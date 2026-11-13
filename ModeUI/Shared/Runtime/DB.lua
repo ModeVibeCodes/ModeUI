@@ -75,35 +75,52 @@ local function MigrateV1(root)
     root.activeProfile = D.DEFAULT_PROFILE
 end
 
--- Play The Game Tools carried these unit frames before ModeUI. The first time
--- ModeUI starts (no saved unit frame settings yet), copy the active PTG
--- profile's unit frame settings and positions. PTGToolsDB is only read.
+-- Copies one module's settings and position keys from a PTG profile into db.
+-- Only a copy that passes ModeUI's own validation and migration is kept.
+local function ImportModule(id, module, profile, db)
+    local source = type(profile.modules) == "table" and profile.modules[id]
+    if type(source) ~= "table" or type(module.Initialize) ~= "function" then return false end
+    local ok, copy = pcall(Copy, source)
+    if not ok or type(copy) ~= "table" or not pcall(module.Initialize, copy) then return false end
+    db.modules = type(db.modules) == "table" and db.modules or {}
+    db.modules[id] = copy
+    db.positions = type(db.positions) == "table" and db.positions or {}
+    local positions = type(profile.positions) == "table" and profile.positions or {}
+    for _, key in ipairs(type(module.ptgImport.positions) == "table" and module.ptgImport.positions or {}) do
+        if type(positions[key]) == "table" and db.positions[key] == nil then
+            local okPosition, position = pcall(Copy, positions[key])
+            if okPosition then db.positions[key] = position end
+        end
+    end
+    return true
+end
+
+-- Play The Game Tools carried some modules before ModeUI (Unit Frames). A
+-- module that declares `ptgImport = { positions = { ... } }` in its Init.lua
+-- is copied once, the first time ModeUI starts with none of those modules
+-- saved yet: its settings from the active PTG profile (same module ID) and
+-- the listed position keys. PTGToolsDB is only read.
 local function ImportFromPlayTheGameTools(root, db)
-    if root.importedFrom ~= nil or (type(db.modules) == "table" and db.modules.unitFrames ~= nil) then return end
+    if root.importedFrom ~= nil then return end
+    local importing = {}
+    for _, id in ipairs(addon.moduleOrder) do
+        if type(addon.modules[id].ptgImport) == "table" then
+            if type(db.modules) == "table" and db.modules[id] ~= nil then return end
+            importing[#importing + 1] = id
+        end
+    end
     root.importedFrom = "none"
     local ptg = PTGToolsDB
     if type(ptg) ~= "table" or type(ptg.profiles) ~= "table" then return end
     local selection = type(ptg.accountSelection) == "table" and ptg.accountSelection or nil
     local name = selection and selection.activeProfile or ptg.defaultProfile
     local profile = type(name) == "string" and ptg.profiles[name]
-    local modules = type(profile) == "table" and profile.modules
-    local frames = type(modules) == "table" and modules.unitFrames
-    if type(frames) ~= "table" then return end
-    local ok, copy = pcall(Copy, frames)
-    if not ok or type(copy) ~= "table" then return end
-    -- Only keep a copy that passes ModeUI's own validation and migration.
-    if not addon.UnitFrames or not pcall(addon.UnitFrames.Initialize, copy) then return end
-    db.modules = type(db.modules) == "table" and db.modules or {}
-    db.modules.unitFrames = copy
-    db.positions = type(db.positions) == "table" and db.positions or {}
-    local positions = type(profile.positions) == "table" and profile.positions or {}
-    for _, id in ipairs({ "unitFramesPlayer", "unitFramesTarget" }) do
-        if type(positions[id]) == "table" and db.positions[id] == nil then
-            local okPosition, position = pcall(Copy, positions[id])
-            if okPosition then db.positions[id] = position end
-        end
+    if type(profile) ~= "table" then return end
+    local imported = false
+    for _, id in ipairs(importing) do
+        if ImportModule(id, addon.modules[id], profile, db) then imported = true end
     end
-    root.importedFrom = "PlayTheGameTools:" .. name
+    if imported then root.importedFrom = "PlayTheGameTools:" .. name end
 end
 
 function addon:InitializeDatabase()

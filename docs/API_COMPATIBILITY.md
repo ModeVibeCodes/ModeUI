@@ -669,3 +669,106 @@ Checked against the `forever` branch of Gethe/wow-ui-source and the local
   the proc-enchant table's names on Forever, whether `ColumnDisplay` and
   list-row strips look right faded in every window, and how Window Text
   reads in long windows (Achievements, Collections).
+
+## Tooltip — November 13, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source and the local
+12.1.5 copy (the tooltip files match; Forever has no tooltip overrides).
+[Details](TOOLTIP.md).
+
+- **Frame.** `GameTooltip` → `GameTooltipTemplate` → `SharedTooltipTemplate`
+  → `SharedTooltipArtTemplate`: a `NineSlice` (`TooltipDefaultLayout`) and
+  `TopOverlay`/`BottomOverlay`. `SharedTooltip_SetBackdropStyle` (on load, on
+  hide, on clear for comparisons, and after the data post-calls for azerite
+  and corrupted items) calls `NineSliceUtil.ApplyLayout` (atlases and points,
+  never alpha), `NineSlice:Show()` and `SetCenterColor`, so ModeUI fades the
+  NineSlice with `SetAlpha(0)` and keeps its own fill and border.
+- **Lines.** `GameTooltipTextLeft/RightN`; lines 3+ are made by the engine.
+  Blizzard's Lua doesn't call `SetFontObject` on them (the Auction House buy
+  dialog swaps line 1's font object). `FontString:SetText` accepts secret
+  text, and a line's sizes are then secret, so ModeUI only sets fonts.
+  `TooltipDataProcessor.AddTooltipPostCall(TooltipDataProcessor.AllTypes, fn)`
+  runs addon post-calls insecurely through a forbidden delegate, before
+  `Show()`; ModeUI sets fonts there and again in an `OnShow` hook.
+- **Health bar.** `GameTooltip.StatusBar` (`GameTooltipStatusBar`):
+  `SetValue(UnitPercentHealthFromGUID(guid))` (secret) from Blizzard's secure
+  mixin; `HealthBar_OnValueChanged` colors it green on each change, so ModeUI
+  re-colors it in an `OnValueChanged` hook. ModeUI only sets its texture,
+  color, points and height.
+- **Placement.** `GameTooltip_SetDefaultAnchor(tooltip, parent)` does
+  `SetOwner(parent, "ANCHOR_NONE")` and anchors to `GameTooltipDefaultContainer`
+  (an `EditModeHudTooltipSystemTemplate` frame: Forever has the HUD Tooltip
+  Edit Mode system). ModeUI post-hooks it for `GameTooltip` only and calls
+  `ClearAllPoints`/`SetPoint` (or `SetOwner(parent, "ANCHOR_CURSOR")`);
+  GameTooltip isn't protected, so these work in combat. Blizzard's container
+  is never touched.
+- **Combat.** `GameTooltip:Hide()` from an `OnShow` hook is allowed (Blizzard's
+  own `GameTooltip_OnShow` does it in Edit Mode); `GameTooltip_OnHide` is
+  hardened for addon-touched tooltips. A post-call is too early to hide
+  (`Show()` follows it).
+- **Border colors.** `tooltip:GetItem()` → `C_Item.GetItemQualityByID` (no
+  secret returns) and `C_Item.GetItemQualityColor`. `tooltip:GetUnit()` can
+  return a secret token (`UnitTokenFromGUID` is
+  `SecretWhenUnitIdentityRestricted`), and `UnitClass` errors on a secret
+  token from addon code, so ModeUI checks the token is public first.
+- **Unverified natively:** engine-made lines keeping the Mode face across
+  tooltips, the health bar's placement under every unit tooltip, and Hide in
+  Combat with tooltips Blizzard refreshes every 0.2 s (unit frames).
+
+### Character window, third pass — November 13, 2026
+
+- **Stats pane.** `CharacterStatsPaneScrollBox` (`ClassBackground`, `Border`
+  `common-insideframe`, a scroll line) with `.ScrollBox` rows:
+  `CharacterStatFrameCategoryTemplate` (`Background` `UI-Character-Info-Title`,
+  `Title`) and `CharacterStatFrameScrollBoxBaseElementTemplate` (`Background`
+  `UI-Character-Info-Line-Bounce2`, which Blizzard shows on every other row,
+  `Label`, `Value`). ModeUI fades the headers' art and desaturates the row
+  stripe (its shown state stays Blizzard's).
+- **Model area.** Slots are 37 px; the left column's right edge (x 61) and the
+  right column's left edge (x 341) bound the model, above the weapon row. The
+  stats block hangs from a frame anchored to `CharacterHeadSlot`,
+  `CharacterHandsSlot` and `CharacterWristSlot`, so it never reaches a slot.
+- **Other parts.** `PaperDollFrame.TopBackgroundStripHost` (rock strip,
+  `_UI-Frame-InnerTopTile`), `RightPaneToggleButton`, and
+  `CharacterFrameModeTab1..6` (`LargeSideTabButtonTemplate`, a Frame whose
+  `SelectedTexture` shows when checked). `SetPaperDollBackground` resets the
+  model's `BackgroundOverlay` alpha on every show, so ModeUI leaves the model
+  backdrop alone.
+- **Dropdowns.** `WowStyle1/2DropdownTemplate` roots are `DropdownButton`, an
+  intrinsic `Button` (`GetObjectType` answers "Button"); ModeUI recognises
+  them by `Background`, `Arrow` and DropdownButtonMixin's methods. The Guild
+  chat edit box's middle piece is `Mid`.
+
+## Game menu button and addon compartment — November 13, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source (Forever loads
+the game type `camelot`). Code: `Shared/Settings/Launchers.lua`.
+
+- **Game menu.** `Blizzard_GameMenu.toc` loads `Shared/GameMenuFrame.lua` for
+  camelot. `GameMenuFrameMixin:InitButtons()` runs on every show (and on
+  `STORE_STATUS_CHANGED`/`TRIAL_STATUS_UPDATE`): it empties `self.buttons`,
+  calls `Reset()` (releases the pooled buttons) and adds Options, Shop,
+  `AddSection()`, AddOns, Edit Mode, Support, Macros, `AddSection()`, Log Out,
+  Exit Game and Return to Game. Forever's `AddButton(text, callback,
+  isDisabled, disabledText, useGoldRedButton)` appends to `self.buttons`;
+  `MainMenuFrameMixin:AddButton` (`Blizzard_SharedXML/Shared/Frame/MainMenuFrameTemplates.lua`)
+  gives each button a `layoutIndex`, the pending `topPadding` (20 after
+  `AddSection`) and calls `MarkDirty()`. ModeUI post-hooks `InitButtons` with
+  `hooksecurefunc`, adds its button, moves it in `self.buttons` before the
+  first button after Options that starts a section (AddOns), gives it and that
+  button a 20 px `topPadding`, renumbers `layoutIndex` and narration in list
+  order (as Play The Game Tools does, so both addons' buttons fit), and
+  re-runs `ResetGamepadButtons`/`SetupGamepadButtons`. It adds nothing in
+  combat. The click does what Blizzard's own buttons do: `PlaySound(SOUNDKIT.IG_MAINMENU_OPTION)`,
+  `HideUIPanel(GameMenuFrame)`, then opens the settings window.
+- **Addon compartment.** `Blizzard_Minimap.toc` loads the mainline
+  `AddonCompartment.lua`, then camelot's own `Camelot/AddonCompartment.lua` and
+  `.xml` (the mainline XML is excluded for camelot). Camelot keeps the mixin
+  and only restyles `AddonCompartmentFrame` (a
+  `DropdownButton` on `MinimapCluster`). `AddonCompartmentMixin:RegisterAddon({ text,
+  icon, func, funcOnEnter, funcOnLeave })` adds an entry and shows the button;
+  entries are sorted by text with hyperlinks stripped. Registering this way
+  needs no global function (the TOC's `AddonCompartmentFunc` would).
+- **Unverified natively:** the button's exact spot when other addons also add
+  game menu buttons, and the compartment entry's sort position with a color
+  code at the start of its text.

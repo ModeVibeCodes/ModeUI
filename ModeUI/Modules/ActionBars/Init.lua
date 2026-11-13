@@ -9,7 +9,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- The micro menu and the bag bar are bars here too (Utility.lua): Blizzard's
 -- micro and bag buttons on ModeUI bars with the same skin, text, Edit Mode
 -- and Show choices (Always, Mouseover, Hidden).
--- Files: Init (this), Migrations, Driver, Bars, Layout, Skin, Text, Utility,
+-- Files: Init (this), Migrations, Driver, Layout, Skin, Text, Utility, Bars,
 -- Visibility, Keybind, Glow, GlowMenu, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Action Bars"], category = "interface", defaultEnabled = false,

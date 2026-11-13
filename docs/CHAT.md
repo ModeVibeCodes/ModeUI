@@ -18,14 +18,13 @@ measures messages, and it never writes Blizzard's globals or fields.
 | Box | Blizzard's `Background` region stays as the window's box, moved to Text Inset (6 px) plus the border around the messages, plus the edit box when it sits inside and the scroll bar's 10 px gutter (more on top for the combat log's quick buttons). The tab dock, button frame and alerts that Blizzard anchors to it follow. |
 | Text | Expressway by default (the Font setting), with a crisp one-pixel shadow. Each window keeps its own Font Size from its tab's right-click menu; Blizzard re-applies the size but keeps the face. |
 | Edit box | **Bottom** (default) or **Top**: joined to the window inside its border, on a band a little darker than the window, Edit Box Height tall, with a one-pixel divider toward the text that turns cyan while typing. **Below**: its own field Edit Gap under the window, with the window's border, cyan while typing. Its text, header and prompt use the chat face. |
-| Tabs | Blizzard's tab art is faded. Panes rest on the window's border: the selected tab stands Tab Height tall (24 px), the others tuck down Tuck Depth (3 px). **Glass**: the ModeGlass texture (feathered sides and top), a soft white wash over its top half, a diagonal glint (ModeSheen, added light) and a faint top line. **Solid**: flat dark fields. The selected tab has white text and a 2 px cyan bar; the others are label gray. Whisper tabs keep their whisper color. Text sits on the pane's middle. |
+| Tabs | Blizzard's tab art is faded. Panes rest on the window's border: the selected tab stands Tab Height tall (24 px), the others tuck down Tuck Depth (3 px). **Glass**: the ModeGlass texture (feathered sides and top) with a diagonal glint (ModeSheen, added light). (The white wash and top line were dropped: the lit top edge on the selected tab looked odd, owner, November 13, 2026.) **Solid**: flat dark fields. The selected tab has white text and a 2 px cyan bar; the others are label gray. Whisper tabs keep their whisper color. Text sits on the pane's middle. |
 | Tab width | Blizzard sizes a tab to its text in whatever font it had; General, Combat Log and other fixed or undocked tabs are sized again in the Mode face right after (post-hook on `PanelTemplates_TabResize`), so names aren't cut off. Dynamic docked tabs keep the dock's width; whisper tabs (whose names can be secret) are never measured. |
 | Compartment | One capsule at the right end of the main window's tab row: Channels (cyan while a voice channel is active), Voice Deafen and Voice Mute (only while voice chat shows them) and the Chat Menu, 22 by 18 px cells with one-pixel dividers. They are Blizzard's own buttons moved in, so clicks, menus and tooltips are Blizzard's. Social and Text to Speech (Blizzard's chat alert column) stack just above it. |
 | Scroll | Blizzard's MinimalScrollBar, skinned: a slim Mode track and thumb in the gutter, shown while the mouse is over the chat (Scroll Bar off hides it). Scroll to Bottom is a 16 px field with a chevron in the box's bottom-right corner, shown whenever the window is scrolled up; Blizzard's flashing arrow is hidden. |
 
 The window can't really blur what's behind it: the client has no backdrop
-blur. The "glass" is the feathered, see-through pane, its wash, glint and top
-line.
+blur. The "glass" is the feathered, see-through pane and its glint.
 
 ## Fading
 

@@ -159,6 +159,18 @@ function M:SetStat(id, on)
     if not self.statsById[id] or type(on) ~= "boolean" then return false end
     self.db.charStatList[id] = on
     self:CharacterRefresh()
+    -- Its color row shows with it.
+    if self.page then self.page:Layout() end
+    return true
+end
+
+-- One stat's label color in the stats display.
+function M:SetStatColor(id, color)
+    if not self.STAT_COLORS[id] or type(color) ~= "table" then return false end
+    for i = 1, 3 do if not addon.IsNumber(color[i], 0, 1) then return false end end
+    self.db.charStatColors[id] = { color[1], color[2], color[3] }
+    self:CharacterRefresh()
+    if self.page then self.page:Refresh() end
     return true
 end
 

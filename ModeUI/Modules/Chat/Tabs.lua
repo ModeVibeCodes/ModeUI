@@ -5,9 +5,9 @@ if not M then return end
 -- Glass tabs. Blizzard's tab art (the left, middle and right pieces, their
 -- active and highlight copies) is faded; ModeUI draws a pane resting on the
 -- window's border (Blizzard anchors each tab's bottom to the box's top):
---   Glass  the ModeGlass texture (feathered sides and top), a soft white
---          wash over its top half, a diagonal glint (ModeSheen, added light)
---          and a faint one-pixel top line
+--   Glass  the ModeGlass texture (feathered sides and top) with a diagonal
+--          glint (ModeSheen, added light). (A white wash and top line were
+--          dropped: the owner found the lit top edge odd, November 13, 2026.)
 --   Solid  a flat dark field
 -- The selected tab stands Tab Height tall with white text and a two-pixel
 -- cyan bar; the others are tucked down Tuck Depth with label-gray text.
@@ -31,11 +31,9 @@ local function Parts(tab)
     Skin.parts[tab] = parts
     local function Own(region) parts.regions[region] = true; return region end
     parts.glass = Own(tab:CreateTexture(nil, "BACKGROUND", nil, -8))
-    parts.sheen = Own(tab:CreateTexture(nil, "BACKGROUND", nil, -7))
     parts.glint = Own(tab:CreateTexture(nil, "BACKGROUND", nil, -6))
-    parts.line = Own(tab:CreateTexture(nil, "BACKGROUND", nil, -5))
     parts.bar = Own(tab:CreateTexture(nil, "ARTWORK", nil, 7))
-    for _, key in ipairs({ "sheen", "line", "bar" }) do parts[key]:SetTexture(Kit.FLAT) end
+    parts.bar:SetTexture(Kit.FLAT)
     addon.Media:ApplyTexture(parts.glint, "ModeSheen")
     parts.glint:SetBlendMode("ADD")
     return parts
@@ -117,28 +115,14 @@ function M:PaintPane(tab, selected)
         glass:SetTexture(Kit.FLAT); glass:SetTexCoord(0, 1, 0, 1)
         Kit.Tint(glass, selected and C.selected or C.field, 0.92)
     end
-    -- The wash: a soft white gradient over the top half, clear at the middle.
-    local inner = Snap(2, px)
-    local sheen = parts.sheen
-    sheen:ClearAllPoints()
-    sheen:SetPoint("TOPLEFT", glass, "TOPLEFT", inner, -px)
-    sheen:SetPoint("TOPRIGHT", glass, "TOPRIGHT", -inner, -px)
-    sheen:SetHeight(Snap(height / 2, px))
-    Kit.Gradient(sheen, { 1, 1, 1, 0.1 }, { 1, 1, 1, 0 }, 0.05)
     -- The glint: a diagonal band of added light across the pane.
+    local inner = Snap(2, px)
     local glint = parts.glint
     glint:ClearAllPoints()
     glint:SetPoint("TOPLEFT", glass, "TOPLEFT", inner, -px)
     glint:SetPoint("BOTTOMRIGHT", glass, "BOTTOMRIGHT", -inner, 0)
-    glint:SetVertexColor(1, 1, 1, selected and 0.16 or 0.1)
-    -- A faint light line along the top, inside the feathered corners.
-    local line = parts.line
-    line:ClearAllPoints()
-    line:SetPoint("TOPLEFT", glass, "TOPLEFT", Snap(3, px), -px)
-    line:SetPoint("TOPRIGHT", glass, "TOPRIGHT", -Snap(3, px), -px)
-    line:SetHeight(px)
-    Kit.Tint(line, { 1, 1, 1 }, 0.1)
-    sheen:SetShown(glassy); glint:SetShown(glassy); line:SetShown(glassy)
+    glint:SetVertexColor(1, 1, 1, selected and 0.12 or 0.08)
+    glint:SetShown(glassy)
     -- The selected tab's cyan bar, half Tab Padding in from the pane's sides.
     local bar, pad = parts.bar, Snap(self.TAB_PADDING / 2, px)
     bar:ClearAllPoints()

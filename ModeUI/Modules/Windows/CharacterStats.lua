@@ -4,29 +4,33 @@ if not M then return end
 
 -- The Character window's stats display: a small block of text over the
 -- character model, one line per stat picked on the Character tab (Main Stat,
--- Stamina, Armor, Crit, Hit and Haste by default), label at the left and
--- value at the right. Main Stat is the specialization's primary stat
--- (C_SpecializationInfo / GetSpecializationInfo, as Forever's own paper
--- doll reads it), or the highest of Strength, Agility and Intellect, and its
--- label is cyan. It sits at Stats Anchor of the model, nudged by Offset X
--- and Y, in the Mode face at Stats Text Size, on an optional dark field.
--- Every stat comes from the functions Forever's paper doll calls; they can
--- be secret while unit stats are restricted, and a secret or missing value
--- shows a dash.
+-- Stamina, Armor, Crit, Hit and Haste by default), label at the left in the
+-- stat's color (Stat Colors) and value at the right in white. Main Stat is
+-- the specialization's primary stat (C_SpecializationInfo /
+-- GetSpecializationInfo, as Forever's own paper doll reads it), or the
+-- highest of Strength, Agility and Intellect, in its attribute's color. It
+-- sits at Stats Anchor of the model area between the slot columns (never
+-- over a slot: offsets are kept inside it, and the block is never wider than
+-- it), nudged by Offset X and Y, in the Mode face at Stats Text Size, on an
+-- optional dark field. Every stat comes from the functions Forever's paper
+-- doll calls; they can be secret while unit stats are restricted, and a
+-- secret or missing value shows a dash.
 local L, Kit, Skin = addon.L, addon.Kit, addon.Skin
 local Number = addon.IsNumber
 local C = Skin.colors
-local WIDTH, PADDING, GAP = 150, 6, 2
+local WIDTH, PADDING, GAP, VALUE_WIDTH = 150, 6, 2, 64
 local DASH = "-"
 -- UnitStat indexes (LE_UNIT_STAT_*).
 local STAT_INDEX = { strength = 1, agility = 2, stamina = 3, intellect = 4, spirit = 5 }
 local STAT_NAMES = { "Strength", "Agility", "Stamina", "Intellect", "Spirit" }
 
+-- fn(...) under pcall, all its returns kept (nils between them too; Lua 5.1).
+local function Pack(...) return { n = select("#", ...), ... } end
 local function Call(fn, ...)
     if type(fn) ~= "function" then return nil end
-    local results = { pcall(fn, ...) }
+    local results = Pack(pcall(fn, ...))
     if not results[1] then return nil end
-    return select(2, unpack(results))
+    return unpack(results, 2, results.n)
 end
 local function Whole(value) return Number(value) and string.format("%d", math.floor(value + 0.5)) or DASH end
 local function Percent(value) return Number(value) and string.format("%.2f%%", value) or DASH end
@@ -106,8 +110,24 @@ function M:StatText(id)
     return label or L[stat.label], value or DASH
 end
 
--- Where the block hangs: the character model, or the paper doll.
-local function Host() return CharacterModelScene or (PaperDollFrame and PaperDollFrame.ModelScene) or PaperDollFrame end
+-- The model area: between the left slot column's right edge and the right
+-- column's left edge, from the top of the head slot to the bottom of the
+-- wrist slot (above the weapons), less Area Gap on every side. Every Stats
+-- Anchor is a point of this area, so the block never reaches a slot.
+local AREA_GAP = 6
+function M:StatsArea()
+    if self.statsArea then return self.statsArea end
+    local head, wrist, hands = CharacterHeadSlot, CharacterWristSlot, CharacterHandsSlot
+    local parent = PaperDollFrame or CharacterFrame
+    if not (parent and head and wrist and hands) then return CharacterModelScene or parent end
+    local area = CreateFrame("Frame", nil, parent)
+    area:EnableMouse(false)
+    area:SetPoint("TOPLEFT", head, "TOPRIGHT", AREA_GAP, 0)
+    area:SetPoint("TOPRIGHT", hands, "TOPLEFT", -AREA_GAP, 0)
+    area:SetPoint("BOTTOMLEFT", wrist, "BOTTOMRIGHT", AREA_GAP, 0)
+    self.statsArea = area
+    return area
+end
 
 function M:BuildStats()
     if self.statsFrame then return self.statsFrame end
@@ -130,17 +150,38 @@ local function Line(frame, index)
     return line
 end
 
+-- A stat's label color; Main Stat takes its attribute's.
+function M:StatColor(id, main)
+    if id == "mainStat" then id = ({ "strength", "agility", "stamina", "intellect", "spirit" })[main] or "strength" end
+    return self.db.charStatColors[id] or self.STAT_COLORS[id] or C.label
+end
+
+-- The offset that keeps a `size`-long block inside an `room`-long area for an
+-- anchor on its low edge (LEFT/BOTTOM: 0..spare), high edge (RIGHT/TOP:
+-- -spare..0) or middle (-spare/2..spare/2).
+local function Clamp(offset, edge, room, size)
+    if not (Number(room) and room > 0) then return offset end
+    local spare = math.max(0, room - size)
+    local low, high = 0, spare
+    if edge == "high" then low, high = -spare, 0 elseif edge == "middle" then low, high = -spare / 2, spare / 2 end
+    return math.max(low, math.min(high, offset))
+end
+
 -- Fills and places the block from the settings; hidden with Stats off.
 function M:PaintStats()
     local db = self.db
     local frame = self.statsFrame or (self.active and db.charStats and self:BuildStats())
     if not frame then return end
-    local host = Host()
-    if not (self.active and db.charStats and host) then frame:Hide(); return end
+    local area = self:StatsArea()
+    if not (self.active and db.charStats and area) then frame:Hide(); return end
     local px = Kit.PixelSize(frame)
     local size, path = db.charStatsSize, Kit.FontPath(db, self.id)
     local row = Skin.Snap(size + 4, px)
     local main = self:MainStatIndex()
+    -- As wide as the area allows, up to WIDTH.
+    local room = area.GetWidth and area:GetWidth()
+    local width = Skin.Snap(WIDTH, px)
+    if Number(room) and room > 0 then width = math.min(width, Skin.Snap(room, px)) end
     local count = 0
     for _, stat in ipairs(self.STATS) do
         if db.charStatList[stat.id] then
@@ -150,25 +191,34 @@ function M:PaintStats()
             for _, text in ipairs({ line.label, line.value }) do
                 Skin.Font(text, path, size, db.outline, true, px)
                 text:ClearAllPoints()
+                text:SetWordWrap(false)
             end
             local y = -(PADDING + (count - 1) * (row + GAP))
             line.label:SetPoint("TOPLEFT", frame, "TOPLEFT", PADDING, y)
+            -- Values get a fixed column at the right; labels the rest.
+            line.label:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(PADDING + VALUE_WIDTH), y)
             line.value:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PADDING, y)
+            line.value:SetPoint("TOPLEFT", frame, "TOPRIGHT", -(PADDING + VALUE_WIDTH), y)
             line.label:SetHeight(row); line.value:SetHeight(row)
             line.label:SetText(label); line.value:SetText(value)
-            -- The main stat is cyan, on its own line or on its attribute's.
-            local isMain = stat.id == "mainStat" or (STAT_INDEX[stat.id] == main and not db.charStatList.mainStat)
-            local color = isMain and C.accent or C.label
+            local color = self:StatColor(stat.id, main)
             line.label:SetTextColor(color[1], color[2], color[3], 1)
             line.value:SetTextColor(C.heading[1], C.heading[2], C.heading[3], 1)
             line.label:Show(); line.value:Show()
         end
     end
     for index = count + 1, #frame.lines do frame.lines[index].label:Hide(); frame.lines[index].value:Hide() end
-    frame:SetSize(Skin.Snap(WIDTH, px), Skin.Snap(2 * PADDING + count * row + math.max(0, count - 1) * GAP, px))
-    frame:ClearAllPoints()
+    local height = Skin.Snap(2 * PADDING + count * row + math.max(0, count - 1) * GAP, px)
+    frame:SetSize(width, height)
+    -- Offsets are kept inside the area, whatever the anchor.
     local anchor = db.charStatsAnchor
-    frame:SetPoint(anchor, host, anchor, db.charStatsX, db.charStatsY)
+    local horizontal = anchor:find("LEFT") and "low" or (anchor:find("RIGHT") and "high" or "middle")
+    local vertical = anchor:find("BOTTOM") and "low" or (anchor:find("TOP") and "high" or "middle")
+    local x = Clamp(db.charStatsX, horizontal, room, width)
+    local y = Clamp(db.charStatsY, vertical, area.GetHeight and area:GetHeight(), height)
+    frame:ClearAllPoints()
+    frame:SetPoint(anchor, area, anchor, x, y)
+    local host = CharacterModelScene or area
     local level = host:GetFrameLevel()
     if Number(level) then frame:SetFrameLevel(level + 60) end
     Skin.PaintPanel(frame.parts, frame, C.field, db.charStatsBackground and 0.7 or 0, C.fieldRim, db.charStatsBackground and px or 0)

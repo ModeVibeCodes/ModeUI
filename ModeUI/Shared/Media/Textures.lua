@@ -25,7 +25,6 @@ M.Textures = {
     ModeSliderThumb = { file = "Mode/CheckSurfaceRound.tga", rounded = true },
     ModeScrollThumb = { file = "Mode/ScrollThumb.tga", rounded = true },
     ModeDivider = { file = "Mode/Divider.tga", transparent = true },
-    ModeLogo = { file = "Mode/Logo.tga", transparent = true },
     -- Unit Frames Satin Matte (tools/build_unit_frame_textures.py): neutral
     -- luminance tinted in-game; slices cover each corner radius.
     UnitFrameFrame = { file = "UnitFrames/FrameFill.tga", slice = 6, rounded = true },

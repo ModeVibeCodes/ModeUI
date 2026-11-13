@@ -43,13 +43,17 @@ local ABBREVIATIONS = {
     { "Critical Strike", "Crit" }, { "Strength", "Str" }, { "Agility", "Agi" }, { "Intellect", "Int" },
     { "Stamina", "Sta" }, { "Spirit", "Spi" }, { "Defense", "Def" }, { "Damage", "Dmg" },
     { "[Mm]ana every 5 [Ss]ec%.?", "MP5" }, { "[Mm]ana per 5 [Ss]ec%.?", "MP5" },
+    -- "and" reads as "&" (owner, November 13, 2026).
+    { "%s+[Aa]nd%s+", " & " },
 }
 
+-- fn(...) under pcall, all its returns kept (nils between them too; Lua 5.1).
+local function Pack(...) return { n = select("#", ...), ... } end
 local function Call(fn, ...)
     if type(fn) ~= "function" then return nil end
-    local results = { pcall(fn, ...) }
+    local results = Pack(pcall(fn, ...))
     if not results[1] then return nil end
-    return select(2, unpack(results))
+    return unpack(results, 2, results.n)
 end
 local function Clean(text) return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("^%s+", ""):gsub("%s+$", "")) end
 -- A Lua pattern from a format string like "Enchanted: %s".
@@ -63,17 +67,20 @@ function M.ShortStat(text)
     return text
 end
 
+-- "and" in an enchant's name reads as "&".
+local function Amp(text) return (text:gsub("%s+[Aa]nd%s+", " & ")) end
+
 -- The enchant's name and its stat, from its tooltip text.
 function M.SummarizeEnchant(name)
     if name:find("^[%+%-]?%d") then return M.ShortStat(name), nil end
     local base, inner = name:match("^(.-)%s*%((.-)%)$")
-    if inner and inner:find("%d") then return base, M.ShortStat(inner) end
+    if inner and inner:find("%d") then return Amp(base), M.ShortStat(inner) end
     for known, stat in pairs(M.KNOWN_ENCHANTS) do
-        if name:sub(1, #known) == known then return name, stat end
+        if name:sub(1, #known) == known then return Amp(name), Amp(stat) end
     end
     local left, right = name:match("^(.-)%s+%-%s+(.+)$")
-    if right and right:find("%d") then return left, M.ShortStat(right) end
-    return name, nil
+    if right and right:find("%d") then return Amp(left), M.ShortStat(right) end
+    return Amp(name), nil
 end
 
 local function TooltipLines(slotID)

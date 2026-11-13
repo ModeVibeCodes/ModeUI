@@ -5,6 +5,24 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Texts colored by the unit
+
+November 13, 2026, per the owner: a text spot's color (`texts.<slot>.colorMode`)
+can also be **Reaction** (hostile red, neutral yellow, friendly green, tapped
+gray, softened by Class Color Softness), **Class Color** (a player's class
+color, anyone else by reaction) or, for the level only, **Level Difficulty**
+(`GetCreatureDifficultyColor` for the unit's level against yours; a skull
+level is red). A mode that doesn't suit the text (Level Difficulty on a name)
+shows the default color; an unknown color does too. These colors are
+repainted whenever the frame's unit, faction or level updates
+(`M:PaintUnitColoredTexts`); stand-ins show the Player friendly and the other
+frames as a level 60 enemy. In the Health Bar and Power Bar tabs each spot with
+a text shows icons for the modes that suit it, at the right of its size
+controls: three stripes for Reaction, your class icon for Class Color and five
+stripes for Level Difficulty. Clicking the lit icon goes back to the default;
+right-clicking the swatch does too (the Default button is gone). No saved key
+changes: the new values are extra choices of `colorMode`.
+
 ## Editing marks, cast bar width, Focus cast gap (layout version 19)
 
 November 13, 2026, per the owner:
@@ -29,7 +47,7 @@ November 13, 2026, per the owner:
   you chose stays.
 
 Manual check (layout version 19):
-- **Navigation:** **Interface** › **Unit Frames**, the **Editing** list at the
+- **Navigation:** **Frames** › **Unit Frames**, the **Editing** list at the
   preview's top right; then the **Portrait** and **Cast Bar** tabs.
 - **Action:** open the Editing list; turn Focus off with **Show Frame** and
   open the list again; Turn On. On the Portrait tab, look at the first
@@ -429,7 +447,7 @@ top half, the look the old "Mode" choice gave). The Bar Texture setting is gone,
 and layout version 12 removes the saved `texture` key from both frames. ModeUI's
 text and interface default to Expressway, with the bundled Lato as the fallback.
 
-November 11, 2026. First module of the **Interface** category and the start of
+November 11, 2026. First module (in the **Frames** category since November 13) and the start of
 the Play The Game Tools UI suite. Opt-in (default off), Forever only, built into
 PTG with no dependency on ModeTools or any other addon. Static/mock validated
 only; **native acceptance is pending**.

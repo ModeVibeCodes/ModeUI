@@ -234,5 +234,8 @@ end
 -- (the button's normal texture) faded so the window's fill shows through.
 function Skin.Row(row, style, fadeRows)
     if fadeRows and row.GetNormalTexture then Fade(row:GetNormalTexture()) end
+    -- The Guild roster's brown profession header strip.
+    local header = fadeRows and row.ProfessionHeader
+    if header then for _, key in ipairs({ "Left", "Middle", "Right" }) do Fade(header[key]) end end
     if style.bodyFont then Skin.Texts(row, style.path) end
 end
