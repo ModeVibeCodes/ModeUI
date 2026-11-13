@@ -88,6 +88,7 @@ function E:ViewportChanged()
     if not addon.editMode or InCombatLockdown() or UnitAffectingCombat("player") then return end
     self:FinishDrags()
     addon.Positioning:Refresh()
+    addon.PositionManager:RenderGrid()
     if addon.UpdateEditWindowBounds then addon:UpdateEditWindowBounds() end
     self:NotifyPosition()
 end

@@ -1,6 +1,6 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
-local HEIGHT = 472
+local HEIGHT = 510
 local ARROWS = { LEFT = { -1, 0 }, RIGHT = { 1, 0 }, UP = { 0, 1 }, DOWN = { 0, -1 } }
 
 -- Small owned dropdown; options are rebuilt on open, never polled.
@@ -171,8 +171,18 @@ function addon:CreateEditWindow()
     highlights:SetPoint("TOPLEFT", 20, -348)
     highlights:SetScript("OnClick", function() E:SetHighlights(not E.highlights) end)
     W.Label(window, "Show Highlights", nil, 60, -355, 220)
+    -- Center Lines and Grid draw on the screen behind the elements (PositionGrid.lua).
+    local function ScreenToggle(x, text, get, set)
+        local box = W.Button(window, "", 30, 30, "checkbox")
+        box:SetPoint("TOPLEFT", x, -386)
+        box:SetScript("OnClick", function() set(not get()); self:RefreshEditWindow() end)
+        box.text = W.Label(window, text, nil, x + 40, -393, 110)
+        return box
+    end
+    local centerLines = ScreenToggle(20, "Center Lines", function() return E.centerLines end, function(on) E:SetCenterLines(on) end)
+    local grid = ScreenToggle(176, "Grid", function() return E.grid end, function(on) E:SetGrid(on) end)
     local settings = W.Button(window, "Open Module Settings", 300, 30)
-    settings:SetPoint("TOPLEFT", 20, -386)
+    settings:SetPoint("TOPLEFT", 20, -424)
     settings:SetScript("OnClick", function()
         if InCombatLockdown() or UnitAffectingCombat("player") then
             print("ModeUI: open element settings outside combat.")
@@ -187,7 +197,7 @@ function addon:CreateEditWindow()
         if module.OpenElementSettings then module:OpenElementSettings(elementId) end
     end)
     local exit = W.Button(window, "Exit", 300, 32)
-    exit:SetPoint("TOPLEFT", 20, -424)
+    exit:SetPoint("TOPLEFT", 20, -462)
     exit:SetSelected(true)
     exit:SetScript("OnClick", function() self:SetEditMode(false) end)
     function self:RefreshEditWindow()
@@ -214,6 +224,7 @@ function addon:CreateEditWindow()
         anchorTo.label:SetText(picking and "Cancel" or "Anchor To...")
         targets:Refresh(); placements:Refresh()
         highlights:SetSelected(E.highlights)
+        centerLines:SetSelected(E.centerLines); grid:SetSelected(E.grid)
         refreshing = false
     end
     -- Clearing focus runs the numeric input's normal apply.
@@ -224,6 +235,7 @@ function addon:CreateEditWindow()
     window.anchorToButton = anchorTo
     window.matchWidthButton, window.matchHeightButton = matchWidth, matchHeight
     window.settingsButton, window.exitButton, window.highlightButton = settings, exit, highlights
+    window.centerLinesButton, window.gridButton = centerLines, grid
     window.selectedLabel = selected
     window:EnableKeyboard(true)
     window:SetPropagateKeyboardInput(true)

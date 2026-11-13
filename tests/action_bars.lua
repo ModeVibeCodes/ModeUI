@@ -340,6 +340,54 @@ world.run([==[
     element.dragUpdate()
     assert(PM.guides and PM.guides.x:IsShown(), 'center guide near an X of 0')
     assert(PM:StopDragging('actionBarsBar1') and PM:GetPosition('actionBarsBar1').x == 0 and not PM.guides.frame:IsShown(), 'snapped to 0')
+    -- The selected element shows its X and Y from the screen's center.
+    addon.EditMode:Select('actionBarsBar1')
+    local coords = element.decoration.coords
+    assert(coords:IsShown() and Point(coords)[1] == 'RIGHT' and Point(coords)[3] == 'LEFT', 'X and Y left of the name')
+    coords.scripts.OnUpdate(coords, 1)
+    local sx, sy = UIParent:GetCenter()
+    local mx, my = mover1:GetCenter()
+    assert(coords.text:GetText() == ('X ' .. math.floor(mx - sx + 0.5) .. '   Y ' .. math.floor(my - sy + 0.5)), 'from the screen center')
+    assert(not PM.elements.actionBarsBar2.decoration.coords:IsShown(), 'only on the selected element')
+    -- Center Lines (on) and Grid (off) in the Edit Mode window.
+    local window, E = addon.editWindow, addon.EditMode
+    assert(PM.grid and PM.grid.frame:IsShown() and PM.grid.centerX:IsShown() and PM.grid.centerY:IsShown(), 'center lines by default')
+    assert(window.centerLinesButton.selected and not window.gridButton.selected and not (PM.grid.lines[1] and PM.grid.lines[1]:IsShown()))
+    window.gridButton.scripts.OnClick(window.gridButton)
+    assert(E.grid and window.gridButton.selected and #PM.grid.lines == 2 * (math.floor(640 / 32) + math.floor(400 / 32)), 'Grid draws lines out from the center')
+    window.centerLinesButton.scripts.OnClick(window.centerLinesButton)
+    assert(not E.centerLines and not PM.grid.centerX:IsShown() and PM.grid.frame:IsShown(), 'Center Lines off, grid still on')
+    window.gridButton.scripts.OnClick(window.gridButton)
+    assert(not PM.grid.frame:IsShown(), 'both off')
+    window.centerLinesButton.scripts.OnClick(window.centerLinesButton)
+    assert(PM.grid.frame:IsShown() and PM.grid.centerX:IsShown())
+    -- Anchor To: every stand-in keeps the mouse (no dragging), so a click picks
+    -- it and never reaches a button under it.
+    local A = addon.EditAnchor
+    assert(A:Start('actionBarsBar4') and PM.picking)
+    assert(mover1:IsMouseEnabled() and not PM:CanDrag(element), 'the bar takes the click, but does not drag')
+    assert(element.decoration.handle:IsMouseEnabled(), 'its name handle takes the click too')
+    assert(not PM:StartDragging('actionBarsBar1'), 'no dragging while picking')
+    A:Stop()
+    assert(not PM.picking and mover1:IsMouseEnabled() and PM:CanDrag(element), 'back to dragging')
+    -- Stacks stay on the screen: Action Bar 1 at the top edge turns the bars
+    -- stacked above it to grow downward, each one under the last.
+    local stack = { 'actionBarsBar2', 'actionBarsBar3', 'actionBarsPet', 'actionBarsStance' }
+    local kept1 = PM:GetPosition('actionBarsBar1')
+    assert(PM:SetPosition('actionBarsBar1', { target = 'screen', placement = 'above', x = 0, y = 0 }))
+    for _, id in ipairs(stack) do
+        local position = PM:GetPosition(id)
+        assert(position.placement == 'below' and position.y == -4, id .. ' flips below, its gap kept')
+    end
+    local _, top1 = mover1:GetCenter()
+    local _, top2 = ModeUIActionBar2Mover:GetCenter()
+    local _, top3 = ModeUIActionBar3Mover:GetCenter()
+    assert(top2 < top1 and top3 < top2, 'each bar under the last, none piled up')
+    assert(PM:SetPosition('actionBarsBar1', { target = 'screen', placement = 'below', x = 0, y = 0 }))
+    for _, id in ipairs(stack) do assert(PM:GetPosition(id).placement == 'above' and PM:GetPosition(id).y == 4, id .. ' back above at the bottom') end
+    assert(PM:SetPosition('actionBarsBar1', kept1) and PM:GetPosition('actionBarsBar2').placement == 'above', 'a side that fits is kept')
+    -- A side with room is kept: Action Bar 5 stays Left of Action Bar 4.
+    assert(PM:GetPosition('actionBarsBar5').placement == 'left')
     -- Blizzard's counts and keybinds can be secret; the preview copies them as they are.
     ActionButton3.Count:SetText(Secret('charges')); ActionButton4.HotKey:SetText(Secret('key'))
     addon.EditMode:Select('actionBarsPet')
