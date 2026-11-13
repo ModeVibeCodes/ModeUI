@@ -26,7 +26,7 @@ local function Keys(command)
     for i = #keys, 1, -1 do if not Public(keys[i]) or type(keys[i]) ~= "string" then table.remove(keys, i) end end
     return keys
 end
-local function Short(key) return GetBindingText and GetBindingText(key, true) or key end
+local function Short(key) return M.ShortKey(GetBindingText and GetBindingText(key, true) or key) end
 
 -- The key with the held modifiers, as the game names it ("SHIFT-1").
 local function Chord(key)

@@ -25,7 +25,9 @@ addon:RegisterModule("actionBars", M)
 -- 75% (the owner asked for all bars); Blizzard's empty buttons use Background
 -- Opacity too; paging (Page Switching, Page Conditions) and glows (proc glow,
 -- ready glow, icon opacity on cooldown).
-M.VERSION = 4
+-- Version 5: icons desaturate on cooldown (Desaturate Icon); keybinds 2px
+-- smaller and shortened ("sE" for Shift-E); per-button glow switches.
+M.VERSION = 5
 local P = Kit.palette
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -114,8 +116,11 @@ local function Style(bar)
         paging = bar == "bar1", pageConditions = bar == "bar1" and "" or "[mod:shift] 2; [mod:ctrl] 3; [mod:alt] 4",
         procGlow = "mode", procColor = Copy(M.PROC_COLOR), procPulse = true,
         readyGlow = true, readyStyle = "glow", readyColor = Copy(M.READY_COLOR), readyDuration = 2, cooldownOpacity = 100,
+        cooldownDesaturate = true, hotkeyShort = true,
+        -- Buttons whose proc glow or ready glow is off, by place: { ["3"] = { ready = false } }.
+        buttonGlows = {},
     }
-    for key, value in pairs(Part("hotkey", true, 11, "TOPRIGHT", P.text)) do style[key] = value end
+    for key, value in pairs(Part("hotkey", true, 9, "TOPRIGHT", P.text)) do style[key] = value end
     for key, value in pairs(Part("count", true, 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
     for key, value in pairs(Part("macro", false, 10, "BOTTOM", M.MACRO_COLOR)) do style[key] = value end
     for key, value in pairs(Part("cooldown", true, 14, "CENTER", M.COOLDOWN_COLOR)) do style[key] = value end
@@ -129,7 +134,7 @@ for _, bar in ipairs(M.bars) do M.defaults[bar] = Copy(M.styleDefaults[bar]) end
 -- Keys Copy Style leaves alone: whether and when a bar shows, and how many
 -- buttons it has in what shape.
 M.identityKeys = { show = true, buttons = true, perLine = true, orientation = true, start = true,
-    visibility = true, customVisibility = true }
+    visibility = true, customVisibility = true, buttonGlows = true }
 M.colorKeys = { borderColor = true, backgroundColor = true, procColor = true, readyColor = true }
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 

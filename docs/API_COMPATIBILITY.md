@@ -312,6 +312,16 @@ guarded, and native behavior on Forever is unverified until checked in game.
 - **Empty buttons.** Blizzard's own empty buttons (Always Show Buttons, or a
   spell being dragged) are shown by Blizzard; ModeUI only draws their
   background at Background Opacity.
+- **Desaturation and keybind text.** `Texture:SetDesaturated` is
+  `AllowedWhenTainted`; Blizzard calls `icon:SetDesaturated(false)` in
+  `ActionBarActionButtonMixin:Update` and `true` only for level-linked actions
+  (`UpdateUsable`). ModeUI hooks the icon's `SetDesaturated` to keep its own gray
+  while a cooldown runs. Keybind text comes from `GetBindingText(key, 1)` in
+  `UpdateHotkeys` (abbreviated as `s-`, `c-`, `a-`); ModeUI shortens it with
+  `FontString:SetText` after that call, and calls the button's own
+  `UpdateHotkeys` (outside combat) to restore it. The preview's Blizzard proc
+  style uses Blizzard's `ActionButtonSpellAlertTemplate` (`ActionButtonSpellAlerts.xml`)
+  on a ModeUI frame.
 
 ## Interface damage meters — November 13, 2026
 

@@ -5,6 +5,21 @@ local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
     local methods = getmetatable(UIParent).__index
     function methods:SetSpriteSheetCell(index, rows, columns) self.spriteCell = { index, rows, columns } end
+    -- Animation groups: records what a flipbook is set to and whether it plays.
+    function methods:CreateAnimationGroup()
+        local group = { anims = {} }
+        function group:CreateAnimation(kind)
+            local anim = { kind = kind }
+            setmetatable(anim, { __index = function(_, key) return function(self, ...) self[key .. 'Args'] = { ... } end end })
+            self.anims[#self.anims + 1] = anim
+            return anim
+        end
+        function group:SetLooping(mode) self.looping = mode end
+        function group:Play() self.playing = true end
+        function group:Stop() self.playing = false end
+        function group:IsPlaying() return self.playing == true end
+        return group
+    end
     function methods:SetVertexColorFromBoolean(value, ifTrue, ifFalse) self.colorFromBoolean = { value, ifTrue, ifFalse } end
     function methods:SetReverseFill(value) self.reverseFill = value end
 
@@ -369,15 +384,25 @@ world.run([==[
     -- A 2px rim, then the 1px gap; rounded slices don't snap on their own.
     local cc1 = A.crowdControl[1]
     assert(Point(cc1.gap)[4] == 2 and Point(cc1.icon)[4] == 3, '2px rim and 1px gap')
-    assert(cc1.rim.snapToPixelGrid == false and cc1.rim.texelSnappingBias == 0 and cc1.gap.snapToPixelGrid == false, 'unsnapped slices')
-    assert(plate.healthBox.rim.snapToPixelGrid == false, 'plate rims unsnapped too')
-    -- Crowd control glows in its rim color; other groups don't.
-    assert(cc1.glow:IsShown() and cc1.glow.texture == addon.Media:GetTexture('AuraGlow'), 'crowd control glow')
-    assert(math.abs(cc1.glow.vertexColor[4] - Kit.AURA_GLOW_ALPHA) < 1e-9 and not A.debuffs[1].glow:IsShown(), 'soft, crowd control only')
-    assert(M:SetOption('enemy', 'auraCCGlow', false) and not cc1.glow:IsShown(), 'glow off')
+    -- Sharp corners by default: single flat textures snapped to whole pixels.
+    assert(cc1.rim.texture == Kit.FLAT and cc1.rim.snapToPixelGrid == true and cc1.gap.snapToPixelGrid == true, 'sharp, snapped rim')
+    assert(M:SetOption('enemy', 'auraCorners', 'rounded') and cc1.rim.snapToPixelGrid == false and cc1.rim.texelSnappingBias == 0, 'rounded slices unsnapped')
+    assert(M:SetOption('enemy', 'auraCorners', 'sharp'))
+    assert(plate.healthBox.rim.snapToPixelGrid == false, 'plate rims unsnapped')
+    -- Crowd control: Blizzard's GCD flash, looping, in the rim color; other groups none.
+    assert(cc1.flash:IsShown() and cc1.flash.atlas == Kit.GCD_FLASH_ATLAS and cc1.flashAnim:IsPlaying(), 'GCD flash plays')
+    assert(cc1.flashAnim.looping == 'REPEAT' and cc1.flashAnim.anims[1].kind == 'FlipBook' and cc1.flashAnim.anims[1].SetFlipBookFramesArgs[1] == 22, 'flipbook 22 frames')
+    assert(math.abs(cc1.flash.vertexColor[4] - Kit.AURA_FLASH_ALPHA) < 1e-9 and not cc1.glow:IsShown(), 'toned down, no soft halo')
+    assert(not A.debuffs[1].flash:IsShown(), 'crowd control only')
+    assert(M:SetOption('enemy', 'auraGlowStyle', 'soft') and cc1.glow:IsShown() and not cc1.flash:IsShown() and not cc1.flashAnim:IsPlaying(), 'soft glow')
+    assert(math.abs(cc1.glow.vertexColor[4] - 0.4) < 1e-9, 'softer halo')
+    assert(M:SetOption('enemy', 'auraGlowStyle', 'gcd'))
+    assert(M:SetOption('enemy', 'auraCCGlow', false) and not cc1.glow:IsShown() and not cc1.flash:IsShown(), 'glow off')
+    -- Timer text in the action bar cooldown color.
+    assert(cc1.timer.color[1] == P.cooldown[1] and cc1.timer.color[2] == P.cooldown[2], 'cooldown text color')
     assert(M:SetOption('enemy', 'auraBorderSize', 1) and Point(cc1.gap)[4] == 1 and Point(cc1.icon)[4] == 2, '1px rim')
     assert(not M:SetOption('enemy', 'auraBorderSize', 4), 'border size range')
-    assert(M:SetOption('enemy', 'auraCCGlow', true) and M:SetOption('enemy', 'auraBorderSize', 2) and cc1.glow:IsShown())
+    assert(M:SetOption('enemy', 'auraCCGlow', true) and M:SetOption('enemy', 'auraBorderSize', 2) and cc1.flash:IsShown())
     local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -1, 'crowd control left of the marker: ' .. x .. ',' .. y)
     x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 32, 'debuffs centered above the name: ' .. x .. ',' .. y)
     x, y = Corner(A.buffs[1]); assert(x == 182 and y == 2, 'buffs right of the bar: ' .. x .. ',' .. y)
@@ -893,7 +918,8 @@ withContainers.run([==[
     assert(not button.timer.lift:IsShown(), 'no lifted copy on game-driven text')
     assert(math.abs(button.width - 20) < 1 and math.abs(button.height - 14) < 1, 'cropped 20 x 14')
     local ccButton = C.LEFT.groups.crowdControl.button
-    assert(ccButton.glow:IsShown() and not button.glow:IsShown(), 'containers: crowd control glows')
+    assert(ccButton.flash:IsShown() and ccButton.flashAnim:IsPlaying() and not button.flash:IsShown(), 'containers: crowd control GCD flash')
+    assert(button.timer.color[1] == M.db.enemy.auraTimerColor[1], 'containers: cooldown text color')
     -- Placement: debuffs grow from the center above the name; crowd control grows left past the marker.
     assert(C.TOP.flowAnchor == 'BOTTOMLEFT' and Point(C.TOP)[3] == 'TOP', 'top row starts at the bar top')
     assert(C.LEFT.flowAnchor == 'RIGHT' and Point(C.LEFT)[3] == 'LEFT' and Point(C.LEFT)[4] < -2, 'left row past the marker')

@@ -112,7 +112,7 @@ function M:UpdateAuras(plate)
                     local icon = self:AuraIcon(plate, group, index)
                     Auras.Apply(icon, unit, aura, style.auraTimer, style.auraCount)
                     Kit.TintAuraRim(icon, self:AuraRimColor(style, icon.dispelType, group))
-                    Kit.GlowAura(icon, self:AuraGlowColor(style, icon.dispelType, group))
+                    Kit.GlowAura(icon, self:AuraGlowColor(style, icon.dispelType, group), style.auraGlowStyle)
                     Kit.Write(icon.timer, "")
                     icon:Show()
                     count = index
