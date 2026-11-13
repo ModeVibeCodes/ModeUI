@@ -5,6 +5,12 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Near-black rim
+
+November 12, 2026, per the owner: the Onyx rim (`Kit.onyx.border`) is now
+#25282C instead of slate #6A737D, so frame borders read close to black. The
+portrait ring's Default color follows it.
+
 ## Mode Gradient on every bar (layout version 12)
 
 November 12, 2026, per the owner: every ModeUI bar uses one texture, **Mode

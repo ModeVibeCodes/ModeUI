@@ -63,6 +63,7 @@ Shared\Settings\Widgets\Button.lua
 Shared\Settings\Widgets\Switch.lua
 Shared\Settings\Widgets\Header.lua
 Shared\Settings\Widgets\Input.lua
+Shared\Settings\Widgets\AnchorPicker.lua
 Shared\Settings\Pages.lua
 Shared\Settings\SectionTabs.lua
 Shared\Settings\ModeLayout.lua

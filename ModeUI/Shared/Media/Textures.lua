@@ -32,6 +32,10 @@ M.Textures = {
     UnitFrameFrameInner = { file = "UnitFrames/FrameInner.tga", slice = 4, rounded = true },
     UnitFrameCircle = { file = "UnitFrames/Circle.tga", rounded = true },
     UnitFrameBar = { file = "UnitFrames/BarSatin.tga" },
+    -- Nameplate rims: small corner radii so health and cast boxes round alike
+    -- (tools/build_nameplate_textures.lua).
+    NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
+    NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
 }
 
 

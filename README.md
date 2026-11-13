@@ -61,7 +61,7 @@ ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   Media/           Mode theme textures, unit frame textures, Lato fonts
 tests/             structure, runtime, smoke, Unit Frames, Nameplates, Global and template tests
                    (simulated client, not WoW)
-tools/             texture generators (Python + Pillow)
+tools/             texture generators (Python + Pillow; the nameplate rims in plain Lua)
 design/mode/       Mode theme source artwork and provenance
 docs/              architecture (docs/ARCHITECTURE.md) and design notes (docs/UNIT_FRAMES.md)
 ```

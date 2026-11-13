@@ -10,9 +10,10 @@ Kit.palette = {
     text = RGB(212, 212, 212), accent = RGB(0, 240, 255), green = RGB(127, 219, 151), hostile = RGB(224, 102, 102),
     neutral = RGB(232, 176, 75), tapped = RGB(140, 140, 140), mana = RGB(64, 150, 255), muted = RGB(185, 185, 185),
 }
--- The Onyx skin: default health fill, empty bar, the slate rim and the black
--- gap inside it (owner, Unit Frames layout version 9).
-Kit.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(106, 115, 125), inner = RGB(0, 0, 0) }
+-- The Onyx skin: default health fill, empty bar, the rim and the black gap
+-- inside it. The rim was slate (#6A737D) until the owner asked for it closer
+-- to black (November 12, 2026).
+Kit.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(37, 40, 44), inner = RGB(0, 0, 0) }
 
 -- Colors a region from a boolean that may be secret: a public value picks the
 -- color here; a secret one goes to SetVertexColorFromBoolean, which accepts

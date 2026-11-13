@@ -38,7 +38,7 @@ ModeUI/
     Placement/                positions, Edit Mode, Preview, frame anchors
     Skin/                     re-skinning Blizzard frames; added with Chat Windows or Blizzard UI Windows
     Settings/                 settings window framework (window, pages, search, tabs)
-      Widgets/                one file per widget kind (Core, Art, Text, Button, Switch, Header, Input)
+      Widgets/                one file per widget kind (Core, Art, Text, Button, Switch, Header, Input, AnchorPicker)
     Templates/                XML virtual templates, added when a module needs one
   Modules/
     <Name>/
@@ -275,7 +275,8 @@ to widgets documented as accepting them.
   migrations never reset data. The top-level `schemaVersion` changes only when
   the shared layout of `ModeUIDB` does.
 - **Look.** Every bar uses `Kit.ModeGradient` (Mode Gradient); there is no bar
-  texture setting. Text and the interface default to Expressway, falling back to
+  texture setting. Rims are near-black (`Kit.onyx.border`). Anchoring settings
+  use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface default to Expressway, falling back to
   the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
 - **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI` and frame
   names that start with `ModeUI`.

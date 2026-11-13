@@ -69,15 +69,16 @@ function Auras.ApplyTimer(icon, unit, id, duration, expiration)
     return false
 end
 
--- The groups to show, in order, for a style's aura choices.
-function Auras.Filters(crowdControl, debuffs, buffs)
-    local filters = {}
-    if crowdControl then filters[#filters + 1] = Auras.crowdControlFilter end
-    local debuff = Auras.debuffFilters[debuffs]
-    if debuff then filters[#filters + 1] = crowdControl and debuff .. Auras.WITHOUT_CROWD_CONTROL or debuff end
-    local buff = Auras.buffFilters[buffs]
-    if buff then filters[#filters + 1] = buff end
-    return filters
+-- The filter string for one group: "crowdControl", or "debuffs"/"buffs" with
+-- a choice from debuffFilters/buffFilters. Debuffs leave out crowd control
+-- when that has its own group.
+function Auras.GroupFilter(group, choice, crowdControlShown)
+    if group == "crowdControl" then return Auras.crowdControlFilter end
+    if group == "debuffs" then
+        local filter = Auras.debuffFilters[choice]
+        return filter and crowdControlShown and filter .. Auras.WITHOUT_CROWD_CONTROL or filter
+    end
+    return Auras.buffFilters[choice]
 end
 
 -- Every aura for the filters, in order, up to max. A filter the client rejects

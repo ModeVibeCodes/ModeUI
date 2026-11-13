@@ -103,7 +103,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'interface' and not M.enabled, 'registered, off by default')
-    assert(M.db.version == 3 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 4 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
 
@@ -197,16 +197,18 @@ world.run([==[
     units.nameplate1.channel = nil; FireEvent('UNIT_SPELLCAST_CHANNEL_STOP', 'nameplate1')
     assert(not plate.castBox:IsShown() and plate.casting == nil and plate.cast.scripts.OnUpdate == nil, 'cast bar stops')
 
-    -- Every bar is Mode Gradient; boxes have rounded rims like the unit frames.
-    local rounded = addon.Media:GetTexture('UnitFrameFrame')
+    -- Every bar is Mode Gradient; health and cast boxes share the same rounded rims.
+    local rim, gapTexture = addon.Media:GetTexture('NameplateRim'), addon.Media:GetTexture('NameplateGap')
     assert(plate.health.statusBarTexture == Kit.FLAT and plate.health.sheen:IsShown() and plate.health.sheen.gradient, 'Mode Gradient health')
     assert(plate.cast.statusBarTexture == Kit.FLAT and plate.cast.sheen:IsShown(), 'Mode Gradient cast bar')
-    assert(plate.healthBox.rim.texture == rounded and plate.healthBox.gap.texture == addon.Media:GetTexture('UnitFrameFrameInner'), 'rounded rim')
+    assert(plate.healthBox.rim.texture == rim and plate.healthBox.gap.texture == gapTexture, 'rounded health box')
+    assert(plate.castBox.rim.texture == rim and plate.castBox.gap.texture == gapTexture, 'cast box rounded like the health box')
+    assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and Kit.onyx.border[1] < 0.2, 'near-black rim')
     assert(not M:SetOption('enemy', 'texture', 'flat'), 'the bar texture is not a setting')
-    assert(M:SetOption('enemy', 'castHeight', 4) and plate.castBox.rim.texture == Kit.FLAT, 'too small to round: square rim')
-    assert(M:SetOption('enemy', 'castHeight', 8) and plate.castBox.rim.texture == rounded)
+    assert(M:SetOption('enemy', 'castHeight', 4) and plate.castBox.rim.texture == rim, 'small cast bars stay rounded')
+    assert(M:SetOption('enemy', 'castHeight', 8))
 
-    -- Auras: the game's filters pick them; crowd control, then debuffs, then buffs.
+    -- Auras: three groups (crowd control, debuffs, buffs), each anchored on its own.
     local SNARE = { auraInstanceID = 11, icon = 'snare', harmful = true, cc = true, duration = 6, expirationTime = 105 }
     local DOT = { auraInstanceID = 12, icon = 'dot', harmful = true, player = true, applications = 3, duration = 18, expirationTime = 110 }
     local OTHER = { auraInstanceID = 13, icon = 'other', harmful = true, dispellable = true, duration = 0, expirationTime = 0 }
@@ -214,40 +216,62 @@ world.run([==[
     local SECRET = { auraInstanceID = 15, icon = Secret('icon'), harmful = true, player = true, applications = Secret('n'), duration = Secret('d'), expirationTime = Secret('e') }
     units.nameplate1.auras = { SHIELD, OTHER, DOT, SNARE }
     FireEvent('UNIT_AURA', 'nameplate1')
-    local icons = plate.auraIcons
-    assert(plate.auraCount == 3 and icons[1].icon.texture == 'snare' and icons[2].icon.texture == 'dot' and icons[3].icon.texture == 'shield',
-        'enemy defaults: crowd control, your debuffs, dispellable buffs')
-    assert(not (icons[4] and icons[4]:IsShown()), "others' debuffs left out")
-    assert(icons[2].count.text == '3' and icons[1].count.text == '', 'stack count from the game')
-    assert(icons[2].cooldown.cooldownStart == 92 and icons[2].cooldown.cooldownDuration == 18 and icons[2].cooldown:IsShown(), 'timer swipe')
-    local found = false
-    for _, query in ipairs(auraQueries) do if query == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' then found = true end end
-    assert(found, 'debuffs leave crowd control to its own group')
-    -- Placement: above the name, centered; left/right beside the health box.
-    local firstIcon = Point(icons[1])
-    assert(firstIcon[1] == 'BOTTOMLEFT' and firstIcon[2] == plate.name and firstIcon[3] == 'TOPLEFT', 'above the name')
-    assert(M:SetOption('enemy', 'auraPosition', 'below') and Point(icons[1])[2] == plate and Point(icons[1])[1] == 'TOPLEFT')
-    assert(M:SetOption('enemy', 'auraPosition', 'right') and Point(icons[1])[1] == 'LEFT' and Point(icons[1])[3] == 'RIGHT')
-    assert(M:SetOption('enemy', 'auraSize', 30) and math.abs(icons[1].width - 30) < 1, 'icon size')
-    assert(M:SetOption('enemy', 'auraMax', 2) and plate.auraCount == 2 and not icons[3]:IsShown(), 'most shown')
-    assert(M:SetOption('enemy', 'auraDebuffs', 'all') and M:SetOption('enemy', 'auraMax', 6))
-    assert(plate.auraCount == 4 and icons[2].icon.texture == 'other' and icons[3].icon.texture == 'dot', 'all debuffs, in the order the game returns them')
-    assert(not icons[2].cooldown:IsShown(), 'permanent aura: no swipe')
-    assert(M:SetOption('enemy', 'auraTimer', false) and not icons[3].cooldown:IsShown())
-    assert(M:SetOption('enemy', 'auraCount', false) and icons[3].count.text == '')
-    -- Secret auras: icon and count go only to SetTexture and SetText; no swipe from secret times.
+    local A = plate.auraIcons
+    assert(plate.auraShown.crowdControl == 1 and A.crowdControl[1].icon.texture == 'snare', 'crowd control group')
+    assert(plate.auraShown.debuffs == 1 and A.debuffs[1].icon.texture == 'dot', 'your debuffs only')
+    assert(plate.auraShown.buffs == 1 and A.buffs[1].icon.texture == 'shield', 'dispellable buffs')
+    assert(plate.auraCount == 3)
+    assert(A.debuffs[1].count.text == '3' and A.crowdControl[1].count.text == '', 'stack count from the game')
+    assert(A.debuffs[1].cooldown.cooldownStart == 92 and A.debuffs[1].cooldown.cooldownDuration == 18 and A.debuffs[1].cooldown:IsShown())
+    local negated = false
+    for _, query in ipairs(auraQueries) do if query == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' then negated = true end end
+    assert(negated, 'debuffs leave crowd control to its own group')
+    -- Default anchors: crowd control Left, debuffs Top, buffs Right.
+    local at = Point(A.crowdControl[1])
+    assert(at[1] == 'RIGHT' and at[2] == plate.healthBox and at[3] == 'LEFT', 'crowd control on the left')
+    at = Point(A.debuffs[1])
+    assert(at[1] == 'BOTTOMLEFT' and at[2] == plate.name and at[3] == 'TOPLEFT', 'debuffs above the name')
+    at = Point(A.buffs[1])
+    assert(at[1] == 'LEFT' and at[2] == plate.healthBox and at[3] == 'RIGHT', 'buffs on the right')
+    -- Moving one group: anchor, offsets, size and count, all validated.
+    assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
+    at = Point(A.debuffs[1])
+    assert(at[1] == 'TOPLEFT' and at[2] == plate and at[3] == 'BOTTOMLEFT' and at[4] == 160 and at[5] == -2, 'bottom right, under the cast bar')
+    assert(M:SetOption('enemy', 'x', 5, 'debuffs') and Point(A.debuffs[1])[4] == 165, 'offset X')
+    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and Point(A.debuffs[1])[5] == -5, 'offset Y')
+    assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
+    assert(not M:SetOption('enemy', 'debuffs', {}) and not M:SetOption('enemy', 'filter', 'all', 'crowdControl'), 'one setting at a time')
+    assert(M.db.friendly.debuffs.anchor == 'TOP', 'the other kind is untouched')
+    -- Groups on the same anchor stack outward in group order.
+    assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'x', 0, 'debuffs') and M:SetOption('enemy', 'y', 0, 'debuffs'))
+    assert(M:SetOption('enemy', 'anchor', 'TOP', 'buffs'))
+    assert(Point(A.debuffs[1])[5] == 2 and Point(A.buffs[1])[5] == 24, 'buffs stack above debuffs')
+    assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'buffs'))
+    assert(M:SetOption('enemy', 'size', 30, 'debuffs') and math.abs(A.debuffs[1].width - 30) < 1, 'icon size per group')
+    assert(M:SetOption('enemy', 'size', 20, 'debuffs'))
+    assert(M:SetOption('enemy', 'filter', 'all', 'debuffs') and plate.auraShown.debuffs == 2)
+    assert(A.debuffs[1].icon.texture == 'other' and A.debuffs[2].icon.texture == 'dot', 'all debuffs, in the order the game returns them')
+    assert(M:SetOption('enemy', 'max', 1, 'debuffs') and plate.auraShown.debuffs == 1 and not A.debuffs[2]:IsShown(), 'most shown')
+    assert(M:SetOption('enemy', 'max', 6, 'debuffs'))
+    assert(M:SetOption('enemy', 'show', false, 'crowdControl') and plate.auraShown.crowdControl == 0)
+    assert(plate.auraShown.debuffs == 3, 'without its own group, crowd control is a debuff again')
+    assert(not A.debuffs[1].cooldown:IsShown(), 'permanent aura: no swipe')
+    assert(M:SetOption('enemy', 'auraTimer', false) and not A.debuffs[2].cooldown:IsShown())
+    assert(M:SetOption('enemy', 'auraCount', false) and A.debuffs[2].count.text == '')
     assert(M:SetOption('enemy', 'auraTimer', true) and M:SetOption('enemy', 'auraCount', true))
+    assert(M:SetOption('enemy', 'show', true, 'crowdControl') and M:SetOption('enemy', 'filter', 'mine', 'debuffs'))
+    -- Secret auras: icon and count go only to SetTexture and SetText; no swipe from secret times.
     units.nameplate1.auras = { SECRET }; FireEvent('UNIT_AURA', 'nameplate1')
-    assert(plate.auraCount == 1 and issecretvalue(icons[1].icon.texture) and issecretvalue(icons[1].count.text))
-    assert(not icons[1].cooldown:IsShown(), 'no swipe from secret times without a duration object')
+    assert(plate.auraShown.debuffs == 1 and issecretvalue(A.debuffs[1].icon.texture) and issecretvalue(A.debuffs[1].count.text))
+    assert(not A.debuffs[1].cooldown:IsShown(), 'no swipe from secret times without a duration object')
     testDurationObjects = true; FireEvent('UNIT_AURA', 'nameplate1')
-    assert(icons[1].cooldown.durationObject and icons[1].cooldown:IsShown(), 'duration object drawn natively')
+    assert(A.debuffs[1].cooldown.durationObject and A.debuffs[1].cooldown:IsShown(), 'duration object drawn natively')
     testDurationObjects = nil
     -- A client that rejects the negation still shows debuffs.
     testRejectNegation = true; units.nameplate1.auras = { DOT }; FireEvent('UNIT_AURA', 'nameplate1')
-    assert(plate.auraCount == 1 and icons[1].icon.texture == 'dot', 'negation retried without it')
+    assert(plate.auraShown.debuffs == 1 and A.debuffs[1].icon.texture == 'dot', 'negation retried without it')
     testRejectNegation = nil
-    assert(M:SetOption('enemy', 'showAuras', false) and plate.auraCount == 0 and not icons[1]:IsShown(), 'auras off')
+    assert(M:SetOption('enemy', 'showAuras', false) and plate.auraCount == 0 and not A.debuffs[1]:IsShown(), 'auras off')
     assert(M:SetOption('enemy', 'showAuras', true))
     units.nameplate1.auras = nil; FireEvent('UNIT_AURA', 'nameplate1')
     assert(plate.auraCount == 0)
@@ -300,14 +324,42 @@ world.run([==[
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
     assert(sample.targeted and sample.healthBox.rim.vertexColor[3] == P.accent[3], 'sample target rim')
     assert(sample.castBox:IsShown() and sample.cast.value == 0.6 and sample.castText.text == 'Shadow Bolt')
-    -- Sample auras follow the aura settings (enemy here: everything shown above).
-    local function Shown(p) local n = 0; for _, icon in ipairs(p.auraIcons) do if icon:IsShown() then n = n + 1 end end; return n end
-    assert(Shown(sample) == 4 and sample.auraIcons[1].icon.texture:find('Polymorph', 1, true), 'enemy sample auras')
-    assert(Shown(friend) == 1 and friend.auraIcons[1].icon.texture:find('AbominationExplosion', 1, true), 'friendly: dispellable debuff only')
-    assert(M:SetOption('friendly', 'auraBuffs', 'mine') and Shown(friend) == 2, 'preview follows Buffs')
-    assert(M:SetOption('friendly', 'auraCrowdControl', true) and Shown(friend) == 3 and friend.auraIcons[1].icon.texture:find('ChainsOfIce', 1, true))
-    assert(M:SetOption('friendly', 'showAuras', false) and Shown(friend) == 0)
+    -- Sample auras follow each group's settings (enemy: crowd control, your debuff, a dispellable buff).
+    local function Shown(p, group)
+        local n = 0
+        for _, icon in ipairs(p.auraIcons[group]) do if icon:IsShown() then n = n + 1 end end
+        return n
+    end
+    assert(Shown(sample, 'crowdControl') == 1 and Shown(sample, 'debuffs') == 1 and Shown(sample, 'buffs') == 1, 'enemy sample auras')
+    assert(sample.auraIcons.debuffs[1].icon.texture:find('ShadowWordPain', 1, true))
+    assert(Shown(friend, 'debuffs') == 1 and Shown(friend, 'buffs') == 0 and Shown(friend, 'crowdControl') == 0, 'friendly sample')
+    assert(M:SetOption('friendly', 'show', true, 'buffs') and Shown(friend, 'buffs') == 1, 'preview follows each group')
+    assert(M:SetOption('friendly', 'anchor', 'BOTTOM', 'buffs') and Point(friend.auraIcons.buffs[1])[2] == friend, 'preview follows anchors')
+    assert(M:SetOption('friendly', 'showAuras', false) and Shown(friend, 'debuffs') == 0)
     assert(M:SetOption('friendly', 'showAuras', true))
+    -- Clicking a part of a sample jumps to its settings.
+    local hits = view.targets.friendly
+    hits.cast.scripts.OnEnter(hits.cast)
+    assert(hits.cast.jumpHighlight:IsShown(), 'parts light up under the mouse')
+    hits.cast.scripts.OnLeave(hits.cast)
+    assert(not hits.cast.jumpHighlight:IsShown())
+    hits.cast.scripts.OnMouseUp(hits.cast, 'LeftButton')
+    assert(page.nameplateEditing() == 'friendly' and page.selectedSection.title == 'Cast Bar', 'cast bar click opens Cast Bar for Friendly')
+    view.targets.enemy.name.scripts.OnMouseUp(view.targets.enemy.name, 'LeftButton')
+    assert(page.nameplateEditing() == 'enemy' and page.selectedSection.title == 'Text', 'name click opens Text')
+    view.targets.enemy.health.scripts.OnMouseUp(view.targets.enemy.health, 'LeftButton')
+    assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
+    view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')
+    assert(page.selectedSection.title == 'Markers', 'marker click opens Markers')
+    local buffIcon = sample.auraIcons.buffs[1]
+    buffIcon.scripts.OnMouseUp(buffIcon, 'LeftButton')
+    assert(page.selectedSection.title == 'Auras' and page.nameplateAuraGroup() == 'buffs', 'aura click opens its group')
+    assert(page.auraAnchorButtons.RIGHT.selected and not page.auraAnchorButtons.TOP.selected, 'the anchor picker shows the group')
+    page.auraAnchorButtons.BOTTOMLEFT.scripts.OnClick(page.auraAnchorButtons.BOTTOMLEFT)
+    assert(M.db.enemy.buffs.anchor == 'BOTTOMLEFT' and page.auraAnchorButtons.BOTTOMLEFT.selected, 'picking an anchor')
+    assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'buffs'))
+    assert(not M.plates[first] or not M.byUnit.nameplate1.auraIcons.buffs[1] or not M.byUnit.nameplate1.auraIcons.buffs[1].jump,
+        'only preview auras take clicks')
     -- One Nameplates tab replaces Plates and Health; Auras has its own.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
@@ -354,7 +406,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 3 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 4 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -369,14 +421,34 @@ local np = v2.profiles.Default.modules.nameplates
 np.version = 2
 for _, kind in ipairs({ 'enemy', 'friendly' }) do
     np[kind].texture = 'satin'
-    for key in pairs(np[kind]) do if key:find('^aura') or key == 'showAuras' then np[kind][key] = nil end end
+    for key in pairs(np[kind]) do
+        if key:find('^aura') or key == 'showAuras' or key == 'crowdControl' or key == 'debuffs' or key == 'buffs' then np[kind][key] = nil end
+    end
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 3 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
-    assert(db.enemy.showAuras and db.enemy.auraDebuffs == 'mine' and db.friendly.auraDebuffs == 'dispellable', 'aura defaults')
+    assert(db.version == 4 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
+
+-- Version 3's single aura row becomes three groups placed where it was.
+local v3 = world.saved()
+np = v3.profiles.Default.modules.nameplates
+np.version = 3
+local old = np.enemy
+old.crowdControl, old.debuffs, old.buffs = nil, nil, nil
+old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
+old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
+H.Load({ before = STUBS, saved = v3 }).run([==[
+    local style = addon.Nameplates.db.enemy
+    assert(addon.Nameplates.db.version == 4 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
+        assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
+    end
+    assert(style.crowdControl.show and style.debuffs.show and style.debuffs.filter == 'all', 'choices kept')
+    assert(not style.buffs.show and style.buffs.filter == 'dispellable', 'None becomes hidden')
+]==], "nameplates_v3")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

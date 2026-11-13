@@ -152,13 +152,20 @@ end
 
 function M:CanConfigure() return not addon.InCombat() end
 
-function M:SetOption(kind, key, value)
+-- key is a setting of the kind, or of one aura group when `group` is given.
+local GROUPS = {}
+for _, group in ipairs(M.auraGroups) do GROUPS[group] = true end
+function M:SetOption(kind, key, value, group)
     local defaults = self.styleDefaults[kind]
-    if not self:CanConfigure() or not defaults or defaults[key] == nil then return false end
+    if not self:CanConfigure() or not defaults or (group and not GROUPS[group]) or (not group and GROUPS[key]) then return false end
+    local target = group and defaults[group] or defaults
+    if target[key] == nil then return false end
     local candidate = Copy(self.db)
-    candidate[kind][key] = Copy(value)
+    local holder = group and candidate[kind][group] or candidate[kind]
+    holder[key] = Copy(value)
     if not pcall(self.Initialize, candidate) then return false end
-    self.db[kind][key] = candidate[kind][key]
+    local live = group and self.db[kind][group] or self.db[kind]
+    live[key] = holder[key]
     Changed(self)
     return true
 end

@@ -4,8 +4,9 @@ if not M then return end
 
 -- Building a plate on a game nameplate, and its pixel-perfect layout. Plates
 -- are plain frames (never secure), so they can be built and changed in combat.
--- Each box is a 1px slate rim and a 1px black gap with rounded corners, like
--- the unit frames, then the bar in the Mode Gradient texture.
+-- Each box is a 1px rim and a 1px black gap with rounded corners, then the
+-- bar in the Mode Gradient texture. Health and cast boxes use the same rim
+-- textures, so they round alike at every size.
 local Kit = addon.Kit
 local ONYX, FLAT = Kit.onyx, Kit.FLAT
 local Tint, Text, Bar = Kit.Tint, Kit.Text, Kit.Bar
@@ -38,7 +39,7 @@ function M:BuildPlate(parent)
     plate.raidIcon = plate.textLayer:CreateTexture(nil, "OVERLAY")
     plate.auraLayer = CreateFrame("Frame", nil, plate)
     plate.auraLayer:SetAllPoints()
-    plate.auraIcons = {}
+    plate.auraIcons, plate.auraShown, plate.auraCount = { crowdControl = {}, debuffs = {}, buffs = {} }, {}, 0
     plate.castBox:Hide()
     plate:Hide()
     return plate
@@ -57,8 +58,9 @@ function M:EnsurePlate(nameplate)
     self.plates[nameplate] = plate
     return plate
 end
--- The rounded rim textures need at least this many units each way.
-local ROUNDED_MINIMUM = 12
+-- The nameplate rim textures (corner radius 3, sliced at 4) need at least
+-- this many units each way; only the very smallest bars stay square.
+local ROUNDED_MINIMUM = 8
 local function Skin(texture, key, rounded)
     if rounded then Kit.Rounded(texture, key); return end
     if texture.ClearTextureSlice then texture:ClearTextureSlice() end
@@ -72,9 +74,9 @@ local function LayoutBox(box, width, barHeight, px)
     box:SetSize(width, height)
     local rounded = height >= ROUNDED_MINIMUM and width >= ROUNDED_MINIMUM
     box.rim:ClearAllPoints(); box.rim:SetAllPoints(box)
-    Skin(box.rim, "UnitFrameFrame", rounded); Tint(box.rim, ONYX.border, 1)
+    Skin(box.rim, "NameplateRim", rounded); Tint(box.rim, ONYX.border, 1)
     Kit.Inset(box.gap, box, px)
-    Skin(box.gap, "UnitFrameFrameInner", rounded); Tint(box.gap, ONYX.inner, 1)
+    Skin(box.gap, "NameplateGap", rounded); Tint(box.gap, ONYX.inner, 1)
     local bar = box.bar
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)
@@ -128,5 +130,7 @@ function M:LayoutPlate(plate)
     plate.markSize = mark
     plate.raidIcon:ClearAllPoints(); plate.raidIcon:SetPoint("RIGHT", plate.healthBox, "LEFT", -3 * px, 0)
     plate.raidIcon:SetSize(mark, mark)
-    for _, auraIcon in ipairs(plate.auraIcons) do Kit.LayoutAuraIcon(auraIcon, Snap(db.auraSize), px, db, path) end
+    for group, pool in pairs(plate.auraIcons) do
+        for _, auraIcon in ipairs(pool) do Kit.LayoutAuraIcon(auraIcon, Snap(db[group].size), px, db, path) end
+    end
 end
