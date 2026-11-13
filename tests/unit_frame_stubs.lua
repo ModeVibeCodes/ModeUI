@@ -89,6 +89,10 @@
         return d.power/d.powerMax*100
     end
     function AbbreviateNumbers(v) if issecretvalue(v) then return Secret('abbr') end return tostring(v) end
+    -- Health Deficit: missing health, made into text by C_StringUtil (secret in, secret out).
+    function UnitHealthMissing(u) local d=units[u];if issecretvalue(d.health) then return Secret('miss') end return d.max-d.health end
+    C_StringUtil={TruncateWhenZero=function(n) if issecretvalue(n) then return Secret('digits') end n=math.floor(n);return n==0 and '' or tostring(n) end,
+        WrapString=function(infix,prefix,suffix) if issecretvalue(infix) then return Secret('wrapped') end if infix=='' then return '' end return (prefix or '')..infix..(suffix or '') end}
 
     -- Native frames: content parts fade, the frame itself keeps running.
     for _,spec in ipairs({{'PlayerFrame','PlayerFrameContainer','PlayerFrameContent'},{'TargetFrame','TargetFrameContainer','TargetFrameContent'},

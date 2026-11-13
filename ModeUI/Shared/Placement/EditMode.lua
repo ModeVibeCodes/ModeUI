@@ -61,22 +61,23 @@ local function Anchorable()
     return addon.editMode and element and element.supportsAnchoring and element or nil
 end
 
+-- A new target, side or Reset Offset puts X and Y back at 0 (see PM:AnchorTo).
 function E:SetTarget(target)
     local element = Anchorable()
     if not element then return false end
-    return addon.PositionManager:ChangeTarget(element.id, target)
+    return addon.PositionManager:AnchorTo(element.id, target)
 end
 
 function E:SetPlacement(placement)
     local element = Anchorable()
     if not element then return false end
-    return addon.PositionManager:SetPlacement(element.id, placement)
+    return addon.PositionManager:AnchorTo(element.id, element.position.target or "screen", placement)
 end
 
 function E:ResetOffset()
     local element = Anchorable()
     if not element then return false end
-    return addon.PositionManager:ResetOffsets(element.id)
+    return addon.PositionManager:SetOffsets(element.id, 0, 0)
 end
 
 function E:FinishDrags()
@@ -87,6 +88,7 @@ function E:ViewportChanged()
     if not addon.editMode or InCombatLockdown() or UnitAffectingCombat("player") then return end
     self:FinishDrags()
     addon.Positioning:Refresh()
+    addon.PositionManager:RenderGrid()
     if addon.UpdateEditWindowBounds then addon:UpdateEditWindowBounds() end
     self:NotifyPosition()
 end

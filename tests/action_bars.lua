@@ -304,7 +304,10 @@ world.run([==[
     local element = PM.elements.actionBarsBar1
     assert(element and element.label == 'Action Bar 1' and PM.elements.actionBarsPet and PM.elements.actionBarsStance)
     assert(addon:SetEditMode(true))
-    assert(mover1:IsShown() and mover1.width == bar1.width and mover1.label.text == 'Action Bar 1' and Point(mover1.label)[1] == 'CENTER', 'named in the middle')
+    assert(mover1:IsShown() and mover1.width == bar1.width and not mover1.label, 'the box carries no name')
+    local handle = element.decoration and element.decoration.handle
+    assert(handle and Point(handle)[1] == 'BOTTOM' and Point(handle)[3] == 'TOP', 'the handle sits centered above the bar')
+    assert(element.decoration.label.text == 'Action Bar 1' and element.decoration.label.color[2] == 1, 'named in volt green')
     assert(mover1.fill.vertexColor[3] == Kit.palette.accent[3], 'highlighted')
     assert(not M.slots.bar1[1] or not ModeUIActionBar1Mover.slots[1]:IsShown(), 'the real bar shows under its highlight')
     assert(not ModeUIActionBar6Mover:IsShown() and not PM.elements.actionBarsBar6.editMode, 'hidden bars are not movable')
@@ -337,6 +340,54 @@ world.run([==[
     element.dragUpdate()
     assert(PM.guides and PM.guides.x:IsShown(), 'center guide near an X of 0')
     assert(PM:StopDragging('actionBarsBar1') and PM:GetPosition('actionBarsBar1').x == 0 and not PM.guides.frame:IsShown(), 'snapped to 0')
+    -- The selected element shows its X and Y from the screen's center.
+    addon.EditMode:Select('actionBarsBar1')
+    local coords = element.decoration.coords
+    assert(coords:IsShown() and Point(coords)[1] == 'RIGHT' and Point(coords)[3] == 'LEFT', 'X and Y left of the name')
+    coords.scripts.OnUpdate(coords, 1)
+    local sx, sy = UIParent:GetCenter()
+    local mx, my = mover1:GetCenter()
+    assert(coords.text:GetText() == ('X ' .. math.floor(mx - sx + 0.5) .. '   Y ' .. math.floor(my - sy + 0.5)), 'from the screen center')
+    assert(not PM.elements.actionBarsBar2.decoration.coords:IsShown(), 'only on the selected element')
+    -- Center Lines (on) and Grid (off) in the Edit Mode window.
+    local window, E = addon.editWindow, addon.EditMode
+    assert(PM.grid and PM.grid.frame:IsShown() and PM.grid.centerX:IsShown() and PM.grid.centerY:IsShown(), 'center lines by default')
+    assert(window.centerLinesButton.selected and not window.gridButton.selected and not (PM.grid.lines[1] and PM.grid.lines[1]:IsShown()))
+    window.gridButton.scripts.OnClick(window.gridButton)
+    assert(E.grid and window.gridButton.selected and #PM.grid.lines == 2 * (math.floor(640 / 32) + math.floor(400 / 32)), 'Grid draws lines out from the center')
+    window.centerLinesButton.scripts.OnClick(window.centerLinesButton)
+    assert(not E.centerLines and not PM.grid.centerX:IsShown() and PM.grid.frame:IsShown(), 'Center Lines off, grid still on')
+    window.gridButton.scripts.OnClick(window.gridButton)
+    assert(not PM.grid.frame:IsShown(), 'both off')
+    window.centerLinesButton.scripts.OnClick(window.centerLinesButton)
+    assert(PM.grid.frame:IsShown() and PM.grid.centerX:IsShown())
+    -- Anchor To: every stand-in keeps the mouse (no dragging), so a click picks
+    -- it and never reaches a button under it.
+    local A = addon.EditAnchor
+    assert(A:Start('actionBarsBar4') and PM.picking)
+    assert(mover1:IsMouseEnabled() and not PM:CanDrag(element), 'the bar takes the click, but does not drag')
+    assert(element.decoration.handle:IsMouseEnabled(), 'its name handle takes the click too')
+    assert(not PM:StartDragging('actionBarsBar1'), 'no dragging while picking')
+    A:Stop()
+    assert(not PM.picking and mover1:IsMouseEnabled() and PM:CanDrag(element), 'back to dragging')
+    -- Stacks stay on the screen: Action Bar 1 at the top edge turns the bars
+    -- stacked above it to grow downward, each one under the last.
+    local stack = { 'actionBarsBar2', 'actionBarsBar3', 'actionBarsPet', 'actionBarsStance' }
+    local kept1 = PM:GetPosition('actionBarsBar1')
+    assert(PM:SetPosition('actionBarsBar1', { target = 'screen', placement = 'above', x = 0, y = 0 }))
+    for _, id in ipairs(stack) do
+        local position = PM:GetPosition(id)
+        assert(position.placement == 'below' and position.y == -4, id .. ' flips below, its gap kept')
+    end
+    local _, top1 = mover1:GetCenter()
+    local _, top2 = ModeUIActionBar2Mover:GetCenter()
+    local _, top3 = ModeUIActionBar3Mover:GetCenter()
+    assert(top2 < top1 and top3 < top2, 'each bar under the last, none piled up')
+    assert(PM:SetPosition('actionBarsBar1', { target = 'screen', placement = 'below', x = 0, y = 0 }))
+    for _, id in ipairs(stack) do assert(PM:GetPosition(id).placement == 'above' and PM:GetPosition(id).y == 4, id .. ' back above at the bottom') end
+    assert(PM:SetPosition('actionBarsBar1', kept1) and PM:GetPosition('actionBarsBar2').placement == 'above', 'a side that fits is kept')
+    -- A side with room is kept: Action Bar 5 stays Left of Action Bar 4.
+    assert(PM:GetPosition('actionBarsBar5').placement == 'left')
     -- Blizzard's counts and keybinds can be secret; the preview copies them as they are.
     ActionButton3.Count:SetText(Secret('charges')); ActionButton4.HotKey:SetText(Secret('key'))
     addon.EditMode:Select('actionBarsPet')
@@ -347,7 +398,7 @@ world.run([==[
     -- Settings page and preview: the player's own bar.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Bar,Buttons,Text,Glows,Visibility', 'five tabs')
+    assert(table.concat(sections, ',') == 'Bar,Buttons,Text,Glows,Visibility,Copy & Apply', 'six tabs')
     assert(page.buttonsSlider.high == 10, 'pet bar slider stops at ten')
     page.SetEditing('bar1')
     assert(page.buttonsSlider.high == 12)
@@ -541,22 +592,68 @@ world.run([==[
     assert(M:SetOption('bar6', 'show', false))
     page.SetEditing('bar1')
 
-    -- Apply Style: tick bars, then apply this bar's look to them.
+    -- Copy & Apply, its own tab: tick bars, then apply this bar's look to them.
+    local copyTab
+    for _, section in ipairs(page.sections) do if section.title == 'Copy & Apply' then copyTab = section end end
+    assert(copyTab and page.sections[#page.sections] == copyTab, 'Copy & Apply is the last tab')
+    local pick = page.applyTargetSelect
+    -- Clicks the pick list's row for a bar; the menu stays open.
+    local function Pick(bar)
+        if not pick.menu:IsShown() then pick.scripts.OnClick(pick) end
+        for _, row in ipairs(pick.rows) do
+            if row:IsShown() and row.choice.id == bar then
+                if row.choice.disabled then return 'disabled' end
+                row.scripts.OnClick(row); return true
+            end
+        end
+    end
+    for _, row in ipairs(page.rows) do
+        if row.settingsGroupTitle == 'Apply To' or row.settingsGroupTitle == 'Copy From' or row.settingsGroupTitle == 'Reset' then
+            assert(row.section == copyTab, 'copy, apply and reset sit on the Copy & Apply tab')
+        end
+        assert(row.settingsGroupTitle ~= 'Apply Style' and row.settingsGroupTitle ~= 'This Bar', 'the Bar tab no longer holds them')
+    end
+    assert(page.applySource.label.text == 'Action Bar 1', 'Copy From shows the bar in Editing')
     assert(M:SetOption('bar1', 'borderSize', 3))
-    local cells = page.applyToggles
-    cells[3].frame.scripts.OnClick(cells[3].frame); cells[5].frame.scripts.OnClick(cells[5].frame)
-    cells[1].frame.scripts.OnClick(cells[1].frame)
+    assert(pick.label.text == 'Choose bars', 'nothing picked yet')
+    assert(Pick('bar3') and Pick('bar5') and Pick('bar1') == 'disabled', 'the source cannot be picked')
+    assert(pick.menu:IsShown(), 'the pick list stays open for more picks')
+    local marks = {}
+    for _, row in ipairs(pick.rows) do if row:IsShown() then marks[row.choice.id] = row.checkMark:IsShown() end end
+    assert(marks.bar3 and marks.bar5 and not marks.bar4 and not marks.bar1, 'picked bars show a check')
+    assert(pick.label.text == '2 bars selected', 'the field counts the picks')
+    pick.menu:Hide()
     assert(page.applyTargets.bar3 and page.applyTargets.bar5 and not page.applyTargets.bar1, 'the edited bar is skipped')
     page.applyButton.scripts.OnClick(page.applyButton)
     assert(M.db.bar3.borderSize == 3 and M.db.bar5.borderSize == 3 and M.db.bar4.borderSize == 2, 'applied to the ticked bars only')
     assert(M.db.bar5.orientation == 'vertical' and page.applyResult.text == 'Applied to 2 bars.', 'shape kept; result shown')
     assert(M.db.bar3.paging == false and M.db.bar3.pageConditions:find('mod:shift', 1, true), 'paging stays per bar')
-    cells[3].frame.scripts.OnClick(cells[3].frame); cells[5].frame.scripts.OnClick(cells[5].frame)
+    Pick('bar3'); assert(pick.label.text == 'Action Bar 5', 'one pick shows its name'); Pick('bar5'); pick.menu:Hide()
     page.applyButton.scripts.OnClick(page.applyButton)
     assert(page.applyResult.text == 'Choose bars first.', 'nothing ticked')
     page.applyAllButton.scripts.OnClick(page.applyAllButton)
     assert(M.db.bar4.borderSize == 3 and M.db.pet.borderSize == 3 and page.applyResult.text == 'Applied to 9 bars.', 'Apply to All Bars')
     for _, bar in ipairs(M.bars) do assert(M:SetOption(bar, 'borderSize', 2)) end
+
+    -- Opacity drags set alpha only: no rebuild of the bars or the page per step.
+    local applies, apply = 0, M.Apply
+    M.Apply = function(...) applies = applies + 1; return apply(...) end
+    assert(M:SetOption('bar1', 'opacity', 55) and M.db.bar1.opacity == 55 and applies == 0, 'opacity skips the rebuild')
+    assert(math.abs(M.headers.bar1:GetAlpha() - 0.55) < 0.001 and math.abs(M.previewView.bar:GetAlpha() - 0.55) < 0.001, 'bar and preview fade at once')
+    assert(not M:SetOption('bar1', 'opacity', 5) and not M:SetOption('bar1', 'opacity', 52.5) and not M:SetOption('bar1', 'fadeOpacity', 'x'), 'out-of-range opacity refused')
+    assert(M:SetOption('bar1', 'fadeOpacity', 20) and applies == 0 and M.db.bar1.fadeOpacity == 20)
+    M.Apply = apply
+    assert(M:SetOption('bar1', 'opacity', 100) and M:SetOption('bar1', 'fadeOpacity', 0))
+
+    -- On Cooldown sits on the Buttons tab: a line about cooldowns, then the choices.
+    local pills = page.cooldownColorPills
+    local cooldownRow
+    for _, row in ipairs(page.rows) do if row.settingsGroupTitle == 'On Cooldown' then cooldownRow = row end end
+    assert(cooldownRow and cooldownRow.section.title == 'Buttons', 'On Cooldown is on the Buttons tab')
+    pills[2].scripts.OnClick(pills[2])
+    assert(M.db.bar1.cooldownDesaturate == false, 'Full Color keeps the icon as it is')
+    pills[1].scripts.OnClick(pills[1])
+    assert(M.db.bar1.cooldownDesaturate == true, 'Desaturate turns it gray')
 
     -- Copy and reset.
     assert(M:SetOption('bar1', 'border', 'square') and M:CopyStyleToAll('bar1'))

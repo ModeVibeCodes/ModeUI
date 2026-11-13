@@ -8,7 +8,7 @@ local Kit = addon.Kit
 local FLAT = Kit.FLAT
 local CIRCLE_MASK = M.CIRCLE_MASK
 local Tint, Lighten = Kit.Tint, Kit.Lighten
-local Font, LayoutLift, Inset = Kit.Font, Kit.LayoutLift, Kit.Inset
+local Inset = Kit.Inset
 M.Lighten = Lighten
 
 -- Mirrored by portrait side: the portrait caps the outer end.
@@ -69,27 +69,13 @@ function M:Geometry(fdb, px)
     return g
 end
 
--- Where the bottom of a name above the bars sits, up from the health bar's
--- top. On the Border (owner, November 13, 2026): the text's baseline on the
--- middle of the top rim, so the letters sit on the border and their
--- descenders dip over it (descent taken as a quarter of the font size).
--- Above Frame: 3px over the rim.
-function M:NameBottom(fdb, g)
-    local px = g.px
-    if fdb.namePosition == "border" then
-        local descent = math.floor(fdb.nameFontSize * 0.25 / px + 0.5) * px
-        return g.pad - g.border / 2 - descent + math.floor(fdb.nameOffsetY / px + 0.5) * px
-    end
-    return g.pad + 3 + fdb.nameOffsetY
-end
-
 -- The suite's text style (see Shared/Kit/Text.lua).
 M.LIFT_PIXELS, M.LIFT_ALPHA = Kit.LIFT_PIXELS, Kit.LIFT_ALPHA
 
 function M:ApplyLayout(f, unit)
     local fdb = self:FrameDB(unit)
     -- Scale first: the pixel size depends on the frame's effective scale.
-    f:SetScale(fdb.scale / 100)
+    f:SetScale(fdb.scale / 100 * (f.previewScale or 1))
     local g = self:Geometry(fdb, self:PixelSize(f))
     f.geometry = g
     local near, far, sign = Sides(fdb)
@@ -170,106 +156,7 @@ function M:ApplyLayout(f, unit)
         end
     end
     f.textLayer:SetFrameLevel(math.max(h:GetFrameLevel(), p:GetFrameLevel()) + 2)
-
-    -- Text never reaches the portrait (owner, November 13, 2026). A text on the
-    -- portrait side stops 2px before the ring's outer edge across its own line
-    -- (its font's band, at its Y offset), rounded out to whole pixels; its X
-    -- offset moves it away from the portrait freely but never past that line.
-    -- Returns how far in from the bars' portrait-side edge the text may start.
-    local R, px = g.portrait / 2, g.px
-    local function Clearance(mid, size, dy, minimum)
-        minimum = minimum or 4
-        if R <= 0 then return minimum end
-        local half = math.ceil((size + 2) / 2 / px) * px
-        local c = mid - dy - g.height / 2
-        local d = (c - half <= 0 and c + half >= 0) and 0 or math.min(math.abs(c - half), math.abs(c + half))
-        if d >= R then return minimum end
-        local edge = R + math.sqrt(R * R - d * d) + 2 * px - g.inset
-        return math.max(minimum, math.ceil(edge / px - 1e-6) * px)
-    end
-    local function Clamped(clear, dx) return sign * math.max(clear, clear + sign * dx) end
-    local healthMid = g.barsTop + g.healthHeight / 2
-    local powerMid = g.barsTop + g.healthHeight + g.gap + g.powerHeight / 2
-    local function SideText(text, bar, position, dx, dy, size, mid)
-        text:ClearAllPoints()
-        local x = (position == "LEFT" and 4 or position == "RIGHT" and -4 or 0) + dx
-        if position == near then x = Clamped(Clearance(mid, size, dy), dx) end
-        text:SetPoint(position, bar, position, x, dy); text:SetJustifyH(position)
-    end
-    local path = self:FontPath(fdb)
-    Font(f.nameText, fdb, fdb.nameFontSize, path, g.px); Font(f.levelText, fdb, fdb.levelFontSize, path, g.px)
-    Font(f.healthText, fdb, fdb.healthFontSize, path, g.px); Font(f.powerText, fdb, fdb.powerFontSize, path, g.px)
-    local hx, hy = fdb.healthTextOffsetX, fdb.healthTextOffsetY
-    local lx, ly = fdb.levelOffsetX, fdb.levelOffsetY
-    f.healthText:SetShown(fdb.healthText ~= "none")
-    -- Level stays in the health bar beside the health text, read level first:
-    -- "31 54%" right-aligned, "33 76%" from the left. A Target mirroring the
-    -- Player reads health first ("54% 31"), the exact mirror image, so a level
-    -- moved by its offset never lands on the health text. Alone, or beside
-    -- centred text, the level sits at the bar's right.
-    local level = fdb.levelStyle ~= "none"
-    local position = fdb.healthTextPosition
-    local corner = level and fdb.levelPosition == "corner"
-    local grouped = level and not corner and fdb.healthText ~= "none" and position ~= "CENTER"
-    local healthFirst = fdb.mirrored == true
-    f.levelText:ClearAllPoints(); f.nameText:ClearAllPoints()
-    if corner then
-        -- Bottom Corner: the health bar's bottom on the portrait side, 1px up,
-        -- clear of the portrait across its own line (owner, November 13, 2026).
-        local line = math.ceil((fdb.levelFontSize + 2) / px) * px
-        local mid = g.barsTop + g.healthHeight - px - line / 2
-        f.levelText:SetPoint("BOTTOM" .. near, h, "BOTTOM" .. near, Clamped(Clearance(mid, fdb.levelFontSize, ly), lx), px + ly)
-        f.levelText:SetJustifyH(near)
-        SideText(f.healthText, h, position, hx, hy, fdb.healthFontSize, healthMid)
-    elseif grouped and (position == "LEFT") ~= healthFirst then
-        -- The level is the outer text, at the bar's edge; the health text sits inside it.
-        SideText(f.levelText, h, position, hx + lx, hy + ly, fdb.levelFontSize, healthMid)
-        f.healthText:ClearAllPoints()
-        if position == "LEFT" then
-            f.healthText:SetPoint("LEFT", f.levelText, "RIGHT", 6 - lx, -ly); f.healthText:SetJustifyH("LEFT")
-        else
-            f.healthText:SetPoint("RIGHT", f.levelText, "LEFT", -6 - lx, -ly); f.healthText:SetJustifyH("RIGHT")
-        end
-    else
-        SideText(f.healthText, h, position, hx, hy, fdb.healthFontSize, healthMid)
-        if grouped and position == "RIGHT" then
-            f.levelText:SetPoint("RIGHT", f.healthText, "LEFT", -6 + lx, ly); f.levelText:SetJustifyH("RIGHT")
-        elseif grouped then
-            f.levelText:SetPoint("LEFT", f.healthText, "RIGHT", 6 + lx, ly); f.levelText:SetJustifyH("LEFT")
-        elseif level then
-            SideText(f.levelText, h, "RIGHT", lx, ly, fdb.levelFontSize, healthMid)
-        end
-    end
-    if level then local c = fdb.levelColor; f.levelText:SetTextColor(c[1], c[2], c[3], 1) end
-    f.levelText:SetShown(level)
-    -- Plain name (no sheen or texture) in the accent, class or custom color.
-    local nx, ny = fdb.nameOffsetX, fdb.nameOffsetY
-    if fdb.namePosition == "bar" then
-        local align = fdb.nameAlign
-        local x = (align == "LEFT" and 4 or align == "RIGHT" and -4 or 0) + nx
-        if align == near then x = Clamped(Clearance(healthMid, fdb.nameFontSize, ny), nx) end
-        f.nameText:SetPoint(align, h, align, x, ny)
-        f.nameText:SetJustifyH(align)
-        f.nameText:SetWidth(fdb.barWidth * 0.6)
-    else
-        -- On the border (its baseline on the middle of the top rim) or above the
-        -- frame; clear of the ring at the name's own height (the ring curves away
-        -- above the block, so it can sit closer).
-        local line = math.ceil((fdb.nameFontSize + 2) / px) * px
-        local bottom = self:NameBottom(fdb, g)
-        local clear = Clearance(g.barsTop - bottom - line / 2, fdb.nameFontSize, 0, 0)
-        local nearX = Clamped(clear, nx)
-        f.nameText:SetPoint("BOTTOMLEFT", h, "TOPLEFT", near == "LEFT" and nearX or nx, bottom)
-        f.nameText:SetPoint("BOTTOMRIGHT", h, "TOPRIGHT", near == "RIGHT" and nearX or nx, bottom)
-        f.nameText:SetJustifyH(fdb.nameAlign)
-    end
-    f.nameText:SetShown(fdb.showName)
-    SideText(f.powerText, pw, fdb.powerTextPosition, fdb.powerTextOffsetX, fdb.powerTextOffsetY, fdb.powerFontSize, powerMid)
-    f.powerText:SetShown(fdb.showPower and fdb.powerText ~= "none")
-    LayoutLift(f.nameText, fdb, fdb.nameFontSize, path, g.px, fdb.showName, fdb.nameAlign)
-    LayoutLift(f.levelText, fdb, fdb.levelFontSize, path, g.px, level, corner and near or "CENTER")
-    LayoutLift(f.healthText, fdb, fdb.healthFontSize, path, g.px, fdb.healthText ~= "none", position)
-    LayoutLift(f.powerText, fdb, fdb.powerFontSize, path, g.px, fdb.showPower and fdb.powerText ~= "none", fdb.powerTextPosition)
+    self:LayoutTexts(f, unit)
     self:PaintRing(f, unit)
     if f.combo then self:ResetComboLayout(f) end
     self:LayoutCast(f, unit)

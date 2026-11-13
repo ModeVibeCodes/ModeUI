@@ -66,6 +66,7 @@ function PM:RegisterElement(id, frame, options)
     for _, key in ipairs({ "draggable", "editMode", "anchoring", "legacyPosition" }) do
         if options[key] ~= nil and type(options[key]) ~= "boolean" then return false, "invalid-options" end
     end
+    if options.label ~= nil and (not Plain(options.label) or type(options.label) ~= "string") then return false, "invalid-options" end
     for _, key in ipairs({ "canDrag", "onPositionChanged", "onHighlight" }) do
         if options[key] ~= nil and type(options[key]) ~= "function" then return false, "invalid-options" end
     end
@@ -94,7 +95,7 @@ function PM:RegisterElement(id, frame, options)
     position.target, position.placement = position.target or "screen", position.placement or "center"
     if options.legacyPosition then module.db.position = position
     else addon.db.positions = addon.db.positions or {}; addon.db.positions[id] = position end
-    local element = { id = id, module = module, frame = frame, position = position, defaults = Copy(defaults),
+    local element = { id = id, label = options.label, module = module, frame = frame, position = position, defaults = Copy(defaults),
         allowedTargets = allowed, draggable = draggable, editMode = options.editMode ~= false,
         supportsAnchoring = options.anchoring ~= false, legacy = options.legacy,
         canDrag = options.canDrag, onPositionChanged = options.onPositionChanged, onHighlight = options.onHighlight,
@@ -240,6 +241,7 @@ function PM:SetPosition(id, position, allowUnavailable)
         end
     end
     self:NotifyPosition(id, true)
+    if self.FitAnchored then self:FitAnchored(id) end
     return true
 end
 

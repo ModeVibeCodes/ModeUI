@@ -51,6 +51,30 @@ function W.NumericInput(parent, getter, setter, minimum, maximum, width, decimal
     return input
 end
 
+-- Live controls (slider drags, the color picker) fire many changes a second,
+-- and each change can rebuild frames and the settings page. Throttle(apply)
+-- applies the first value at once, then at most one every `seconds` while
+-- values keep coming; the last value is always applied.
+W.LIVE_SECONDS = 0.12
+function W.Throttle(apply, seconds)
+    seconds = seconds or W.LIVE_SECONDS
+    local driver = CreateFrame("Frame")
+    driver:Hide()
+    local pending, waiting, last = nil, false, nil
+    local function Flush()
+        driver:Hide()
+        if not waiting then return end
+        waiting = false
+        last = GetTime()
+        apply(pending)
+    end
+    driver:SetScript("OnUpdate", function() if not last or GetTime() - last >= seconds then Flush() end end)
+    return function(value)
+        pending, waiting = value, true
+        if not last or GetTime() - last >= seconds then Flush() else driver:Show() end
+    end, Flush
+end
+
 function W.ScrollThumb(bar, height)
     local thumb = W.Texture(bar, "ScrollThumb", "OVERLAY")
     thumb:ClearAllPoints()
@@ -138,12 +162,21 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
         if input then input:Refresh() end
         updating = false
     end
-    slider:SetScript("OnValueChanged", function(_, value)
-        if updating then return end
+    -- Dragging shows each value at once but applies them throttled (W.Throttle),
+    -- so a drag never rebuilds everything on every step; letting go applies the last.
+    local Apply, Flush = W.Throttle(function(value)
         setter(value)
         Refresh()
         if input then input:Refresh(true) end
     end)
+    slider:SetScript("OnValueChanged", function(_, value)
+        if updating then return end
+        label:SetText(string.format("%g", value) .. (suffix or ""))
+        Progress()
+        Apply(value)
+    end)
+    slider:HookScript("OnMouseUp", Flush)
+    slider:HookScript("OnHide", Flush)
     if numeric then
         valueBox:Hide()
         local options = type(numeric) == "table" and numeric or {}

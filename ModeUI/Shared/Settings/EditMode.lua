@@ -1,6 +1,6 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
-local HEIGHT = 434
+local HEIGHT = 510
 local ARROWS = { LEFT = { -1, 0 }, RIGHT = { 1, 0 }, UP = { 0, 1 }, DOWN = { 0, -1 } }
 
 -- Small owned dropdown; options are rebuilt on open, never polled.
@@ -123,7 +123,7 @@ function addon:CreateEditWindow()
         local element = E:Selected()
         return element and self.PositionManager:GetPosition(element.id)
     end
-    local targets = Dropdown(window, 300, function()
+    local targets = Dropdown(window, 188, function()
         local element = E:Selected()
         return self.PositionManager:GetAllowedTargets(element and element.id)
     end, function()
@@ -136,6 +136,14 @@ function addon:CreateEditWindow()
         return id, "Saved target unavailable"
     end, function(id) E:SetTarget(id) end)
     targets:SetPoint("TOPLEFT", 20, -228)
+    -- Anchor To: click it, then click the element to hang from (EditAnchor.lua).
+    local anchorTo = W.Button(window, "Anchor To...", 104, 28, "secondary")
+    anchorTo:SetPoint("TOPLEFT", 216, -228)
+    anchorTo:SetScript("OnClick", function()
+        local A, element = self.EditAnchor, E:Selected()
+        if A:Active() then A:Stop() elseif element then A:Start(element.id) end
+        self:RefreshEditWindow()
+    end)
     local placements = Dropdown(window, 188, function() return P.placements end, function()
         local p = Position()
         local placement = P:Placement(p and p.placement)
@@ -146,11 +154,35 @@ function addon:CreateEditWindow()
     reset:SetPoint("TOPLEFT", 216, -266)
     reset:SetScript("OnClick", function() E:ResetOffset() end)
     local highlights = W.Button(window, "", 30, 30, "checkbox")
-    highlights:SetPoint("TOPLEFT", 20, -310)
+    -- Match Width / Match Height: offered by modules that can size an element
+    -- to what it's anchored on (PositionManager:SetSizeMatch).
+    local function Match(axis, x, text)
+        local box = W.Button(window, "", 30, 30, "checkbox")
+        box:SetPoint("TOPLEFT", x, -306)
+        box:SetScript("OnClick", function()
+            local element = E:Selected()
+            if element then self.PositionManager:SetSizeMatchValue(element.id, axis, not self.PositionManager:GetSizeMatch(element.id, axis)) end
+            self:RefreshEditWindow()
+        end)
+        box.text = W.Label(window, text, nil, x + 40, -313, 110)
+        return box
+    end
+    local matchWidth, matchHeight = Match("width", 20, "Match Width"), Match("height", 176, "Match Height")
+    highlights:SetPoint("TOPLEFT", 20, -348)
     highlights:SetScript("OnClick", function() E:SetHighlights(not E.highlights) end)
-    W.Label(window, "Show Highlights", nil, 60, -317, 220)
+    W.Label(window, "Show Highlights", nil, 60, -355, 220)
+    -- Center Lines and Grid draw on the screen behind the elements (PositionGrid.lua).
+    local function ScreenToggle(x, text, get, set)
+        local box = W.Button(window, "", 30, 30, "checkbox")
+        box:SetPoint("TOPLEFT", x, -386)
+        box:SetScript("OnClick", function() set(not get()); self:RefreshEditWindow() end)
+        box.text = W.Label(window, text, nil, x + 40, -393, 110)
+        return box
+    end
+    local centerLines = ScreenToggle(20, "Center Lines", function() return E.centerLines end, function(on) E:SetCenterLines(on) end)
+    local grid = ScreenToggle(176, "Grid", function() return E.grid end, function(on) E:SetGrid(on) end)
     local settings = W.Button(window, "Open Module Settings", 300, 30)
-    settings:SetPoint("TOPLEFT", 20, -348)
+    settings:SetPoint("TOPLEFT", 20, -424)
     settings:SetScript("OnClick", function()
         if InCombatLockdown() or UnitAffectingCombat("player") then
             print("ModeUI: open element settings outside combat.")
@@ -165,7 +197,7 @@ function addon:CreateEditWindow()
         if module.OpenElementSettings then module:OpenElementSettings(elementId) end
     end)
     local exit = W.Button(window, "Exit", 300, 32)
-    exit:SetPoint("TOPLEFT", 20, -386)
+    exit:SetPoint("TOPLEFT", 20, -462)
     exit:SetSelected(true)
     exit:SetScript("OnClick", function() self:SetEditMode(false) end)
     function self:RefreshEditWindow()
@@ -181,8 +213,18 @@ function addon:CreateEditWindow()
         xSlider:SetEnabled(available); ySlider:SetEnabled(available)
         refreshX(); refreshY()
         targets:SetEnabled(anchoring); placements:SetEnabled(anchoring and available); reset:SetEnabled(anchoring and available)
+        for axis, box in pairs({ width = matchWidth, height = matchHeight }) do
+            local can = element ~= nil and self.PositionManager:CanMatchSize(element.id, axis)
+            box:SetEnabled(can); box:SetSelected(can and self.PositionManager:GetSizeMatch(element.id, axis))
+            box.text:SetAlpha(can and 1 or 0.45)
+        end
+        local picking = self.EditAnchor:Active()
+        anchorTo:SetEnabled(picking or self.EditAnchor:CanPick(element))
+        anchorTo:SetSelected(picking)
+        anchorTo.label:SetText(picking and "Cancel" or "Anchor To...")
         targets:Refresh(); placements:Refresh()
         highlights:SetSelected(E.highlights)
+        centerLines:SetSelected(E.centerLines); grid:SetSelected(E.grid)
         refreshing = false
     end
     -- Clearing focus runs the numeric input's normal apply.
@@ -190,7 +232,10 @@ function addon:CreateEditWindow()
     window.xInput, window.yInput = xInput, yInput
     window.xSlider, window.ySlider = xSlider, ySlider
     window.targetDropdown, window.placementDropdown, window.resetOffset = targets, placements, reset
+    window.anchorToButton = anchorTo
+    window.matchWidthButton, window.matchHeightButton = matchWidth, matchHeight
     window.settingsButton, window.exitButton, window.highlightButton = settings, exit, highlights
+    window.centerLinesButton, window.gridButton = centerLines, grid
     window.selectedLabel = selected
     window:EnableKeyboard(true)
     window:SetPropagateKeyboardInput(true)
@@ -208,6 +253,7 @@ function addon:CreateEditWindow()
     end)
     window:SetScript("OnHide", function()
         targets.menu:Hide(); placements.menu:Hide()
+        self.EditAnchor:Finish()
         window:StopMovingOrSizing(); window.moving = false
         if self.editMode and not window.ending then self:SetEditMode(false) end
     end)

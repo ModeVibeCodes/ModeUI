@@ -65,6 +65,7 @@ Shared\Media\MediaDiscovery.lua
 Shared\Placement\PreviewStates.lua
 Shared\Border\Border.lua
 Shared\Placement\PositionHighlights.lua
+Shared\Placement\PositionGrid.lua
 Shared\Skin\Skin.lua
 Shared\Skin\Controls.lua
 Shared\Skin\Extras.lua
@@ -93,6 +94,7 @@ Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Sidebar.lua
 Shared\Settings\Window.lua
+Shared\Settings\EditAnchor.lua
 Shared\Settings\EditMode.lua
 Modules\UnitFrames\UnitFrames.xml
 Modules\Nameplates\Nameplates.xml

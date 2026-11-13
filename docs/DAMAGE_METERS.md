@@ -13,10 +13,14 @@ records fights itself (`Blizzard_DamageMeter`, which Forever loads with
 `C_DamageMeter`. ModeUI reads it and draws its own windows, the way current
 third-party meters do (Recount-Revived, Skada's Midnight edition, ForeverMeter).
 
-ModeUI **never touches Blizzard's meter window**. One meter author reported that
-writing into Blizzard's windows taints their refresh and makes them log errors
-in combat. To see only ModeUI's windows, set Blizzard's meter to hidden with its
-own Edit Mode settings. The game only records while its own **Damage Meter**
+ModeUI **hides Blizzard's meter window but never writes into it**. One meter
+author reported that writing into Blizzard's windows taints their refresh and
+makes them log errors in combat. **Hide Blizzard's Meter** (Window tab › Data,
+on by default) puts Blizzard's meter frame (`DamageMeter`, which holds its
+session windows and their breakdowns) under a hidden ModeUI frame while the
+module is on. Nothing in it is changed or called, and it keeps running, so it
+keeps recording. Switching the setting or the module off puts it back where it
+was. The game only records while its own **Damage Meter**
 option is on. ModeUI reads that option (`damageMeterEnabled`) and never changes
 it, because game-wide settings belong to the Optimizations module. When it's
 off, the page's **Status** line and the windows say so.
@@ -93,15 +97,17 @@ outside combat and outside Edit Mode:
 - **Dragging a header** moves the window. A grouped window moves its whole
   group. The drop is saved the way Edit Mode saves it: an offset from the
   window's anchor, on whole pixels, so a window anchored to another stays
-  anchored.
+  anchored. Windows anchored on it in Edit Mode follow it during the drag: its
+  stand-in rides on the window's corner until the drop.
 - **The grip** (three diagonal lines, faint until hovered) sits in the corner
   that grows. Width follows the cursor and **Rows** change a whole row at a
   time. The first resize pins the window by its top-left corner to the screen,
   so that corner stays put. A window grouped above another has its grip at the
-  top right and grows upward. Windows placed on the resized one through Edit
-  Mode anchoring (Window 2 above Window 1 by default, and Window 3 above 2)
-  take its width too, so a stack stays one width. They keep their own rows.
-  Grouped windows share the width anyway.
+  top right and grows upward. Windows anchored on the resized one in Edit
+  Mode with **Match Width** (Window 2 above Window 1 by default, and Window 3
+  above 2) take its width too, so a stack stays one width. They keep their own
+  rows. Grouped windows share the width anyway. A matched window's grip
+  changes only its rows (and nothing, with Match Height on too).
 
 Combat hides the grip and ignores drags. Click Through windows can't be moved
 or resized by hand.
@@ -109,7 +115,8 @@ or resized by hand.
 ## Groups
 
 Window tab › **Group With**: None, or another window. A grouped window stacks
-**Below** or **Above** that window (Side), **Gap** apart (2px by default), and
+**Above** (the default) or **Below** that window (Side), **Gap** apart (2px by
+default), and
 takes every shared setting from the window at the head of its group: width,
 bars, text, header, frame, Show, opacity and the lock. It keeps its own
 **Meter**, **Fight** and **Rows**, so a group grows up or down one window at a
@@ -185,15 +192,46 @@ resize and update in combat. Settings also change in combat.
 ## Edit Mode, Test on Screen and the preview
 
 In **Edit Mode** every window that's on shows, Hidden ones too, with a cyan
-stand-in named after it ("Window 1"). The windows show a sample fight so they
+stand-in; its handle, centered above it, names it ("Window 1"). The windows show a sample fight so they
 can be laid out without one. Window 1 sits on the right edge below the middle.
 Windows 2 and 3 stack above it by default, and a window can anchor to a window
 listed before it. Position Manager moves the stand-in (it drives the mouse on
 what it registers), and the window hangs from the stand-in's top-left corner.
 
+**Anchoring** (the Edit Mode window, for every module's elements): choosing a
+target under **Snap To UI Element**, a side, or **Reset Offset** puts X and Y
+back at 0, so the element sits right on that side of its target. Before, a new
+target kept the old offsets, which were measured from the old anchor: the
+owner's Window 2 went off the screen that way. Choosing Screen keeps an element
+where it is. **Anchor To...** (beside the target list) waits for a click on the
+element to hang from. What a click would pick is outlined and named at the top
+of the screen; Escape, a right-click or combat cancels, and nothing drags
+meanwhile. The element goes Above what was clicked at 0, 0, and a small window
+offers the sides: a compass of Above, Below, Left, Right and Center, its
+corners lining up edges (Above, left edges together...), with **Done** and
+**Undo**. Something that already hangs from the element is never offered, so
+anchors never loop (`PositionManager:WouldLoop`). Code:
+`PositionManager:AnchorTo` (`Shared/Placement/PositionAnchors.lua`) and
+`Shared/Settings/EditAnchor.lua`.
+
+**Match Width** and **Match Height** (Edit Mode window, under the sides) size
+an anchored element to what it hangs from. A module offers them for its
+elements (`PositionManager:SetSizeMatch`); they're dimmed on the screen and
+for elements that don't. Damage meter windows have both. **Match Width** is on
+by default: the window takes its anchor's width whenever that changes (its
+grip, its Width setting, Copy & Apply, or a different frame changing size),
+and its Rows stay its own. Before, only the grip passed the width on, so the
+owner's Window 2 came apart from Window 1 when Window 1's size changed some
+other way. **Match Height** (off by default) gives the window as many rows as
+fit its anchor's height. On another meter window the match reads that
+window's settings, so it lands on the same refresh; on any other frame it
+reads its size on screen, watched by Position Manager's anchor size listener.
+The Window tab says when Width (or Rows) follow an anchor.
+
 **Test on Screen** shows the sample fight on the real windows. The settings page
 preview is the window being edited, drawn by the same code, with the sample
-fight. **Animated** plays it out over 20 seconds. Clicking the preview's header,
+fight: at most five rows, at 80% size at most, so it stays small whatever
+Rows is set to. **Animated** plays it out over 20 seconds. Clicking the preview's header,
 bars or frame opens the Header, Bars or Frame tab. Clicking a name, a value or
 the title opens the Text tab on that text.
 
@@ -203,11 +241,11 @@ you, for Always Show Me. Healing meters rank the healers first.
 ## Settings page
 
 **Editing** sits at the top right of the preview, as on the Action Bars page,
-and names each window with its meter ("Window 1 - DPS"). Five tabs:
+and names each window with its meter ("Window 1 - DPS"). Six tabs:
 
 - **Window:** Show Window, Status, Meter, Fight, Width, Rows, Row Height,
   Spacing, Padding, Show, Opacity, Lock Window, Click Through, Group With,
-  Side, Gap, Copy Style to All Windows, Reset to Defaults, Reset All Data.
+  Side, Gap, Reset All Data, Hide Blizzard's Meter.
 - **Bars:** Foreground, Background, Bar Opacity, Background Opacity, Bar
   Color, Custom Color, Other Color, Icon, Always Show Me.
 - **Text:** Text (Name, Value, Title, Timer), then that text's Font, Size,
@@ -219,16 +257,36 @@ and names each window with its meter ("Window 1 - DPS"). Five tabs:
   the Title and Timer text settings.
 - **Frame:** Border, Border Size, Border Color, Background Color, Background
   Opacity.
+- **Copy & Apply:** Copy From (the window in Editing), **Copy** (All, Window,
+  Bars, Text), Apply To (tick windows), **Apply to Selected**, **Apply to All
+  Windows**, Reset to Defaults.
 
-Copy Style copies everything except what each window shows and when, and its
-group: Show Window, Meter, Fight, Show, Group With, Side and Gap. Reset to
-Defaults keeps those too. On a grouped window, every tab says which window the
-group shares its settings with. Copy Style and Reset act on the group's head.
+Copy & Apply copies by part (`M.copyScopes`):
+- **All:** everything except what each window shows and when, its group and
+  matching (Show Window, Meter, Fight, Show, Group With, Side, Gap, Match Width
+  and Match Height).
+- **Window:** the window with its header and border: Width, Padding, Opacity,
+  Border, Border Size, Border Color, Background Color, Background Opacity, and
+  the header's Show Header, Texture, Height, Color, Opacity, Uppercase Title,
+  Show Fight, Show Timer and Header Buttons.
+- **Bars:** Row Height, Spacing, Foreground, Background, both opacities, Bar
+  Color, Custom Color, Other Color, Icon and Always Show Me.
+- **Text:** every text's Font, Size, Outline, Shadow, Slug and Color, Name and
+  Value color modes, Text Inset, Show Rank, Show (numbers), Decimals,
+  Separator and Show Percent.
+
+Every copy is checked before it's kept. A grouped window takes it on its
+group's head, so the whole group changes. Reset to Defaults keeps the same keys
+as All leaves alone. On a grouped window, every other tab says which window
+the group shares its settings with.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.damageMeters`, version 3: `window1`, `window2` and
-`window3`, each a full style table (`Init.lua`'s `Style`). Positions are under
+`ModeUIDB` profile `modules.damageMeters`, version 4: `window1`, `window2` and
+`window3`, each a full style table (`Init.lua`'s `Style`), and `hideBlizzard`
+(Hide Blizzard's Meter, for the whole module). Each window also has
+`matchWidth` (on) and `matchHeight` (off), Edit Mode's Match Width and Match
+Height; older saves take those defaults. Positions are under
 `positions.damageMetersWindow1` to `3`. `Initialize` fills defaults and
 validates every key, range, color, choice, texture and group (no window grouped
 with itself, no loops). Bad data stops startup; it is never reset.
@@ -245,6 +303,11 @@ Color" becomes "Color". Decimals still at version 2's default (1) becomes None.
 A header still at version 2's #141518 takes the Onyx health color, and Texture
 takes Mode Gradient. The old shared keys are removed.
 
+Version 3 → 4: groups stack Above by default. The owner grouped Window 2 with
+Window 1, it went below and off the screen, and they asked for the top. Every
+window still on version 3's default (Below) turns Above. Hide Blizzard's Meter
+takes its default (on).
+
 ## Files
 
 | File | Job |
@@ -253,8 +316,8 @@ takes Mode Gradient. The old shared keys are removed.
 | `Shared/Kit/Shape.lua` | `Kit.Rim`, `Kit.PlaceRim`: the hollow pixel rim |
 | `Shared/Kit/Text.lua` | `Kit.ShortNumber(value, decimals)`: abbreviated numbers with set decimals, secret-safe |
 | `Init.lua` | declaration, windows, positions, colors, defaults, ranges, choices |
-| `Migrations.lua` | `Initialize(db)`: validation, the version 2 migration, group loops |
-| `Group.lua` | groups: the head of a group, the settings a window draws with, where a grouped window hangs |
+| `Migrations.lua` | `Initialize(db)`: validation, the migrations, group loops |
+| `Group.lua` | groups: the head of a group, the settings a window draws with, where a grouped window hangs; Match Width and Match Height |
 | `Driver.lua` | lifecycle, events, the render throttle (4 a second, timer every 0.5s in combat), show rules, settings changes |
 | `Layout.lua` | pixel geometry |
 | `Window.lua` | building and painting windows, rows and stand-ins |
@@ -262,6 +325,7 @@ takes Mode Gradient. The old shared keys are removed.
 | `Render.lua` | filling rows: bars, names, numbers, icons, header, empty text, scrolling |
 | `Menu.lua` | the header menu |
 | `Breakdown.lua` | the spell breakdown and Death Recap |
+| `Blizzard.lua` | Hide Blizzard's Meter: Blizzard's meter frame under a hidden frame, and back |
 | `Preview.lua` | the sample fight, the settings preview, Test on Screen |
 | `Settings.lua` | the settings page |
 
@@ -342,17 +406,19 @@ concatenation or measurement, and the stub refuses secret arguments.
      - Locked, the grip disappears and the header no longer drags.
      - Unlocked, the window moves, and the grip changes width and whole rows
        with the top-left corner fixed. After `/reload` the place and size stay.
+     - With Window 2 shown (anchored on Window 1), it moves along during the
+       drag, not only after the drop.
 7. **Groups**
    - **Navigation:** **Window** tab, **Editing**: Window 2.
    - **Action:**
-     - Turn on **Show Window**, set **Group With** to Window 1 and **Side** to
-       Below.
+     - Turn on **Show Window** and set **Group With** to Window 1 (**Side**
+       is Above by default).
      - Change **Rows**, then Width.
      - Drag Window 1's header.
    - **Required state:** out of combat.
    - **Confirmation:**
-     - Window 2 sits 2px under Window 1, matches its width, text and look, and
-       keeps its own meter.
+     - Window 2 sits 2px above Window 1, matches its width, text and look, and
+       keeps its own meter. **Side** Below puts it 2px under.
      - Rows change only Window 2. Width changes both.
      - Dragging moves both.
      - **Group With**: None puts Window 2 back where it was.
@@ -364,3 +430,67 @@ concatenation or measurement, and the stub refuses secret arguments.
    - **Confirmation:**
      - The 1px rim and divider are one crisp pixel, never blurred or doubled.
      - Rounded corners miss exactly one pixel.
+9. **Anchor To**
+   - **Navigation:** **Edit Mode** in the settings window header.
+   - **Action:**
+     - Turn on **Show Window** for Window 3 first (Window tab, **Editing**:
+       Window 3).
+     - Click Window 3's stand-in, then **Anchor To...** in the ModeUI Edit Mode
+       window, then Window 1.
+     - In the window that opens, click the compass's bottom-left button, then
+       **Done**.
+     - Pick **Screen** in **Snap To UI Element**, drag Window 3 away, and choose
+       Window 1 in the same list.
+   - **Required state:** out of combat, Window 1 shown.
+   - **Confirmation:**
+     - While waiting, Window 1 is outlined when the mouse is over it and the
+       top of the screen names it.
+     - The click puts Window 3 right on top of Window 1, and **X Position** and
+       **Y Position** read 0.
+     - The compass moves it under Window 1 with the left edges together.
+       **Undo** would have put it back.
+     - Choosing Window 1 from the list also puts it on top at 0, 0, never off
+       the screen.
+10. **Blizzard's meter hidden**
+    - **Navigation:** **Interface** › **Damage Meters** › **Window** tab, **Hide
+      Blizzard's Meter** under Data.
+    - **Action:** with the game's Damage Meter option on, turn the module on,
+      fight, then switch **Hide Blizzard's Meter** off and on.
+    - **Required state:** any; switching works in combat too.
+    - **Confirmation:**
+      - With it on, Blizzard's meter windows are gone and ModeUI's still fill
+        during the fight.
+      - Off, Blizzard's windows come back where they were, with the same
+        numbers. Turning the module off brings them back too.
+      - No Lua errors, including in Blizzard's own Edit Mode.
+11. **Match Width and Match Height**
+    - **Navigation:** **Edit Mode** in the settings window header, then
+      **Interface** › **Damage Meters**.
+    - **Action:**
+      - With Window 2 shown and anchored on Window 1 (its default), select
+        Window 2's stand-in.
+      - In the ModeUI Edit Mode window, check that **Match Width** is ticked,
+        then leave Edit Mode.
+      - Change Window 1's **Width** on the Window tab, then drag its grip.
+      - Tick **Match Height** for Window 2 in Edit Mode.
+    - **Required state:** out of combat; Window 2 not grouped.
+    - **Confirmation:**
+      - Window 2 stays exactly as wide as Window 1 both ways, keeps its own
+        rows, and never comes apart from it.
+      - The Window tab, with Editing on Window 2, says its Width follows
+        Window 1.
+      - Match Height gives Window 2 Window 1's height in whole rows.
+      - On Window 1 itself (anchored on the screen) both are dimmed.
+12. **Copy & Apply and the preview**
+    - **Navigation:** **Interface** › **Damage Meters** › **Copy & Apply** tab.
+    - **Action:**
+      - With Editing on Window 1, set **Copy** to Text, tick Window 2 and click
+        **Apply to Selected**.
+      - Then try Window and Bars.
+      - Set Window 1's **Rows** to 20 and look at the preview.
+    - **Required state:** any.
+    - **Confirmation:**
+      - Text copies only fonts and numbers. Window brings the width, border and
+        header. Bars brings the bar look.
+      - The line beside the buttons says how many windows changed.
+      - The preview stays at five rows and a smaller size.

@@ -4,9 +4,9 @@ if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
 -- preview of the bar being edited sits above the tabs (Bar, Buttons, Text,
--- Visibility); clicking a part of it jumps to its settings. Every tab starts
--- with the Editing choice (which bar), shared by every tab, then cards of
--- related settings, side by side where they fit.
+-- Glows, Visibility, Copy & Apply); clicking a part of it jumps to its settings.
+-- Editing (which bar) sits in the preview header, shared by every tab; each
+-- tab holds cards of related settings, side by side where they fit.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing, textPart = "bar1", "hotkey"
@@ -46,12 +46,14 @@ function M:CreateConfigPage(parent)
     local function PartSlider(host, suffix, unit)
         return SliderIn(host, M.ranges["hotkey" .. suffix], function() return db()[PartKey(suffix)] end, SetPart(suffix), unit)
     end
-    local function SelectIn(host, width, choices, get, set)
+    -- get returns the chosen id, or nil and a label to show (a pick list).
+    local function SelectIn(host, width, choices, get, set, options)
         local button = W.Select(host, width, choices, function()
-            local value = get()
+            local value, label = get()
+            if label then return value, label end
             for _, choice in ipairs(choices()) do if choice.id == value then return value, choice.label end end
             return value, tostring(value)
-        end, set)
+        end, set, options)
         Refresh(function() button:Refresh() end)
         return button
     end
@@ -83,6 +85,8 @@ function M:CreateConfigPage(parent)
     end
     -- The Editing list marks bars that are off or hidden.
     local STATE = { off = "Off", hidden = "Hidden" }
+    -- On Cooldown's Icon Color: one switch (cooldownDesaturate) as two choices.
+    local ICON_COLORS = { { id = "desaturate", label = "Desaturate" }, { id = "full", label = "Full Color" } }
     local function BarLabel(bar)
         local state = M:BarState(bar)
         local label = L[M.barSpecs[bar].label]
@@ -122,7 +126,7 @@ function M:CreateConfigPage(parent)
     -- Each tab says so when the bar being edited is hidden.
     local function Tab(title, build)
         page:Section(L[title], nil, false)
-        if title ~= "Bar" then
+        if title ~= "Bar" and title ~= "Copy & Apply" then
             When(function() return not db().show end, function() Note("This bar is hidden. Turn on Show Bar on the Bar tab to use it.") end)
         end
         build()
@@ -147,40 +151,6 @@ function M:CreateConfigPage(parent)
         page.widthSlider = Slider(size[1], "width", "px"); Mark("buttons")
         page.heightSlider = Slider(size[2], "height", "px")
         page.spacingSlider = Slider(size[3], "spacing", "px")
-        -- Apply Style: tick bars, then give them this bar's look.
-        page:Group(L["Apply Style"])
-        local targets, items = {}, {}
-        for _, bar in ipairs(M.bars) do
-            items[#items + 1] = { M.barSpecs[bar].label, "apply",
-                get = function() return bar ~= editing and targets[bar] == true end,
-                set = function(on) if bar ~= editing then targets[bar] = on or nil end end }
-        end
-        page.applyTargets = targets
-        page.applyToggles = Toggles(items)
-        local apply = page:Row(L["Apply"], 48)
-        page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
-        page.applyButton:SetPoint("LEFT")
-        page.applyAllButton = W.Button(apply, L["Apply to All Bars"], 150, 30, "secondary")
-        page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
-        local result = W.Label(apply, "", nil, 0, 0, 160, T.muted)
-        result:ClearAllPoints(); result:SetPoint("LEFT", page.applyAllButton, "RIGHT", 10, 0)
-        page.applyResult = result
-        local function Report(ok, count)
-            result:SetText(ok and string.format(L["Applied to %d bars."], count or 0) or L["Choose bars first."])
-        end
-        page.applyButton:SetScript("OnClick", function()
-            local chosen = false
-            for bar in pairs(targets) do if bar ~= editing then chosen = true end end
-            if not chosen then Report(false); return end
-            Report(M:CopyStyleTo(editing, targets))
-        end)
-        page.applyAllButton:SetScript("OnClick", function() Report(M:CopyStyleToAll(editing)) end)
-        Refresh(function() if editing ~= page.applyResultBar then result:SetText(""); page.applyResultBar = editing end end)
-        page:Group(L["This Bar"])
-        local reset = page:Row(L["Style"], 48)
-        page.resetButton = W.Button(reset, L["Reset to Defaults"], 150, 30, "secondary")
-        page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetBar(editing) end)
-        Note("Apply Style gives the ticked bars this bar's size, borders, background, text, glows and opacity; each keeps its own buttons, lines, paging and show settings. The bar being edited is skipped.", 48)
         page:Group(L["Keybinds"])
         local keys = page:Row(L["Keybind Mode"], 48)
         page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")
@@ -215,6 +185,15 @@ function M:CreateConfigPage(parent)
         page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
         page.slotToggles = Toggles({ { "Show Empty Slots", "showEmpty" } })
         Note("The background shows in empty slots at Background Opacity, with a textured slot finish, and as the thin line between border and icon. Dragging a spell shows every button so it can be dropped.", 48)
+        -- On Cooldown: what an icon looks like until its ability is ready.
+        page:Group(L["On Cooldown"])
+        Note("While an ability is on cooldown (longer than the global cooldown), its icon can turn gray and fade until it's ready again. Action bars 1-8 only.", 40)
+        page.cooldownColorPills = Pills("Icon Color", ICON_COLORS,
+            function() return db().cooldownDesaturate and "desaturate" or "full" end,
+            function(mode) M:SetOption(editing, "cooldownDesaturate", mode == "desaturate") end, 110); Mark("cooldown")
+        local dim = Columns({ "Icon Opacity" })
+        page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
+        Note("Desaturate turns the icon gray; Full Color keeps it as it is. Click a button in the preview to set it for that button alone.", 32)
     end)
 
     -- Text: pick a text, then its place, size and color; the font is shared.
@@ -267,11 +246,7 @@ function M:CreateConfigPage(parent)
             Color(ready[1], "readyColor")
             page.readySlider = Slider(ready[2], "readyDuration", "s")
         end)
-        page:Group(L["On Cooldown"])
-        local dim = Columns({ "Icon Opacity" })
-        page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
-        page.desaturateToggles = Toggles({ { "Desaturate Icon", "cooldownDesaturate" } })
-        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. Icon Opacity fades the icon and Desaturate Icon turns it gray while that cooldown runs; with Desaturate Icon off it keeps its full color. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
+        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. How an icon looks while it cools down is on the Buttons tab. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
     end)
 
     Tab("Visibility", function()
@@ -296,6 +271,69 @@ function M:CreateConfigPage(parent)
             page.fadeSlider = Slider(faded[1], "fadeOpacity", "%")
         end)
         Note("Mouseover keeps the bar at Faded Opacity until the mouse is over it. Hidden bars still show in Edit Mode and Keybind Mode. Every bar hides during pet battles. Action Bar 1 hides while the game shows its own vehicle bar, and the pet and stance bars while you control a vehicle.", 48)
+    end)
+
+    -- Copy & Apply: the bar in Editing is the source; tick bars, then apply.
+    Tab("Copy & Apply", function()
+        page:Group(L["Copy From"])
+        -- The source is the bar in Editing; choosing here changes both.
+        local from = Columns({ "Bar" })
+        page.applySource = SelectIn(from[1], 240, BarChoices, Bar, page.SetEditing)
+        Note("Its size, borders, background, text, glows and opacity are copied; each bar keeps its own buttons, lines, paging and show settings.", 32)
+        page:Group(L["Apply To"])
+        local targets = {}
+        page.applyTargets = targets
+        local function Chosen()
+            local list = {}
+            for _, bar in ipairs(M.bars) do if bar ~= editing and targets[bar] then list[#list + 1] = bar end end
+            return list
+        end
+        -- A pick list: each bar has a check box; the source can't be picked.
+        local function TargetChoices()
+            local list = {}
+            for _, bar in ipairs(M.bars) do
+                local source = bar == editing
+                list[#list + 1] = { id = bar, label = source and (L[M.barSpecs[bar].label] .. "  |cff8c8c8c" .. L["Source"] .. "|r") or BarLabel(bar),
+                    selected = not source and targets[bar] == true, disabled = source }
+            end
+            return list
+        end
+        local function TargetLabel()
+            local chosen = Chosen()
+            if #chosen == 0 then return nil, L["Choose bars"] end
+            if #chosen == 1 then return nil, L[M.barSpecs[chosen[1]].label] end
+            return nil, string.format(L["%d bars selected"], #chosen)
+        end
+        local to = Columns({ "Bars" })
+        page.applyTargetSelect = SelectIn(to[1], 240, TargetChoices, TargetLabel, function(bar)
+            if bar ~= editing then targets[bar] = not targets[bar] or nil end
+        end, { multi = true })
+        local apply = page:Row("", 40)
+        apply.rowLabel:Hide(); apply:ClearAllPoints(); apply:SetAllPoints(apply.row)
+        page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
+        page.applyButton:SetPoint("LEFT")
+        page.applyAllButton = W.Button(apply, L["Apply to All Bars"], 150, 30, "secondary")
+        page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
+        local result = W.Label(apply, "", nil, 0, 0, 160, T.muted)
+        result:ClearAllPoints(); result:SetPoint("LEFT", page.applyAllButton, "RIGHT", 10, 0)
+        page.applyResult = result
+        local function Report(ok, count)
+            result:SetText(ok and string.format(L["Applied to %d bars."], count or 0) or L["Choose bars first."])
+        end
+        page.applyButton:SetScript("OnClick", function()
+            local chosen = false
+            for bar in pairs(targets) do if bar ~= editing then chosen = true end end
+            if not chosen then Report(false); return end
+            Report(M:CopyStyleTo(editing, targets))
+        end)
+        page.applyAllButton:SetScript("OnClick", function() Report(M:CopyStyleToAll(editing)) end)
+        Refresh(function() if editing ~= page.applyResultBar then result:SetText(""); page.applyResultBar = editing end end)
+        page:Group(L["Reset"])
+        local reset = page:Row("", 40)
+        reset.rowLabel:Hide(); reset:ClearAllPoints(); reset:SetAllPoints(reset.row)
+        page.resetButton = W.Button(reset, L["Reset to Defaults"], 150, 30, "secondary")
+        page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetBar(editing) end)
+        Note("Puts the bar in Editing back to ModeUI's defaults.", 32)
     end)
 
     -- While this page is open, each bar on screen wears a name tag (Preview.lua).

@@ -35,7 +35,7 @@ ModeUI/
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Border/                   pixel borders
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
-    Placement/                positions, Edit Mode (guides, nudging), Preview, frame anchors
+    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors
     Skin/                     re-skinning Blizzard frames (Skin, Controls, Extras, Frame): Chat and Windows
     Settings/                 settings window framework (window, pages, search, tabs)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker)

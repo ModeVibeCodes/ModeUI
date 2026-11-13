@@ -27,11 +27,22 @@ local function Ranged(v, r) return Number(v, r[1], r[2]) and v == math.floor(v) 
 -- Phase-1 (layout version 1) frames: values a user changed from the phase-1
 -- defaults carry into both frames once; everything else adopts the defaults.
 local V1_FRAME = { width = 220, height = 36, powerHeight = 8 }
+-- A frame's defaults as of layout version 16, text keys included.
+local function LegacyFrame(unit)
+    local frame = Copy(M.frameDefaults[unit])
+    for key, value in pairs(M.legacyText[unit]) do frame[key] = Copy(value) end
+    return frame
+end
+local function LegacyDefault(unit, key)
+    local value = M.legacyText[unit][key]
+    if value == nil then return M.frameDefaults[unit][key] end
+    return value
+end
 local function MigrateV1(db)
     for _, unit in ipairs(M.units) do
         local old = db[unit]
         if type(old) == "table" then
-            local new = Copy(M.frameDefaults[unit])
+            local new = LegacyFrame(unit)
             for _, key in ipairs({ "enabled", "hideBlizzard", "showPower", "showName", "healthText" }) do
                 if type(old[key]) == type(new[key]) then new[key] = old[key] end
             end
@@ -86,7 +97,9 @@ end
 local RETIRED = { "palette", "paletteHealth", "paletteTrack", "paletteBorder", "paletteInner", "rimThickness",
     "gapThickness", "hairlineThickness", "nameSheen", "nameSheenStrength", "borderStyle", "borderColor", "borderOpacity",
     "backgroundColor", "backgroundOpacity", "trimColor", "showFrameEdge", "barBorderColor", "barBorderOpacity", "portraitSize" }
-M.retiredKeys = RETIRED
+-- Every retired key, for checks; each migration removes only its own.
+M.retiredKeys = {}
+for _, key in ipairs(RETIRED) do M.retiredKeys[#M.retiredKeys + 1] = key end
 local HEALTH_MODE = { custom = "custom", class = "class", reaction = "class" }
 local function MigrateV8(db)
     for _, unit in ipairs(M.units) do
@@ -105,7 +118,7 @@ end
 -- Layout version 9 -> 10, per the owner: the Mist accent and its glow are
 -- replaced by Champagne/Lilac/Frost names with a crisp lifted shadow.
 local RETIRED_V10 = { "nameGlow", "nameGlowStrength" }
-for _, key in ipairs(RETIRED_V10) do RETIRED[#RETIRED + 1] = key end
+for _, key in ipairs(RETIRED_V10) do M.retiredKeys[#M.retiredKeys + 1] = key end
 local function MigrateV9(db)
     for _, unit in ipairs(M.units) do
         local frame = db[unit]
@@ -120,7 +133,7 @@ end
 -- lifted shadow on every text instead of just the name, and a matched Target
 -- that copies the Player's text layout rather than mirroring it.
 local PRESET_NAME = { champagne = true, lilac = true, frost = true }
-RETIRED[#RETIRED + 1] = "nameLift"
+M.retiredKeys[#M.retiredKeys + 1] = "nameLift"
 local function MigrateV10(db)
     for _, unit in ipairs(M.units) do
         local frame = db[unit]
@@ -134,7 +147,7 @@ end
 
 -- Layout version 11 -> 12, per the owner: every bar uses the Mode Gradient
 -- texture (Kit.ModeGradient), so the Bar Texture choice is retired.
-RETIRED[#RETIRED + 1] = "texture"
+M.retiredKeys[#M.retiredKeys + 1] = "texture"
 local function MigrateV11(db)
     for _, unit in ipairs(M.units) do
         if type(db[unit]) == "table" then db[unit].texture = nil end
@@ -154,7 +167,7 @@ local function MigrateV12(db)
         local frame = db[unit]
         if type(frame) == "table" then
             for key, value in pairs(old) do
-                if frame[key] == value then frame[key] = M.frameDefaults[unit][key] end
+                if frame[key] == value then frame[key] = Copy(LegacyDefault(unit, key)) end
             end
         end
     end
@@ -195,22 +208,43 @@ local function MigrateV15(db)
     end
 end
 
+-- Layout version 16 -> 17, per the owner: text slots (TextSlots.lua) replace
+-- the name, level, health and power text keys. Each frame's texts move into
+-- the matching slots, so nothing moves; the old keys are removed.
+local LEGACY_TEXT = {}
+for key in pairs(M.legacyText.player) do LEGACY_TEXT[#LEGACY_TEXT + 1] = key end
+for _, key in ipairs(LEGACY_TEXT) do M.retiredKeys[#M.retiredKeys + 1] = key end
+local function MigrateV16(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" then
+            local old = setmetatable({}, { __index = function(_, key)
+                local value = frame[key]
+                if value == nil or not Public(value) then return LegacyDefault(unit, key) end
+                return value
+            end })
+            if type(frame.texts) ~= "table" then frame.texts = M.SlotsFromLegacy(unit, old) end
+            for _, key in ipairs(LEGACY_TEXT) do frame[key] = nil end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
-    if db.layoutVersion == nil and type(db.player) == "table" and db.player.width ~= nil then MigrateV1(db)
-    else
-        local from = db.layoutVersion
-        if Number(from, 2, 7) then MigrateV2toV7(db, from); db.layoutVersion = 8 end
-        if db.layoutVersion == 8 then MigrateV8(db); db.layoutVersion = 9 end
-        if db.layoutVersion == 9 then MigrateV9(db); db.layoutVersion = 10 end
-        if db.layoutVersion == 10 then MigrateV10(db); db.layoutVersion = 11 end
-        if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = 12 end
-        if db.layoutVersion == 12 then MigrateV12(db); db.layoutVersion = 13 end
-        if db.layoutVersion == 13 then MigrateV13(db); db.layoutVersion = 14 end
-        if db.layoutVersion == 14 then MigrateV14(db); db.layoutVersion = 15 end
-        if db.layoutVersion == 15 then MigrateV15(db); db.layoutVersion = M.LAYOUT_VERSION end
-    end
+    -- Phase-1 frames take the version 16 defaults, then gain text slots.
+    if db.layoutVersion == nil and type(db.player) == "table" and db.player.width ~= nil then MigrateV1(db); db.layoutVersion = 16 end
+    local from = db.layoutVersion
+    if Number(from, 2, 7) then MigrateV2toV7(db, from); db.layoutVersion = 8 end
+    if db.layoutVersion == 8 then MigrateV8(db); db.layoutVersion = 9 end
+    if db.layoutVersion == 9 then MigrateV9(db); db.layoutVersion = 10 end
+    if db.layoutVersion == 10 then MigrateV10(db); db.layoutVersion = 11 end
+    if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = 12 end
+    if db.layoutVersion == 12 then MigrateV12(db); db.layoutVersion = 13 end
+    if db.layoutVersion == 13 then MigrateV13(db); db.layoutVersion = 14 end
+    if db.layoutVersion == 14 then MigrateV14(db); db.layoutVersion = 15 end
+    if db.layoutVersion == 15 then MigrateV15(db); db.layoutVersion = 16 end
+    if db.layoutVersion == 16 then MigrateV16(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do
@@ -224,6 +258,10 @@ function M.Initialize(db)
             "Invalid unit frame texture: " .. unit)
         M.ValidateTable(frame, "castBar", M.CastDefaults(unit), M.castRanges, M.castChoices)
         M.ValidateTable(frame, "status", M.StatusDefaults(unit), M.statusRanges, M.statusChoices)
+        local texts = M.ValidateTable(frame, "texts", {}, {})
+        for _, slot in ipairs(M.textSlots) do
+            M.ValidateTable(texts, slot, M.TextDefaults(unit, slot), M.textRanges, M.TextChoices(slot))
+        end
         for _, group in ipairs(M.auraGroups) do
             M.ValidateTable(frame, group, M.AuraDefaults(unit, group), M.auraRanges, M.AuraChoices(group))
         end

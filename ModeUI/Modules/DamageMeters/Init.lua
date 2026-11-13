@@ -5,9 +5,10 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- numbers come from the game's own damage meter (C_DamageMeter); ModeUI only
 -- draws them. Each window has its own meter (Damage Done, DPS, Healing...),
 -- fight (Current, Overall or an earlier one), size, bars, text and when it
--- shows. Blizzard's meter window is never touched. See docs/DAMAGE_METERS.md.
+-- shows. Blizzard's own meter is hidden while this is on (Hide Blizzard's
+-- Meter); it keeps recording. See docs/DAMAGE_METERS.md.
 -- Files: Init (this), Migrations, Driver, Group, Layout, Window, Controls,
--- Render, Menu, Breakdown, Preview, Settings.
+-- Render, Menu, Breakdown, Blizzard, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local DM = addon.Domain.DamageMeter
 local M = { title = L["Damage Meters"], category = "interface", defaultEnabled = false,
@@ -23,7 +24,9 @@ addon:RegisterModule("damageMeters", M)
 -- outline, shadow and color; names pure white and outlined; whole numbers
 -- by default (Decimals 0-3); Separator; the header is an Onyx bar with its
 -- own texture.
-M.VERSION = 3
+-- Version 4: groups stack Above by default (the owner wanted a grouped
+-- window on top of the one it follows), and Hide Blizzard's Meter.
+M.VERSION = 4
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows, in sidebar order, with their Edit Mode element (and saved
@@ -79,9 +82,13 @@ local function Style(window)
     local style = {
         show = window == "window1", meterType = window == "window2" and "healingDone" or window == "window3" and "damageTaken" or "damageDone",
         session = "current", visibility = "always", opacity = 100, clickThrough = false, locked = false,
-        -- Group With: another window this one stacks on (Below or Above, Gap
+        -- Group With: another window this one stacks on (Above or Below, Gap
         -- apart) and takes every shared setting from.
-        group = "none", groupSide = "below", groupGap = 2,
+        group = "none", groupSide = "above", groupGap = 2,
+        -- Edit Mode's Match Width and Match Height: anchored on another
+        -- element, the window takes its width (on by default; Rows stay) or
+        -- as many rows as fit its height.
+        matchWidth = true, matchHeight = false,
         -- Size: the window is as tall as its rows, so it always fits them exactly.
         width = 240, rows = 8, rowHeight = 18, spacing = 1, padding = 1,
         -- Frame
@@ -106,15 +113,29 @@ local function Style(window)
 end
 M.styleDefaults = {}
 for _, window in ipairs(M.windows) do M.styleDefaults[window] = Style(window) end
-M.defaults = { version = M.VERSION }
+-- Hide Blizzard's Meter (the whole module): Blizzard's own meter window steps
+-- aside while ModeUI's are on. Its data keeps recording either way.
+M.defaults = { version = M.VERSION, hideBlizzard = true }
 for _, window in ipairs(M.windows) do M.defaults[window] = Copy(M.styleDefaults[window]) end
 
 -- Keys Copy Style leaves alone: whether, what and when a window shows, and its group.
 M.identityKeys = { show = true, meterType = true, session = true, visibility = true,
-    group = true, groupSide = true, groupGap = true }
+    group = true, groupSide = true, groupGap = true, matchWidth = true, matchHeight = true }
 -- Keys a grouped window keeps as its own; every other setting comes from the
 -- window at the head of its group, so the group matches.
-M.ownKeys = { show = true, meterType = true, session = true, rows = true, group = true, groupSide = true, groupGap = true }
+M.ownKeys = { show = true, meterType = true, session = true, rows = true, group = true, groupSide = true, groupGap = true,
+    matchWidth = true, matchHeight = true }
+-- Copy & Apply: what each choice copies. All is every setting but the
+-- identity keys. Window brings its size, frame and header with it; Bars the
+-- rows' look; Text every text and number setting.
+M.copyScopes = {
+    window = { "width", "padding", "opacity", "border", "borderSize", "borderColor", "backgroundColor", "backgroundOpacity",
+        "header", "headerHeight", "headerTexture", "headerColor", "headerOpacity", "titleUpper", "showSession", "showTimer", "headerButtons" },
+    bars = { "rowHeight", "spacing", "barTexture", "barBackground", "barOpacity", "barBackgroundOpacity", "barColorMode",
+        "barColor", "otherColor", "icon", "alwaysShowMe" },
+    text = { "textInset", "showRank", "numbers", "showPercent", "decimals", "separator", "nameColorMode", "valueColorMode" },
+}
+M.copyScopeChoices = { { id = "all", label = "All" }, { id = "window", label = "Window" }, { id = "bars", label = "Bars" }, { id = "text", label = "Text" } }
 M.colorKeys = { borderColor = true, backgroundColor = true, headerColor = true, barColor = true, otherColor = true }
 -- Values for which the texture choices are checked by Kit.ValidBarTexture
 -- (true: a foreground, which may be Mode Gradient).
@@ -126,6 +147,7 @@ M.ranges = { width = { 120, 600, 1 }, rows = { 1, 40, 1 }, rowHeight = { 10, 40,
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, opacity = { 10, 100, 5 },
     textInset = { 0, 20, 1 }, decimals = { 0, 3, 1 }, groupGap = { 0, 20, 1 } }
 for _, part in ipairs(M.textParts) do
+    for _, suffix in ipairs(M.textPartKeys) do table.insert(M.copyScopes.text, part .. suffix) end
     M.colorKeys[part .. "Color"] = true
     M.ranges[part .. "Size"] = { 6, 32, 1 }
 end
@@ -150,6 +172,6 @@ M.choices = {
     icon = { { id = "class", label = "Class Icon" }, { id = "none", label = "None" } },
     numbers = { { id = "primary", label = "Amount" }, { id = "both", label = "Amount and Per Second" } },
     group = { { id = "none", label = "None" } },
-    groupSide = { { id = "below", label = "Below" }, { id = "above", label = "Above" } },
+    groupSide = { { id = "above", label = "Above" }, { id = "below", label = "Below" } },
 }
 for _, window in ipairs(M.windows) do M.choices.group[#M.choices.group + 1] = { id = window, label = M.windowLabels[window] } end

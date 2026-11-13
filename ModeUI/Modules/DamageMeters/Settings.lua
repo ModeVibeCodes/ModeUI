@@ -4,7 +4,7 @@ if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
 -- preview of the window being edited sits above the tabs (Window, Bars,
--- Text, Header, Frame), with Editing (which window, and its meter) at its top
+-- Text, Header, Frame, Copy & Apply), with Editing (which window, and its meter) at its top
 -- right as on the Action Bars page. Clicking a part of the preview jumps to
 -- its settings. Tabs hold cards of related settings, side by side where they
 -- fit.
@@ -90,7 +90,7 @@ function M:CreateConfigPage(parent)
         return list
     end
 
-    page.configPreview = W.Preview(page, M, { contentHeight = 200 })
+    page.configPreview = W.Preview(page, M, { contentHeight = 140 })
     -- Editing, at the top right of the preview, is seen from every tab.
     if page.previewArea then
         local host = CreateFrame("Frame", nil, page.previewArea)
@@ -103,9 +103,10 @@ function M:CreateConfigPage(parent)
         page:UpdatePreviewLayout()
     end
 
-    -- Each tab says so when the window is off or grouped.
+    -- Each tab says so when the window is off or grouped (Copy & Apply says it its own way).
     local function Tab(title, build)
         page:Section(L[title], nil, false)
+        if title == "Copy & Apply" then build(); return end
         if title ~= "Window" then
             When(function() return not db().show end, function() Note("This window is off. Turn on Show Window on the Window tab to use it.") end)
         end
@@ -138,13 +139,26 @@ function M:CreateConfigPage(parent)
         page.rowHeightSlider = Slider(rows[1], "rowHeight", "px")
         page.spacingSlider = Slider(rows[2], "spacing", "px")
         page.paddingSlider = Slider(rows[3], "padding", "px")
+        -- Matched in Edit Mode: the width (and rows, with Match Height) follow the anchor.
+        local function Matched() return M:Matching(editing, "Width") or M:Matching(editing, "Height") end
+        When(function() return Matched() ~= nil end, function()
+            local note = Note("", 32)
+            Refresh(function()
+                local target = Matched()
+                if not target then return end
+                local width, height = M:Matching(editing, "Width"), M:Matching(editing, "Height")
+                local what = height and (width and L["Width and Rows"] or L["Rows"]) or L["Width"]
+                note:SetText(string.format(L["%s follow %s (Match Width and Match Height in Edit Mode)."], what, addon.EditAnchor:TargetLabel(target)))
+            end)
+            page.matchNote = note
+        end)
         page:Group(L["When to Show"])
         local show = Columns({ "Show", "Opacity" })
         page.visibilitySelect = SelectIn(show[1], 200, function() return Localized(M.choices.visibility) end,
             function() return db().visibility end, Set("visibility"))
         page.opacitySlider = Slider(show[2], "opacity", "%")
         page.mouseToggles = Toggles({ { "Lock Window", "locked" }, { "Click Through", "clickThrough" } })
-        Note("Unlocked, drag a window's header to move it and the grip in its corner to resize it (out of combat); windows anchored on it take its width. The lock button in the header does the same as Lock Window. Hidden windows still show in Edit Mode. Click Through lets clicks and the mouse wheel pass to the game world.", 48)
+        Note("Unlocked, drag a window's header to move it and the grip in its corner to resize it (out of combat); windows anchored on it with Match Width (Edit Mode, on by default) take its width. The lock button in the header does the same as Lock Window. Hidden windows still show in Edit Mode. Click Through lets clicks and the mouse wheel pass to the game world.", 48)
         page:Group(L["Group"])
         local group = Columns({ "Group With" })
         page.groupSelect = SelectIn(group[1], 200, function() return M:GroupChoices(editing) end,
@@ -154,19 +168,14 @@ function M:CreateConfigPage(parent)
             local gap = Columns({ "Gap" })
             page.groupGapSlider = Slider(gap[1], "groupGap", "px")
         end)
-        Note("A grouped window stacks below or above the window it follows and matches its group: width, bars, text, header, frame, Show and the lock. It keeps its own meter, fight and Rows, so a group grows up or down a window at a time. Move the group by its first window.", 48)
-        page:Group(L["This Window"])
-        local tools = page:Row(L["Style"], 48)
-        page.copyButton = W.Button(tools, L["Copy Style to All Windows"], 200, 30, "secondary")
-        page.copyButton:SetPoint("LEFT"); page.copyButton:SetScript("OnClick", function() M:CopyStyleToAll(editing) end)
-        page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
-        page.resetButton:SetPoint("LEFT", page.copyButton, "RIGHT", 8, 0); page.resetButton:SetScript("OnClick", function() M:ResetWindow(editing) end)
-        Note("Copy Style copies size, bars, text, header and frame; each window keeps its own meter, fight and show settings.", 32)
+        Note("A grouped window stacks above (by default) or below the window it follows and matches its group: width, bars, text, header, frame, Show and the lock. It keeps its own meter, fight and Rows, so a group grows up or down a window at a time. Move the group by its first window.", 48)
         page:Group(L["Data"])
         local data = page:Row(L["Recorded Fights"], 48)
         page.resetDataButton = W.Button(data, L["Reset All Data"], 150, 30, "secondary")
         page.resetDataButton:SetPoint("LEFT"); page.resetDataButton:SetScript("OnClick", function() M:ResetData() end)
-        Note("The numbers come from the game's own damage meter, which must be on in the game's options. ModeUI never changes that option or Blizzard's meter window; hide Blizzard's window with its own Edit Mode settings if you only want ModeUI's.", 48)
+        page.blizzardToggles = Toggles({ { "Hide Blizzard's Meter", get = function() return M.db.hideBlizzard end,
+            set = function(value) M:SetHideBlizzard(value) end } })
+        Note("The numbers come from the game's own damage meter, which must be on in the game's options; ModeUI never changes that option. Hide Blizzard's Meter tucks Blizzard's meter windows away while this module is on; they keep recording, so ModeUI's windows still fill.", 48)
     end)
 
     Tab("Bars", function()
@@ -270,6 +279,69 @@ function M:CreateConfigPage(parent)
         Color(background[1], "backgroundColor")
         page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
         Note("Border Size is in screen pixels. Rounded leaves out each corner's outer pixel. The header divider uses the border color.", 32)
+    end)
+
+    -- Copy & Apply: the window in Editing is the source. Pick what to copy
+    -- (All, Window, Bars or Text), tick windows, then apply.
+    local SCOPE_NOTES = {
+        all = "Everything: size, bars, text, header and frame. Each window keeps its own meter, fight, show settings, group and matching.",
+        window = "The window itself, with its header and border: width, padding, opacity, border, background, and the header's bar, height, color, title and buttons.",
+        bars = "The bars: row height, spacing, textures, opacity, colors, icon and Always Show Me.",
+        text = "Every text: the name, value, title and timer fonts, sizes, outlines, shadows and colors, with Text Inset, Show Rank, numbers, Decimals, Separator and Show Percent.",
+    }
+    local scope = "all"
+    page.copyScope = function() return scope end
+    Tab("Copy & Apply", function()
+        page:Group(L["Copy From"])
+        local source = W.Label(page:Row(L["Window"], 32), "", nil, 0, -6, 360, T.text)
+        Refresh(function()
+            local labels, head = {}, M:Leader(editing)
+            for _, choice in ipairs(WindowChoices()) do labels[choice.id] = choice.label end
+            local text = labels[editing]
+            if head ~= editing then text = text .. " " .. string.format(L["(its group's look, from %s)"], L[M.windowLabels[head]]) end
+            source:SetText(text)
+        end)
+        page.applySource = source
+        page.copyScopePills = Pills("Copy", M.copyScopeChoices, function() return scope end,
+            function(value) scope = value; page:Refresh() end, 96)
+        local what = Note("", 48)
+        Refresh(function() what:SetText(L[SCOPE_NOTES[scope]]) end)
+        page:Group(L["Apply To"])
+        local targets, items = {}, {}
+        for _, window in ipairs(M.windows) do
+            items[#items + 1] = { M.windowLabels[window], "apply",
+                get = function() return window ~= editing and targets[window] == true end,
+                set = function(on) if window ~= editing then targets[window] = on or nil end end }
+        end
+        page.applyTargets = targets
+        page.applyToggles = Toggles(items)
+        local apply = page:Row("", 40)
+        apply.rowLabel:Hide(); apply:ClearAllPoints(); apply:SetAllPoints(apply.row)
+        page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
+        page.applyButton:SetPoint("LEFT")
+        page.applyAllButton = W.Button(apply, L["Apply to All Windows"], 160, 30, "secondary")
+        page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
+        local result = W.Label(apply, "", nil, 0, 0, 140, T.muted)
+        result:ClearAllPoints(); result:SetPoint("LEFT", page.applyAllButton, "RIGHT", 10, 0)
+        page.applyResult = result
+        local function Report(ok, count)
+            result:SetText(ok and string.format(L["Applied to %d windows."], count or 0) or L["Choose windows first."])
+        end
+        page.applyButton:SetScript("OnClick", function()
+            local chosen = false
+            for window in pairs(targets) do if window ~= editing then chosen = true end end
+            if not chosen then Report(false); return end
+            Report(M:CopyStyleTo(editing, targets, scope))
+        end)
+        page.applyAllButton:SetScript("OnClick", function() Report(M:CopyStyleToAll(editing, scope)) end)
+        Refresh(function() if editing ~= page.applyResultWindow then result:SetText(""); page.applyResultWindow = editing end end)
+        Note("A grouped window takes the copy on its group's first window, so its whole group changes.", 32)
+        page:Group(L["Reset"])
+        local reset = page:Row("", 40)
+        reset.rowLabel:Hide(); reset:ClearAllPoints(); reset:SetAllPoints(reset.row)
+        page.resetButton = W.Button(reset, L["Reset to Defaults"], 150, 30, "secondary")
+        page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetWindow(editing) end)
+        Note("Puts the window in Editing (its group, when grouped) back to ModeUI's defaults; its meter, fight, show settings and group stay.", 32)
     end)
 
     W.SectionTabs(page)

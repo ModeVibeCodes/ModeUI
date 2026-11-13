@@ -53,6 +53,33 @@ function M:UpdateAllStatus()
     if not self.frames then return end
     for _, unit in ipairs(self.units) do self:UpdateStatus(unit) end
 end
+-- Settings of one text slot (content, size, colorMode, color, x, y, align),
+-- changed together. Each text shows once per frame (owner, November 13,
+-- 2026): showing a text in a slot clears it from any other slot.
+function M:SetTextOptions(unit, slot, changes)
+    if not self:CanConfigure() or not self.labels[unit] or not self.slotPlaces[slot] then return false end
+    local copy = Copy(self.db)
+    local texts = copy[unit].texts
+    for key, value in pairs(changes) do
+        if texts[slot][key] == nil then return false end
+        texts[slot][key] = Copy(value)
+    end
+    local content = changes.content
+    if content ~= nil and content ~= "none" then
+        for other, s in pairs(texts) do if other ~= slot and s.content == content then s.content = "none" end end
+    end
+    if not pcall(self.Initialize, copy) then return false end
+    local live = self.db[unit].texts
+    for name, fresh in pairs(copy[unit].texts) do
+        local target = live[name]
+        for k in pairs(target) do target[k] = nil end
+        for k, v in pairs(fresh) do target[k] = v end
+    end
+    self:Refresh()
+    if self.page then self.page:Refresh(); self.page:Layout() end
+    return true
+end
+function M:SetTextOption(unit, slot, key, value) return self:SetTextOptions(unit, slot, { [key] = value }) end
 function M:SetCastOption(unit, key, value) return self.labels[unit] ~= nil and self:SetNestedOption({ unit, "castBar" }, key, value) end
 function M:SetAuraOption(unit, group, key, value)
     return self.labels[unit] ~= nil and self.auraGroupLabels[group] ~= nil and self:SetNestedOption({ unit, group }, key, value)
@@ -127,30 +154,21 @@ end
 function M:FrameOn(unit) return self.active == true and self.db[unit].enabled == true end
 
 -- Settings a frame renders with. A Target set to Match Player Frame reads the
--- Player's look and text layout, keeping its own identity keys (side,
+-- Player's look and text slots, keeping its own identity keys (side,
 -- visibility, the toggles); one cached proxy, so per-event updates allocate
--- nothing. With Mirror Player Text on and the portrait on the other side, text
--- alignment and horizontal offsets mirror, and `mirrored` tells the layout to
--- read the grouped level/health text in mirror order.
-local FLIP = { LEFT = "RIGHT", RIGHT = "LEFT" }
-M.mirrorAlign = { nameAlign = true, healthTextPosition = true, powerTextPosition = true }
-M.mirrorOffset = { nameOffsetX = true, levelOffsetX = true, healthTextOffsetX = true, powerTextOffsetX = true }
+-- nothing. With Mirror Player Text on and the portrait on the other side,
+-- `mirrored` tells the layout to show each text slot on the other side
+-- (Texts.lua).
 function M:FrameDB(unit)
     local fdb = self.db[unit]
     if unit ~= "target" or not fdb.matchPlayer then return fdb end
     if not self.matchedTarget then
-        local identity, align, offset = self.identityKeys, self.mirrorAlign, self.mirrorOffset
+        local identity = self.identityKeys
         self.matchedTarget = setmetatable({}, { __index = function(_, key)
             local target, player = self.db.target, self.db.player
             if identity[key] or self.ownKeys[key] then return target[key] end
-            local mirror = target.mirrorText == true and target.portraitSide ~= player.portraitSide
-            if key == "mirrored" then return mirror end
-            local value = player[key]
-            if mirror then
-                if align[key] then return FLIP[value] or value end
-                if offset[key] then return -value end
-            end
-            return value
+            if key == "mirrored" then return target.mirrorText == true and target.portraitSide ~= player.portraitSide end
+            return player[key]
         end })
     end
     return self.matchedTarget

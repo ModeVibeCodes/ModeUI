@@ -5,6 +5,68 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Text slots (layout version 17)
+
+November 13, 2026, per the owner (after EllesmereUI's text elements): every
+frame has fixed text spots, and each shows one text picked from a list, with
+its own font size, color and offsets. They replace the separate name, level,
+health and power text settings.
+
+- **Spots** (`M.textSlots`, `Modules/UnitFrames/TextSlots.lua`): nine on the
+  health bar (Top Left, Top, Top Right, Left, Center, Right, Bottom Left,
+  Bottom, Bottom Right), **On the Border** (the name sitting on the top rim,
+  with Border Alignment Left / Center / Right) and three on the power bar
+  (Power Left, Power Center, Power Right). Saved in `db[unit].texts[slot]` as
+  `content`, `size` (6–24), `x` / `y` (−100–100), `colorMode` (Default or
+  Custom), `color`, and `align` on the border spot.
+- **What a spot shows** (`M.choices.textContent`): None, Name, Level, Level and
+  Name, Health Percent, Health Current, Health Current and Percent, Health
+  Deficit, Power Percent, Power Current, Power Current and Percent.
+- **Default color**: names take the Name Color (Sky, the presets, class or
+  custom), the level stays muted (in Level and Name only the level is muted),
+  numbers use the Text Color. Custom colors the whole text.
+- **Placement** (`Modules/UnitFrames/Texts.lua`): a bar spot anchors to that
+  point of its bar, 4 units in from the side and 1px in from the top or bottom
+  edge. Spots on the portrait side keep the existing rule: they stop 2px before
+  the portrait ring across their own line, and an X offset toward the portrait
+  stops there. Names in a bar spot are at most 60% of the bar wide. Power spots
+  show only with the power bar; a power value in a health spot still updates.
+- **Health Deficit**: `UnitHealthMissing` is secret on Forever, so the text is
+  made by `C_StringUtil.TruncateWhenZero` (a whole number, empty at zero) and
+  `C_StringUtil.WrapString` (adds the "-" only to a non-empty text). Both
+  accept secret values; the result goes straight to `SetText`. It shows
+  "-1234" (not abbreviated) and nothing at full health.
+- **Matched Target**: a Target matching the Player uses the Player's spots;
+  with Mirror Player Text each Player spot shows on the other side (Left ↔
+  Right, Bottom Left ↔ Bottom Right…), its X offset and border alignment
+  flipped.
+- **Settings**: the Text tab lays the spots out like the frame, three equal
+  dropdowns to a line (Top Left, Top, Top Right; Left, Center, Right; Bottom
+  Left, Bottom, Bottom Right; then On the Border with Border Alignment, and
+  Power Left, Power Center, Power Right). A spot showing a text has a color
+  swatch (the game's color picker; Default returns to the default color) and
+  a font size (- / number / +) under its dropdown. Names (Name Color, Class
+  Color Softness) and Font follow. The Name & Level tab is gone; Health and
+  Power keep their bar settings. Clicking a text in the preview opens its
+  spot. Offsets stay saved (migrated ones still apply) but have no control.
+- **Each text once**: picking a text for a spot clears it from any other spot
+  on that frame (`M:SetTextOptions`), so moving the level from Left to Right
+  leaves Left empty.
+- **Preview and live controls** (owner, November 13, 2026): the preview draws
+  the sample at 80% (`M.PREVIEW_SCALE`) in a 150px area. Every settings slider
+  and the color picker apply the first change at once, then at most one
+  change every 0.12s while dragging (`W.Throttle`); letting go applies the
+  last value. Each change rebuilds the frames and the settings page, which
+  was what dropped frames when it ran on every slider step.
+- **Migration** (layout version 17): each frame's texts move to the matching
+  spots, so nothing moves: the name On the Border (Above Frame names go to the
+  border raised by the difference) or in the Left / Center / Right spot when it
+  was On Health Bar; health and power text in the spot of their side; the level
+  in the bottom corner on the portrait side (a level Beside Health Text goes
+  there too, since two texts can't share a spot). A text whose spot is taken
+  moves to that spot's top row. A level color other than the default becomes
+  that spot's Custom color. The old keys are removed.
+
 ## One border, the name on it (layout version 16)
 
 November 13, 2026, per the owner: the 2px rim plus the 2px black gap inside it
@@ -807,7 +869,9 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
 - **Edit Mode.** PTG's Position Manager refuses protected frames, so each
   frame has a plain stand-in, `PlayTheGameTools<Unit>UnitFramePreview`,
   registered as `unitFramesPlayer`/`unitFramesTarget` (screen anchoring only).
-  The stand-in uses the same Mode face with sample values. The secure button
+  The stand-in uses the same Mode face with sample values; its name is yours
+  on the Player and "Name" on the others, since the handle centered above it
+  names the frame ("Player Frame") in volt green. The secure button
   copies its anchor and scale outside combat. Saved positions live in the shared
   `positions` table.
 - **Native frames.** "Hide Blizzard … Frame" sets the alpha of the native
@@ -835,10 +899,19 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
 
 ## Settings (`modules.unitFrames`)
 
-`layoutVersion` is 11. `player` and `target` each hold the full set below
-(defaults shown). The Target differs only in portrait side (right) and
-`matchPlayer` (on). The Onyx rim, gap, empty bar and background are constants
-(`M.onyx`), not settings.
+`layoutVersion` is 17. Each frame (`player`, `target`, `targettarget`,
+`focus`, `focustarget`) holds the set below (defaults shown). The Onyx rim,
+empty bar and background are constants (`M.onyx`), not settings. Since layout
+version 17 the Name, Level, Health text and Power text keys below are replaced
+by text slots (`texts`, see "Text slots" at the top); the rows are kept as the
+history of what was migrated.
+
+| Group | Keys (default; range or choices) |
+| --- | --- |
+| Text slots | `texts.<slot>`: `content` (see "Text slots"), `size` 6–24, `x`/`y` −100–100, `colorMode` default / custom, `color`; `texts.border.align` LEFT / CENTER / RIGHT. Player: `border` Name (12, RIGHT), `bottomLeft` Level (11), `right` Health Percent (11). Small frames: `left` Name (11), `right` Health Percent (10). |
+| Names | `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `classSoftness` 40 (0–100%) |
+
+History (layout version 11):
 
 | Group | Keys (default; range or choices) |
 | --- | --- |

@@ -131,8 +131,9 @@ default, or Lifted).
 ## Edit Mode
 
 **Edit Mode** shows every bar that's switched on, even ones set to Hidden or In
-Combat, with all its slots. A cyan highlight with the bar's name in the middle
-sits over each one; that's the stand-in you drag.
+Combat, with all its slots. A cyan highlight sits over each one; that's the
+stand-in you drag. The bar's name ("Action Bar 1") is on the handle centered
+above it, in volt green (#CCFF00); the highlight itself carries no text.
 
 - **The bar follows live** while you drag, frame by frame.
 - **Anchoring:** **Snap To UI Element** in the Edit Mode window anchors a bar to
@@ -141,6 +142,24 @@ sits over each one; that's the stand-in you drag.
   the other way round, so anchors never loop. A bar anchored to another moves
   with it. The secure bar itself is always pinned to the screen where its
   stand-in is, so it never hangs from another frame in combat.
+- **Anchor To** clicks: while **Anchor To...** waits for a click, every
+  stand-in (and its name handle) still takes the mouse without dragging, so the
+  click picks the bar and never reaches a button on it.
+- **Stacks stay on screen:** whenever an element moves (a preset side, a drag,
+  a nudge, a new anchor), each element anchored **Above**, **Below**, **Left** or
+  **Right** of another is checked. If its side would put it off the screen, or
+  back over the frame its parent hangs from, and the opposite side is clear, it
+  switches sides (its offset on that axis mirrored). This overrides the side it
+  had, and runs down the chain. Moving Action Bar 1 to the top edge turns bars 2,
+  3, pet and stance to stack downward under it; a side that still fits is kept.
+- **X and Y:** the selected element shows its center's X and Y from the
+  screen's center (whole UI units) left of its name, kept current while it's
+  dragged or nudged.
+- **Center Lines and Grid** (Edit Mode window): Center Lines (on by default)
+  draw a vertical and a horizontal line through the screen's center, where X
+  and Y are 0. **Grid** (off by default) adds faint lines every 32 units out
+  from the center. Both are click-through, sit behind the elements, and last
+  for the session, like Show Highlights.
 - **Alignment guides:** while you drag any ModeUI element, a cyan line shows
   when its center comes within 8 units of a guide. Guides are:
   - its X or Y offset being 0
@@ -193,7 +212,9 @@ then owns keys 1-12. **Show Bar** (on the **Bar** tab) off turns a bar off
 completely, in Edit Mode too. Keybinds still work for hidden bars, as they do
 for Blizzard's.
 
-**Opacity** fades the whole bar. Opacity changes may happen in combat. Showing,
+**Opacity** fades the whole bar. Moving the Opacity and Faded Opacity sliders
+only sets the alpha on the bar and the preview, with no rebuild, so dragging
+stays smooth. Opacity changes may happen in combat. Showing,
 hiding, moving and sizing don't: anything that needs them waits for the end of
 combat.
 
@@ -213,12 +234,13 @@ Mode. The bar being edited has a cyan tag; clicking any tag edits that bar.
 Clicking a button opens the **Bar** tab and its glow menu (see Glows); clicking a text opens the **Text** tab
 on that text. The tabs:
 
-- **Bar**: Show Bar, status, layout, size, Apply Style, reset, Keybind Mode, paging
+- **Bar**: Show Bar, status, layout, size, Keybind Mode, paging
 - **Buttons**: border style, size and color; background color and opacity;
-  empty slots
+  empty slots; On Cooldown (Icon Color, Icon Opacity)
 - **Text**: which text, then its place, size and color, and the font
-- **Glows**: proc glow, glow when ready, icon opacity on cooldown
+- **Glows**: proc glow, glow when ready
 - **Visibility**: Show, custom conditions, opacity, Faded Opacity
+- **Copy & Apply**: Copy From (the bar in Editing), Apply To, Reset
 
 **Editing** (the bar being changed) sits at the top right of the preview, so it's
 always in view and shared by every tab. Its list marks bars that are **Off** (Show
@@ -226,12 +248,16 @@ Bar off) or **Hidden** (Show set to Hidden). When the chosen bar is either, a
 **Turn On** button appears beside it: it switches Show Bar on, and sets Show back
 to Always if it was Hidden. A tab also says so when that bar is off.
 
-**Apply Style** (Bar tab): tick bars, then **Apply to Selected**, or use **Apply
-to All Bars**. The ticked bars get the edited bar's size, borders, background,
-text, glows and opacity; each keeps its own buttons, lines, paging, show
-settings and per-button glow switches. The edited bar is skipped, and the
-result ("Applied to 2 bars.") shows beside the buttons. **Reset to Defaults** (This
-Bar) resets one bar's look.
+**Copy & Apply** tab: **Copy From** is a dropdown showing the source, the bar in
+Editing; choosing a bar there changes Editing too. **Apply To** is a pick list:
+each bar has a check box, clicking a bar ticks or unticks it and the list stays
+open, and the field reads "Choose bars", the bar's name, or "3 bars selected".
+The source shows as **Source** and can't be picked. The list closes on a click
+outside it. Then **Apply to Selected**, or **Apply to All Bars**. The picked
+bars get the source's size, borders, background, text, glows and opacity; each
+keeps its own buttons, lines, paging, show settings and per-button glow
+switches. The result ("Applied to 2 bars.") shows beside the buttons. **Reset**
+holds **Reset to Defaults** for the bar in Editing.
 
 ## Paging
 
@@ -269,10 +295,14 @@ How buttons react, on the **Glows** tab (per bar):
   `C_ActionBar.GetActionCooldown` on `SPELL_UPDATE_COOLDOWN`; its `isActive` and
   `isOnGCD` fields are never secret, so this works in combat and ignores the
   global cooldown.
+- **On Cooldown** (Buttons tab) starts by saying what it covers: an ability on
+  a cooldown longer than the global cooldown.
+- **Icon Color**: **Desaturate** (the default) turns the icon gray while that
+  cooldown runs and gives its color back when it's ready; **Full Color** keeps
+  it as it is. It's the saved `cooldownDesaturate` switch.
 - **Icon Opacity** (on cooldown): fades an icon while its spell is on such a
   cooldown. 100% (the default) leaves icons alone.
-- **Desaturate Icon** (on by default): the icon turns gray while that cooldown
-  runs and gets its color back when it's ready. Off keeps full color. Blizzard
+- Desaturation details: Blizzard
   clears desaturation when a button's action changes; a hook puts it back while
   the cooldown still runs, and ModeUI only undoes its own (a level-locked
   action stays gray).
@@ -402,8 +432,8 @@ Shared additions:
 - **Confirmation:**
   - Buttons are 42 by 36, with a faint textured background in empty slots.
   - Keybinds sit tight in the top-right corner. Cooldown numbers are amber.
-  - In Edit Mode, each bar is highlighted with its name centered, and moves with
-    the mouse without lag.
+  - In Edit Mode, each bar is highlighted, its name in volt green on the handle
+    centered above it, and moves with the mouse without lag.
   - A cyan line appears near the center, and the bar snaps onto it.
   - Each arrow click moves the bar one pixel.
   - Action Bar 3 shows only under the mouse. Action Bar 2 shows only in Edit
