@@ -150,5 +150,24 @@ M.comboRanges = { size = { 6, 24, 1 }, spacing = { 0, 12, 1 }, distance = { 0, 2
 -- bars; without a portrait the points line up under the bars.
 M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer", label = "Outer Side" },
     { id = "bottomOuter", label = "Lower Outer" }, { id = "top", label = "Top" }, { id = "bottom", label = "Bottom" } }
+-- Each frame's cast bar (owner, November 13, 2026), in db[unit].castBar: a
+-- box with the frame's rim and gap under (or over) the bar block, its bar
+-- lined up with the health bar. On for the Player, Target and Focus.
+M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 3, icon = "far",
+    showText = true, showTimer = true, fontSize = 10, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
+M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 } }
+M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
+M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "Hidden" } }
+M.castChoices = { position = "castPosition", icon = "castIcon" }
+local CAST_OFF = { targettarget = true, focustarget = true }
+function M.CastDefaults(unit)
+    local defaults = Copy(M.castDefaults)
+    defaults.enabled = not CAST_OFF[unit]
+    return defaults
+end
+-- Settings every frame keeps for itself: a Target matching the Player still
+-- uses its own cast bar and auras (unlike identity keys, Copy Style and Reset
+-- include them).
+M.ownKeys = { castBar = true }
 M.defaults = { layoutVersion = M.LAYOUT_VERSION, comboPoints = Copy(M.comboDefaults) }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end

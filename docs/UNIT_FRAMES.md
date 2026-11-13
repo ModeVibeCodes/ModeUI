@@ -5,6 +5,23 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Cast bars
+
+November 13, 2026, per the owner: each frame has a cast bar in the Mode skin
+(`CastBar.lua`, the **Cast Bar** tab), on for the Player, Target and Focus. It
+is a second block with the frame's rounded rim, black gap and bar texture,
+exactly as wide as the bar block, `gap` pixels under it (or over it); its bar
+starts and ends where the health bar does, and the portrait ring caps its near
+end like the bar block's. The spell icon takes a square from the far end, the
+portrait end, or is hidden; the spell name and a timer sit inside. Settings
+are in `db[unit].castBar` (`enabled`, `hideBlizzard`, `position` below/above,
+`height` 14, `gap` 3, `icon` far/near/none, `showText`, `showTimer`,
+`fontSize` 10, `color`, `lockedColor`), one of the frame's **own keys**: a
+Target matching the Player keeps its own, while Copy Style and Reset include
+it. Hide Blizzard Cast Bar fades `PlayerCastingBarFrame`, `TargetFrameSpellBar`
+or `FocusFrameSpellBar`. Cast painting and the timer are shared with
+Nameplates (`Kit.PaintCastBar`, `Kit.CastTimer` in `Shared/Kit/Cast.lua`).
+
 ## Combo points around the Target portrait
 
 November 13, 2026, per the owner: Blizzard's combo points stayed pinned to the

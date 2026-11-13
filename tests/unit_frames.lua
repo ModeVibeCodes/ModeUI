@@ -66,6 +66,40 @@ world.run([====[
     assert(M:SetFrameOption('player','showPortrait',false) and Point(cb.points[1])[1]=='TOPLEFT' and Point(cb.points[1])[2]==t.power)
     assert(M:SetFrameOption('player','showPortrait',true) and Point(cb.points[1])[2]==t.portrait)
 
+    -- Cast bars: a block in the frame's own skin under the bar block, as wide as
+    -- it, its bar starting exactly where the health bar does.
+    local pc,tex=p.castBox,function(key) return (addon.Media:GetTexture(key)) end
+    assert(pc and not pc:IsShown() and PlayerCastingBarFrame:GetAlpha()==0 and TargetFrameSpellBar:GetAlpha()==0 and FocusFrameSpellBar:GetAlpha()==0)
+    local cp1,cp2=Point(pc),Point(pc,2)
+    assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT')
+    assert(pc.height==14+8 and pc.rim.texture==tex('UnitFrameFrame') and pc.gap.texture==tex('UnitFrameFrameInner'),'rim and gap like the frame')
+    local cb1,cb2=Point(pc.bar),Point(pc.bar,2)
+    assert(cb1[1]=='TOPLEFT' and cb1[4]==60-35 and cb1[5]==-4,'bar starts where the health bar does')
+    assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(4+14+1) and cb2[5]==4,'the icon takes the far end, a hairline apart')
+    local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-4 and pc.icon.width==14 and pc.icon.height==14)
+    assert(pc:GetFrameLevel()<p.portrait:GetFrameLevel(),'the portrait ring caps it')
+    units.player.cast={name='Frostbolt',text='Frostbolt',icon=135846,start=1000,stop=3000}
+    FireEvent('UNIT_SPELLCAST_START','player')
+    assert(pc:IsShown() and pc.bar.low==1000 and pc.bar.high==3000 and pc.text:GetText()=='Frostbolt' and pc.icon.texture==135846)
+    assert(pc.bar.fillTexture.vertexColor[1]==M.castDefaults.color[1] and pc.bar.reverseFill==false and pc.bar.value==GetTime()*1000)
+    units.player.cast=nil;FireEvent('UNIT_SPELLCAST_STOP','player');assert(not pc:IsShown())
+    -- A channel drains; secret values go straight to the widgets.
+    units.target.channel={name=Secret('c'),text=Secret('ctext'),icon=Secret('i'),start=Secret('s'),stop=Secret('e'),locked=Secret('l')}
+    FireEvent('UNIT_SPELLCAST_CHANNEL_START','target');local tcb=t.castBox
+    assert(tcb:IsShown() and tcb.bar.reverseFill==true and tcb.text.text.label=='ctext' and tcb.bar.low.label=='s')
+    units.target.channel=nil;FireEvent('UNIT_SPELLCAST_CHANNEL_STOP','target');assert(not tcb:IsShown())
+    assert(Point(tcb.bar)[1]=='TOPRIGHT' and Point(tcb.bar)[4]==-25 and Point(tcb.icon)[1]=='LEFT','mirrored on the Target')
+    -- Settings: position, icon side, Blizzard's bar; validated; per frame even while matched.
+    assert(M:SetCastOption('player','position','above') and Point(pc)[1]=='BOTTOMLEFT' and Point(pc)[3]=='TOPLEFT' and Point(pc)[5]==3)
+    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==25 and Point(pc.bar)[4]==25+14+1)
+    assert(M:SetCastOption('player','icon','none') and not pc.icon:IsShown() and Point(pc.bar,2)[4]==-4)
+    assert(M:SetCastOption('player','hideBlizzard',false) and PlayerCastingBarFrame:GetAlpha()==1)
+    assert(not M:SetCastOption('player','height',99) and not M:SetCastOption('player','icon','top') and not M:SetCastOption('player','bogus',1))
+    assert(M:FrameDB('target').castBar==M.db.target.castBar and M.db.target.matchPlayer,'a matched Target keeps its own cast bar')
+    assert(M:ResetFrame('player') and M.db.player.castBar.position=='below' and PlayerCastingBarFrame:GetAlpha()==0,'reset restores it')
+    assert(M:SetCastOption('target','enabled',false) and TargetFrameSpellBar:GetAlpha()==1 and M:SetCastOption('target','enabled',true))
+    assert(M.db.targettarget.castBar.enabled==false and M.db.focus.castBar.enabled==true)
+
     -- Target of Target, Focus and Target of Focus: secure frames of their own,
     -- each replacing Blizzard's; Blizzard's Focus frame fades like the Target.
     local tt,fo,ft=M.frames.targettarget,M.frames.focus,M.frames.focustarget
@@ -495,8 +529,8 @@ restored.run([====[
     if not addon.EnsureConfigPage then addon:ToggleConfig() end
     local page=addon:EnsureConfigPage('unitFrames')
     local titles={};for _,section in ipairs(page.sections) do titles[#titles+1]=section.title end
-    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Combo Points|Text','one tab per frame element; no Border tab')
-    assert(page.sectionTabs and #page.sectionTabs.buttons==8)
+    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Cast Bar|Combo Points|Text','one tab per frame element; no Border tab')
+    assert(page.sectionTabs and #page.sectionTabs.buttons==9)
     local function Find(section,title)
         for _,row in ipairs(page.rows) do if row.section and row.section.title==section and row.settingsTitle==title then return row end end
     end
@@ -529,7 +563,12 @@ restored.run([====[
     assert(page.unitFrameComboArc and page.unitFrameComboSize and Visible(Row('Combo Points','Arc Position')))
     assert(M:SetComboOption('enabled',false) and not Visible(Row('Combo Points','Arc Position')) and M:SetComboOption('enabled',true))
     -- Editing picks one of the five frames, shared by every tab.
-    assert(#page.unitFrameEditSelects==6)
+    assert(#page.unitFrameEditSelects==7)
+    -- Cast Bar edits the frame's own cast bar, even on a matched Target.
+    assert(page.unitFrameCastPosition and page.unitFrameCastHeight and Visible(Row('Cast Bar','Position')))
+    page.SetEditing('target');assert(M.db.target.matchPlayer and Visible(Row('Cast Bar','Spell Icon')) and not Visible(Row('Layout','Scale')))
+    page.SetEditing('targettarget');assert(not Visible(Row('Cast Bar','Position')),'off by default on the Target of Target')
+    page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
     assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==25,'edits the Focus only')

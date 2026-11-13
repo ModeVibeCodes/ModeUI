@@ -107,4 +107,10 @@
     CreateFrame('Frame','ComboFrame',TargetFrame)
     comboPoints=0
     function GetComboPoints(unit,target) assert(unit=='player' and target=='target');return comboPoints end
+    -- Casts: Blizzard's player cast bar and the Target/Focus spell bars.
+    function methods:SetReverseFill(value) self.reverseFill=value end
+    function UnitCastingInfo(u) local c=units[u] and units[u].cast;if c then return c.name,c.text,c.icon,c.start,c.stop,false,'id',c.locked end end
+    function UnitChannelInfo(u) local c=units[u] and units[u].channel;if c then return c.name,c.text,c.icon,c.start,c.stop,false,c.locked end end
+    CreateFrame('StatusBar','PlayerCastingBarFrame',UIParent);CreateFrame('StatusBar','TargetFrameSpellBar',TargetFrame)
+    CreateFrame('StatusBar','FocusFrameSpellBar',FocusFrame)
     function Point(region,i) return {region:GetPoint(i or 1)} end

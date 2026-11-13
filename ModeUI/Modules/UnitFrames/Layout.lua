@@ -204,4 +204,5 @@ function M:ApplyLayout(f, unit)
     LayoutLift(f.powerText, fdb, fdb.powerFontSize, path, g.px, fdb.showPower and fdb.powerText ~= "none", fdb.powerTextPosition)
     self:PaintRing(f, unit)
     if f.combo then self:ResetComboLayout(f) end
+    self:LayoutCast(f, unit)
 end

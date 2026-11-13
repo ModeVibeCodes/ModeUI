@@ -44,6 +44,17 @@ power is restricted. ModeUI passes the count only to StatusBar `SetValue`
 Camelot's `TargetBoundComboPointBar`) through `pcall`. Fading `ComboFrame`
 uses the same alpha hook as the other native frames. Unverified in game.
 
+## Unit frame cast bars — November 13, 2026
+
+Same cast API use as the nameplates (`UnitCastingInfo`, `UnitChannelInfo`,
+duration objects, the `UNIT_SPELLCAST_*` events, unit-filtered). Blizzard's
+bars are named in the Forever source: `PlayerCastingBarFrame`
+(`Blizzard_UIPanels_Game/Mainline/CastingBarFrame.xml`) and
+`<frame>SpellBar` from `TargetFrameMixin:CreateSpellbar`
+(`Blizzard_UnitFrame/Mainline/TargetFrame.lua`). They are faded with the alpha
+hook, never hidden or reparented. The ModeUI cast bar is a plain child of the
+secure unit button, shown and hidden in combat. Unverified in game.
+
 ## Interface nameplates — November 12, 2026
 
 Source: the user's local copy of Blizzard's interface code, `WoWUI-live`

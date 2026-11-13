@@ -184,6 +184,7 @@ function M.Initialize(db)
         for key, list in pairs(M.choiceKeys) do assert(ALLOWED[list][frame[key]], "Invalid unit frame choice: " .. unit .. "." .. key) end
         assert(Kit.ValidBarTexture(frame.foregroundTexture, true) and Kit.ValidBarTexture(frame.backgroundTexture, false),
             "Invalid unit frame texture: " .. unit)
+        M.ValidateTable(frame, "castBar", M.CastDefaults(unit), M.castRanges, M.castChoices)
     end
     M.ValidateTable(db, "comboPoints", M.comboDefaults, M.comboRanges, { arc = "comboArc" })
 end
