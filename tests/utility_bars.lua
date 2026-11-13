@@ -161,4 +161,47 @@ world.run([==[
     assert(MicroMenu:GetAlpha() == 1 and BagsBar:GetAlpha() == 1 and not micro:IsShown())
 ]==], "utility bars")
 
+-- Blizzard re-lays the micro menu whenever a shown micro button's visibility
+-- changes (MainMenuBarMicroButtonMixin:OnShow/OnHide), and MicroMenuMixin:
+-- GetEdgeButton then compares the centers of the lowest and highest
+-- layoutIndex children still on MicroMenu. Help is hidden and was never laid
+-- out, so it has no center: it must never be the first or last child left
+-- while shown buttons move (in game: "attempt to compare nil with number").
+local EDGE = STUBS .. [==[
+    edgeChecks = 0
+    local function GetEdgeButton()
+        local first, last
+        for _, child in ipairs({ MicroMenu:GetChildren() }) do
+            if child.layoutIndex then
+                if not first or child.layoutIndex < first.layoutIndex then first = child end
+                if not last or child.layoutIndex > last.layoutIndex then last = child end
+            end
+        end
+        if not first then return end
+        edgeChecks = edgeChecks + 1
+        local firstX, lastX = first:GetCenter(), last:GetCenter()
+        assert(firstX and lastX, 'MicroMenuContainer.lua:137: attempt to compare nil with number (' .. first:GetName() .. ')')
+    end
+    for _, b in ipairs({ CharacterMicroButton, SpellbookMicroButton, HelpMicroButton, StoreMicroButton, MainMenuMicroButton }) do
+        b.requireAnchorForGeometry = true
+        local SetParent = b.SetParent
+        function b:SetParent(parent)
+            local shown = self:IsShown()
+            SetParent(self, parent)
+            if shown then GetEdgeButton() end
+        end
+    end
+    HelpMicroButton:ClearAllPoints() -- hidden since load: never placed
+]==]
+local edge = H.Load({ before = EDGE })
+edge.run([==[
+    addon:SetModuleEnabled('actionBars', true)
+    assert(edgeChecks > 0 and CharacterMicroButton:GetParent() == ModeUIMicroMenu and HelpMicroButton:GetParent() == ModeUIMicroMenu,
+        'every micro button moves without breaking Blizzard\'s layout')
+    edgeChecks = 0
+    addon:SetModuleEnabled('actionBars', false)
+    assert(edgeChecks > 0 and CharacterMicroButton:GetParent() == MicroMenu and HelpMicroButton:GetParent() == MicroMenu,
+        'and goes back the same way')
+]==], "micro menu edge")
+
 print("utility bars: all checks passed")

@@ -128,7 +128,8 @@ function M:ApplyBar(bar)
     -- it hides wait on the bar for when it shows them.
     local order = spec.utility and self:UtilityButtons(bar)
     if order then
-        for _, button in ipairs(self.buttons[bar]) do Adopt(self, button, header); self:HookUtility(bar, button) end
+        -- Hidden buttons move first (Utility.lua, ShownLast).
+        for _, button in ipairs(self:ShownLast(self.buttons[bar])) do Adopt(self, button, header); self:HookUtility(bar, button) end
     end
     for i = 1, spec.count do
         local slot, button = self.slots[bar][i]
@@ -186,7 +187,13 @@ function M:Restore()
         if self.ghosts[bar] then self.ghosts[bar]:Hide() end
     end
     self:FadeUtilityFrames(false)
-    for frame, home in pairs(self.homes or {}) do
+    -- Shown buttons go home first, hidden ones last (Utility.lua, ShownLast).
+    local frames = {}
+    for frame in pairs(self.homes or {}) do frames[#frames + 1] = frame end
+    local hiddenFirst = self:ShownLast(frames)
+    for i = #hiddenFirst, 1, -1 do
+        local frame = hiddenFirst[i]
+        local home = self.homes[frame]
         frame:SetParent(home.parent)
         if home.width then
             frame:ClearAllPoints()

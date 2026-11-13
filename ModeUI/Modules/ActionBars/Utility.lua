@@ -58,6 +58,22 @@ function M:CollectUtility(bar)
     return list
 end
 
+-- Moving a shown micro button fires its OnShow/OnHide, which re-lays out
+-- Blizzard's micro menu; MicroMenuMixin:GetEdgeButton then compares the
+-- centers of the lowest and highest layoutIndex buttons still on it. A
+-- button hidden since load (Help) was never placed and has no center, so it
+-- must never be left first or last: hidden buttons leave first and come back
+-- last (moving a hidden button fires nothing).
+function M:ShownLast(frames)
+    local hidden, shown = {}, {}
+    for _, frame in ipairs(frames) do
+        local list = Shown(frame) and shown or hidden
+        list[#list + 1] = frame
+    end
+    for _, frame in ipairs(shown) do hidden[#hidden + 1] = frame end
+    return hidden
+end
+
 -- The buttons laid out now: the ones Blizzard shows.
 function M:UtilityButtons(bar)
     local list = {}

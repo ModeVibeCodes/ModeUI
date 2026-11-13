@@ -358,6 +358,14 @@ behavior still needs in-game confirmation.
   empty; `HelpOpenWebTicketButton:SetPoint("CENTER", nil, ...)` then anchors to
   its parent, the Character button. Vehicles and pet battles reparent
   `MicroMenu` itself (`OverrideMicroMenuPosition`), not the buttons.
+- **Moving micro buttons** (found in game, November 13, 2026): reparenting a
+  shown micro button fires its `OnShow`/`OnHide`, which calls
+  `MicroMenuContainer:Layout()`. `GetEdgeButton` then compares the centers of
+  the lowest and highest `layoutIndex` buttons still on `MicroMenu`, shown or
+  not. A button hidden since load (Help) was never placed, so its center is
+  nil and the compare errors once it is first or last. ModeUI moves hidden
+  buttons first and gives them back last (`M:ShownLast`); moving a hidden
+  button fires nothing.
 - **Micro button art:** `LoadMicroButtonTextures` sets Normal/Pushed/Disabled/
   Highlight atlases; `SetPushed`/`SetNormal` re-apply the highlight and toggle
   `Background`/`PushedBackground`; `MainMenuMicroButton`'s OnUpdate re-sets its
