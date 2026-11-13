@@ -58,9 +58,15 @@ function Skin.Kind(frame)
     if (kind == "EventFrame" or kind == "Frame") and frame.Track and frame.Track.Thumb and frame.Back and frame.Forward then
         return "ScrollBar"
     end
-    if kind == "EditBox" and frame.Left and frame.Right and frame.Middle then return "Field" end
-    if kind == "DropdownButton" and frame.Arrow and frame.Background then return "Dropdown" end
+    -- (The Guild chat's edit box names its middle piece Mid.)
+    if kind == "EditBox" and frame.Left and frame.Right and (frame.Middle or frame.Mid) then return "Field" end
+    -- WowStyle dropdowns are DropdownButton intrinsics; GetObjectType may
+    -- answer "Button", so the keys and DropdownButtonMixin's methods decide.
+    if (kind == "DropdownButton" or kind == "Button") and frame.Arrow and frame.Background
+        and (kind == "DropdownButton" or frame.SetupMenu or frame.OpenMenu) then return "Dropdown" end
     if kind == "Frame" and frame.Left and frame.Middle and frame.Right and frame.Button and frame.Text then return "Dropdown" end
+    -- LargeSideTabButtonTemplate (the Character window's mode tabs) is a Frame.
+    if kind == "Frame" and frame.SelectedTexture and frame.Icon and frame.Background then return "SideTab" end
     if kind == "Button" or kind == "CheckButton" or kind == "DropdownButton" then
         if frame.LeftActive and frame.MiddleActive and frame.RightActive then return "Tab" end
         if frame.SelectedTexture and frame.Icon and frame.Background then return "SideTab" end
@@ -89,7 +95,7 @@ function Skin.Button(button, style)
 end
 
 function Skin.Field(edit, style)
-    for _, key in ipairs({ "Left", "Middle", "Right" }) do Fade(edit[key]) end
+    for _, key in ipairs({ "Left", "Middle", "Mid", "Right" }) do Fade(edit[key]) end
     local parts = Parts(edit)
     local px = Kit.PixelSize(edit)
     parts.px = px
@@ -194,7 +200,9 @@ end
 function Skin.PaintSideTab(tab)
     local parts = Skin.parts[tab]
     if not parts or not parts.fill then return end
-    local checked = tab.GetChecked and Public(tab:GetChecked()) == true
+    -- SidePanelTabButtonMixin shows SelectedTexture when checked (it may
+    -- have no GetChecked); the texture is faded, but its shown state stays.
+    local checked = (tab.GetChecked and Public(tab:GetChecked()) == true) or Shown(tab.SelectedTexture)
     local rim = (checked or parts.hovered) and C.accent or C.fieldRim
     Skin.PaintPanel(parts, tab, checked and C.selected or C.field, 0.95, rim, parts.px or 1)
 end

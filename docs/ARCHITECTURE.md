@@ -351,6 +351,7 @@ module is built.
 | 6 | Bags | Interface | Domain: Containers, Items. Kit: ItemButton. Templates: item slot | `C_Container` on Forever; secure use of items from addon buttons |
 | 7 | Windows | Interface | Skin: window frames, controls by template keys (buttons, fields, tabs, side tabs, close, scroll bars, insets) | done (native acceptance pending); secure windows skinned out of combat |
 | 8 | Minimap | Interface | Skin: minimap shape and border. Kit: addon-button collector | minimap APIs and cluster frames on Forever |
+| 9 | Tooltip | Interface | Skin: Panel, Edge, Font on Blizzard's tooltips. Placement: one Edit Mode element (the tooltip's anchor) | done (native acceptance pending); GameTooltip_SetDefaultAnchor post-hook, Blizzard's container untouched |
 
 Every module gets design notes in `docs/<NAME>.md` (like `docs/UNIT_FRAMES.md`)
 and an entry in the README's module table.

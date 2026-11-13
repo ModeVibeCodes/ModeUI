@@ -214,7 +214,7 @@ world.run([==[
     assert(M:SetOption('tuckDepth', 0)); assert(t2.glass:GetHeight() == 28, 'h2 ' .. tostring(t2.glass:GetHeight()))
     assert(M:SetOption('buttons', 'hidden') and not box:IsShown())
     assert(M:SetOption('buttons', 'compartment') and box:IsShown())
-    assert(M:SetOption('glassTabs', false) and t1.glass.texture == Kit.FLAT and not t1.sheen:IsShown() and not t1.glint:IsShown())
+    assert(M:SetOption('glassTabs', false) and t1.glass.texture == Kit.FLAT and not t1.glint:IsShown() and t1.sheen == nil and t1.line == nil)
     assert(M:SetOption('scrollBar', false)); bar:Show(); assert(not bar:IsShown() and bar.alpha == 0, 'Scroll Bar off')
     assert(Point(ChatFrame1Background, 2)[4] == 8, 'no gutter without the scroll bar')
     assert(M:SetOption('scrollBar', true)); bar:Show(); assert(bar:IsShown(), 'Scroll Bar on')

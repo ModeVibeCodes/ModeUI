@@ -30,7 +30,8 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 -- Blizzard addon that makes them. Options go to Skin.Window.
 M.registry = {
     { id = "character", label = "Character", frames = { "CharacterFrame" },
-        options = { fade = { "LeftPaneHost", "RightPaneHost", function(frame) return frame.RightPaneHost and frame.RightPaneHost.StoneBg end } } },
+        options = { fade = { "LeftPaneHost", "RightPaneHost", function(frame) return frame.RightPaneHost and frame.RightPaneHost.StoneBg end },
+            after = function(frame, style) M:SkinCharacterPanel(frame, style) end } },
     { id = "spellbook", label = "Spellbook and Talents", frames = { "PlayerSpellsFrame" }, addon = "Blizzard_PlayerSpells" },
     { id = "professions", label = "Professions", frames = { "ProfessionsFrame" }, addon = "Blizzard_Professions" },
     { id = "social", label = "Social", frames = { "FriendsFrame" } },
@@ -86,6 +87,20 @@ M.STATS = {
 }
 M.statsById = {}
 for _, stat in ipairs(M.STATS) do M.statsById[stat.id] = stat end
+-- Each stat's label color (Stat Colors on the Character tab): attributes in
+-- their usual colors (Strength red, Agility yellow, Intellect blue), the
+-- rest by family: physical power orange, spell power violet, healing and
+-- regen green, crit red, hit amber, haste light blue, avoidance pale blue.
+-- Main Stat takes its attribute's color.
+local RGB = Kit.RGB
+M.STAT_COLORS = {
+    strength = RGB(232, 92, 80), agility = RGB(255, 209, 64), stamina = RGB(232, 176, 75), intellect = RGB(64, 150, 255),
+    spirit = RGB(127, 219, 151), armor = RGB(185, 185, 185), attackPower = RGB(255, 138, 61),
+    rangedAttackPower = RGB(255, 138, 61), spellPower = RGB(176, 124, 255), healing = RGB(127, 219, 151),
+    crit = RGB(255, 107, 107), spellCrit = RGB(255, 107, 107), rangedCrit = RGB(255, 107, 107), hit = RGB(255, 177, 47),
+    spellHit = RGB(255, 177, 47), haste = RGB(127, 219, 255), spellHaste = RGB(127, 219, 255), expertise = RGB(232, 176, 75),
+    dodge = RGB(154, 208, 236), parry = RGB(154, 208, 236), block = RGB(154, 208, 236), manaRegen = RGB(64, 150, 255),
+}
 
 local windows, looks = {}, {}
 for _, entry in ipairs(M.registry) do windows[entry.id] = true; looks[entry.id] = Copy(M.LOOK) end
@@ -107,6 +122,7 @@ M.defaults = {
     -- Character window: stats display, rarity borders, enchant text.
     charStats = true, charStatsBackground = true, charStatsAnchor = "TOPLEFT", charStatsX = 8, charStatsY = -8,
     charStatsSize = 12, charStatList = { mainStat = true, stamina = true, armor = true, crit = true, hit = true, haste = true },
+    charStatColors = Copy(M.STAT_COLORS),
     charBorders = true, charBorderSize = 2, charEnchants = true, charEnchantSize = 10,
 }
 M.colorKeys = { backgroundColor = true, borderColor = true }

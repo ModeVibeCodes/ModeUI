@@ -52,6 +52,23 @@ function M:CreateCharacterSettings(page, H)
         end
         local size = H.Columns({ "Stats Text Size" })
         page.statsSizeSlider = H.Slider(size[1], "charStatsSize")
+        -- Stat Colors: a row for each stat shown (Main Stat uses its attribute's).
+        page:Group(L["Stat Colors"])
+        H.Note("Each stat's label color. Main Stat takes its attribute's color: Strength, Agility or Intellect.")
+        local owner = { db = { appearance = setmetatable({}, { __index = function(_, key) return M.db.charStatColors[key] end }) } }
+        function owner.CanConfigure() return true end
+        function owner.SetAppearance(_, key, value) return M:SetStatColor(key, value) end
+        local attributes = { strength = true, agility = true, intellect = true }
+        page.statColorRows = {}
+        for _, stat in ipairs(M.STATS) do
+            local id = stat.id
+            if M.STAT_COLORS[id] then
+                H.When(function() return M.db.charStatList[id] == true or (attributes[id] and M.db.charStatList.mainStat == true) end, function()
+                    local host = H.Columns({ stat.label })
+                    page.statColorRows[id] = W.ColorRow(page, owner, L[stat.label], id, nil, host[1])
+                end)
+            end
+        end
     end)
 
     page:Group(L["Rarity Borders"])

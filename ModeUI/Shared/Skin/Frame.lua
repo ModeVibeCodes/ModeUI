@@ -30,7 +30,8 @@ local HEADER_ART = { "LeftBG", "RightBG", "CenterBG" }
 local DECOR = { "TopFiligree", "BottomFiligree", "TopTileStreaks", "InsetBorderTopLeft", "InsetBorderTopRight",
     "InsetBorderBottomLeft", "InsetBorderBottomRight", "InsetBorderTop", "InsetBorderBottom", "InsetBorderLeft",
     "InsetBorderRight" }
-local DECOR_FRAMES = { "FilligreeOverlay", "PortraitOverlay" }
+-- (WatermarkFrame: the Guild roster's emblem behind the names.)
+local DECOR_FRAMES = { "FilligreeOverlay", "PortraitOverlay", "WatermarkFrame" }
 local SCAN_DEPTH = 6
 -- The border's frame sits above everything Blizzard stacks on a window (its
 -- NineSlice at 500, tabs and buttons at 510).
@@ -60,6 +61,10 @@ local function FadeDecor(frame)
     -- A tiled list background (the Guild list's blue menu, a column header's rock).
     if IsTexture(frame.Bg) then Fade(frame.Bg) end
     if frame.ColumnDisplay then Fade(frame.ColumnDisplay.Background); Fade(frame.ColumnDisplay.TopTileStreaks) end
+    -- Inset border pieces under any name (InsetBorderTop2 on the Guild pages).
+    for key, region in pairs(frame) do
+        if type(key) == "string" and key:find("^InsetBorder") and IsTexture(region) then Fade(region) end
+    end
 end
 
 local function FadeArt(frame, options)
@@ -158,6 +163,8 @@ function Skin.Window(frame, style, options)
     local close = Skin.CloseOf(frame)
     if close then Skin.Close(close); Skin.PlaceClose(frame, close, style) end
     Skin.Scan(frame, frame, style, 0)
+    -- A window's own extra parts (the Character window's stats pane).
+    if options.after then options.after(frame, style) end
     if style.bodyFont then
         local skip = {}
         local title = Skin.TitleOf(frame)
@@ -176,7 +183,9 @@ function Skin.Scan(window, frame, style, depth)
             local kind = Skin.Kind(child)
             -- Right side tabs hang directly off a window (the Guild window's);
             -- icon check buttons deeper inside are left alone.
-            if kind == "RightSideTab" and child:GetParent() ~= window then kind = nil end
+            -- (or off a tab holder on it: the Character window's sidebar tabs).
+            local holder = child:GetParent()
+            if kind == "RightSideTab" and holder ~= window and not (holder and holder:GetParent() == window) then kind = nil end
             if kind and style.controls[kind] then
                 Skin.Control(window, child, kind, style)
             elseif child ~= Skin.CloseOf(window) and child ~= Skin.MaxMinOf(window) then

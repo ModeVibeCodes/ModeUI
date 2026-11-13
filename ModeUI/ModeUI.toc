@@ -102,6 +102,7 @@ Modules\ActionBars\ActionBars.xml
 Modules\DamageMeters\DamageMeters.xml
 Modules\Chat\Chat.xml
 Modules\Windows\Windows.xml
+Modules\Tooltip\Tooltip.xml
 Modules\Profiles\Profiles.xml
 Modules\Optimizations\Optimizations.xml
 Modules\ClassColors\ClassColors.xml
