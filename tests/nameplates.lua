@@ -118,7 +118,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'interface' and not M.enabled, 'registered, off by default')
-    assert(M.db.version == 7 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 8 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
 
@@ -744,7 +744,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 7 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 8 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -765,7 +765,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 7 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 8 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -780,7 +780,7 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 7 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 8 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
         assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
@@ -801,7 +801,7 @@ end
 np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 7 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.version == 8 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
     assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
     assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
 ]==], "nameplates_v4")
@@ -815,7 +815,7 @@ np.enemy.healthOpacity, np.enemy.backgroundOpacity = nil, nil
 np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 7 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
+    assert(db.version == 8 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
     assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 55 and db.friendly.backgroundOpacity == 55, 'opacity defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v5")
@@ -830,7 +830,7 @@ end
 np.enemy.indicatorAnchor, np.enemy.indicatorX, np.enemy.indicatorY, np.enemy.indicatorSize, np.enemy.indicatorFontSize = 'TOPLEFT', 3, -2, 18, 11
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local e = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 7 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 8 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
     assert(e.questAnchor == 'TOPLEFT' and e.levelAnchor == 'TOPLEFT' and e.classificationX == 3 and e.levelY == -2, 'place carried over')
     assert(e.questSize == 18 and e.classificationSize == 18 and e.levelSize == 11, 'sizes carried over')
 ]==], "nameplates_v6")
@@ -910,9 +910,9 @@ withContainers.run([==[
     assert(curve.points[1].r == e.auraMagicColor[1] and curve.points[2].r == e.auraCurseColor[1] and curve.points[9].r == e.auraEnrageColor[1], 'type IDs')
     assert(curve.points[11].r == e.auraBleedColor[1] and curve.points[0].r == e.auraNoTypeColor[1], 'bleed and no type')
     assert(button.dispelOptions.showWithoutDispelType and button.dispelOptions.showWhenHelpful, 'every aura gets a rim')
-    -- Crowd control without a type is orange by default.
+    -- Crowd control without a type is #FF5948 by default.
     local cc = C.LEFT.groups.crowdControl.button.dispelOptions.customDispelColorCurve
-    assert(cc.points[0].r == e.auraCCNoTypeColor[1] and e.auraCCNoTypeColor[1] == 1, 'orange crowd control without a type')
+    assert(cc.points[0].r == e.auraCCNoTypeColor[1] and e.auraCCNoTypeColor[1] == 1 and math.abs(e.auraCCNoTypeColor[2] - 89 / 255) < 1e-9 and math.abs(e.auraCCNoTypeColor[3] - 72 / 255) < 1e-9, '#FF5948 crowd control without a type')
     -- Swipe and time text are registered for the game to drive.
     assert(button.timerRegion == button.timer and button.timerOptions.textFormatter.breakpoints[1].format == '%d', 'time text')
     assert(not button.timer.lift:IsShown(), 'no lifted copy on game-driven text')
@@ -937,6 +937,18 @@ withContainers.run([==[
     RemovePlate('nameplate1')
     for _, container in pairs(plate.auraContainers) do assert(not container.enabled, 'stopped on removal') end
 ]==], "nameplates_containers")
+
+-- Version 7: the old orange no-type crowd control default becomes #FF5948; a picked color stays.
+local v7 = world.saved()
+np = v7.profiles.Default.modules.nameplates
+np.version = 7
+np.enemy.auraCCNoTypeColor = { 1, 140 / 255, 40 / 255 }
+np.friendly.auraCCNoTypeColor = { 0.2, 0.4, 0.9 }
+H.Load({ before = STUBS, saved = v7 }).run([==[
+    local db = addon.Nameplates.db
+    assert(db.version == 8 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
+    assert(db.friendly.auraCCNoTypeColor[3] == 0.9, 'a picked color stays')
+]==], "nameplates_v7")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

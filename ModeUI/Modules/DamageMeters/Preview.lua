@@ -1,0 +1,134 @@
+local _, addon = ...
+local M = addon.DamageMeters
+if not M then return end
+
+-- The sample fight and the settings preview. Edit Mode, Test on Screen and
+-- the preview show a made-up group of Forever's classes (one of them marked
+-- as you, for Always Show Me), so a window can be laid out without a fight.
+-- Animated plays the fight out over 20 seconds. The preview is the window
+-- being edited, drawn by the same code as the real one; clicking its header,
+-- bars or frame jumps to those settings.
+local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
+local DM = addon.Domain.DamageMeter
+local SAMPLE_SECONDS, PLAY_SECONDS, MAX_WIDTH, MAX_HEIGHT, CAPTION_HEIGHT = 94, 20, 520, 240, 18
+
+-- Name, class and share of the top amount, best first. Healing meters rank
+-- the healers first. An empty class is something without one (a creature).
+local DAMAGE = {
+    { "Valeria", "MAGE", 1 }, { "Thorgrim", "WARRIOR", 0.93 }, { "Sylwen", "HUNTER", 0.81 },
+    { "Mode", "ROGUE", 0.78, true }, { "Ashka", "WARLOCK", 0.68 }, { "Brannoc", "PALADIN", 0.5 },
+    { "Tavi", "SHAMAN", 0.41 }, { "Kaelin", "DRUID", 0.29 }, { "Ysolde", "PRIEST", 0.22 }, { "Ember Hound", "", 0.08 },
+}
+local HEALING = {
+    { "Ysolde", "PRIEST", 1 }, { "Kaelin", "DRUID", 0.86 }, { "Tavi", "SHAMAN", 0.74 }, { "Brannoc", "PALADIN", 0.69 },
+    { "Mode", "ROGUE", 0.12, true }, { "Thorgrim", "WARRIOR", 0.09 }, { "Valeria", "MAGE", 0.05 }, { "Sylwen", "HUNTER", 0.04 },
+}
+local TOP = { amount = 1284000, count = 9 }
+
+-- A session shaped like the game's: { sources, max, total, duration, sample }.
+-- phase (seconds into the Animated preview) grows the fight; nil is static.
+function M:SampleData(meterType, phase)
+    local info = DM.typeById[meterType] or DM.types[1]
+    local grown = phase and math.min(1, 0.05 + (phase % PLAY_SECONDS) / PLAY_SECONDS) or 1
+    local seconds = math.max(1, math.floor(SAMPLE_SECONDS * grown + 0.5))
+    local list = info.group == "Healing" and HEALING or DAMAGE
+    local top = info.count and TOP.count or TOP.amount
+    local sources, total = {}, 0
+    for index, item in ipairs(list) do
+        if not info.deaths or index <= 3 then
+            local amount = math.floor(top * item[3] * grown + 0.5)
+            if info.count then amount = math.max(1, math.floor(top * item[3] + 0.5)) end
+            sources[#sources + 1] = { name = item[1], classFilename = item[2], totalAmount = amount,
+                amountPerSecond = math.floor(amount / seconds + 0.5), isLocalPlayer = item[4] == true,
+                deathRecapID = 0, deathTimeSeconds = info.deaths and 41 + index * 13 or 0 }
+            total = total + amount
+        end
+    end
+    return { sources = sources, max = sources[1] and sources[1].totalAmount or 0, total = total, duration = seconds, sample = true }
+end
+
+addon.PreviewStates:Register(M.id, {
+    states = { { id = "static", label = "Static" }, { id = "animated", label = "Animated" } },
+    animated = { animated = true }, previewAnimated = "animated",
+    sample = function(_, phase) return phase end,
+})
+-- Test on Screen draws on the real windows; Preview States redraws them.
+function M:IsSimulationVisible() return self.testing == true and self.active == true end
+function M:Render() self:RenderAll() end
+
+-- The window the settings page is editing, else Window 1.
+function M:PreviewWindow()
+    local page = self.page
+    return page and page.windowEditing and page.windowEditing() or "window1"
+end
+
+local function Scale(style)
+    local g = M.Geometry(style, 1)
+    return math.min(1, MAX_WIDTH / g.width, MAX_HEIGHT / g.height), g
+end
+
+function M:GetPreviewSize()
+    local scale, g = Scale(self.db[self:PreviewWindow()])
+    return math.max(300, g.width * scale), g.height * scale + 8 + CAPTION_HEIGHT
+end
+
+-- A part that jumps to its settings when clicked and lights up under the mouse.
+local function Clickable(hit, target)
+    hit:EnableMouse(true)
+    hit.jumpHighlight = W.Fill(hit, T.primary, "OVERLAY", 0, 0.16)
+    hit.jumpHighlight:Hide()
+    hit:SetScript("OnEnter", function() hit.jumpHighlight:Show() end)
+    hit:SetScript("OnLeave", function() hit.jumpHighlight:Hide() end)
+    hit:SetScript("OnMouseUp", function(_, button) if button == nil or button == "LeftButton" then M:JumpTo(target) end end)
+    hit.jump = target
+    return hit
+end
+
+function M:RenderPreview(view)
+    local window = self:PreviewWindow()
+    local style = self.db[window]
+    local scale = Scale(style)
+    local shell = view.window
+    shell:SetScale(scale)
+    self:PaintShell(shell, style)
+    shell:ClearAllPoints(); shell:SetPoint("TOP", view.frame, "TOP", 0, -2 / scale)
+    shell:SetAlpha(style.show and style.opacity / 100 or 0.4)
+    for _, row in ipairs(shell.rows) do
+        if not row.jump then
+            row:SetScript("OnClick", nil)
+            Clickable(row, "bars")
+            row.textHit = Clickable(CreateFrame("Frame", nil, row.textLayer), "text")
+        end
+        row.textHit:ClearAllPoints()
+        row.textHit:SetPoint("TOPLEFT", row.bar, "TOPLEFT", 0, 0)
+        row.textHit:SetPoint("BOTTOMRIGHT", row.bar, "BOTTOM", 0, 0)
+    end
+    local info = DM.typeById[style.meterType]
+    local data = self:SampleData(style.meterType, addon.PreviewStates:Sample(self.id))
+    self:RenderHeader(shell, style, info, style.session, data)
+    self:FillRows(shell, style, info, data)
+    view.background:SetAllPoints(shell)
+    local caption = L[self.windowLabels[window]] .. " · " .. L["sample fight"]
+    if not style.show then caption = L[self.windowLabels[window]] .. " · " .. L["hidden"] end
+    view.caption:SetText(caption)
+end
+
+function M:CreateConfigPreview(parent)
+    local frame = CreateFrame("Frame", nil, parent)
+    frame:SetAllPoints()
+    local view = { frame = frame }
+    view.window = self:BuildShell(frame, nil)
+    -- The frame (rim and background) sits under the header and rows.
+    view.background = Clickable(CreateFrame("Frame", nil, view.window), "frame")
+    view.background:SetFrameLevel(view.window:GetFrameLevel())
+    view.window.header:SetFrameLevel(view.window:GetFrameLevel() + 2)
+    view.window.header:SetScript("OnClick", nil)
+    Clickable(view.window.header, "header")
+    view.caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
+    view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
+    view.hint = W.Label(frame, L["Click a part to open its settings"], nil, 0, 0, 220, T.faint or T.muted)
+    view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2); view.hint:SetJustifyH("RIGHT")
+    function view.Refresh() M:RenderPreview(view) end
+    view.RenderSimulation = view.Refresh
+    return view
+end
