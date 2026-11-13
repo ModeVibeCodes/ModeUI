@@ -97,6 +97,7 @@ function M:LayoutPlate(plate)
 
     self:LayoutTarget(plate)
     self:LayoutFocus(plate)
+    plate.containerDirty = true
     for group, pool in pairs(plate.auraIcons) do
         for _, auraIcon in ipairs(pool) do self:LayoutAuraIcon(plate, auraIcon, group) end
     end

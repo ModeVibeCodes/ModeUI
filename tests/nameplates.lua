@@ -792,6 +792,77 @@ H.Load({ before = STUBS, saved = v6 }).run([==[
     assert(e.questSize == 18 and e.classificationSize == 18 and e.levelSize == 11, 'sizes carried over')
 ]==], "nameplates_v6")
 
+-- 12.1 aura containers: when the client has CustomAuraContainerTemplate, the
+-- game reads auras in secure code and fills buttons ModeUI styled once.
+local CONTAINERS = STUBS .. [==[
+    C_XMLUtil = { GetTemplateInfo = function(name) if name == 'CustomAuraContainerTemplate' then return {} end end }
+    Enum = Enum or {}
+    Enum.CustomAuraButtonDispelTypeTextureStyle = { PreserveAsset = 3 }
+    containers = {}
+    local createFrame = CreateFrame
+    function CreateFrame(kind, name, parent, template)
+        if kind ~= 'AuraContainer' then return createFrame(kind, name, parent, template) end
+        local c = createFrame('Frame', name, parent)
+        c.template, c.groups, c.order, c.calls = template, {}, {}, {}
+        function c:AddAuraGroup(key, filter, options)
+            assert(not self.groups[key], 'groups are added once')
+            self.groups[key] = { filter = filter, options = options, enabled = true, max = options.maxFrameCount }
+            self.order[#self.order + 1] = key
+            local button = createFrame('Frame', nil, self)
+            function button:SetIcon(t) self.iconRegion = t end
+            function button:SetDurationCooldown(cd) self.cooldownRegion = cd end
+            function button:SetApplicationCount(fs) self.countRegion = fs end
+            function button:AddDispelTypeTexture(t, o) self.dispelTexture, self.dispelOptions = t, o end
+            options.initializeFrame(button)
+            self.groups[key].button = button
+        end
+        function c:SetAuraGroupFilterString(key, f) self.groups[key].filter = f end
+        function c:SetAuraGroupMaxFrameCount(key, n) self.groups[key].max = n end
+        function c:SetAuraGroupLayout(key, l) self.groups[key].layout = l end
+        function c:SetAuraGroupEnabled(key, on) self.groups[key].enabled = on end
+        function c:SetEnabled(on) self.enabled = on end
+        function c:SetUnit(unit) self.unit = unit end
+        function c:UpdateAllAuras() self.updates = (self.updates or 0) + 1 end
+        function c:SetFlowLayoutAnchorPoint(p) self.flowAnchor = p end
+        function c:SetFlowLayoutAxis(a) self.axis = a end
+        function c:SetFlowLayoutGrowthDirection(h, v) self.growth = { h, v } end
+        containers[#containers + 1] = c
+        return c
+    end
+]==]
+local withContainers = H.Load({ before = CONTAINERS })
+withContainers.run([==[
+    local M = addon.Nameplates
+    addon:SetModuleEnabled('nameplates', true)
+    AddPlate('nameplate1', Hostile())
+    local plate = M.byUnit.nameplate1
+    assert(M:UsesAuraContainers(), 'the template is found')
+    local C = plate.auraContainers
+    -- Default enemy anchors: crowd control Left, debuffs Top, buffs Right; one container each.
+    assert(C.LEFT and C.TOP and C.RIGHT and C.LEFT.template == 'CustomAuraContainerTemplate', 'one container per anchor')
+    assert(C.LEFT.enabled and C.LEFT.unit == 'nameplate1' and C.LEFT:IsShown() and C.LEFT.updates >= 1, 'pointed at the unit')
+    assert(C.LEFT.groups.crowdControl.filter == 'HARMFUL|CROWD_CONTROL|INCLUDE_NAME_PLATE_ONLY', 'crowd control filter')
+    assert(C.TOP.groups.debuffs.filter == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL', 'your debuffs')
+    assert(C.RIGHT.groups.buffs.filter == 'HELPFUL|DISPELLABLE' and C.RIGHT.groups.buffs.max == 3, 'dispellable buffs')
+    -- Buttons are styled in the Mode look and registered for the game to fill.
+    local button = C.TOP.groups.debuffs.button
+    assert(button.iconRegion == button.icon and button.cooldownRegion == button.cooldown and button.countRegion == button.count, 'regions registered')
+    assert(button.dispelTexture == button.rim and button.dispelOptions.customDispelColorMap.Magic and button.dispelOptions.customDispelColorMap.None, 'rim by dispel type')
+    assert(math.abs(button.width - 20) < 1 and math.abs(button.height - 16) < 1, 'cropped 20 x 16')
+    -- Placement: debuffs grow from the center above the name; crowd control grows left past the marker.
+    assert(C.TOP.flowAnchor == 'BOTTOMLEFT' and Point(C.TOP)[3] == 'TOP', 'top row starts at the bar top')
+    assert(C.LEFT.flowAnchor == 'RIGHT' and Point(C.LEFT)[3] == 'LEFT' and Point(C.LEFT)[4] < -2, 'left row past the marker')
+    -- Settings change through setters; look changes make a new container.
+    local top = C.TOP
+    assert(M:SetOption('enemy', 'max', 4, 'debuffs') and plate.auraContainers.TOP == top and top.groups.debuffs.max == 4, 'max through setters')
+    assert(M:SetOption('enemy', 'show', false, 'debuffs') and not top.enabled and not top:IsShown(), 'a hidden group stops its container')
+    assert(M:SetOption('enemy', 'show', true, 'debuffs') and top.enabled)
+    assert(M:SetOption('enemy', 'auraTimer', false) and plate.auraContainers.TOP ~= top and not top.enabled, 'look change: new container, old one stopped')
+    -- Removing the unit stops every container.
+    RemovePlate('nameplate1')
+    for _, container in pairs(plate.auraContainers) do assert(not container.enabled, 'stopped on removal') end
+]==], "nameplates_containers")
+
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()
 broken.profiles.Default.modules.nameplates.enemy.width = 'wide'

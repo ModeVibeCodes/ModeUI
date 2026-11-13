@@ -7,6 +7,14 @@ local Kit = addon.Kit
 -- and the stack count in the corner. Fill it with Domain.Auras.Apply.
 function Kit.AuraIcon(parent)
     local icon = CreateFrame("Frame", nil, parent)
+    Kit.AuraIconParts(icon)
+    icon:Hide()
+    return icon
+end
+
+-- The parts of an aura icon, made on an existing frame (a Kit.AuraIcon, or a
+-- button an aura container made).
+function Kit.AuraIconParts(icon)
     icon.rim = icon:CreateTexture(nil, "BACKGROUND", nil, 0)
     icon.gap = icon:CreateTexture(nil, "BACKGROUND", nil, 1)
     icon.rim:SetTexture(Kit.FLAT); icon.gap:SetTexture(Kit.FLAT)
@@ -20,7 +28,6 @@ function Kit.AuraIcon(parent)
     icon.textLayer:SetAllPoints()
     icon.count = Kit.Text(icon.textLayer)
     icon.count.lift = Kit.Text(icon.textLayer, "ARTWORK")
-    icon:Hide()
     return icon
 end
 
