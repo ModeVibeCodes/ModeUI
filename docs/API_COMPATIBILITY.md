@@ -84,6 +84,27 @@ behavior on Forever is unverified until checked in game.
   drawn in four bands with `Frame:SetClipsChildren(true)`
   (`SimpleFrameAPIDocumentation.lua`; `AllowedWhenUntainted`, which a plain
   boolean always satisfies) so that nothing opaque sits behind the bar.
+- **Indicator.** `UnitLevel`, `UnitClassification`, `UnitIsQuestBoss` and
+  `C_QuestLog.UnitIsRelatedToActiveQuest` document no secret returns; ModeUI
+  still reads them through `Query.Plain` and hides a part on a secret or unknown
+  answer. Icons use Blizzard's atlases (`nameplates-icon-elite-gold`/`-silver`,
+  `UI-HUD-UnitFrame-Target-PortraitOn-Boss-Rare-Star` from
+  `Blizzard_NamePlateClassificationFrame.lua`; `...-Boss-Quest` from
+  `TargetFrame.xml`). Level color is `GetCreatureDifficultyColor`
+  (`DifficultyUtil.lua`). Updates on `UNIT_LEVEL`,
+  `UNIT_CLASSIFICATION_CHANGED` and `QUEST_LOG_UPDATE`.
+- **Cast target and timer.** The target is `UnitName(unit .. "target")` (may be
+  secret, goes to `SetText`), refreshed on `UNIT_TARGET`. The timer uses
+  `endMs - GetTime()*1000` when the times are public; otherwise
+  `UnitCastingDuration` (`SecretReturns`) or `UnitChannelDuration` and the
+  duration object's `GetRemainingDuration`, inside `pcall`, formatted by
+  `SetFormattedText` (`AllowedWhenTainted`).
+- **Slug text.** Slug rendering is set only in XML (`<Font slug="true">`, used by
+  `SystemFont_Outline_Slug_*` in `Blizzard_Fonts_Shared`); no Lua API sets it.
+  `Kit/Fonts.xml` declares slug templates; `Kit.SlugFont` copies one with
+  `CreateFont` + `Font:CopyFontObject` and sets the face with `Font:SetFont`,
+  then `FontString:SetFontObject`. Whether `SetFont` keeps the slug flag on the
+  copy is not documented; native confirmation is pending.
 - **Not used.** `SetShown` and `SetTimerDuration` reject secret arguments from
   addon code (`AllowedWhenUntainted`). Blizzard notes that tainted callers must
   use `SetAlphaFromBoolean` instead (`Blizzard_UnitFrame/Shared/UnitFrameUtil.lua`).

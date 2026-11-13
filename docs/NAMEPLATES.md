@@ -30,8 +30,19 @@ frame and fades Blizzard's art. Each plate has:
   clipped bands around the bar rather than as filled shapes behind it, and the
   target glow texture is hollow. The cast bar keeps a solid background: a
   channel drains by covering the cast color with the track color.
-- **Cast bar** with icon and spell name: amber when interruptible, gray when not;
-  channels drain from right to left.
+- **Textures**: **Foreground** (Mode Gradient by default, Flat, or any SharedMedia
+  status bar) and **Background** (Flat or SharedMedia), for the health and cast bars.
+- **Cast bar**: amber when interruptible, gray when not; channels drain from right
+  to left. **Spell Icon** Left, Right or Hidden; **Spell Name**; **Cast Target**
+  (who the caster is targeting, in its class color, on a line past the bar; on by
+  default for enemies); **Timer** (seconds left, from public cast times or the
+  cast's duration object; empty while the game hides both).
+- **Indicator**: a quest icon (quest bosses and creatures tied to your active
+  quests), Blizzard's elite, rare elite, rare and boss icons, and the level in
+  its difficulty color, placed by anchor. Beside the bar it sits past the raid
+  marker; aura rows and target arrows sit past it.
+- **Slug Text** (on by default): text drawn from glyph outlines, sharp at any
+  size. See [API_COMPATIBILITY.md](API_COMPATIBILITY.md) for how it is applied.
 - **Auras** in three groups, the **raid marker**, and a **target indicator**.
 
 **Name Only** (the Style choice) draws just the name, centered, in the class
@@ -67,13 +78,14 @@ Three groups, in order: **Crowd Control**, **Debuffs**, **Buffs**. The game's ow
 aura filters decide what belongs to each, so secret aura data is never compared.
 
 - Every group: **Show Auras**, **Timer Swipe**, **Stack Count**, **Icon Shape**
-  (Cropped: 2px wider than tall, the default; or Square), **Borders** (By Type or
+  (Cropped: 4px wider than tall, the default; or Square), **Borders** (By Type or
   Mode) and **Spacing**.
 - Each group (pick it with **Group**): **Show This Group**, **Which** (Debuffs:
   Yours, Ones You Can Dispel, All; Buffs: Dispellable or Stealable, Important,
   Yours, All), **Anchor**, **Grow** (Right, Left, Up, Down, Center), **Offset X/Y**,
   **Icon Size** and **Most Shown**. Groups on the same anchor continue as one
-  row in the first group's direction.
+  row in the first group's direction. **Sit on Health Bar** puts a Top or Bottom
+  group right against the bar; the name and cast bar on that side move past it.
 - Icons are built like plate boxes: rounded rim, black gap, the icon inset 2px
   and cropped so it is never stretched. With **By Type** borders the rim takes the
   aura's dispel type color (Magic, Curse, Disease, Poison, Enrage, each
@@ -87,8 +99,9 @@ aura filters decide what belongs to each, so secret aura data is never compared.
 
 **Style**: Border (the rims turn the target color; **Border Thickness** up to
 3px), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
-**Arrow Gap**), Border and Arrows, or None, in a **Color** of your choice (cyan
-by default). Arrows clear a raid marker on their side. Name Only plates color the
+**Arrow Gap**, up to 48 and 60), Border and Arrows, or None, in a **Color** of
+your choice (cyan by default). Arrows always sit outside the raid marker, the
+indicator and any aura row on their side. Name Only plates color the
 name for Border and Glow. The target is found by comparing nameplate frames.
 
 ## Preview
@@ -102,8 +115,11 @@ marker) to jump to its settings; parts light up under the mouse.
 
 ## Settings page
 
-Tabs: **Nameplates** (style, size, health), **Text** (name, health text, font),
-**Cast Bar**, **Auras**, **Target** (indicator and raid marker). Each tab starts
+Tabs: **Nameplates** (style, size, textures, health), **Text** (name, health
+text, font), **Cast Bar** (layout, content, colors), **Auras**, **Target** (target
+indicator) and **Indicators** (the level, elite and quest indicator, and the raid
+marker). Clicking text in the preview opens its settings only where the text is
+written; the rest of the bar opens the health settings. Each tab starts
 with the Editing switch; settings are grouped on cards with accent titles, with
 related sliders and choices side by side.
 
@@ -132,9 +148,10 @@ settings take their defaults.
 | `Driver.lua` | lifecycle, events, enemy or friendly kind, fading Blizzard's unit frame, per-kind settings |
 | `Plate.lua` | building a plate and laying out its boxes |
 | `Layout.lua` | placing every element by anchor and offset; Name Only |
-| `Target.lua` | target indicator styles and name colors |
+| `Target.lua` | target indicator styles, arrow placement and name colors |
+| `Indicator.lua` | the level, classification and quest indicator |
 | `Update.lua` | health, name, colors, threat, raid marker |
-| `CastBar.lua` | cast and channel bars |
+| `CastBar.lua` | cast and channel bars, icon side, target line and timer |
 | `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |
 | `Preview.lua` | the sample plate on the settings page and its click targets |
 | `Settings.lua` | the settings page |
