@@ -61,13 +61,15 @@ function M:InstallHooks()
     if hooksecurefunc and GameTooltip_SetDefaultAnchor then
         hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tooltip, parent) self:Place(tooltip, parent) end)
     end
-    -- Data tooltips (units, items, spells...): fonts before Blizzard shows
-    -- them, so the size it measures is the Mode face's.
+    -- Data tooltips (units, items, spells...): fonts, size and colors
+    -- before Blizzard shows them, so the size it measures is the Mode
+    -- face's. Unit tooltips are filled again every few frames; this runs
+    -- each time.
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         local all = TooltipDataProcessor.AllTypes
         if all ~= nil then
-            pcall(TooltipDataProcessor.AddTooltipPostCall, all, function(tooltip)
-                if self.active and self.skinnedTooltips and self.skinnedTooltips[tooltip] then self:ApplyFonts(tooltip) end
+            pcall(TooltipDataProcessor.AddTooltipPostCall, all, function(tooltip, data)
+                if self.active and self.skinnedTooltips and self.skinnedTooltips[tooltip] then self:Dress(tooltip, data) end
             end)
         end
     end
@@ -80,19 +82,28 @@ function M:Refresh()
     for _, tooltip in ipairs(self:Tooltips()) do
         self.skinnedTooltips[tooltip] = true
         self:Skin(tooltip)
-        self:ApplyFonts(tooltip)
+        self:Dress(tooltip)
     end
     self:PlaceMover()
     if self.page then self.page:Refresh() end
 end
 
--- A tooltip showing: its border color, its fonts (sized again if they
--- changed), and the combat check for the main tooltip.
+-- Fonts, size and text colors; answers whether the fonts changed.
+function M:Dress(tooltip, data)
+    local changed = self:ApplyFonts(tooltip)
+    self:ApplySize(tooltip)
+    self:ColorLines(tooltip, data)
+    return changed
+end
+
+-- A tooltip showing: its border color, its fonts, size and colors (sized
+-- again if the fonts changed), and the combat check for the main tooltip.
 function M:OnTooltipShow(tooltip)
     if not self.active or self.resizing then return end
     if tooltip == GameTooltip and self:HiddenByCombat() then tooltip:Hide(); return end
     self:Paint(tooltip, self:ContentColor(tooltip))
-    if self:ApplyFonts(tooltip) then
+    local data = tooltip.GetPrimaryTooltipData and select(2, pcall(tooltip.GetPrimaryTooltipData, tooltip)) or nil
+    if self:Dress(tooltip, type(data) == "table" and data or nil) then
         -- Show again so the tooltip measures its lines in the new face (an
         -- already shown frame doesn't run OnShow again).
         self.resizing = true
@@ -142,7 +153,7 @@ function M:BuildMover()
     mover:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", self.DEFAULT_POSITION.x, self.DEFAULT_POSITION.y)
     self.mover = mover
     local ok, reason = addon.PositionManager:RegisterElement(self.ELEMENT_ID, mover, { moduleId = self.id,
-        defaultPosition = self.DEFAULT_POSITION, label = L["Tooltip"],
+        defaultPosition = self.DEFAULT_POSITION, label = L["Tooltip"], anyTarget = true,
         canDrag = function() return self.active == true and self.db.position == "anchor" end })
     assert(ok, "ModeUI: tooltip position registration failed: " .. tostring(reason))
     mover:Hide()

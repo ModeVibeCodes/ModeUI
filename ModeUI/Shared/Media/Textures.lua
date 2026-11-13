@@ -69,6 +69,12 @@ M.Textures = {
     ModeMinimize = { file = "Mode/Minimize.tga", transparent = true },
     ModeMaximize = { file = "Mode/Maximize.tga", transparent = true },
     ModeSheen = { file = "Mode/Sheen.tga", transparent = true },
+    -- A rounded box and its hollow rim, 1 to 4 px (tooltips).
+    ModeRound = { file = "Mode/Round.tga", slice = 6, rounded = true },
+    ModeRing1 = { file = "Mode/Ring1.tga", slice = 6, rounded = true },
+    ModeRing2 = { file = "Mode/Ring2.tga", slice = 6, rounded = true },
+    ModeRing3 = { file = "Mode/Ring3.tga", slice = 6, rounded = true },
+    ModeRing4 = { file = "Mode/Ring4.tga", slice = 6, rounded = true },
     -- Chat compartment glyphs: the chat menu's speech bubble and Channels' "#".
     ChatMenu = { file = "Chat/Menu.tga", transparent = true },
     ChatChannels = { file = "Chat/Channels.tga", transparent = true },
