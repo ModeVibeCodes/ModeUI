@@ -107,6 +107,16 @@ local function MigrateV4(db)
     end
 end
 
+-- Version 5 -> 6: the window takes ModeUI's standard border, which has no
+-- settings (the owner asked for the unit frames' border everywhere), so
+-- Border, Border Size and Border Color go.
+local function MigrateV5(db)
+    for _, window in ipairs(M.windows) do
+        local style = db[window]
+        if type(style) == "table" then style.border, style.borderSize, style.borderColor = nil, nil, nil end
+    end
+end
+
 -- A window can't group with itself, and groups never loop.
 local function ValidateGroups(db)
     for _, window in ipairs(M.windows) do
@@ -124,6 +134,7 @@ function M.Initialize(db)
     if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
+    if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid damage meter settings version")
     if db.hideBlizzard == nil then db.hideBlizzard = true end

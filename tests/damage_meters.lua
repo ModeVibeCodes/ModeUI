@@ -122,19 +122,25 @@ world.run([==[
     assert(w1:IsShown() and not w2:IsShown(), 'only switched-on windows show')
     assert(not w1.secure and not (w1.IsProtected and w1:IsProtected()), 'plain frames: they update in combat')
 
-    -- Geometry: 1px rim, 20px header, 1px divider, 1px padding, 8 rows of 18 one pixel apart.
-    assert(w1.width == 240 and w1.height == 1 + 20 + 1 + 1 + 8 * 18 + 7 + 1 + 1, 'exact height for the rows')
+    -- Geometry: the 2px ModeUI border, 20px header, 1px hairline, 1px padding, 8 rows of 18 one pixel apart.
+    assert(w1.width == 240 and w1.height == 2 + 20 + 1 + 1 + 8 * 18 + 7 + 1 + 2, 'exact height for the rows')
     assert(w1.height % 2 == 0 and w1.width % 2 == 0, 'even size stays on the pixel grid')
     assert(ModeUIDamageMeter1Mover.width == w1.width and Point(w1)[2] == ModeUIDamageMeter1Mover, 'hangs from its stand-in')
     local row1, row2, row3 = w1.rows[1], w1.rows[2], w1.rows[3]
     local p = Point(row1)
-    assert(p[1] == 'TOPLEFT' and p[4] == 2 and p[5] == -23 and row1.width == 236 and row1.height == 18, 'first row inside rim, header, divider and padding')
-    assert(Point(row2)[5] == -42, 'next row one row and one pixel down')
+    assert(p[1] == 'TOPLEFT' and p[4] == 3 and p[5] == -24 and row1.width == 234 and row1.height == 18, 'first row inside rim, header, hairline and padding')
+    assert(Point(row2)[5] == -43, 'next row one row and one pixel down')
     assert(row1.icon.width == 18 and Point(row1.bar)[4] == 19, 'square icon, a pixel gap, then the bar')
-    local rim = w1.rim
-    assert(rim[1]:IsShown() and Point(rim[1], 1)[4] == 1 and Point(rim[1], 2)[5] == -1, 'rounded rim leaves its corner pixel out')
-    assert(rim[1].vertexColor[1] == M.BORDER_COLOR[1] and w1.fill.vertexColor[4] == 0.75, 'rim color and 75% background')
-    assert(w1.divider:IsShown() and Point(w1.divider)[5] == -21, 'divider under the header')
+    -- The border: ModeUI's standard rim (as on the unit frames' health bar) as a
+    -- rounded rectangle, its corners as deep as a bar the header's height would round.
+    local border = w1.border
+    assert(M.BORDER_COLOR == Kit.BORDER_COLOR and border.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and border.strips.TOP.height == 2, 'the standard rim, 2px')
+    assert(w1.g.corner == Kit.CapDepth(24, 1) and border.radius == 6 and Point(border.strips.TOP)[4] == 6 and border.corners.TOPLEFT.cap.width == 6, 'round corners')
+    assert(border.corners.BOTTOMRIGHT.cap.texCoord and border.corners.BOTTOMRIGHT.cap.texCoord[3] == 0.75, 'the cap art\'s own corner')
+    assert(row1.bar:GetStatusBarTexture().capMasks[border.masks.TOPLEFT] and w1.fill.capMasks[border.masks.BOTTOMRIGHT], 'content rounds with it')
+    assert(border.edge:GetFrameLevel() > w1.header:GetFrameLevel(), 'drawn above what it holds')
+    assert(Point(w1.fill)[4] == 1 and w1.fill.vertexColor[4] == 0.75, 'background 1px under the rim; 75%')
+    assert(w1.divider:IsShown() and Point(w1.divider)[5] == -22 and w1.divider.vertexColor[1] == 0, 'a black hairline under the header')
 
     -- Header buttons: 16px glyphs, 2px apart, centered in the header; the timer left of them.
     local b = w1.buttons
@@ -219,7 +225,7 @@ world.run([==[
     row1.scripts.OnClick(row1, 'LeftButton'); assert(not panel:IsShown(), 'same row again closes it')
 
     -- Always Show Me and the mouse wheel.
-    assert(M:SetOption('window1', 'rows', 1) and w1.height == 1 + 20 + 1 + 1 + 18 + 1 + 1 + 1, 'one row (an extra pixel keeps it even)')
+    assert(M:SetOption('window1', 'rows', 1) and w1.height == 2 + 20 + 1 + 1 + 18 + 1 + 2 + 1, 'one row (an extra pixel keeps it even)')
     assert(row1.name.text == '2. Fixture', 'you take the last row when ranked below it')
     assert(M:SetOption('window1', 'alwaysShowMe', false) and row1.name.text == '1. Valeria')
     assert(M:SetOption('window1', 'rows', 2))
@@ -308,13 +314,13 @@ world.run([==[
     -- Settings are checked before they're kept.
     assert(not M:SetOption('window1', 'width', 50) and M.db.window1.width == 300, 'width range')
     assert(not M:SetOption('window1', 'meterType', 'bogus') and not M:SetOption('window1', 'barTexture', 'nope'), 'known choices only')
-    assert(not M:SetOption('window1', 'borderColor', { 2, 0, 0 }), 'colors are 0-1')
+    assert(not M:SetOption('window1', 'backgroundColor', { 2, 0, 0 }), 'colors are 0-1')
+    assert(not M:SetOption('window1', 'borderSize', 3) and M.db.window1.border == nil, 'the border has no settings')
     assert(not M:SetOption('window1', 'group', 'window1'), 'not grouped with itself')
     assert(M:SetOption('window1', 'barTexture', 'flat') and row1.bar.statusBarTexture == Kit.FLAT and not row1.bar.sheen:IsShown(), 'Flat texture')
     assert(M:SetOption('window1', 'barTexture', 'mode') and row1.bar.sheen:IsShown(), 'Mode Gradient')
-    assert(M:SetOption('window1', 'border', 'none') and not rim[1]:IsShown() and not w1.divider:IsShown() and Point(row1)[4] == 1, 'no rim, no divider')
-    assert(M:SetOption('window1', 'border', 'square') and Point(rim[1], 1)[4] == 0, 'square corners')
-    assert(M:SetOption('window1', 'header', false) and not w1.header:IsShown() and Point(row1)[5] == -2, 'no header: rows start under the rim')
+    assert(M:SetOption('window1', 'header', false) and not w1.header:IsShown() and not w1.divider:IsShown() and Point(row1)[5] == -3, 'no header: rows start under the rim')
+    assert(w1.g.corner == Kit.CapDepth(18 + 4, 1), 'a row stands in for the header')
     assert(M:SetOption('window1', 'header', true) and M:SetOption('window1', 'icon', 'none') and not row1.icon:IsShown() and Point(row1.bar)[4] == 0, 'no icon: the bar fills the row')
     assert(M:SetOption('window1', 'clickThrough', true) and not row1.mouse and not w1.grip:IsShown(), 'Click Through')
     assert(M:SetOption('window1', 'clickThrough', false) and row1.mouse)
@@ -322,13 +328,13 @@ world.run([==[
     assert(M:CopyStyleToAll('window1'))
     assert(M.db.window2.width == 300 and M.db.window2.meterType == 'healingDone' and not M.db.window2.show, 'look copied, identity kept')
     -- Copy & Apply by part: Text, Window (with its header and border), Bars, All.
-    assert(M:SetOption('window1', 'nameSize', 15) and M:SetOption('window1', 'borderSize', 2) and M:SetOption('window1', 'barOpacity', 50))
+    assert(M:SetOption('window1', 'nameSize', 15) and M:SetOption('window1', 'padding', 3) and M:SetOption('window1', 'barOpacity', 50))
     local copied, count = M:CopyStyleTo('window1', { window3 = true }, 'text')
-    assert(copied and count == 1 and M.db.window3.nameSize == 15 and M.db.window3.borderSize == 1 and M.db.window3.barOpacity == 100, 'Text copies only text')
-    assert(M:CopyStyleTo('window1', { window3 = true }, 'window') and M.db.window3.borderSize == 2 and M.db.window3.barOpacity == 100, 'Window brings the border')
+    assert(copied and count == 1 and M.db.window3.nameSize == 15 and M.db.window3.padding == 1 and M.db.window3.barOpacity == 100, 'Text copies only text')
+    assert(M:CopyStyleTo('window1', { window3 = true }, 'window') and M.db.window3.padding == 3 and M.db.window3.barOpacity == 100, 'Window brings the frame')
     assert(M:CopyStyleTo('window1', { window3 = true }, 'bars') and M.db.window3.barOpacity == 50, 'Bars')
     assert(not M:CopyStyleTo('window1', { window3 = true }, 'nope'), 'known parts only')
-    assert(M:SetOption('window1', 'nameSize', 12) and M:SetOption('window1', 'borderSize', 1) and M:SetOption('window1', 'barOpacity', 100))
+    assert(M:SetOption('window1', 'nameSize', 12) and M:SetOption('window1', 'padding', 1) and M:SetOption('window1', 'barOpacity', 100))
     assert(M:CopyStyleToAll('window1', 'all') and M.db.window3.barOpacity == 100 and M.db.window3.nameSize == 12)
 
     -- Show: Always, In Combat, In a Group, Hidden.
@@ -539,7 +545,7 @@ end
 old.window3.textColor = { 1, 0, 0 }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 5 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
+    assert(M.db.version == 6 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
     assert(M.db.window3.valueColor[2] == 0 and M.db.window3.nameColor[2] == 1, 'a chosen value color stays; names are white')
     assert(M.db.window1.nameOutline and M.db.window3.valueOutline and M.db.window1.textColor == nil and M.db.window1.outline == nil, 'outlined; old keys gone')
     assert(M.db.window1.decimals == 0 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
@@ -563,7 +569,7 @@ mod.window2.nameColorMode, mod.window2.decimals = "class", 2
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
     local s = M.db.window1
-    assert(M.db.version == 5 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
+    assert(M.db.version == 6 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
     assert(s.nameOutline and s.titleOutline, 'outline on (the owner asked)')
     assert(s.nameColor[1] == 1 and s.valueColor[1] == 0.5 and s.nameColorMode == 'custom', 'pure white names; values keep the text color')
     assert(s.titleColor[3] == 0 and s.titleSize == 13, 'title kept')
@@ -579,7 +585,7 @@ three.version, three.hideBlizzard = 3, nil
 three.window2.group, three.window2.groupSide, three.window3.groupSide = "window1", "below", "below"
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 5 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
+    assert(M.db.version == 6 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
     assert(M.db.hideBlizzard == true, "Hide Blizzard's Meter on")
 ]==], "migrate v3")
 
@@ -589,9 +595,11 @@ local four = v4.profiles.Default.modules.damageMeters
 four.version = 4
 four.window1.backgroundColor = { 4 / 255, 4 / 255, 4 / 255 }
 four.window2.backgroundColor = { 1, 0, 0 }
+four.window1.border, four.window1.borderSize, four.window1.borderColor = 'rounded', 1, { 0.06, 0.06, 0.06 }
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
-    assert(M.db.version == 5 and M.db.window1.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
+    assert(M.db.version == 6 and M.db.window1.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
+    assert(M.db.window1.border == nil and M.db.window1.borderSize == nil and M.db.window1.borderColor == nil, 'the old border settings go (version 6)')
     assert(M.db.window2.backgroundColor[1] == 1, 'a picked background stays')
 ]==], "migrate v4")
 

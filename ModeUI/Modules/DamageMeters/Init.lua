@@ -26,7 +26,9 @@ addon:RegisterModule("damageMeters", M)
 -- own texture.
 -- Version 4: groups stack Above by default (the owner wanted a grouped
 -- window on top of the one it follows), and Hide Blizzard's Meter.
-M.VERSION = 5
+-- Version 6: the window takes ModeUI's standard border (owner); Border,
+-- Border Size and Border Color are retired.
+M.VERSION = 6
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows, in sidebar order, with their Edit Mode element (and saved
@@ -59,7 +61,9 @@ M.defaultPositions = {
 -- Frames' default health color, Onyx #1C1E21, as the chat and tooltips;
 -- #040404 until version 5), bars for anything without a class (#78808C). The
 -- header is an Onyx bar: the same health fill in Mode Gradient.
-M.BORDER_COLOR, M.BACKGROUND_COLOR = Kit.RGB(16, 16, 16), Copy(Kit.onyx.health)
+-- The border is ModeUI's standard border (Kit.ModeBoxBorder): locked, like
+-- the unit frames' rim, so it has no settings.
+M.BORDER_COLOR, M.BACKGROUND_COLOR = Kit.BORDER_COLOR, Copy(Kit.onyx.health)
 M.OLD_BACKGROUND_COLOR = Kit.RGB(4, 4, 4)
 M.HEADER_COLOR, M.OTHER_COLOR = Kit.onyx.health, Kit.RGB(120, 128, 140)
 M.TRACK_COLOR = Kit.onyx.track
@@ -94,7 +98,6 @@ local function Style(window)
         -- Size: the window is as tall as its rows, so it always fits them exactly.
         width = 240, rows = 8, rowHeight = 18, spacing = 1, padding = 1,
         -- Frame
-        border = "rounded", borderSize = 1, borderColor = Copy(M.BORDER_COLOR),
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 75,
         -- Header
         header = true, headerHeight = 20, headerTexture = "mode", headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
@@ -131,20 +134,20 @@ M.ownKeys = { show = true, meterType = true, session = true, rows = true, group 
 -- identity keys. Window brings its size, frame and header with it; Bars the
 -- rows' look; Text every text and number setting.
 M.copyScopes = {
-    window = { "width", "padding", "opacity", "border", "borderSize", "borderColor", "backgroundColor", "backgroundOpacity",
+    window = { "width", "padding", "opacity", "backgroundColor", "backgroundOpacity",
         "header", "headerHeight", "headerTexture", "headerColor", "headerOpacity", "titleUpper", "showSession", "showTimer", "headerButtons" },
     bars = { "rowHeight", "spacing", "barTexture", "barBackground", "barOpacity", "barBackgroundOpacity", "barColorMode",
         "barColor", "otherColor", "icon", "alwaysShowMe" },
     text = { "textInset", "showRank", "numbers", "showPercent", "decimals", "separator", "nameColorMode", "valueColorMode" },
 }
 M.copyScopeChoices = { { id = "all", label = "All" }, { id = "window", label = "Window" }, { id = "bars", label = "Bars" }, { id = "text", label = "Text" } }
-M.colorKeys = { borderColor = true, backgroundColor = true, headerColor = true, barColor = true, otherColor = true }
+M.colorKeys = { backgroundColor = true, headerColor = true, barColor = true, otherColor = true }
 -- Values for which the texture choices are checked by Kit.ValidBarTexture
 -- (true: a foreground, which may be Mode Gradient).
 M.textureKeys = { barTexture = true, barBackground = false, headerTexture = true }
 
 M.ranges = { width = { 120, 600, 1 }, rows = { 1, 40, 1 }, rowHeight = { 10, 40, 1 }, spacing = { 0, 10, 1 },
-    padding = { 0, 10, 1 }, borderSize = { 1, 4, 1 }, backgroundOpacity = { 0, 100, 5 },
+    padding = { 0, 10, 1 }, backgroundOpacity = { 0, 100, 5 },
     headerHeight = { 14, 40, 1 }, headerOpacity = { 0, 100, 5 },
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, opacity = { 10, 100, 5 },
     textInset = { 0, 20, 1 }, decimals = { 0, 3, 1 }, groupGap = { 0, 20, 1 } }
@@ -165,7 +168,6 @@ M.choices = {
     session = { { id = "current", label = "Current Fight" }, { id = "overall", label = "Overall" } },
     visibility = { { id = "always", label = "Always" }, { id = "combat", label = "In Combat" },
         { id = "group", label = "In a Group" }, { id = "hidden", label = "Hidden" } },
-    border = { { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
     barColorMode = { { id = "class", label = "Class" }, { id = "custom", label = "Custom" } },
     nameColorMode = { { id = "custom", label = "Color" }, { id = "class", label = "Class" } },
     valueColorMode = { { id = "custom", label = "Color" }, { id = "class", label = "Class" } },

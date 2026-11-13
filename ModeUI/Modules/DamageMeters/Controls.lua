@@ -98,11 +98,13 @@ function M:LayoutControls(frame, style, g, window)
     local grip, up = frame.grip, window and self.db[window].group ~= "none" and self.db[window].groupSide == "above"
     grip:ClearAllPoints()
     grip:SetSize(GLYPH * px, GLYPH * px)
+    -- Clear of the rounded corner.
+    local clear = math.max(g.border, math.floor(g.corner / 2 / px + 0.5) * px)
     if up then
-        grip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -(g.border + g.header + g.divider))
+        grip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -clear, -(g.border + g.header + g.divider))
         grip.icon:SetTexCoord(0, 1, 1, 0)
     else
-        grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -g.border, g.border)
+        grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -clear, clear)
         grip.icon:SetTexCoord(0, 1, 0, 1)
     end
     grip.up = up

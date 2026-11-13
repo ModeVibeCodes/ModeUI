@@ -144,13 +144,13 @@ the pixel grid. From the outside in:
 
 | Part | Default | Setting |
 |---|---|---|
-| Rim | 1px, Rounded, #101010 | Frame › Border, Border Size (screen pixels), Border Color |
+| Border | ModeUI's standard border, as on the unit frames' health bar: one crisp 2px rim in Onyx #40454C (`Kit.BORDER_COLOR`), round corners as deep as a bar the header's height would round (6px by default), above what the window holds | none: the border is locked, like the unit frames' rim |
 | Background | the Unit Frames' default health color (Onyx #1C1E21) at 75% (#040404 until settings version 5, which moves a background still at it) | Frame › Background Color, Background Opacity |
 | Header | 20px Onyx bar: Mode Gradient in the Unit Frames health color (#1C1E21) | Header › Texture, Height, Header Color, Header Opacity |
 | Title | 11, uppercase, Mode cyan, outlined | Text › Title; Header › Uppercase Title |
 | Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
 | Timer | 11, #B9B9B9, outlined, left of the buttons | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
-| Divider | 1px in the rim color | shown when there is a header and a rim |
+| Hairline | 1px black under the header, like a unit frame's between health and power | shown with the header |
 | Padding | 1px | Window › Padding |
 | Rows | 8 rows, 18 high, 1 apart, 240 wide | Window › Width, Rows, Row Height, Spacing |
 | Icon | square class icon, 1px gap | Bars › Icon |
@@ -162,8 +162,21 @@ Each text (Name, Value, Title, Timer) has its own font, size, outline, shadow,
 slug and color (`nameFont`, `valueOutline`, `timerColor`...). Names and values
 can take the class color instead (Class Colors' custom colors apply). Text is
 outlined and names are pure white by default, so they read on any bar color.
-The owner found gray text hard to read on a bright rogue-yellow bar. Rounded
-leaves out each corner's outermost pixel (`Kit.Rim`/`Kit.PlaceRim`, shared).
+The owner found gray text hard to read on a bright rogue-yellow bar.
+
+The border (owner, November 13, 2026: "the new standard border... refer to
+unit frames health bar border") is `Kit.ModeBoxBorder` (`Shared/Kit/Border.lua`),
+the standard border's rounded-rectangle form for boxes taller than a bar.
+`Kit.ModeBorder`'s rounded ends are a quarter of the box's height deep, which
+suits a bar but would turn a 180px window's sides into ovals. So the box form
+keeps the same rim and color and rounds only the corners, with the same art:
+the top and bottom quarters of the cap textures are quarter circles. Its
+corners are as deep as `Kit.CapDepth` makes a bar of the header's height plus
+the rim (a row's height without a header), so the header rounds exactly like
+a bar. Like the unit frames, the background reaches 1px under the rim, and
+the corner masks round the background, header and rows that reach a corner.
+The resize grip sits clear of the corner. The spell breakdown and the
+settings preview use the same shell, so they get the same border.
 **Other Color** (#78808C) is for anything without a class, like pets and
 creatures.
 
@@ -255,8 +268,7 @@ and names each window with its meter ("Window 1 - DPS"). Six tabs:
 - **Header:** Show Header; Texture, Height, Header Color, Header Opacity;
   Uppercase Title, Show Fight, Show Timer, Header Buttons, and buttons that open
   the Title and Timer text settings.
-- **Frame:** Border, Border Size, Border Color, Background Color, Background
-  Opacity.
+- **Frame:** Background Color, Background Opacity (the border is locked).
 - **Copy & Apply:** Copy From (the window in Editing), **Copy** (All, Window,
   Bars, Text), Apply To (tick windows), **Apply to Selected**, **Apply to All
   Windows**, Reset to Defaults.
@@ -266,7 +278,7 @@ Copy & Apply copies by part (`M.copyScopes`):
   matching (Show Window, Meter, Fight, Show, Group With, Side, Gap, Match Width
   and Match Height).
 - **Window:** the window with its header and border: Width, Padding, Opacity,
-  Border, Border Size, Border Color, Background Color, Background Opacity, and
+  Background Color, Background Opacity, and
   the header's Show Header, Texture, Height, Color, Opacity, Uppercase Title,
   Show Fight, Show Timer and Header Buttons.
 - **Bars:** Row Height, Spacing, Foreground, Background, both opacities, Bar
@@ -282,7 +294,7 @@ the group shares its settings with.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.damageMeters`, version 4: `window1`, `window2` and
+`ModeUIDB` profile `modules.damageMeters`, version 6: `window1`, `window2` and
 `window3`, each a full style table (`Init.lua`'s `Style`), and `hideBlizzard`
 (Hide Blizzard's Meter, for the whole module). Each window also has
 `matchWidth` (on) and `matchHeight` (off), Edit Mode's Match Width and Match
@@ -307,6 +319,11 @@ Version 3 → 4: groups stack Above by default. The owner grouped Window 2 with
 Window 1, it went below and off the screen, and they asked for the top. Every
 window still on version 3's default (Below) turns Above. Hide Blizzard's Meter
 takes its default (on).
+
+Version 4 → 5: a background still at #040404 takes the Unit Frames' health color.
+
+Version 5 → 6: the window takes ModeUI's standard border, which has no
+settings, so `border`, `borderSize` and `borderColor` are removed.
 
 ## Files
 
@@ -425,11 +442,15 @@ concatenation or measurement, and the stub refuses secret arguments.
 8. **Pixel check**
    - **Navigation:** **Global** › **Optimizations**, UI Scale Pixel Perfect (or
      the game's own scale).
-   - **Action:** look at a window's rim, divider and bar edges up close.
+   - **Action:** look at a window's border, the hairline under the header and
+     the bar edges up close, next to the Player frame's health bar.
    - **Required state:** any.
    - **Confirmation:**
-     - The 1px rim and divider are one crisp pixel, never blurred or doubled.
-     - Rounded corners miss exactly one pixel.
+     - The border is the same 2px Onyx rim as the health bar's, crisp, never
+       blurred or doubled, and the hairline is one black pixel.
+     - The corners are round and even, with no gap or seam between the rim and
+       the background, header or bars inside it.
+     - The resize grip sits inside the bottom-right corner's curve.
 9. **Anchor To**
    - **Navigation:** **Edit Mode** in the settings window header.
    - **Action:**

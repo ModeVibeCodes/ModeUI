@@ -46,7 +46,8 @@ function M:BuildShell(parent, name)
     frame:SetSize(240, 160)
     frame.fill = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
     frame.fill:SetTexture(FLAT)
-    frame.rim = Kit.Rim(frame, "BORDER")
+    -- ModeUI's border, as a rounded rectangle; it rounds what the window holds.
+    frame.border = Kit.ModeBoxBorder(frame)
     local header = CreateFrame("Button", nil, frame)
     header:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     -- The header strip is a full bar, so it takes the same textures as the rows.
@@ -59,6 +60,7 @@ function M:BuildShell(parent, name)
     frame.divider = frame:CreateTexture(nil, "BORDER")
     frame.divider:SetTexture(FLAT)
     frame.header = header
+    Kit.MaskToBoxBorder(frame.border, { frame.fill, header.bar:GetStatusBarTexture(), header.bar.sheen, frame.divider })
     frame.empty = Kit.Text(frame)
     frame.empty:SetWordWrap(true)
     frame.rows = {}
@@ -125,6 +127,8 @@ function M:PaintRow(row, frame, style, g, index)
     Kit.BarForeground(row.bar, style.barTexture, g.rowH, g.px)
     Kit.BarBackground(row.bar, style.barBackground)
     Kit.Tint(row.bar.bg, self.TRACK_COLOR, style.barBackgroundOpacity / 100)
+    -- Rows near a corner round with the border.
+    Kit.MaskToBoxBorder(frame.border, { row.bar:GetStatusBarTexture(), row.bar.bg, row.bar.sheen, row.icon, row.iconBg })
     local name, value = row.name, row.value
     value:ClearAllPoints(); value:SetPoint("RIGHT", row.bar, "RIGHT", -g.inset, 0); value:SetJustifyH("RIGHT")
     name:ClearAllPoints(); name:SetPoint("LEFT", row.bar, "LEFT", g.inset, 0)
@@ -140,9 +144,10 @@ function M:PaintShell(frame, style, rows)
     local g = self.Geometry(style, px, rows)
     frame.g, frame.style = g, style
     frame:SetSize(g.width, g.height)
-    Kit.Inset(frame.fill, frame, g.border)
+    -- The background reaches 1px under the rim, so no seam shows at its edge.
+    Kit.Inset(frame.fill, frame, math.max(0, g.border - px))
     Kit.Tint(frame.fill, style.backgroundColor, style.backgroundOpacity / 100)
-    Kit.PlaceRim(frame.rim, frame, g.border, g.cut, style.borderColor)
+    Kit.LayoutModeBoxBorder(frame.border, frame, { px = px, radius = g.corner, level = frame:GetFrameLevel() + 8 })
     local header = frame.header
     header:SetShown(style.header)
     header:ClearAllPoints()
@@ -158,7 +163,8 @@ function M:PaintShell(frame, style, rows)
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -(g.border + g.header))
     divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -(g.border + g.header))
     divider:SetHeight(px)
-    Kit.Tint(divider, style.borderColor, 1)
+    -- A black hairline, like the one between a unit frame's health and power.
+    Kit.Tint(divider, Kit.onyx.inner, 1)
     divider:SetShown(g.divider > 0)
     local title, info = header.title, header.info
     info:ClearAllPoints(); info:SetPoint("RIGHT", header, "RIGHT", -g.inset, 0); info:SetJustifyH("RIGHT")

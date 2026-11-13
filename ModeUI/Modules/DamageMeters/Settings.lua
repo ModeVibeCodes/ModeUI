@@ -268,17 +268,11 @@ function M:CreateConfigPage(parent)
     end)
 
     Tab("Frame", function()
-        page:Group(L["Border"])
-        page.borderPills = Choice("Border", "border", 96); Mark("frame")
-        local function Bordered() return db().border ~= "none" end
-        local border = Columns({ "Border Size", "Border Color" })
-        page.borderSizeSlider = Slider(border[1], "borderSize", "px")
-        Color(border[2], "borderColor", Bordered)
         page:Group(L["Background"])
-        local background = Columns({ "Background Color", "Background Opacity" })
+        local background = Columns({ "Background Color", "Background Opacity" }); Mark("frame")
         Color(background[1], "backgroundColor")
         page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
-        Note("Border Size is in screen pixels. Rounded leaves out each corner's outer pixel. The header divider uses the border color.", 32)
+        Note("The border is ModeUI's standard border, as on the unit frames: a crisp 2px Onyx rim with rounded corners, so it has no settings. A black hairline sits under the header.", 32)
     end)
 
     -- Copy & Apply: the window in Editing is the source. Pick what to copy
