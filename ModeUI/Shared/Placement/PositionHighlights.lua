@@ -1,6 +1,6 @@
 local _, addon = ...
 local PM = addon.PositionManager
-local function Combat() return InCombatLockdown() or UnitAffectingCombat("player") end
+local Combat = addon.InCombat
 
 -- Decoration is attached to actual owned bounds, including module icon/layout bounds.
 -- Only the visible handle intercepts input; no invisible full-frame input overlay.

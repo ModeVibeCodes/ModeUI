@@ -80,6 +80,7 @@ replace checking things in game.
 
 ```
 lua tests/structure.lua
+lua tests/runtime.lua
 lua tests/smoke.lua
 lua tests/unit_frames.lua
 lua tests/global.lua
@@ -93,7 +94,7 @@ lua tests/global.lua
 > `Modules/<Name>.lua` files, so start new modules after phase 3. The steps below
 > describe how Unit Frames is wired today.
 
-1. Register its category in `Shared/Runtime/Categories.lua` if it needs a new one, for example
+1. Register its category in `Shared/Runtime/Lifecycle.lua` if it needs a new one, for example
    `addon:RegisterCategory("nameplates", { title = "Nameplates" })`.
 2. Add `Modules/<Name>.lua` that calls `addon:RegisterModule(id, module)` with
    `category = "<category id>"`. Add a settings page in `Config/<Name>.lua` via

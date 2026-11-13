@@ -1,12 +1,25 @@
 local addonName, addon = ...
 
--- Generated packages load this first. The source Retail TOC remains the baseline.
--- Identification is deliberately independent of feature/capability detection.
+-- The first Shared file: client identification and the secret-safe value
+-- checks every other file uses. Identification is deliberately independent of
+-- feature/capability detection.
+
+-- Unit and UI values can be secret on Forever. A secret value may only be
+-- passed to widgets documented as accepting one, never compared or inspected.
+function addon.IsPublic(value) return not (issecretvalue and issecretvalue(value)) end
+local Public = addon.IsPublic
+
+-- A finite, public number, optionally inside [low, high].
+function addon.IsNumber(value, low, high)
+    if not Public(value) or type(value) ~= "number" or value ~= value or math.abs(value) == math.huge then return false end
+    return (low == nil or value >= low) and (high == nil or value <= high)
+end
+
+-- Combat as the restrictions see it: lockdown, or the player already fighting.
+function addon.InCombat() return InCombatLockdown() or UnitAffectingCombat("player") end
+
 local E = {}
 addon.Edition = E
-local function Public(value)
-    return not (issecretvalue and issecretvalue(value))
-end
 local ok, name = false, nil
 if C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function" then
     ok, name = pcall(C_AddOns.GetAddOnMetadata, addonName, "X-ModeUI-Edition")

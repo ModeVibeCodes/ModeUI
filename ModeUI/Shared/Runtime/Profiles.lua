@@ -13,7 +13,7 @@ P.EXPORT_FORMAT = "ModeUI"
 P.EXPORT_VERSION = 1
 
 function P:Name(name)
-    if type(name) ~= "string" or (issecretvalue and issecretvalue(name)) then return end
+    if type(name) ~= "string" or not addon.IsPublic(name) then return end
     name = name:match("^%s*(.-)%s*$")
     if #name < 1 or #name > 48 or name:find("[%z\1-\31\127|]") then return end
     return name

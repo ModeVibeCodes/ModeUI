@@ -41,7 +41,7 @@ function M:GetStatusBars()
     return choices
 end
 function M:RefreshStatusBars()
-    if InCombatLockdown() or UnitAffectingCombat("player") then self.statusbarPending=true; self.pending=true; return end
+    if addon.InCombat() then self.statusbarPending=true; self:RefreshAfterCombat(); return end
     self.statusbarPending=false; self.statusbarRevision=self.statusbarRevision+1
     for owner,callback in pairs(self.statusbarListeners) do callback(owner) end
 end
@@ -150,7 +150,7 @@ function M:GetBorders()
 end
 
 function M:RefreshBorders()
-    if InCombatLockdown() or UnitAffectingCombat("player") then self.borderPending = true; self.pending = true; return end
+    if addon.InCombat() then self.borderPending = true; self:RefreshAfterCombat(); return end
     self.borderPending = false
     self.borderRevision = self.borderRevision + 1
     for owner, callback in pairs(self.borderListeners) do callback(owner) end
@@ -169,8 +169,13 @@ function M:GetInterfaceFont(fallbackPath, scope, weight)
     return self:GetFont("Expressway") or fallbackPath or GameFontHighlight:GetFont()
 end
 
-local function InCombat()
-    return InCombatLockdown() or UnitAffectingCombat("player")
+local InCombat = addon.InCombat
+
+-- Media changes during combat wait for one refresh after combat: RefreshFonts
+-- also catches up the border, status bar and sound listeners that were skipped.
+function M:RefreshAfterCombat()
+    self.pending = true
+    addon.Defer:Queue("media", function() M:RefreshFonts() end)
 end
 
 function M:AttachLibrary()
@@ -283,7 +288,7 @@ end
 
 function M:RefreshFonts()
     self:AttachLibrary()
-    if InCombat() then self.pending = true; return end
+    if InCombat() then self:RefreshAfterCombat(); return end
     self.pending = false
     for region, spec in pairs(self.regions) do self:ApplyInterfaceFont(region, spec) end
     for owner, callback in pairs(self.fontListeners) do callback(owner) end
@@ -301,16 +306,15 @@ function M:OnMediaRegistered(_, mediaType, name)
 end
 
 function M:Initialize()
-    if self.events then return end
-    local events = CreateFrame("Frame")
-    events:RegisterEvent("ADDON_LOADED")
-    events:SetScript("OnEvent", function()
+    if self.started then return end
+    self.started = true
+    -- Another addon may bring fonts, textures or a LibSharedMedia copy with it.
+    addon.Events:On(self, "ADDON_LOADED", function()
         if self:AttachLibrary() then self:RefreshFonts(); self:RefreshBorders(); self:RefreshStatusBars(); self:RefreshSounds() end
         self:RegisterProviderFonts()
         self:DiscoverMedia()
         if addon.Positioning then addon.Positioning:Discover() end
     end)
-    self.events = events
     self:RefreshFonts()
     self:RefreshBorders()
     self:RefreshStatusBars()
@@ -335,7 +339,7 @@ function M:GetSounds()
 end
 function M:RegisterSoundListener(owner,callback) self.soundListeners[owner]=callback end
 function M:RefreshSounds()
-    if InCombat() then self.soundPending=true;self.pending=true;return end
+    if InCombat() then self.soundPending=true;self:RefreshAfterCombat();return end
     self.soundPending=false
     for owner,callback in pairs(self.soundListeners) do callback(owner) end
 end

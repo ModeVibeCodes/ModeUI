@@ -17,8 +17,8 @@
   `Driver.lua`. Code two modules need belongs in `Shared/`; modules never use each
   other's files. Files stay under 400 lines. Settings pages are built only when opened.
 - Keep `ModeUI/ModeUI.toc` load order correct. No placeholder functionality.
-- Run `lua tests/structure.lua`, `lua tests/smoke.lua`, `lua tests/unit_frames.lua` and
-  `lua tests/global.lua`. Do not claim native testing without the user's in-game confirmation.
+- Run `lua tests/structure.lua`, `lua tests/runtime.lua`, `lua tests/smoke.lua`,
+  `lua tests/unit_frames.lua` and `lua tests/global.lua`. Do not claim native testing without the user's in-game confirmation.
 - Manual checks must state Navigation, Action, Required state and Confirmation,
   using the actual control labels. Do not invent UI paths.
 - Releases, pushes and collaborator invitations need the user's authorization.

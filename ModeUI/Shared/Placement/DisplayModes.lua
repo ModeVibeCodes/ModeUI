@@ -16,7 +16,7 @@ function addon:RefreshDisplayModes()
 end
 
 local function CanEnterMode(enabled)
-    if enabled and (InCombatLockdown() or UnitAffectingCombat("player")) then
+    if enabled and addon.InCombat() then
         print("ModeUI: Preview and Edit Mode are available outside combat.")
         return false
     end
@@ -66,30 +66,22 @@ function addon:ResetDisplayModes()
 end
 
 function addon:InitializeDisplayModes()
-    if self.displayModeEvents then return end
-    local events = CreateFrame("Frame")
-    events:RegisterEvent("PLAYER_REGEN_DISABLED")
-    events:RegisterEvent("PLAYER_REGEN_ENABLED")
-    events:SetScript("OnEvent", function(_, event)
-        if event == "PLAYER_REGEN_DISABLED" then
-            if self.FrameAnchors then self.FrameAnchors:Stop() end
-            if self.PreviewStates then self.PreviewStates:StopAll() end
-            self:ResetDisplayModes()
-            if self.FinishWindowInteraction then self:FinishWindowInteraction() end
-            if self.CloseTimerColorPicker then self:CloseTimerColorPicker() end
-            if self.CloseFontDropdown then self:CloseFontDropdown() end
-            if self.CloseModulePreview then self:CloseModulePreview() end
-        else
-            if self.Positioning then self.Positioning:Refresh() end
-            if self.configWindow and self.configWindow.boundsPending then self:UpdateWindowBounds() end
-            if self.Media and self.Media.pending then self.Media:RefreshFonts() end
-            if self.Media and self.Media.borderPending then self.Media:RefreshBorders() end
-            if self.searchPending and self.configWindow and self.configWindow:IsShown() then self:RefreshSettingsSearch() end
-        end
-        for _, id in ipairs(self.moduleOrder) do
-            local module = self.modules[id]
-            if module.enabled and module.OnCombatStateChanged then module:OnCombatStateChanged(event == "PLAYER_REGEN_DISABLED") end
-        end
+    if self.displayModesStarted then return end
+    self.displayModesStarted = true
+    -- Combat closes every editing surface; refreshes that waited for the end of
+    -- combat run from addon.Defer, which empties its queue before this handler.
+    self.Events:On(self, "PLAYER_REGEN_DISABLED", function()
+        if self.FrameAnchors then self.FrameAnchors:Stop() end
+        if self.PreviewStates then self.PreviewStates:StopAll() end
+        self:ResetDisplayModes()
+        if self.FinishWindowInteraction then self:FinishWindowInteraction() end
+        if self.CloseTimerColorPicker then self:CloseTimerColorPicker() end
+        if self.CloseFontDropdown then self:CloseFontDropdown() end
+        if self.CloseModulePreview then self:CloseModulePreview() end
+        self:BroadcastCombatState(true)
     end)
-    self.displayModeEvents = events
+    self.Events:On(self, "PLAYER_REGEN_ENABLED", function()
+        if self.Positioning then self.Positioning:Refresh() end
+        self:BroadcastCombatState(false)
+    end)
 end

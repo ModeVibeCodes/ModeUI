@@ -5,9 +5,8 @@ document: add to it when a new idea or module changes the shape of things.
 `tests/structure.lua` enforces the parts that can be checked mechanically.
 
 > **Status (November 12, 2026):** the target layout below is being adopted in
-> phases (see [Restructure phases](#restructure-phases)). The shared code now
-> lives in `Libs/` and `Shared/` under its pre-restructure file names (for example
-> `Shared/Runtime/Database.lua`, which becomes `DB.lua` in phase 3). Until
+> phases (see [Restructure phases](#restructure-phases)). The shared code lives in
+> `Libs/` and `Shared/`, and the Runtime services below are in place. Until
 > phase 5, the modules (Unit Frames, Profiles, Optimizations, Class Colors) are
 > still flat `Modules/*.lua` files with their pages in `Config/`, listed as legacy
 > in `tests/structure.lua`. New code goes in the new layout only.
@@ -158,28 +157,44 @@ folder. We keep the settings inside the module and build pages lazily.
 
 ## Runtime services
 
-| Service | Job | Today |
+All in `Shared/Runtime/`, loaded in this order:
+
+| File | Job | API |
 |---|---|---|
-| Core | addon table, edition gate, version, `Public`/`Number` secret-safe checks | `Shared/Runtime/Edition.lua`, `Shared/Runtime/Boot.lua`; the checks are copied into several files |
-| DB | defaults, schema check, never reset, call module migrations, one-time PTG import | `Shared/Runtime/Database.lua` |
-| Lifecycle | register modules, initialize, enable/disable, broadcast combat | `Shared/Runtime/Modules.lua`, `Shared/Placement/DisplayModes.lua` |
-| Events | one frame for game events; modules subscribe and unsubscribe by owner | each module makes its own frames |
-| Callbacks | internal messages such as media or profile changes | missing |
-| Defer | `Defer:Run(key, fn)` runs now out of combat, otherwise queues it; the latest call per key wins; the queue empties on `PLAYER_REGEN_ENABLED` | separate `pending` flags in `Shared/Placement/DisplayModes.lua` |
-| Locale | `L["Text"]` returns the English text until a translation is registered | missing |
-| Boot | the startup sequence on `ADDON_LOADED`, then the slash command | `Shared/Runtime/Boot.lua` |
-| Profiles | account-wide named profiles of the module, position and media settings; import and export | `Shared/Runtime/Profiles.lua` |
+| `Core.lua` | edition gate and the secret-safe checks every file shares | `addon.IsPublic(v)`, `addon.IsNumber(v, low, high)`, `addon.InCombat()`, `addon.Edition:CheckClient()` |
+| `Locale.lua` | user-facing text | `addon.L["English text"]`, `addon:RegisterLocale("deDE", strings)` |
+| `Events.lua` | one frame for game events | `addon.Events:On(owner, event, handler)`, `:Off(owner, event)`, `:OffAll(owner)`, `:IsOn(owner, event)`; handlers get `(event, ...)` |
+| `Callbacks.lua` | messages between modules and services | `addon.RegisterMessage(owner, message, fn)`, `addon.UnregisterMessage(owner, message)`, `addon:SendMessage(message, ...)`; names in `addon.Messages` |
+| `Defer.lua` | work that must wait for the end of combat | `addon.Defer:Run(key, fn)` (now, or queued in combat), `:Queue(key, fn)`, `:Cancel(key)`, `:IsQueued(key)`; the latest task per key wins and the queue runs on `PLAYER_REGEN_ENABLED` |
+| `Feedback.lua` | chat output, throttled and never from restricted code | `addon:PrintAction(message, key)` |
+| `ProfileCodec.lua` | bounded copy, export and import of settings tables | `addon.ProfileCodec.Copy(value)` and friends |
+| `DB.lua` | `ModeUIDB`: defaults, schema check and migration, never reset; each module's `Initialize(db)` validates its own settings; one-time PTG import | `addon:InitializeDatabase()`, `addon.Database` |
+| `Profiles.lua` | account-wide named profiles; switching applies on reload | `addon.Profiles` |
+| `Reload.lua` | reload requests and the reasons shown to the user | `addon.ReloadManager:Request(key, reason)`, `:Clear(key)`, `:Reload()` |
+| `Lifecycle.lua` | categories and the module registry; enable/disable; combat broadcast | `addon:RegisterCategory(id, def)`, `addon:RegisterModule(id, module)`, `addon:SetModuleEnabled(id, on)`, `addon:BroadcastCombatState(inCombat)` |
+| `Boot.lua` | the startup sequence on `ADDON_LOADED`, then `/modeui`; always the last file | |
 
-Notes for building them:
+Messages in use (`addon.Messages`):
 
-- **Callbacks** uses the bundled CallbackHandler-1.0. Its
-  `CallbackHandler:New(target, "RegisterMessage", "UnregisterMessage", "UnregisterAllMessages")`
-  returns a registry with `:Fire(message, ...)`.
+| Name | Arguments | Sent when |
+|---|---|---|
+| `MODULE_TOGGLED` | `id, enabled` | a module was switched on or off; Edit Mode and the settings window refresh |
+| `CLASS_COLORS_CHANGED` | | Class Colors changed; class-colored modules redraw |
+
+Notes:
+
 - **Events:** a frame's `RegisterUnitEvent` filters to at most two units. Events
-  that filter by unit get a frame per owner. Plain events share the one frame.
+  that filter by unit stay on a frame owned by the code that needs them. Plain
+  events share the one frame.
+- **Callbacks:** handler order isn't guaranteed, so a listener must not depend
+  on another listener having run.
+- **Defer:** combat runs from `PLAYER_REGEN_DISABLED` to `PLAYER_REGEN_ENABLED`.
+  The queue runs before the Placement refresh and before modules hear
+  `OnCombatStateChanged(false)`.
 - **Locale:** keys are the English strings, so a missing translation shows
   English. Saved settings store IDs (`"sky"`, `"left"`), never labels, so a
-  language change never affects saved data.
+  language change never affects saved data. Translations go in
+  `Shared/Locale/<code>.lua`, loaded after `Shared/Runtime/Locale.lua`.
 
 ## Rules every module follows
 
@@ -247,7 +262,7 @@ change to behavior, looks or saved data.
 |---|---|---|
 | 1 | This document, AGENTS.md rules, `tests/structure.lua`, XML support in the harness | done |
 | 2 | Move files into `Libs/` and `Shared/*` with `git mv`; no code edits. The libraries now load before `Edition.lua` | done |
-| 3 | Runtime: `Core.lua` (from `Edition.lua` and the copied secret checks), `DB.lua`, `Reload.lua`, `Lifecycle.lua` (from `Modules.lua`, `Categories.lua` and the combat broadcast in `DisplayModes.lua`); add Events, Defer, Callbacks, Locale | planned |
+| 3 | Runtime: `Core.lua` (from `Edition.lua` and the copied secret checks), `DB.lua`, `Reload.lua`, `Lifecycle.lua` (from `Modules.lua`, `Categories.lua` and the combat broadcast in `DisplayModes.lua`); add Events, Defer, Callbacks, Locale | done |
 | 4 | Domain and Kit: unit readers and frame builders out of `UnitFramesDisplay.lua` | planned |
 | 5 | Module folders: `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings), then `Profiles/`, `Optimizations/` and `ClassColors/` (Init, Driver, Settings) | planned |
 | 6 | Split `Widgets.lua` and `Window.lua` into `Shared/Settings/Widgets/`; modules register their own page layout | planned |

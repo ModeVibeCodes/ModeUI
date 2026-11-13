@@ -18,9 +18,9 @@ M.scaleModes = { auto = true, custom = true }
 -- UIParent directly, as Blizzard's pixel-perfect scale does.
 M.CVAR_SCALE_FLOOR = 0.65
 
-local function Public(v) return not (issecretvalue and issecretvalue(v)) end
+local Public = addon.IsPublic
 local function Number(v, low, high) return Public(v) and type(v) == "number" and v == v and v >= low and v <= high end
-local function Combat() return InCombatLockdown() or UnitAffectingCombat("player") end
+local Combat = addon.InCombat
 local function Read(fn, ...)
     if type(fn) ~= "function" then return end
     local results = { pcall(fn, ...) }

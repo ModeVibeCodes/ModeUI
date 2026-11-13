@@ -1,7 +1,7 @@
 local _,addon=...
 local C={limit=262144,nodes=20000,depth=20}
 addon.ProfileCodec=C
-local function Plain(v) return not (issecretvalue and issecretvalue(v)) end
+local Plain = addon.IsPublic
 local function Number(v) return Plain(v) and type(v)=="number" and v==v and math.abs(v)<math.huge end
 C.Number=Number
 -- Bounded primitive tree: no metatables, references, code or runtime objects.

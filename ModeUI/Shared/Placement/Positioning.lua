@@ -23,10 +23,8 @@ local vectors = { CENTER = {0, 0}, TOP = {0, 0.5}, BOTTOM = {0, -0.5}, LEFT = {-
 vectors.TOPLEFT,vectors.TOPRIGHT,vectors.BOTTOMLEFT,vectors.BOTTOMRIGHT={-0.5,0.5},{0.5,0.5},{-0.5,-0.5},{0.5,-0.5}
 P.points = {"TOPLEFT","TOP","TOPRIGHT","LEFT","CENTER","RIGHT","BOTTOMLEFT","BOTTOM","BOTTOMRIGHT"}
 P.vectors = vectors
-local function Combat() return InCombatLockdown() or UnitAffectingCombat("player") end
-local function Plain(value)
-    return not (issecretvalue and issecretvalue(value))
-end
+local Combat = addon.InCombat
+local Plain = addon.IsPublic
 local function Number(value)
     return Plain(value) and type(value) == "number" and value == value and math.abs(value) < math.huge
 end

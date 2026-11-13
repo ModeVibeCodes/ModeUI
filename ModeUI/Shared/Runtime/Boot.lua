@@ -7,18 +7,16 @@ function addon:BuildIdentification()
     if C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function" then
         ok, version = pcall(C_AddOns.GetAddOnMetadata, addonName, "Version")
     end
-    if not ok or (issecretvalue and issecretvalue(version)) or type(version) ~= "string" or version == "" then version = "unknown" end
+    if not ok or not addon.IsPublic(version) or type(version) ~= "string" or version == "" then version = "unknown" end
     self.buildVersion = version:sub(1, 48)
     return "v" .. self.buildVersion .. " | " .. self.developmentPhase .. " | /modeui"
 end
 
-local events = CreateFrame("Frame")
-events:RegisterEvent("ADDON_LOADED")
-events:SetScript("OnEvent", function(self, _, loadedName)
+addon.Events:On(addon, "ADDON_LOADED", function(_, loadedName)
     if loadedName ~= addonName or addon.initialized then
         return
     end
-    self:UnregisterEvent("ADDON_LOADED")
+    addon.Events:Off(addon, "ADDON_LOADED")
     if addon.Edition and not addon.Edition:CheckClient() then return end
     addon.Media:AttachLibrary()
     addon:InitializeDatabase()

@@ -1,7 +1,24 @@
 local _, addon = ...
+local L = addon.L
 
-addon.modules = {}
-addon.moduleOrder = {}
+-- The module registry. Modules register from their Init.lua before startup;
+-- at startup each one is initialized with its saved settings and then enabled
+-- or left off. Runtime never names a specific module.
+addon.categories, addon.categoryOrder = {}, {}
+addon.modules, addon.moduleOrder = {}, {}
+
+-- Categories organize modules in the sidebar; they have no enable state or lifecycle.
+function addon:RegisterCategory(id, definition)
+    assert(not self.initialized, "ModeUI: register categories before initialization.")
+    assert(type(id) == "string" and id ~= "" and not self.categories[id], "ModeUI: unique category ID required.")
+    assert(not self.modules[id], "ModeUI: category/module IDs must be distinct.")
+    assert(type(definition) == "table" and type(definition.title) == "string", "ModeUI: category title required.")
+    self.categories[id] = { id = id, title = definition.title, modules = {} }
+    self.categoryOrder[#self.categoryOrder + 1] = id
+end
+
+addon:RegisterCategory("interface", { title = L["Interface"] })
+addon:RegisterCategory("global", { title = L["Global"] })
 
 function addon:RegisterModule(id, module)
     assert(not self.initialized, "ModeUI: register modules before initialization.")
@@ -21,20 +38,11 @@ function addon:RegisterModule(id, module)
 end
 
 local function Transition(module, enabled)
-    if module.planned then module.enabled=false;return end
-    if module.alwaysOn then enabled=true end
-    if module.enabled == enabled then
-        return
-    end
-    local callback
-    if enabled then
-        callback = module.OnEnable
-    else
-        callback = module.OnDisable
-    end
-    if callback then
-        callback(module)
-    end
+    if module.planned then module.enabled = false; return end
+    if module.alwaysOn then enabled = true end
+    if module.enabled == enabled then return end
+    local callback = enabled and module.OnEnable or module.OnDisable
+    if callback then callback(module) end
     module.enabled = enabled
     if not enabled and addon.PreviewStates then addon.PreviewStates:Stop(module.id) end
 end
@@ -48,14 +56,10 @@ function addon:InitializeModules()
             self.db.modules[id] = settings
         end
         assert(type(settings) == "table", "ModeUI: invalid settings for " .. id)
-        if settings.enabled == nil then
-            settings.enabled = module.defaultEnabled ~= false
-        end
+        if settings.enabled == nil then settings.enabled = module.defaultEnabled ~= false end
         assert(type(settings.enabled) == "boolean", "ModeUI: invalid enabled setting for " .. id)
         module.db = settings
-        if module.OnInitialize then
-            module:OnInitialize()
-        end
+        if module.OnInitialize then module:OnInitialize() end
         Transition(module, settings.enabled)
         if self.SyncModuleDisplayModes then self:SyncModuleDisplayModes(module) end
     end
@@ -69,6 +73,13 @@ function addon:SetModuleEnabled(id, enabled)
     Transition(module, enabled)
     module.db.enabled = enabled
     if self.SyncModuleDisplayModes then self:SyncModuleDisplayModes(module) end
-    if self.EditMode then self.EditMode:RefreshElements() end
-    if self.RefreshConfig then self:RefreshConfig() end
+    self:SendMessage(self.Messages.MODULE_TOGGLED, id, enabled)
+end
+
+-- Every enabled module hears when combat starts and ends.
+function addon:BroadcastCombatState(inCombat)
+    for _, id in ipairs(self.moduleOrder) do
+        local module = self.modules[id]
+        if module.enabled and module.OnCombatStateChanged then module:OnCombatStateChanged(inCombat) end
+    end
 end

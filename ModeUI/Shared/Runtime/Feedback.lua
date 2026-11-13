@@ -1,7 +1,7 @@
 local _,addon=...
 local F={last={}}
 addon.Feedback=F
-local function Plain(v) return not (issecretvalue and issecretvalue(v)) end
+local Plain = addon.IsPublic
 -- Routine output is never deferred out of a restricted callback.
 function F:Allowed(allowCombat)
     local ok,allowed=pcall(function()

@@ -19,7 +19,7 @@ local FALLBACK = { WARRIOR = { .78, .61, .43 }, PALADIN = { .96, .55, .73 }, HUN
     ROGUE = { 1, .96, .41 }, PRIEST = { 1, 1, 1 }, SHAMAN = { 0, .44, .87 }, MAGE = { .25, .78, .92 },
     WARLOCK = { .53, .53, .93 }, DRUID = { 1, .49, .04 } }
 
-local function Public(v) return not (issecretvalue and issecretvalue(v)) end
+local Public = addon.IsPublic
 local function Number(v, low, high) return Public(v) and type(v) == "number" and v == v and v >= low and v <= high end
 
 function M.Initialize(db)
@@ -94,9 +94,6 @@ end
 -- so this is safe in combat too.
 function M:Changed()
     if not addon.initialized then return end
-    for _, id in ipairs(addon.moduleOrder) do
-        local module = addon.modules[id]
-        if module ~= self and module.OnClassColorsChanged then pcall(module.OnClassColorsChanged, module) end
-    end
+    addon:SendMessage(addon.Messages.CLASS_COLORS_CHANGED)
     if self.page then self.page:Refresh() end
 end

@@ -3,8 +3,8 @@ local PM = { elements = {}, order = {}, frames = setmetatable({}, { __mode = "k"
 addon.PositionManager = PM
 addon.EditMode.elements, addon.EditMode.order = PM.elements, PM.order
 local P = addon.Positioning
-local function Combat() return InCombatLockdown() or UnitAffectingCombat("player") end
-local function Plain(value) return not (issecretvalue and issecretvalue(value)) end
+local Combat = addon.InCombat
+local Plain = addon.IsPublic
 local function Number(value)
     return Plain(value) and type(value) == "number" and value == value and math.abs(value) < math.huge
 end

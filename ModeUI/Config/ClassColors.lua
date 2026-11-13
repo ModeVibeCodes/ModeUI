@@ -6,7 +6,7 @@ if not M then return end
 -- color, Reset to return to the game's color. Changes apply immediately.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
-    local function Combat() return InCombatLockdown() or UnitAffectingCombat("player") end
+    local Combat = addon.InCombat
     page:Section("Class Colors", nil, false)
     local intro = W.Label(page:Row("How It Works", 56), "Click a class to choose its color. Names, health bars and portrait rings that use class colors update right away. Reset returns a class to the game's color.", nil, 0, -4, 420, T.muted)
     intro:SetWordWrap(true)

@@ -1,6 +1,8 @@
 local _, addon = ...
 local E = { highlights = true }
 addon.EditMode = E
+-- Switching a module on or off adds or removes its movable frames.
+addon.RegisterMessage(E, addon.Messages.MODULE_TOGGLED, function() E:RefreshElements() end)
 
 function E:RegisterElement(module, frame)
     -- Compatibility for consumers of the earlier module-owned position contract.

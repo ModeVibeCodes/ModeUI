@@ -1,7 +1,7 @@
 local _,addon=...
 local R={requests={},drafts={}}
 addon.ReloadManager=R
-local function Combat() return InCombatLockdown() or UnitAffectingCombat("player") end
+local Combat = addon.InCombat
 function R:IsPending() return next(self.requests)~=nil end
 function R:GetReason()
     local keys,reasons={},{}
@@ -43,7 +43,7 @@ function R:OnWindowClosed()
     if addon.ShowReloadPrompt then addon:ShowReloadPrompt() end
 end
 function R:Start()
-    if self.events then return end
-    self.events=CreateFrame("Frame");self.events:RegisterEvent("PLAYER_REGEN_DISABLED")
-    self.events:SetScript("OnEvent",function() if self.prompt then self.prompt:Hide() end end)
+    if self.started then return end
+    self.started=true
+    addon.Events:On(self,"PLAYER_REGEN_DISABLED",function() if self.prompt then self.prompt:Hide() end end)
 end

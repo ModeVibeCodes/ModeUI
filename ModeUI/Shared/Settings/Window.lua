@@ -5,9 +5,11 @@ local SIDEBAR_WIDTH, HEADER_HEIGHT = 240, 56
 -- Reserve the reload control as well as Preview/Edit/Close for safe dragging.
 local HEADER_RESERVED = 360 + 24 + 16
 
-local function InCombat()
-    return InCombatLockdown() or UnitAffectingCombat("player")
-end
+local InCombat = addon.InCombat
+-- An open window shows a module's new on/off state at once.
+addon.RegisterMessage("ModeUI.SettingsWindow", addon.Messages.MODULE_TOGGLED, function()
+    if addon.RefreshConfig then addon:RefreshConfig() end
+end)
 function addon:RecoverWindowPosition()
     local window=self.configWindow
     if not window or InCombat() then return false end
@@ -44,7 +46,7 @@ function addon:FinishWindowInteraction()
         self.root.window.x, self.root.window.y = x * ratio - parentX, y * ratio - parentY
     end
     if InCombat() then
-        window.boundsPending = true
+        addon.Defer:Queue("settings:bounds", function() addon:UpdateWindowBounds() end)
     else
         self:RecoverWindowPosition()
         window:ClearAllPoints()
@@ -55,7 +57,7 @@ end
 function addon:UpdateWindowBounds(initial)
     local window = self.configWindow
     if not window then return end
-    if InCombat() and not initial then window.boundsPending = true; return end
+    if InCombat() and not initial then addon.Defer:Queue("settings:bounds", function() addon:UpdateWindowBounds() end); return end
     local width, height = UIParent:GetWidth(), UIParent:GetHeight()
     -- Legacy saved dimensions are intentionally ignored and left untouched.
     local scale = math.min(1, math.max(1, width - 32) / WINDOW_WIDTH, math.max(1, height - 32) / WINDOW_HEIGHT)
@@ -64,7 +66,6 @@ function addon:UpdateWindowBounds(initial)
     if not InCombat() then self:RecoverWindowPosition() end
     window:ClearAllPoints()
     window:SetPoint("CENTER", UIParent, "CENTER", self.root.window.x / scale, self.root.window.y / scale)
-    window.boundsPending = false
 end
 
 local function GenericPage(parent, module)

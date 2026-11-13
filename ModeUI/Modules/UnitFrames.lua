@@ -63,7 +63,7 @@ M.choiceKeys = { healthText = "healthText", powerText = "powerText", healthTextP
     healthColorMode = "healthColor", powerColorMode = "powerColor" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
-function M.Public(v) return not (issecretvalue and issecretvalue(v)) end
+M.Public = addon.IsPublic
 function M.Number(v, low, high)
     return M.Public(v) and type(v) == "number" and v == v and v >= low and v <= high
 end
@@ -309,6 +309,7 @@ function M:OnInitialize()
     self.events = CreateFrame("Frame")
     self.events:SetScript("OnEvent", function(_, event, unit) self:OnEvent(event, unit) end)
     self.events:RegisterEvent("PLAYER_REGEN_ENABLED")
+    addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function() self:OnClassColorsChanged() end)
 end
 function M:OnEnable()
     self.active = true

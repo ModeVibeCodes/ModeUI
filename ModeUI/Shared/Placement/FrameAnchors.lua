@@ -1,8 +1,8 @@
 local _,addon=...
 local F,P,PM={},addon.Positioning,addon.PositionManager
 addon.FrameAnchors=F
-local function Combat() return InCombatLockdown() or UnitAffectingCombat("player") end
-local function Plain(v) return not (issecretvalue and issecretvalue(v)) end
+local Combat = addon.InCombat
+local Plain = addon.IsPublic
 local function Name(v) return Plain(v) and type(v)=="string" and #v<=128 and v:match("^[%a_][%w_]*$") end
 local function Geometry(frame)
     if not Plain(frame) or not frame then return end

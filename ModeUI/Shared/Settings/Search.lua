@@ -14,10 +14,17 @@ end
 
 function addon:SearchSettings(query)
     query = Normalize(query)
-    if query == "" then self.searchPending = false; return {} end
+    if query == "" then addon.Defer:Cancel("settings:search"); return {} end
     local results = {}
-    local combat = InCombatLockdown() or UnitAffectingCombat("player")
-    self.searchPending = combat
+    local combat = addon.InCombat()
+    -- Pages can't be built in combat; search them again once it ends.
+    if combat then
+        addon.Defer:Queue("settings:search", function()
+            if self.configWindow and self.configWindow:IsShown() then self:RefreshSettingsSearch() end
+        end)
+    else
+        addon.Defer:Cancel("settings:search")
+    end
     for _, id in ipairs(self.moduleOrder) do
         local module = self.modules[id]
         local page = self.configWindow.pages[id]

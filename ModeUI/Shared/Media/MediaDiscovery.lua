@@ -2,7 +2,7 @@ local _,addon=...
 local M=addon.Media
 local kinds={font=true,statusbar=true,background=true,border=true}
 local limit=4096
-local function Public(value) return not (issecretvalue and issecretvalue(value)) end
+local Public = addon.IsPublic
 local function Valid(kind,name,path)
     return Public(kind) and Public(name) and Public(path) and kinds[kind]
         and type(name)=="string" and #name>0 and #name<=160 and not name:find("[%z\1-\31]")
