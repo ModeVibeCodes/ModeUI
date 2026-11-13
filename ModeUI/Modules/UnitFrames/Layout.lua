@@ -87,7 +87,7 @@ function M:ApplyLayout(f, unit)
     -- portrait); end masks round the bars inside the gap to match.
     local depth = Kit.CapDepth(g.blockHeight, g.px)
     local rounded = { [far] = true, [near] = g.portrait == 0 }
-    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, ONYX.border, depth, rounded)
+    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, M.RIM_COLOR, depth, rounded)
     Kit.PlaceCapRing(panel.gap, panel, g.border, g.line, ONYX.inner, depth, rounded)
     Kit.PlaceEndMask(panel.farMask, panel, far, depth, g.pad, true)
     Kit.PlaceEndMask(panel.nearMask, panel, near, depth, g.pad, rounded[near])

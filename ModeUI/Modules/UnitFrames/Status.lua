@@ -62,7 +62,7 @@ function M:LayoutStatus(f, unit)
         badge:ClearAllPoints()
         badge:SetPoint("CENTER", p, "CENTER", math.floor(math.cos(angle) * radius / px + 0.5) * px,
             math.floor(math.sin(angle) * radius / px + 0.5) * px)
-        badge.rim:ClearAllPoints(); badge.rim:SetAllPoints(badge); Tint(badge.rim, ONYX.border, 1)
+        badge.rim:ClearAllPoints(); badge.rim:SetAllPoints(badge); Tint(badge.rim, M.RIM_COLOR, 1)
         Kit.Inset(badge.back, badge, g.border); Tint(badge.back, { 11 / 255, 11 / 255, 13 / 255 }, 1)
         Kit.Inset(badge.icon, badge, g.border + 2 * px); Tint(badge.icon, color, 1)
     end

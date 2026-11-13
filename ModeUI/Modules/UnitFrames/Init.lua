@@ -53,6 +53,10 @@ M.LAYOUT_VERSION = 14
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
 M.palette, M.onyx = addon.Kit.palette, addon.Kit.onyx
+-- Every unit frame rim (bar block, cast bar, badges, combo points, the
+-- portrait ring's Default): a little lighter than the Onyx border, so it
+-- stands apart from the health bar.
+M.RIM_COLOR = addon.Kit.onyx.frameRim
 -- Plain-text name colors that contrast the cool Onyx/slate skin (owner's
 -- picks). Sky, the owner's own color (layout version 11), is the default.
 M.nameAccents = { sky = RGB(145, 198, 255), champagne = RGB(242, 223, 184), lilac = RGB(201, 187, 255),

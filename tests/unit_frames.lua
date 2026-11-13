@@ -55,7 +55,7 @@ world.run([====[
     assert(c1[1]=='CENTER' and c1[2]==t.portrait and c1[4]>0 and c5[5]>c1[5],'from the lower outer end upward')
     for i=1,5 do local q=Point(cb.points[i]);assert(q[4]==math.floor(q[4]) and q[5]==math.floor(q[5]) and cb.points[i].width%2==0) end
     local r=35+3+5;assert(math.abs(math.sqrt(c1[4]^2+c1[5]^2)-r)<1,'radius: portrait, distance, half a point')
-    assert(cb.points[1].rim.vertexColor[1]==O.border[1] and Point(cb.points[1].bar)[4]==2)
+    assert(cb.points[1].rim.vertexColor[1]==M.RIM_COLOR[1] and Point(cb.points[1].bar)[4]==2)
     assert(M:SetComboOption('arc','top') and math.abs(Point(cb.points[3])[4])<1 and Point(cb.points[3])[5]>0,'centred over the top')
     assert(M:SetComboOption('size',14) and cb.points[1].width==14 and M:SetComboOption('size',10) and M:SetComboOption('arc','topOuter'))
     assert(not M:SetComboOption('arc','sideways') and not M:SetComboOption('size',40),'validated')
@@ -73,7 +73,7 @@ world.run([====[
     resting=true;FireEvent('PLAYER_UPDATE_RESTING')
     assert(p.restBadge:IsShown() and not p.combatBadge:IsShown() and not t.restBadge:IsShown(),'rested: Player only')
     local rb=Point(p.restBadge);assert(rb[1]=='CENTER' and rb[2]==p.portrait and rb[4]==-25 and rb[5]==25 and p.restBadge.width==20,'top left, on the ring')
-    assert(p.restBadge.icon.vertexColor[1]==M.ACCENT[1] and p.restBadge.rim.vertexColor[1]==O.border[1])
+    assert(p.restBadge.icon.vertexColor[1]==M.ACCENT[1] and p.restBadge.rim.vertexColor[1]==M.RIM_COLOR[1])
     -- Pulled while running: in combat, nothing targeted that is fighting you. Red ring, pulsing halo.
     combat.player=true;FireEvent('PLAYER_REGEN_DISABLED')
     local cb2=Point(p.combatBadge);assert(p.combatBadge:IsShown() and cb2[4]==-25 and cb2[5]==-25,'bottom left')
@@ -105,12 +105,12 @@ world.run([====[
     local cp1,cp2=Point(pc),Point(pc,2)
     assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[4]==26 and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT' and cp2[4]==0)
     assert(pc.clear==26,'clear of the portrait')
-    assert(pc.height==14+8 and pc.depth==9 and pc.rim.ends.LEFT.cap:IsShown() and pc.rim.ends.RIGHT.cap:IsShown(),'rounded at both ends (0.4 of 22px)')
+    assert(pc.height==14+8 and pc.depth==6 and pc.rim.ends.LEFT.cap:IsShown() and pc.rim.ends.RIGHT.cap:IsShown(),'rounded at both ends (a quarter of 22px, rounded)')
     assert(pc.gap.texture==addon.Kit.FLAT and Point(pc.gap)[4]==2 and pc.gap.capMasks[pc.gapMasks.LEFT] and pc.bar.fillTexture.capMasks[pc.barMasks.RIGHT],'black inside and the bar, rounded to match')
     local cb1,cb2=Point(pc.bar),Point(pc.bar,2)
     assert(cb1[1]=='TOPLEFT' and cb1[4]==4 and cb1[5]==-4,'bar one rim and gap in from the box')
-    assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(9+14+1) and cb2[5]==4,'the icon sits where the far end rounds, a hairline apart')
-    local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-9 and pc.icon.width==14 and pc.icon.height==14)
+    assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(6+14+1) and cb2[5]==4,'the icon sits where the far end rounds, a hairline apart')
+    local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-6 and pc.icon.width==14 and pc.icon.height==14)
     assert(pc:GetFrameLevel()<p.portrait:GetFrameLevel(),'the portrait ring caps it')
     units.player.cast={name='Frostbolt',text='Frostbolt',icon=135846,start=1000,stop=3000}
     FireEvent('UNIT_SPELLCAST_START','player')
@@ -125,7 +125,7 @@ world.run([====[
     assert(Point(tcb.bar)[1]=='TOPRIGHT' and Point(tcb.bar)[4]==-4 and Point(tcb)[4]==-26 and Point(tcb.icon)[1]=='LEFT','mirrored on the Target')
     -- Settings: position, icon side, Blizzard's bar; validated; per frame even while matched.
     assert(M:SetCastOption('player','position','above') and Point(pc)[1]=='BOTTOMLEFT' and Point(pc)[3]=='TOPLEFT' and Point(pc)[5]==3)
-    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==9 and Point(pc.bar)[4]==9+14+1)
+    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==6 and Point(pc.bar)[4]==6+14+1)
     assert(M:SetCastOption('player','icon','none') and not pc.icon:IsShown() and Point(pc.bar,2)[4]==-4)
     assert(M:SetCastOption('player','gap',40) and Point(pc)[4]==0,'far enough down, it can start under the portrait centre')
     assert(M:SetCastOption('player','gap',3) and M:SetFrameOption('player','showPortrait',false) and Point(pc)[4]==0 and Point(pc.bar)[4]==4)
@@ -227,18 +227,19 @@ world.run([====[
     local pp=Point(p.panel);assert(pp[1]=='TOPLEFT' and pp[4]==35 and pp[5]==-12,'bar block starts under the portrait centre')
     local pb=Point(p.panel,2);assert(pb[1]=='BOTTOMRIGHT' and pb[5]==12)
     -- Straight edges are hard flat strips on whole pixels; the far end is a half oval
-    -- 18px deep (0.4 of the 46px block), a cap hollowed into a ring by a hole mask.
+    -- 12px deep (a quarter of the 46px block, rounded): a straight end with round corners,
+    -- a cap hollowed into a ring by a hole mask; the rim is the lighter frame rim color.
     local tex=function(key) return (addon.Media:GetTexture(key)) end
     local rim,gap=p.panel.rim,p.panel.gap
-    assert(p.panel.depth==18 and rim.top.texture==addon.Kit.FLAT and rim.top.height==2 and rim.top.vertexColor[1]==O.border[1])
-    assert(Point(rim.top)[4]==0 and Point(rim.top)[5]==0 and Point(rim.top,2)[4]==-18,'top strip from the near edge to where the far end rounds')
-    local rc=rim.ends.RIGHT;assert(rc.cap:IsShown() and not rc.strip:IsShown() and rc.cap.texture==tex('ModeCapRight') and rc.cap.width==18 and rc.cap.vertexColor[1]==O.border[1])
-    assert(rc.cap.mask==rc.hole and rc.hole.texture==tex('ModeCapHoleRight') and Point(rc.hole)[4]==-2 and Point(rc.hole)[5]==-2 and rc.hole.width==16,'hollowed 2px in: a ring')
+    assert(p.panel.depth==12 and rim.top.texture==addon.Kit.FLAT and rim.top.height==2 and rim.top.vertexColor[1]==M.RIM_COLOR[1])
+    assert(Point(rim.top)[4]==0 and Point(rim.top)[5]==0 and Point(rim.top,2)[4]==-12,'top strip from the near edge to where the far end rounds')
+    local rc=rim.ends.RIGHT;assert(rc.cap:IsShown() and not rc.strip:IsShown() and rc.cap.texture==tex('ModeCapRight') and rc.cap.width==12 and rc.cap.vertexColor[1]==M.RIM_COLOR[1])
+    assert(rc.cap.mask==rc.hole and rc.hole.texture==tex('ModeCapHoleRight') and Point(rc.hole)[4]==-2 and Point(rc.hole)[5]==-2 and rc.hole.width==10,'hollowed 2px in: a ring')
     assert(rim.ends.LEFT.strip:IsShown() and not rim.ends.LEFT.cap:IsShown() and rim.ends.LEFT.strip.width==2,'the portrait end stays straight under the portrait')
-    local gc=gap.ends.RIGHT;assert(gc.cap:IsShown() and gc.cap.vertexColor[1]==O.inner[1] and Point(gc.cap)[4]==-2 and gc.cap.width==16 and Point(gc.hole)[4]==-4 and gc.hole.width==14,'2px black gap one rim in')
-    assert(Point(gap.top)[4]==2 and Point(gap.top)[5]==-2 and Point(gap.top,2)[4]==-18)
+    local gc=gap.ends.RIGHT;assert(gc.cap:IsShown() and gc.cap.vertexColor[1]==O.inner[1] and Point(gc.cap)[4]==-2 and gc.cap.width==10 and Point(gc.hole)[4]==-4 and gc.hole.width==8,'2px black gap one rim in')
+    assert(Point(gap.top)[4]==2 and Point(gap.top)[5]==-2 and Point(gap.top,2)[4]==-12)
     -- The bars are rounded to the same end; the near mask is parked off the block.
-    local fm=p.panel.farMask;assert(fm.texture==tex('ModeCapRight') and Point(fm)[4]==-4 and Point(fm)[5]==-4 and fm.width==14)
+    local fm=p.panel.farMask;assert(fm.texture==tex('ModeCapRight') and Point(fm)[4]==-4 and Point(fm)[5]==-4 and fm.width==8)
     assert(Point(p.panel.nearMask)[1]=='TOPRIGHT' and Point(p.panel.nearMask)[3]=='TOPLEFT','near mask parked past the near end')
     assert(p.health.fillTexture.capMasks[fm] and p.health.bg.capMasks[fm] and p.power.fillTexture.capMasks[p.panel.nearMask])
     assert(t.panel.rim.ends.LEFT.cap:IsShown() and t.panel.rim.ends.LEFT.cap.texture==tex('ModeCapLeft') and not t.panel.rim.ends.RIGHT.cap:IsShown(),'target: rounded on the left')
@@ -384,7 +385,7 @@ world.run([====[
     assert(M:SetFrameOption('player','outline',false))
     assert(M:SetFrameOption('player','powerText','percent') and p.powerText.lift:IsShown() and p.powerText.lift:GetText()=='50%','power text lifts too')
     assert(M:SetFrameOption('player','powerText','none') and not p.powerText.lift:IsShown())
-    assert(M:SetFrameOption('player','portraitRing','border') and RingTop(p).r==O.border[1] and RingBottom(p).r==O.border[1],'Default matches the frame rim')
+    assert(M:SetFrameOption('player','portraitRing','border') and RingTop(p).r==M.RIM_COLOR[1] and RingBottom(p).r==M.RIM_COLOR[1],'Default matches the frame rim')
     assert(M:SetFrameOption('player','portraitRing','custom') and M:SetFrameOption('player','portraitRingColor',{1,0,1}) and RingTop(p).g==0 and RingBottom(p).r==1)
     assert(not M:SetFrameOption('player','portraitRing','accent'))
     assert(M:SetFrameOption('player','portraitRing','class'))

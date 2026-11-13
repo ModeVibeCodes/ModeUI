@@ -5,6 +5,18 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Rounded-rectangle ends, a lighter rim, a softer fill line
+
+November 13, 2026, per the owner (with a rounded-rectangle reference): the
+ends are a straight edge with circular corners rather than a half oval. The
+cap textures are 64x256, a straight end with 64px round corners, used at a
+depth of a quarter of the box's height (`Kit.CAP_DEPTH = 0.25`) so the corners
+stay circular: 12px on the 46px bar block, 6px on the 22px cast bar. Unit
+frame rims (bar block, cast bar, badges, combo points, the portrait ring's
+Default) use `Kit.onyx.frameRim` #40454C, a little lighter than the Onyx
+border, to stand apart from the health bar. The fill end line is white at 22%
+instead of 45%.
+
 ## Half-oval ends, a line that hides at full, darker Mode Slate
 
 November 13, 2026, after the hard-edged borders were tried in game, per the
