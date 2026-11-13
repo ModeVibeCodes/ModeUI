@@ -312,3 +312,55 @@ guarded, and native behavior on Forever is unverified until checked in game.
 - **Empty buttons.** Blizzard's own empty buttons (Always Show Buttons, or a
   spell being dragged) are shown by Blizzard; ModeUI only draws their
   background at Background Opacity.
+
+## Interface damage meters — November 13, 2026
+
+Sources: Forever's own interface code on the `forever` branch of
+[Gethe/wow-ui-source](https://github.com/Gethe/wow-ui-source/tree/forever/Interface/AddOns/Blizzard_DamageMeter),
+checked against the user's local mainline copy (`WoWUI-live`, build
+12.1.5.70575). [Details](DAMAGE_METERS.md).
+
+- **Forever has the meter.**
+  [Blizzard_DamageMeter.toc](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_DamageMeter/Blizzard_DamageMeter.toc)
+  loads with `AllowLoadGameType: standard, camelot`. Forever adds only
+  `Camelot/DamageMeterEntryOverrides.lua`, which turns off classification icons.
+  [DamageMeterDocumentation.lua](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/DamageMeterDocumentation.lua)
+  matches mainline except `specIconID`, which is `SecretValue` on Forever and
+  `NeverSecret` on mainline. ModeUI uses class icons instead.
+- **Reads.** `C_DamageMeter.GetCombatSessionFromType(sessionType, type)` and
+  `GetCombatSessionFromID(sessionID, type)` return `combatSources` already
+  ranked (Blizzard's window shows them in order, unsorted), plus `maxAmount`,
+  `totalAmount` and `durationSeconds`. `GetCombatSessionSourceFromType` and
+  `GetCombatSessionSourceFromID` (with `sourceGUID` or `sourceCreatureID`)
+  return `combatSpells`, also unsorted by Blizzard. `GetAvailableCombatSessions`
+  lists earlier fights. `GetSessionDurationSeconds(sessionType)` has no secret
+  flag. `IsDamageMeterAvailable` returns availability and a reason.
+  `ResetAllCombatSessions` is Blizzard's own Reset. Events:
+  `DAMAGE_METER_COMBAT_SESSION_UPDATED`, `DAMAGE_METER_CURRENT_SESSION_UPDATED`,
+  `DAMAGE_METER_RESET`.
+- **Secrets.** The session and source reads are `SecretWhenInCombat`.
+  `name` and `sourceGUID` are `ConditionalSecret`. `classFilename`,
+  `isLocalPlayer`, `deathRecapID` and `classification` are `NeverSecret`.
+  Arguments are `SecretArguments = "AllowedWhenUntainted"`, so addon code
+  passes only public ones; a secret GUID means no breakdown until after combat.
+  Secret values go only to StatusBar `SetMinMaxValues`/`SetValue`,
+  `AbbreviateNumbers` (`AllowedWhenTainted`, `LocalizationDocumentation.lua` on
+  both branches), FontString `SetText`/`SetFormattedText`, Texture `SetTexture`,
+  and `C_Spell.GetSpellName`/`GetSpellTexture` (`AllowedWhenTainted`,
+  `SpellDocumentation.lua`). Nothing compares, sorts, adds or measures them,
+  and none go to `GameTooltip`.
+- **The game's option.** Blizzard's window checks the `damageMeterEnabled`
+  CVar (`DamageMeter.lua`, `ShouldBeShown`). Third-party meters report that the
+  game records only while it's on. ModeUI reads it with `C_CVar.GetCVarBool`
+  and never writes it.
+- **Blizzard's window is left alone.** It is an Edit Mode system frame
+  (`EditModeDamageMeterSystemTemplate`). A third-party author (LittleThings)
+  reported that writing into its session windows taints their refresh. ModeUI
+  neither reparents, hides nor calls into it. Its own Edit Mode Visibility
+  setting can hide it.
+- **Death Recap.** `OpenDeathRecapUI(deathRecapID)` is what Blizzard's window
+  calls. ModeUI calls it only out of combat, guarded.
+- **Unverified natively:** whether the game records with its option off,
+  which meter types return data on Forever (one author reports Avoidable Damage
+  Taken is unavailable there; the window then says "No avoidable damage
+  taken."), and the exact client behavior of `AbbreviateNumbers` text.

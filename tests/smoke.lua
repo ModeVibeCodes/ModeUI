@@ -9,7 +9,7 @@ assert(metadata["X-ModeUI-Edition"] == "Forever" and metadata.Interface == "1600
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='unitFrames,nameplates,actionBars,profiles,optimizations,classColors')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='unitFrames,nameplates,actionBars,damageMeters,profiles,optimizations,classColors')
     assert(table.concat(addon.categoryOrder,',')=='interface,global' and addon.categories.interface.title=='Interface' and addon.categories.global.title=='Global')
     assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
@@ -18,6 +18,7 @@ world.run([[
     assert(addon.modules.unitFrames.enabled,'unit frames are on for a fresh install')
     assert(not addon.modules.nameplates.enabled,'nameplates start off')
     assert(not addon.modules.actionBars.enabled,'action bars start off')
+    assert(not addon.modules.damageMeters.enabled,'damage meters start off')
     assert(ModeUIDB.importedFrom=='none','nothing to import without Play The Game Tools')
     assert(ModeUIDB.schemaVersion==2 and ModeUIDB.activeProfile=='Default' and ModeUIDB.profiles.Default==addon.db,'Default profile')
     assert(messages[1]:find('ModeUI',1,true),'welcome line')
@@ -34,11 +35,13 @@ world.run([[
     local nested=window.sidebarModuleButtons.unitFrames
     assert(nested and nested:IsShown() and nested.label:GetText()=='· Unit Frames','Unit Frames nested under Interface')
     local count=0;for _ in pairs(window.sidebarModuleButtons) do count=count+1 end
-    assert(count==6,'six pages in the sidebar')
+    assert(count==7,'seven pages in the sidebar')
     assert(window.sidebarModuleButtons.nameplates:IsShown(),'Nameplates nested under Interface')
     addon:SelectConfigPage('nameplates');assert(window.pages.nameplates:IsShown() and window.moduleHeader.title:GetText()=='Nameplates')
     assert(window.sidebarModuleButtons.actionBars:IsShown(),'Action Bars nested under Interface')
     addon:SelectConfigPage('actionBars');assert(window.pages.actionBars:IsShown() and window.moduleHeader.title:GetText()=='Action Bars')
+    assert(window.sidebarModuleButtons.damageMeters:IsShown(),'Damage Meters nested under Interface')
+    addon:SelectConfigPage('damageMeters');assert(window.pages.damageMeters:IsShown() and window.moduleHeader.title:GetText()=='Damage Meters')
     for _,id in ipairs({'profiles','optimizations','classColors'}) do
         assert(window.sidebarModuleButtons[id]:IsShown(),id..' nested under Global')
         addon:SelectConfigPage(id);assert(window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)

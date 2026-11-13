@@ -253,6 +253,7 @@ to widgets documented as accepting them.
 | `Threat.lua` | `Domain.Threat.Status(unit)` → 0-3 or nil when unknown or secret |
 | `Nameplate.lua` | `Domain.Nameplate.ForUnit(unit)`, `.IsPlayerPlate(frame)`, `.WidgetsOnly(unit)`, `.ActiveUnits()` |
 | `Auras.lua` | `Domain.Auras.Filters(crowdControl, debuffs, buffs)` → filter strings; `.Collect(unit, filters, max)`; `.Apply(icon, unit, aura, showTimer, showCount)`; `.ApplyTimer(...)`; the game's filters choose auras, no secret field is compared |
+| `DamageMeter.lua` | `Domain.DamageMeter.types`/`.typeById` (meter IDs saved in settings), `.Supported()`, `.Available()` → ok, reason, `.GameMeterOn()` (reads the game's option), `.Session(session, typeId)` → { sources (ranked by the game), max, total, duration } (may be secret), `.Source(session, typeId, guid, creatureID)` → { spells, max, total } (public arguments only), `.Sessions()`, `.Duration(session)`, `.Reset()`, `.SpellName(id)`, `.SpellIcon(id)`, `.ClassAtlas(class)`, `.Clock(seconds)`; `.EVENTS` |
 
 `Shared/Kit/` builds frame pieces in the Mode look. It holds no game data.
 
@@ -260,7 +261,7 @@ to widgets documented as accepting them.
 |---|---|
 | `Color.lua` | `Kit.Tint(region, color, alpha)`, `.Lighten(color, t)`, `.Scale(color, f)`, `.Gradient(texture, top, bottom, alpha)`, `Kit.FLAT` |
 | `Palette.lua` | `Kit.palette` (Mode text and gameplay colors), `Kit.onyx` (the Onyx skin), `Kit.RGB(r, g, b)`, `Kit.ColorFromBoolean(region, value, ifTrue, ifFalse)` for possibly secret booleans |
-| `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)`, `.ModeGradient(bar, barHeight, px)` (the one bar texture), `.BarForeground(bar, choice, barHeight, px)`, `.BarBackground(bar, choice)`, `.BarTextureChoices(foreground)`, `.ValidBarTexture(value, foreground)` |
+| `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)`, `.ModeGradient(bar, barHeight, px)` (the one bar texture), `.BarForeground(bar, choice, barHeight, px)`, `.BarBackground(bar, choice)`, `.BarTextureChoices(foreground)`, `.ValidBarTexture(value, foreground)`, `.Rim(host, layer, sublevel)`, `.PlaceRim(edges, host, thickness, cut, color, alpha)` (a hollow pixel rim; `cut` rounds the corners) |
 | `Cast.lua` | `Kit.PaintCastBar(bar, channel, notInterruptible, color, lockedColor)`, `.CastTimer(text, info, unit)`: secret-safe cast colors and seconds left |
 | `Bands.lua` | `Kit.Bands(parent)`, `.PlaceBands(bands, box, left, top, right, bottom, px, room)`: a rim drawn in four clipped bands around a see-through hole |
 | `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`; `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA`; `Kit.FontPath(style, scope)` |
@@ -323,7 +324,7 @@ module is built.
 | 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
 | 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar), `Positioning:AddTarget` (bars anchor to bars), PositionGuides (alignment guides, snapping, `Nudge`). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
 | 4 | Chat Windows | Interface | Skin: chat frames, edit box, tabs. Kit: ScrollText | chat frame hooks that don't taint |
-| 5 | Damage Meters | Interface | Domain: combat data source | whether Forever has a built-in damage meter API and what it exposes |
+| 5 | Damage Meters | Interface | Domain: DamageMeter (the game's own meter through `C_DamageMeter`). Kit: Rim, PlaceRim | done (native acceptance pending); Forever loads Blizzard_DamageMeter |
 | 6 | Bags | Interface | Domain: Containers, Items. Kit: ItemButton. Templates: item slot | `C_Container` on Forever; secure use of items from addon buttons |
 | 7 | Blizzard UI Windows | Interface | Skin: frame stripping, Mode borders, buttons, tabs, scroll bars | per-window taint risk; load-on-demand Blizzard addons |
 | 8 | Minimap | Interface | Skin: minimap shape and border. Kit: addon-button collector | minimap APIs and cluster frames on Forever |
