@@ -75,12 +75,13 @@ M.choices = {
     powerColor = { { id = "type", label = "Power Type" }, { id = "custom", label = "Custom" } },
     attachPoint = { { id = "bottomright", label = "Below, Right Edges" }, { id = "bottomleft", label = "Below, Left Edges" },
         { id = "right", label = "Right Side" }, { id = "left", label = "Left Side" }, { id = "topright", label = "Above, Right Edges" } },
+    fill = { { id = "standard", label = "Left to Right" }, { id = "reverse", label = "Right to Left" } },
 }
 -- Setting key -> choice list.
 M.choiceKeys = { healthText = "healthText", powerText = "powerText", healthTextPosition = "position",
     powerTextPosition = "position", nameAlign = "position", portraitSide = "side", portraitStyle = "portraitStyle",
     portraitRing = "ring", namePosition = "namePosition", nameColorMode = "nameColor", levelStyle = "level",
-    healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint" }
+    healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint", fillDirection = "fill" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -115,7 +116,10 @@ local function Frame(side, extra)
         -- a lighter second shadow 2px out (owner, layout version 11).
         liftedShadow = true, textColor = Copy(M.palette.text),
         -- Target of Target and Target of Focus only: attached to their parent frame.
-        attach = false, attachPoint = "bottomright", attachOffsetX = 0, attachOffsetY = -2 }
+        attach = false, attachPoint = "bottomright", attachOffsetX = 0, attachOffsetY = -2,
+        -- Which way health and power fill (and drain). The Target runs the
+        -- other way from the Player by default (owner, November 13, 2026).
+        fillDirection = "standard" }
     for key, value in pairs(extra or {}) do frame[key] = value end
     return frame
 end
@@ -127,7 +131,7 @@ local function Small(scale, attach)
     return { barWidth = 110, healthHeight = 16, powerHeight = 6, nameFontSize = 11, healthFontSize = 10, levelStyle = "none",
         scale = scale, showPortrait = false, namePosition = "bar", nameAlign = "LEFT", attach = attach }
 end
-M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true }),
+M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true, fillDirection = "reverse" }),
     targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false)), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, nameFontSize = { 8, 24, 1 }, healthFontSize = { 8, 24, 1 }, powerFontSize = { 6, 20, 1 },
@@ -139,7 +143,7 @@ M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeig
     attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
 -- Keys that describe placement/identity rather than style; Copy Style skips them.
 M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true,
-    attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true }
+    attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true, fillDirection = true }
 -- Combo points around the Target frame's portrait (owner, November 13, 2026).
 -- Their own table, not per frame, so they stay editable while the Target
 -- matches the Player. Sizes are in the Target frame's units.

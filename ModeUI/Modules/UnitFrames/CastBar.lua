@@ -3,11 +3,11 @@ local M = addon.UnitFrames
 if not M then return end
 
 -- Each frame's cast bar: a second block in the frame's own skin (the same
--- rounded rim, black gap and bar texture), as wide as the bar block and
--- hanging under it (or sitting over it). Its bar starts and ends exactly where
--- the health bar does, so the two line up pixel for pixel, and the portrait's
--- ring caps its near end like it caps the bar block. Cast values can be
--- secret: see Shared/Kit/Cast.lua and Shared/Domain/Cast.lua.
+-- rounded rim, black gap and bar texture) hanging under the bar block (or
+-- sitting over it). Its far end lines up with the bar block's, its bar ends
+-- where the health bar does, and its portrait end stops just short of the
+-- portrait instead of running under it. Cast values can be secret: see
+-- Shared/Kit/Cast.lua and Shared/Domain/Cast.lua.
 local Kit, Cast = addon.Kit, addon.Domain.Cast
 local ONYX, Tint, Rounded = M.onyx, Kit.Tint, Kit.Rounded
 local TIMER_STEP = 0.1
@@ -40,16 +40,24 @@ function M:LayoutCast(f, unit)
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local near, far, sign = Sides(fdb)
     local height, gap = Snap(cdb.height), Round(cdb.gap)
-    -- The same span as the bar block (from under the portrait's centre to the
-    -- far edge), above or below it.
+    -- Under (or over) the bar block, to its far edge. The portrait end stops
+    -- just short of the portrait (owner, November 13, 2026): where the ring's
+    -- circle crosses the box's edge nearest the portrait's centre, plus a
+    -- 2px gap, rounded out to whole pixels.
+    local clear = 0
+    if fdb.showPortrait and g.portrait > 0 then
+        local radius, edge = g.portrait / 2, g.blockHeight / 2 + gap
+        if edge < radius then clear = math.ceil((math.sqrt(radius * radius - edge * edge) + 2 * px) / px) * px end
+    end
     box:ClearAllPoints()
     if cdb.position == "above" then
-        box:SetPoint("BOTTOM" .. near, f.panel, "TOP" .. near, 0, gap)
+        box:SetPoint("BOTTOM" .. near, f.panel, "TOP" .. near, sign * clear, gap)
         box:SetPoint("BOTTOM" .. far, f.panel, "TOP" .. far, 0, gap)
     else
-        box:SetPoint("TOP" .. near, f.panel, "BOTTOM" .. near, 0, -gap)
+        box:SetPoint("TOP" .. near, f.panel, "BOTTOM" .. near, sign * clear, -gap)
         box:SetPoint("TOP" .. far, f.panel, "BOTTOM" .. far, 0, -gap)
     end
+    box.clear = clear
     box:SetHeight(height + 2 * g.pad)
     box:SetFrameLevel(f.panel:GetFrameLevel())
     box.rim:ClearAllPoints(); box.rim:SetAllPoints(box)
@@ -57,7 +65,7 @@ function M:LayoutCast(f, unit)
     Rounded(box.gap, "UnitFrameFrameInner"); Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
     -- The bar spans what the health bar spans; the icon, if any, takes a
     -- square from one end, a hairline of the black gap between them.
-    local start = g.inset - g.blockStart
+    local start = math.max(g.pad, g.inset - g.blockStart - clear)
     local nearInset, farInset = start, g.pad
     local icon, bar = box.icon, box.bar
     icon:ClearAllPoints(); icon:SetSize(height, height); icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)

@@ -9,7 +9,11 @@ if not M then return end
 -- the cast part-way through; Animated loops it. Clicking a part opens its
 -- settings. Shown through the shared settings preview (W.Preview).
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
-local CAST_SECONDS, HINT_HEIGHT, MARGIN = 2.5, 18, 12
+local CAST_SECONDS, HINT_HEIGHT = 2.5, 18
+-- One fixed size, so moving or resizing a part never resizes the preview or
+-- moves the sample (owner, November 13, 2026). Room for the largest frame at
+-- 100% with a name and buffs above and a cast bar below.
+M.PREVIEW_WIDTH, M.PREVIEW_HEIGHT = 440, 190
 
 addon.PreviewStates:Register(M.id, {
     states = { { id = "static", label = "Static" }, { id = "animated", label = "Animated" } },
@@ -17,9 +21,14 @@ addon.PreviewStates:Register(M.id, {
     sample = function(_, phase) return phase end,
 })
 
--- The frame the page is editing, else the Player.
+-- Tabs for a part only one frame has show that frame, whatever Editing says.
+M.previewSectionUnits = { ["Combo Points"] = "target" }
+-- The frame the page is editing (or the one the open tab is about), else the Player.
 function M:PreviewUnit()
     local page = self.page
+    local section = page and page.selectedSection
+    local fixed = section and self.previewSectionUnits[section.title]
+    if fixed then return fixed end
     return page and page.unitFrameEditing and page.unitFrameEditing() or "player"
 end
 
@@ -44,37 +53,7 @@ local function Clickable(region, target, group, host)
     return hit
 end
 
--- Room around the frame for what sits outside it: the name and top aura rows
--- above, a cast bar and bottom aura rows below, the combo arc beside it.
-local function Room(self, unit)
-    local fdb = self:FrameDB(unit)
-    local cast = self.db[unit].castBar
-    local top, bottom, side = (fdb.showName and fdb.namePosition == "above") and fdb.nameFontSize + 8 or 6, 6, MARGIN
-    if cast.enabled then
-        local size = cast.height + 8 + cast.gap
-        if cast.position == "above" then top = top + size else bottom = bottom + size end
-    end
-    for _, group in ipairs(self.auraGroups) do
-        local adb = self.db[unit][group]
-        if adb.enabled then
-            local rows = math.ceil(math.min(adb.max, self.AURA_SAMPLE) / adb.perRow)
-            local size = rows * (adb.size + adb.spacing) + 2
-            if adb.anchor:find("^TOP") then top = top + size + math.max(0, adb.y) else bottom = bottom + size + math.max(0, -adb.y) end
-        end
-    end
-    if unit == "target" and self.db.comboPoints.enabled then side = side + self.db.comboPoints.size + self.db.comboPoints.distance + 4 end
-    return top, bottom, side
-end
-
-function M:GetPreviewSize(view)
-    local unit = self:PreviewUnit()
-    local face = view and view.faces[unit]
-    local scale = self:FrameDB(unit).scale / 100
-    local top, bottom, side = Room(self, unit)
-    local g = face and face.geometry
-    local width, height = g and g.width or 240, g and g.height or 70
-    return math.max(320, width * scale + 2 * side * scale), (top + height + bottom) * scale + 6 + HINT_HEIGHT
-end
+function M:GetPreviewSize() return self.PREVIEW_WIDTH, self.PREVIEW_HEIGHT end
 
 -- Marks every part of a face as a way into its settings, once.
 local function MakeClickable(face)
@@ -104,12 +83,15 @@ function M:RenderPreview(view)
         for _, icon in ipairs(face.auraIcons[group]) do if not icon.jump then Clickable(icon, "auras", group) end end
     end
     if phase and face.castBox:IsShown() then face.castBox.bar:SetValue((phase % CAST_SECONDS) / CAST_SECONDS) end
-    -- Centred on whole pixels, below the room its name and top rows need.
-    local top = Room(self, unit)
-    local px = face.geometry.px
-    local x = math.floor(-face.geometry.width / 2 / px + 0.5) * px
+    -- A fixed spot: the frame's centre on the preview's centre (above the
+    -- hint line), on whole pixels. Offsets are in the sample's own scale.
+    local g, scale = face.geometry, self:FrameDB(unit).scale / 100
+    local px = g.px
+    local function Snap(v) return math.floor(v / px + 0.5) * px end
+    local width, height = view.frame:GetWidth(), view.frame:GetHeight()
     face:ClearAllPoints()
-    face:SetPoint("TOPLEFT", view.frame, "TOP", x, -math.floor(top / px + 0.5) * px)
+    face:SetPoint("TOPLEFT", view.frame, "TOPLEFT", Snap(width / 2 / scale - g.width / 2),
+        -Snap((height - HINT_HEIGHT) / 2 / scale - g.height / 2))
     face:SetShown(self.db[unit].enabled)
     view.caption:SetText(self.db[unit].enabled and L[self.titles[unit]] or L["This frame is turned off"])
 end
