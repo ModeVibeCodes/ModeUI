@@ -223,6 +223,8 @@ function methods:SetJustifyV(value) self.justifyV = value end
 function methods:SetFrameStrata(value) self.strata = value end
 function methods:SetFrameLevel(value) self.frameLevel = value end
 function methods:SetClipsChildren(value) self.clipsChildren = value end
+function methods:SetSnapToPixelGrid(value) self.snapToPixelGrid = value end
+function methods:SetTexelSnappingBias(value) self.texelSnappingBias = value end
 function methods:GetFrameLevel() return self.frameLevel or (self.parent and self.parent:GetFrameLevel() + 1 or 0) end
 function methods:SetMovable() end
 function methods:SetClampedToScreen(value) self.clamped=value end

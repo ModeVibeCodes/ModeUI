@@ -85,8 +85,10 @@ Three groups, in order: **Crowd Control**, **Debuffs**, **Buffs**. The game's ow
 aura filters decide what belongs to each, so secret aura data is never compared.
 
 - Every group: **Show Auras**, **Timer Swipe**, **Stack Count**, **Icon Shape**
-  (Cropped: 4px wider than tall, the default; or Square), **Borders** (By Type or
-  Mode) and **Spacing**.
+  (Cropped: 6px wider than tall, the default, for example 32 x 26; or Square),
+  **Borders** (By Type or Mode), **Border Size** (1-3px, 2 by default),
+  **Spacing**, **Timer Text** and **Crowd Control Glow** (a soft glow in the rim
+  color around crowd control, on by default).
 - Each group (pick it with **Group**): **Show This Group**, **Which** (Debuffs:
   Yours, Ones You Can Dispel, All; Buffs: Dispellable or Stealable, Important,
   Yours, All), **Anchor**, **Grow** (Right, Left, Up, Down, Center), **Offset X/Y**,

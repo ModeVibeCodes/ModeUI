@@ -36,11 +36,12 @@ local function Edge(edge, host, point, x1, y1, relative, x2, y2)
 end
 
 -- Rounded leaves out each corner's outermost pixel, so the edges meet in a
--- soft corner; Square fills it. In an empty slot (`slot`) the background
--- shows at Background Opacity; behind an icon it's solid, so the pixel
--- between border and icon is crisp. The slot texture adds its bevel and grain
--- (ADD), so the Background Color stays the base.
-function M.PaintArt(art, host, style, g, slot)
+-- soft corner; Square fills it. The background shows at Background Opacity
+-- everywhere: in ModeUI's empty slots and in Blizzard's own empty buttons
+-- (shown by the game's Always Show Buttons, or while a spell is dragged), so
+-- every bar looks alike. The slot texture adds its bevel and grain (ADD), so
+-- the Background Color stays the base.
+function M.PaintArt(art, host, style, g)
     local on = style.border ~= "none"
     local t, cut = g.border, (on and style.border == "rounded") and g.px or 0
     local top, bottom, left, right = art.edges[1], art.edges[2], art.edges[3], art.edges[4]
@@ -51,7 +52,7 @@ function M.PaintArt(art, host, style, g, slot)
     for _, edge in ipairs(art.edges) do
         edge:SetTexture(FLAT); Kit.Tint(edge, style.borderColor, 1); edge:SetShown(on)
     end
-    local alpha = slot and style.backgroundOpacity / 100 or 1
+    local alpha = style.backgroundOpacity / 100
     Kit.Inset(art.fill, host, t)
     art.fill:SetTexture(FLAT); Kit.Tint(art.fill, style.backgroundColor, alpha)
     Kit.Inset(art.grain, host, t)
@@ -66,7 +67,7 @@ function M:BuildSlot(parent)
     slot:Hide()
     return slot
 end
-function M:PaintSlot(slot, style, g) M.PaintArt(self:Art(slot), slot, style, g, true) end
+function M:PaintSlot(slot, style, g) M.PaintArt(self:Art(slot), slot, style, g) end
 
 -- Crops the icon to the button's shape: 8% off its edges, then the long side
 -- cut to the inner aspect, so a 42 by 38 button shows the icon unstretched.

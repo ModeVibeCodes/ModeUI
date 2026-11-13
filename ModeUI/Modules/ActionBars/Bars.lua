@@ -23,6 +23,16 @@ M.OVERRIDE_HIDE = [[
     owner:SetAttribute("modeoverride", nil)
     if owner:GetAttribute("modeshown") == "show" then owner:Show() end
 ]]
+-- Paging: the bar's state driver picks a page; this sets it on every button
+-- (a number, or "none" to let the button follow its Blizzard bar). It runs in
+-- the game's secure environment, so pages change in combat too.
+M.PAGE_SNIPPET = [[
+    local page = tonumber(newstate)
+    for i = 1, 12 do
+        local button = self:GetFrameRef("button" .. i)
+        if button then button:SetAttribute("actionpage", page) end
+    end
+]]
 
 function M:Build()
     if self.built then return end
@@ -37,6 +47,7 @@ function M:BuildBar(bar)
     local header = CreateFrame("Frame", self.frameNames[bar], UIParent, "SecureHandlerStateTemplate")
     header:SetFrameStrata("MEDIUM")
     header:SetAttribute("_onstate-modevis", self.STATE_SNIPPET)
+    header:SetAttribute("_onstate-modepage", self.PAGE_SNIPPET)
     header:SetSize(1, 1); header:SetPoint("CENTER")
     header:Hide()
     self.headers[bar] = header
@@ -45,7 +56,11 @@ function M:BuildBar(bar)
     for i = 1, spec.count do
         self.slots[bar][i] = self:BuildSlot(header)
         local button = _G[spec.prefix .. i]
-        if type(button) == "table" and button.SetParent then buttons[i] = button; self.barOf[button] = bar end
+        if type(button) == "table" and button.SetParent then
+            buttons[i], self.barOf[button] = button, bar
+            -- The paging snippet reaches the buttons of bars that page.
+            if self.pages[bar] and SecureHandlerSetFrameRef then SecureHandlerSetFrameRef(header, "button" .. i, button) end
+        end
     end
     self.buttons[bar] = buttons
     if spec.override then self:WatchOverrideBar(header) end
@@ -122,6 +137,12 @@ function M:ApplyBar(bar)
         end
     end
     RegisterStateDriver(header, "modevis", self:Conditions(bar, count))
+    local paging = self:PageConditions(bar)
+    if paging then RegisterStateDriver(header, "modepage", paging)
+    else
+        UnregisterStateDriver(header, "modepage")
+        if header:GetAttribute("state-modepage") ~= "none" then header:SetAttribute("state-modepage", "none") end
+    end
     self:SyncPosition(bar)
     self:LayoutGhost(bar)
 end
@@ -132,6 +153,9 @@ function M:Restore()
     for _, bar in ipairs(self.bars) do
         local header = self.headers[bar]
         UnregisterStateDriver(header, "modevis")
+        UnregisterStateDriver(header, "modepage")
+        -- Buttons follow their Blizzard bars' pages again.
+        header:SetAttribute("state-modepage", "none")
         -- Leaving the vehicle bar must not show an emptied bar again.
         header:SetAttribute("modeshown", nil)
         header:Hide()

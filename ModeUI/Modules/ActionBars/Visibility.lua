@@ -90,3 +90,18 @@ function M:SetGridShown(shown)
     self.gridShown = shown
     self:UpdateFade()
 end
+
+-- Paging: the state driver for a bar's page, or nil when its buttons follow
+-- their Blizzard bar. Action Bar 1 with Page Switching on and no Page
+-- Conditions follows the game's own paging (stances, forms, stealth,
+-- vehicles, page keys); off, it stays on page 1. Other bars page only with
+-- Page Switching on. Conditions end in "none": when none match, a bar shows
+-- its own page. Conditions the game can't read leave the bar on its own page.
+function M:PageConditions(bar)
+    if not self.pages[bar] then return nil end
+    local style = self.db[bar]
+    if not style.paging then return bar == "bar1" and "1" or nil end
+    local text = style.pageConditions:gsub("[%s;]+$", "")
+    if text:match("^%s*$") or not self.ParseConditions(text) then return nil end
+    return text .. "; none"
+end

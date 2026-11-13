@@ -81,6 +81,13 @@ function M:CreateConfigPage(parent)
     for _, bar in ipairs(M.bars) do barChoices[#barChoices + 1] = { id = bar, label = L[M.barSpecs[bar].label] } end
 
     page.configPreview = W.Preview(page, M, { contentHeight = 120 })
+    -- Keybind Mode from every tab: a button in the preview's header.
+    if page.previewCollapseButton then
+        local keys = W.Button(page.previewArea, L["Keybind Mode"], 104, 24, "choice")
+        keys:SetPoint("LEFT", page.previewCollapseButton, "RIGHT", 4, 0)
+        keys:SetScript("OnClick", function() M:SetKeybindMode(true) end)
+        page.keybindHeaderButton = keys
+    end
 
     -- Every tab starts with the Editing choice; a hidden bar says so.
     page.barSelects = {}
@@ -125,6 +132,20 @@ function M:CreateConfigPage(parent)
         page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")
         page.keybindButton:SetPoint("LEFT"); page.keybindButton:SetScript("OnClick", function() M:SetKeybindMode(true) end)
         Note("Or type /kb. Hover a button and press a key to bind it; Escape clears it.", 32)
+        -- Paging, for bars 1-8.
+        When(function() return M.pages[editing] ~= nil end, function()
+            page:Group(L["Paging"])
+            page.pagingToggles = Toggles({ { "Page Switching", "paging" } }); Mark("paging")
+            When(function() return db().paging end, function()
+                local host = page:Row(L["Page Conditions"], 48)
+                local box = W.TextInput(host, 300, "[mod:shift] 2; [bonusbar:1] 7", M.MAX_CONDITIONS)
+                -- Enter keeps the conditions; Escape leaves them as they were.
+                box.onEnter = function(text) M:SetOption(editing, "pageConditions", text); page:Refresh() end
+                Refresh(function() if not box:HasFocus() then box:SetText(db().pageConditions) end end)
+                page.pageConditionsInput = box
+            end)
+            Note("Page Conditions pick a page by macro conditions, like \"[mod:shift] 2; [bonusbar:1] 7\" (pages 1-6 are the game's bars, 7-10 stance and form pages). When none match, the bar shows its own page. Action Bar 1 with no conditions follows the game's own paging (stances, forms, vehicles, page keys); with Page Switching off it stays on page 1.", 64)
+        end)
     end)
 
     Tab("Buttons", function()
@@ -168,6 +189,30 @@ function M:CreateConfigPage(parent)
             local shadow, lifted = addon.Kit.ShadowKeys(mode)
             M:SetOption(editing, "shadow", shadow); M:SetOption(editing, "liftedShadow", lifted)
         end)
+    end)
+
+    -- Glows: how buttons react to procs and cooldowns.
+    Tab("Glows", function()
+        page:Group(L["Proc Glow"])
+        page.procPills = Pills("Style", M.choices.procGlow, function() return db().procGlow end, Set("procGlow"), 96); Mark("glows")
+        When(function() return db().procGlow == "mode" or db().procGlow == "border" end, function()
+            local proc = Columns({ "Proc Color" })
+            Color(proc[1], "procColor")
+            page.procToggles = Toggles({ { "Pulse", "procPulse" } })
+        end)
+        Note("A proc is the game lighting up a spell you should use now. Blizzard keeps the game's own animation; None shows nothing.", 32)
+        page:Group(L["Cooldown Ready"])
+        page.readyToggles = Toggles({ { "Glow When Ready", "readyGlow" } })
+        When(function() return db().readyGlow end, function()
+            page.readyPills = Pills("Style", M.choices.readyStyle, function() return db().readyStyle end, Set("readyStyle"))
+            local ready = Columns({ "Glow Color", "Glow Time" })
+            Color(ready[1], "readyColor")
+            page.readySlider = Slider(ready[2], "readyDuration", "s")
+        end)
+        page:Group(L["On Cooldown"])
+        local dim = Columns({ "Icon Opacity" })
+        page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
+        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. Icon Opacity fades the icon while that cooldown runs (100% keeps it as it is). Action bars 1-8 only.", 48)
     end)
 
     Tab("Visibility", function()

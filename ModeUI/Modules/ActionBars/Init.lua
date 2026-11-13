@@ -21,7 +21,11 @@ addon:RegisterModule("actionBars", M)
 -- Version 3: the border is a hollow frame (it no longer tints a see-through
 -- background), 2px by default (Border Size) in #404542; Background Color
 -- (#040404); macro names #69A5B9; 1px spacing.
-M.VERSION = 3
+-- Version 4: every bar's border becomes #101010 and its Background Opacity
+-- 75% (the owner asked for all bars); Blizzard's empty buttons use Background
+-- Opacity too; paging (Page Switching, Page Conditions) and glows (proc glow,
+-- ready glow, icon opacity on cooldown).
+M.VERSION = 4
 local P = Kit.palette
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -82,7 +86,10 @@ M.textPartLabels = { hotkey = "Keybind", count = "Count", macro = "Macro Name", 
 -- Cooldown numbers are amber (#FFB12F) by default.
 M.COOLDOWN_COLOR = Kit.RGB(255, 177, 47)
 -- The border (#404542), the background inside it (#040404) and macro names (#69A5B9).
-M.BORDER_COLOR, M.BACKGROUND_COLOR, M.MACRO_COLOR = Kit.RGB(64, 69, 66), Kit.RGB(4, 4, 4), Kit.RGB(105, 165, 185)
+M.BORDER_COLOR, M.BACKGROUND_COLOR, M.MACRO_COLOR = Kit.RGB(16, 16, 16), Kit.RGB(4, 4, 4), Kit.RGB(105, 165, 185)
+M.BACKGROUND_OPACITY = 75
+-- Proc glows are gold by default; the ready glow is the Mode cyan.
+M.PROC_COLOR, M.READY_COLOR = Kit.RGB(255, 210, 90), Kit.palette.accent
 local function Part(prefix, show, size, anchor, color)
     return { [prefix .. "Show"] = show, [prefix .. "Size"] = size, [prefix .. "Anchor"] = anchor,
         [prefix .. "X"] = 0, [prefix .. "Y"] = 0, [prefix .. "Color"] = Copy(color) }
@@ -98,9 +105,15 @@ local function Style(bar)
         buttons = spec.count, perLine = spec.count, orientation = upright and "vertical" or "horizontal", start = "TOPLEFT",
         width = 42, height = 36, spacing = 1,
         border = "rounded", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
-        backgroundColor = Copy(M.BACKGROUND_COLOR), showEmpty = true, backgroundOpacity = 20,
+        backgroundColor = Copy(M.BACKGROUND_COLOR), showEmpty = true, backgroundOpacity = M.BACKGROUND_OPACITY,
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
         font = "game", fontMedia = "Expressway", outline = true, shadow = true, liftedShadow = false, slug = true,
+        -- Paging: Action Bar 1 follows the game's own paging (stances, forms,
+        -- vehicles, page keys) unless it has Page Conditions; other bars keep
+        -- their page until Page Switching is on.
+        paging = bar == "bar1", pageConditions = bar == "bar1" and "" or "[mod:shift] 2; [mod:ctrl] 3; [mod:alt] 4",
+        procGlow = "mode", procColor = Copy(M.PROC_COLOR), procPulse = true,
+        readyGlow = true, readyStyle = "glow", readyColor = Copy(M.READY_COLOR), readyDuration = 2, cooldownOpacity = 100,
     }
     for key, value in pairs(Part("hotkey", true, 11, "TOPRIGHT", P.text)) do style[key] = value end
     for key, value in pairs(Part("count", true, 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
@@ -117,17 +130,21 @@ for _, bar in ipairs(M.bars) do M.defaults[bar] = Copy(M.styleDefaults[bar]) end
 -- buttons it has in what shape.
 M.identityKeys = { show = true, buttons = true, perLine = true, orientation = true, start = true,
     visibility = true, customVisibility = true }
-M.colorKeys = { borderColor = true, backgroundColor = true }
+M.colorKeys = { borderColor = true, backgroundColor = true, procColor = true, readyColor = true }
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
 M.ranges = { buttons = { 1, 12, 1 }, perLine = { 1, 12, 1 }, width = { 16, 80, 1 }, height = { 16, 80, 1 },
-    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 }, borderSize = { 1, 4, 1 } }
+    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 }, borderSize = { 1, 4, 1 },
+    readyDuration = { 1, 10, 1 }, cooldownOpacity = { 20, 100, 5 } }
 for _, part in ipairs(M.textParts) do
     M.ranges[part .. "Size"] = { 6, 32, 1 }
     M.ranges[part .. "X"] = { -40, 40, 1 }
     M.ranges[part .. "Y"] = { -40, 40, 1 }
 end
 M.MAX_CONDITIONS = 200
+-- Each bar's own page (Blizzard's actionpage for its buttons); paging shows
+-- other pages on the same buttons. The pet and stance bars don't page.
+M.pages = { bar1 = 1, bar2 = 6, bar3 = 5, bar4 = 3, bar5 = 4, bar6 = 13, bar7 = 14, bar8 = 15 }
 
 -- Text anchors on the button, read like a compass; Center is the middle.
 M.anchors = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
@@ -138,6 +155,9 @@ M.choices = {
     start = { { id = "TOPLEFT", label = "Top Left" }, { id = "TOPRIGHT", label = "Top Right" },
         { id = "BOTTOMLEFT", label = "Bottom Left" }, { id = "BOTTOMRIGHT", label = "Bottom Right" } },
     border = { { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
+    procGlow = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "blizzard", label = "Blizzard" },
+        { id = "none", label = "None" } },
+    readyStyle = { { id = "glow", label = "Glow" }, { id = "border", label = "Border" } },
     visibility = { { id = "always", label = "Always" }, { id = "mouseover", label = "Mouseover" }, { id = "hidden", label = "Hidden" },
         { id = "combat", label = "In Combat" }, { id = "noCombat", label = "Out of Combat" },
         { id = "target", label = "In Combat or With a Target" }, { id = "custom", label = "Custom" } },
