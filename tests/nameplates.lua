@@ -910,9 +910,9 @@ withContainers.run([==[
     assert(curve.points[1].r == e.auraMagicColor[1] and curve.points[2].r == e.auraCurseColor[1] and curve.points[9].r == e.auraEnrageColor[1], 'type IDs')
     assert(curve.points[11].r == e.auraBleedColor[1] and curve.points[0].r == e.auraNoTypeColor[1], 'bleed and no type')
     assert(button.dispelOptions.showWithoutDispelType and button.dispelOptions.showWhenHelpful, 'every aura gets a rim')
-    -- Crowd control without a type is orange by default.
+    -- Crowd control without a type is #FF5948 by default.
     local cc = C.LEFT.groups.crowdControl.button.dispelOptions.customDispelColorCurve
-    assert(cc.points[0].r == e.auraCCNoTypeColor[1] and e.auraCCNoTypeColor[1] == 1, 'orange crowd control without a type')
+    assert(cc.points[0].r == e.auraCCNoTypeColor[1] and e.auraCCNoTypeColor[1] == 1 and math.abs(e.auraCCNoTypeColor[2] - 89 / 255) < 1e-9 and math.abs(e.auraCCNoTypeColor[3] - 72 / 255) < 1e-9, '#FF5948 crowd control without a type')
     -- Swipe and time text are registered for the game to drive.
     assert(button.timerRegion == button.timer and button.timerOptions.textFormatter.breakpoints[1].format == '%d', 'time text')
     assert(not button.timer.lift:IsShown(), 'no lifted copy on game-driven text')
