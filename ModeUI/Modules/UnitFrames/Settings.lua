@@ -154,7 +154,7 @@ function M:CreateConfigPage(parent)
             end)
         end)
         page:Group("Size")
-        Slider("Scale", "scale", "%"); Slider("Bar Width", "barWidth")
+        Slider("Scale", "scale", "%")
         -- Both bars: the fill (foreground) and the empty bar (background).
         page:Group("Bar Textures")
         local textures = page:Columns({ "Foreground", "Background" })
@@ -168,7 +168,8 @@ function M:CreateConfigPage(parent)
         page.unitFrameForegroundOpacity = SliderIn(fade[1], "barForegroundOpacity", "%")
         page.unitFrameBackgroundOpacity = SliderIn(fade[2], "barBackgroundOpacity", "%")
     end, false, function()
-        -- Each frame's own, so the Target can drain the other way while matched.
+        -- Each frame's own, so a matched Target can differ from the Player.
+        Slider("Frame Width", "barWidth", "px")
         Choice("Fill Direction", "fillDirection")
     end)
 

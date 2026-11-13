@@ -208,6 +208,7 @@ end
 -- Settings every frame keeps for itself: a Target matching the Player still
 -- uses its own cast bar and auras (unlike identity keys, Copy Style and Reset
 -- include them).
-M.ownKeys = { castBar = true, buffs = true, debuffs = true }
+-- Frame Width (barWidth) too, so a matched Target can be wider or narrower.
+M.ownKeys = { castBar = true, buffs = true, debuffs = true, barWidth = true }
 M.defaults = { layoutVersion = M.LAYOUT_VERSION, comboPoints = Copy(M.comboDefaults) }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end

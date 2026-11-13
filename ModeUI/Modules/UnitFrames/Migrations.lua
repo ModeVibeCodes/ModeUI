@@ -170,6 +170,12 @@ local function MigrateV13(db)
             if frame.barBackgroundOpacity == 25 then frame.barBackgroundOpacity = 70 end
         end
     end
+    -- Frame Width became each frame's own: a matched Target keeps the width it
+    -- showed (the Player's).
+    local player, target = db.player, db.target
+    if type(player) == "table" and type(target) == "table" and target.matchPlayer == true and Number(player.barWidth, 100, 400) then
+        target.barWidth = math.floor(player.barWidth)
+    end
 end
 
 -- Pure defaults, one-time migration and validation; profile validation runs

@@ -36,6 +36,11 @@ nameplates (`Kit.BarBackground`, `Kit.BarBackgroundColor`):
 Layout version 14 moves a frame still on the old defaults (Flat, 25%) to Mode
 Slate at 70%; chosen textures and opacities stay.
 
+**Frame Width.** The bar width setting is now **Frame Width**, one of each
+frame's own keys (`barWidth` in `M.ownKeys`), shown on the Layout tab under
+Editing even while the Target matches the Player, beside Fill Direction.
+Layout version 14 gives a matched Target the Player's width, so nothing moves.
+
 ## Hard-edged borders and the fill end line
 
 November 13, 2026, per the owner: the rounded rim and gap textures were

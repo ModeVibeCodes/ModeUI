@@ -412,12 +412,12 @@ world.run([====[
     assert(M:SetFrameOption('player','levelColor',P.muted) and M:SetFrameOption('player','levelFontSize',11))
 
     -- The Target matches the Player (mirrored) until Match Player Frame is turned off.
-    assert(M:SetFrameOption('player','barWidth',200) and t.width==p.width and t.geometry.inset==p.geometry.inset)
+    assert(M:SetFrameOption('player','barWidth',200) and t.width==60+180+4 and p.width==60+200+4 and t.geometry.inset==p.geometry.inset,'width is each frame own')
     assert(Point(t.portrait)[1]=='TOPRIGHT' and Point(t.health)[1]=='TOPRIGHT','still mirrored')
     assert(M:SetFrameOption('player','showPower',false) and not t.power:IsShown(),'power bar follows the Player')
     assert(M:SetFrameOption('player','showPower',true) and t.power:IsShown())
-    assert(M:SetFrameOption('target','barWidth',300) and t.width==p.width,'own style ignored while matched')
-    assert(M:FrameDB('target').portraitSide=='right' and M:FrameDB('target').barWidth==200)
+    assert(M:SetFrameOption('target','barWidth',300) and t.width==60+300+4,'a matched Target uses its own width')
+    assert(M:FrameDB('target').portraitSide=='right' and M:FrameDB('target').barWidth==300 and M:FrameDB('target').healthHeight==M.db.player.healthHeight)
     assert(M:SetFrameOption('target','matchPlayer',false) and t.width==60+300+4,'own settings once unmatched')
     assert(M:FrameDB('target')==M.db.target and t.nameText.justifyH=='RIGHT')
     assert(M:SetFrameOption('player','barWidth',180) and M:SetFrameOption('target','barWidth',180))
@@ -576,6 +576,8 @@ world.run([====[
     M.Initialize(v13)
     assert(v13.layoutVersion==14 and v13.player.backgroundTexture=='slate' and v13.player.barBackgroundOpacity==70)
     assert(v13.target.backgroundTexture=='media:Smooth' and v13.target.barBackgroundOpacity==40,'chosen backgrounds stay')
+    local w13={layoutVersion=13,player={barWidth=230},target={matchPlayer=true,barWidth=180}};M.Initialize(w13)
+    assert(w13.target.barWidth==230,'a matched Target keeps the width it showed')
     local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     kept.player.nameColorMode='class';kept.player.portraitRing='border';M.Initialize(kept)
     assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='border','later choices are not migrated')
@@ -606,7 +608,7 @@ restored.run([====[
     end
     local function Row(section,title) return Find(section,title) or error('missing row '..section..' / '..title) end
     local function Visible(row) return not row.visibleWhen or row.visibleWhen() end
-    for section,list in pairs({Layout={'Scale','Bar Width'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
+    for section,list in pairs({Layout={'Scale','Frame Width'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
         ['Name & Level']={'Name Color','Name Offset X','Class Color Softness','Level Font Size','Level Color','Level Offset Y'},
         Health={'Health Bar Height','Health Color','Health Text Offset X'},Power={'Power Bar Height','Power Text'},Text={'Font','Text Color'}}) do
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end
@@ -694,7 +696,9 @@ restored.run([====[
     page.SetEditing('target');assert(page.unitFrameEditing()=='target' and page.unitFrameEditSelects[2].label:GetText()=='Target','switch to the Target')
     assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')
-    assert(Visible(Row('Layout','Fill Direction')),'a matched Target still picks its fill direction')
+    assert(Visible(Row('Layout','Fill Direction')) and Visible(Row('Layout','Frame Width')),'a matched Target still picks its width and fill direction')
+    assert(M:SetFrameOption('target','barWidth',150) and M.db.player.barWidth==180 and M.frames.target.geometry.width<M.frames.player.geometry.width,'its own width')
+    assert(M:SetFrameOption('target','barWidth',180))
     assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Layout','Scale')))
     assert(M:SetFrameOption('target','barWidth',220) and M.db.player.barWidth==180)
     assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))
