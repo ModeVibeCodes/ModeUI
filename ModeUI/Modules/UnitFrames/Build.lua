@@ -39,6 +39,9 @@ function M:BuildFace(f)
     f.textLayer:SetAllPoints()
     f.nameText, f.levelText, f.healthText, f.powerText = Text(f.textLayer), Text(f.textLayer), Text(f.textLayer), Text(f.textLayer)
     for _, text in ipairs({ f.nameText, f.levelText, f.healthText, f.powerText }) do text.lift = Text(f.textLayer, "ARTWORK") end
+    if f.unit == "target" then self:BuildCombo(f) end
+    self:BuildCast(f)
+    self:BuildAuras(f)
 end
 
 function M:CreateDisplay()
@@ -75,20 +78,63 @@ function M:CreateGhost(unit)
     -- the Position Manager then moves it to the saved position.
     local default = self.defaultPositions[unit]
     g:SetPoint("CENTER", UIParent, "CENTER", default.x, default.y)
+    self.ghosts[unit] = g
+    self:RegisterPosition(unit)
+end
+
+function M:RegisterPosition(unit)
+    local g = self.ghosts[unit]
+    local shown = g:IsShown()
     g:Show()
     local ok, reason = addon.PositionManager:RegisterElement(self.elementIds[unit], g, { moduleId = self.id,
         defaultPosition = self.defaultPositions[unit], allowedTargets = { "screen" },
         canDrag = function() return self:FrameOn(unit) end,
         onPositionChanged = function() self:SyncPosition(unit) end })
     assert(ok, "ModeUI: unit frame position registration failed: " .. tostring(reason))
-    g:Hide()
-    self.ghosts[unit] = g
+    g:SetShown(shown)
+end
+
+-- The parent a frame is attached to (Attach to Target/Focus Frame), while
+-- that parent is shown; otherwise the frame keeps its own screen position.
+function M:AttachedTo(unit)
+    local parent = self.attachParents[unit]
+    if parent and self.db[unit].attach and self:FrameOn(parent) then return parent end
+end
+
+-- An attached frame leaves the Position Manager (so Edit Mode can't move it,
+-- and nothing re-places it); detaching registers it again at its saved
+-- position, which the Position Manager kept. Outside combat only.
+function M:SyncPlacement(unit)
+    local id, PM = self.elementIds[unit], addon.PositionManager
+    local registered = PM:Element(id) ~= nil
+    if self:AttachedTo(unit) then
+        if registered then PM:UnregisterElement(id) end
+    elseif not registered then
+        self:RegisterPosition(unit)
+    end
+end
+
+-- Joins `frame` to `parent` at the chosen corner. Offsets are whole physical
+-- pixels in the frame's own scale, so both frames stay on the pixel grid.
+local function Attach(self, frame, parent, fdb)
+    local spec = self.attachPoints[fdb.attachPoint]
+    local px = self:PixelSize(frame)
+    frame:ClearAllPoints()
+    frame:SetPoint(spec.point, parent, spec.relative, fdb.attachOffsetX * px, fdb.attachOffsetY * px)
 end
 
 function M:SyncPosition(unit)
     local b, g = self.frames[unit], self.ghosts[unit]
     if not b or not g then return end
     if InCombatLockdown() then self.pending = true; return end
+    local parent = self:AttachedTo(unit)
+    if parent then
+        -- Button to button and stand-in to stand-in: a secure frame is never
+        -- anchored to a plain one.
+        local fdb = self:FrameDB(unit)
+        Attach(self, b, self.frames[parent], fdb); Attach(self, g, self.ghosts[parent], fdb)
+        return
+    end
     local count = g:GetNumPoints()
     if not Number(count, 1, 10) then return end
     local px = self:PixelSize(b)

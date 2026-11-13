@@ -21,6 +21,7 @@ M.native = {
     focus = { frame = "FocusFrame", parts = TARGET_PARTS, also = { "FocusFrameToT" } },
     focustarget = { frame = "FocusFrameToT" },
 }
+M.nativeCast = { player = "PlayerCastingBarFrame", target = "TargetFrameSpellBar", focus = "FocusFrameSpellBar" }
 -- Blizzard's Target of Target debuff icons take the mouse for their tooltips
 -- (TargetofTargetDebuffFrameTemplate, enableMouse), so a faded one lets go too.
 local DEBUFFS = 4
@@ -91,6 +92,17 @@ function M:SyncNative()
     for unit, spec in pairs(self.native) do
         if self:FrameOn(unit) and self.db[unit].hideBlizzard then Collect(spec, faded, released) end
     end
+    -- Blizzard's combo points (Camelot ComboFrame, pinned to the Target frame's
+    -- portrait) give way to ModeUI's while they are on.
+    -- Blizzard's cast bars give way to a frame's own: the Player's
+    -- (PlayerCastingBarFrame) and the Target and Focus spell bars, which
+    -- TargetFrameMixin:CreateSpellbar names <frame>SpellBar.
+    for unit, name in pairs(self.nativeCast) do
+        local cast = self.db[unit].castBar
+        if self:FrameOn(unit) and cast.enabled and cast.hideBlizzard and Faded(_G[name]) then faded[_G[name]] = true end
+    end
+    local combo = self.db.comboPoints
+    if self:FrameOn("target") and combo.enabled and combo.hideBlizzard and Faded(_G.ComboFrame) then faded[_G.ComboFrame] = true end
     for region in pairs(self.nativeHidden) do if not faded[region] then Fade(self, region, false) end end
     for region in pairs(faded) do if not self.nativeHidden[region] then Fade(self, region, true) end end
     for frame in pairs(self.nativeMouse) do if not released[frame] then Release(self, frame, false) end end

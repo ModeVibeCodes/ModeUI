@@ -88,6 +88,9 @@ function M:PaintSample(g, unit)
     if fdb.showPortrait then
         if unit == "player" then self:PaintPortrait(g, unit, "player") else Portrait.SetIcon(g.portrait.icon, Portrait.UNKNOWN_ICON) end
     end
+    self:PaintComboSample(g)
+    self:PaintCastSample(g, unit)
+    self:PaintAuraSample(g, unit)
 end
 
 local Health, Power, Name, Level = Domain.Health, Domain.Power, Domain.Name, Domain.Level
@@ -143,5 +146,7 @@ function M:Update(unit)
     local f = self.frames and self.frames[unit]
     if not f or not self:FrameOn(unit) or not Portrait.Exists(unit) then return end
     self:UpdateText(unit); self:UpdateHealth(unit); self:UpdatePower(unit); self:UpdatePortrait(unit)
+    if unit == "target" then self:UpdateCombo() end
+    self:UpdateCast(unit); self:UpdateAuras(unit)
 end
 function M:UpdateAll() for _, unit in ipairs(self.units) do self:Update(unit) end end

@@ -61,7 +61,7 @@ local function Style(kind)
     local enemy = kind == "enemy"
     return {
         show = true, display = "plate",
-        width = enemy and 140 or 120, healthHeight = enemy and 12 or 8, castHeight = 8,
+        width = enemy and 140 or 120, healthHeight = enemy and 12 or 8, castHeight = enemy and 12 or 8,
         healthColorMode = "reaction", healthColor = Copy(P.green), threatColors = enemy,
         -- Colors are used as they are; the bar and its background each fade.
         healthOpacity = 100, backgroundOpacity = 55,
@@ -72,8 +72,8 @@ local function Style(kind)
         healthText = enemy and "percent" or "none", healthFontSize = 9,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
         showName = true, nameFontSize = 10, nameColorMode = "text", nameAnchor = "TOP", nameX = 0, nameY = 0,
-        showCastBar = true, castFontSize = 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
-        castAnchor = "BOTTOM", castX = 0, castY = 0,
+        showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
+        castAnchor = "BOTTOM", castX = 0, castY = enemy and -2 or 0,
         castIcon = "LEFT", castShowText = true, castShowTarget = enemy, castShowTimer = true,
         -- Cast texts by anchor around the cast bar: Left, Center and Right sit inside it.
         castTextAnchor = "LEFT", castTextX = 0, castTextY = 0, castTimerAnchor = "RIGHT", castTimerX = 0, castTimerY = 0,
@@ -90,9 +90,13 @@ local function Style(kind)
         focusStyle = "border", focusColor = RGB(255, 181, 71), focusStripeOpacity = 40, focusTexture = "default",
         focusFadeOthers = 100,
         -- Auras: settings for every group, then each group on its own.
-        showAuras = true, auraSpacing = 2, auraTimer = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
+        showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
+        auraBorderSize = 2, auraCCGlow = true,
         auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
-        auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85),
+        auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85), auraBleedColor = RGB(200, 45, 45),
+        -- Auras without a dispel type (Cheap Shot, most crowd control): orange for
+        -- crowd control, the Mode rim for the rest.
+        auraNoTypeColor = RGB(37, 40, 44), auraCCNoTypeColor = RGB(255, 140, 40),
         crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),
@@ -105,12 +109,18 @@ M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendl
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
 M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
-    auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true }
+    auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true,
+    auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true }
 -- Aura border colors by the game's dispel type name.
 M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Disease = "auraDiseaseColor",
-    Poison = "auraPoisonColor", Enrage = "auraEnrageColor" }
+    Poison = "auraPoisonColor", Enrage = "auraEnrageColor", Bleed = "auraBleedColor" }
+-- The game's dispel type IDs, the x values of a dispel color curve
+-- (C_UnitAuras.GetAuraDispelTypeColor); "none" gets the no-type color.
+M.dispelTypeIDs = { [0] = "none", [1] = "Magic", [2] = "Curse", [3] = "Disease", [4] = "Poison", [5] = "none",
+    [9] = "Enrage", [10] = "none", [11] = "Bleed", [12] = "none" }
 
 M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 },
+    auraBorderSize = { 1, 3, 1 },
     healthOpacity = { 10, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },

@@ -103,4 +103,26 @@
         local tot=CreateFrame('Button',owner..'ToT',_G[owner]);tot:EnableMouse(true)
         for i=1,4 do CreateFrame('Frame',owner..'ToTDebuff'..i,tot):EnableMouse(true) end
     end
+    -- Forever's ComboFrame is pinned to the Target frame; combo points live on the target.
+    CreateFrame('Frame','ComboFrame',TargetFrame)
+    comboPoints=0
+    function GetComboPoints(unit,target) assert(unit=='player' and target=='target');return comboPoints end
+    -- Casts: Blizzard's player cast bar and the Target/Focus spell bars.
+    function methods:SetReverseFill(value) self.reverseFill=value end
+    function UnitCastingInfo(u) local c=units[u] and units[u].cast;if c then return c.name,c.text,c.icon,c.start,c.stop,false,'id',c.locked end end
+    function UnitChannelInfo(u) local c=units[u] and units[u].channel;if c then return c.name,c.text,c.icon,c.start,c.stop,false,c.locked end end
+    CreateFrame('StatusBar','PlayerCastingBarFrame',UIParent);CreateFrame('StatusBar','TargetFrameSpellBar',TargetFrame)
+    CreateFrame('StatusBar','FocusFrameSpellBar',FocusFrame)
+    -- Auras: units[u].helpful / .harmful, picked by the filter's first word.
+    auraFilters={}
+    C_UnitAuras={GetUnitAuras=function(unit,filter,max)
+            auraFilters[#auraFilters+1]=filter
+            local list={}
+            for _,a in ipairs((units[unit] or {})[filter:find('^HELPFUL') and 'helpful' or 'harmful'] or {}) do if #list<max then list[#list+1]=a end end
+            return list
+        end,
+        GetAuraApplicationDisplayCount=function(unit,id,minimum)
+            for _,a in ipairs(units[unit].helpful or {}) do if a.auraInstanceID==id then return (a.applications or 0)>=minimum and tostring(a.applications) or '' end end
+            return ''
+        end}
     function Point(region,i) return {region:GetPoint(i or 1)} end

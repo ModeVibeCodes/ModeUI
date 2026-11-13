@@ -17,7 +17,6 @@ if not M then return end
 -- times are secret (Domain/Cast); if neither is readable it stays empty.
 local Kit, Domain = addon.Kit, addon.Domain
 local Cast, UnitColor = Domain.Cast, Domain.UnitColor
-local ONYX = Kit.onyx
 local TIMER_STEP = 0.1
 
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
@@ -127,16 +126,7 @@ end
 
 -- Colors, text and icon for a cast; shared with the preview.
 function M:PaintCast(plate, style, channel, notInterruptible, text, texture)
-    local bar = plate.cast
-    if bar.SetReverseFill then bar:SetReverseFill(channel) end
-    local fill = bar:GetStatusBarTexture()
-    if channel then
-        Kit.Tint(fill, ONYX.track, 1)
-        Kit.ColorFromBoolean(bar.bg, notInterruptible, style.castLockedColor, style.castColor)
-    else
-        Kit.Tint(bar.bg, ONYX.track, 1)
-        Kit.ColorFromBoolean(fill, notInterruptible, style.castLockedColor, style.castColor)
-    end
+    Kit.PaintCastBar(plate.cast, channel, notInterruptible, style.castColor, style.castLockedColor)
     pcall(Kit.Write, plate.castText, style.castShowText and text or "")
     if not pcall(plate.castIcon.SetTexture, plate.castIcon, texture) then plate.castIcon:SetTexture(nil) end
     plate.casting = channel and "channel" or "cast"
@@ -164,17 +154,7 @@ function M:UpdateCastTarget(plate)
 end
 
 -- Seconds left: from public times, else the duration object; may be secret.
-function M:UpdateCastTimer(plate)
-    local info = plate.castInfo
-    if not info then Kit.Write(plate.castTimer, ""); return end
-    local now = Cast.Now()
-    if addon.IsPublic(info.endMs) and type(info.endMs) == "number" then
-        Kit.Formatted(plate.castTimer, "%.1f", math.max(0, (info.endMs - now) / 1000))
-        return
-    end
-    local ok, remaining = Cast.Remaining(plate.unit, info.channel)
-    if not (ok and pcall(Kit.Formatted, plate.castTimer, "%.1f", remaining)) then Kit.Write(plate.castTimer, "") end
-end
+function M:UpdateCastTimer(plate) Kit.CastTimer(plate.castTimer, plate.castInfo, plate.unit) end
 
 function M:UpdateCast(plate)
     local unit, style = plate.unit, self:Style(plate)

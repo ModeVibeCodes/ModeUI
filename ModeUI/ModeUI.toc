@@ -26,6 +26,7 @@ Shared\Runtime\Lifecycle.lua
 Shared\Domain\Query.lua
 Shared\Domain\Health.lua
 Shared\Domain\Power.lua
+Shared\Domain\ComboPoints.lua
 Shared\Domain\Name.lua
 Shared\Domain\Level.lua
 Shared\Domain\Quest.lua
@@ -42,6 +43,7 @@ Shared\Kit\Shape.lua
 Shared\Kit\Bands.lua
 Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
+Shared\Kit\Cast.lua
 Shared\Kit\AuraIcon.lua
 Shared\Placement\DisplayModes.lua
 Shared\Placement\EditMode.lua

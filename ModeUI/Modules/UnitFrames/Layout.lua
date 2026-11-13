@@ -203,4 +203,7 @@ function M:ApplyLayout(f, unit)
     LayoutLift(f.healthText, fdb, fdb.healthFontSize, path, g.px, fdb.healthText ~= "none", position)
     LayoutLift(f.powerText, fdb, fdb.powerFontSize, path, g.px, fdb.showPower and fdb.powerText ~= "none", fdb.powerTextPosition)
     self:PaintRing(f, unit)
+    if f.combo then self:ResetComboLayout(f) end
+    self:LayoutCast(f, unit)
+    self:LayoutAuras(f, unit)
 end

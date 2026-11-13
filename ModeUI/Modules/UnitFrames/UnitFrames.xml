@@ -6,5 +6,10 @@
     <Script file="Layout.lua"/>
     <Script file="Build.lua"/>
     <Script file="Update.lua"/>
+    <Script file="Combo.lua"/>
+    <Script file="CastBar.lua"/>
+    <Script file="Auras.lua"/>
+    <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsExtra.lua"/>
 </Ui>

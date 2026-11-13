@@ -5,6 +5,88 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Settings preview
+
+November 13, 2026, per the owner: the Unit Frames page has a live preview like
+the Nameplates page (`Preview.lua`, through `W.Preview`). It shows one sample of
+the frame chosen with **Editing**, built and painted by the same code as the
+frames in the world (`BuildFace`, `ApplyLayout`, `PaintSample`), so it shows the
+portrait, bars, texts, cast bar, sample buffs and debuffs and, on the Target,
+combo points exactly as set. Static shows the cast part-way through; Animated
+loops it. Clicking the health bar, power bar, portrait, name, cast bar, an aura
+(its group) or the combo points opens that part's tab at its first setting
+(`M:JumpTo`, `page.jumpTargets`).
+
+## Buffs and debuffs
+
+November 13, 2026, per the owner: each frame shows buffs and debuffs
+(`Auras.lua`, the **Auras** tab with a Buffs/Debuffs switch), each group with
+the same options in `db[unit].buffs` / `db[unit].debuffs` (own keys):
+`enabled` (buffs on for the Target only; debuffs off), `filter` all / mine /
+dispellable, `anchor` (a corner: Top Right, Top Left, Bottom Right, Bottom
+Left), `grow` left/right, `max` 8, `perRow` 8, `x`/`y`, `size` 20, `spacing` 2,
+`shape` cropped (4px wider than tall, like the nameplates) / square, `border`
+by dispel type / Mode, `timer` and `count`.
+
+A group's rows start at a corner of the health bar's span: Top Right puts the
+first icon's right edge on the health bar's right edge, so the row lines up
+with the bars and never reaches over the portrait. Top rows sit 2px over the
+bar block; when the name is above the frame on the same side (or centred) the
+row sits over the name instead, so they never overlap. Bottom rows sit under
+the bars, past a cast bar below them. Rows stack away from the frame. Filters
+are game filter strings (`Domain.Auras.frameFilters`, without the nameplate
+filter) and aura fields go only to widgets that accept secrets, as on the
+nameplates. Icons don't take the mouse.
+
+## Cast bars
+
+November 13, 2026, per the owner: each frame has a cast bar in the Mode skin
+(`CastBar.lua`, the **Cast Bar** tab), on for the Player, Target and Focus. It
+is a second block with the frame's rounded rim, black gap and bar texture,
+exactly as wide as the bar block, `gap` pixels under it (or over it); its bar
+starts and ends where the health bar does, and the portrait ring caps its near
+end like the bar block's. The spell icon takes a square from the far end, the
+portrait end, or is hidden; the spell name and a timer sit inside. Settings
+are in `db[unit].castBar` (`enabled`, `hideBlizzard`, `position` below/above,
+`height` 14, `gap` 3, `icon` far/near/none, `showText`, `showTimer`,
+`fontSize` 10, `color`, `lockedColor`), one of the frame's **own keys**: a
+Target matching the Player keeps its own, while Copy Style and Reset include
+it. Hide Blizzard Cast Bar fades `PlayerCastingBarFrame`, `TargetFrameSpellBar`
+or `FocusFrameSpellBar`. Cast painting and the timer are shared with
+Nameplates (`Kit.PaintCastBar`, `Kit.CastTimer` in `Shared/Kit/Cast.lua`).
+
+## Combo points around the Target portrait
+
+November 13, 2026, per the owner: Blizzard's combo points stayed pinned to the
+faded Blizzard Target frame. The Target frame now draws its own (`Combo.lua`,
+the **Combo Points** tab): one round socket per point (Onyx rim, dark socket,
+lit fill) on an arc around the portrait's outer side, or in a row under the
+bars when the portrait is off. Settings live in `modules.unitFrames.comboPoints`
+(not per frame, so they stay editable while the Target matches the Player):
+`enabled`, `hideBlizzard` (fades Blizzard's `ComboFrame`), `arc` (Upper Outer,
+Outer Side, Lower Outer, Top, Bottom), `size` 10, `spacing` 3, `distance` 3,
+`activeColor`, `emptyColor`. Sizes are even pixel counts and centres are
+snapped, so the sockets sit on the pixel grid. Points show while the player is
+a Rogue or a Druid in Cat Form; the count may be secret and only reaches
+StatusBar `SetValue`.
+
+## Small-frame defaults and attachment (layout version 13)
+
+November 13, 2026, per the owner: Target of Target defaults to no portrait,
+75% scale and the name inside the health bar on the left, attached under the
+Target frame's bottom-right corner. Target of Focus is the same under the
+Focus frame, and Focus is the same frame at 90% scale on its own. Layout
+version 13 moves a saved setting to the new default only while it still equals
+the version 12 default.
+
+Attachment (`attach`, `attachPoint`, `attachOffsetX`/`attachOffsetY` in
+physical pixels; identity keys, so Copy Style and Reset keep them) is handled
+by the module: the Position Manager's frame anchors refuse ModeUI frames, so an
+attached frame is unregistered from it and its button is anchored to the
+parent's button (its Edit Mode stand-in to the parent's stand-in, so a secure
+frame is never anchored to a plain one). Detached, or while the parent frame
+is off, it registers again at its saved position and moves in Edit Mode.
+
 ## Target of Target, Focus and Target of Focus
 
 November 13, 2026, per the owner: three more secure frames in the same skin,

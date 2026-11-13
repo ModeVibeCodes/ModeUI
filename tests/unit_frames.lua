@@ -13,7 +13,7 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==12 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.layoutVersion==13 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture==nil,'one bar texture: Mode Gradient')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
     assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='sky' and M.db.player.portraitRing=='class')
@@ -42,6 +42,94 @@ world.run([====[
     assert(TargetFrameToT:GetAlpha()==0 and TargetFrameToT.mouse==false and TargetFrameToTDebuff1.mouse==false and TargetFrameToTDebuff4.mouse==false,'Blizzard Target of Target fades with the Target frame')
     TargetFrameToT:SetAlpha(1);assert(TargetFrameToT:GetAlpha()==0,'kept faded when Blizzard restores it')
 
+    -- Combo points ring the Target portrait (Rogue fixture): five sockets, each its
+    -- own StatusBar over (i-1, i), so a secret count fills them without comparisons.
+    local cb=t.combo;assert(cb and cb:IsShown() and cb.count==5 and not cb.points[6]:IsShown() and p.combo==nil)
+    assert(ComboFrame:GetAlpha()==0,'Blizzard combo points fade')
+    for i=1,5 do local lo,hi=cb.points[i].bar.low,cb.points[i].bar.high;assert(lo==i-1 and hi==i and cb.points[i].bar.value==0) end
+    comboPoints=3;FireEvent('UNIT_POWER_FREQUENT','player');assert(cb.points[3].bar.value==3 and cb.points[5].bar.value==3)
+    comboPoints=Secret('cp');FireEvent('COMBO_TARGET_CHANGED');assert(cb.points[1].bar.value.label=='cp','secret count straight to SetValue')
+    comboPoints=0;FireEvent('PLAYER_TARGET_CHANGED')
+    -- Pixel perfect on an arc around the portrait's centre, on its outer side (right).
+    local c1,c5=Point(cb.points[1]),Point(cb.points[5])
+    assert(c1[1]=='CENTER' and c1[2]==t.portrait and c1[4]>0 and c5[5]>c1[5],'from the lower outer end upward')
+    for i=1,5 do local q=Point(cb.points[i]);assert(q[4]==math.floor(q[4]) and q[5]==math.floor(q[5]) and cb.points[i].width%2==0) end
+    local r=35+3+5;assert(math.abs(math.sqrt(c1[4]^2+c1[5]^2)-r)<1,'radius: portrait, distance, half a point')
+    assert(cb.points[1].rim.vertexColor[1]==O.border[1] and Point(cb.points[1].bar)[4]==2)
+    assert(M:SetComboOption('arc','top') and math.abs(Point(cb.points[3])[4])<1 and Point(cb.points[3])[5]>0,'centred over the top')
+    assert(M:SetComboOption('size',14) and cb.points[1].width==14 and M:SetComboOption('size',10) and M:SetComboOption('arc','topOuter'))
+    assert(not M:SetComboOption('arc','sideways') and not M:SetComboOption('size',40),'validated')
+    assert(M:SetComboOption('hideBlizzard',false) and ComboFrame:GetAlpha()==1 and M:SetComboOption('hideBlizzard',true) and ComboFrame:GetAlpha()==0)
+    assert(M:SetComboOption('enabled',false) and not cb:IsShown() and ComboFrame:GetAlpha()==1,'off: Blizzard\'s come back')
+    assert(M:SetComboOption('enabled',true) and cb:IsShown())
+    -- Matching the Player never borrows combo settings; a Target without a portrait lines them up under the bars.
+    assert(M:SetFrameOption('player','showPortrait',false) and Point(cb.points[1])[1]=='TOPLEFT' and Point(cb.points[1])[2]==t.power)
+    assert(M:SetFrameOption('player','showPortrait',true) and Point(cb.points[1])[2]==t.portrait)
+
+    -- Cast bars: a block in the frame's own skin under the bar block, as wide as
+    -- it, its bar starting exactly where the health bar does.
+    local pc,tex=p.castBox,function(key) return (addon.Media:GetTexture(key)) end
+    assert(pc and not pc:IsShown() and PlayerCastingBarFrame:GetAlpha()==0 and TargetFrameSpellBar:GetAlpha()==0 and FocusFrameSpellBar:GetAlpha()==0)
+    local cp1,cp2=Point(pc),Point(pc,2)
+    assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT')
+    assert(pc.height==14+8 and pc.rim.texture==tex('UnitFrameFrame') and pc.gap.texture==tex('UnitFrameFrameInner'),'rim and gap like the frame')
+    local cb1,cb2=Point(pc.bar),Point(pc.bar,2)
+    assert(cb1[1]=='TOPLEFT' and cb1[4]==60-35 and cb1[5]==-4,'bar starts where the health bar does')
+    assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(4+14+1) and cb2[5]==4,'the icon takes the far end, a hairline apart')
+    local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-4 and pc.icon.width==14 and pc.icon.height==14)
+    assert(pc:GetFrameLevel()<p.portrait:GetFrameLevel(),'the portrait ring caps it')
+    units.player.cast={name='Frostbolt',text='Frostbolt',icon=135846,start=1000,stop=3000}
+    FireEvent('UNIT_SPELLCAST_START','player')
+    assert(pc:IsShown() and pc.bar.low==1000 and pc.bar.high==3000 and pc.text:GetText()=='Frostbolt' and pc.icon.texture==135846)
+    assert(pc.bar.fillTexture.vertexColor[1]==M.castDefaults.color[1] and pc.bar.reverseFill==false and pc.bar.value==GetTime()*1000)
+    units.player.cast=nil;FireEvent('UNIT_SPELLCAST_STOP','player');assert(not pc:IsShown())
+    -- A channel drains; secret values go straight to the widgets.
+    units.target.channel={name=Secret('c'),text=Secret('ctext'),icon=Secret('i'),start=Secret('s'),stop=Secret('e'),locked=Secret('l')}
+    FireEvent('UNIT_SPELLCAST_CHANNEL_START','target');local tcb=t.castBox
+    assert(tcb:IsShown() and tcb.bar.reverseFill==true and tcb.text.text.label=='ctext' and tcb.bar.low.label=='s')
+    units.target.channel=nil;FireEvent('UNIT_SPELLCAST_CHANNEL_STOP','target');assert(not tcb:IsShown())
+    assert(Point(tcb.bar)[1]=='TOPRIGHT' and Point(tcb.bar)[4]==-25 and Point(tcb.icon)[1]=='LEFT','mirrored on the Target')
+    -- Settings: position, icon side, Blizzard's bar; validated; per frame even while matched.
+    assert(M:SetCastOption('player','position','above') and Point(pc)[1]=='BOTTOMLEFT' and Point(pc)[3]=='TOPLEFT' and Point(pc)[5]==3)
+    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==25 and Point(pc.bar)[4]==25+14+1)
+    assert(M:SetCastOption('player','icon','none') and not pc.icon:IsShown() and Point(pc.bar,2)[4]==-4)
+    assert(M:SetCastOption('player','hideBlizzard',false) and PlayerCastingBarFrame:GetAlpha()==1)
+    assert(not M:SetCastOption('player','height',99) and not M:SetCastOption('player','icon','top') and not M:SetCastOption('player','bogus',1))
+    assert(M:FrameDB('target').castBar==M.db.target.castBar and M.db.target.matchPlayer,'a matched Target keeps its own cast bar')
+    assert(M:ResetFrame('player') and M.db.player.castBar.position=='below' and PlayerCastingBarFrame:GetAlpha()==0,'reset restores it')
+    assert(M:SetCastOption('target','enabled',false) and TargetFrameSpellBar:GetAlpha()==1 and M:SetCastOption('target','enabled',true))
+    assert(M.db.targettarget.castBar.enabled==false and M.db.focus.castBar.enabled==true)
+
+    -- Auras: buffs on the Target by default, debuffs off; each group its own settings.
+    assert(M.db.target.buffs.enabled and not M.db.target.debuffs.enabled and not M.db.player.buffs.enabled and not M.db.focus.buffs.enabled)
+    units.target.helpful={{icon=136078,auraInstanceID=1,applications=3,duration=10,expirationTime=20},{icon=136090,auraInstanceID=2}}
+    units.target.harmful={{icon=136207,auraInstanceID=3,dispelName='Magic'}}
+    FireEvent('UNIT_AURA','target')
+    local b1,b2=t.auraIcons.buffs[1],t.auraIcons.buffs[2]
+    assert(b1:IsShown() and b2:IsShown() and t.auraShown.buffs==2 and t.auraShown.debuffs==0 and auraFilters[#auraFilters]=='HELPFUL')
+    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.rim.vertexColor[1]==O.border[1])
+    -- Top right: the first icon's right edge on the health bar's right edge (clear of
+    -- the portrait), cropped icons growing left. The matched name is right-aligned
+    -- above the frame, so the row sits over the name instead of on it.
+    local q=Point(b1);assert(q[1]=='BOTTOMRIGHT' and q[2]==t.health and q[3]=='TOPRIGHT' and q[4]==0 and q[5]==4+3+14+2,'over the name')
+    assert(b1.width==20 and b1.height==16 and Point(b2)[4]==-(20+2) and Point(b2)[5]==q[5],'cropped, growing left')
+    assert(M:SetFrameOption('player','nameAlign','LEFT') and Point(b1)[5]==4+2,'with the name on the other side, right on the bar block')
+    assert(M:SetFrameOption('player','nameAlign','RIGHT'))
+    assert(M:SetAuraOption('target','buffs','perRow',1) and Point(b2)[4]==0 and Point(b2)[5]==q[5]+16+2,'a new row above')
+    assert(M:SetAuraOption('target','buffs','shape','square') and b1.height==20 and M:SetAuraOption('target','buffs','perRow',8))
+    assert(M:SetAuraOption('target','buffs','filter','mine') and auraFilters[#auraFilters]=='HELPFUL|PLAYER')
+    assert(M:SetAuraOption('target','buffs','max',1) and not b2:IsShown() and M:ResetFrame('target') and b2:IsShown(),'reset restores the auras')
+    -- Debuffs: under the bars, past the cast bar below them; rims by dispel type.
+    assert(M:SetAuraOption('target','debuffs','enabled',true));local d1=t.auraIcons.debuffs[1]
+    assert(d1:IsShown() and d1.rim.vertexColor[3]==M.dispelColors.Magic[3])
+    local dq=Point(d1);assert(dq[1]=='TOPRIGHT' and dq[2]==t.power and dq[5]==-(4+2+3+14+8),'below the cast bar')
+    assert(M:SetCastOption('target','position','above') and Point(d1)[5]==-(4+2) and M:SetCastOption('target','position','below'))
+    assert(M:SetAuraOption('target','debuffs','border','mode') and d1.rim.vertexColor[1]==O.border[1])
+    assert(not M:SetAuraOption('target','debuffs','anchor','MIDDLE') and not M:SetAuraOption('target','debuffs','size',99) and not M:SetAuraOption('target','nope','size',20))
+    assert(M:FrameDB('target').buffs==M.db.target.buffs,'a matched Target keeps its own auras')
+    assert(M:SetAuraOption('target','debuffs','enabled',false) and not d1:IsShown())
+    units.target.helpful,units.target.harmful=nil,nil;FireEvent('UNIT_AURA','target');assert(not b1:IsShown())
+
     -- Target of Target, Focus and Target of Focus: secure frames of their own,
     -- each replacing Blizzard's; Blizzard's Focus frame fades like the Target.
     local tt,fo,ft=M.frames.targettarget,M.frames.focus,M.frames.focustarget
@@ -50,10 +138,31 @@ world.run([====[
     assert(tt.attributes.unit=='targettarget' and fo.attributes.unit=='focus' and ft.attributes.unit=='focustarget')
     assert(FocusFrame.TargetFrameContainer:GetAlpha()==0 and FocusFrame.TargetFrameContent:GetAlpha()==0 and FocusFrame.mouse==false)
     assert(FocusFrameToT:GetAlpha()==0 and FocusFrameToTDebuff3.mouse==false,'Blizzard Target of Focus fades too')
-    for _,id in ipairs({'unitFramesTargetTarget','unitFramesFocus','unitFramesFocusTarget'}) do assert(addon.PositionManager.elements[id],id) end
-    assert(M.db.targettarget.barWidth==110 and M.db.targettarget.levelStyle=='none' and M.db.focustarget.healthHeight==16)
-    assert(M.db.focus.portraitSide=='right' and M.db.focus.barWidth==150 and not M.db.focus.matchPlayer and not M.db.targettarget.matchPlayer)
-    assert(tt.width<p.width and tt.height<p.height and not tt.levelText:IsShown(),'Target of Target is small, without a level')
+    -- Target of Target: small, no portrait or level, 75%, name in the bar on the left.
+    -- Focus is the same frame at 90%; Target of Focus matches the Target of Target.
+    local d=M.db.targettarget
+    assert(d.barWidth==110 and d.levelStyle=='none' and d.scale==75 and d.showPortrait==false and d.namePosition=='bar' and d.nameAlign=='LEFT')
+    assert(M.db.focustarget.scale==75 and M.db.focustarget.attach and M.db.focustarget.showPortrait==false)
+    assert(M.db.focus.scale==90 and M.db.focus.barWidth==110 and M.db.focus.showPortrait==false and M.db.focus.namePosition=='bar' and not M.db.focus.attach)
+    assert(not M.db.focus.matchPlayer and not d.matchPlayer)
+    assert(tt.scale==0.75 and fo.scale==0.9 and not tt.portrait:IsShown() and not tt.levelText:IsShown(),'small frames')
+    local tn=Point(tt.nameText);assert(tn[1]=='LEFT' and tn[2]==tt.health and tn[4]==4 and tt.nameText.justifyH=='LEFT','name in the bar, on the left')
+    -- Attached under the Target frame's bottom-right corner, button to button and
+    -- stand-in to stand-in; attached frames leave the Position Manager.
+    local ta=Point(tt);assert(ta[1]=='TOPRIGHT' and ta[2]==t and ta[3]=='BOTTOMRIGHT' and ta[4]==0 and ta[5]==-2,'attached under the Target')
+    local ga=Point(M.ghosts.targettarget);assert(ga[2]==M.ghosts.target and ga[1]=='TOPRIGHT')
+    assert(Point(ft)[2]==fo,'Target of Focus attaches to the Focus')
+    local PM=addon.PositionManager
+    assert(not PM.elements.unitFramesTargetTarget and not PM.elements.unitFramesFocusTarget and PM.elements.unitFramesFocus)
+    assert(M:SetFrameOption('targettarget','attachPoint','bottomleft') and Point(tt)[1]=='TOPLEFT' and Point(tt)[3]=='BOTTOMLEFT')
+    assert(M:SetFrameOption('targettarget','attachOffsetX',3) and Point(tt)[4]==3 and M:ResetFrame('targettarget'),'pixel offsets')
+    assert(M.db.targettarget.attachPoint=='bottomleft' and M.db.targettarget.attachOffsetX==3,'reset keeps placement')
+    assert(M:SetFrameOption('targettarget','attachPoint','bottomright') and M:SetFrameOption('targettarget','attachOffsetX',0))
+    -- Detached (or while the Target frame is off) it is placed and moved like any frame.
+    assert(M:SetFrameOption('targettarget','attach',false) and PM.elements.unitFramesTargetTarget and Point(tt)[2]~=t)
+    assert(M:SetFrameOption('targettarget','attach',true) and not PM.elements.unitFramesTargetTarget and Point(tt)[2]==t)
+    assert(M:SetFrameOption('target','enabled',false) and PM.elements.unitFramesTargetTarget,'free while the Target is off')
+    assert(M:SetFrameOption('target','enabled',true) and Point(tt)[2]==t)
     -- The game sends no unit events for targettarget/focustarget: a short timer refreshes them.
     assert(M.poller:IsShown());Advance(0.2)
     units.targettarget={exists=true,health=300,max=600,power=10,powerMax=100,token='RAGE',name='Totfix',level=12,reaction=2,connected=true}
@@ -336,6 +445,9 @@ world.run([====[
     assert(ghost.nameText.lift:GetText()=='Player Frame' and ghost.nameText.lift:IsShown() and ghost.levelText.lift:GetText()=='60','stand-in text has the lift too')
     assert(ghost.width==p.width and Near(RingTop(ghost).r,Soft(soft,0.35)[1]),'stand-in matches size and class ring')
     assert(Near(RingTop(M.ghosts.target).r,Soft(Soft(P.hostile),0.35)[1]),'target stand-in shows an enemy ring')
+    local gc=M.ghosts.target.combo;assert(gc:IsShown() and gc.points[3].bar.value==M.COMBO_SAMPLE and gc.points[5]:IsShown(),'stand-in shows sample combo points')
+    local ga=M.ghosts.target;assert(ga.auraShown.buffs==M.AURA_SAMPLE and ga.auraIcons.buffs[1]:IsShown() and ga.auraShown.debuffs==0,'sample buffs')
+    assert(ga.castBox:IsShown() and ga.castBox.text:GetText()=='Frostbolt' and not M.ghosts.player.auraIcons.buffs[1],'sample cast; no buffs on the Player')
     assert(addon.PositionManager:SetOffsets('unitFramesPlayer',-300,-150))
     local point,gp=Point(p),Point(ghost)
     assert(point[1]==gp[1] and point[3]==gp[3] and point[4]==gp[4] and point[5]==gp[5] and p.scale==ghost.scale,'secure button copies the stand-in anchor at the same scale')
@@ -368,7 +480,7 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==12 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
+    assert(v1.layoutVersion==13 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
     assert(v1.player.healthText=='both' and v1.player.nameFontSize==14 and v1.player.healthColorMode=='default')
     assert(v1.player.fontMedia=='Expressway' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
     assert(v1.target.enabled==false and v1.target.barWidth==180)
@@ -380,7 +492,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==12 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
+    assert(v5.layoutVersion==13 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
     assert(v5.player.levelFontSize==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -393,7 +505,7 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==12 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==13 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='sky' and v8.target.nameColorMode=='sky','names adopt the default color')
     assert(v8.player.portraitRing=='class' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'class gradient ring unless custom')
@@ -404,7 +516,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==12 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
+    assert(v9.layoutVersion==13 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -412,12 +524,20 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==12 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
+    assert(v10.layoutVersion==13 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==true and v10.player.nameLift==nil and v10.target.nameLift==nil,'lift choice carried over')
     assert(v10.target.mirrorText==false,'matched Target now copies the Player text layout')
     local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
-    assert(v11.layoutVersion==12 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    assert(v11.layoutVersion==13 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    -- Version 12 -> 13: new small-frame defaults, but a changed setting stays.
+    local v12={layoutVersion=12,targettarget={scale=100,showPortrait=true,namePosition='above',nameAlign='CENTER',barWidth=110},
+        focus={scale=120,showPortrait=true,barWidth=150,healthHeight=22,levelStyle='badge',nameFontSize=12}}
+    M.Initialize(v12)
+    assert(v12.layoutVersion==13 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
+    assert(v12.targettarget.nameAlign=='CENTER' and v12.focus.scale==120,'user changes kept')
+    assert(v12.focus.barWidth==110 and v12.focus.healthHeight==16 and v12.focus.levelStyle=='none' and v12.focus.nameFontSize==11)
+    assert(v12.targettarget.attach==true and v12.focustarget.attach==true and v12.focus.attach==false,'new keys take defaults')
     local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     kept.player.nameColorMode='class';kept.player.portraitRing='border';M.Initialize(kept)
     assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='border','later choices are not migrated')
@@ -441,8 +561,8 @@ restored.run([====[
     if not addon.EnsureConfigPage then addon:ToggleConfig() end
     local page=addon:EnsureConfigPage('unitFrames')
     local titles={};for _,section in ipairs(page.sections) do titles[#titles+1]=section.title end
-    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Text','one tab per frame element; no Border tab')
-    assert(page.sectionTabs and #page.sectionTabs.buttons==7)
+    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Cast Bar|Auras|Combo Points|Text','one tab per frame element; no Border tab')
+    assert(page.sectionTabs and #page.sectionTabs.buttons==10)
     local function Find(section,title)
         for _,row in ipairs(page.rows) do if row.section and row.section.title==section and row.settingsTitle==title then return row end end
     end
@@ -470,13 +590,49 @@ restored.run([====[
     assert(page.unitFrameCopyPlayer.label:GetText()=='Copy Style to Target' and page.unitFrameCopyFocus.label:GetText()=='Copy Player Style')
     assert(M:SetFrameOption('player','barWidth',200));page.unitFrameCopyFocus.scripts.OnClick()
     assert(M.db.focus.barWidth==200 and M.db.focus.portraitSide=='right','copies the Player look, keeps its side')
-    page.unitFrameResetFocus.scripts.OnClick();assert(M.db.focus.barWidth==150 and M:ResetFrame('player'))
+    page.unitFrameResetFocus.scripts.OnClick();assert(M.db.focus.barWidth==110 and M:ResetFrame('player'))
+    -- Combo Points: the Target's own settings, editable even while it matches the Player.
+    assert(page.unitFrameComboArc and page.unitFrameComboSize and Visible(Row('Combo Points','Arc Position')))
+    assert(M:SetComboOption('enabled',false) and not Visible(Row('Combo Points','Arc Position')) and M:SetComboOption('enabled',true))
     -- Editing picks one of the five frames, shared by every tab.
-    assert(#page.unitFrameEditSelects==6)
+    assert(#page.unitFrameEditSelects==8)
+    -- Cast Bar edits the frame's own cast bar, even on a matched Target.
+    assert(page.unitFrameCastPosition and page.unitFrameCastHeight and Visible(Row('Cast Bar','Position')))
+    page.SetEditing('target');assert(M.db.target.matchPlayer and Visible(Row('Cast Bar','Spell Icon')) and not Visible(Row('Layout','Scale')))
+    page.SetEditing('targettarget');assert(not Visible(Row('Cast Bar','Position')),'off by default on the Target of Target')
+    -- Auras: Buffs and Debuffs share the controls; the group switch picks one.
+    page.SetEditing('target');assert(page.unitFrameAuraGroup()=='buffs' and page.unitFrameAuraAnchor and Visible(Row('Auras','Filter')))
+    local function Shared() return Visible(page.unitFrameAuraAnchor:GetParent().row) end
+    assert(Shared());page.unitFrameAuraButtons[2].scripts.OnClick();assert(page.unitFrameAuraGroup()=='debuffs' and not Shared(),'debuffs start off')
+    assert(M:SetAuraOption('target','debuffs','enabled',true) and Shared() and M:SetAuraOption('target','debuffs','enabled',false))
+    page.SetAuraGroup('buffs')
+    -- Preview: a live sample of the frame being edited, built by the same code as
+    -- the frames in the world; clicking a part opens its settings.
+    local view=page.configPreview
+    assert(view and page.previewArea:IsShown() and not page.testDisplayButton:IsShown(),'preview without a screen test')
+    local face=view.faces.target
+    assert(face and face:IsShown() and face:GetParent()==view.frame and not (view.faces.player and view.faces.player:IsShown()))
+    assert(face.auraShown.buffs==M.AURA_SAMPLE and face.castBox:IsShown() and face.combo:IsShown(),'buffs, cast bar and combo points')
+    assert(face.nameText:GetText()=='Target Frame' and face.health.value==75)
+    local at=Point(face);assert(at[1]=='TOPLEFT' and at[2]==view.frame and at[3]=='TOP' and at[4]==math.floor(at[4]),'centred on whole pixels')
+    assert(M:SetAuraOption('target','buffs','enabled',false) and face.auraShown.buffs==0 and M:SetAuraOption('target','buffs','enabled',true),'follows the settings')
+    face.castBox.scripts.OnMouseUp(face.castBox,'LeftButton');assert(page.selectedSection.title=='Cast Bar')
+    face.auraIcons.buffs[1].scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Auras' and page.unitFrameAuraGroup()=='buffs')
+    face.health.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Health')
+    face.combo.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Combo Points')
+    face.portrait.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Portrait')
+    page.SetEditing('targettarget');local small=view.faces.targettarget
+    assert(small:IsShown() and not face:IsShown() and small.scale==0.75 and not small.portrait:IsShown() and not small.castBox:IsShown())
+    local w,h=M:GetPreviewSize(view);assert(w>=320 and h>0)
+    page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
     assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==25,'edits the Focus only')
     assert(M:ResetFrame('focus'))
+    -- Placement shows only for frames that attach; its offsets only while attached.
+    assert(not Visible(Row('Layout','Attach Point')),'Focus has no parent frame')
+    page.SetEditing('targettarget');assert(Visible(Row('Layout','Attach Point')) and page.unitFrameAttachY)
+    assert(M:SetFrameOption('targettarget','attach',false) and not Visible(Row('Layout','Attach Point')) and M:SetFrameOption('targettarget','attach',true))
     page.SetEditing('target');assert(page.unitFrameEditing()=='target' and page.unitFrameEditSelects[2].label:GetText()=='Target','switch to the Target')
     assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')

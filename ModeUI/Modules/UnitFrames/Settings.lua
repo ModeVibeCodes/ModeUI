@@ -59,6 +59,12 @@ function M:CreateConfigPage(parent)
         return label
     end
 
+    -- The live sample of the frame being edited (Preview.lua); clicking a part
+    -- of it reveals the row marked here for that part.
+    page.configPreview = W.Preview(page, M, { contentHeight = 170 })
+    page.jumpTargets = {}
+    local function Mark(target) local row = page.rows[#page.rows]; page.jumpTargets[target] = { section = row.section, row = row } end
+
     -- Frames: visibility, matching, status and whole-frame tools.
     page:Section("Frames", nil, false)
     -- One line per frame: show it, and hide Blizzard's own beside it.
@@ -99,25 +105,49 @@ function M:CreateConfigPage(parent)
     for _, unit in ipairs(M.units) do frameChoices[#frameChoices + 1] = { id = unit, label = M.labels[unit] } end
     function page.SetEditing(unit) if M.labels[unit] then editing = unit; page:Refresh(); page:Layout() end end
     page.unitFrameEditSelects = {}
-    local function Tab(title, build)
+    -- `own`: the tab edits settings every frame keeps for itself (cast bar,
+    -- auras), so a matched Target edits them too.
+    local function Tab(title, build, own)
         page:Section(title, nil, false)
         local row = page:Row("Editing", 48, { "player", "target", "focus", "frame" })
         page.unitFrameEditSelects[#page.unitFrameEditSelects + 1] = SelectIn(row, 260, function() return frameChoices end,
             Unit, page.SetEditing)
-        When(function() return editing == "target" and db().enabled end, function()
-            Toggles({ { "Match Player Frame", "matchPlayer" } })
-        end)
-        When(Matched, function()
-            Toggles({ { "Mirror Player Text", "mirrorText" } })
-            Note("Target Matches Player", "Uses the Player frame's look and text layout. Turn on Mirror Player Text to flip the text alignment to the other side, or turn off Match Player Frame to customize the Target separately.", 52)
-        end)
+        if not own then
+            When(function() return editing == "target" and db().enabled end, function()
+                Toggles({ { "Match Player Frame", "matchPlayer" } })
+            end)
+            When(Matched, function()
+                Toggles({ { "Mirror Player Text", "mirrorText" } })
+                Note("Target Matches Player", "Uses the Player frame's look and text layout. Turn on Mirror Player Text to flip the text alignment to the other side, or turn off Match Player Frame to customize the Target separately.", 52)
+            end)
+        end
         When(function() return not db().enabled end, function()
             Note("Frame Hidden", "This frame is turned off. Turn it on in the Frames tab to customize it.")
         end)
-        When(function() return db().enabled and not Matched() end, build)
+        When(function() return db().enabled and (own or not Matched()) end, build)
     end
+    -- Helpers the other tab files (SettingsExtra.lua) build with.
+    local ui = { page = page, When = When, SelectIn = SelectIn, Select = Select, Toggles = Toggles, Note = Note, Tab = Tab,
+        Editing = Unit, db = db, Mark = Mark }
 
     Tab("Layout", function()
+        -- Target of Target and Target of Focus can attach to their parent frame
+        -- (offsets in screen pixels); detached, they move in Edit Mode.
+        local function Attachable() return M.attachParents[editing] ~= nil end
+        When(Attachable, function()
+            page:Group("Placement")
+            for unit, parent in pairs(M.attachParents) do
+                When(function() return editing == unit end, function()
+                    Toggles({ { "Attach to " .. M.titles[parent], "attach" } })
+                end)
+            end
+            When(function() return db().attach end, function()
+                Choice("Attach Point", "attachPoint")
+                local offsets = page:Columns({ "Attach Offset X", "Attach Offset Y" })
+                page.unitFrameAttachX = SliderIn(offsets[1], "attachOffsetX", "px")
+                page.unitFrameAttachY = SliderIn(offsets[2], "attachOffsetY", "px")
+            end)
+        end)
         page:Group("Size")
         Slider("Scale", "scale", "%"); Slider("Bar Width", "barWidth")
         -- Both bars: the fill (foreground) and the empty bar (background).
@@ -134,7 +164,7 @@ function M:CreateConfigPage(parent)
     end)
 
     Tab("Portrait", function()
-        Toggles({ { "Show Portrait", "showPortrait" } })
+        Toggles({ { "Show Portrait", "showPortrait" } }); Mark("portrait")
         When(function() return db().showPortrait end, function()
             Choice("Portrait Style", "portraitStyle"); Choice("Portrait Side", "portraitSide")
             -- Sized against the bar block; the full ring is drawn over the bar's end.
@@ -146,7 +176,7 @@ function M:CreateConfigPage(parent)
 
     Tab("Name & Level", function()
         page:Group("Name")
-        Toggles({ { "Show Name", "showName" } })
+        Toggles({ { "Show Name", "showName" } }); Mark("name")
         When(function() return db().showName end, function()
             Choice("Name Position", "namePosition"); Choice("Name Alignment", "nameAlign")
             -- Plain text: Sky by default, or Champagne, Lilac, Frost, class or custom.
@@ -168,7 +198,7 @@ function M:CreateConfigPage(parent)
 
     Tab("Health", function()
         page:Group("Health Bar")
-        Slider("Health Bar Height", "healthHeight")
+        Slider("Health Bar Height", "healthHeight"); Mark("health")
         -- Default is Onyx #1C1E21; the empty bar and background stay Onyx.
         Choice("Health Color", "healthColorMode")
         When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
@@ -182,7 +212,7 @@ function M:CreateConfigPage(parent)
 
     Tab("Power", function()
         page:Group("Power Bar")
-        Toggles({ { "Show Power Bar", "showPower" } })
+        Toggles({ { "Show Power Bar", "showPower" } }); Mark("power")
         When(function() return db().showPower end, function()
             Slider("Power Bar Height", "powerHeight")
             Choice("Power Color", "powerColorMode")
@@ -195,6 +225,10 @@ function M:CreateConfigPage(parent)
             end)
         end)
     end)
+
+    M:BuildCastTab(ui)
+    M:BuildAurasTab(ui)
+    M:BuildComboTab(ui)
 
     Tab("Text", function()
         local _, refresh = W.FontDropdown(page:Row("Font", 42), owner); page.refreshers[#page.refreshers + 1] = refresh
@@ -210,7 +244,7 @@ function M:CreateConfigPage(parent)
         Color("Text Color", "textColor")
     end)
 
-    local note = W.Label(page:Row("About Unit Frames", 170), "Each tab customizes one part of the frame; use Editing at the top of a tab to pick the Player, Target, Target of Target, Focus or Target of Focus frame. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside a pixel-perfect slate rim and black gap, with a hairline between health and power. The rim and gap are fixed. Each bar has a foreground (fill) and background (empty bar) texture and opacity; the background is 25% by default, so the world shows through the empty part. Health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text layout, optionally mirrored. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. Hiding a Blizzard frame only fades its main art and bars, so pet frames, combo points, target auras and cast bars keep working; Blizzard's Target of Target and Target of Focus fade with the Target and Focus frames they sit on. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
+    local note = W.Label(page:Row("About Unit Frames", 190), "Each tab customizes one part of the frame; use Editing at the top of a tab to pick the Player, Target, Target of Target, Focus or Target of Focus frame. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside a pixel-perfect slate rim and black gap, with a hairline between health and power. The rim and gap are fixed. Each bar has a foreground (fill) and background (empty bar) texture and opacity; the background is 25% by default, so the world shows through the empty part. Health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text layout, optionally mirrored. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. The preview above shows the frame you are editing; click a part of it to open its settings. Hiding a Blizzard frame only fades its main art and bars, so pet frames and other Blizzard parts keep working; the Cast Bar and Combo Points tabs can hide Blizzard's cast bars and combo points too; Blizzard's Target of Target and Target of Focus fade with the Target and Focus frames they sit on. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
     note:SetWordWrap(true); page:FooterNote(note)
     W.PinnedSectionTabs(page)
     page:Finish(); return page
