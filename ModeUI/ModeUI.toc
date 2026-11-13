@@ -1,0 +1,51 @@
+## Interface: 16001
+## Title: |cff00f0ffModeUI|r
+## Notes: Custom Mode interface for WoW Forever: Player and Target unit frames.
+## Author: Mode
+## Version: 0.1.0-beta.1
+## IconTexture: Interface\AddOns\ModeUI\Media\Textures\Mode\Logo
+## SavedVariables: ModeUIDB
+## OptionalDeps: PlayTheGameTools, LibSharedMedia-3.0, SharedMedia, SharedMedia_MyMedia
+## X-ModeUI-Edition: Forever
+## X-License: GPL-3.0-only (bundled distribution; original MIT grants retained)
+
+Core\Edition.lua
+Core\Libs\LibStub.lua
+Core\Libs\CallbackHandler-1.0.lua
+Core\Libs\LibSharedMedia-3.0.lua
+Core\ProfileCodec.lua
+Core\Database.lua
+Core\ReloadManager.lua
+Core\Categories.lua
+Core\Modules.lua
+Core\DisplayModes.lua
+Core\EditMode.lua
+Core\Positioning.lua
+Core\PositionManager.lua
+Core\FrameAnchors.lua
+Core\Media.lua
+Core\MediaCatalog.lua
+Core\MediaDiscovery.lua
+Core\GlobalSettings.lua
+Core\Feedback.lua
+Core\PreviewStates.lua
+Core\Border.lua
+Core\PositionHighlights.lua
+Config\Theme.lua
+Modules\UnitFrames.lua
+Modules\UnitFramesDisplay.lua
+Config\Widgets.lua
+Config\Pages.lua
+Config\SectionTabs.lua
+Config\ModeLayout.lua
+Config\Previews.lua
+Config\Search.lua
+Config\FontDropdown.lua
+Config\Select.lua
+Config\ColorRow.lua
+Config\Categories.lua
+Config\Reload.lua
+Config\Window.lua
+Config\EditMode.lua
+Config\UnitFrames.lua
+Core\Init.lua
