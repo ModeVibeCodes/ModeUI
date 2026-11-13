@@ -224,6 +224,26 @@ world.run([==[
     nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
     assert(not p2.targeted and p2.healthBox.rim.vertexColor[1] == Kit.onyx.border[1])
 
+    -- Focus: found like the target; a border, glow or stripes, its own texture, fading the others.
+    local amber = M.db.enemy.focusColor
+    nameplates.focus = first; FireEvent('PLAYER_FOCUS_CHANGED')
+    assert(plate.focused and not p2.focused and plate.healthBox.rim.vertexColor[1] == amber[1], 'focus border')
+    assert(p2:GetAlpha() == 1, 'others stay at 100% by default')
+    nameplates.target = first; FireEvent('PLAYER_TARGET_CHANGED')
+    assert(plate.healthBox.rim.vertexColor[3] == P.accent[3], 'the target border wins')
+    nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
+    assert(plate.healthBox.rim.vertexColor[1] == amber[1], 'focus border back')
+    assert(M:SetOption('enemy', 'focusStyle', 'stripes') and plate.focusStripes:IsShown() and math.abs(plate.focusStripes.vertexColor[4] - 0.4) < 1e-9, 'stripes')
+    assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and plate.focusStripes.texture == addon.Media:GetTexture('NameplateStripes'), 'stripes only')
+    assert(M:SetOption('enemy', 'focusStyle', 'glow') and plate.focusGlow:IsShown() and not plate.focusStripes:IsShown(), 'glow')
+    assert(M:SetOption('friendly', 'focusFadeOthers', 50) and p2:GetAlpha() == 0.5, 'other plates fade')
+    assert(M:SetOption('enemy', 'focusTexture', 'flat') and plate.health.statusBarTexture == Kit.FLAT, 'focus texture')
+    nameplates.focus = nil; FireEvent('PLAYER_FOCUS_CHANGED')
+    assert(not plate.focused and plate.health.sheen:IsShown() and p2:GetAlpha() == 1 and not plate.focusGlow:IsShown(), 'focus cleared')
+    assert(not M:SetOption('enemy', 'focusStyle', 'pulse') and not M:SetOption('enemy', 'focusTexture', 'rainbow'), 'refused')
+    for _, key in ipairs({ 'focusStyle', 'focusTexture' }) do assert(M:SetOption('enemy', key, M.styleDefaults.enemy[key])) end
+    assert(M:SetOption('friendly', 'focusFadeOthers', 100))
+
     -- Raid markers: a secret index goes only to SetSpriteSheetCell.
     units.nameplate1.raid = Secret('raid'); FireEvent('RAID_TARGET_UPDATE')
     assert(plate.raidIcon:IsShown() and issecretvalue(plate.raidIcon.spriteCell[1]) and plate.raidIcon.spriteCell[2] == 4)
@@ -573,8 +593,15 @@ world.run([==[
     -- Tabs, cards and the Editing switch.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target,Indicators', table.concat(sections, ','))
+    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target,Focus,Indicators', table.concat(sections, ','))
     assert(#page.cards > 5 and page.cards[1].frame:IsShown(), 'settings sit on cards')
+    -- On the Focus tab the sample shows itself as the focus, not the target.
+    local selected = page.selectedSection
+    page:SelectSectionTab(6)
+    assert(page.selectedSection.title == 'Focus' and sample.focused and not sample.targeted, 'focus sample')
+    assert(sample.healthBox.rim.vertexColor[1] == M.db.enemy.focusColor[1], 'focus border in the sample')
+    page:SelectSectionTab(selected)
+    assert(not sample.focused and sample.targeted, 'target sample again')
     local switch = page.nameplateEditButtons[1]
     switch[2].scripts.OnClick(switch[2])
     assert(page.nameplateEditing() == 'friendly' and page.nameplateEditButtons[3][2].selected, 'one switch across tabs')

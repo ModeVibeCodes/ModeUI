@@ -12,6 +12,7 @@
 --   Nameplates/Gap.tga   the black gap inside a rim (radius 2, sliced at 3)
 --   Nameplates/Glow.tga  soft target glow around a plate, hollow inside (sliced at 12)
 --   Nameplates/Arrow.tga target arrow pointing right (mirrored for the left)
+--   Nameplates/Stripes.tga diagonal stripes for the focus highlight (tiles seamlessly)
 local SAMPLES = 8
 local ROOT = "ModeUI/Media/Textures/"
 
@@ -39,6 +40,12 @@ local function Glow(size, inset, radius, blur)
         local t = math.max(0, 1 - distance / blur)
         return t * t * (3 - 2 * t)
     end
+end
+
+-- Diagonal stripes, `width` pixels wide every `period` pixels; the period
+-- divides the tile so it repeats without a seam.
+local function Stripes(period, width)
+    return function(x, y) return ((x + y) % period) < width and 1 or 0 end
 end
 
 local function Triangle(ax, ay, bx, by, cx, cy)
@@ -81,6 +88,7 @@ local TEXTURES = {
     { "Nameplates/Gap.tga", 16, 16, RoundedRect(16, 16, 2), true },
     { "Nameplates/Glow.tga", 32, 32, Glow(32, 12, 2, 11), false },
     { "Nameplates/Arrow.tga", 16, 16, Triangle(3, 2, 14, 8, 3, 14), true },
+    { "Nameplates/Stripes.tga", 16, 16, Stripes(8, 3), true },
 }
 
 local function Coverage(shape, px, py, supersample)

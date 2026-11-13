@@ -111,6 +111,17 @@ your choice (cyan by default). Arrows always sit outside the raid marker, the
 indicator and any aura row on their side. Name Only plates color the
 name for Border and Glow. The target is found by comparing nameplate frames.
 
+## Focus
+
+The **Focus** tab styles your focus target's plate: **Highlight** (Border, the
+rims in the focus color; Glow; Stripes, diagonal stripes over the health bar at
+**Stripe Opacity**; or None), a **Color** (amber by default), **Focus Texture**
+(Same as Foreground, or any foreground texture) and **Other Plates Opacity**,
+which fades every other plate while you have a focus (100% leaves them alone).
+A plate that is both your target and your focus shows the target's border. The
+focus is found by comparing nameplate frames, on `PLAYER_FOCUS_CHANGED`. While
+the Focus tab is open, the preview sample shows itself as your focus.
+
 ## Preview
 
 The top of the page shows one sample plate: the kind chosen with **Editing**,
@@ -157,7 +168,8 @@ settings take their defaults.
 | `Plate.lua` | building a plate and laying out its boxes |
 | `Layout.lua` | placing every element by anchor and offset; Name Only |
 | `Target.lua` | target indicator styles, arrow placement and name colors |
-| `Indicator.lua` | the level, classification and quest indicator |
+| `Indicator.lua` | the level, classification and quest indicators |
+| `Focus.lua` | the focus highlight, focus texture and fading other plates |
 | `Update.lua` | health, name, colors, threat, raid marker |
 | `CastBar.lua` | cast and channel bars, icon side, target line and timer |
 | `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |

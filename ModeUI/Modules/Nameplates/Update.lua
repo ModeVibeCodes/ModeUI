@@ -18,6 +18,7 @@ function M:UpdatePlate(plate)
     self:UpdateRaidIcon(plate)
     self:UpdateIndicator(plate)
     self:UpdateTarget(plate)
+    self:UpdateFocus(plate)
     self:UpdateCast(plate)
     self:UpdateAuras(plate)
 end

@@ -259,6 +259,27 @@ function M:CreateConfigPage(parent)
         Note("Arrows always sit outside the raid marker, the indicator and any aura row beside the bar.", 32)
     end)
 
+    Tab("Focus", function()
+        When(Plate, function()
+            page:Group(L["Focus"])
+            page.focusStylePills = Pills("Highlight", M.choices.focusStyle, function() return db().focusStyle end, Set("focusStyle"), 90)
+            Mark("focus")
+            local look = Columns({ "Color", "Stripe Opacity" })
+            Color(look[1], "focusColor")
+            page.focusStripeSlider = Slider(look[2], "focusStripeOpacity", "%")
+            local texture = Columns({ "Focus Texture" })
+            page.focusTextureSelect = SelectIn(texture[1], 200, function()
+                local list = { { id = "default", label = "Same as Foreground" } }
+                for _, choice in ipairs(M.TextureChoices(true)) do list[#list + 1] = choice end
+                return list
+            end, function() return db().focusTexture end, Set("focusTexture"))
+            local fade = Columns({ "Other Plates Opacity" })
+            page.focusFadeSlider = Slider(fade[1], "focusFadeOthers", "%")
+            Note("Your focus's plate shows the highlight and its own texture. Other Plates Opacity fades every other plate while you have a focus; 100% leaves them alone. A plate that is your target and focus shows the target's border.", 48)
+        end)
+        When(function() return not Plate() end, function() Note("Name Only plates have no focus highlight.") end)
+    end)
+
     Tab("Indicators", function()
         page:Group(L["Indicators"])
         page.indicatorToggles = Toggles({ { "Show Indicators", "showIndicator" } })
@@ -294,6 +315,12 @@ function M:CreateConfigPage(parent)
     end)
 
     W.SectionTabs(page)
+    -- The sample shows itself as your focus while the Focus tab is open.
+    local select = page.SelectSectionTab
+    function page:SelectSectionTab(...)
+        select(self, ...)
+        if self.configPreview and self.configPreview.Refresh then self.configPreview:Refresh() end
+    end
     page:Finish(); return page
 end
 
