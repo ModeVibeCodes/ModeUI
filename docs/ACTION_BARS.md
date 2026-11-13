@@ -213,17 +213,25 @@ Mode. The bar being edited has a cyan tag; clicking any tag edits that bar.
 Clicking a button opens the **Bar** tab and its glow menu (see Glows); clicking a text opens the **Text** tab
 on that text. The tabs:
 
-- **Bar**: Show Bar, status, layout, size, copy and reset, Keybind Mode, paging
+- **Bar**: Show Bar, status, layout, size, Apply Style, reset, Keybind Mode, paging
 - **Buttons**: border style, size and color; background color and opacity;
   empty slots
 - **Text**: which text, then its place, size and color, and the font
 - **Glows**: proc glow, glow when ready, icon opacity on cooldown
 - **Visibility**: Show, custom conditions, opacity, Faded Opacity
 
-**Editing** (the bar being changed) sits at the top right of the preview, so it's always in view and shared by every tab; a tab says so when that bar is hidden.
-**Copy Style to All Bars** copies size, borders, background, text and opacity.
-Each bar keeps its own buttons, lines and show settings. **Reset to Defaults**
-resets one bar's look.
+**Editing** (the bar being changed) sits at the top right of the preview, so it's
+always in view and shared by every tab. Its list marks bars that are **Off** (Show
+Bar off) or **Hidden** (Show set to Hidden). When the chosen bar is either, a
+**Turn On** button appears beside it: it switches Show Bar on, and sets Show back
+to Always if it was Hidden. A tab also says so when that bar is off.
+
+**Apply Style** (Bar tab): tick bars, then **Apply to Selected**, or use **Apply
+to All Bars**. The ticked bars get the edited bar's size, borders, background,
+text, glows and opacity; each keeps its own buttons, lines, paging, show
+settings and per-button glow switches. The edited bar is skipped, and the
+result ("Applied to 2 bars.") shows beside the buttons. **Reset to Defaults** (This
+Bar) resets one bar's look.
 
 ## Paging
 
