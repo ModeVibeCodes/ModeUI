@@ -226,6 +226,9 @@ function M:CreateMover(window)
         defaultPosition = self.defaultPositions[window], allowedTargets = self.allowedTargets[window],
         label = L[self.windowLabels[window]], canDrag = function() return self.active == true and self.db[window].show and not self:IsGrouped(window) end })
     assert(ok, "ModeUI: damage meter position registration failed: " .. tostring(element))
+    -- Match Width and Match Height in the Edit Mode window (Group.lua).
+    addon.PositionManager:SetSizeMatch(self.elementIds[window], self:SizeMatchHandlers(window))
+    addon.PositionManager:SetAnchorSizeListener(self.elementIds[window], function() self:AnchorResized() end)
     mover:Hide()
 end
 

@@ -85,6 +85,10 @@ local function Style(window)
         -- Group With: another window this one stacks on (Above or Below, Gap
         -- apart) and takes every shared setting from.
         group = "none", groupSide = "above", groupGap = 2,
+        -- Edit Mode's Match Width and Match Height: anchored on another
+        -- element, the window takes its width (on by default; Rows stay) or
+        -- as many rows as fit its height.
+        matchWidth = true, matchHeight = false,
         -- Size: the window is as tall as its rows, so it always fits them exactly.
         width = 240, rows = 8, rowHeight = 18, spacing = 1, padding = 1,
         -- Frame
@@ -116,10 +120,22 @@ for _, window in ipairs(M.windows) do M.defaults[window] = Copy(M.styleDefaults[
 
 -- Keys Copy Style leaves alone: whether, what and when a window shows, and its group.
 M.identityKeys = { show = true, meterType = true, session = true, visibility = true,
-    group = true, groupSide = true, groupGap = true }
+    group = true, groupSide = true, groupGap = true, matchWidth = true, matchHeight = true }
 -- Keys a grouped window keeps as its own; every other setting comes from the
 -- window at the head of its group, so the group matches.
-M.ownKeys = { show = true, meterType = true, session = true, rows = true, group = true, groupSide = true, groupGap = true }
+M.ownKeys = { show = true, meterType = true, session = true, rows = true, group = true, groupSide = true, groupGap = true,
+    matchWidth = true, matchHeight = true }
+-- Copy & Apply: what each choice copies. All is every setting but the
+-- identity keys. Window brings its size, frame and header with it; Bars the
+-- rows' look; Text every text and number setting.
+M.copyScopes = {
+    window = { "width", "padding", "opacity", "border", "borderSize", "borderColor", "backgroundColor", "backgroundOpacity",
+        "header", "headerHeight", "headerTexture", "headerColor", "headerOpacity", "titleUpper", "showSession", "showTimer", "headerButtons" },
+    bars = { "rowHeight", "spacing", "barTexture", "barBackground", "barOpacity", "barBackgroundOpacity", "barColorMode",
+        "barColor", "otherColor", "icon", "alwaysShowMe" },
+    text = { "textInset", "showRank", "numbers", "showPercent", "decimals", "separator", "nameColorMode", "valueColorMode" },
+}
+M.copyScopeChoices = { { id = "all", label = "All" }, { id = "window", label = "Window" }, { id = "bars", label = "Bars" }, { id = "text", label = "Text" } }
 M.colorKeys = { borderColor = true, backgroundColor = true, headerColor = true, barColor = true, otherColor = true }
 -- Values for which the texture choices are checked by Kit.ValidBarTexture
 -- (true: a foreground, which may be Mode Gradient).
@@ -131,6 +147,7 @@ M.ranges = { width = { 120, 600, 1 }, rows = { 1, 40, 1 }, rowHeight = { 10, 40,
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, opacity = { 10, 100, 5 },
     textInset = { 0, 20, 1 }, decimals = { 0, 3, 1 }, groupGap = { 0, 20, 1 } }
 for _, part in ipairs(M.textParts) do
+    for _, suffix in ipairs(M.textPartKeys) do table.insert(M.copyScopes.text, part .. suffix) end
     M.colorKeys[part .. "Color"] = true
     M.ranges[part .. "Size"] = { 6, 32, 1 }
 end

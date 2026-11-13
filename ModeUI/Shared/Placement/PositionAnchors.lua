@@ -110,3 +110,43 @@ function PM:AnchorTo(id, target, placement, point, relativePoint)
     position.x, position.y = 0, 0
     return self:SetPosition(id, position, true)
 end
+
+-- Match Width and Match Height in the Edit Mode window, for elements whose
+-- module can size them to what they're anchored on. handlers: axes
+-- ({ width = true, height = true }), get(axis), set(axis, on), and optionally
+-- available() (false hides the choice for now). The module does the sizing.
+function PM:SetSizeMatch(id, handlers)
+    local element = Lookup(self, id)
+    if not element then return false, "unknown-element" end
+    if handlers ~= nil and (type(handlers) ~= "table" or type(handlers.axes) ~= "table"
+        or type(handlers.get) ~= "function" or type(handlers.set) ~= "function") then return false, "invalid-handlers" end
+    element.sizeMatch = handlers
+    return true
+end
+
+-- Whether the element can match its anchor's size on an axis right now: the
+-- module offers it and the element hangs from something other than the screen.
+function PM:CanMatchSize(id, axis)
+    local element = Lookup(self, id)
+    local match = element and element.sizeMatch
+    if not match or not match.axes[axis] or element.position.target == "screen" then return false end
+    if match.available then
+        local ok, available = pcall(match.available)
+        if not ok or available ~= true then return false end
+    end
+    return true
+end
+
+function PM:GetSizeMatch(id, axis)
+    if not self:CanMatchSize(id, axis) then return false end
+    local ok, on = pcall(self.elements[id].sizeMatch.get, axis)
+    return ok and on == true
+end
+
+function PM:SetSizeMatchValue(id, axis, on)
+    if Combat() then return false, "combat" end
+    if not self:CanMatchSize(id, axis) then return false, "unavailable" end
+    local ok, result = pcall(self.elements[id].sizeMatch.set, axis, on == true)
+    self:NotifyPosition(id, false)
+    return ok and result ~= false
+end
