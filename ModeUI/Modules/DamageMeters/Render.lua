@@ -10,7 +10,7 @@ if not M then return end
 -- only while the amounts are public (out of combat).
 local Kit, L = addon.Kit, addon.L
 local DM, UnitColor = addon.Domain.DamageMeter, addon.Domain.UnitColor
-local Public, Number, Call = addon.IsPublic, addon.IsNumber, addon.Domain.Query.Call
+local Public, Number = addon.IsPublic, addon.IsNumber
 
 -- An amount for the bar: a public non-number (nil) counts as 0; a secret
 -- one passes through untouched.
@@ -19,12 +19,12 @@ local function Amount(value)
     return value
 end
 M.Amount = Amount
--- ok, text: abbreviated text for an amount ("12.3K"); ok is false when there
--- is none. The text is secret when the amount is, so only ok is tested.
-local function Abbreviate(value)
+-- ok, text: abbreviated text for an amount ("12.3K", Decimals places); ok is
+-- false when there is none. The text is secret when the amount is, so only
+-- ok is tested.
+local function Abbreviate(value, decimals)
     if Public(value) and type(value) ~= "number" then return false end
-    local ok, text = Call(AbbreviateNumbers, value)
-    return ok, text
+    return Kit.ShortNumber(value, decimals)
 end
 
 -- The source's class (never secret), or "" for anything without one.
@@ -43,26 +43,50 @@ function M.BarColor(style, class)
     return style.otherColor
 end
 
--- Value text: the amount (per second first for DPS and HPS), the other in
--- parentheses with Amount and Per Second, and the share of the total while
--- public. Deaths show when the death happened, while known.
+-- Joins the amount, the other amount and the share with the Separator:
+-- "5K (179, 61%)" in parentheses, else "5K / 179 / 61%". The amounts may be
+-- secret strings; they only go to SetFormattedText.
+local function Join(text, style, main, hasExtra, extra, share)
+    local sep = M.separators[style.separator]
+    if sep == true then
+        if hasExtra and share then Kit.Formatted(text, "%s (%s, %d%%)", main, extra, share)
+        elseif hasExtra then Kit.Formatted(text, "%s (%s)", main, extra)
+        elseif share then Kit.Formatted(text, "%s (%d%%)", main, share)
+        else Kit.Write(text, main) end
+        return
+    end
+    if hasExtra and share then Kit.Formatted(text, "%s" .. sep .. "%s" .. sep .. "%d%%", main, extra, share)
+    elseif hasExtra then Kit.Formatted(text, "%s" .. sep .. "%s", main, extra)
+    elseif share then Kit.Formatted(text, "%s" .. sep .. "%d%%", main, share)
+    else Kit.Write(text, main) end
+end
+
+-- Value text: the amount (per second first for DPS and HPS), the other with
+-- Amount and Per Second, and the share of the total while public, joined by
+-- the Separator. Deaths show when the death happened, while known.
 function M.WriteValue(text, source, total, style, info)
     if info.deaths then Kit.Write(text, DM.Clock(source.deathTimeSeconds)); return end
     -- Swapped by the public type flag only: and/or would test a secret amount.
     local amount, first, second = source.totalAmount, source.totalAmount, source.amountPerSecond
     if info.perSecond then first, second = source.amountPerSecond, source.totalAmount end
-    local hasMain, main = Abbreviate(first)
+    -- Counts (interrupts, dispels) are always whole numbers.
+    local decimals = info.count and 0 or style.decimals
+    local hasMain, main = Abbreviate(first, decimals)
     local hasExtra, extra = false, nil
-    if not info.count and style.numbers == "both" then hasExtra, extra = Abbreviate(second) end
+    if not info.count and style.numbers == "both" then hasExtra, extra = Abbreviate(second, decimals) end
     local share
     if style.showPercent and Number(amount, 0) and Number(total) and total > 0 then
         share = math.floor(amount / total * 100 + 0.5)
     end
-    if not hasMain then Kit.Write(text, "")
-    elseif hasExtra and share then Kit.Formatted(text, "%s (%s) · %d%%", main, extra, share)
-    elseif hasExtra then Kit.Formatted(text, "%s (%s)", main, extra)
-    elseif share then Kit.Formatted(text, "%s · %d%%", main, share)
-    else Kit.Write(text, main) end
+    if not hasMain then Kit.Write(text, "") else Join(text, style, main, hasExtra, extra, share) end
+end
+
+-- A text's color: its class color with Class (names and values), else its own.
+function M.PaintColor(text, style, part, class)
+    local classColor = style[part .. "ColorMode"] == "class" and class ~= "" and UnitColor.Class(class)
+    if classColor then text:SetTextColor(classColor.r, classColor.g, classColor.b, 1); return end
+    local c = style[part .. "Color"]
+    text:SetTextColor(c[1], c[2], c[3], 1)
 end
 
 local function SetIcon(row, style, info, class)
@@ -85,10 +109,8 @@ function M:FillRow(row, source, rank, data, style, info)
     local name = source.name
     if Public(name) and type(name) ~= "string" then name = "" end
     if style.showRank then Kit.Formatted(row.name, "%d. %s", rank, name) else Kit.Write(row.name, name) end
-    local textColor = style.textColor
-    local classColor = style.nameColorMode == "class" and class ~= "" and UnitColor.Class(class)
-    if classColor then row.name:SetTextColor(classColor.r, classColor.g, classColor.b, 1)
-    else row.name:SetTextColor(textColor[1], textColor[2], textColor[3], 1) end
+    self.PaintColor(row.name, style, "name", class)
+    self.PaintColor(row.value, style, "value", class)
     self.WriteValue(row.value, source, data.total, style, info)
 end
 
@@ -109,13 +131,14 @@ function M:SessionOf(window) return self.sessionIds[window] or self.db[window].s
 -- The data a window shows: the sample in Edit Mode and Test on Screen, else
 -- the game's.
 function M:WindowData(window)
-    local style = self.db[window]
+    local style = self:Style(window)
     if self.editing or self.testing then return self:SampleData(style.meterType) end
     return DM.Session(self:SessionOf(window), style.meterType)
 end
 
 function M:RenderHeader(frame, style, info, session, data)
     if not style.header then return end
+    if frame.buttons then frame.buttons.session.text:SetText(self:SessionShort(session)) end
     local title = L[info.label]
     if style.titleUpper then title = title:upper() end
     Kit.Write(frame.header.title, title)
@@ -172,7 +195,7 @@ end
 function M:RenderWindow(window)
     local frame = self.frames[window]
     if not frame or not frame:IsShown() or not frame.g then return end
-    local style = self.db[window]
+    local style = self:Style(window)
     local info = DM.typeById[style.meterType]
     local data = self:WindowData(window)
     self:RenderHeader(frame, style, info, self:SessionOf(window), data)
@@ -191,7 +214,7 @@ function M:RenderHeaders()
     for _, window in ipairs(self.windows) do
         local frame = self.frames[window]
         if frame:IsShown() and frame.g then
-            local style = self.db[window]
+            local style = self:Style(window)
             self:RenderHeader(frame, style, DM.typeById[style.meterType], self:SessionOf(window), nil)
         end
     end

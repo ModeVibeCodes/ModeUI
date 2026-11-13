@@ -8,16 +8,19 @@ local CIRCLE_MASK = M.CIRCLE_MASK
 local Bar, Text, Circle = Kit.Bar, Kit.Text, Kit.Circle
 
 -- One face for both the secure button and its Edit Mode/preview stand-in.
--- Bar block: a hard-edged 2px rim, a 2px black gap one rim in, then the bars.
--- The portrait sits above the block, so its full ring is drawn over the bar's
--- end. Rim and gap are flat strips with square corners (Kit.Edges), so nothing
--- sits under the bars (their background can be see-through) and nothing soft
--- bleeds into them; a black cap fills the block under the portrait up to where
--- the bars start, and the hairline between health and power is its own texture.
+-- Bar block: a 2px rim, a 2px black gap one rim in, then the bars. The
+-- portrait sits above the block, so its full ring is drawn over the bar's
+-- end. Rim and gap are rings (Kit.CapRing): hard-edged flat strips along the
+-- straight edges and a half-oval end away from the portrait (both ends without
+-- one), so nothing sits under the bars (their background can be see-through)
+-- and nothing soft bleeds into them. End masks round the bars the same way. A
+-- black cap fills the block under the portrait up to where the bars start, and
+-- the hairline between health and power is its own texture.
 function M:BuildFace(f)
     local panel = CreateFrame("Frame", nil, f)
     f.panel = panel
-    panel.rim, panel.gap = Kit.Edges(panel, "BACKGROUND", 0), Kit.Edges(panel, "BACKGROUND", 1)
+    panel.rim, panel.gap = Kit.CapRing(panel, 0), Kit.CapRing(panel, 1)
+    panel.farMask, panel.nearMask = Kit.EndMask(panel), Kit.EndMask(panel)
     panel.cap = panel:CreateTexture(nil, "BACKGROUND", nil, 1)
     panel.cap:SetTexture(Kit.FLAT)
     panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)

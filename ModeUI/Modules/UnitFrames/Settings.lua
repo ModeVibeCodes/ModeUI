@@ -201,6 +201,7 @@ function M:CreateConfigPage(parent)
         Toggles({ { "Show Level", "levelStyle", get = function() return db().levelStyle ~= "none" end,
             set = function(v) M:SetFrameOption(editing, "levelStyle", v and "badge" or "none") end } })
         When(function() return db().levelStyle ~= "none" end, function()
+            Choice("Level Position", "levelPosition")
             Slider("Level Font Size", "levelFontSize"); Color("Level Color", "levelColor")
             Slider("Level Offset X", "levelOffsetX"); Slider("Level Offset Y", "levelOffsetY")
         end)
