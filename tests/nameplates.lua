@@ -342,7 +342,12 @@ world.run([==[
     assert(not M:SetOption('enemy', 'foregroundTexture', 'rainbow') and not M:SetOption('enemy', 'backgroundTexture', 'mode'), 'bad textures refused')
     local labels = {}
     for _, choice in ipairs(M.TextureChoices(true)) do labels[#labels + 1] = choice.id end
-    assert(labels[1] == 'mode' and labels[2] == 'flat' and M.TextureChoices(false)[1].id == 'flat', 'texture choices')
+    local backgrounds = M.TextureChoices(false)
+    assert(labels[1] == 'mode' and labels[2] == 'flat' and backgrounds[1].id == 'slate' and backgrounds[2].id == 'slateHatch' and backgrounds[3].id == 'flat', 'texture choices')
+    -- Mode Slate: flat, tinted the slate gray; the hatch tiles per pixel.
+    assert(M:SetOption('enemy', 'backgroundTexture', 'slate') and plate.health.bg.texture == Kit.FLAT and plate.health.bg.vertexColor[1] == Kit.onyx.slate[1])
+    assert(M:SetOption('enemy', 'backgroundTexture', 'slateHatch') and plate.health.bg.texture == addon.Media:GetTexture('ModeSlateHatch'))
+    assert(not M:SetOption('enemy', 'foregroundTexture', 'slate'), 'slate is a background only')
     assert(M:SetOption('enemy', 'foregroundTexture', 'mode') and M:SetOption('enemy', 'backgroundTexture', 'flat'))
     assert(M:SetOption('enemy', 'castHeight', 4) and plate.castBox.rim.texture == rim, 'small cast bars stay rounded')
     assert(M:SetOption('enemy', 'castHeight', 8))
@@ -660,7 +665,7 @@ world.run([==[
     switch[2].scripts.OnClick(switch[2])
     assert(page.nameplateEditing() == 'friendly' and page.nameplateEditButtons[3][2].selected, 'one switch across tabs')
     local editingRow = switch[1]:GetParent().row
-    assert(Point(editingRow.settingsLabel)[1] == 'LEFT', 'the Editing label is centered with its pills')
+    assert(Point(editingRow.settingsLabel)[1] == 'TOPLEFT' and editingRow.stacked and Point(switch[1]:GetParent())[1] == 'LEFT', 'the Editing label sits above its pills')
     -- Clicking a part of the sample jumps to its settings.
     local hits = view.targets.friendly
     hits.cast.scripts.OnEnter(hits.cast)

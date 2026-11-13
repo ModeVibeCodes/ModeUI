@@ -6,6 +6,10 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- controls on a 36 px pitch, labels centered on them.
 local CARD_PADDING, CARD_GAP = 16, 12
 local ROW_HEIGHT, ROW_INSET, LEGACY_ROW_HEIGHT = 36, 4, 48
+-- Standard rows stack their label above the control (owner's Layout tab
+-- design, November 13, 2026); a slider's value sits at the right of the label
+-- line. Two pairable rows in a row (sliders, dropdowns) share one line.
+local STACK_LABEL, STACK_HEIGHT, PAIR_GAP = 22, 58, 24
 
 -- The same responsive scrolling and row layout is used on every page.
 function W.Page(parent, minimumWidth)
@@ -48,6 +52,13 @@ function W.Page(parent, minimumWidth)
         width=math.max(1,width-leftInset-self.contentInset)
         local cursor = self.layoutTopInset or 0
         local footers={}
+        local function Visible(row)
+            local show = row.sectionHeader or not row.section or row.section.expanded
+            if self.sectionTabs then show = not row.sectionHeader and (not row.section or row.section == self.selectedSection) and (not row.section or row.section.expanded) end
+            if self.ModeRowVisible then show=self:ModeRowVisible(row,show) end
+            if row.visibleWhen then show=show and row.visibleWhen() end
+            return show and true or false
+        end
         local function Prepare(row,footer,innerWidth)
             if not footer and row.settingsFooterMoved and row.settingsFooterRestore then
                 row.settingsFooterRestore();row.settingsFooterMoved=false
@@ -72,10 +83,7 @@ function W.Page(parent, minimumWidth)
                 row:SetHeight(math.max(14,height)+(titled and 20 or 0)+12)
                 if row.divider then row.divider:Hide() end
             end
-            local show = row.sectionHeader or not row.section or row.section.expanded
-            if self.sectionTabs then show = not row.sectionHeader and (not row.section or row.section == self.selectedSection) and (not row.section or row.section.expanded) end
-            if self.ModeRowVisible then show=self:ModeRowVisible(row,show) end
-            if row.visibleWhen then show=show and row.visibleWhen() end
+            local show = Visible(row)
             row:SetShown(show)
             return show
         end
@@ -84,24 +92,51 @@ function W.Page(parent, minimumWidth)
         local px = addon.Kit.PixelSize(content)
         local function Snap(value) return math.floor(value / px + 0.5) * px end
         local openCard
+        -- A pairable stacked row waiting for a partner on its line: { row, top }.
+        local half
+        local inner = width - 2 * CARD_PADDING
+        local halfWidth = Snap((inner - PAIR_GAP) / 2)
+        local function FlushHalf()
+            if half then cursor = Snap(half.top + half.row:GetHeight()); half = nil end
+        end
         local function CloseCard()
+            FlushHalf()
             if openCard then openCard.bottom = cursor; cursor = cursor + CARD_PADDING; openCard = nil end
         end
         for _, card in ipairs(self.cards) do card.top, card.bottom = nil, nil end
-        for _, row in ipairs(self.rows) do
+        for index, row in ipairs(self.rows) do
             if self.modeFooterLayout and row.settingsFooterNote and (not row.settingsFooterInlineWhen or not row.settingsFooterInlineWhen()) then footers[#footers+1]=row
             elseif row.card then
-                if row.card ~= openCard and Prepare(row,false,width-2*CARD_PADDING) then
-                    local wasCard = openCard ~= nil
-                    CloseCard()
-                    cursor = Snap(cursor + (wasCard and CARD_GAP - CARD_PADDING or (cursor > 0 and CARD_GAP or 0)))
-                    openCard = row.card; openCard.top = cursor; cursor = cursor + CARD_PADDING
-                    if row.divider then row.divider:Hide() end
-                    row:ClearAllPoints(); row:SetPoint("TOPLEFT", leftInset + CARD_PADDING, -cursor)
-                    row.offset = cursor; cursor = Snap(cursor + row:GetHeight())
-                elseif row.card == openCard and Prepare(row,false,width-2*CARD_PADDING) then
-                    row:ClearAllPoints(); row:SetPoint("TOPLEFT", leftInset + CARD_PADDING, -cursor)
-                    row.offset = cursor; cursor = Snap(cursor + row:GetHeight())
+                -- Pairs: this row and the next visible one, both pairable, same card.
+                -- (hidden rows between them are skipped; any other shown row ends the search).
+                local pairNext
+                if row.stacked and row.pairable and not half then
+                    for j = index + 1, #self.rows do
+                        local nextRow = self.rows[j]
+                        if nextRow.card ~= row.card then break end
+                        if Visible(nextRow) then pairNext = nextRow.stacked and nextRow.pairable or false; break end
+                    end
+                end
+                local paired = half ~= nil and row.stacked and row.pairable
+                local rowWidth = (paired or pairNext) and halfWidth or inner
+                if Prepare(row,false,rowWidth) then
+                    if row.card ~= openCard then
+                        local wasCard = openCard ~= nil
+                        CloseCard(); paired = false
+                        cursor = Snap(cursor + (wasCard and CARD_GAP - CARD_PADDING or (cursor > 0 and CARD_GAP or 0)))
+                        openCard = row.card; openCard.top = cursor; cursor = cursor + CARD_PADDING
+                        if row.divider then row.divider:Hide() end
+                    elseif not paired then FlushHalf() end
+                    row:ClearAllPoints()
+                    if paired then
+                        row:SetPoint("TOPLEFT", leftInset + CARD_PADDING + halfWidth + PAIR_GAP, -half.top)
+                        row.offset = half.top
+                        cursor = Snap(half.top + math.max(half.row:GetHeight(), row:GetHeight())); half = nil
+                    else
+                        row:SetPoint("TOPLEFT", leftInset + CARD_PADDING, -cursor)
+                        row.offset = cursor
+                        if pairNext then half = { row = row, top = cursor } else cursor = Snap(cursor + row:GetHeight()) end
+                    end
                 end
             elseif Prepare(row,false) then
                 CloseCard()
@@ -231,23 +266,41 @@ function W.Page(parent, minimumWidth)
     end
     -- height: nil or the old standard 48 is a standard 36 px row; other
     -- heights (notes, pickers, editors) are kept.
-    function page:Row(title, height, keywords)
+    -- plain: keep the label beside the control (toggle grids and columns lay
+    -- out their own cells).
+    function page:Row(title, height, keywords, plain)
         if height == nil or height == LEGACY_ROW_HEIGHT then height = ROW_HEIGHT end
+        local stacked = height == ROW_HEIGHT and not plain
+        if stacked then height = STACK_HEIGHT end
         local row = CreateFrame("Frame", nil, content)
         row:SetPoint("TOPLEFT", 0, -self.cursor)
         row:SetSize(400, height)
         local label = W.Label(row, title, nil, 0, -17, 172)
         label:SetWordWrap(true)
         local controls = CreateFrame("Frame", nil, row)
-        controls:SetPoint("TOPLEFT", 184, -ROW_INSET)
-        controls:SetPoint("BOTTOMRIGHT", -14, ROW_INSET)
+        if stacked then
+            controls:SetPoint("TOPLEFT", 0, -STACK_LABEL)
+            controls:SetPoint("BOTTOMRIGHT", 0, ROW_INSET)
+            -- Where a slider puts its value: the right end of the label line.
+            controls.valueAnchor = CreateFrame("Frame", nil, row)
+            controls.valueAnchor:SetPoint("TOPRIGHT", 0, 0); controls.valueAnchor:SetSize(72, STACK_LABEL - 2)
+            row.stacked = true
+            function row:layoutChildren(width) label:SetWidth(math.max(40, width - 76)) end
+        else
+            controls:SetPoint("TOPLEFT", 184, -ROW_INSET)
+            controls:SetPoint("BOTTOMRIGHT", -14, ROW_INSET)
+        end
         self.rows[#self.rows + 1] = row
         row.section = self.activeSection
         row.gapAfter = 0
         row.card = self:ActiveCard()
         row:SetFrameLevel(content:GetFrameLevel() + 2)
-        -- Labels sit on the row's middle, level with the controls beside them.
-        label:ClearAllPoints(); label:SetPoint("LEFT", row, "LEFT", 0, 0)
+        -- Labels sit over a stacked control, or on the row's middle beside it.
+        label:ClearAllPoints()
+        if stacked then
+            label:SetPoint("TOPLEFT", row, "TOPLEFT", 0, -2); label:SetHeight(STACK_LABEL - 4)
+            label:SetWordWrap(false); label:SetTextColor(unpack(T.secondary))
+        else label:SetPoint("LEFT", row, "LEFT", 0, 0) end
         if label.SetJustifyV then label:SetJustifyV("MIDDLE") end
         self.searchEntries[#self.searchEntries + 1] = { label = title, keywords = keywords, section = self.activeSection, row = row, kind = "setting" }
         controls.row, controls.rowLabel = row, label
@@ -282,75 +335,7 @@ function W.Page(parent, minimumWidth)
         self.rows[#self.rows + 1] = row
         self.cursor = self.cursor + 24
     end
-    -- One row of labeled cells side by side (sliders, choices, colors). Returns
-    -- a control host per title; each host is laid out under its own label.
-    function page:Columns(titles, height)
-        local controls = self:Row("", height or 60)
-        local row = controls.row
-        controls.rowLabel:Hide()
-        controls:ClearAllPoints(); controls:SetAllPoints(row)
-        table.remove(self.searchEntries) -- replace the empty row metadata
-        local cells, hosts = {}, {}
-        for i, title in ipairs(titles) do
-            local cell = CreateFrame("Frame", nil, controls)
-            cell.label = W.Label(cell, title, nil, 0, -2, 200, T.text)
-            local host = CreateFrame("Frame", nil, cell)
-            host:SetPoint("TOPLEFT", 0, -24); host:SetPoint("BOTTOMRIGHT", 0, 8)
-            host.row, host.rowLabel = row, cell.label
-            cells[i], hosts[i] = cell, host
-            self.searchEntries[#self.searchEntries + 1] = { label = title, section = self.activeSection, row = row, kind = "setting" }
-        end
-        function row:layoutChildren(width)
-            local gap = 24
-            local cellWidth = (width - gap * (#cells - 1)) / #cells
-            for i, cell in ipairs(cells) do
-                cell:ClearAllPoints(); cell:SetPoint("TOPLEFT", (i - 1) * (cellWidth + gap), 0)
-                cell:SetSize(cellWidth, self:GetHeight()); cell.label:SetWidth(cellWidth)
-            end
-        end
-        row.settingsColumns, row.settingsTitles = cells, titles
-        return hosts
-    end
-    -- Full-cell click targets and per-setting search entries; wraps to 1-3
-    -- columns. Each cell is a switch with its label 10 px to the right.
-    function page:ToggleGrid(items, options)
-        local controls = self:Row("", ROW_HEIGHT)
-        local row = controls.row
-        controls.rowLabel:Hide()
-        controls:ClearAllPoints(); controls:SetAllPoints(row)
-        local cells = {}
-        table.remove(self.searchEntries) -- replace the empty row metadata
-        for i, item in ipairs(items) do
-            local cell = CreateFrame("Button", nil, controls)
-            cell:EnableMouse(true); cell:RegisterForClicks("LeftButtonUp")
-            local toggle = W.Button(cell, "", 28, 28, "checkbox")
-            toggle:SetPoint("LEFT", 0, 0)
-            local label = W.Label(cell, item.label, nil, 0, 0, 120)
-            label:ClearAllPoints(); label:SetPoint("LEFT", toggle, "RIGHT", 10, 0)
-            label:SetWordWrap(true)
-            local function Click() item.set(not item.get()); self:Refresh() end
-            cell:SetScript("OnClick", Click); toggle:SetScript("OnClick", Click)
-            -- The whole cell is the hit target, so hovering it lights the box too.
-            cell:HookScript("OnEnter", function() toggle.hovered = true; toggle:RefreshAppearance() end)
-            cell:HookScript("OnLeave", function() toggle.hovered = false; toggle:RefreshAppearance() end)
-            self.refreshers[#self.refreshers + 1] = function() toggle:SetSelected(item.get()) end
-            self.searchEntries[#self.searchEntries + 1] = {label=item.label,section=self.activeSection,row=row,kind="setting"}
-            cells[i] = {frame=cell,button=toggle,label=label}
-        end
-        function row:layoutChildren(width)
-            local columns = math.max(1, math.min(options and options.maxColumns or 3, #items, math.floor(width / (options and options.minimumCellWidth or 180))))
-            local cellWidth = width / columns
-            self:SetHeight(math.ceil(#items / columns) * ROW_HEIGHT)
-            for i, cell in ipairs(cells) do
-                cell.frame:ClearAllPoints(); cell.frame:SetSize(cellWidth, ROW_HEIGHT)
-                cell.frame:SetPoint("TOPLEFT", ((i-1)%columns)*cellWidth, -math.floor((i-1)/columns)*ROW_HEIGHT)
-                cell.label:SetWidth(cellWidth-46)
-            end
-        end
-        self.toggleGrids = self.toggleGrids or {}; self.toggleGrids[#self.toggleGrids+1] = cells
-        row.settingsToggles=cells
-        return cells
-    end
+    W.PageControls(page, ROW_HEIGHT)
     function page:Finish()
         content:SetHeight(self.cursor + 12)
         self:Layout()

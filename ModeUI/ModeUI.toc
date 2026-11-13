@@ -27,6 +27,7 @@ Shared\Domain\Query.lua
 Shared\Domain\Health.lua
 Shared\Domain\Power.lua
 Shared\Domain\ComboPoints.lua
+Shared\Domain\Status.lua
 Shared\Domain\Name.lua
 Shared\Domain\Level.lua
 Shared\Domain\Quest.lua
@@ -42,6 +43,7 @@ Shared\Kit\Color.lua
 Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua
 Shared\Kit\Bands.lua
+Shared\Kit\Edges.lua
 Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
 Shared\Kit\Cast.lua
@@ -73,6 +75,7 @@ Shared\Settings\Widgets\Header.lua
 Shared\Settings\Widgets\Input.lua
 Shared\Settings\Widgets\AnchorPicker.lua
 Shared\Settings\Pages.lua
+Shared\Settings\PageControls.lua
 Shared\Settings\SectionTabs.lua
 Shared\Settings\ModeLayout.lua
 Shared\Settings\Previews.lua

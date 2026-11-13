@@ -14,6 +14,10 @@
 --   Nameplates/AuraGlow.tga small glow around an aura icon, hollow inside (sliced at 6)
 --   Nameplates/Arrow.tga target arrow pointing right (mirrored for the left)
 --   Nameplates/Stripes.tga diagonal stripes for the focus highlight (tiles seamlessly)
+--   Mode/SlateHatch.tga  ModeSlateHatch: 4x4 tile, gray 80% with a 1px full-white diagonal; tinted
+--                        Mode Slate / 0.8, so the base is Mode Slate and the lines a little lighter
+--   UnitFrames/Rested.tga  UnitFrameRested: a "Zz" in square strokes, for the rested badge
+--   UnitFrames/Combat.tga  UnitFrameCombat: crossed swords with guards, for the combat badge
 --   ActionBars/Slot.tga  ActionBarSlot: a dark action slot with a soft top bevel, darker edges and
 --                        fine grain, in color (not tinted) and shown at Background Opacity
 local SAMPLES = 8
@@ -42,6 +46,23 @@ local function Glow(size, inset, radius, blur)
         if distance <= 0 then return 1 end
         local t = math.max(0, 1 - distance / blur)
         return t * t * (3 - 2 * t)
+    end
+end
+
+-- Strokes: covered within width / 2 of any segment { x1, y1, x2, y2 }, with
+-- square ends (the segments are extended by half the width).
+local function Strokes(segments, width)
+    local half = width / 2
+    return function(x, y)
+        for _, s in ipairs(segments) do
+            local dx, dy = s[3] - s[1], s[4] - s[2]
+            local length = math.sqrt(dx * dx + dy * dy)
+            local ux, uy = dx / length, dy / length
+            local along = (x - s[1]) * ux + (y - s[2]) * uy
+            local across = math.abs((x - s[1]) * -uy + (y - s[2]) * ux)
+            if along >= -half and along <= length + half and across <= half then return 1 end
+        end
+        return 0
     end
 end
 
@@ -113,6 +134,13 @@ local TEXTURES = {
     { "Nameplates/Arrow.tga", 16, 16, Triangle(3, 2, 14, 8, 3, 14), true },
     { "Nameplates/Stripes.tga", 16, 16, Stripes(8, 3), true },
     { "ActionBars/Slot.tga", 64, 64, function() return 1 end, false, Slot(64) },
+    { "UnitFrames/Rested.tga", 32, 32, Strokes({ { 5, 8, 16, 8 }, { 16, 8, 5, 21 }, { 5, 21, 16, 21 },
+        { 19, 15, 27, 15 }, { 27, 15, 19, 24 }, { 19, 24, 27, 24 } }, 3), true },
+    { "UnitFrames/Combat.tga", 32, 32, Strokes({ { 7, 7, 25, 25 }, { 25, 7, 7, 25 }, { 4, 22, 10, 28 }, { 22, 28, 28, 22 } }, 3), true },
+    { "Mode/SlateHatch.tga", 4, 4, function() return 1 end, false, function(x, y)
+        local v = (x + y) % 4 == 0 and 1 or 0.8
+        return v, v, v
+    end },
 }
 
 local function Coverage(shape, px, py, supersample)

@@ -120,3 +120,31 @@ function M:BuildAurasTab(ui)
         end)
     end, true)
 end
+
+-- Status on the portrait (Portrait tab): each frame's own, so a matched Target
+-- edits its own. Shown while the frame shows a portrait.
+function M:BuildStatusControls(ui)
+    local page, When = ui.page, ui.When
+    local function St() return ui.db().status end
+    local n = Nested(ui, St, function(key, value) M:SetStatusOption(ui.Editing(), key, value) end)
+    local function Portrait() return M:FrameDB(ui.Editing()).showPortrait end
+    local function Player() return ui.Editing() == "player" end
+    When(Portrait, function()
+        page:Group("Status")
+        When(Player, function()
+            page.unitFrameRestToggle = n.Toggles({ n.Toggle("Rested Icon", "restIcon"), n.Toggle("Combat Icon", "combatIcon") })
+        end)
+        When(function() return not Player() end, function() n.Toggles({ n.Toggle("Combat Icon", "combatIcon") }) end)
+        local corners = page:Columns({ "Rested Corner", "Combat Corner" })
+        page.unitFrameRestCorner = n.SelectIn(corners[1], M.choices.statusCorner, "restCorner")
+        page.unitFrameCombatCorner = n.SelectIn(corners[2], M.choices.statusCorner, "combatCorner")
+        local size = page:Columns({ "Badge Size" })
+        n.Slider(size[1], M.statusRanges.badgeSize, "badgeSize", "px")
+        n.Toggles({ n.Toggle("Mirror on a Right-Side Portrait", "mirror"), n.Toggle("Combat Ring", "combatRing") })
+        When(function() return St().combatRing or St().pulse end, function() n.Color("Combat Ring Color", "ringColor") end)
+        -- Something pulled you that you haven't targeted: the ring pulses until you do.
+        When(Player, function()
+            page.unitFramePulseToggle = n.Toggles({ n.Toggle("Pulse When Pulled", "pulse") })
+        end)
+    end)
+end

@@ -13,7 +13,7 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==13 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.layoutVersion==14 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture==nil,'one bar texture: Mode Gradient')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
     assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='sky' and M.db.player.portraitRing=='class')
@@ -66,6 +66,37 @@ world.run([====[
     assert(M:SetFrameOption('player','showPortrait',false) and Point(cb.points[1])[1]=='TOPLEFT' and Point(cb.points[1])[2]==t.power)
     assert(M:SetFrameOption('player','showPortrait',true) and Point(cb.points[1])[2]==t.portrait)
 
+    -- Status on the portrait: rested top left and combat bottom left on the ring
+    -- (35px out at 135° and 225°, snapped), mirrored to the outer side on the Target.
+    local sp,st=M.db.player.status,M.db.target.status
+    assert(sp.restIcon and sp.combatIcon and sp.combatRing and sp.pulse and st.combatIcon and not st.restIcon and not st.pulse and not M.db.focus.status.combatIcon)
+    resting=true;FireEvent('PLAYER_UPDATE_RESTING')
+    assert(p.restBadge:IsShown() and not p.combatBadge:IsShown() and not t.restBadge:IsShown(),'rested: Player only')
+    local rb=Point(p.restBadge);assert(rb[1]=='CENTER' and rb[2]==p.portrait and rb[4]==-25 and rb[5]==25 and p.restBadge.width==20,'top left, on the ring')
+    assert(p.restBadge.icon.vertexColor[1]==M.ACCENT[1] and p.restBadge.rim.vertexColor[1]==O.border[1])
+    -- Pulled while running: in combat, nothing targeted that is fighting you. Red ring, pulsing halo.
+    combat.player=true;FireEvent('PLAYER_REGEN_DISABLED')
+    local cb2=Point(p.combatBadge);assert(p.combatBadge:IsShown() and cb2[4]==-25 and cb2[5]==-25,'bottom left')
+    local red=M.db.player.status.ringColor
+    assert(p.redRing and math.abs(p.portrait.ring.gradient[3].r-(red[1]+(1-red[1])*0.35))<1e-9,'the ring turns red')
+    assert(p.portrait.halo:IsShown(),'pulled unawares: the ring pulses')
+    -- You target it and it fights you: the pulse stops; the ring holds red.
+    combat.target,attackable.target=true,true;FireEvent('UNIT_FLAGS','target')
+    assert(not p.portrait.halo:IsShown() and p.redRing,'targeted: steady red')
+    assert(t.combatBadge:IsShown() and Point(t.combatBadge)[4]==25 and Point(t.combatBadge)[5]==-25 and not t.redRing,'Target: its own badge, outer side; no red ring by default')
+    combat.target=false;FireEvent('UNIT_FLAGS','target');assert(p.portrait.halo:IsShown(),'a target that is not fighting you does not count')
+    combat.player,combat.target,attackable.target,resting=false,false,false,false;FireEvent('PLAYER_REGEN_ENABLED')
+    assert(not p.combatBadge:IsShown() and not p.restBadge:IsShown() and not p.redRing and not p.portrait.halo:IsShown() and not t.combatBadge:IsShown())
+    -- Settings: corners, size, mirror; validated.
+    resting=true;FireEvent('PLAYER_UPDATE_RESTING')
+    assert(M:SetStatusOption('player','restCorner','topRight') and Point(p.restBadge)[4]==25 and Point(p.restBadge)[5]==25)
+    assert(M:SetStatusOption('player','badgeSize',25) and p.restBadge.width==26,'even pixel sizes')
+    assert(not M:SetStatusOption('player','restCorner','middle') and not M:SetStatusOption('player','badgeSize',60))
+    assert(M:SetStatusOption('player','restIcon',false) and not p.restBadge:IsShown())
+    assert(M:SetStatusOption('player','restIcon',true) and M:SetStatusOption('player','restCorner','topLeft') and M:SetStatusOption('player','badgeSize',20))
+    resting=false;FireEvent('PLAYER_UPDATE_RESTING')
+    assert(M:FrameDB('target').status==M.db.target.status,'a matched Target keeps its own status settings')
+
     -- Cast bars: a block in the frame's own skin under the bar block, its far end
     -- lined up with the block's; the portrait end stops 2px short of the ring's
     -- circle (radius 35, crossing the box's top 26px under the centre: 23.4 + 2, rounded out).
@@ -74,7 +105,7 @@ world.run([====[
     local cp1,cp2=Point(pc),Point(pc,2)
     assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[4]==26 and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT' and cp2[4]==0)
     assert(pc.clear==26,'clear of the portrait')
-    assert(pc.height==14+8 and pc.rim.texture==tex('UnitFrameFrame') and pc.gap.texture==tex('UnitFrameFrameInner'),'rim and gap like the frame')
+    assert(pc.height==14+8 and pc.rim.texture==addon.Kit.FLAT and pc.gap.texture==addon.Kit.FLAT and Point(pc.gap)[4]==2,'hard-edged rim and gap like the frame')
     local cb1,cb2=Point(pc.bar),Point(pc.bar,2)
     assert(cb1[1]=='TOPLEFT' and cb1[4]==4 and cb1[5]==-4,'bar one rim and gap in from the box')
     assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(4+14+1) and cb2[5]==4,'the icon takes the far end, a hairline apart')
@@ -193,26 +224,30 @@ world.run([====[
     assert(p.width==244 and p.height==70)
     local pp=Point(p.panel);assert(pp[1]=='TOPLEFT' and pp[4]==35 and pp[5]==-12,'bar block starts under the portrait centre')
     local pb=Point(p.panel,2);assert(pb[1]=='BOTTOMRIGHT' and pb[5]==12)
-    assert(p.panel.fill.texture==tex('UnitFrameFrame') and p.panel.fill.vertexColor[1]==O.border[1],'slate rim')
-    local ip=Point(p.panel.border);assert(p.panel.border.texture==tex('UnitFrameFrameInner') and ip[4]==2 and ip[5]==-2,'2px black gap inside the 2px rim')
-    assert(p.panel.border.vertexColor[1]==O.inner[1])
+    -- Hard edges: rim and gap are four flat strips each, square corners, whole pixels.
+    local rim,gap=p.panel.rim,p.panel.gap
+    for i=1,4 do assert(rim[i].texture==addon.Kit.FLAT and gap[i].texture==addon.Kit.FLAT and rim[i].vertexColor[1]==O.border[1] and gap[i].vertexColor[1]==O.inner[1],'flat strips') end
+    assert(rim[1].height==2 and Point(rim[1])[4]==0 and Point(rim[1])[5]==0 and rim[3].width==2 and Point(rim[3])[5]==-2,'2px rim on the edge, sides between top and bottom')
+    assert(gap[1].height==2 and Point(gap[1])[4]==2 and Point(gap[1])[5]==-2 and Point(gap[3])[5]==-4 and Point(gap[4],2)[5]==4,'2px black gap one rim in')
+    local cap=p.panel.cap;assert(cap:IsShown() and Point(cap)[1]=='TOPLEFT' and Point(cap)[4]==4 and cap.width==25-4 and cap.vertexColor[1]==O.inner[1],'black under the portrait up to the bars')
     for _,bar in ipairs({p.health,p.power}) do
-        assert(bar.bg.vertexColor[1]==O.track[1] and bar.bg.vertexColor[3]==O.track[3] and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
+        assert(bar.bg.vertexColor[1]==O.slate[1] and bar.bg.vertexColor[3]==O.slate[3] and bar.bg.texture==addon.Kit.FLAT and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
         assert(bar.fillTexture.drawLayer=='ARTWORK','fill drawn above the track')
     end
-    -- See-through background: 25% by default, so the rim and gap are four clipped
-    -- bands around the bars' rectangle (nothing opaque under the bars), with a
-    -- solid hairline between health and power.
+    -- See-through background: nothing opaque under the bars (rim, gap and cap
+    -- surround them), with a solid hairline between health and power.
     local d=M.db.player
-    assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==25 and d.foregroundTexture=='mode' and d.backgroundTexture=='flat')
-    for _,bar in ipairs({p.health,p.power}) do assert(math.abs(bar.bg.vertexColor[4]-0.25)<1e-9,'25% background') end
-    assert(#p.panel.bands==4 and #p.panel.fills==4 and p.panel.bands[1].clipsChildren)
-    for i=1,4 do assert(p.panel.fills[i].texture==tex('UnitFrameFrame') and p.panel.inners[i].texture==tex('UnitFrameFrameInner')) end
-    -- Hole: from the bars' start (inset 60 - block start 35) to one rim and gap (4) in.
-    assert(Point(p.panel.bands[1],2)[5]==-4 and Point(p.panel.bands[2])[5]==4,'top and bottom bands stop at the bars')
-    assert(Point(p.panel.bands[3],2)[4]==25 and Point(p.panel.bands[4])[4]==-4,'side bands stop at the bars')
-    assert(Point(p.panel.bands[3])[5]==-4+1 and Point(p.panel.bands[3],2)[5]==4-1,'side bands overlap by a pixel')
-    assert(Point(t.panel.bands[3],2)[4]==4 and Point(t.panel.bands[4])[4]==-25,'target: the portrait side is the right')
+    assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==70 and d.foregroundTexture=='mode' and d.backgroundTexture=='slate','Mode Slate at 70%')
+    for _,bar in ipairs({p.health,p.power}) do assert(math.abs(bar.bg.vertexColor[4]-0.7)<1e-9,'70% background') end
+    assert(M:SetFrameOption('player','backgroundTexture','slateHatch') and p.health.bg.texture==addon.Media:GetTexture('ModeSlateHatch') and p.health.bg.vertexColor[1]==O.slateHatch[1])
+    local hc=p.health.bg.texCoord;assert(hc[2]==(244-60-4)/4 and hc[4]==27/4,'the hatch tiles one texel per pixel')
+    assert(M:SetFrameOption('player','backgroundTexture','flat') and p.health.bg.vertexColor[1]==O.track[1] and p.health.bg.texCoord[2]==1)
+    assert(M:SetFrameOption('player','backgroundTexture','slate') and not M:SetFrameOption('player','foregroundTexture','slate'))
+    assert(Point(t.panel.cap)[1]=='TOPRIGHT' and Point(t.panel.cap)[4]==-4,'target: the cap is on the right')
+    -- The end of the health fill gets a 1px light line, on the side it fills toward.
+    local fe=p.health.fillEdge;assert(fe and fe:IsShown() and fe.width==1 and Point(fe)[1]=='TOPRIGHT' and Point(fe)[2]==p.health.fillTexture)
+    assert(Point(t.health.fillEdge)[1]=='TOPLEFT','reverse fill: on the left')
+    assert(M:SetFrameOption('player','fillEdge',false) and not fe:IsShown() and M:SetFrameOption('player','fillEdge',true) and fe:IsShown())
     local hl=p.panel.hairline;assert(hl:IsShown() and hl.vertexColor[1]==O.inner[1] and hl.vertexColor[4]==1 and Point(hl)[2]==p.health and Point(hl,2)[2]==p.power,'solid hairline')
     local mhp=Point(p.health);assert(mhp[1]=='TOPLEFT' and mhp[4]==60 and mhp[5]==-16 and p.health.height==27)
     local mht=Point(t.health);assert(mht[1]=='TOPRIGHT' and mht[4]==-60,'target mirrored: portrait on the right')
@@ -234,7 +269,7 @@ world.run([====[
     assert(Point(ring.icon)[4]==4 and ring.icon.mask.texture=='Interface\\CHARACTERFRAME\\TempPortraitAlphaMask','circular portrait')
     assert(p.nameClip==nil and p.nameShine==nil and p.panel.ringBorder==nil,'plain name, single ring')
     assert(p.textLayer:GetFrameLevel()>ring:GetFrameLevel(),'text above the portrait')
-    local np=Point(p.nameText);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==12 and np[5]==4+3 and p.nameText.justifyH=='RIGHT','name right-aligned above')
+    local np=Point(p.nameText);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==1 and np[5]==4+3 and p.nameText.justifyH=='RIGHT','name right-aligned above')
     assert(p.nameText.font[1]:find('Lato') and p.healthText.font[1]:find('Lato'),'Expressway falls back to ModeUI Lato when not installed')
     assert(t.nameText.justifyH=='RIGHT','matched target copies the Player name alignment')
     local lp=Point(p.levelText);assert(lp[1]=='RIGHT' and lp[2]==p.healthText and lp[4]==-6,'level before the right-aligned health text')
@@ -243,8 +278,26 @@ world.run([====[
     -- health text, which clears the Target's own portrait curve.
     local th=Point(t.healthText);assert(th[1]=='RIGHT' and th[2]==t.health and th[4]==-4-8,'health text on the right, like the Player')
     local tl=Point(t.levelText);assert(tl[1]=='RIGHT' and tl[2]==t.healthText and tl[4]==-6,'level before it, like the Player')
-    assert(Point(t.nameText,2)[4]==-(8+4) and Point(p.nameText,2)[4]==0,'name kept clear of the portrait')
+    -- The name above the frame clears the ring at its own height: the ring curves away
+    -- there (26px above its centre it reaches 23.4px out), so 1px in from the bars.
+    assert(Point(t.nameText,2)[4]==-1 and Point(p.nameText,2)[4]==0,'name clear of the portrait at its own height')
     assert(p.levelText.color[1]==P.muted[1])
+    -- Bar text never reaches the portrait: 2px before the ring's outer edge across
+    -- its own line (at the bars' middle: 35 + 35 + 2 - 60 = 12 from the bars' edge),
+    -- and an X offset toward the portrait stops there.
+    assert(M:SetFrameOption('player','healthTextPosition','LEFT') and Point(p.levelText)[4]==12,'the outer text at the clearance')
+    assert(M:SetFrameOption('player','levelOffsetX',-9) and Point(p.levelText)[4]==12,'an offset into the ring stops at the line')
+    assert(M:SetFrameOption('player','levelOffsetX',5) and Point(p.levelText)[4]==17,'away from the portrait it moves freely')
+    assert(M:SetFrameOption('player','levelOffsetX',0) and M:SetFrameOption('player','healthTextPosition','RIGHT'))
+    assert(M:SetFrameOption('player','powerText','percent') and M:SetFrameOption('player','powerTextPosition','LEFT'))
+    -- The power line's nearest edge is 8px under the ring's centre, where the ring
+    -- still reaches 34.1px out: 35 + 34.1 + 2 - 60, rounded out, is 12.
+    assert(Point(p.powerText)[4]==12,'the power text measured across its own line')
+    -- A big level font in a tall bar is measured across its own taller band.
+    assert(M:SetFrameOption('player','powerTextOffsetY',-12) and Point(p.powerText)[4]<12,'lower, where the ring has curved away, it can sit closer')
+    assert(M:SetFrameOption('player','powerTextOffsetY',0))
+    assert(M:SetFrameOption('player','powerText','none') and M:SetFrameOption('player','powerTextPosition','CENTER'))
+    assert(Point(t.healthText)[4]==-12,'target: mirrored on the right')
 
     M:UpdateAll()
     local function Soft(c,amount) amount=amount or 0.4;return {c[1]+(1-c[1])*amount,c[2]+(1-c[2])*amount,c[3]+(1-c[3])*amount} end
@@ -289,7 +342,7 @@ world.run([====[
     assert(M:SetFrameOption('player','foregroundTexture','flat') and p.health.statusBarTexture==addon.Kit.FLAT and not p.health.sheen:IsShown())
     assert(not M:SetFrameOption('player','backgroundTexture','mode') and not M:SetFrameOption('player','foregroundTexture','bogus'),'texture choices validated')
     assert(M:SetFrameOption('player','foregroundTexture','mode') and p.health.sheen:IsShown())
-    assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',25))
+    assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',70))
     assert(M:SetFrameOption('player','showPower',false) and not p.panel.hairline:IsShown() and M:SetFrameOption('player','showPower',true))
     assert(not M:SetFrameOption('player','healthColorMode','palette') and not M:SetFrameOption('player','healthColorMode','reaction'),'only Default, Class Color or Custom')
     assert(M:SetFrameOption('player','nameColorMode','class') and Near(p.nameText.color[1],soft[1]))
@@ -373,7 +426,7 @@ world.run([====[
     assert(M:SetFrameOption('player','healthText','percent') and M:SetFrameOption('player','healthTextPosition','RIGHT'))
     assert(M:SetFrameOption('player','healthTextOffsetX',5) and M:SetFrameOption('player','healthTextOffsetY',-2))
     assert(Point(p.healthText)[4]==-4+5 and Point(p.healthText)[5]==-2,'health text offset')
-    assert(M:FrameDB('target').healthTextOffsetX==5 and Point(t.healthText)[4]==-4+5-8,'matched target copies offsets')
+    assert(M:FrameDB('target').healthTextOffsetX==5 and Point(t.healthText)[4]==-12,'matched target copies offsets; toward its portrait they stop at the line')
     assert(M:SetFrameOption('target','mirrorText',true) and M:FrameDB('target').healthTextOffsetX==-5,'mirrored offsets')
     assert(Point(t.healthText)[1]=='LEFT' and Point(t.healthText)[2]==t.health and Point(t.healthText)[4]==4-5)
     assert(Point(t.levelText)[1]=='LEFT' and Point(t.levelText)[2]==t.healthText and Point(t.levelText)[4]==6,'level after the health text')
@@ -382,7 +435,7 @@ world.run([====[
     assert(Point(p.levelText)[4]==-6-45 and Point(t.healthText)[4]==4-1 and Point(t.levelText)[4]==6+45,'mirror keeps the level clear of the health text')
     assert(M:SetFrameOption('target','mirrorText',false) and Point(t.healthText)[1]=='RIGHT' and Point(t.levelText)[4]==-6-45,'same layout as the Player')
     assert(M:SetFrameOption('player','levelOffsetX',0) and M:SetFrameOption('player','healthTextOffsetX',5))
-    assert(M:SetFrameOption('player','nameOffsetX',3) and M:SetFrameOption('player','nameOffsetY',4) and Point(p.nameText)[5]==4+3+4 and Point(p.nameText)[4]==12+3)
+    assert(M:SetFrameOption('player','nameOffsetX',3) and M:SetFrameOption('player','nameOffsetY',4) and Point(p.nameText)[5]==4+3+4 and Point(p.nameText)[4]==0+3,'4px higher the ring is past the name: no tuck')
     assert(M:SetFrameOption('player','levelOffsetX',-2) and Point(p.levelText)[4]==-6-2)
     for _,key in ipairs({'healthTextOffsetX','healthTextOffsetY','nameOffsetX','nameOffsetY','levelOffsetX'}) do assert(M:SetFrameOption('player',key,0)) end
     assert(M:SetFrameOption('player','levelColor',{1,0,0}) and M:SetFrameOption('player','levelFontSize',14))
@@ -390,12 +443,12 @@ world.run([====[
     assert(M:SetFrameOption('player','levelColor',P.muted) and M:SetFrameOption('player','levelFontSize',11))
 
     -- The Target matches the Player (mirrored) until Match Player Frame is turned off.
-    assert(M:SetFrameOption('player','barWidth',200) and t.width==p.width and t.geometry.inset==p.geometry.inset)
+    assert(M:SetFrameOption('player','barWidth',200) and t.width==60+180+4 and p.width==60+200+4 and t.geometry.inset==p.geometry.inset,'width is each frame own')
     assert(Point(t.portrait)[1]=='TOPRIGHT' and Point(t.health)[1]=='TOPRIGHT','still mirrored')
     assert(M:SetFrameOption('player','showPower',false) and not t.power:IsShown(),'power bar follows the Player')
     assert(M:SetFrameOption('player','showPower',true) and t.power:IsShown())
-    assert(M:SetFrameOption('target','barWidth',300) and t.width==p.width,'own style ignored while matched')
-    assert(M:FrameDB('target').portraitSide=='right' and M:FrameDB('target').barWidth==200)
+    assert(M:SetFrameOption('target','barWidth',300) and t.width==60+300+4,'a matched Target uses its own width')
+    assert(M:FrameDB('target').portraitSide=='right' and M:FrameDB('target').barWidth==300 and M:FrameDB('target').healthHeight==M.db.player.healthHeight)
     assert(M:SetFrameOption('target','matchPlayer',false) and t.width==60+300+4,'own settings once unmatched')
     assert(M:FrameDB('target')==M.db.target and t.nameText.justifyH=='RIGHT')
     assert(M:SetFrameOption('player','barWidth',180) and M:SetFrameOption('target','barWidth',180))
@@ -491,7 +544,7 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==13 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
+    assert(v1.layoutVersion==14 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
     assert(v1.player.healthText=='both' and v1.player.nameFontSize==14 and v1.player.healthColorMode=='default')
     assert(v1.player.fontMedia=='Expressway' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
     assert(v1.target.enabled==false and v1.target.barWidth==180)
@@ -503,7 +556,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==13 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
+    assert(v5.layoutVersion==14 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
     assert(v5.player.levelFontSize==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -516,7 +569,7 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==13 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==14 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='sky' and v8.target.nameColorMode=='sky','names adopt the default color')
     assert(v8.player.portraitRing=='class' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'class gradient ring unless custom')
@@ -527,7 +580,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==13 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
+    assert(v9.layoutVersion==14 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -535,20 +588,27 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==13 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
+    assert(v10.layoutVersion==14 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==true and v10.player.nameLift==nil and v10.target.nameLift==nil,'lift choice carried over')
     assert(v10.target.mirrorText==false,'matched Target now copies the Player text layout')
     local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
-    assert(v11.layoutVersion==13 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    assert(v11.layoutVersion==14 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
     -- Version 12 -> 13: new small-frame defaults, but a changed setting stays.
     local v12={layoutVersion=12,targettarget={scale=100,showPortrait=true,namePosition='above',nameAlign='CENTER',barWidth=110},
         focus={scale=120,showPortrait=true,barWidth=150,healthHeight=22,levelStyle='badge',nameFontSize=12}}
     M.Initialize(v12)
-    assert(v12.layoutVersion==13 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
+    assert(v12.layoutVersion==14 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
     assert(v12.targettarget.nameAlign=='CENTER' and v12.focus.scale==120,'user changes kept')
     assert(v12.focus.barWidth==110 and v12.focus.healthHeight==16 and v12.focus.levelStyle=='none' and v12.focus.nameFontSize==11)
     assert(v12.targettarget.attach==true and v12.focustarget.attach==true and v12.focus.attach==false,'new keys take defaults')
+    -- Version 13 -> 14: Mode Slate at 70% for frames still on the old Flat / 25%.
+    local v13={layoutVersion=13,player={backgroundTexture='flat',barBackgroundOpacity=25},target={backgroundTexture='media:Smooth',barBackgroundOpacity=40}}
+    M.Initialize(v13)
+    assert(v13.layoutVersion==14 and v13.player.backgroundTexture=='slate' and v13.player.barBackgroundOpacity==70)
+    assert(v13.target.backgroundTexture=='media:Smooth' and v13.target.barBackgroundOpacity==40,'chosen backgrounds stay')
+    local w13={layoutVersion=13,player={barWidth=230},target={matchPlayer=true,barWidth=180}};M.Initialize(w13)
+    assert(w13.target.barWidth==230,'a matched Target keeps the width it showed')
     local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     kept.player.nameColorMode='class';kept.player.portraitRing='border';M.Initialize(kept)
     assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='border','later choices are not migrated')
@@ -579,7 +639,7 @@ restored.run([====[
     end
     local function Row(section,title) return Find(section,title) or error('missing row '..section..' / '..title) end
     local function Visible(row) return not row.visibleWhen or row.visibleWhen() end
-    for section,list in pairs({Layout={'Scale','Bar Width'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
+    for section,list in pairs({Layout={'Scale','Frame Width'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
         ['Name & Level']={'Name Color','Name Offset X','Class Color Softness','Level Font Size','Level Color','Level Offset Y'},
         Health={'Health Bar Height','Health Color','Health Text Offset X'},Power={'Power Bar Height','Power Text'},Text={'Font','Text Color'}}) do
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end
@@ -658,7 +718,7 @@ restored.run([====[
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
-    assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==25,'edits the Focus only')
+    assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==70,'edits the Focus only')
     assert(M:ResetFrame('focus'))
     -- Placement shows only for frames that attach; its offsets only while attached.
     assert(not Visible(Row('Layout','Attach Point')),'Focus has no parent frame')
@@ -667,7 +727,24 @@ restored.run([====[
     page.SetEditing('target');assert(page.unitFrameEditing()=='target' and page.unitFrameEditSelects[2].label:GetText()=='Target','switch to the Target')
     assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')
-    assert(Visible(Row('Layout','Fill Direction')),'a matched Target still picks its fill direction')
+    assert(Visible(Row('Layout','Fill Direction')) and Visible(Row('Layout','Frame Width')),'a matched Target still picks its width and fill direction')
+    -- The settings look (owner's Layout tab design): labels above controls, and two
+    -- dropdowns or sliders share a line in a card; the slider's value sits on its label line.
+    page:SelectSectionTab(page.sections[2]);page:Layout()
+    local editRow,fillRow,widthRow=Row('Layout','Editing'),Row('Layout','Fill Direction'),Row('Layout','Frame Width')
+    assert(editRow.stacked and editRow.pairable and fillRow.pairable and widthRow.pairable)
+    assert(editRow.offset==fillRow.offset and Point(fillRow)[4]>Point(editRow)[4],'Editing and Fill Direction share a line')
+    assert(widthRow.offset>fillRow.offset and Point(widthRow)[4]==Point(editRow)[4],'Frame Width on the next line, alone')
+    assert(math.abs(editRow.width-fillRow.width)<1 and widthRow.width>editRow.width,'halves, then the full width')
+    assert(Point(editRow.settingsLabel)[1]=='TOPLEFT' and Point(editRow.settingsHost)[5]==-22,'label above the control')
+    local input=widthRow.settingsHost.numericInput;assert(Point(input)[2]==widthRow.settingsHost.valueAnchor and Point(widthRow.settingsHost.slider,2)[4]==0,'value on the label line, slider full width')
+    -- Status (Portrait tab): the frame's own, so a matched Target edits it; rested and pulse are the Player's.
+    assert(page.unitFrameRestCorner and Visible(page.unitFrameRestCorner:GetParent().row),'status on a matched Target')
+    page.SetEditing('player');assert(Visible(page.unitFrameCombatCorner:GetParent().row))
+    assert(M:SetFrameOption('player','showPortrait',false) and not Visible(page.unitFrameCombatCorner:GetParent().row),'no portrait, no status')
+    assert(M:SetFrameOption('player','showPortrait',true));page.SetEditing('target')
+    assert(M:SetFrameOption('target','barWidth',150) and M.db.player.barWidth==180 and M.frames.target.geometry.width<M.frames.player.geometry.width,'its own width')
+    assert(M:SetFrameOption('target','barWidth',180))
     assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Layout','Scale')))
     assert(M:SetFrameOption('target','barWidth',220) and M.db.player.barWidth==180)
     assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))

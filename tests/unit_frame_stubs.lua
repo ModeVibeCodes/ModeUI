@@ -125,4 +125,9 @@
             for _,a in ipairs(units[unit].helpful or {}) do if a.auraInstanceID==id then return (a.applications or 0)>=minimum and tostring(a.applications) or '' end end
             return ''
         end}
+    -- Rest and combat state (plain booleans on Forever).
+    combat,attackable,resting={},{},false
+    function UnitAffectingCombat(u) return combat[u]==true or (u=='player' and testCombat==true) end
+    function UnitCanAttack(_,u) return attackable[u]==true end
+    function IsResting() return resting end
     function Point(region,i) return {region:GetPoint(i or 1)} end

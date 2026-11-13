@@ -283,8 +283,15 @@ to widgets documented as accepting them.
   texture setting. Settings pages group rows on cards (`page:Group`: ModeCard
   panels, 6 px corners, a one-pixel `cardBorder` rim, 16 px padding, 12 px
   apart, with a small uppercase accent title) and put related controls side by
-  side (`page:Columns`); standard rows put 28 px controls on a 36 px pitch with
-  the label centered on them. Controls are drawn by `Widgets/Shape.lua` as a
+  side (`page:Columns`). Since November 13, 2026 (the owner's Layout tab
+  design) a standard row stacks its label above its 28 px control (58 px
+  pitch); sliders show their value at the right of the label line and span the
+  full width; two pairable rows in a row (sliders and dropdowns,
+  `row.pairable`) share one line in a card, 24 px apart; rows with wider
+  controls, `page:ToggleGrid` and `page:Columns`
+  (`Shared/Settings/PageControls.lua`) keep the full width. Colors: cards
+  #121316 on a #1E2024 rim, fields #0E0F11 on #2A2D32, labels #C4C8CE, values
+  #8A8F96, a #22262B selected segment. Controls are drawn by `Widgets/Shape.lua` as a
   rounded fill inside a one-physical-pixel rim (`W.Box`, 4 px corners): buttons
   are fields with a `rim` that turns accent on hover (primary buttons are
   accent with ink text, quiet ones text only); toggles are 28x16 pill switches;

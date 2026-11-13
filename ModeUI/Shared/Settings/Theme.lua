@@ -21,20 +21,23 @@ local function RGB(r, g, b, a) return { r / 255, g / 255, b / 255, a or 1 } end
 -- mockup): settings sit on cards (card, cardBorder; ModeCard texture), controls
 -- are fields with a one-pixel rim (field, rim), and the accent marks what is
 -- chosen (primary; accentFill behind a selected segment).
+-- Colors follow the owner's Layout tab design (November 13, 2026): a cooler
+-- near-black with cards #121316 on a #1E2024 rim, fields #0E0F11 on #2A2D32,
+-- labels #C4C8CE over values #8A8F96, and a #22262B selected segment.
 local MODE = {
-    primary = RGB(0, 240, 255), accentFill = RGB(10, 58, 64),
+    primary = RGB(0, 240, 255), accentFill = RGB(34, 38, 43),
     enabled = RGB(127, 219, 151), danger = RGB(255, 90, 95),
     off = RGB(184, 184, 191), unavailable = RGB(102, 102, 110),
     highlight = RGB(244, 244, 245), ink = RGB(11, 11, 13),
     background = RGB(11, 11, 13), pageBackground = RGB(11, 11, 13),
-    sidebar = RGB(16, 16, 19), navSelected = RGB(29, 29, 33),
-    card = RGB(23, 23, 26), cardBorder = RGB(38, 38, 43), panel = RGB(23, 23, 26),
-    field = RGB(32, 32, 36), surface = RGB(32, 32, 36), hover = RGB(42, 42, 47),
-    rim = RGB(48, 48, 54), line = RGB(38, 38, 43), lineStrong = RGB(179, 179, 179),
+    sidebar = RGB(11, 11, 13), navSelected = RGB(22, 24, 28),
+    card = RGB(18, 19, 22), cardBorder = RGB(30, 32, 36), panel = RGB(18, 19, 22),
+    field = RGB(14, 15, 17), surface = RGB(18, 19, 22), hover = RGB(34, 38, 43),
+    rim = RGB(42, 45, 50), line = RGB(30, 32, 36), lineStrong = RGB(74, 79, 86),
     -- Switch and slider tracks.
-    track = RGB(42, 42, 48), trackRim = RGB(58, 58, 66),
-    text = RGB(228, 228, 231), heading = RGB(228, 228, 231),
-    secondary = RGB(184, 184, 191), muted = RGB(154, 154, 162), faint = RGB(110, 110, 118),
+    track = RGB(42, 45, 50), trackRim = RGB(58, 62, 68),
+    text = RGB(228, 228, 228), heading = RGB(242, 242, 242),
+    secondary = RGB(196, 200, 206), muted = RGB(138, 143, 150), faint = RGB(110, 115, 122),
 }
 
 addon.InterfaceThemes = {
@@ -54,7 +57,7 @@ addon.InterfaceTheme = {
     -- titles (page), section tabs and headings (section), card titles and
     -- sidebar captions, uppercase (group), setting labels (body), help (small).
     spacing = addon.Theme.spacing,
-    fontSize = { small = 12, body = 13, group = 11, section = 14, page = 20, display = 20 },
+    fontSize = { small = 12, body = 13, group = 12, section = 14, page = 24, display = 24 },
 }
 for key, color in pairs(MODE) do addon.InterfaceTheme[key] = Copy(color) end
 
