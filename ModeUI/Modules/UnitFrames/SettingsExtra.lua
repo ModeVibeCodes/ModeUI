@@ -2,7 +2,7 @@ local _, addon = ...
 local M, W = addon.UnitFrames, addon.ConfigWidgets
 if not M then return end
 
--- Settings tabs for the parts kept in nested tables: combo points (the
+-- Settings tabs for the parts kept in nested tables: the class resource (the
 -- Target's, in M.db.comboPoints), and each frame's cast bar and auras. Built
 -- by CreateConfigPage (Settings.lua) with its helpers in `ui`.
 
@@ -33,14 +33,31 @@ local function Nested(ui, get, set)
 end
 M.NestedControls = Nested
 
+-- Class Resource (owner, November 13, 2026: not just a Rogue's): your class's
+-- points around the Target's portrait (Domain.ClassResource). A class without
+-- one is told so, and nothing shows or can be set for it.
 function M:BuildComboTab(ui)
     local page, When = ui.page, ui.When
-    page:Section("Combo Points", nil, false)
+    local Resource = addon.Domain.ClassResource
+    page:Section("Class Resource", nil, false)
     local function C() return M.db.comboPoints end
+    local function Has() return Resource.Spec() ~= nil end
     local n = Nested(ui, C, function(key, value) M:SetComboOption(key, value) end)
-    page.unitFrameComboToggles = n.Toggles({ n.Toggle("Show Combo Points", "enabled"), n.Toggle("Hide Blizzard Combo Points", "hideBlizzard") })
+    local about = ui.Note("Your Class", "", 40)
+    page.unitFrameResourceNote = about
+    page.refreshers[#page.refreshers + 1] = function()
+        local spec, class = Resource.Spec(), Resource.ClassName()
+        if spec then
+            about:SetText(class .. ": " .. spec.name .. (spec.when and (", " .. spec.when) or "") .. ", around the Target frame's portrait.")
+        else
+            about:SetText((class ~= "" and class or "Your class") .. " has no class resource on WoW Forever, so nothing shows here. Rogues, and Druids in Cat Form, have Combo Points.")
+        end
+    end
     ui.Mark("combo")
-    When(function() return C().enabled end, function()
+    When(Has, function()
+        page.unitFrameComboToggles = n.Toggles({ n.Toggle("Show Class Resource", "enabled"), n.Toggle("Hide Blizzard Class Resource", "hideBlizzard") })
+    end)
+    When(function() return Has() and C().enabled end, function()
         page:Group("Placement")
         page.unitFrameComboArc = n.Select("Arc Position", M.choices.comboArc, "arc")
         local sizes = page:Columns({ "Point Size", "Spacing", "Distance" })
@@ -50,7 +67,9 @@ function M:BuildComboTab(ui)
         page:Group("Colors")
         n.Color("Lit Point Color", "activeColor"); n.Color("Empty Point Color", "emptyColor")
     end)
-    ui.Note("About Combo Points", "Combo points ring the Target frame's portrait while you are a Rogue or a Druid in Cat Form, one socket per point. Without a portrait they line up under the bars. Hide Blizzard Combo Points fades the game's own points, which sit where Blizzard's Target frame was.", 64)
+    When(Has, function()
+        ui.Note("About Class Resource", "One socket per point rings the Target frame's portrait while you build them. Without a portrait they line up under the bars. Hide Blizzard Class Resource fades the game's own points, which sit where Blizzard's Target frame was.", 64)
+    end)
 end
 
 -- A tab of the frame's own (a matched Target edits its own cast bar).
@@ -70,6 +89,12 @@ function M:BuildCastTab(ui)
             local size = page:Columns({ "Bar Height", "Gap" })
             page.unitFrameCastHeight = n.Slider(size[1], M.castRanges.height, "height", "px")
             n.Slider(size[2], M.castRanges.gap, "gap", "px")
+            page:Group("Textures")
+            local textures = page:Columns({ "Foreground", "Background" })
+            page.unitFrameCastForeground = ui.SelectIn(textures[1], 200, function() return addon.Kit.BarTextureChoices(true) end,
+                function() return C().foregroundTexture end, function(v) M:SetCastOption(ui.Editing(), "foregroundTexture", v) end)
+            page.unitFrameCastBackground = ui.SelectIn(textures[2], 200, function() return addon.Kit.BarTextureChoices(false) end,
+                function() return C().backgroundTexture end, function(v) M:SetCastOption(ui.Editing(), "backgroundTexture", v) end)
             page:Group("Icon and Text")
             page.unitFrameCastIcon = n.Select("Spell Icon", M.choices.castIcon, "icon")
             n.Toggles({ n.Toggle("Spell Name", "showText"), n.Toggle("Timer", "showTimer") })

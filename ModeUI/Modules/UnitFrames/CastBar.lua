@@ -89,8 +89,9 @@ function M:LayoutCast(f, unit)
     bar:SetPoint("TOP" .. near, box, "TOP" .. near, sign * nearInset, -g.pad)
     bar:SetPoint("BOTTOM" .. far, box, "BOTTOM" .. far, -sign * farInset, g.pad)
     bar:SetFrameLevel(box:GetFrameLevel() + 1)
-    Kit.BarForeground(bar, fdb.foregroundTexture, height, px)
-    Kit.BarBackground(bar, fdb.backgroundTexture)
+    -- The cast bar's own textures (Cast Bar tab).
+    Kit.BarForeground(bar, cdb.foregroundTexture, height, px)
+    Kit.BarBackground(bar, cdb.backgroundTexture)
     Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, { box.barMasks.LEFT, box.barMasks.RIGHT })
     box.textLayer:SetFrameLevel(bar:GetFrameLevel() + 2)
     -- Spell name from the left, seconds left on the right, in the frame's font.

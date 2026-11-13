@@ -5,6 +5,44 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Settings by part, Class Resource (layout version 18)
+
+November 13, 2026, per the owner:
+
+- **Editing** (the frame every tab changes) sits at the preview's top right,
+  as on Action Bars, with a dot and On / Off for whether that frame is shown,
+  and **Turn On** beside a frame that is off. Tabs no longer start with their
+  own Editing row.
+- **Tabs**: Frame, Health Bar, Power Bar, Portrait, Cast Bar, Auras, Class
+  Resource, Text.
+  - **Frame**: Show Frame, Hide Blizzard's Frame; on the Target, Match Player
+    Frame and Mirror Player Text (the only place for them); Scale; Placement
+    (Target of Target, Target of Focus); Reset Frame and Copy Style; Status.
+  - **Health Bar** (Layout and Health together): Frame Width and Health Bar
+    Height side by side, Fill Direction, Fill End Line, Health Color, its
+    textures and opacity, and its text spots (nine plus the border). Width
+    and fill direction stay the frame's own, so a matched Target shows them.
+    The portrait is a share of the bar block's height (Portrait Size), so it
+    grows and shrinks with the bars.
+  - **Power Bar**: Show Power Bar, height, color, its own textures and
+    opacity, and its three text spots.
+  - **Cast Bar**: gains its own Foreground / Background textures.
+  - **Text**: name colors and the font.
+- **Own textures**: `powerForegroundTexture`, `powerBackgroundTexture`,
+  `powerForegroundOpacity`, `powerBackgroundOpacity` and
+  `castBar.foregroundTexture` / `castBar.backgroundTexture`. The old shared
+  keys (`foregroundTexture`, `backgroundTexture`, `barForegroundOpacity`,
+  `barBackgroundOpacity`) are now the health bar's. Layout version 18 copies
+  the shared values into the new keys, so nothing changes on screen.
+- **Class Resource** (was Combo Points; settings still in `db.comboPoints`):
+  `Shared/Domain/ClassResource.lua` lists each class's resource. Forever's
+  Camelot unit frames load only the Rogue and Druid combo point bars
+  (Blizzard_UnitFrame.toc excludes Holy Power, Soul Shards, Chi, Runes, Arcane
+  Charges and Essence for Camelot), so Rogues, and Druids in Cat Form, have
+  Combo Points; another class sees "has no class resource on WoW Forever" in
+  the tab, no controls, and nothing on the frame or in the stand-ins. A class
+  that gains one later is a new entry in `ClassResource.CLASSES`.
+
 ## Text slots (layout version 17)
 
 November 13, 2026, per the owner (after EllesmereUI's text elements): every

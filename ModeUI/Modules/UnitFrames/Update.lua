@@ -80,7 +80,8 @@ function M:PaintSample(g, unit)
     g.health:SetStatusBarColor(color[1], color[2], color[3], alpha)
     g.health:SetMinMaxValues(0, 100); g.health:SetValue(75)
     local power = fdb.powerColorMode == "custom" and fdb.powerColor or P.mana
-    g.power:SetMinMaxValues(0, 100); g.power:SetValue(60); g.power:SetStatusBarColor(power[1], power[2], power[3], alpha)
+    g.power:SetMinMaxValues(0, 100); g.power:SetValue(60)
+    g.power:SetStatusBarColor(power[1], power[2], power[3], fdb.powerForegroundOpacity / 100)
     self:PaintTextSample(g, unit, identity)
     if fdb.showPortrait then
         if unit == "player" then self:PaintPortrait(g, unit, "player") else Portrait.SetIcon(g.portrait.icon, Portrait.UNKNOWN_ICON) end
@@ -115,7 +116,7 @@ function M:UpdatePower(unit)
         if okMax then pcall(f.power.SetMinMaxValues, f.power, 0, max) end
         if okValue then pcall(f.power.SetValue, f.power, value) end
         local color = fdb.powerColorMode == "custom" and fdb.powerColor or Power.Color(token)
-        f.power:SetStatusBarColor(color[1], color[2], color[3], fdb.barForegroundOpacity / 100)
+        f.power:SetStatusBarColor(color[1], color[2], color[3], fdb.powerForegroundOpacity / 100)
     end
     self:UpdatePowerTexts(f, unit, powerType, okValue, value)
 end

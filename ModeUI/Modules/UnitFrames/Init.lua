@@ -52,7 +52,9 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 15: the level in the health bar's bottom corner; a matched Target mirrors the Player.
 -- Version 16: one border (no black gap); the name sits on the top border.
 -- Version 17: text slots replace the name, level, health and power text keys.
-M.LAYOUT_VERSION = 17
+-- Version 18: the power bar and cast bar get their own textures (and the power
+-- bar its own opacity), copied from the shared bar textures.
+M.LAYOUT_VERSION = 18
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -103,6 +105,10 @@ local function Frame(side, extra)
         -- Mode Slate at 70% (owner, November 13, 2026): a solid near-neutral gray
         -- behind the fill, strong enough not to feel see-through.
         foregroundTexture = "mode", backgroundTexture = "slate", barForegroundOpacity = 100, barBackgroundOpacity = 70,
+        -- The power bar's own (owner, November 13, 2026: each part of the frame
+        -- has its own texture settings); the keys above are the health bar's.
+        powerForegroundTexture = "mode", powerBackgroundTexture = "slate", powerForegroundOpacity = 100,
+        powerBackgroundOpacity = 70,
         -- A 1px light line where the health fill ends.
         fillEdge = true,
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
@@ -140,7 +146,8 @@ M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlaye
     targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false)), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 },
-    barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
+    barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, powerForegroundOpacity = { 10, 100, 5 },
+    powerBackgroundOpacity = { 0, 100, 5 }, attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
 -- Keys that describe placement/identity rather than style; Copy Style skips them.
 M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true,
     attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true, fillDirection = true }
@@ -158,6 +165,7 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 -- box with the frame's rim and gap under (or over) the bar block, its bar
 -- lined up with the health bar. On for the Player, Target and Focus.
 M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 3, icon = "far",
+    foregroundTexture = "mode", backgroundTexture = "slate",
     showText = true, showTimer = true, fontSize = 10, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
 M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }

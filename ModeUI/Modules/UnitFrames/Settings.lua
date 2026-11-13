@@ -2,10 +2,12 @@ local _, addon = ...
 local M, W, T = addon.UnitFrames, addon.ConfigWidgets, addon.InterfaceTheme
 if not M then return end
 
--- One tab per frame element (Layout, Portrait, Health, Power, Cast Bar,
--- Auras, Combo Points, Text); the Onyx rim is locked, so there is no Border
--- tab. Each element tab edits the Player or the Target, picked by the Editing
--- switch at its top; the choice is shared by every tab for this session.
+-- Tabs: Frame (show it, matching, scale, placement, tools), then one per part
+-- of the frame (Health Bar, Power Bar, Portrait, Cast Bar, Auras, Class
+-- Resource) with that part's own size, colors, textures and text spots, and
+-- Text (name colors, font). The Onyx rim is locked, so there is no Border tab.
+-- Every tab edits the frame picked with Editing above the preview, shared by
+-- every tab for this session.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing = "player"
@@ -58,93 +60,89 @@ function M:CreateConfigPage(parent)
         local label = W.Label(page:Row(title, height or 40), text, nil, 0, -4, 420, T.muted); label:SetWordWrap(true)
         return label
     end
+    -- Style settings a Target matching the Player takes from the Player: hidden
+    -- while it matches (tabs of the frame's own settings use this per row).
+    local function Style(build) When(function() return not Matched() end, build) end
 
     -- The live sample of the frame being edited (Preview.lua); clicking a part
     -- of it reveals the row marked here for that part.
     page.configPreview = W.Preview(page, M, { contentHeight = 150 })
-    -- A tab about one frame's part (Combo Points) switches the sample to that frame.
+    -- A tab about one frame's part (Class Resource) switches the sample to that frame.
     function page:OnSectionTabChanged() if self.configPreview then self.configPreview:Refresh() end end
     page.jumpTargets = {}
     local function Mark(target) local row = page.rows[#page.rows]; page.jumpTargets[target] = { section = row.section, row = row } end
 
-    -- Frames: visibility, matching, status and whole-frame tools.
-    page:Section("Frames", nil, false)
-    -- One line per frame: show it, and hide Blizzard's own beside it.
-    local cells = {}
-    for _, unit in ipairs(M.units) do
-        local title = M.titles[unit]
-        cells[#cells + 1] = { label = "Show " .. title, get = function() return M.db[unit].enabled end,
-            set = function(v) M:SetFrameOption(unit, "enabled", v) end }
-        cells[#cells + 1] = { label = "Hide Blizzard " .. title, get = function() return M.db[unit].hideBlizzard end,
-            set = function(v) M:SetFrameOption(unit, "hideBlizzard", v) end }
-    end
-    cells[#cells + 1] = { label = "Target Matches Player", get = function() return M.db.target.matchPlayer end,
-        set = function(v) M:SetFrameOption("target", "matchPlayer", v) end }
-    page.unitFrameToggles = page:ToggleGrid(cells, { maxColumns = 2, minimumCellWidth = 210 })
-    local status = W.Label(page:Row("Status", 56), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
-    page.unitFrameStatus = status
-    page.refreshers[#page.refreshers + 1] = function() status:SetText(M:Status()) end
-    page:Group("Style Tools")
-    -- Player and Target copy their style to each other; the smaller frames
-    -- copy the Player's.
-    for _, unit in ipairs(M.units) do
-        local title, name = M.titles[unit], M.frameNames[unit]
-        local from, to, text = unit, unit == "player" and "target" or "player", nil
-        if unit == "player" or unit == "target" then text = "Copy Style to " .. M.labels[to]
-        else from, to, text = "player", unit, "Copy Player Style" end
-        local row = page:Row(title .. " Tools", 48)
-        local reset = W.Button(row, "Reset " .. title, 190, 28); reset:SetPoint("LEFT")
-        reset:SetScript("OnClick", function() M:ResetFrame(unit) end)
-        local copy = W.Button(row, text, 190, 28); copy:SetPoint("LEFT", 198, 0)
-        copy:SetScript("OnClick", function() M:CopyStyle(from, to) end)
-        page["unitFrameReset" .. name], page["unitFrameCopy" .. name] = reset, copy
-    end
-
-    -- Every element tab starts with the Editing choice (one of the five
-    -- frames); a matched or hidden frame explains itself instead of showing
-    -- controls that would not apply.
+    -- Editing (the frame every tab changes) sits at the preview's top right,
+    -- as on Action Bars, with whether that frame is on and Turn On when it is off.
     local frameChoices = {}
     for _, unit in ipairs(M.units) do frameChoices[#frameChoices + 1] = { id = unit, label = M.labels[unit] } end
     function page.SetEditing(unit) if M.labels[unit] then editing = unit; page:Refresh(); page:Layout() end end
-    page.unitFrameEditSelects = {}
-    -- `own`: the tab edits settings every frame keeps for itself (cast bar,
-    -- auras), so a matched Target edits them too.
-    -- `always`: the frame's own placement settings, shown under the Editing
-    -- choice even on a matched Target (like Match Player Frame itself).
+    if page.previewArea then
+        local corner = CreateFrame("Frame", nil, page.previewArea)
+        corner:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); corner:SetSize(430, 28)
+        local select = SelectIn(corner, 200, function() return frameChoices end, Unit, page.SetEditing)
+        select:ClearAllPoints(); select:SetPoint("RIGHT", 0, 0)
+        local label = W.Label(corner, "Editing", nil, 0, 0, 52, T.muted)
+        label:ClearAllPoints(); label:SetPoint("RIGHT", select, "LEFT", -8, 0); label:SetJustifyH("RIGHT")
+        local state = W.Label(corner, "", nil, 0, 0, 30, T.muted)
+        state:ClearAllPoints(); state:SetPoint("RIGHT", label, "LEFT", -12, 0); state:SetJustifyH("LEFT")
+        local dot = W.Shape(corner, "ModeCircle", "OVERLAY")
+        dot:SetSize(8, 8); dot:SetPoint("RIGHT", state, "LEFT", -6, 0)
+        local turnOn = W.Button(corner, "Turn On", 80, 24, "choice")
+        turnOn:SetPoint("RIGHT", dot, "LEFT", -10, 0)
+        turnOn:SetScript("OnClick", function() M:SetFrameOption(editing, "enabled", true) end)
+        page.refreshers[#page.refreshers + 1] = function()
+            local on = M.db[editing].enabled
+            state:SetText(on and "On" or "Off")
+            local c = on and T.enabled or T.danger
+            dot:SetVertexColor(c[1], c[2], c[3], 1)
+            turnOn:SetShown(not on)
+        end
+        page.unitFrameEditSelect, page.unitFrameState, page.unitFrameStateDot, page.unitFrameTurnOn = select, state, dot, turnOn
+        page.previewReserveRight = 440
+        page:UpdatePreviewLayout()
+    end
+
+    -- A tab of style settings for the frame being edited. `own`: settings every
+    -- frame keeps for itself (cast bar, auras), so a matched Target edits them
+    -- too. `always`: the frame's own settings shown first, even on a matched Target.
     local function Tab(title, build, own, always)
         page:Section(title, nil, false)
-        local row = page:Row("Editing", 48, { "player", "target", "focus", "frame" })
-        page.unitFrameEditSelects[#page.unitFrameEditSelects + 1] = SelectIn(row, 260, function() return frameChoices end,
-            Unit, page.SetEditing)
         if always then When(function() return db().enabled end, always) end
         if not own then
-            When(function() return editing == "target" and db().enabled end, function()
-                Toggles({ { "Match Player Frame", "matchPlayer" } })
-            end)
-            When(Matched, function()
-                Toggles({ { "Mirror Player Text", "mirrorText" } })
-                Note("Target Matches Player", "Uses the Player frame's look and text layout. Turn on Mirror Player Text to flip the text alignment to the other side, or turn off Match Player Frame to customize the Target separately.", 52)
+            When(function() return db().enabled and Matched() end, function()
+                Note("Target Matches Player", "The Target uses the Player frame's look. Turn off Match Player Frame on the Frame tab to customize it here.")
             end)
         end
         When(function() return not db().enabled end, function()
-            Note("Frame Hidden", "This frame is turned off. Turn it on in the Frames tab to customize it.")
+            Note("Frame Off", "This frame is turned off. Use Turn On above the preview, or Show Frame on the Frame tab.")
         end)
         When(function() return db().enabled and (own or not Matched()) end, build)
     end
-    -- Helpers the other tab files (SettingsExtra.lua) build with.
+    -- Helpers the other tab files (SettingsExtra.lua, SettingsText.lua) build with.
     local ui = { page = page, When = When, SelectIn = SelectIn, Select = Select, Toggles = Toggles, Note = Note, Tab = Tab,
-        Editing = Unit, db = db, Mark = Mark, Choice = Choice, Slider = Slider, Color = Color, owner = owner }
+        Editing = Unit, db = db, Mark = Mark, Choice = Choice, Slider = Slider, SliderIn = SliderIn, Color = Color, owner = owner,
+        Matched = Matched, Style = Style, Set = Set }
 
-    Tab("Layout", function()
+    -- Frame: show it, Blizzard's own, matching (Target), size, placement, tools.
+    page:Section("Frame", nil, false)
+    Toggles({ { "Show Frame", "enabled" }, { "Hide Blizzard's Frame", "hideBlizzard" } }); Mark("frame")
+    When(function() return editing == "target" end, function()
+        page:Group("Match the Player")
+        Toggles({ { "Match Player Frame", "matchPlayer" } })
+        When(Matched, function()
+            Toggles({ { "Mirror Player Text", "mirrorText" } })
+            Note("Target Matches Player", "The Target uses the Player frame's look and text, mirrored to its other side with Mirror Player Text. Its width, fill direction, cast bar, auras, status and placement stay its own.", 52)
+        end)
+    end)
+    When(function() return db().enabled end, function()
+        Style(function() page:Group("Size"); Slider("Scale", "scale", "%") end)
         -- Target of Target and Target of Focus can attach to their parent frame
         -- (offsets in screen pixels); detached, they move in Edit Mode.
-        local function Attachable() return M.attachParents[editing] ~= nil end
-        When(Attachable, function()
+        When(function() return M.attachParents[editing] ~= nil end, function()
             page:Group("Placement")
             for unit, parent in pairs(M.attachParents) do
-                When(function() return editing == unit end, function()
-                    Toggles({ { "Attach to " .. M.titles[parent], "attach" } })
-                end)
+                When(function() return editing == unit end, function() Toggles({ { "Attach to " .. M.titles[parent], "attach" } }) end)
             end
             When(function() return db().attach end, function()
                 Choice("Attach Point", "attachPoint")
@@ -153,62 +151,91 @@ function M:CreateConfigPage(parent)
                 page.unitFrameAttachY = SliderIn(offsets[2], "attachOffsetY", "px")
             end)
         end)
-        page:Group("Size")
-        Slider("Scale", "scale", "%")
-        -- Both bars: the fill (foreground) and the empty bar (background).
-        page:Group("Bar Textures")
+        -- The Player and Target copy their style to each other; the smaller
+        -- frames copy the Player's.
+        page:Group("Style Tools")
+        local function CopyPair()
+            if editing == "player" then return "player", "target", "Copy Style to Target" end
+            if editing == "target" then return "target", "player", "Copy Style to Player" end
+            return "player", editing, "Copy Player Style"
+        end
+        local tools = page:Row("Frame Tools", 48)
+        local reset = W.Button(tools, "Reset Frame", 190, 28); reset:SetPoint("LEFT")
+        reset:SetScript("OnClick", function() M:ResetFrame(editing) end)
+        local copy = W.Button(tools, "", 190, 28); copy:SetPoint("LEFT", 198, 0)
+        copy:SetScript("OnClick", function() local from, to = CopyPair(); M:CopyStyle(from, to) end)
+        page.refreshers[#page.refreshers + 1] = function() local _, _, text = CopyPair(); copy.label:SetText(text) end
+        page.unitFrameReset, page.unitFrameCopy = reset, copy
+    end)
+    local status = W.Label(page:Row("Status", 56), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
+    page.unitFrameStatus = status
+    page.refreshers[#page.refreshers + 1] = function() status:SetText(M:Status()) end
+
+    -- Bar textures and opacity: a part's own keys.
+    local function Textures(fill, back, fillOpacity, backOpacity)
+        page:Group("Textures")
         local textures = page:Columns({ "Foreground", "Background" })
-        page.unitFrameForeground = SelectIn(textures[1], 200, function() return addon.Kit.BarTextureChoices(true) end,
-            function() return db().foregroundTexture end, Set("foregroundTexture"))
-        page.unitFrameBackground = SelectIn(textures[2], 200, function() return addon.Kit.BarTextureChoices(false) end,
-            function() return db().backgroundTexture end, Set("backgroundTexture"))
-        Toggles({ { "Fill End Line", "fillEdge" } })
-        page:Group("Bar Opacity")
+        local fg = SelectIn(textures[1], 200, function() return addon.Kit.BarTextureChoices(true) end, function() return db()[fill] end, Set(fill))
+        local bg = SelectIn(textures[2], 200, function() return addon.Kit.BarTextureChoices(false) end, function() return db()[back] end, Set(back))
         local fade = page:Columns({ "Foreground Opacity", "Background Opacity" })
-        page.unitFrameForegroundOpacity = SliderIn(fade[1], "barForegroundOpacity", "%")
-        page.unitFrameBackgroundOpacity = SliderIn(fade[2], "barBackgroundOpacity", "%")
-    end, false, function()
-        -- Each frame's own, so a matched Target can differ from the Player.
-        Choice("Fill Direction", "fillDirection")
+        return fg, bg, SliderIn(fade[1], fillOpacity, "%"), SliderIn(fade[2], backOpacity, "%")
+    end
+
+    -- Health Bar: its width and height (the portrait follows the bar block's
+    -- height), fill, colors, textures and the text spots on it. Width and fill
+    -- direction are each frame's own, so a matched Target keeps them.
+    Tab("Health Bar", function()
+        When(function() return Matched() end, function()
+            Note("Target Matches Player", "The Target uses the Player frame's look; its width and fill direction stay its own. Turn off Match Player Frame on the Frame tab to customize the rest.", 52)
+        end)
+        page:Group("Size")
         Slider("Frame Width", "barWidth", "px")
+        Style(function() Slider("Health Bar Height", "healthHeight", "px"); Mark("health") end)
+        Choice("Fill Direction", "fillDirection")
+        Style(function()
+            Toggles({ { "Fill End Line", "fillEdge" } })
+            page:Group("Color")
+            -- Default is Onyx #1C1E21; the empty bar stays the background texture.
+            Choice("Health Color", "healthColorMode")
+            When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
+            page.unitFrameForeground, page.unitFrameBackground, page.unitFrameForegroundOpacity, page.unitFrameBackgroundOpacity =
+                Textures("foregroundTexture", "backgroundTexture", "barForegroundOpacity", "barBackgroundOpacity")
+            M:BuildTextSpots(ui, "health")
+        end)
+    end, true)
+
+    Tab("Power Bar", function()
+        Toggles({ { "Show Power Bar", "showPower" } }); Mark("power")
+        When(function() return db().showPower end, function()
+            page:Group("Size")
+            Slider("Power Bar Height", "powerHeight", "px")
+            page:Group("Color")
+            Choice("Power Color", "powerColorMode")
+            When(function() return db().powerColorMode == "custom" end, function() Color("Custom Power Color", "powerColor") end)
+            page.unitFramePowerForeground, page.unitFramePowerBackground, page.unitFramePowerForegroundOpacity,
+                page.unitFramePowerBackgroundOpacity = Textures("powerForegroundTexture", "powerBackgroundTexture",
+                "powerForegroundOpacity", "powerBackgroundOpacity")
+            M:BuildTextSpots(ui, "power")
+        end)
     end)
 
     Tab("Portrait", function()
         Toggles({ { "Show Portrait", "showPortrait" } }); Mark("portrait")
         When(function() return db().showPortrait end, function()
             Choice("Portrait Style", "portraitStyle"); Choice("Portrait Side", "portraitSide")
-            -- Sized against the bar block; the full ring is drawn over the bar's end.
+            -- A share of the bar block's height, so it grows and shrinks with the bars.
             Slider("Portrait Size", "portraitScale", "%")
             Choice("Portrait Ring", "portraitRing")
             When(function() return db().portraitRing == "custom" end, function() Color("Portrait Ring Color", "portraitRingColor") end)
         end)
     end, false, function() M:BuildStatusControls(ui) end)
 
-    Tab("Health", function()
-        page:Group("Health Bar")
-        Slider("Health Bar Height", "healthHeight"); Mark("health")
-        -- Default is Onyx #1C1E21; the empty bar and background stay Onyx.
-        Choice("Health Color", "healthColorMode")
-        When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
-    end)
-
-    Tab("Power", function()
-        page:Group("Power Bar")
-        Toggles({ { "Show Power Bar", "showPower" } }); Mark("power")
-        When(function() return db().showPower end, function()
-            Slider("Power Bar Height", "powerHeight")
-            Choice("Power Color", "powerColorMode")
-            When(function() return db().powerColorMode == "custom" end, function() Color("Custom Power Color", "powerColor") end)
-        end)
-    end)
-
     M:BuildCastTab(ui)
     M:BuildAurasTab(ui)
     M:BuildComboTab(ui)
-
     M:BuildTextTab(ui)
 
-    local note = W.Label(page:Row("About Unit Frames", 190), "Each tab customizes one part of the frame; use Editing at the top of a tab to pick the Player, Target, Target of Target, Focus or Target of Focus frame. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside one crisp, pixel-perfect rim, with a hairline between health and power. The rim is fixed. Each bar has a foreground (fill) and background (empty bar) texture and opacity; the background is Mode Slate at 70% by default. The Text tab picks what each text spot shows: nine on the health bar, one on the top border and three on the power bar, each with its own font size, color and offsets. Health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text slots, optionally mirrored to the other side. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. The preview above shows the frame you are editing; click a part of it to open its settings. Hiding a Blizzard frame only fades its main art and bars, so pet frames and other Blizzard parts keep working; the Cast Bar and Combo Points tabs can hide Blizzard's cast bars and combo points too; Blizzard's Target of Target and Target of Focus fade with the Target and Focus frames they sit on. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
+    local note = W.Label(page:Row("About Unit Frames", 190), "Pick the frame to change with Editing above the preview; every tab changes that frame. Frame turns it on or off and holds its scale, placement and tools; Health Bar, Power Bar, Portrait, Cast Bar and Auras each hold their own size, colors, textures and text spots; Text holds the name colors and the font. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside one crisp, pixel-perfect rim, with a hairline between health and power. The portrait is a share of the bar block's height, so it follows the bars. Each text spot shows one text, once per frame. A Target matching the Player copies its look and text, optionally mirrored to the other side. Class Resource shows your class's points (Combo Points for Rogues and Druids in Cat Form) around the Target's portrait; a class without one shows nothing. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. Click a part of the preview to open its settings. Hiding a Blizzard frame only fades its main art and bars, so pet frames and other Blizzard parts keep working. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
     note:SetWordWrap(true); page:FooterNote(note)
     W.PinnedSectionTabs(page)
     page:Finish(); return page

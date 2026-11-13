@@ -2,12 +2,14 @@ local _, addon = ...
 local M = addon.UnitFrames
 if not M then return end
 
--- Combo points on the Target frame: one round socket per point (Onyx rim,
--- dark socket) on an arc around the portrait, replacing Blizzard's ComboFrame,
--- which Forever pins to the Target frame's portrait. The count may be secret,
--- so each point is its own StatusBar spanning (i - 1, i): SetValue(count)
--- fills it or leaves it empty without the count ever being compared.
-local Kit, ComboPoints = addon.Kit, addon.Domain.ComboPoints
+-- The class resource (Domain.ClassResource; on Forever, a Rogue's or Cat Form
+-- Druid's combo points) on the Target frame: one round socket per point (Onyx
+-- rim, dark socket) on an arc around the portrait, replacing Blizzard's
+-- ComboFrame, which Forever pins to the Target frame's portrait. A class
+-- without a resource shows nothing. The count may be secret, so each point is
+-- its own StatusBar spanning (i - 1, i): SetValue(count) fills it or leaves it
+-- empty without the count ever being compared. Settings: db.comboPoints.
+local Kit, Resource = addon.Kit, addon.Domain.ClassResource
 local ONYX, Tint = M.onyx, Kit.Tint
 -- Arc centres in degrees, measured from the portrait's outer side (away from
 -- the bars) toward the top.
@@ -28,7 +30,7 @@ function M:BuildCombo(f)
     local combo = CreateFrame("Frame", nil, f)
     combo:SetAllPoints(f)
     combo.points = {}
-    for i = 1, ComboPoints.MAX do combo.points[i] = BuildPoint(combo, i) end
+    for i = 1, Resource.MAX do combo.points[i] = BuildPoint(combo, i) end
     combo:Hide()
     f.combo = combo
 end
@@ -77,16 +79,16 @@ function M:LayoutCombo(f, count)
 end
 
 -- Shown while the Target frame is on, the setting is on and the player builds
--- combo points (a Rogue, or a Druid in Cat Form).
+-- their class resource (a Rogue, or a Druid in Cat Form).
 function M:UpdateCombo()
     local f = self.frames and self.frames.target
     if not f or not f.combo then return end
-    local on = self:FrameOn("target") and self.db.comboPoints.enabled and ComboPoints.Active()
-    local count = on and ComboPoints.Max() or 0
+    local on = self:FrameOn("target") and self.db.comboPoints.enabled and Resource.Active()
+    local count = on and Resource.Max() or 0
     if count ~= f.combo.count then f.combo.count = count; self:LayoutCombo(f, count) end
     f.combo:SetShown(count > 0)
     if count == 0 then return end
-    local ok, points = ComboPoints.Read()
+    local ok, points = Resource.Read()
     for i = 1, count do
         local bar = f.combo.points[i].bar
         if ok then pcall(bar.SetValue, bar, points) else bar:SetValue(i - 1) end
@@ -98,10 +100,10 @@ function M:ResetComboLayout(f)
     if f.combo then f.combo.count = nil; self:LayoutCombo(f, 0) end
 end
 
--- Stand-ins show the full arc with a few points lit.
+-- Stand-ins show the full arc with a few points lit, for a class with a resource.
 function M:PaintComboSample(g)
     if not g.combo then return end
-    local count = self.db.comboPoints.enabled and ComboPoints.DEFAULT_MAX or 0
+    local count = self.db.comboPoints.enabled and Resource.Max() or 0
     g.combo.count = count
     self:LayoutCombo(g, count)
     g.combo:SetShown(count > 0)

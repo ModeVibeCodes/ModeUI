@@ -229,6 +229,27 @@ local function MigrateV16(db)
     end
 end
 
+-- Layout version 17 -> 18, per the owner: the power bar and the cast bar get
+-- their own textures (and the power bar its own opacity). Each starts as the
+-- shared bar settings it used, so nothing changes on screen.
+local SHARED_POWER = { foregroundTexture = "powerForegroundTexture", backgroundTexture = "powerBackgroundTexture",
+    barForegroundOpacity = "powerForegroundOpacity", barBackgroundOpacity = "powerBackgroundOpacity" }
+local function MigrateV17(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" then
+            for from, to in pairs(SHARED_POWER) do
+                if frame[to] == nil and Public(frame[from]) then frame[to] = frame[from] end
+            end
+            local cast = frame.castBar
+            if type(cast) == "table" and Public(cast) then
+                if cast.foregroundTexture == nil and Public(frame.foregroundTexture) then cast.foregroundTexture = frame.foregroundTexture end
+                if cast.backgroundTexture == nil and Public(frame.backgroundTexture) then cast.backgroundTexture = frame.backgroundTexture end
+            end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -244,7 +265,8 @@ function M.Initialize(db)
     if db.layoutVersion == 13 then MigrateV13(db); db.layoutVersion = 14 end
     if db.layoutVersion == 14 then MigrateV14(db); db.layoutVersion = 15 end
     if db.layoutVersion == 15 then MigrateV15(db); db.layoutVersion = 16 end
-    if db.layoutVersion == 16 then MigrateV16(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 16 then MigrateV16(db); db.layoutVersion = 17 end
+    if db.layoutVersion == 17 then MigrateV17(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do
@@ -254,9 +276,12 @@ function M.Initialize(db)
         Fill(frame, M.frameDefaults[unit], unit .. ".")
         for key, r in pairs(M.frameRanges) do assert(Ranged(frame[key], r), "Invalid unit frame range: " .. unit .. "." .. key) end
         for key, list in pairs(M.choiceKeys) do assert(ALLOWED[list][frame[key]], "Invalid unit frame choice: " .. unit .. "." .. key) end
-        assert(Kit.ValidBarTexture(frame.foregroundTexture, true) and Kit.ValidBarTexture(frame.backgroundTexture, false),
+        assert(Kit.ValidBarTexture(frame.foregroundTexture, true) and Kit.ValidBarTexture(frame.backgroundTexture, false)
+            and Kit.ValidBarTexture(frame.powerForegroundTexture, true) and Kit.ValidBarTexture(frame.powerBackgroundTexture, false),
             "Invalid unit frame texture: " .. unit)
-        M.ValidateTable(frame, "castBar", M.CastDefaults(unit), M.castRanges, M.castChoices)
+        local cast = M.ValidateTable(frame, "castBar", M.CastDefaults(unit), M.castRanges, M.castChoices)
+        assert(Kit.ValidBarTexture(cast.foregroundTexture, true) and Kit.ValidBarTexture(cast.backgroundTexture, false),
+            "Invalid unit frame cast bar texture: " .. unit)
         M.ValidateTable(frame, "status", M.StatusDefaults(unit), M.statusRanges, M.statusChoices)
         local texts = M.ValidateTable(frame, "texts", {}, {})
         for _, slot in ipairs(M.textSlots) do
