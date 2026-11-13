@@ -168,7 +168,8 @@ settings take their defaults.
 
 | File | Job |
 |---|---|
-| `Init.lua` | declaration, per-kind defaults, ranges, choices, validation, migrations |
+| `Init.lua` | declaration, per-kind defaults, ranges and choices |
+| `Migrations.lua` | `Initialize(db)`: validation and the settings-version migrations |
 | `Driver.lua` | lifecycle, events, enemy or friendly kind, fading Blizzard's unit frame, per-kind settings |
 | `Plate.lua` | building a plate and laying out its boxes |
 | `Layout.lua` | placing every element by anchor and offset; Name Only |
@@ -178,6 +179,7 @@ settings take their defaults.
 | `Update.lua` | health, name, colors, threat, raid marker |
 | `CastBar.lua` | cast and channel bars, icon side, target line and timer |
 | `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |
+| `AuraContainers.lua` | auras through Blizzard's secure custom aura containers while auras are secret |
 | `Preview.lua` | the sample plate on the settings page and its click targets |
 | `Settings.lua` | the settings page |
 

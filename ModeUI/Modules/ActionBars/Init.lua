@@ -6,8 +6,8 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- paging, cooldowns, range and keybinds work as before; ModeUI owns where
 -- each bar sits, how it's laid out, the button skin, the text and when the
 -- bar shows. Every bar has its own settings. See docs/ACTION_BARS.md.
--- Files: Init (this), Migrations, Driver, Bars, Layout, Skin, Text, Fade,
--- Preview, Settings.
+-- Files: Init (this), Migrations, Driver, Layout, Skin, Text, Bars, Visibility,
+-- Keybind, Glow, GlowMenu, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Action Bars"], category = "interface", defaultEnabled = false,
     configDescription = L["Action bars in the Mode look: layout, size, borders, text and when each bar shows."],

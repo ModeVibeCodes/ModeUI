@@ -62,7 +62,7 @@ Libs  →  Shared/Runtime  →  Shared/Forever  →  Shared/Domain, Kit, Border,
   thing, it moves into `Shared/`. Modules talk to each other only through
   `Callbacks` messages.
 - **Shared never names a module.** Runtime loops over the registry; it never
-  reaches for `addon.UnitFrames` or any other module directly.
+  reaches for `addon.UnitFrames` or any other module directly. `tests/structure.lua` fails any Shared file, or other module, that uses the table a module's `Init.lua` publishes (`addon.UnitFrames` and the like).
 
 ## Load order
 
@@ -132,6 +132,7 @@ Module fields Runtime reads:
 | `alwaysOn` | `true` for a module that can't be switched off (Profiles) |
 | `configDescription` | the line under the page title |
 | `modeLayout` | the page's Mode presentation plan, such as `{ decorateOnly = true }` |
+| `ptgImport` | `{ positions = { ... } }` to copy this module's settings (same ID) and those position keys from the active Play The Game Tools profile once, on ModeUI's first start (Unit Frames) |
 | `Initialize(db)` | a plain function (not a method) that fills defaults, migrates and validates the module's settings, erroring on bad data. Profile validation calls it on detached copies, so it must not touch frames or other state |
 
 The module ID (`"unitFrames"`) is also its saved-variable key and must never

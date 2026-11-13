@@ -16,6 +16,10 @@ local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true
     modeLayout = { decorateOnly = true } }
 addon.UnitFrames = M
 addon:RegisterModule("unitFrames", M)
+-- Play The Game Tools carried these frames first: on ModeUI's first start the
+-- active PTG profile's unitFrames settings and these positions are copied
+-- once (Shared/Runtime/DB.lua).
+M.ptgImport = { positions = { "unitFramesPlayer", "unitFramesTarget" } }
 
 M.CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 
