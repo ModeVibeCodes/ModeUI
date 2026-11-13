@@ -172,7 +172,7 @@ function M:RenderPreview(view)
     local g = self.Geometry(style, count, self.PixelSize(view.bar))
     view.bar:SetSize(g.width, g.height)
     view.bar:ClearAllPoints(); view.bar:SetPoint("TOP", view.frame, "TOP", 0, -2 / scale)
-    view.bar:SetAlpha(style.show and style.opacity / 100 or 0.4)
+    self:PaintPreviewAlpha(view)
     local phase = addon.PreviewStates:Sample(self.id)
     local demo = self.page ~= nil and self.page.textPart ~= nil and self.page.textPart() == "cooldown"
     local filledCount = 0
@@ -212,10 +212,19 @@ function M:RenderPreview(view)
     self:RefreshGlowMenu()
 end
 
+-- The preview at the bar's opacity, dimmed while the bar is off.
+function M:PaintPreviewAlpha(view)
+    view = view or self.previewView
+    if not view then return end
+    local style = self.db[self:PreviewBar()]
+    view.bar:SetAlpha(style.show and style.opacity / 100 or 0.4)
+end
+
 function M:CreateConfigPreview(parent)
     local frame = CreateFrame("Frame", nil, parent)
     frame:SetAllPoints()
     local view = { frame = frame, buttons = {} }
+    self.previewView = view
     view.bar = CreateFrame("Frame", nil, frame)
     view.caption = W.Label(frame, "", nil, 0, 0, 300, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")

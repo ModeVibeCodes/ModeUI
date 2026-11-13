@@ -62,19 +62,71 @@ function M:GroupChoices(window)
     return list
 end
 
--- Windows placed on `window` through Edit Mode anchoring (and windows placed on
--- those), not grouped: resizing `window` by its grip gives them its width.
-function M:AnchoredTo(window, list, seen)
-    list, seen = list or {}, seen or { [window] = true }
+-- Edit Mode's Match Width and Match Height. A window anchored (not grouped)
+-- on another element takes its width, or as many rows as fit its height, so
+-- a stack keeps together however the window under it changes: by its grip,
+-- its settings or Copy & Apply. Rows never change for Match Width alone.
+-- On another meter window it reads that window's settings, so the change
+-- lands on the same refresh; on anything else, its size on screen (outside
+-- combat), watched through Position Manager's anchor size listener.
+local PM, P, Kit = addon.PositionManager, addon.Positioning, addon.Kit
+
+-- The anchor a match applies to now, or nil. axis: "Width" or "Height".
+function M:Matching(window, axis)
+    local own = self.db[window]
+    if self:IsGrouped(window) or not own["match" .. axis] then return end
+    local position = PM:GetPosition(self.elementIds[window])
+    if position and position.target ~= "screen" then return position.target end
+end
+
+local function TargetSize(self, target, px)
     for _, other in ipairs(self.windows) do
-        local position = not seen[other] and not self:IsGrouped(other) and addon.PositionManager:GetPosition(self.elementIds[other])
-        if position and position.target == self.elementIds[window] then
-            seen[other] = true
-            list[#list + 1] = other
-            self:AnchoredTo(other, list, seen)
+        if self.elementIds[other] == target then
+            local g = self.Geometry(self:Style(other), px)
+            return g.width, g.height
         end
     end
-    return list
+    local frame = P:Resolve(target)
+    if not frame then return end
+    local _, _, width, height = P:Geometry(frame)
+    return width, height
+end
+
+-- Applies every match (windows anchor only on windows listed before them, so
+-- one pass in order settles a stack). Returns whether anything changed.
+function M:MatchAnchored()
+    local changed = false
+    for _, window in ipairs(self.windows) do
+        local own = self.db[window]
+        local target = self:Matching(window, "Width") or self:Matching(window, "Height")
+        local px = Kit.PixelSize(self.frames[window] or UIParent)
+        local width, height
+        if target then width, height = TargetSize(self, target, px) end
+        if width and self:Matching(window, "Width") then
+            local range = self.ranges.width
+            local fit = math.max(range[1], math.min(range[2], math.floor(width + 0.5)))
+            if fit ~= own.width then own.width, changed = fit, true end
+        end
+        if height and self:Matching(window, "Height") then
+            local range, rows = self.ranges.rows, self.ranges.rows[1]
+            for count = range[1], range[2] do
+                if self.Geometry(own, px, count).height <= height + px / 2 then rows = count end
+            end
+            if rows ~= own.rows then own.rows, changed = rows, true end
+        end
+        if changed then self:ClearStyles() end
+    end
+    return changed
+end
+
+-- Edit Mode's Match Width and Match Height switches for a window's stand-in.
+function M:SizeMatchHandlers(window)
+    return {
+        axes = { width = true, height = true },
+        get = function(axis) return self.db[window][axis == "width" and "matchWidth" or "matchHeight"] end,
+        set = function(axis, on) return self:SetOption(window, axis == "width" and "matchWidth" or "matchHeight", on == true) end,
+        available = function() return not self:IsGrouped(window) end,
+    }
 end
 
 -- Hangs a window from its stand-in, or from the window it follows.

@@ -263,12 +263,12 @@ function M:UpdateResize()
     local width = Clamp(math.floor(r.width + (x - r.x) + 0.5), self.ranges.width)
     local down = r.up and (y - r.y) or (r.y - y)
     local rows = Clamp(r.rows + math.floor(down / (style.rowHeight + style.spacing) + 0.5), self.ranges.rows)
-    if width ~= style.width then
-        self:SetOption(r.window, "width", width)
-        -- Grouped windows share it; windows anchored on this one match it.
-        for _, other in ipairs(self:AnchoredTo(self:Leader(r.window))) do self:SetOption(other, "width", width) end
-    end
-    if rows ~= self.db[r.window].rows then self:SetOption(r.window, "rows", rows) end
+    -- Grouped windows share the width; windows anchored on this one with
+    -- Match Width take it on the refresh. A matched window's own width (or
+    -- rows, with Match Height) stays its anchor's.
+    local head = self:Leader(r.window)
+    if width ~= style.width and not self:Matching(head, "Width") then self:SetOption(r.window, "width", width) end
+    if rows ~= self.db[r.window].rows and not self:Matching(r.window, "Height") then self:SetOption(r.window, "rows", rows) end
 end
 
 function M:StopResize()

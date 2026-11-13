@@ -46,12 +46,14 @@ function M:CreateConfigPage(parent)
     local function PartSlider(host, suffix, unit)
         return SliderIn(host, M.ranges["hotkey" .. suffix], function() return db()[PartKey(suffix)] end, SetPart(suffix), unit)
     end
-    local function SelectIn(host, width, choices, get, set)
+    -- get returns the chosen id, or nil and a label to show (a pick list).
+    local function SelectIn(host, width, choices, get, set, options)
         local button = W.Select(host, width, choices, function()
-            local value = get()
+            local value, label = get()
+            if label then return value, label end
             for _, choice in ipairs(choices()) do if choice.id == value then return value, choice.label end end
             return value, tostring(value)
-        end, set)
+        end, set, options)
         Refresh(function() button:Refresh() end)
         return button
     end
@@ -83,6 +85,8 @@ function M:CreateConfigPage(parent)
     end
     -- The Editing list marks bars that are off or hidden.
     local STATE = { off = "Off", hidden = "Hidden" }
+    -- On Cooldown's Icon Color: one switch (cooldownDesaturate) as two choices.
+    local ICON_COLORS = { { id = "desaturate", label = "Desaturate" }, { id = "full", label = "Full Color" } }
     local function BarLabel(bar)
         local state = M:BarState(bar)
         local label = L[M.barSpecs[bar].label]
@@ -181,6 +185,15 @@ function M:CreateConfigPage(parent)
         page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
         page.slotToggles = Toggles({ { "Show Empty Slots", "showEmpty" } })
         Note("The background shows in empty slots at Background Opacity, with a textured slot finish, and as the thin line between border and icon. Dragging a spell shows every button so it can be dropped.", 48)
+        -- On Cooldown: what an icon looks like until its ability is ready.
+        page:Group(L["On Cooldown"])
+        Note("While an ability is on cooldown (longer than the global cooldown), its icon can turn gray and fade until it's ready again. Action bars 1-8 only.", 40)
+        page.cooldownColorPills = Pills("Icon Color", ICON_COLORS,
+            function() return db().cooldownDesaturate and "desaturate" or "full" end,
+            function(mode) M:SetOption(editing, "cooldownDesaturate", mode == "desaturate") end, 110); Mark("cooldown")
+        local dim = Columns({ "Icon Opacity" })
+        page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
+        Note("Desaturate turns the icon gray; Full Color keeps it as it is. Click a button in the preview to set it for that button alone.", 32)
     end)
 
     -- Text: pick a text, then its place, size and color; the font is shared.
@@ -233,11 +246,7 @@ function M:CreateConfigPage(parent)
             Color(ready[1], "readyColor")
             page.readySlider = Slider(ready[2], "readyDuration", "s")
         end)
-        page:Group(L["On Cooldown"])
-        local dim = Columns({ "Icon Opacity" })
-        page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
-        page.desaturateToggles = Toggles({ { "Desaturate Icon", "cooldownDesaturate" } })
-        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. Icon Opacity fades the icon and Desaturate Icon turns it gray while that cooldown runs; with Desaturate Icon off it keeps its full color. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
+        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. How an icon looks while it cools down is on the Buttons tab. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
     end)
 
     Tab("Visibility", function()
@@ -267,19 +276,38 @@ function M:CreateConfigPage(parent)
     -- Copy & Apply: the bar in Editing is the source; tick bars, then apply.
     Tab("Copy & Apply", function()
         page:Group(L["Copy From"])
-        local source = W.Label(page:Row(L["Bar"], 32), "", nil, 0, -6, 300, T.text)
-        Refresh(function() source:SetText(L[M.barSpecs[editing].label]) end)
-        page.applySource = source
-        Note("The bar chosen in Editing, at the top right. Its size, borders, background, text, glows and opacity are copied; each bar keeps its own buttons, lines, paging and show settings.", 48)
+        -- The source is the bar in Editing; choosing here changes both.
+        local from = Columns({ "Bar" })
+        page.applySource = SelectIn(from[1], 240, BarChoices, Bar, page.SetEditing)
+        Note("Its size, borders, background, text, glows and opacity are copied; each bar keeps its own buttons, lines, paging and show settings.", 32)
         page:Group(L["Apply To"])
-        local targets, items = {}, {}
-        for _, bar in ipairs(M.bars) do
-            items[#items + 1] = { M.barSpecs[bar].label, "apply",
-                get = function() return bar ~= editing and targets[bar] == true end,
-                set = function(on) if bar ~= editing then targets[bar] = on or nil end end }
-        end
+        local targets = {}
         page.applyTargets = targets
-        page.applyToggles = Toggles(items)
+        local function Chosen()
+            local list = {}
+            for _, bar in ipairs(M.bars) do if bar ~= editing and targets[bar] then list[#list + 1] = bar end end
+            return list
+        end
+        -- A pick list: each bar has a check box; the source can't be picked.
+        local function TargetChoices()
+            local list = {}
+            for _, bar in ipairs(M.bars) do
+                local source = bar == editing
+                list[#list + 1] = { id = bar, label = source and (L[M.barSpecs[bar].label] .. "  |cff8c8c8c" .. L["Source"] .. "|r") or BarLabel(bar),
+                    selected = not source and targets[bar] == true, disabled = source }
+            end
+            return list
+        end
+        local function TargetLabel()
+            local chosen = Chosen()
+            if #chosen == 0 then return nil, L["Choose bars"] end
+            if #chosen == 1 then return nil, L[M.barSpecs[chosen[1]].label] end
+            return nil, string.format(L["%d bars selected"], #chosen)
+        end
+        local to = Columns({ "Bars" })
+        page.applyTargetSelect = SelectIn(to[1], 240, TargetChoices, TargetLabel, function(bar)
+            if bar ~= editing then targets[bar] = not targets[bar] or nil end
+        end, { multi = true })
         local apply = page:Row("", 40)
         apply.rowLabel:Hide(); apply:ClearAllPoints(); apply:SetAllPoints(apply.row)
         page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")

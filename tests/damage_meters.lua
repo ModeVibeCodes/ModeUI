@@ -321,6 +321,15 @@ world.run([==[
     -- Copy Style keeps each window's meter, fight, show settings and group.
     assert(M:CopyStyleToAll('window1'))
     assert(M.db.window2.width == 300 and M.db.window2.meterType == 'healingDone' and not M.db.window2.show, 'look copied, identity kept')
+    -- Copy & Apply by part: Text, Window (with its header and border), Bars, All.
+    assert(M:SetOption('window1', 'nameSize', 15) and M:SetOption('window1', 'borderSize', 2) and M:SetOption('window1', 'barOpacity', 50))
+    local copied, count = M:CopyStyleTo('window1', { window3 = true }, 'text')
+    assert(copied and count == 1 and M.db.window3.nameSize == 15 and M.db.window3.borderSize == 1 and M.db.window3.barOpacity == 100, 'Text copies only text')
+    assert(M:CopyStyleTo('window1', { window3 = true }, 'window') and M.db.window3.borderSize == 2 and M.db.window3.barOpacity == 100, 'Window brings the border')
+    assert(M:CopyStyleTo('window1', { window3 = true }, 'bars') and M.db.window3.barOpacity == 50, 'Bars')
+    assert(not M:CopyStyleTo('window1', { window3 = true }, 'nope'), 'known parts only')
+    assert(M:SetOption('window1', 'nameSize', 12) and M:SetOption('window1', 'borderSize', 1) and M:SetOption('window1', 'barOpacity', 100))
+    assert(M:CopyStyleToAll('window1', 'all') and M.db.window3.barOpacity == 100 and M.db.window3.nameSize == 12)
 
     -- Show: Always, In Combat, In a Group, Hidden.
     assert(M:SetOption('window2', 'show', true) and w2:IsShown() and w2.header.title.text == 'HEALING DONE', 'a second window with its own meter')
@@ -380,6 +389,24 @@ world.run([==[
     A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'LeftButton'); assert(A:Active(), 'nothing there')
     A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'RightButton'); assert(not A:Active())
     assert(PM:ResetPosition(id3) and M:SetOption('window3', 'show', false))
+    -- Match Width (on by default): an anchored window takes its anchor's width
+    -- however that changes, down the stack; its rows stay its own.
+    local id2 = 'damageMetersWindow2'
+    assert(PM:GetPosition(id2).target == 'damageMetersWindow1' and M.db.window2.width == M.db.window1.width)
+    local rows2 = M.db.window2.rows
+    assert(M:SetOption('window1', 'width', 280) and M.db.window2.width == 280 and M.db.window3.width == 280 and w2.width == 280, 'a settings change carries down the stack')
+    assert(M.db.window2.rows == rows2 and M:Matching('window2', 'Width') == 'damageMetersWindow1' and not M:Matching('window2', 'Height'), 'rows kept')
+    local mw, mh = addon.editWindow.matchWidthButton, addon.editWindow.matchHeightButton
+    assert(E:Select(id2)); addon:RefreshEditWindow()
+    assert(mw:IsEnabled() and mw.selected and mh:IsEnabled() and not mh.selected, 'Match Width on, Match Height off')
+    mh.scripts.OnClick(mh)
+    assert(M.db.window2.matchHeight and M.db.window2.rows == M.db.window1.rows and mh.selected, 'Match Height fits its rows to the height')
+    mh.scripts.OnClick(mh); assert(not M.db.window2.matchHeight and M:SetOption('window2', 'rows', rows2))
+    mw.scripts.OnClick(mw)
+    assert(not M.db.window2.matchWidth and M:SetOption('window1', 'width', 300) and M.db.window2.width == 280, 'Match Width off: its own width')
+    mw.scripts.OnClick(mw); assert(M.db.window2.width == 300, 'on again: matched')
+    assert(E:Select('damageMetersWindow1')); addon:RefreshEditWindow()
+    assert(not mw:IsEnabled() and not mh:IsEnabled(), 'nothing to match on the screen')
     assert(addon:SetEditMode(false) and not mover2:IsShown() and not w2:IsShown() and not w1.rows[4]:IsShown())
 
     -- Groups: window 2 follows window 1, matching it but keeping its own meter and rows.
@@ -431,12 +458,16 @@ world.run([==[
     local page = addon.configWindow.pages.damageMeters
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Window,Bars,Text,Header,Frame', 'five tabs')
+    assert(table.concat(sections, ',') == 'Window,Bars,Text,Header,Frame,Copy & Apply', 'six tabs')
+    assert(page.copyScopePills and page.applyAllButton and page.resetButton and page.copyScope() == 'all', 'Copy & Apply')
+    page.applyButton.scripts.OnClick(page.applyButton); assert(page.applyResult.text == 'Choose windows first.')
+    page.applyAllButton.scripts.OnClick(page.applyAllButton); assert(page.applyResult.text == 'Applied to 2 windows.')
     assert(page.groupSelect and page.decimalPills and page.mouseToggles and page.separatorPills, 'group, decimals, separator and lock settings')
     assert(page.windowSelect:GetParent():GetParent() == page.previewArea and page.previewReserveRight, 'Editing sits at the top right of the preview')
     assert(page.windowSelect.label.text == 'Window 1 - Damage Done', 'each window with its meter')
     local view = page.configPreview
     local shell = view.window
+    assert(M.db.window1.rows == 10 and shell.g.rows == 5 and not (shell.rows[6] and shell.rows[6]:IsShown()) and shell.scale <= 0.8, 'a sample of five rows, drawn smaller')
     assert(shell.width == 320 and shell.rows[1].name.text == '1. Valeria' and shell.rows[1].value.text == '1.2M (13.6K)', 'preview: the sample fight in the edited window')
     assert(shell.header.title.text == 'DAMAGE DONE' and view.caption.text == 'Window 1 · sample fight' and shell.buttons.session.text.text == 'C')
     page.SetEditing('window2')

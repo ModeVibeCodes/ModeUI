@@ -120,7 +120,10 @@ function M:UpdateShown()
 end
 
 function M:Refresh()
+    self.refreshing = true
     self:ClearStyles()
+    -- Windows anchored with Match Width or Match Height follow their anchor first.
+    self:MatchAnchored()
     self:SyncBlizzard()
     if self.active then self:Build() end
     -- The breakdown repaints its shell after any settings change.
@@ -132,8 +135,15 @@ function M:Refresh()
         self:RenderAll()
         if self.active then self:Ticker():Show() elseif self.ticker then self.ticker:Hide() end
     end
+    self.refreshing = false
     if addon.EditMode and addon.EditMode.RefreshElements then addon.EditMode:RefreshElements() end
     if self.page then self.page:Refresh() end
+end
+
+-- Position Manager's anchor size listener: a window matched to something
+-- that isn't a meter window follows it when that changes size.
+function M:AnchorResized()
+    if self.active and self.built and not self.refreshing and self:MatchAnchored() then self:Refresh() end
 end
 
 function M:SetEditMode(enabled)
@@ -203,21 +213,45 @@ function M:ResetWindow(window)
     return Commit(self, window, style)
 end
 
--- Copies one window's look (its group's, when grouped) to the others; what
--- each shows and when, and its group, stay its own.
-function M:CopyStyleToAll(from)
-    if not self.styleDefaults[from] then return false end
+-- Copy & Apply: copies one window's look (its group's, when grouped) to the
+-- chosen windows (a grouped one takes it on its group's head). scope: "all"
+-- (everything but what each window shows and when, its group and matching),
+-- "window" (size, frame and header), "bars" or "text" (M.copyScopes).
+-- Each copy is checked before it's kept. Returns ok and how many changed.
+function M:CopyStyleTo(from, targets, scope)
+    scope = scope or "all"
+    if not self.styleDefaults[from] or type(targets) ~= "table" or (scope ~= "all" and not self.copyScopes[scope]) then return false end
     from = self:Leader(from)
+    local keys = {}
+    if scope == "all" then
+        for key in pairs(self.styleDefaults[from]) do if not self.identityKeys[key] then keys[#keys + 1] = key end end
+    else
+        for _, key in ipairs(self.copyScopes[scope]) do keys[#keys + 1] = key end
+    end
+    local owners, applied = {}, 0
     for _, window in ipairs(self.windows) do
-        if window ~= from then
-            local style = Copy(self.db[from])
-            for key in pairs(self.identityKeys) do style[key] = self.db[window][key] end
-            local target = self.db[window]
-            for key in pairs(target) do target[key] = nil end
-            for key, value in pairs(style) do target[key] = value end
+        if targets[window] then owners[self:Leader(window)] = true end
+    end
+    for _, window in ipairs(self.windows) do
+        if owners[window] and window ~= from then
+            local candidate = Copy(self.db)
+            for _, key in ipairs(keys) do candidate[window][key] = Copy(self.db[from][key]) end
+            if pcall(self.Initialize, candidate) then
+                local target = self.db[window]
+                for key in pairs(target) do target[key] = nil end
+                for key, value in pairs(candidate[window]) do target[key] = value end
+                applied = applied + 1
+            end
         end
     end
-    return Commit(self, from, Copy(self.db[from]))
+    Commit(self, from, Copy(self.db[from]))
+    return true, applied
+end
+
+function M:CopyStyleToAll(from, scope)
+    local all = {}
+    for _, window in ipairs(self.windows) do all[window] = true end
+    return self:CopyStyleTo(from, all, scope)
 end
 
 -- Clears the game's recorded fights (Blizzard's own Reset), for every meter.

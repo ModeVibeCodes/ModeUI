@@ -10,7 +10,10 @@ if not M then return end
 -- bars or frame jumps to those settings.
 local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local DM = addon.Domain.DamageMeter
-local SAMPLE_SECONDS, PLAY_SECONDS, MAX_WIDTH, MAX_HEIGHT, CAPTION_HEIGHT = 94, 20, 520, 240, 18
+local SAMPLE_SECONDS, PLAY_SECONDS, MAX_WIDTH, MAX_HEIGHT, CAPTION_HEIGHT = 94, 20, 440, 160, 18
+-- The preview is a sample: at most five rows, drawn at most at 80% size, so
+-- it stays small however many Rows the window has.
+M.PREVIEW_ROWS, M.PREVIEW_SCALE = 5, 0.8
 
 -- Name, class and share of the top amount, best first. Healing meters rank
 -- the healers first. An empty class is something without one (a creature).
@@ -64,11 +67,21 @@ end
 
 local function Scale(style)
     local g = M.Geometry(style, 1)
-    return math.min(1, MAX_WIDTH / g.width, MAX_HEIGHT / g.height), g
+    return math.min(M.PREVIEW_SCALE, MAX_WIDTH / g.width, MAX_HEIGHT / g.height), g
+end
+
+-- The window's settings with at most PREVIEW_ROWS rows.
+function M:PreviewStyle(window)
+    local style = self:Style(window)
+    if style.rows <= self.PREVIEW_ROWS then return style end
+    local short = {}
+    for key, value in pairs(style) do short[key] = value end
+    short.rows = self.PREVIEW_ROWS
+    return short
 end
 
 function M:GetPreviewSize()
-    local scale, g = Scale(self:Style(self:PreviewWindow()))
+    local scale, g = Scale(self:PreviewStyle(self:PreviewWindow()))
     return math.max(300, g.width * scale), g.height * scale + 8 + CAPTION_HEIGHT
 end
 
@@ -87,7 +100,7 @@ end
 
 function M:RenderPreview(view)
     local window = self:PreviewWindow()
-    local style = self:Style(window)
+    local style = self:PreviewStyle(window)
     local scale = Scale(style)
     local shell = view.window
     shell:SetScale(scale)
