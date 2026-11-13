@@ -5,6 +5,18 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Settings preview
+
+November 13, 2026, per the owner: the Unit Frames page has a live preview like
+the Nameplates page (`Preview.lua`, through `W.Preview`). It shows one sample of
+the frame chosen with **Editing**, built and painted by the same code as the
+frames in the world (`BuildFace`, `ApplyLayout`, `PaintSample`), so it shows the
+portrait, bars, texts, cast bar, sample buffs and debuffs and, on the Target,
+combo points exactly as set. Static shows the cast part-way through; Animated
+loops it. Clicking the health bar, power bar, portrait, name, cast bar, an aura
+(its group) or the combo points opens that part's tab at its first setting
+(`M:JumpTo`, `page.jumpTargets`).
+
 ## Buffs and debuffs
 
 November 13, 2026, per the owner: each frame shows buffs and debuffs

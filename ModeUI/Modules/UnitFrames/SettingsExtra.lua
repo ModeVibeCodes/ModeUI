@@ -39,6 +39,7 @@ function M:BuildComboTab(ui)
     local function C() return M.db.comboPoints end
     local n = Nested(ui, C, function(key, value) M:SetComboOption(key, value) end)
     page.unitFrameComboToggles = n.Toggles({ n.Toggle("Show Combo Points", "enabled"), n.Toggle("Hide Blizzard Combo Points", "hideBlizzard") })
+    ui.Mark("combo")
     When(function() return C().enabled end, function()
         page:Group("Placement")
         page.unitFrameComboArc = n.Select("Arc Position", M.choices.comboArc, "arc")
@@ -58,7 +59,7 @@ function M:BuildCastTab(ui)
     local function C() return ui.db().castBar end
     local n = Nested(ui, C, function(key, value) M:SetCastOption(ui.Editing(), key, value) end)
     ui.Tab("Cast Bar", function()
-        page.unitFrameCastToggles = n.Toggles({ n.Toggle("Show Cast Bar", "enabled") })
+        page.unitFrameCastToggles = n.Toggles({ n.Toggle("Show Cast Bar", "enabled") }); ui.Mark("cast")
         -- Only the Player, Target and Focus have a Blizzard cast bar to hide.
         When(function() return C().enabled and M.nativeCast[ui.Editing()] ~= nil end, function()
             n.Toggles({ n.Toggle("Hide Blizzard Cast Bar", "hideBlizzard") })
@@ -93,7 +94,7 @@ function M:BuildAurasTab(ui)
         local buttons, refresh = W.Exclusive(page:Row("Group", 48), { { label = "Buffs", value = "buffs", width = 110 },
             { label = "Debuffs", value = "debuffs", width = 110 } }, function() return group end, page.SetAuraGroup)
         page.refreshers[#page.refreshers + 1] = refresh
-        page.unitFrameAuraButtons = buttons
+        page.unitFrameAuraButtons = buttons; ui.Mark("auras")
         page.unitFrameAuraToggles = n.Toggles({ { label = "Show", get = function() return A().enabled end,
             set = function(v) M:SetAuraOption(ui.Editing(), group, "enabled", v) end } })
         When(function() return A().enabled end, function()

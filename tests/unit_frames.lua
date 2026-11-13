@@ -606,6 +606,24 @@ restored.run([====[
     assert(Shared());page.unitFrameAuraButtons[2].scripts.OnClick();assert(page.unitFrameAuraGroup()=='debuffs' and not Shared(),'debuffs start off')
     assert(M:SetAuraOption('target','debuffs','enabled',true) and Shared() and M:SetAuraOption('target','debuffs','enabled',false))
     page.SetAuraGroup('buffs')
+    -- Preview: a live sample of the frame being edited, built by the same code as
+    -- the frames in the world; clicking a part opens its settings.
+    local view=page.configPreview
+    assert(view and page.previewArea:IsShown() and not page.testDisplayButton:IsShown(),'preview without a screen test')
+    local face=view.faces.target
+    assert(face and face:IsShown() and face:GetParent()==view.frame and not (view.faces.player and view.faces.player:IsShown()))
+    assert(face.auraShown.buffs==M.AURA_SAMPLE and face.castBox:IsShown() and face.combo:IsShown(),'buffs, cast bar and combo points')
+    assert(face.nameText:GetText()=='Target Frame' and face.health.value==75)
+    local at=Point(face);assert(at[1]=='TOPLEFT' and at[2]==view.frame and at[3]=='TOP' and at[4]==math.floor(at[4]),'centred on whole pixels')
+    assert(M:SetAuraOption('target','buffs','enabled',false) and face.auraShown.buffs==0 and M:SetAuraOption('target','buffs','enabled',true),'follows the settings')
+    face.castBox.scripts.OnMouseUp(face.castBox,'LeftButton');assert(page.selectedSection.title=='Cast Bar')
+    face.auraIcons.buffs[1].scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Auras' and page.unitFrameAuraGroup()=='buffs')
+    face.health.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Health')
+    face.combo.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Combo Points')
+    face.portrait.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Portrait')
+    page.SetEditing('targettarget');local small=view.faces.targettarget
+    assert(small:IsShown() and not face:IsShown() and small.scale==0.75 and not small.portrait:IsShown() and not small.castBox:IsShown())
+    local w,h=M:GetPreviewSize(view);assert(w>=320 and h>0)
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
