@@ -19,7 +19,11 @@ local Bar, Text, Circle = Kit.Bar, Kit.Text, Kit.Circle
 function M:BuildFace(f)
     local panel = CreateFrame("Frame", nil, f)
     f.panel = panel
-    panel.rim, panel.gap = Kit.CapRing(panel, 0), Kit.CapRing(panel, 1)
+    -- The rim draws on its own layer above the bars (and below the portrait),
+    -- so it covers the bars' edge instead of sitting under it.
+    panel.edge = CreateFrame("Frame", nil, panel)
+    panel.edge:SetAllPoints(panel)
+    panel.rim, panel.gap = Kit.CapRing(panel.edge, 0), Kit.CapRing(panel, 1)
     panel.farMask, panel.nearMask = Kit.EndMask(panel), Kit.EndMask(panel)
     panel.cap = panel:CreateTexture(nil, "BACKGROUND", nil, 1)
     panel.cap:SetTexture(Kit.FLAT)

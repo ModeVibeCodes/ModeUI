@@ -68,25 +68,26 @@ local function Scale(style)
 end
 
 function M:GetPreviewSize()
-    local scale, g = Scale(self.db[self:PreviewWindow()])
+    local scale, g = Scale(self:Style(self:PreviewWindow()))
     return math.max(300, g.width * scale), g.height * scale + 8 + CAPTION_HEIGHT
 end
 
--- A part that jumps to its settings when clicked and lights up under the mouse.
-local function Clickable(hit, target)
+-- A part that jumps to its settings when clicked and lights up under the
+-- mouse; `part` picks the text on the Text tab.
+local function Clickable(hit, target, part)
     hit:EnableMouse(true)
     hit.jumpHighlight = W.Fill(hit, T.primary, "OVERLAY", 0, 0.16)
     hit.jumpHighlight:Hide()
     hit:SetScript("OnEnter", function() hit.jumpHighlight:Show() end)
     hit:SetScript("OnLeave", function() hit.jumpHighlight:Hide() end)
-    hit:SetScript("OnMouseUp", function(_, button) if button == nil or button == "LeftButton" then M:JumpTo(target) end end)
+    hit:SetScript("OnMouseUp", function(_, button) if button == nil or button == "LeftButton" then M:JumpTo(target, part) end end)
     hit.jump = target
     return hit
 end
 
 function M:RenderPreview(view)
     local window = self:PreviewWindow()
-    local style = self.db[window]
+    local style = self:Style(window)
     local scale = Scale(style)
     local shell = view.window
     shell:SetScale(scale)
@@ -97,11 +98,15 @@ function M:RenderPreview(view)
         if not row.jump then
             row:SetScript("OnClick", nil)
             Clickable(row, "bars")
-            row.textHit = Clickable(CreateFrame("Frame", nil, row.textLayer), "text")
+            row.textHit = Clickable(CreateFrame("Frame", nil, row.textLayer), "text", "name")
+            row.valueHit = Clickable(CreateFrame("Frame", nil, row.textLayer), "text", "value")
         end
         row.textHit:ClearAllPoints()
         row.textHit:SetPoint("TOPLEFT", row.bar, "TOPLEFT", 0, 0)
         row.textHit:SetPoint("BOTTOMRIGHT", row.bar, "BOTTOM", 0, 0)
+        row.valueHit:ClearAllPoints()
+        row.valueHit:SetPoint("TOPLEFT", row.bar, "TOP", 0, 0)
+        row.valueHit:SetPoint("BOTTOMRIGHT", row.bar, "BOTTOMRIGHT", 0, 0)
     end
     local info = DM.typeById[style.meterType]
     local data = self:SampleData(style.meterType, addon.PreviewStates:Sample(self.id))
@@ -124,6 +129,14 @@ function M:CreateConfigPreview(parent)
     view.window.header:SetFrameLevel(view.window:GetFrameLevel() + 2)
     view.window.header:SetScript("OnClick", nil)
     Clickable(view.window.header, "header")
+    -- The title (the left half of the header) opens its text settings.
+    local title = Clickable(CreateFrame("Frame", nil, view.window.header.text), "text", "title")
+    title:SetPoint("TOPLEFT", view.window.header, "TOPLEFT", 0, 0)
+    title:SetPoint("BOTTOMRIGHT", view.window.header, "BOTTOM", 0, 0)
+    view.titleHit = title
+    -- The header buttons, as on the real window; here they open Header.
+    self:BuildControls(view.window)
+    for _, button in pairs(view.window.buttons) do button:SetScript("OnClick", function() M:JumpTo("header") end) end
     view.caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
     view.hint = W.Label(frame, L["Click a part to open its settings"], nil, 0, 0, 220, T.faint or T.muted)

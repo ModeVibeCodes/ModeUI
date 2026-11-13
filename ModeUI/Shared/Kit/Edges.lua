@@ -30,5 +30,5 @@ function Kit.FillEdge(bar, shown, reverse, px, color, alpha)
     edge:SetPoint("TOP" .. side, fill, "TOP" .. side, 0, 0)
     edge:SetPoint("BOTTOM" .. side, fill, "BOTTOM" .. side, 0, 0)
     edge:SetWidth(px)
-    Kit.Tint(edge, color or { 1, 1, 1 }, alpha or 0.45)
+    Kit.Tint(edge, color or { 1, 1, 1 }, alpha or 0.22)
 end

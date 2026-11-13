@@ -43,6 +43,8 @@ end
 function M:OnCombatStateChanged(inCombat)
     if not self.active then return end
     self:UpdateShown()
+    self:UpdateGrips()
+    if inCombat then self:StopResize() end
     -- The ticker runs the fight timer.
     if inCombat then self:Ticker():Show(); return end
     self:RequestRender()
@@ -94,7 +96,7 @@ end
 -- Whether a window shows: switched on, and its Show setting allows it now.
 -- Edit Mode and Test on Screen show every window that's on.
 function M:ShouldShow(window)
-    local style = self.db[window]
+    local style = self:Style(window)
     if not self.active or not style.show then return false end
     if self.editing or self.testing then return true end
     local when = style.visibility
@@ -115,6 +117,7 @@ function M:UpdateShown()
 end
 
 function M:Refresh()
+    self:ClearStyles()
     if self.active then self:Build() end
     -- The breakdown repaints its shell after any settings change.
     self.paintRevision = (self.paintRevision or 0) + 1
@@ -156,19 +159,22 @@ local function Commit(self, window, style)
 end
 
 -- Values are checked by Initialize on a copy before they're kept. Windows
--- aren't protected, so settings change in combat too.
+-- aren't protected, so settings change in combat too. A grouped window's
+-- shared settings are saved on the head of its group, so the group changes
+-- together.
 function M:SetOption(window, key, value)
     local defaults = self.styleDefaults[window]
     if not defaults or defaults[key] == nil then return false end
+    local target = self:OwnerOf(window, key)
     local candidate = Copy(self.db)
-    candidate[window][key] = Copy(value)
+    candidate[target][key] = Copy(value)
     if not pcall(self.Initialize, candidate) then return false end
     if key == "meterType" or key == "session" then
         self.sessionIds[window] = nil
         if self.built then self.frames[window].offset = 0 end
         if self.breakdown and self.breakdown.window == window then self:CloseBreakdown() end
     end
-    return Commit(self, window, candidate[window])
+    return Commit(self, target, candidate[target])
 end
 
 -- A window's fight: "current", "overall" (saved), or an earlier fight's
@@ -184,16 +190,20 @@ function M:SetSession(window, session)
     return self:SetOption(window, "session", session)
 end
 
+-- Resets a window's look; for a grouped window, its group's.
 function M:ResetWindow(window)
     if not self.styleDefaults[window] then return false end
+    window = self:Leader(window)
     local style = Copy(self.styleDefaults[window])
     for key in pairs(self.identityKeys) do style[key] = self.db[window][key] end
     return Commit(self, window, style)
 end
 
--- Copies one window's look to the others; what each shows and when stays its own.
+-- Copies one window's look (its group's, when grouped) to the others; what
+-- each shows and when, and its group, stay its own.
 function M:CopyStyleToAll(from)
     if not self.styleDefaults[from] then return false end
+    from = self:Leader(from)
     for _, window in ipairs(self.windows) do
         if window ~= from then
             local style = Copy(self.db[from])
@@ -214,13 +224,16 @@ function M:ResetData()
 end
 
 -- Owner for the shared font and color widgets: window() names the window
--- being edited.
-function M:AppearanceOwner(window)
-    local appearance = setmetatable({}, { __index = function(_, key) return M.db[window()][key] end })
+-- being edited and part() the text. The font widget's "font" and
+-- "fontMedia", and "partColor", are that text's own keys.
+local PART_KEYS = { font = "Font", fontMedia = "FontMedia", partColor = "Color" }
+function M:AppearanceOwner(window, part)
+    local function Key(key) return PART_KEYS[key] and part and part() .. PART_KEYS[key] or key end
+    local appearance = setmetatable({}, { __index = function(_, key) return M:Style(window())[Key(key)] end })
     local owner = { db = { appearance = appearance } }
     function owner.CanConfigure() return true end
     function owner.GetFonts() return addon.Media:GetFonts() end
-    function owner.SetAppearance(_, key, value) return M:SetOption(window(), key, value) end
+    function owner.SetAppearance(_, key, value) return M:SetOption(window(), Key(key), value) end
     return owner
 end
 

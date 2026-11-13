@@ -2,8 +2,10 @@
     <Script file="Init.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
+    <Script file="Group.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Window.lua"/>
+    <Script file="Controls.lua"/>
     <Script file="Render.lua"/>
     <Script file="Menu.lua"/>
     <Script file="Breakdown.lua"/>

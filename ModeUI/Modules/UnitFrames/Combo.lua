@@ -55,7 +55,7 @@ function M:LayoutCombo(f, count)
         point:SetShown(i <= count)
         if i <= count then
             point:SetSize(size, size)
-            point.rim:ClearAllPoints(); point.rim:SetAllPoints(point); Tint(point.rim, ONYX.border, 1)
+            point.rim:ClearAllPoints(); point.rim:SetAllPoints(point); Tint(point.rim, M.RIM_COLOR, 1)
             Kit.Inset(point.socket, point, px); Tint(point.socket, cdb.emptyColor, 1)
             local bar = point.bar
             bar:ClearAllPoints()

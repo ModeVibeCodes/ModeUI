@@ -54,7 +54,7 @@ function M:NameColor(unit, identity)
 end
 
 -- Portrait ring: Class Gradient (light top, pastel class/reaction color, deeper
--- bottom), Default (the frame's slate rim) or Custom.
+-- bottom), Default (the frame's rim color) or Custom.
 function M:PaintRing(f, unit)
     local fdb = self:FrameDB(unit)
     local ring, mode = f.portrait.ring, fdb.portraitRing
@@ -65,7 +65,7 @@ function M:PaintRing(f, unit)
     end
     if mode == "custom" then Gradient(ring, fdb.portraitRingColor, fdb.portraitRingColor); return end
     local color = mode == "class" and (f.ghost and self:SampleIdentity(unit, fdb) or self:IdentityColor(unit))
-    if not color then Gradient(ring, ONYX.border, ONYX.border); return end
+    if not color then Gradient(ring, M.RIM_COLOR, M.RIM_COLOR); return end
     Gradient(ring, Lighten(color, 0.35), Scale(color, 0.72))
 end
 

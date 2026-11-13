@@ -116,6 +116,49 @@ function Kit.ValueText(text, mode, percentFn, unit, hasCurrent, current)
     Kit.Write(text, "")
 end
 
+-- Abbreviated numbers with a set number of decimals (0-2): "12.3K", "1.25M",
+-- and whole numbers below a thousand ("165", not "165.71428571429").
+-- AbbreviateNumbers is C code that accepts secret numbers from addon code. For
+-- each breakpoint (largest first) a number at or above it shows as
+-- floor(n / significandDivisor) / fractionDivisor plus its suffix; a number
+-- below every breakpoint shows as it is, every decimal included, so the last
+-- breakpoint rounds small numbers down to whole ones. The client's rules for
+-- breakpoints aren't documented: the fullest set it accepts (tried once per
+-- decimals on a public number) is kept, else the plain call. Returns ok, text;
+-- the text is secret when the number is.
+local SUFFIXES = { { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
+local numberOptions = {}
+local function Breakpoints(decimals, smallest)
+    local scale = 10 ^ decimals
+    local list = {}
+    for _, item in ipairs(SUFFIXES) do
+        list[#list + 1] = { breakpoint = item[1], abbreviation = item[2], significandDivisor = item[1] / scale,
+            fractionDivisor = scale, abbreviationIsGlobal = false }
+    end
+    if smallest then
+        list[#list + 1] = { breakpoint = smallest, abbreviation = "", significandDivisor = 1, fractionDivisor = 1, abbreviationIsGlobal = false }
+    end
+    return { breakpointData = list }
+end
+function Kit.ShortNumber(value, decimals)
+    if type(AbbreviateNumbers) ~= "function" then return false end
+    local options = numberOptions[decimals]
+    if options == nil then
+        options = false
+        for _, smallest in ipairs({ 0, 1, false }) do
+            local candidate = Breakpoints(decimals, smallest)
+            local ok, text = pcall(AbbreviateNumbers, 1234.5, candidate)
+            if ok and type(text) == "string" then options = candidate; break end
+        end
+        numberOptions[decimals] = options
+    end
+    if options then
+        local ok, text = pcall(AbbreviateNumbers, value, options)
+        if ok then return true, text end
+    end
+    return pcall(AbbreviateNumbers, value)
+end
+
 -- The font file for a style's font/fontMedia choice. Expressway (registered by
 -- Media from an installed AyijeUI or EllesmereUI copy) falls back to the
 -- bundled ModeUI Lato when unavailable. scope is the module ID.

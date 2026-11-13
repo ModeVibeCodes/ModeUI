@@ -68,6 +68,11 @@ M.Textures = {
     -- Chat compartment glyphs: the chat menu's speech bubble and Channels' "#".
     ChatMenu = { file = "Chat/Menu.tga", transparent = true },
     ChatChannels = { file = "Chat/Channels.tga", transparent = true },
+    -- Damage meter header glyphs and the resize grip, tinted in game.
+    DamageMeterReset = { file = "DamageMeters/Reset.tga", transparent = true },
+    DamageMeterLock = { file = "DamageMeters/Lock.tga", transparent = true },
+    DamageMeterUnlock = { file = "DamageMeters/Unlock.tga", transparent = true },
+    DamageMeterGrip = { file = "DamageMeters/Grip.tga", transparent = true },
 }
 
 

@@ -123,13 +123,15 @@ function M:ResetBar(bar)
     return Commit(self, bar, style)
 end
 
--- Copies one bar's look (size, borders, text, opacity) to every other bar;
--- what each bar shows and when stays its own. The pet and stance bars keep
--- their ten-button limit.
-function M:CopyStyleToAll(from)
-    if not self:CanConfigure() or not self.styleDefaults[from] then return false end
+-- Copies one bar's look (size, borders, background, text, glows, opacity) to
+-- the bars in `targets` (a set: { bar2 = true }); what each bar shows and when
+-- stays its own. The pet and stance bars keep their ten-button limit.
+-- Returns how many bars took the style.
+function M:CopyStyleTo(from, targets)
+    if not self:CanConfigure() or not self.styleDefaults[from] or type(targets) ~= "table" then return false end
+    local applied = 0
     for _, bar in ipairs(self.bars) do
-        if bar ~= from then
+        if bar ~= from and targets[bar] then
             local style = Copy(self.db[from])
             for key in pairs(self.identityKeys) do style[key] = self.db[bar][key] end
             local candidate = Copy(self.db)
@@ -138,10 +140,34 @@ function M:CopyStyleToAll(from)
                 local target = self.db[bar]
                 for key in pairs(target) do target[key] = nil end
                 for key, value in pairs(candidate[bar]) do target[key] = value end
+                applied = applied + 1
             end
         end
     end
-    return Commit(self, from, Copy(self.db[from]))
+    Commit(self, from, Copy(self.db[from]))
+    return true, applied
+end
+
+function M:CopyStyleToAll(from)
+    local all = {}
+    for _, bar in ipairs(self.bars) do all[bar] = true end
+    return self:CopyStyleTo(from, all)
+end
+
+-- Switches a bar on for good: Show Bar on, and Show back to Always if it was
+-- Hidden (the Editing header's Turn On).
+function M:TurnOnBar(bar)
+    if not self:CanConfigure() or not self.styleDefaults[bar] then return false end
+    if self.db[bar].visibility == "hidden" and not self:SetOption(bar, "visibility", "always") then return false end
+    return self.db[bar].show or self:SetOption(bar, "show", true)
+end
+
+-- How a bar stands, for the Editing list: "off" (Show Bar off), "hidden"
+-- (Show set to Hidden) or nil when it shows.
+function M:BarState(bar)
+    local style = self.db[bar]
+    if not style.show then return "off" end
+    if style.visibility == "hidden" then return "hidden" end
 end
 
 -- Owner for the shared font and color widgets. bar() names the bar being

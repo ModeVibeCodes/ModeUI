@@ -1,15 +1,18 @@
 local _, addon = ...
 local Kit = addon.Kit
 
--- Boxes with rounded ends (owner, November 13, 2026: "almost a half oval"):
+-- Boxes with rounded ends (owner, November 13, 2026: a straight end with a
+-- gradual curve into it, like a rounded rectangle):
 -- the straight edges stay hard-edged flat strips on whole pixels, and each
--- rounded end is a half ellipse (Mode/Cap*.tga) whose depth is a share of the
+-- rounded end is a cap (Mode/Cap*.tga) whose depth is a share of the
 -- box's height. A ring is a cap hollowed by a hole mask, so nothing opaque
 -- sits inside it; what a box holds (bars) is rounded the same way by end
 -- masks. Masks use CLAMPTOWHITE, so everything outside their own area stays.
 
--- How deep a rounded end is: 0.4 of the height (a semicircle would be 0.5).
-Kit.CAP_DEPTH = 0.4
+-- How deep a rounded end is: a quarter of the height. The cap textures are a
+-- straight end with round corners as wide as the texture (64x256), so at this
+-- depth the corners stay circular and the end edge runs straight between them.
+Kit.CAP_DEPTH = 0.25
 function Kit.CapDepth(height, px)
     return math.max(px, math.floor(height * Kit.CAP_DEPTH / px + 0.5) * px)
 end
@@ -102,4 +105,10 @@ function Kit.AddMasks(regions, masks)
             end
         end
     end
+end
+
+-- Hides every part of a ring (a box drawn without it).
+function Kit.HideCapRing(ring)
+    ring.top:Hide(); ring.bottom:Hide()
+    for _, e in pairs(ring.ends) do e.strip:Hide(); e.cap:Hide() end
 end

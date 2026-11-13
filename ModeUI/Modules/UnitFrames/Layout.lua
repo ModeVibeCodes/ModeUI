@@ -29,7 +29,9 @@ function M:PixelSize(f) return Kit.PixelSize(f) end
 -- block. Pixel perfect: every size is whole physical pixels (2px slate rim,
 -- 2px black gap, 1px hairline between health and power) and the frame is an
 -- even number of pixels each way, so its centre anchor stays on the grid.
-M.RIM, M.GAP, M.HAIRLINE = 2, 2, 1
+-- One crisp 2px border round the whole block (owner, November 13, 2026): the
+-- black gap that sat inside the rim is gone (GAP 0), so the bars meet the rim.
+M.RIM, M.GAP, M.HAIRLINE = 2, 0, 1
 function M:Geometry(fdb, px)
     local g, p = {}, px or 1
     local function Snap(v) return math.max(p, math.floor(v / p + 0.5) * p) end
@@ -67,6 +69,20 @@ function M:Geometry(fdb, px)
     return g
 end
 
+-- Where the bottom of a name above the bars sits, up from the health bar's
+-- top. On the Border (owner, November 13, 2026): the text's baseline on the
+-- middle of the top rim, so the letters sit on the border and their
+-- descenders dip over it (descent taken as a quarter of the font size).
+-- Above Frame: 3px over the rim.
+function M:NameBottom(fdb, g)
+    local px = g.px
+    if fdb.namePosition == "border" then
+        local descent = math.floor(fdb.nameFontSize * 0.25 / px + 0.5) * px
+        return g.pad - g.border / 2 - descent + math.floor(fdb.nameOffsetY / px + 0.5) * px
+    end
+    return g.pad + 3 + fdb.nameOffsetY
+end
+
 -- The suite's text style (see Shared/Kit/Text.lua).
 M.LIFT_PIXELS, M.LIFT_ALPHA = Kit.LIFT_PIXELS, Kit.LIFT_ALPHA
 
@@ -87,10 +103,14 @@ function M:ApplyLayout(f, unit)
     -- portrait); end masks round the bars inside the gap to match.
     local depth = Kit.CapDepth(g.blockHeight, g.px)
     local rounded = { [far] = true, [near] = g.portrait == 0 }
-    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, ONYX.border, depth, rounded)
-    Kit.PlaceCapRing(panel.gap, panel, g.border, g.line, ONYX.inner, depth, rounded)
-    Kit.PlaceEndMask(panel.farMask, panel, far, depth, g.pad, true)
-    Kit.PlaceEndMask(panel.nearMask, panel, near, depth, g.pad, rounded[near])
+    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, M.RIM_COLOR, depth, rounded)
+    if g.line > 0 then Kit.PlaceCapRing(panel.gap, panel, g.border, g.line, ONYX.inner, depth, rounded)
+    else Kit.HideCapRing(panel.gap) end
+    -- The bars' rounded end reaches one pixel under the rim, so their edge
+    -- covers the rim's soft inner curve and no faint seam shows between them.
+    local maskInset = math.max(0, g.pad - g.px)
+    Kit.PlaceEndMask(panel.farMask, panel, far, depth, maskInset, true)
+    Kit.PlaceEndMask(panel.nearMask, panel, near, depth, maskInset, rounded[near])
     local masks = { panel.farMask, panel.nearMask }
     panel.depth = depth
     local start = g.inset - g.blockStart
@@ -98,7 +118,7 @@ function M:ApplyLayout(f, unit)
     cap:ClearAllPoints()
     cap:SetPoint("TOP" .. near, panel, "TOP" .. near, sign * g.pad, -g.pad)
     cap:SetPoint("BOTTOM" .. near, panel, "BOTTOM" .. near, sign * g.pad, g.pad)
-    cap:SetWidth(math.max(g.px, start - g.pad)); Tint(cap, ONYX.inner, 1)
+    cap:SetWidth(math.max(g.px, start - g.pad)); Tint(cap, M.RIM_COLOR, 1)
     cap:SetShown(start > g.pad)
     local level = panel:GetFrameLevel()
 
@@ -130,6 +150,8 @@ function M:ApplyLayout(f, unit)
     -- A 1px light line where the health fill ends (owner, November 13, 2026).
     Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)
     Kit.AddMasks({ h.fillEdge, line }, masks)
+    -- Rim over the bars, then the portrait, then text.
+    panel.edge:SetFrameLevel(h:GetFrameLevel() + 1)
     f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
 
     -- Round portrait above the block: full ring, black gap, dark backing, image.
@@ -137,7 +159,7 @@ function M:ApplyLayout(f, unit)
     p:SetShown(g.portrait > 0)
     if g.portrait > 0 then
         p:ClearAllPoints(); p:SetPoint("TOP" .. near, f, "TOP" .. near, 0, -g.portraitY); p:SetSize(g.portrait, g.portrait)
-        p:SetFrameLevel(h:GetFrameLevel() + 1)
+        p:SetFrameLevel(h:GetFrameLevel() + 2)
         p.ring:ClearAllPoints(); p.ring:SetAllPoints(p)
         Inset(p.innerEdge, p, g.border); Tint(p.innerEdge, ONYX.inner, 1)
         Inset(p.back, p, g.pad); Tint(p.back, ONYX.track, 1)
@@ -187,10 +209,19 @@ function M:ApplyLayout(f, unit)
     -- centred text, the level sits at the bar's right.
     local level = fdb.levelStyle ~= "none"
     local position = fdb.healthTextPosition
-    local grouped = level and fdb.healthText ~= "none" and position ~= "CENTER"
+    local corner = level and fdb.levelPosition == "corner"
+    local grouped = level and not corner and fdb.healthText ~= "none" and position ~= "CENTER"
     local healthFirst = fdb.mirrored == true
     f.levelText:ClearAllPoints(); f.nameText:ClearAllPoints()
-    if grouped and (position == "LEFT") ~= healthFirst then
+    if corner then
+        -- Bottom Corner: the health bar's bottom on the portrait side, 1px up,
+        -- clear of the portrait across its own line (owner, November 13, 2026).
+        local line = math.ceil((fdb.levelFontSize + 2) / px) * px
+        local mid = g.barsTop + g.healthHeight - px - line / 2
+        f.levelText:SetPoint("BOTTOM" .. near, h, "BOTTOM" .. near, Clamped(Clearance(mid, fdb.levelFontSize, ly), lx), px + ly)
+        f.levelText:SetJustifyH(near)
+        SideText(f.healthText, h, position, hx, hy, fdb.healthFontSize, healthMid)
+    elseif grouped and (position == "LEFT") ~= healthFirst then
         -- The level is the outer text, at the bar's edge; the health text sits inside it.
         SideText(f.levelText, h, position, hx + lx, hy + ly, fdb.levelFontSize, healthMid)
         f.healthText:ClearAllPoints()
@@ -221,20 +252,22 @@ function M:ApplyLayout(f, unit)
         f.nameText:SetJustifyH(align)
         f.nameText:SetWidth(fdb.barWidth * 0.6)
     else
-        -- Above the frame, over the bars, clear of the ring at the name's own
-        -- height (the ring curves away above the block, so it can sit closer).
+        -- On the border (its baseline on the middle of the top rim) or above the
+        -- frame; clear of the ring at the name's own height (the ring curves away
+        -- above the block, so it can sit closer).
         local line = math.ceil((fdb.nameFontSize + 2) / px) * px
-        local clear = Clearance(g.barsTop - g.pad - 3 - ny - line / 2, fdb.nameFontSize, 0, 0)
+        local bottom = self:NameBottom(fdb, g)
+        local clear = Clearance(g.barsTop - bottom - line / 2, fdb.nameFontSize, 0, 0)
         local nearX = Clamped(clear, nx)
-        f.nameText:SetPoint("BOTTOMLEFT", h, "TOPLEFT", near == "LEFT" and nearX or nx, g.pad + 3 + ny)
-        f.nameText:SetPoint("BOTTOMRIGHT", h, "TOPRIGHT", near == "RIGHT" and nearX or nx, g.pad + 3 + ny)
+        f.nameText:SetPoint("BOTTOMLEFT", h, "TOPLEFT", near == "LEFT" and nearX or nx, bottom)
+        f.nameText:SetPoint("BOTTOMRIGHT", h, "TOPRIGHT", near == "RIGHT" and nearX or nx, bottom)
         f.nameText:SetJustifyH(fdb.nameAlign)
     end
     f.nameText:SetShown(fdb.showName)
     SideText(f.powerText, pw, fdb.powerTextPosition, fdb.powerTextOffsetX, fdb.powerTextOffsetY, fdb.powerFontSize, powerMid)
     f.powerText:SetShown(fdb.showPower and fdb.powerText ~= "none")
     LayoutLift(f.nameText, fdb, fdb.nameFontSize, path, g.px, fdb.showName, fdb.nameAlign)
-    LayoutLift(f.levelText, fdb, fdb.levelFontSize, path, g.px, level, "CENTER")
+    LayoutLift(f.levelText, fdb, fdb.levelFontSize, path, g.px, level, corner and near or "CENTER")
     LayoutLift(f.healthText, fdb, fdb.healthFontSize, path, g.px, fdb.healthText ~= "none", position)
     LayoutLift(f.powerText, fdb, fdb.powerFontSize, path, g.px, fdb.showPower and fdb.powerText ~= "none", fdb.powerTextPosition)
     self:PaintRing(f, unit)

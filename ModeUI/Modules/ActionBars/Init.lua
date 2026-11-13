@@ -134,7 +134,7 @@ for _, bar in ipairs(M.bars) do M.defaults[bar] = Copy(M.styleDefaults[bar]) end
 -- Keys Copy Style leaves alone: whether and when a bar shows, and how many
 -- buttons it has in what shape.
 M.identityKeys = { show = true, buttons = true, perLine = true, orientation = true, start = true,
-    visibility = true, customVisibility = true, buttonGlows = true }
+    visibility = true, customVisibility = true, buttonGlows = true, paging = true, pageConditions = true }
 M.colorKeys = { borderColor = true, backgroundColor = true, procColor = true, readyColor = true }
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
