@@ -70,7 +70,11 @@ end
 -- What one of Blizzard's buttons shows now. Values may be secret: they only
 -- go to SetTexture and SetText.
 local function Real(bar, index) local list = M.buttons[bar]; return list and list[index] or _G[M.barSpecs[bar].prefix .. index] end
-local function Shown(region) return region ~= nil and region.IsShown ~= nil and region:IsShown() == true end
+local function Shown(region)
+    if not region or not region.IsShown then return false end
+    local shown = region:IsShown()
+    return Public(shown) and shown == true
+end
 local function Icon(real)
     if not real or not Shown(real.icon) then return nil end
     return real.icon:GetTexture()
@@ -111,19 +115,18 @@ local function Clickable(region, target, part, host)
     return hit
 end
 
--- Covers the written text; a secret text can't be measured, so its click
--- area is the whole text box.
-local function FitText(hit, text, written)
-    local width = text:GetWidth()
-    local measured = written and text:GetStringWidth()
-    if Number(measured) then width = math.min(width, measured + 4) end
-    local justify = text:GetJustifyH()
-    local point = justify == "LEFT" and "LEFT" or justify == "RIGHT" and "RIGHT" or "CENTER"
+-- The click area for a text, sized from its settings, never by measuring:
+-- the preview copies the real buttons' texts, which can be secret, and the
+-- game then makes that text's measurements secret too. A corner text gets
+-- the half of the button on its side; a centered one the middle.
+local function FitText(hit, text, written, style, part, g)
+    local anchor = style[part .. "Anchor"]
+    local point = anchor:find("LEFT") and "LEFT" or anchor:find("RIGHT") and "RIGHT" or "CENTER"
+    local inner = math.max(8, g.w - 2 * g.inset)
     hit:ClearAllPoints()
     hit:SetPoint(point, text, point, 0, 0)
-    local _, size = text:GetFont()
-    hit:SetSize(math.max(8, width), math.max(8, (Number(size) and size or 10) + 2))
-    hit:SetShown(written == true and text:GetAlpha() > 0)
+    hit:SetSize(point == "CENTER" and inner * 0.6 or inner / 2, math.max(8, style[part .. "Size"] + 2))
+    hit:SetShown(written == true and style[part .. "Show"] == true)
 end
 
 local function Scale(style, count)
@@ -191,7 +194,9 @@ function M:RenderPreview(view)
             button.cooldown:Hide(); Kit.Write(button.cooldownText, "")
         end
         for part, hit in pairs(button.hits) do
-            if part ~= "button" then FitText(hit, self.TextRegion(button, part), filled and (part ~= "cooldown" or cooling)) end
+            if part ~= "button" then
+                FitText(hit, self.TextRegion(button, part), filled and (part ~= "cooldown" or cooling), style, part, g)
+            end
         end
         filledCount = filledCount + (filled and 1 or 0)
         button:SetShown(filled or style.showEmpty)

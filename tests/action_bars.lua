@@ -20,6 +20,25 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         self.countdown = self.countdown or self:CreateFontString(nil, 'OVERLAY')
         return self.countdown
     end
+    -- Secret text makes a FontString's measurements secret too (as in the client).
+    local setText = methods.SetText
+    function methods:SetText(text)
+        if self.kind == 'FontString' and issecretvalue(text) then self.secretContent = true end
+        return setText(self, text)
+    end
+    for _, name in ipairs({ 'GetWidth', 'GetHeight', 'GetStringWidth', 'GetStringHeight' }) do
+        local get = methods[name]
+        methods[name] = function(self, ...) if self.secretContent then return Secret('measure') end return get(self, ...) end
+    end
+    -- The stub's own anchor math needs real sizes; the client's does it natively.
+    local setPoint = methods.SetPoint
+    function methods:SetPoint(point, relative, ...)
+        local own, other = self.secretContent, type(relative) == 'table' and relative.secretContent
+        self.secretContent = nil; if other then relative.secretContent = nil end
+        local result = setPoint(self, point, relative, ...)
+        self.secretContent = own; if other then relative.secretContent = other end
+        return result
+    end
     RED_FONT_COLOR = { GetRGB = function() return 1, 0.125, 0.125 end }
     RANGE_INDICATOR = '*'
     testForms = 0
@@ -280,6 +299,8 @@ world.run([==[
     element.dragUpdate()
     assert(PM.guides and PM.guides.x:IsShown(), 'center guide near an X of 0')
     assert(PM:StopDragging('actionBarsBar1') and PM:GetPosition('actionBarsBar1').x == 0 and not PM.guides.frame:IsShown(), 'snapped to 0')
+    -- Blizzard's counts and keybinds can be secret; the preview copies them as they are.
+    ActionButton3.Count:SetText(Secret('charges')); ActionButton4.HotKey:SetText(Secret('key'))
     addon.EditMode:Select('actionBarsPet')
     addon.editWindow.settingsButton.scripts.OnClick(addon.editWindow.settingsButton)
     local page = addon.configWindow.pages.actionBars
@@ -293,6 +314,9 @@ world.run([==[
     page.SetEditing('bar1')
     assert(page.buttonsSlider.high == 12)
     local view = page.configPreview
+    for i = 1, 12 do assert(view.buttons[i] and view.buttons[i]:IsShown(), 'every button drawn, secret texts and all') end
+    assert(issecretvalue(view.buttons[3].Count.text) and issecretvalue(view.buttons[4].HotKey.text), 'secret texts shown as they are')
+    assert(page.barSelects[1].label.text == 'Action Bar 1', 'the bar being edited is named')
     local first = view.buttons[1]
     assert(first:IsShown() and first.width == 42 and first.height == 36, 'preview of the edited bar')
     assert(first.icon.texture == 'Interface/Icons/Spell1' and first.HotKey.text == '1', 'your own spell and keybind')

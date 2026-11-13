@@ -12,7 +12,7 @@ if not M then return end
 -- keeps Action Bar 1 hidden while the game shows its own vehicle bar, which
 -- covers the same keys.
 local L = addon.L
-local P = addon.Positioning
+local P, Number = addon.Positioning, addon.IsNumber
 
 M.STATE_SNIPPET = [[
     self:SetAttribute("modeshown", newstate)
@@ -84,7 +84,10 @@ local function Adopt(self, button, parent)
     if self.homes[button] == nil then
         local points = {}
         for i = 1, button:GetNumPoints() do points[i] = { button:GetPoint(i) } end
-        self.homes[button] = { parent = button:GetParent(), width = button:GetWidth(), height = button:GetHeight(), points = points }
+        -- Blizzard's buttons are 45 square; a size the game won't tell is taken as that.
+        local width, height = button:GetWidth(), button:GetHeight()
+        if not Number(width, 1, 400) or not Number(height, 1, 400) then width, height = 45, 45 end
+        self.homes[button] = { parent = button:GetParent(), width = width, height = height, points = points }
     end
     if button:GetParent() ~= parent then button:SetParent(parent) end
 end

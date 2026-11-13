@@ -45,9 +45,15 @@ local function KeepColor(text, r, g, b)
     guard = true; text:SetVertexColor(c[1], c[2], c[3], 1); guard = false
 end
 
+-- Whether a region shows, counting a secret answer as no.
+function M.IsShown(region)
+    local shown = region:IsShown()
+    return Public(shown) and shown == true
+end
+
 local function SyncLift(text)
     local lift, state = M.lifts[text], M.textState[text]
-    if lift then lift:SetShown(text:IsShown() and state ~= nil and state.lifted == true) end
+    if lift then lift:SetShown(M.IsShown(text) and state ~= nil and state.lifted == true) end
 end
 
 -- A lift for a Blizzard text, kept in step with it from now on.
@@ -107,7 +113,7 @@ local function StylePart(self, button, part, style, g, sample)
     -- Samples carry their own lift; Blizzard's texts get one on first use.
     local lift = sample and text.lift or (state.lifted and part ~= "cooldown" and self:Lift(text)) or self.lifts[text]
     if lift then
-        Kit.LayoutLift(text, look, size, path, g.px, state.lifted and text:IsShown(), justify, lift)
+        Kit.LayoutLift(text, look, size, path, g.px, state.lifted and M.IsShown(text), justify, lift)
         lift:SetAlpha(shown and 1 or 0)
     end
 end

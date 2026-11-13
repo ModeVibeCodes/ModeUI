@@ -144,8 +144,12 @@ function W.Page(parent, minimumWidth)
         bar:SetShown(maximum > 0)
     end
     scroll:SetScript("OnSizeChanged", function() page:Layout() end)
+    -- One failing control reports its error without leaving the rest blank.
     function page:Refresh()
-        for _, refresh in ipairs(self.refreshers) do refresh() end
+        for _, refresh in ipairs(self.refreshers) do
+            local ok, message = pcall(refresh)
+            if not ok then geterrorhandler()(message) end
+        end
     end
     function page:FooterNote(note,inlineWhen)
         local row=note:GetParent().row
