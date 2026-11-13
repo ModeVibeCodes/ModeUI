@@ -96,7 +96,7 @@ M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = {
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },
     castX = { -50, 50, 1 }, castY = { -50, 50, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
-    targetThickness = { 1, 3, 1 }, targetArrowSize = { 8, 32, 1 }, targetArrowGap = { 0, 20, 1 } }
+    targetThickness = { 1, 3, 1 }, targetArrowSize = { 8, 48, 1 }, targetArrowGap = { 0, 60, 1 } }
 M.groupRanges = { size = { 10, 40, 1 }, max = { 1, 12, 1 }, x = { -50, 50, 1 }, y = { -50, 50, 1 } }
 -- Anchors around the plate, read like a compass: Top sits above the name,
 -- Bottom below the cast bar, Left and Right beside the health bar.

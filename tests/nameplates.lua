@@ -257,18 +257,20 @@ world.run([==[
     for _, query in ipairs(auraQueries) do if query == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' then negated = true end end
     assert(negated, 'debuffs leave crowd control to its own group')
     -- Default anchors: crowd control Left (past the raid marker), debuffs Top, buffs Right.
-    -- Icons are cropped (2px wider than tall) and placed by their corner on
+    -- Icons are cropped (4px wider than tall) and placed by their corner on
     -- whole pixels from the health bar's bottom left (180 x 16 here).
     local function Corner(icon) local at = Point(icon); assert(at[1] == 'BOTTOMLEFT' and at[2] == plate.healthBox and at[3] == 'BOTTOMLEFT'); return at[4], at[5] end
-    assert(math.abs(A.crowdControl[1].width - 24) < 1 and math.abs(A.crowdControl[1].height - 22) < 1, 'cropped 24 x 22')
-    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -3, 'crowd control left of the marker: ' .. x .. ',' .. y)
+    assert(math.abs(A.crowdControl[1].width - 24) < 1 and math.abs(A.crowdControl[1].height - 20) < 1, 'cropped 24 x 20')
+    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -2, 'crowd control left of the marker: ' .. x .. ',' .. y)
     x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 32, 'debuffs centered above the name: ' .. x .. ',' .. y)
-    x, y = Corner(A.buffs[1]); assert(x == 182 and y == 0, 'buffs right of the bar: ' .. x .. ',' .. y)
+    x, y = Corner(A.buffs[1]); assert(x == 182 and y == 1, 'buffs right of the bar: ' .. x .. ',' .. y)
+    -- Target arrows sit outside the side aura rows (and the marker).
+    assert(plate.auraExtent.LEFT == 47 and plate.auraExtent.RIGHT == 22, 'aura rows reach past the bar')
     -- Moving one group: anchor, offsets, size and count, all validated.
     assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
-    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -34, 'bottom right, under the cast bar: ' .. x .. ',' .. y)
+    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -32, 'bottom right, under the cast bar: ' .. x .. ',' .. y)
     assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 165, 'offset X')
-    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -37, 'offset Y')
+    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -35, 'offset Y')
     assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
     assert(not M:SetOption('enemy', 'grow', 'sideways', 'debuffs'), 'unknown grow refused')
     assert(not M:SetOption('enemy', 'debuffs', {}) and not M:SetOption('enemy', 'filter', 'all', 'crowdControl'), 'one setting at a time')
@@ -289,10 +291,10 @@ world.run([==[
     assert(x1 == 0 and x2 == -22 and y1 == y2, 'grow left')
     assert(M:SetOption('enemy', 'grow', 'up', 'debuffs'))
     x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
-    assert(x1 == x2 and y2 == y1 + 20, 'grow up')
+    assert(x1 == x2 and y2 == y1 + 18, 'grow up')
     assert(M:SetOption('enemy', 'grow', 'down', 'debuffs'))
     x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
-    assert(x1 == x2 and y2 == y1 - 20, 'grow down')
+    assert(x1 == x2 and y2 == y1 - 18, 'grow down')
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'grow', 'center', 'debuffs'))
     assert(M:SetOption('enemy', 'filter', 'mine', 'debuffs'))
     -- Square icons and border colors by dispel type.
@@ -427,6 +429,11 @@ world.run([==[
     assert(M:SetOption('enemy', 'targetStyle', 'glow') and sample.targetGlow:IsShown() and sample.healthBox.rim.vertexColor[1] == Kit.onyx.border[1], 'glow')
     assert(M:SetOption('enemy', 'targetStyle', 'arrows') and sample.arrows.left:IsShown() and sample.arrows.right:IsShown() and not sample.targetGlow:IsShown(), 'arrows')
     assert(sample.arrows.right.texCoord[1] == 1, 'right arrow mirrored')
+    local leftArrow, rightArrow = Point(sample.arrows.left), Point(sample.arrows.right)
+    assert(-leftArrow[4] >= sample.auraExtent.LEFT + M.db.enemy.targetArrowGap and sample.auraExtent.LEFT > 0, 'left arrow outside the crowd control row')
+    assert(rightArrow[4] >= sample.auraExtent.RIGHT + M.db.enemy.targetArrowGap and sample.auraExtent.RIGHT > 0, 'right arrow outside the buffs row')
+    assert(M:SetOption('enemy', 'targetArrowGap', 60) and M:SetOption('enemy', 'targetArrowSize', 48) and M:SetOption('enemy', 'targetArrowGap', 4)
+        and M:SetOption('enemy', 'targetArrowSize', 12), 'wider arrow ranges')
     assert(M:SetOption('enemy', 'targetStyle', 'borderArrows') and sample.arrows.left:IsShown() and sample.healthBox.rim.vertexColor[3] == P.accent[3])
     assert(M:SetOption('enemy', 'targetThickness', 3) and sample.targetOutline:IsShown() and Point(sample.targetOutline)[4] == -2, '3px border')
     assert(M:SetOption('enemy', 'targetStyle', 'none') and not sample.targeted and not sample.arrows.left:IsShown())
@@ -470,6 +477,10 @@ world.run([==[
     page.SetEditing('enemy')
     view.targets.enemy.name.scripts.OnMouseUp(view.targets.enemy.name, 'LeftButton')
     assert(page.nameplateEditing() == 'enemy' and page.selectedSection.title == 'Text', 'name click opens Text')
+    -- Text inside the bar takes clicks only where it is written, so the bar
+    -- beside it opens the health settings.
+    local textHit = view.targets.enemy.healthText
+    assert(textHit.width < sample.health:GetWidth() and Point(textHit)[1] == 'RIGHT', 'health text hit fits the text')
     view.targets.enemy.health.scripts.OnMouseUp(view.targets.enemy.health, 'LeftButton')
     assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
     view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')

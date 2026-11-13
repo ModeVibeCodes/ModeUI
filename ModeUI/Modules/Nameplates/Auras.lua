@@ -20,11 +20,12 @@ local GROUPS = M.auraGroups
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
 local function Round(value, px) return math.floor(value / px + 0.5) * px end
 
--- Icon width and height for a group: cropped icons are 2px wider than tall.
+-- Icon width and height for a group: cropped icons are 4px wider than tall.
+M.CROP_PIXELS = 4
 function M:AuraSize(plate, group)
     local style, px = self:Style(plate), plate.px or 1
     local width = Snap(style[group].size, px)
-    local height = style.auraShape == "cropped" and math.max(px, width - 2 * px) or width
+    local height = style.auraShape == "cropped" and math.max(px, width - M.CROP_PIXELS * px) or width
     return width, height
 end
 
@@ -93,7 +94,9 @@ function M:LayoutAuras(plate)
     local style, px = self:Style(plate), plate.px or 1
     local spacing, gap = style.auraSpacing * px, 2 * px
     local boxWidth, boxHeight = plate.healthBox:GetWidth(), plate.healthBox:GetHeight()
-    local function Clear(side) return (style.showRaidIcon and style.raidAnchor == side) and (plate.markSize or 0) + 3 * px or 0 end
+    local function Clear(side) return self:SideRoom(plate, side) end
+    -- How far each side's aura row reaches past the bar, for the arrows.
+    local extent = { LEFT = 0, RIGHT = 0 }
     -- Gather each anchor's icons in group order.
     local byAnchor, order = {}, {}
     for _, group in ipairs(GROUPS) do
@@ -141,6 +144,10 @@ function M:LayoutAuras(plate)
             local bottom = Round(cy - h / 2 + boxHeight / 2, px) + item.dy
             item.icon:ClearAllPoints()
             item.icon:SetPoint("BOTTOMLEFT", plate.healthBox, "BOTTOMLEFT", left, bottom)
+            if anchor == "LEFT" then extent.LEFT = math.max(extent.LEFT, -left + gap)
+            elseif anchor == "RIGHT" then extent.RIGHT = math.max(extent.RIGHT, left + w - boxWidth + gap) end
         end
     end
+    plate.auraExtent = extent
+    self:PlaceArrows(plate)
 end

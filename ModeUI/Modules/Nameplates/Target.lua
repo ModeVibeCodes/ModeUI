@@ -25,21 +25,28 @@ function M:LayoutTarget(plate)
     plate.targetGlow:SetPoint("TOPLEFT", host, "TOPLEFT", -GLOW_OUTSET, GLOW_OUTSET)
     plate.targetGlow:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", GLOW_OUTSET, -GLOW_OUTSET)
     Kit.Rounded(plate.targetGlow, "NameplateGlow")
-    local size = math.max(px, math.floor(db.targetArrowSize / px + 0.5) * px)
-    local gapPixels = db.targetArrowGap * px
-    -- Arrows clear a raid marker standing on their side.
-    local function Clear(side) return (db.showRaidIcon and db.raidAnchor == side) and (plate.markSize or 0) + 3 * px or 0 end
     for side, arrow in pairs(plate.arrows) do
         addon.Media:ApplyTexture(arrow, "NameplateArrow")
+        if side == "left" then arrow:SetTexCoord(0, 1, 0, 1) else arrow:SetTexCoord(1, 0, 0, 1) end
+    end
+    self:PlaceArrows(plate)
+end
+
+-- Arrows always sit outside everything beside the bar on their side: the raid
+-- marker, the indicator and any aura row anchored Left or Right. Called again
+-- whenever the aura rows change.
+function M:PlaceArrows(plate)
+    local db, px = self:Style(plate), plate.px or 1
+    local host = plate.nameOnly and plate.name or plate.healthBox
+    local size = math.max(px, math.floor(db.targetArrowSize / px + 0.5) * px)
+    local gapPixels = db.targetArrowGap * px
+    local extent = plate.auraExtent or {}
+    local function Clear(side) return math.max(self:SideRoom(plate, side), extent[side] or 0) end
+    for side, arrow in pairs(plate.arrows) do
         arrow:SetSize(size, size)
         arrow:ClearAllPoints()
-        if side == "left" then
-            arrow:SetTexCoord(0, 1, 0, 1)
-            arrow:SetPoint("RIGHT", host, "LEFT", -(gapPixels + Clear("LEFT")), 0)
-        else
-            arrow:SetTexCoord(1, 0, 0, 1)
-            arrow:SetPoint("LEFT", host, "RIGHT", gapPixels + Clear("RIGHT"), 0)
-        end
+        if side == "left" then arrow:SetPoint("RIGHT", host, "LEFT", -(gapPixels + Clear("LEFT")), 0)
+        else arrow:SetPoint("LEFT", host, "RIGHT", gapPixels + Clear("RIGHT"), 0) end
     end
 end
 

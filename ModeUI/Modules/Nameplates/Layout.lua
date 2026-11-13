@@ -105,6 +105,15 @@ function M:LayoutPlate(plate)
     end
 end
 
+-- Room taken beside the bar on one side ("LEFT" or "RIGHT") by the raid
+-- marker, with a 3px gap. Aura rows start past it and the target arrows past
+-- the aura rows (Auras.lua, Target.lua).
+function M:SideRoom(plate, side)
+    local db, px = self:Style(plate), plate.px or 1
+    if db.showRaidIcon and db.raidAnchor == side then return (plate.markSize or 0) + 3 * px end
+    return 0
+end
+
 -- Places an icon-like region (raid marker) by anchor: Top and Bottom anchors
 -- sit past whatever is above or below the bar, Left and Right beside the bar,
 -- Center in its middle.

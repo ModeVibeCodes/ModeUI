@@ -79,6 +79,18 @@ local function Clickable(region, kind, target, group, host)
     return hit
 end
 
+-- Text click areas cover the written text, not the whole line: text inside
+-- the bar is laid out as wide as the bar, and a click on the bar beside the
+-- text should reach the bar.
+local function FitText(hit, text)
+    local width = math.max(8, math.min(text:GetWidth(), text:GetStringWidth() + 4))
+    local justify = text:GetJustifyH()
+    local point = justify == "LEFT" and "LEFT" or justify == "RIGHT" and "RIGHT" or "CENTER"
+    hit:ClearAllPoints()
+    hit:SetPoint(point, text, point, 0, 0)
+    hit:SetSize(width, math.max(8, text:GetStringHeight() + 2))
+end
+
 -- The sample auras one group would show, as the game's filters would pick them.
 function M:SampleAuras(style, sample, group)
     local shown, settings = {}, style[group]
@@ -169,6 +181,8 @@ function M:RenderPreview(view)
                 plate:ClearAllPoints(); plate:SetPoint("TOPLEFT", view.frame, "TOP", x, -math.floor(top / px + 0.5) * px)
                 plate:Show()
                 self:PaintSample(plate, style, self.previewSamples[kind], progress)
+                FitText(view.targets[kind].name, plate.name)
+                FitText(view.targets[kind].healthText, plate.healthText)
                 caption:SetPoint("BOTTOM", view.frame, "BOTTOM", 0, HINT_HEIGHT + 2)
                 caption:SetText(L[self.previewSamples[kind].caption])
             else

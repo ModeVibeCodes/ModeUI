@@ -217,6 +217,7 @@ function methods:SetVerticalScroll(value) self.verticalScroll = value end
 function methods:GetVerticalScroll() return self.verticalScroll or 0 end
 function methods:EnableMouseWheel() end
 function methods:SetJustifyH(value) self.justifyH = value end
+function methods:GetJustifyH() return self.justifyH or "CENTER" end
 function methods:SetJustifyV(value) self.justifyV = value end
 function methods:SetFrameStrata(value) self.strata = value end
 function methods:SetFrameLevel(value) self.frameLevel = value end
