@@ -91,6 +91,10 @@ function M:SyncNative()
     for unit, spec in pairs(self.native) do
         if self:FrameOn(unit) and self.db[unit].hideBlizzard then Collect(spec, faded, released) end
     end
+    -- Blizzard's combo points (Camelot ComboFrame, pinned to the Target frame's
+    -- portrait) give way to ModeUI's while they are on.
+    local combo = self.db.comboPoints
+    if self:FrameOn("target") and combo.enabled and combo.hideBlizzard and Faded(_G.ComboFrame) then faded[_G.ComboFrame] = true end
     for region in pairs(self.nativeHidden) do if not faded[region] then Fade(self, region, false) end end
     for region in pairs(faded) do if not self.nativeHidden[region] then Fade(self, region, true) end end
     for frame in pairs(self.nativeMouse) do if not released[frame] then Release(self, frame, false) end end

@@ -103,4 +103,8 @@
         local tot=CreateFrame('Button',owner..'ToT',_G[owner]);tot:EnableMouse(true)
         for i=1,4 do CreateFrame('Frame',owner..'ToTDebuff'..i,tot):EnableMouse(true) end
     end
+    -- Forever's ComboFrame is pinned to the Target frame; combo points live on the target.
+    CreateFrame('Frame','ComboFrame',TargetFrame)
+    comboPoints=0
+    function GetComboPoints(unit,target) assert(unit=='player' and target=='target');return comboPoints end
     function Point(region,i) return {region:GetPoint(i or 1)} end

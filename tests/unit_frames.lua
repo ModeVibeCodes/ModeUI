@@ -42,6 +42,30 @@ world.run([====[
     assert(TargetFrameToT:GetAlpha()==0 and TargetFrameToT.mouse==false and TargetFrameToTDebuff1.mouse==false and TargetFrameToTDebuff4.mouse==false,'Blizzard Target of Target fades with the Target frame')
     TargetFrameToT:SetAlpha(1);assert(TargetFrameToT:GetAlpha()==0,'kept faded when Blizzard restores it')
 
+    -- Combo points ring the Target portrait (Rogue fixture): five sockets, each its
+    -- own StatusBar over (i-1, i), so a secret count fills them without comparisons.
+    local cb=t.combo;assert(cb and cb:IsShown() and cb.count==5 and not cb.points[6]:IsShown() and p.combo==nil)
+    assert(ComboFrame:GetAlpha()==0,'Blizzard combo points fade')
+    for i=1,5 do local lo,hi=cb.points[i].bar.low,cb.points[i].bar.high;assert(lo==i-1 and hi==i and cb.points[i].bar.value==0) end
+    comboPoints=3;FireEvent('UNIT_POWER_FREQUENT','player');assert(cb.points[3].bar.value==3 and cb.points[5].bar.value==3)
+    comboPoints=Secret('cp');FireEvent('COMBO_TARGET_CHANGED');assert(cb.points[1].bar.value.label=='cp','secret count straight to SetValue')
+    comboPoints=0;FireEvent('PLAYER_TARGET_CHANGED')
+    -- Pixel perfect on an arc around the portrait's centre, on its outer side (right).
+    local c1,c5=Point(cb.points[1]),Point(cb.points[5])
+    assert(c1[1]=='CENTER' and c1[2]==t.portrait and c1[4]>0 and c5[5]>c1[5],'from the lower outer end upward')
+    for i=1,5 do local q=Point(cb.points[i]);assert(q[4]==math.floor(q[4]) and q[5]==math.floor(q[5]) and cb.points[i].width%2==0) end
+    local r=35+3+5;assert(math.abs(math.sqrt(c1[4]^2+c1[5]^2)-r)<1,'radius: portrait, distance, half a point')
+    assert(cb.points[1].rim.vertexColor[1]==O.border[1] and Point(cb.points[1].bar)[4]==2)
+    assert(M:SetComboOption('arc','top') and math.abs(Point(cb.points[3])[4])<1 and Point(cb.points[3])[5]>0,'centred over the top')
+    assert(M:SetComboOption('size',14) and cb.points[1].width==14 and M:SetComboOption('size',10) and M:SetComboOption('arc','topOuter'))
+    assert(not M:SetComboOption('arc','sideways') and not M:SetComboOption('size',40),'validated')
+    assert(M:SetComboOption('hideBlizzard',false) and ComboFrame:GetAlpha()==1 and M:SetComboOption('hideBlizzard',true) and ComboFrame:GetAlpha()==0)
+    assert(M:SetComboOption('enabled',false) and not cb:IsShown() and ComboFrame:GetAlpha()==1,'off: Blizzard\'s come back')
+    assert(M:SetComboOption('enabled',true) and cb:IsShown())
+    -- Matching the Player never borrows combo settings; a Target without a portrait lines them up under the bars.
+    assert(M:SetFrameOption('player','showPortrait',false) and Point(cb.points[1])[1]=='TOPLEFT' and Point(cb.points[1])[2]==t.power)
+    assert(M:SetFrameOption('player','showPortrait',true) and Point(cb.points[1])[2]==t.portrait)
+
     -- Target of Target, Focus and Target of Focus: secure frames of their own,
     -- each replacing Blizzard's; Blizzard's Focus frame fades like the Target.
     local tt,fo,ft=M.frames.targettarget,M.frames.focus,M.frames.focustarget
@@ -357,6 +381,7 @@ world.run([====[
     assert(ghost.nameText.lift:GetText()=='Player Frame' and ghost.nameText.lift:IsShown() and ghost.levelText.lift:GetText()=='60','stand-in text has the lift too')
     assert(ghost.width==p.width and Near(RingTop(ghost).r,Soft(soft,0.35)[1]),'stand-in matches size and class ring')
     assert(Near(RingTop(M.ghosts.target).r,Soft(Soft(P.hostile),0.35)[1]),'target stand-in shows an enemy ring')
+    local gc=M.ghosts.target.combo;assert(gc:IsShown() and gc.points[3].bar.value==M.COMBO_SAMPLE and gc.points[5]:IsShown(),'stand-in shows sample combo points')
     assert(addon.PositionManager:SetOffsets('unitFramesPlayer',-300,-150))
     local point,gp=Point(p),Point(ghost)
     assert(point[1]==gp[1] and point[3]==gp[3] and point[4]==gp[4] and point[5]==gp[5] and p.scale==ghost.scale,'secure button copies the stand-in anchor at the same scale')
@@ -470,8 +495,8 @@ restored.run([====[
     if not addon.EnsureConfigPage then addon:ToggleConfig() end
     local page=addon:EnsureConfigPage('unitFrames')
     local titles={};for _,section in ipairs(page.sections) do titles[#titles+1]=section.title end
-    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Text','one tab per frame element; no Border tab')
-    assert(page.sectionTabs and #page.sectionTabs.buttons==7)
+    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Combo Points|Text','one tab per frame element; no Border tab')
+    assert(page.sectionTabs and #page.sectionTabs.buttons==8)
     local function Find(section,title)
         for _,row in ipairs(page.rows) do if row.section and row.section.title==section and row.settingsTitle==title then return row end end
     end
@@ -500,6 +525,9 @@ restored.run([====[
     assert(M:SetFrameOption('player','barWidth',200));page.unitFrameCopyFocus.scripts.OnClick()
     assert(M.db.focus.barWidth==200 and M.db.focus.portraitSide=='right','copies the Player look, keeps its side')
     page.unitFrameResetFocus.scripts.OnClick();assert(M.db.focus.barWidth==110 and M:ResetFrame('player'))
+    -- Combo Points: the Target's own settings, editable even while it matches the Player.
+    assert(page.unitFrameComboArc and page.unitFrameComboSize and Visible(Row('Combo Points','Arc Position')))
+    assert(M:SetComboOption('enabled',false) and not Visible(Row('Combo Points','Arc Position')) and M:SetComboOption('enabled',true))
     -- Editing picks one of the five frames, shared by every tab.
     assert(#page.unitFrameEditSelects==6)
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')

@@ -5,6 +5,21 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Combo points around the Target portrait
+
+November 13, 2026, per the owner: Blizzard's combo points stayed pinned to the
+faded Blizzard Target frame. The Target frame now draws its own (`Combo.lua`,
+the **Combo Points** tab): one round socket per point (Onyx rim, dark socket,
+lit fill) on an arc around the portrait's outer side, or in a row under the
+bars when the portrait is off. Settings live in `modules.unitFrames.comboPoints`
+(not per frame, so they stay editable while the Target matches the Player):
+`enabled`, `hideBlizzard` (fades Blizzard's `ComboFrame`), `arc` (Upper Outer,
+Outer Side, Lower Outer, Top, Bottom), `size` 10, `spacing` 3, `distance` 3,
+`activeColor`, `emptyColor`. Sizes are even pixel counts and centres are
+snapped, so the sockets sit on the pixel grid. Points show while the player is
+a Rogue or a Druid in Cat Form; the count may be secret and only reaches
+StatusBar `SetValue`.
+
 ## Small-frame defaults and attachment (layout version 13)
 
 November 13, 2026, per the owner: Target of Target defaults to no portrait,

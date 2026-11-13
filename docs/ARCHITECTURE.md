@@ -247,6 +247,7 @@ to widgets documented as accepting them.
 | `Level.lua` | `Domain.Level.Text(unit)` → `"60"`, `"60+"`, `"??"` or `""` |
 | `UnitColor.lua` | `Domain.UnitColor.Class(class)`, `.NativeClass(class)`, `.PlayerClass(unit)`, `.Reaction(unit)` → `"tapped"`, `"hostile"`, `"neutral"`, `"friendly"`; `.SetClassOverride(fn)` (Class Colors supplies the custom colors) |
 | `Portrait.lua` | `Domain.Portrait.Apply(icon, unit, style)`, `.SetIcon(icon, path)`, `.Exists(unit)` |
+| `ComboPoints.lua` | `Domain.ComboPoints.Read()` → ok, count (may be secret), `.Max()` (public; 0 without combo points), `.Active()` (a Rogue, or a Druid in Cat Form) |
 | `Cast.lua` | `Domain.Cast.Read(unit)` → nil or { channel, text, texture, startMs, endMs, notInterruptible } (may be secret); `.Now()` |
 | `RaidIcon.lua` | `Domain.RaidIcon.Apply(texture, unit)`: the marker through `SetSpriteSheetCell`, or hidden |
 | `Threat.lua` | `Domain.Threat.Status(unit)` → 0-3 or nil when unknown or secret |

@@ -185,4 +185,17 @@ function M.Initialize(db)
         assert(Kit.ValidBarTexture(frame.foregroundTexture, true) and Kit.ValidBarTexture(frame.backgroundTexture, false),
             "Invalid unit frame texture: " .. unit)
     end
+    M.ValidateTable(db, "comboPoints", M.comboDefaults, M.comboRanges, { arc = "comboArc" })
+end
+
+-- A nested settings table (combo points, and per-frame cast bar and auras):
+-- filled with defaults, then every range and choice checked.
+function M.ValidateTable(parent, key, defaults, ranges, choiceLists)
+    if parent[key] == nil then parent[key] = Copy(defaults) end
+    local t = parent[key]
+    assert(Public(t) and type(t) == "table", "Invalid unit frame settings: " .. key)
+    Fill(t, defaults, key .. ".")
+    for name, r in pairs(ranges) do assert(Ranged(t[name], r), "Invalid unit frame range: " .. key .. "." .. name) end
+    for name, list in pairs(choiceLists or {}) do assert(ALLOWED[list][t[name]], "Invalid unit frame choice: " .. key .. "." .. name) end
+    return t
 end

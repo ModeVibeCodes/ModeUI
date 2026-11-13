@@ -140,5 +140,15 @@ M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeig
 -- Keys that describe placement/identity rather than style; Copy Style skips them.
 M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true,
     attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true }
-M.defaults = { layoutVersion = M.LAYOUT_VERSION }
+-- Combo points around the Target frame's portrait (owner, November 13, 2026).
+-- Their own table, not per frame, so they stay editable while the Target
+-- matches the Player. Sizes are in the Target frame's units.
+M.comboDefaults = { enabled = true, hideBlizzard = true, arc = "topOuter", size = 10, spacing = 3, distance = 3,
+    activeColor = RGB(240, 84, 84), emptyColor = Copy(M.onyx.track) }
+M.comboRanges = { size = { 6, 24, 1 }, spacing = { 0, 12, 1 }, distance = { 0, 20, 1 } }
+-- Where the arc sits around the portrait. "outer" is the side away from the
+-- bars; without a portrait the points line up under the bars.
+M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer", label = "Outer Side" },
+    { id = "bottomOuter", label = "Lower Outer" }, { id = "top", label = "Top" }, { id = "bottom", label = "Bottom" } }
+M.defaults = { layoutVersion = M.LAYOUT_VERSION, comboPoints = Copy(M.comboDefaults) }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end

@@ -31,6 +31,19 @@ and confirmed by `C_Texture.GetAtlasInfo`; it is not confirmed in the Forever
 source. [Details](UNIT_FRAMES.md).
 
 
+## Unit frame combo points — November 13, 2026
+
+Forever's `Blizzard_UnitFrame/Camelot/ComboFrame.lua` parents `ComboFrame` to
+`TargetFrame`, centres it on the Target portrait and reads
+`GetComboPoints("player", "target")`. The Forever
+[UnitDocumentation](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/UnitDocumentation.lua)
+marks `GetComboPoints`, `UnitPower` and `UnitPowerMax` as secret when unit
+power is restricted. ModeUI passes the count only to StatusBar `SetValue`
+(one bar per point spanning `(i - 1, i)`), reads the maximum only when public
+(else five for a Rogue or Druid), and registers `COMBO_TARGET_CHANGED` (used by
+Camelot's `TargetBoundComboPointBar`) through `pcall`. Fading `ComboFrame`
+uses the same alpha hook as the other native frames. Unverified in game.
+
 ## Interface nameplates — November 12, 2026
 
 Source: the user's local copy of Blizzard's interface code, `WoWUI-live`

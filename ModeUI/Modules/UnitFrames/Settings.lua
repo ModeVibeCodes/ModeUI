@@ -99,23 +99,30 @@ function M:CreateConfigPage(parent)
     for _, unit in ipairs(M.units) do frameChoices[#frameChoices + 1] = { id = unit, label = M.labels[unit] } end
     function page.SetEditing(unit) if M.labels[unit] then editing = unit; page:Refresh(); page:Layout() end end
     page.unitFrameEditSelects = {}
-    local function Tab(title, build)
+    -- `own`: the tab edits settings every frame keeps for itself (cast bar,
+    -- auras), so a matched Target edits them too.
+    local function Tab(title, build, own)
         page:Section(title, nil, false)
         local row = page:Row("Editing", 48, { "player", "target", "focus", "frame" })
         page.unitFrameEditSelects[#page.unitFrameEditSelects + 1] = SelectIn(row, 260, function() return frameChoices end,
             Unit, page.SetEditing)
-        When(function() return editing == "target" and db().enabled end, function()
-            Toggles({ { "Match Player Frame", "matchPlayer" } })
-        end)
-        When(Matched, function()
-            Toggles({ { "Mirror Player Text", "mirrorText" } })
-            Note("Target Matches Player", "Uses the Player frame's look and text layout. Turn on Mirror Player Text to flip the text alignment to the other side, or turn off Match Player Frame to customize the Target separately.", 52)
-        end)
+        if not own then
+            When(function() return editing == "target" and db().enabled end, function()
+                Toggles({ { "Match Player Frame", "matchPlayer" } })
+            end)
+            When(Matched, function()
+                Toggles({ { "Mirror Player Text", "mirrorText" } })
+                Note("Target Matches Player", "Uses the Player frame's look and text layout. Turn on Mirror Player Text to flip the text alignment to the other side, or turn off Match Player Frame to customize the Target separately.", 52)
+            end)
+        end
         When(function() return not db().enabled end, function()
             Note("Frame Hidden", "This frame is turned off. Turn it on in the Frames tab to customize it.")
         end)
-        When(function() return db().enabled and not Matched() end, build)
+        When(function() return db().enabled and (own or not Matched()) end, build)
     end
+    -- Helpers the other tab files (SettingsExtra.lua) build with.
+    local ui = { page = page, When = When, SelectIn = SelectIn, Select = Select, Toggles = Toggles, Note = Note, Tab = Tab,
+        Editing = Unit, db = db }
 
     Tab("Layout", function()
         -- Target of Target and Target of Focus can attach to their parent frame
@@ -212,6 +219,8 @@ function M:CreateConfigPage(parent)
             end)
         end)
     end)
+
+    M:BuildComboTab(ui)
 
     Tab("Text", function()
         local _, refresh = W.FontDropdown(page:Row("Font", 42), owner); page.refreshers[#page.refreshers + 1] = refresh

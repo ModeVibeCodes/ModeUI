@@ -26,6 +26,28 @@ function M:SetFrameOption(unit, key, value)
     local frame = Copy(self.db[unit]); frame[key] = Copy(value)
     return Commit(self, unit, frame)
 end
+-- Nested settings: `path` leads from the module's settings to a table, such as
+-- { "comboPoints" }; the table is updated in place, like a frame's.
+function M:SetNestedOption(path, key, value)
+    if not self:CanConfigure() then return false end
+    local function Walk(root)
+        local t = root
+        for _, k in ipairs(path) do t = type(t) == "table" and t[k] or nil end
+        return type(t) == "table" and t or nil
+    end
+    local live = Walk(self.db)
+    if not live or live[key] == nil then return false end
+    local copy = Copy(self.db)
+    Walk(copy)[key] = Copy(value)
+    if not pcall(self.Initialize, copy) then return false end
+    local fresh = Walk(copy)
+    for k in pairs(live) do live[k] = nil end
+    for k, v in pairs(fresh) do live[k] = v end
+    self:Refresh()
+    if self.page then self.page:Refresh(); self.page:Layout() end
+    return true
+end
+function M:SetComboOption(key, value) return self:SetNestedOption({ "comboPoints" }, key, value) end
 function M:ResetFrame(unit)
     if not self:CanConfigure() or not self.labels[unit] then return false end
     local frame = Copy(self.frameDefaults[unit])
@@ -145,6 +167,9 @@ function M:SetEvents(on)
         "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         if on then f:RegisterEvent(event) else f:UnregisterEvent(event) end
     end
+    -- Forever moves combo points with the target (Camelot TargetBoundComboPointBar);
+    -- guarded, since RegisterEvent errors on an event a client lacks.
+    if on then pcall(f.RegisterEvent, f, "COMBO_TARGET_CHANGED") else pcall(f.UnregisterEvent, f, "COMBO_TARGET_CHANGED") end
 end
 
 -- Secure frames can only be shown, hidden, moved or resized outside combat;
@@ -184,11 +209,15 @@ function M:OnEvent(event, unit)
     elseif event == "PLAYER_FOCUS_CHANGED" then self:Update("focus"); self:Update("focustarget")
     elseif event == "PLAYER_ENTERING_WORLD" or event == "PORTRAITS_UPDATED" then self:UpdateAll()
     elseif event == "UI_SCALE_CHANGED" or event == "DISPLAY_SIZE_CHANGED" then self:Refresh()
+    elseif event == "COMBO_TARGET_CHANGED" then self:UpdateCombo()
     elseif event == "UNIT_TARGET" then
         if unit == "target" or unit == "focus" then self:Update(unit .. "target") end
     elseif unit == "player" or unit == "target" or unit == "focus" then
         if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" or event == "UNIT_CONNECTION" then self:UpdateHealth(unit)
-        elseif event == "UNIT_POWER_FREQUENT" or event == "UNIT_MAXPOWER" or event == "UNIT_DISPLAYPOWER" then self:UpdatePower(unit)
+        elseif event == "UNIT_POWER_FREQUENT" or event == "UNIT_MAXPOWER" or event == "UNIT_DISPLAYPOWER" then
+            self:UpdatePower(unit)
+            -- Combo points are the player's power (Cat Form changes it too).
+            if unit == "player" then self:UpdateCombo() end
         elseif event == "UNIT_PORTRAIT_UPDATE" or event == "UNIT_MODEL_CHANGED" then self:UpdatePortrait(unit)
         else self:Update(unit) end
     end
