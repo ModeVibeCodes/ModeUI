@@ -7,7 +7,8 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Forever runs the mainline client, so unit values can be secret. They are only
 -- handed to widgets/formatters Blizzard documents as accepting secret values;
 -- never compared, tested or used in arithmetic here. See docs/UNIT_FRAMES.md.
--- Files: Init (this), Migrations, Driver, Native, Layout, Build, Update, Settings.
+-- Files: Init (this), TextSlots, Migrations, Driver, Native, Layout, Texts, Build, Update,
+-- Combo, CastBar, Auras, Status, Preview, Settings, SettingsExtra, SettingsText.
 local L = addon.L
 local M = { title = L["Unit Frames"], category = "interface", defaultEnabled = true,
     configDescription = L["Player, Target, Target of Target and Focus frames in the Onyx look. Configure outside combat."],
@@ -50,7 +51,8 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 14: Mode Slate bar backgrounds at 70%.
 -- Version 15: the level in the health bar's bottom corner; a matched Target mirrors the Player.
 -- Version 16: one border (no black gap); the name sits on the top border.
-M.LAYOUT_VERSION = 16
+-- Version 17: text slots replace the name, level, health and power text keys.
+M.LAYOUT_VERSION = 17
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -66,19 +68,12 @@ M.nameAccents = { sky = RGB(145, 198, 255), champagne = RGB(242, 223, 184), lila
 M.ACCENT = M.nameAccents.sky
 
 M.choices = {
-    healthText = { { id = "percent", label = "Percent" }, { id = "current", label = "Current Health" },
-        { id = "both", label = "Current and Percent" }, { id = "none", label = "None" } },
-    powerText = { { id = "none", label = "None" }, { id = "percent", label = "Percent" },
-        { id = "current", label = "Current Power" }, { id = "both", label = "Current and Percent" } },
     position = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     side = { { id = "left", label = "Left" }, { id = "right", label = "Right" } },
     portraitStyle = { { id = "portrait", label = "Character Portrait" }, { id = "class", label = "Class Icon" } },
     ring = { { id = "class", label = "Class Gradient" }, { id = "border", label = "Default" }, { id = "custom", label = "Custom" } },
-    namePosition = { { id = "border", label = "On the Border" }, { id = "above", label = "Above Frame" }, { id = "bar", label = "On Health Bar" } },
     nameColor = { { id = "sky", label = "Sky" }, { id = "champagne", label = "Champagne" }, { id = "lilac", label = "Lilac" },
         { id = "frost", label = "Frost" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
-    level = { { id = "badge", label = "Shown" }, { id = "none", label = "Hidden" } },
-    levelPosition = { { id = "corner", label = "Bottom Corner" }, { id = "health", label = "Beside Health Text" } },
     healthColor = { { id = "default", label = "Default" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     powerColor = { { id = "type", label = "Power Type" }, { id = "custom", label = "Custom" } },
     attachPoint = { { id = "bottomright", label = "Below, Right Edges" }, { id = "bottomleft", label = "Below, Left Edges" },
@@ -86,11 +81,9 @@ M.choices = {
     fill = { { id = "standard", label = "Left to Right" }, { id = "reverse", label = "Right to Left" } },
 }
 -- Setting key -> choice list.
-M.choiceKeys = { healthText = "healthText", powerText = "powerText", healthTextPosition = "position",
-    powerTextPosition = "position", nameAlign = "position", portraitSide = "side", portraitStyle = "portraitStyle",
-    portraitRing = "ring", namePosition = "namePosition", nameColorMode = "nameColor", levelStyle = "level",
-    healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint", fillDirection = "fill",
-    levelPosition = "levelPosition" }
+M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring",
+    nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
+    fillDirection = "fill" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -115,18 +108,12 @@ local function Frame(side, extra)
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
         portraitScale = 150, -- portrait diameter as a % of the bar block
         portraitRing = "class", portraitRingColor = Copy(M.ACCENT),
-        showName = true, namePosition = "border", nameAlign = "RIGHT", nameFontSize = 12,
-        nameColorMode = "sky", nameColor = Copy(M.ACCENT), nameOffsetX = 0, nameOffsetY = 0,
+        -- The color of names in text slots (TextSlots.lua places every text).
+        nameColorMode = "sky", nameColor = Copy(M.ACCENT),
         -- Class/reaction colors are blended this far toward white (pastel).
         classSoftness = 40,
-        levelStyle = "badge", levelFontSize = 11, levelColor = Copy(M.palette.muted), levelOffsetX = 0, levelOffsetY = 0,
-        -- Where the level sits: the bottom corner of the health bar on the portrait
-        -- side, clear of the portrait (owner, November 13, 2026), or beside the health text.
-        levelPosition = "corner",
         healthColorMode = "default", healthColor = Copy(M.palette.green),
-        healthText = "percent", healthTextPosition = "RIGHT", healthFontSize = 11, healthTextOffsetX = 0, healthTextOffsetY = 0,
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
-        powerText = "none", powerTextPosition = "CENTER", powerFontSize = 9, powerTextOffsetX = 0, powerTextOffsetY = 0,
         font = "game", fontMedia = "Expressway", outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
         -- a lighter second shadow 2px out (owner, layout version 11).
@@ -140,25 +127,20 @@ local function Frame(side, extra)
     return frame
 end
 -- Target of Target (owner, November 13, 2026): small, no portrait or level,
--- 75% scale, the name inside the health bar on the left, attached under the
--- Target frame's bottom-right corner. Target of Focus is the same under the
--- Focus frame, and Focus is the same frame at 90% scale, placed on its own.
+-- 75% scale, the name inside the health bar on the left (its text slots,
+-- TextSlots.lua), attached under the Target frame's bottom-right corner.
+-- Target of Focus is the same under the Focus frame, and Focus is the same
+-- frame at 90% scale, placed on its own.
 local function Small(scale, attach)
-    return { barWidth = 110, healthHeight = 16, powerHeight = 6, nameFontSize = 11, healthFontSize = 10, levelStyle = "none",
-        scale = scale, showPortrait = false, namePosition = "bar", nameAlign = "LEFT", attach = attach }
+    return { barWidth = 110, healthHeight = 16, powerHeight = 6, scale = scale, showPortrait = false, attach = attach }
 end
 -- The Target mirrors the Player by default: health text on the left, level in
 -- its bottom right corner (owner, November 13, 2026).
 M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse" }),
     targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false)), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
-    powerHeight = { 2, 30, 1 }, nameFontSize = { 8, 24, 1 }, healthFontSize = { 8, 24, 1 }, powerFontSize = { 6, 20, 1 },
-    portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 }, levelFontSize = { 6, 24, 1 },
-    barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 },
-    nameOffsetX = { -100, 100, 1 }, nameOffsetY = { -100, 100, 1 }, levelOffsetX = { -100, 100, 1 }, levelOffsetY = { -100, 100, 1 },
-    healthTextOffsetX = { -100, 100, 1 }, healthTextOffsetY = { -100, 100, 1 },
-    powerTextOffsetX = { -100, 100, 1 }, powerTextOffsetY = { -100, 100, 1 },
-    attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
+    powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 },
+    barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
 -- Keys that describe placement/identity rather than style; Copy Style skips them.
 M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true,
     attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true, fillDirection = true }

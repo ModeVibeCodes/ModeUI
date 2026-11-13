@@ -13,7 +13,12 @@ Unit frames pass these values only to StatusBar `SetMinMaxValues`/`SetValue`
 and FontString `SetText`/`SetFormattedText`, all `AllowedWhenTainted`. Percent
 text uses `UnitHealthPercent` with `CurveConstants.ScaleTo100`.
 `AbbreviateNumbers` has no generated secret-argument documentation; it is
-pcall-guarded and falls back to percent. Secure unit buttons are created,
+pcall-guarded and falls back to percent. The Health Deficit text slot reads
+`UnitHealthMissing` (`SecretReturns`, on the Forever branch too) and builds its
+text with `C_StringUtil.TruncateWhenZero` and `C_StringUtil.WrapString`, both
+`AllowedWhenTainted` (StringUtilDocumentation.lua, mainline 12.1.5 and the
+Forever branch); every call is pcall-guarded and the slot stays empty on a
+client without them. Secure unit buttons are created,
 shown, moved and resized only outside combat. Position Manager refuses
 protected frames, so Edit Mode moves a plain stand-in whose anchor the button
 copies outside combat. Native player/target art, and the Target of Target

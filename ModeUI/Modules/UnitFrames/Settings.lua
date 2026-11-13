@@ -2,8 +2,8 @@ local _, addon = ...
 local M, W, T = addon.UnitFrames, addon.ConfigWidgets, addon.InterfaceTheme
 if not M then return end
 
--- One tab per frame element (Layout, Portrait, Name & Level, Health, Power,
--- Text); the Onyx rim and gap are locked, so there is no Border
+-- One tab per frame element (Layout, Portrait, Health, Power, Cast Bar,
+-- Auras, Combo Points, Text); the Onyx rim is locked, so there is no Border
 -- tab. Each element tab edits the Player or the Target, picked by the Editing
 -- switch at its top; the choice is shared by every tab for this session.
 function M:CreateConfigPage(parent)
@@ -133,7 +133,7 @@ function M:CreateConfigPage(parent)
     end
     -- Helpers the other tab files (SettingsExtra.lua) build with.
     local ui = { page = page, When = When, SelectIn = SelectIn, Select = Select, Toggles = Toggles, Note = Note, Tab = Tab,
-        Editing = Unit, db = db, Mark = Mark }
+        Editing = Unit, db = db, Mark = Mark, Choice = Choice, Slider = Slider, Color = Color, owner = owner }
 
     Tab("Layout", function()
         -- Target of Target and Target of Focus can attach to their parent frame
@@ -184,41 +184,12 @@ function M:CreateConfigPage(parent)
         end)
     end, false, function() M:BuildStatusControls(ui) end)
 
-    Tab("Name & Level", function()
-        page:Group("Name")
-        Toggles({ { "Show Name", "showName" } }); Mark("name")
-        When(function() return db().showName end, function()
-            Choice("Name Position", "namePosition"); Choice("Name Alignment", "nameAlign")
-            -- Plain text: Sky by default, or Champagne, Lilac, Frost, class or custom.
-            Choice("Name Color", "nameColorMode")
-            When(function() return db().nameColorMode == "custom" end, function() Color("Custom Name Color", "nameColor") end)
-            Slider("Name Font Size", "nameFontSize")
-            Slider("Name Offset X", "nameOffsetX"); Slider("Name Offset Y", "nameOffsetY")
-        end)
-        -- Pastel: class-colored names, class health and the class gradient ring all use it.
-        Slider("Class Color Softness", "classSoftness", "%")
-        page:Group("Level")
-        Toggles({ { "Show Level", "levelStyle", get = function() return db().levelStyle ~= "none" end,
-            set = function(v) M:SetFrameOption(editing, "levelStyle", v and "badge" or "none") end } })
-        When(function() return db().levelStyle ~= "none" end, function()
-            Choice("Level Position", "levelPosition")
-            Slider("Level Font Size", "levelFontSize"); Color("Level Color", "levelColor")
-            Slider("Level Offset X", "levelOffsetX"); Slider("Level Offset Y", "levelOffsetY")
-        end)
-    end)
-
     Tab("Health", function()
         page:Group("Health Bar")
         Slider("Health Bar Height", "healthHeight"); Mark("health")
         -- Default is Onyx #1C1E21; the empty bar and background stay Onyx.
         Choice("Health Color", "healthColorMode")
         When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
-        page:Group("Health Text")
-        Choice("Health Text", "healthText")
-        When(function() return db().healthText ~= "none" end, function()
-            Choice("Health Text Position", "healthTextPosition"); Slider("Health Font Size", "healthFontSize")
-            Slider("Health Text Offset X", "healthTextOffsetX"); Slider("Health Text Offset Y", "healthTextOffsetY")
-        end)
     end)
 
     Tab("Power", function()
@@ -228,12 +199,6 @@ function M:CreateConfigPage(parent)
             Slider("Power Bar Height", "powerHeight")
             Choice("Power Color", "powerColorMode")
             When(function() return db().powerColorMode == "custom" end, function() Color("Custom Power Color", "powerColor") end)
-            page:Group("Power Text")
-            Choice("Power Text", "powerText")
-            When(function() return db().powerText ~= "none" end, function()
-                Choice("Power Text Position", "powerTextPosition"); Slider("Power Font Size", "powerFontSize")
-                Slider("Power Text Offset X", "powerTextOffsetX"); Slider("Power Text Offset Y", "powerTextOffsetY")
-            end)
         end)
     end)
 
@@ -241,21 +206,9 @@ function M:CreateConfigPage(parent)
     M:BuildAurasTab(ui)
     M:BuildComboTab(ui)
 
-    Tab("Text", function()
-        local _, refresh = W.FontDropdown(page:Row("Font", 42), owner); page.refreshers[#page.refreshers + 1] = refresh
-        Toggles({ { "Text Outline", "outline" } })
-        -- One choice for both shadows: None, Crisp (1px) or Lifted (1px plus a lighter one under it).
-        local choices = {}
-        for _, choice in ipairs(addon.Kit.SHADOW_CHOICES) do choices[#choices + 1] = { label = choice.label, value = choice.id, width = 96 } end
-        local _, refresh = W.Exclusive(page:Row("Text Shadow", 48), choices, function() return addon.Kit.ShadowMode(db()) end, function(mode)
-            local shadow, lifted = addon.Kit.ShadowKeys(mode)
-            M:SetFrameOption(editing, "shadow", shadow); M:SetFrameOption(editing, "liftedShadow", lifted)
-        end)
-        page.refreshers[#page.refreshers + 1] = refresh
-        Color("Text Color", "textColor")
-    end)
+    M:BuildTextTab(ui)
 
-    local note = W.Label(page:Row("About Unit Frames", 190), "Each tab customizes one part of the frame; use Editing at the top of a tab to pick the Player, Target, Target of Target, Focus or Target of Focus frame. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside a pixel-perfect slate rim and black gap, with a hairline between health and power. The rim and gap are fixed. Each bar has a foreground (fill) and background (empty bar) texture and opacity; the background is 25% by default, so the world shows through the empty part. Health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text layout, optionally mirrored. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. The preview above shows the frame you are editing; click a part of it to open its settings. Hiding a Blizzard frame only fades its main art and bars, so pet frames and other Blizzard parts keep working; the Cast Bar and Combo Points tabs can hide Blizzard's cast bars and combo points too; Blizzard's Target of Target and Target of Focus fade with the Target and Focus frames they sit on. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
+    local note = W.Label(page:Row("About Unit Frames", 190), "Each tab customizes one part of the frame; use Editing at the top of a tab to pick the Player, Target, Target of Target, Focus or Target of Focus frame. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside one crisp, pixel-perfect rim, with a hairline between health and power. The rim is fixed. Each bar has a foreground (fill) and background (empty bar) texture and opacity; the background is Mode Slate at 70% by default. The Text tab picks what each text spot shows: nine on the health bar, one on the top border and three on the power bar, each with its own font size, color and offsets. Health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text slots, optionally mirrored to the other side. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. The preview above shows the frame you are editing; click a part of it to open its settings. Hiding a Blizzard frame only fades its main art and bars, so pet frames and other Blizzard parts keep working; the Cast Bar and Combo Points tabs can hide Blizzard's cast bars and combo points too; Blizzard's Target of Target and Target of Focus fade with the Target and Focus frames they sit on. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
     note:SetWordWrap(true); page:FooterNote(note)
     W.PinnedSectionTabs(page)
     page:Finish(); return page

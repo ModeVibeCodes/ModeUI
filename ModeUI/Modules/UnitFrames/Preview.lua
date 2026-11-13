@@ -61,7 +61,8 @@ local function MakeClickable(face)
     face.jumpReady = true
     Clickable(face.health, "health"); Clickable(face.power, "power"); Clickable(face.portrait, "portrait")
     Clickable(face.castBox, "cast")
-    Clickable(face.nameText, "name", nil, face.textLayer)
+    -- Each text opens the Text tab on its own slot.
+    for slot, text in pairs(face.texts) do Clickable(text, "text", slot, face.textLayer) end
     if face.combo then Clickable(face.combo, "combo") end
 end
 
@@ -109,11 +110,13 @@ function M:CreateConfigPreview(parent)
     return view
 end
 
--- Opens the settings for a part of the sample: its tab, and the aura group.
+-- Opens the settings for a part of the sample: its tab, and the aura group
+-- or text slot.
 function M:JumpTo(target, group)
     local page = self.page
     if not page or not page.jumpTargets or not page.jumpTargets[target] then return false end
-    if group and page.SetAuraGroup then page.SetAuraGroup(group) end
+    if group and target == "auras" and page.SetAuraGroup then page.SetAuraGroup(group) end
+    if group and target == "text" and page.SetTextSlot then page.SetTextSlot(group) end
     page:Reveal(page.jumpTargets[target])
     return true
 end

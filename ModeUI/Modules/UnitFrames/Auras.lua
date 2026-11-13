@@ -6,8 +6,8 @@ if not M then return end
 -- rows start at a corner of the health bar's span (Top Right: the first icon's
 -- right edge on the health bar's right edge) and stack away from the frame, so
 -- they line up with the bars and never reach over the portrait. Top rows sit
--- just over the bar block, or over the name when it is above the frame on that
--- side; bottom rows sit under the bars, or under a cast bar below them.
+-- just over the bar block, or over the border text when it is on that side;
+-- bottom rows sit under the bars, or under a cast bar below them.
 -- Which auras show is a game filter string and their fields may be secret
 -- (Shared/Domain/Auras.lua); icons are Kit.AuraIcon in the Mode look, with
 -- the game's aura tooltip on hover.
@@ -69,8 +69,10 @@ function M:AuraOrigin(f, unit, adb)
     local gap = 2 * px
     if adb.anchor:find("^TOP") then
         local side = adb.anchor:find("RIGHT") and "RIGHT" or "LEFT"
-        local nameAbove = fdb.showName and fdb.namePosition ~= "bar" and (fdb.nameAlign == side or fdb.nameAlign == "CENTER")
-        if nameAbove then return true, math.max(g.pad + gap, Round(self:NameBottom(fdb, g)) + Snap(fdb.nameFontSize + 2) + gap) end
+        local s, _, align = self:SlotSettings(fdb, "border")
+        if s.content ~= "none" and (align == side or align == "CENTER") then
+            return true, math.max(g.pad + gap, Round(self:BorderBottom(g, s.size, s.y)) + Snap(s.size + 2) + gap)
+        end
         return true, g.pad + gap
     end
     local cast = self.db[unit].castBar

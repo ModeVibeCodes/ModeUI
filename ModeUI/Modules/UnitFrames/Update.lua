@@ -2,15 +2,12 @@ local _, addon = ...
 local M = addon.UnitFrames
 if not M then return end
 
--- Colors and live unit data: names, levels, health, power and portraits.
+-- Colors and live unit data: health, power and portraits; the text slots
+-- (names, levels, values) are filled by Texts.lua.
 local P, ONYX = M.palette, M.onyx
 local Kit, Domain = addon.Kit, addon.Domain
 local UnitColor, Portrait = Domain.UnitColor, Domain.Portrait
-local Lighten, Scale, Gradient, Write = Kit.Lighten, Kit.Scale, Kit.Gradient, Kit.Write
-
-local function SetName(f, text, color)
-    Write(f.nameText, text); f.nameText:SetTextColor(color[1], color[2], color[3], 1)
-end
+local Lighten, Scale, Gradient = Kit.Lighten, Kit.Scale, Kit.Gradient
 
 -- Blends a class/reaction color toward white by the frame's Class Color
 -- Softness (pastel; 0 keeps the original color).
@@ -84,12 +81,7 @@ function M:PaintSample(g, unit)
     g.health:SetMinMaxValues(0, 100); g.health:SetValue(75)
     local power = fdb.powerColorMode == "custom" and fdb.powerColor or P.mana
     g.power:SetMinMaxValues(0, 100); g.power:SetValue(60); g.power:SetStatusBarColor(power[1], power[2], power[3], alpha)
-    SetName(g, self.titles[unit], self:NameColor(unit, identity))
-    Write(g.levelText, "60")
-    local mode = fdb.healthText
-    Write(g.healthText, mode == "current" and "3,450" or mode == "both" and "3,450 · 75%" or "75%")
-    local pmode = fdb.powerText
-    Write(g.powerText, pmode == "current" and "1,200" or pmode == "both" and "1,200 · 60%" or "60%")
+    self:PaintTextSample(g, unit, identity)
     if fdb.showPortrait then
         if unit == "player" then self:PaintPortrait(g, unit, "player") else Portrait.SetIcon(g.portrait.icon, Portrait.UNKNOWN_ICON) end
     end
@@ -99,7 +91,7 @@ function M:PaintSample(g, unit)
     self:PaintStatusSample(g, unit)
 end
 
-local Health, Power, Name, Level = Domain.Health, Domain.Power, Domain.Name, Domain.Level
+local Health, Power = Domain.Health, Domain.Power
 
 function M:UpdateHealth(unit)
     local f = self.frames and self.frames[unit]
@@ -109,27 +101,23 @@ function M:UpdateHealth(unit)
     if okValue then pcall(f.health.SetValue, f.health, value) end
     local color = self:HealthColor(unit)
     f.health:SetStatusBarColor(color[1], color[2], color[3], self:FrameDB(unit).barForegroundOpacity / 100)
-    local mode = self:FrameDB(unit).healthText
-    if mode == "none" then return end
-    -- Objects (pickups, interactables) have no health to show.
-    if Health.IsObject(unit) then Write(f.healthText, ""); return end
-    local state = Health.State(unit)
-    if state then Write(f.healthText, state)
-    else Kit.ValueText(f.healthText, mode, Health.Percent, unit, okValue, value) end
+    self:UpdateHealthTexts(f, unit, okValue, value)
 end
 
 function M:UpdatePower(unit)
     local f = self.frames and self.frames[unit]
     local fdb = self:FrameDB(unit)
-    if not f or not self:FrameOn(unit) or not fdb.showPower then return end
+    if not f or not self:FrameOn(unit) then return end
+    -- Power texts can sit on the health bar, so they update without a power bar.
+    if not fdb.showPower and #f.textKinds.power == 0 then return end
     local powerType, token, okMax, max, okValue, value = Power.Read(unit)
-    if okMax then pcall(f.power.SetMinMaxValues, f.power, 0, max) end
-    if okValue then pcall(f.power.SetValue, f.power, value) end
-    local color = fdb.powerColorMode == "custom" and fdb.powerColor
-        or Power.Color(token)
-    f.power:SetStatusBarColor(color[1], color[2], color[3], fdb.barForegroundOpacity / 100)
-    Kit.ValueText(f.powerText, fdb.powerText, function(u, curve) return Power.Percent(u, powerType, curve) end,
-        unit, okValue, value)
+    if fdb.showPower then
+        if okMax then pcall(f.power.SetMinMaxValues, f.power, 0, max) end
+        if okValue then pcall(f.power.SetValue, f.power, value) end
+        local color = fdb.powerColorMode == "custom" and fdb.powerColor or Power.Color(token)
+        f.power:SetStatusBarColor(color[1], color[2], color[3], fdb.barForegroundOpacity / 100)
+    end
+    self:UpdatePowerTexts(f, unit, powerType, okValue, value)
 end
 
 function M:UpdatePortrait(unit)
@@ -138,15 +126,7 @@ function M:UpdatePortrait(unit)
     self:PaintPortrait(f, unit); self:PaintRing(f, unit)
 end
 
-function M:UpdateText(unit)
-    local f, fdb = self.frames[unit], self:FrameDB(unit)
-    if fdb.showName then
-        SetName(f, Name.Get(unit), self:NameColor(unit))
-    end
-    if fdb.levelStyle ~= "none" then
-        Write(f.levelText, Level.Text(unit))
-    end
-end
+function M:UpdateText(unit) self:UpdateNameTexts(self.frames[unit], unit) end
 
 function M:Update(unit)
     local f = self.frames and self.frames[unit]

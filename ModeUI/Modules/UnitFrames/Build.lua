@@ -5,7 +5,7 @@ if not M then return end
 -- Frame faces, the secure unit buttons and their Edit Mode stand-ins.
 local Number, Kit = M.Number, addon.Kit
 local CIRCLE_MASK = M.CIRCLE_MASK
-local Bar, Text, Circle = Kit.Bar, Kit.Text, Kit.Circle
+local Bar, Circle = Kit.Bar, Kit.Circle
 
 -- One face for both the secure button and its Edit Mode/preview stand-in.
 -- Bar block: a 2px rim, a 2px black gap one rim in, then the bars. The
@@ -42,8 +42,7 @@ function M:BuildFace(f)
     end
     f.textLayer = CreateFrame("Frame", nil, f)
     f.textLayer:SetAllPoints()
-    f.nameText, f.levelText, f.healthText, f.powerText = Text(f.textLayer), Text(f.textLayer), Text(f.textLayer), Text(f.textLayer)
-    for _, text in ipairs({ f.nameText, f.levelText, f.healthText, f.powerText }) do text.lift = Text(f.textLayer, "ARTWORK") end
+    self:BuildTexts(f)
     if f.unit == "target" then self:BuildCombo(f) end
     self:BuildCast(f)
     self:BuildAuras(f)
