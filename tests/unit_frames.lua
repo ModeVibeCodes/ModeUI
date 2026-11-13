@@ -39,6 +39,8 @@ world.run([====[
     assert(p.attributes.unit=='player' and t.attributes['*type2']=='togglemenu' and p.clickRegistration=='AnyUp')
     assert(watched[p] and watched[t])
     assert(PlayerFrame.PlayerFrameContainer:GetAlpha()==0 and TargetFrame.mouse==false,'native art faded')
+    assert(TargetFrameToT:GetAlpha()==0 and TargetFrameToT.mouse==false and TargetFrameToTDebuff1.mouse==false and TargetFrameToTDebuff4.mouse==false,'Blizzard Target of Target fades with the Target frame')
+    TargetFrameToT:SetAlpha(1);assert(TargetFrameToT:GetAlpha()==0,'kept faded when Blizzard restores it')
 
     -- Onyx frame: round portrait cap over one rounded bar block, 2px rim + 2px gap, 1px hairline.
     local tex=function(key) return (addon.Media:GetTexture(key)) end
@@ -292,7 +294,10 @@ world.run([====[
     assert(M:SetFrameOption('target','enabled',false))
     assert(not watched[t] and not t:IsShown() and TargetFrame.TargetFrameContainer:GetAlpha()==1 and TargetFrame.mouse==true)
     assert(TargetFrame.TargetFrameContent:GetAlpha()==0.9,'original native alpha restored')
+    assert(TargetFrameToT:GetAlpha()==1 and TargetFrameToT.mouse==true and TargetFrameToTDebuff2.mouse==true,'Target of Target and its debuffs restored')
     assert(M:SetFrameOption('target','enabled',true) and watched[t])
+    assert(TargetFrameToT:GetAlpha()==0 and M:SetFrameOption('target','hideBlizzard',false) and TargetFrameToT:GetAlpha()==1)
+    assert(M:SetFrameOption('target','hideBlizzard',true) and TargetFrameToT:GetAlpha()==0,'Hide Blizzard Target Frame covers its Target of Target')
     testLockdown=true;testCombat=true
     addon:SetModuleEnabled('unitFrames',false)
     assert(M.pending and watched[p],'disable deferred in combat')

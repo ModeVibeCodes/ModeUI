@@ -540,10 +540,14 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
   `positions` table.
 - **Native frames.** "Hide Blizzard … Frame" sets the alpha of the native
   Container and Content parts to 0 (re-applied if Blizzard restores it) and
-  disables the native frame's mouse input. Nothing is reparented and no events
-  are unregistered, so the pet frame, combo points/class resources, target auras,
-  target cast bar and target of target keep working. Turning the option or
-  module off restores the saved alpha and mouse input outside combat.
+  disables the native frame's mouse input. Blizzard's Target of Target
+  (`TargetFrameToT`) is a child of the Target frame
+  (`TargetFrameMixin:CreateTargetofTarget`), so it would float on its own: it
+  fades whole with the Target frame, and it and its debuff icons release the
+  mouse. Nothing is reparented and no events are unregistered, so the pet
+  frame, combo points/class resources, target auras and target cast bar keep
+  working. Turning the option or module off restores the saved alpha and mouse
+  input outside combat (`Native.lua`).
 - **Combat.** Show/hide, size, position, unit-watch and native-frame changes
   are protected. Requests made in combat are kept and applied on
   `PLAYER_REGEN_ENABLED`. Settings controls refuse changes in combat. Health,

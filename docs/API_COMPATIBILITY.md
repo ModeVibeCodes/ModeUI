@@ -16,7 +16,8 @@ text uses `UnitHealthPercent` with `CurveConstants.ScaleTo100`.
 pcall-guarded and falls back to percent. Secure unit buttons are created,
 shown, moved and resized only outside combat. Position Manager refuses
 protected frames, so Edit Mode moves a plain stand-in whose anchor the button
-copies outside combat. Native player/target art is faded (alpha only) rather
+copies outside combat. Native player/target art, and the Target of Target
+(`TargetFrameToT`, a child of `TargetFrame` on Forever), is faded (alpha only) rather
 than reparented, keeping pet, class resource, aura and cast-bar children
 working. Runtime secrecy and taint behavior remain unverified in the client.
 The Blizzard-style redesign adds `SetPortraitTexture(texture, unit)`

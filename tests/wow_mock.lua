@@ -133,6 +133,7 @@ function methods:GetCenter()
     return self.centerX or 500, self.centerY or 400
 end
 function methods:EnableMouse(enabled) self.mouse = enabled end
+function methods:IsMouseEnabled() return self.mouse == true end
 function methods:EnableKeyboard(enabled) self.keyboard = enabled end
 function methods:SetPropagateKeyboardInput(value) self.propagate = value end
 function methods:SetEnabled(value) self.enabled = value end

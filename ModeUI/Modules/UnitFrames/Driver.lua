@@ -2,11 +2,10 @@ local _, addon = ...
 local M = addon.UnitFrames
 if not M then return end
 
--- Lifecycle, settings changes, Blizzard's own frames, events and the secure
--- refresh. Frames are built in Build.lua, laid out in Layout.lua and filled in
--- Update.lua.
+-- Lifecycle, settings changes, events and the secure refresh. Frames are
+-- built in Build.lua, laid out in Layout.lua and filled in Update.lua;
+-- Blizzard's own frames are faded in Native.lua.
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
-local Number = M.Number
 
 function M:CanConfigure() return not InCombatLockdown() and not UnitAffectingCombat("player") end
 function M:GetFonts() return addon.Media:GetFonts() end
@@ -54,7 +53,7 @@ end
 function M:OnInitialize()
     self.Initialize(self.db)
     self.frames, self.ghosts, self.watched = {}, {}, {}
-    self.nativeHidden, self.nativeAlpha, self.nativeHooks = {}, {}, {}
+    self.nativeHidden, self.nativeAlpha, self.nativeHooks, self.nativeMouse = {}, {}, {}, {}
     self.events = CreateFrame("Frame")
     self.events:SetScript("OnEvent", function(_, event, unit) self:OnEvent(event, unit) end)
     self.events:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -110,41 +109,6 @@ function M:FrameDB(unit)
     return self.matchedTarget
 end
 
--- Native frames keep running so pets, class resources, target auras and cast
--- bars still work; only their main art/bars are faded and their clicks released.
-local NATIVE = {
-    player = { frame = "PlayerFrame", parts = { "PlayerFrameContainer", "PlayerFrameContent" } },
-    target = { frame = "TargetFrame", parts = { "TargetFrameContainer", "TargetFrameContent" } },
-}
-function M:SetNativeHidden(unit, hidden)
-    local spec = NATIVE[unit]
-    local native = _G[spec.frame]
-    if type(native) ~= "table" or (not hidden and not self.nativeHidden[unit]) then return end
-    self.nativeHidden[unit] = hidden or nil
-    for _, key in ipairs(spec.parts) do
-        local part = native[key]
-        if type(part) == "table" and part.SetAlpha and part.GetAlpha then
-            if hidden then
-                local alpha = part:GetAlpha()
-                if self.nativeAlpha[part] == nil then self.nativeAlpha[part] = Number(alpha, 0, 1) and alpha or 1 end
-                if not self.nativeHooks[part] and hooksecurefunc then
-                    self.nativeHooks[part] = true
-                    -- Blizzard may restore alpha later; keep the part faded while hidden.
-                    hooksecurefunc(part, "SetAlpha", function(region)
-                        if self.nativeHidden[unit] and not self.fading then
-                            self.fading = true; region:SetAlpha(0); self.fading = false
-                        end
-                    end)
-                end
-                self.fading = true; part:SetAlpha(0); self.fading = false
-            else
-                part:SetAlpha(self.nativeAlpha[part] or 1); self.nativeAlpha[part] = nil
-            end
-        end
-    end
-    if native.EnableMouse then native:EnableMouse(not hidden) end
-end
-
 local UNIT_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_POWER_FREQUENT", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER",
     "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_CONNECTION", "UNIT_CLASSIFICATION_CHANGED",
     "UNIT_PORTRAIT_UPDATE", "UNIT_MODEL_CHANGED" }
@@ -183,8 +147,8 @@ function M:Refresh()
             if on and not self.watched[unit] then RegisterUnitWatch(f); self.watched[unit] = true
             elseif not on and self.watched[unit] then UnregisterUnitWatch(f); self.watched[unit] = nil; f:Hide() end
         end
-        self:SetNativeHidden(unit, on and self.db[unit].hideBlizzard)
     end
+    self:SyncNative()
     self:SetEvents(any)
     self:RenderGhosts()
     self:UpdateAll()

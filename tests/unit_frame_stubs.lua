@@ -96,4 +96,7 @@
         native[spec[2]]=CreateFrame('Frame',nil,native);native[spec[3]]=CreateFrame('Frame',nil,native)
         native[spec[3]]:SetAlpha(0.9)
     end
+    -- Blizzard's Target of Target sits on the Target frame, with mouse-enabled debuff icons.
+    local tot=CreateFrame('Button','TargetFrameToT',TargetFrame);tot:EnableMouse(true)
+    for i=1,4 do CreateFrame('Frame','TargetFrameToTDebuff'..i,tot):EnableMouse(true) end
     function Point(region,i) return {region:GetPoint(i or 1)} end
