@@ -4,6 +4,9 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- Text tabs, 34 px tall, on one hairline: the chosen tab is in the text color
 -- with a 2 px accent underline, the others muted.
 local TAB_HEIGHT, TAB_PADDING, TAB_GAP = 34, 14, 4
+-- When the tabs don't fit, a thin scroll slider under the hairline shows how
+-- far along they are and drags them; it takes this much room below the tabs.
+local SLIDER_ROOM = 8
 
 -- Session-only presentation of existing section/row metadata, also used by search.
 function W.SectionTabs(page, order)
@@ -30,12 +33,37 @@ function W.SectionTabs(page, order)
     local right = W.Button(strip, ">", 26, 28, "secondary"); right:SetPoint("RIGHT")
     strip.buttons, strip.sections, strip.viewport = {}, sections, viewport
     strip.previousButton, strip.nextButton = left, right
-    left:Hide(); right:Hide() -- overflow remains mouse-wheel/automatic, without visible indicators
+    left:Hide(); right:Hide() -- overflow scrolls with the mouse wheel and the slider below
+    local slider = CreateFrame("Slider", nil, strip)
+    slider:SetOrientation("HORIZONTAL")
+    slider:SetHeight(4)
+    slider:SetPoint("BOTTOMLEFT", 0, 0); slider:SetPoint("BOTTOMRIGHT", 0, 0)
+    slider:SetMinMaxValues(0, 0); slider:SetValue(0)
+    local thumb = W.ScrollThumb(slider, 2)
+    slider:EnableMouseWheel(true)
+    slider:Hide()
+    strip.slider, strip.sliderThumb = slider, thumb
     local offset = 0
     function strip:Scroll(value)
         offset = math.max(0, math.min(self.maximum or 0, value))
         viewport:SetHorizontalScroll(offset)
         left:SetEnabled(offset > 0); right:SetEnabled(offset < (self.maximum or 0))
+        if slider:GetValue() ~= offset then self.syncing = true; slider:SetValue(offset); self.syncing = false end
+    end
+    slider:SetScript("OnValueChanged", function(_, value) if not strip.syncing then strip:Scroll(value) end end)
+    slider:SetScript("OnMouseWheel", function(_, delta) strip:Scroll(offset - delta * 100) end)
+    -- Shows or hides the slider's room; the page re-places what sits below.
+    local function SetOverflow(overflow)
+        if strip.overflow == overflow then return end
+        strip.overflow = overflow
+        local room = overflow and SLIDER_ROOM or 0
+        strip:SetHeight(TAB_HEIGHT + 1 + room)
+        strip.baseline:ClearAllPoints()
+        strip.baseline:SetPoint("BOTTOMLEFT", 0, room); strip.baseline:SetPoint("BOTTOMRIGHT", 0, room)
+        viewport:ClearAllPoints(); viewport:SetPoint("TOPLEFT", 0, 0); viewport:SetPoint("BOTTOMRIGHT", 0, room)
+        slider:SetShown(overflow)
+        if page.UpdatePreviewLayout then page:UpdatePreviewLayout()
+        elseif page.tabContentTop then W.PinnedSectionTabs(page) end
     end
     function strip:Layout()
         local x = 0
@@ -52,7 +80,12 @@ function W.SectionTabs(page, order)
             x = x + width + TAB_GAP
         end
         content:SetWidth(x)
-        self.maximum = math.max(0, x - viewport:GetWidth())
+        local visible = viewport:GetWidth()
+        self.maximum = math.max(0, x - visible)
+        slider:SetMinMaxValues(0, self.maximum)
+        -- The thumb is as long as the share of the tabs in view.
+        if x > 0 then thumb:SetSize(math.max(24, visible * visible / x), T.id == "mode" and 2 or 4) end
+        SetOverflow(self.maximum > 0)
         self:Scroll(offset)
         for i,section in ipairs(sections) do
             if page.selectedSection==section then
@@ -104,7 +137,7 @@ end
 -- Section tabs pinned above the page's scroll area. Pages
 -- without a Preview layer use this to reserve the tab strip's height.
 function W.PinnedSectionTabs(page)
-    W.SectionTabs(page)
+    if not page.sectionTabs then W.SectionTabs(page) end
     if not page.sectionTabs then return end
     page.sectionTabs:ClearAllPoints(); page.sectionTabs:SetPoint("TOPLEFT"); page.sectionTabs:SetPoint("TOPRIGHT", -24, 0)
     local top = page.sectionTabs:GetHeight() + 12
