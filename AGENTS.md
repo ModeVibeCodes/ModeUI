@@ -8,6 +8,10 @@
   Bars that offer texture choices use `Kit.BarForeground`/`Kit.BarBackground`
   (Mode Gradient, Flat, or SharedMedia). Fonts default to Expressway (bundled
   Lato as fallback).
+- Every border is the ModeUI border (`Kit.ModeBorder`, `Shared/Kit/Border.lua`):
+  one crisp 2px rim in `Kit.BORDER_COLOR`, rounded-rectangle ends, drawn above
+  the content it holds, with no glow or second line. Round elements use the
+  same color and thickness. Don't add other border styles.
 - Preserve functionality, appearance, settings and saved-variable keys unless
   the user asks for a specific change. Never reset `ModeUIDB`; migrate instead.
 - Read the relevant source before editing, and implement one focused feature at a time.

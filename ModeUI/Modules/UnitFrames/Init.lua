@@ -68,7 +68,7 @@ M.palette, M.onyx = addon.Kit.palette, addon.Kit.onyx
 -- Every unit frame rim (bar block, cast bar, badges, combo points, the
 -- portrait ring's Default): a little lighter than the Onyx border, so it
 -- stands apart from the health bar.
-M.RIM_COLOR = addon.Kit.onyx.frameRim
+M.RIM_COLOR = addon.Kit.BORDER_COLOR
 -- Plain-text name colors that contrast the cool Onyx/slate skin (owner's
 -- picks). Sky, the owner's own color (layout version 11), is the default.
 M.nameAccents = { sky = RGB(145, 198, 255), champagne = RGB(242, 223, 184), lilac = RGB(201, 187, 255),

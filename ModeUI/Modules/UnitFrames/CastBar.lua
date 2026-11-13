@@ -2,8 +2,8 @@ local _, addon = ...
 local M = addon.UnitFrames
 if not M then return end
 
--- Each frame's cast bar: a second block in the frame's own skin (the same
--- rounded rim, black gap and bar texture) hanging under the bar block (or
+-- Each frame's cast bar: a second block in the frame's own skin (the ModeUI
+-- border, Kit.ModeBorder, black inside and its bar texture) hanging under the bar block (or
 -- sitting over it). Its far end lines up with the bar block's, its bar ends
 -- where the health bar does, and its portrait end stops just short of the
 -- portrait instead of running under it. Cast values can be secret: see
@@ -15,12 +15,13 @@ M.CAST_SAMPLE = { text = "Frostbolt", timer = "1.4", value = 0.6 }
 
 function M:BuildCast(f)
     local box = CreateFrame("Frame", nil, f)
-    box.rim = Kit.CapRing(box, 0)
+    -- The rim draws above the bar; its end masks round the bar.
+    box.border = Kit.ModeBorder(box)
+    box.rim, box.barMasks = box.border.ring, box.border.masks
     box.gap = box:CreateTexture(nil, "BORDER")
     box.gap:SetTexture(Kit.FLAT)
-    -- Masks rounding both ends: the black inside the rim, and the bar.
+    -- Masks rounding both ends of the black inside the rim.
     box.gapMasks = { LEFT = Kit.EndMask(box), RIGHT = Kit.EndMask(box) }
-    box.barMasks = { LEFT = Kit.EndMask(box), RIGHT = Kit.EndMask(box) }
     box.bar = Kit.Bar(box)
     box.icon = box:CreateTexture(nil, "ARTWORK")
     box.textLayer = CreateFrame("Frame", nil, box)
@@ -70,11 +71,10 @@ function M:LayoutCast(f, unit)
     -- Like the bar block: straight edges on whole pixels and half-oval ends,
     -- here at both ends. Inside the rim the box is black (the cast track is
     -- opaque); the black and the bar are rounded by end masks.
-    local depth = Kit.CapDepth(height + 2 * g.pad, px)
-    Kit.PlaceCapRing(box.rim, box, 0, g.border, M.RIM_COLOR, depth, { LEFT = true, RIGHT = true })
+    local depth = Kit.LayoutModeBorder(box.border, box, { px = px, height = height + 2 * g.pad, color = M.RIM_COLOR,
+        level = box:GetFrameLevel() + 2 })
     Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
     for side, mask in pairs(box.gapMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.border, true) end
-    for side, mask in pairs(box.barMasks) do Kit.PlaceEndMask(mask, box, side, depth, math.max(0, g.pad - px), true) end
     Kit.AddMasks({ box.gap }, { box.gapMasks.LEFT, box.gapMasks.RIGHT })
     box.depth = depth
     -- The bar runs end to end inside the gap, rounded with it; the icon, if

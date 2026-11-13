@@ -8,23 +8,21 @@ local CIRCLE_MASK = M.CIRCLE_MASK
 local Bar, Circle = Kit.Bar, Kit.Circle
 
 -- One face for both the secure button and its Edit Mode/preview stand-in.
--- Bar block: a 2px rim, a 2px black gap one rim in, then the bars. The
--- portrait sits above the block, so its full ring is drawn over the bar's
--- end. Rim and gap are rings (Kit.CapRing): hard-edged flat strips along the
--- straight edges and a half-oval end away from the portrait (both ends without
--- one), so nothing sits under the bars (their background can be see-through)
--- and nothing soft bleeds into them. End masks round the bars the same way. A
--- black cap fills the block under the portrait up to where the bars start, and
--- the hairline between health and power is its own texture.
+-- Bar block: the ModeUI border (Kit.ModeBorder, Shared/Kit/Border.lua), then
+-- the bars right inside it. The portrait sits above the block, so its full
+-- ring is drawn over the bar's end. The rim is hard-edged flat strips along
+-- the straight edges and a rounded end away from the portrait (both ends
+-- without one), so nothing sits under the bars (their background can be
+-- see-through); its end masks round the bars the same way. A cap in the rim
+-- color fills the block under the portrait up to where the bars start, and the
+-- hairline between health and power is its own texture.
 function M:BuildFace(f)
     local panel = CreateFrame("Frame", nil, f)
     f.panel = panel
     -- The rim draws on its own layer above the bars (and below the portrait),
     -- so it covers the bars' edge instead of sitting under it.
-    panel.edge = CreateFrame("Frame", nil, panel)
-    panel.edge:SetAllPoints(panel)
-    panel.rim, panel.gap = Kit.CapRing(panel.edge, 0), Kit.CapRing(panel, 1)
-    panel.farMask, panel.nearMask = Kit.EndMask(panel), Kit.EndMask(panel)
+    panel.border = Kit.ModeBorder(panel)
+    panel.edge, panel.rim = panel.border.edge, panel.border.ring
     panel.cap = panel:CreateTexture(nil, "BACKGROUND", nil, 1)
     panel.cap:SetTexture(Kit.FLAT)
     panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)
