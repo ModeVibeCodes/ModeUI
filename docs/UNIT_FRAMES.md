@@ -170,7 +170,11 @@ row sits over the name instead, so they never overlap. Bottom rows sit under
 the bars, past a cast bar below them. Rows stack away from the frame. Filters
 are game filter strings (`Domain.Auras.frameFilters`, without the nameplate
 filter) and aura fields go only to widgets that accept secrets, as on the
-nameplates. Icons don't take the mouse.
+nameplates. Hovering an icon shows the game's aura tooltip
+(`GameTooltip:SetUnitBuffByAuraInstanceID` / `SetUnitDebuffByAuraInstanceID`,
+from Forever's `TooltipDataHandler`); the ID may be secret only for
+Blizzard's own code, so while it is hidden the call fails under `pcall` and no
+tooltip shows. Icons take mouse motion only, where the client allows it.
 
 ## Cast bars
 

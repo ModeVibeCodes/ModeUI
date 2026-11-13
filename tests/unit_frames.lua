@@ -166,6 +166,15 @@ world.run([====[
     local b1,b2=t.auraIcons.buffs[1],t.auraIcons.buffs[2]
     assert(b1:IsShown() and b2:IsShown() and t.auraShown.buffs==2 and t.auraShown.debuffs==0 and auraFilters[#auraFilters]=='HELPFUL')
     assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.rim.vertexColor[1]==O.border[1])
+    -- Hover shows the game's tooltip for that aura; a secret ID (combat) shows none.
+    function GameTooltip:SetOwner(owner) self.owner=owner end
+    function GameTooltip:GetOwner() return self.owner end
+    function GameTooltip:SetUnitBuffByAuraInstanceID(unit,id) if issecretvalue(id) then error('secret id') end self.aura={unit,id,'buff'} end
+    function GameTooltip:SetUnitDebuffByAuraInstanceID(unit,id) self.aura={unit,id,'debuff'} end
+    assert(b1.scripts.OnEnter and b1.mouse,'icons take the mouse')
+    b1.scripts.OnEnter(b1);assert(GameTooltip:IsShown() and GameTooltip.owner==b1 and GameTooltip.aura[1]=='target' and GameTooltip.aura[2]==1 and GameTooltip.aura[3]=='buff')
+    b1.scripts.OnLeave(b1);assert(not GameTooltip:IsShown())
+    b1.auraID=Secret('id');b1.scripts.OnEnter(b1);assert(not GameTooltip:IsShown(),'no empty tooltip for a hidden aura');b1.auraID=1
     -- Top right: the first icon's right edge on the health bar's right edge (clear of
     -- the portrait), cropped icons growing left. The matched name is right-aligned
     -- above the frame, so the row sits over the name instead of on it.
