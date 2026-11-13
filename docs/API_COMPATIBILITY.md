@@ -104,6 +104,10 @@ behavior on Forever is unverified until checked in game.
   centered first icon (flow layouts grow Left, Right, Up or Down only), and
   target arrows clear the most icons a side row can hold. Native confirmation
   is pending.
+- **Rounded slices on moving plates.** Sliced rim, gap and glow textures call
+  `SetSnapToPixelGrid(false)` and `SetTexelSnappingBias(0)` (`Kit.Unsnap`), as
+  Blizzard's `NineSlice.lua` does for its pieces; snapped slices clipped and
+  flickered while plates moved at sub-pixel positions with the camera.
 - **Indicator.** `UnitLevel`, `UnitClassification`, `UnitIsQuestBoss` and
   `C_QuestLog.UnitIsRelatedToActiveQuest` document no secret returns; ModeUI
   still reads them through `Query.Plain` and hides a part on a secret or unknown

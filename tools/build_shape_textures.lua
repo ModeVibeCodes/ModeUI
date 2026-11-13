@@ -11,6 +11,7 @@
 --   Nameplates/Rim.tga   plate and aura rims (radius 3, sliced at 4)
 --   Nameplates/Gap.tga   the black gap inside a rim (radius 2, sliced at 3)
 --   Nameplates/Glow.tga  soft target glow around a plate, hollow inside (sliced at 12)
+--   Nameplates/AuraGlow.tga small glow around an aura icon, hollow inside (sliced at 6)
 --   Nameplates/Arrow.tga target arrow pointing right (mirrored for the left)
 --   Nameplates/Stripes.tga diagonal stripes for the focus highlight (tiles seamlessly)
 local SAMPLES = 8
@@ -87,6 +88,7 @@ local TEXTURES = {
     { "Nameplates/Rim.tga", 16, 16, RoundedRect(16, 16, 3), true },
     { "Nameplates/Gap.tga", 16, 16, RoundedRect(16, 16, 2), true },
     { "Nameplates/Glow.tga", 32, 32, Glow(32, 12, 2, 11), false },
+    { "Nameplates/AuraGlow.tga", 24, 24, Glow(24, 6, 2, 5), false },
     { "Nameplates/Arrow.tga", 16, 16, Triangle(3, 2, 14, 8, 3, 14), true },
     { "Nameplates/Stripes.tga", 16, 16, Stripes(8, 3), true },
 }

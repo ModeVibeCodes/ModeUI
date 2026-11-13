@@ -41,6 +41,16 @@ function Kit.Rounded(texture, key)
         if texture.ClearTextureSlice then texture:ClearTextureSlice() end
         texture:SetTexture(Kit.FLAT)
     end
+    Kit.Unsnap(texture)
+end
+
+-- Sliced textures on moving frames: each slice snapping to the pixel grid on
+-- its own makes rounded rims flicker and clip as a nameplate slides at
+-- sub-pixel positions while the camera turns. Blizzard's NineSlice turns
+-- snapping off for its pieces the same way (NineSlice.lua).
+function Kit.Unsnap(texture)
+    if texture.SetSnapToPixelGrid then texture:SetSnapToPixelGrid(false) end
+    if texture.SetTexelSnappingBias then texture:SetTexelSnappingBias(0) end
 end
 
 -- Mode Gradient: ModeUI's one bar texture, used by every skinned bar. A flat

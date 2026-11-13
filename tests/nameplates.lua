@@ -365,17 +365,29 @@ world.run([==[
     -- Icons are cropped (4px wider than tall) and placed by their corner on
     -- whole pixels from the health bar's bottom left (180 x 16 here).
     local function Corner(icon) local at = Point(icon); assert(at[1] == 'BOTTOMLEFT' and at[2] == plate.healthBox and at[3] == 'BOTTOMLEFT'); return at[4], at[5] end
-    assert(math.abs(A.crowdControl[1].width - 24) < 1 and math.abs(A.crowdControl[1].height - 20) < 1, 'cropped 24 x 20')
-    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -2, 'crowd control left of the marker: ' .. x .. ',' .. y)
+    assert(math.abs(A.crowdControl[1].width - 24) < 1 and math.abs(A.crowdControl[1].height - 18) < 1, 'cropped 24 x 18')
+    -- A 2px rim, then the 1px gap; rounded slices don't snap on their own.
+    local cc1 = A.crowdControl[1]
+    assert(Point(cc1.gap)[4] == 2 and Point(cc1.icon)[4] == 3, '2px rim and 1px gap')
+    assert(cc1.rim.snapToPixelGrid == false and cc1.rim.texelSnappingBias == 0 and cc1.gap.snapToPixelGrid == false, 'unsnapped slices')
+    assert(plate.healthBox.rim.snapToPixelGrid == false, 'plate rims unsnapped too')
+    -- Crowd control glows in its rim color; other groups don't.
+    assert(cc1.glow:IsShown() and cc1.glow.texture == addon.Media:GetTexture('AuraGlow'), 'crowd control glow')
+    assert(math.abs(cc1.glow.vertexColor[4] - Kit.AURA_GLOW_ALPHA) < 1e-9 and not A.debuffs[1].glow:IsShown(), 'soft, crowd control only')
+    assert(M:SetOption('enemy', 'auraCCGlow', false) and not cc1.glow:IsShown(), 'glow off')
+    assert(M:SetOption('enemy', 'auraBorderSize', 1) and Point(cc1.gap)[4] == 1 and Point(cc1.icon)[4] == 2, '1px rim')
+    assert(not M:SetOption('enemy', 'auraBorderSize', 4), 'border size range')
+    assert(M:SetOption('enemy', 'auraCCGlow', true) and M:SetOption('enemy', 'auraBorderSize', 2) and cc1.glow:IsShown())
+    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -1, 'crowd control left of the marker: ' .. x .. ',' .. y)
     x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 32, 'debuffs centered above the name: ' .. x .. ',' .. y)
-    x, y = Corner(A.buffs[1]); assert(x == 182 and y == 1, 'buffs right of the bar: ' .. x .. ',' .. y)
+    x, y = Corner(A.buffs[1]); assert(x == 182 and y == 2, 'buffs right of the bar: ' .. x .. ',' .. y)
     -- Target arrows sit outside the side aura rows (and the marker).
     assert(plate.auraExtent.LEFT == 47 and plate.auraExtent.RIGHT == 22, 'aura rows reach past the bar')
     -- Moving one group: anchor, offsets, size and count, all validated.
     assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
-    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -43, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
+    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -41, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
     assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 165, 'offset X')
-    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -46, 'offset Y')
+    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -44, 'offset Y')
     assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
     assert(not M:SetOption('enemy', 'grow', 'sideways', 'debuffs'), 'unknown grow refused')
     assert(not M:SetOption('enemy', 'debuffs', {}) and not M:SetOption('enemy', 'filter', 'all', 'crowdControl'), 'one setting at a time')
@@ -404,10 +416,10 @@ world.run([==[
     assert(x1 == 0 and x2 == -22 and y1 == y2, 'grow left')
     assert(M:SetOption('enemy', 'grow', 'up', 'debuffs'))
     x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
-    assert(x1 == x2 and y2 == y1 + 18, 'grow up')
+    assert(x1 == x2 and y2 == y1 + 16, 'grow up')
     assert(M:SetOption('enemy', 'grow', 'down', 'debuffs'))
     x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
-    assert(x1 == x2 and y2 == y1 - 18, 'grow down')
+    assert(x1 == x2 and y2 == y1 - 16, 'grow down')
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'grow', 'center', 'debuffs'))
     assert(M:SetOption('enemy', 'filter', 'mine', 'debuffs'))
     -- Square icons and border colors by dispel type.
@@ -879,7 +891,9 @@ withContainers.run([==[
     -- Swipe and time text are registered for the game to drive.
     assert(button.timerRegion == button.timer and button.timerOptions.textFormatter.breakpoints[1].format == '%d', 'time text')
     assert(not button.timer.lift:IsShown(), 'no lifted copy on game-driven text')
-    assert(math.abs(button.width - 20) < 1 and math.abs(button.height - 16) < 1, 'cropped 20 x 16')
+    assert(math.abs(button.width - 20) < 1 and math.abs(button.height - 14) < 1, 'cropped 20 x 14')
+    local ccButton = C.LEFT.groups.crowdControl.button
+    assert(ccButton.glow:IsShown() and not button.glow:IsShown(), 'containers: crowd control glows')
     -- Placement: debuffs grow from the center above the name; crowd control grows left past the marker.
     assert(C.TOP.flowAnchor == 'BOTTOMLEFT' and Point(C.TOP)[3] == 'TOP', 'top row starts at the bar top')
     assert(C.LEFT.flowAnchor == 'RIGHT' and Point(C.LEFT)[3] == 'LEFT' and Point(C.LEFT)[4] < -2, 'left row past the marker')
