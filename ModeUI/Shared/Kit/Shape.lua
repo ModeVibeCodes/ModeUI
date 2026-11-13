@@ -58,6 +58,20 @@ function Kit.BarForeground(bar, choice, barHeight, px)
     bar.sheen:Hide()
 end
 
+-- Bar texture choices: "mode" (foreground only), "flat", or any SharedMedia
+-- status bar ("media:<name>"); a missing one draws as the default until it loads.
+function Kit.ValidBarTexture(value, foreground)
+    return value == "flat" or (foreground and value == "mode") or (type(value) == "string" and value:match("^media:.+") ~= nil)
+end
+function Kit.BarTextureChoices(foreground)
+    local list = { { id = "flat", label = "Flat" } }
+    if foreground then table.insert(list, 1, { id = "mode", label = "Mode Gradient" }) end
+    for _, choice in ipairs(addon.Media:GetStatusBars()) do
+        if choice.key ~= "default" then list[#list + 1] = { id = choice.key, label = choice.label } end
+    end
+    return list
+end
+
 -- A bar's background texture choice: "flat" (the default) or "media:<name>".
 function Kit.BarBackground(bar, choice)
     local path = choice ~= "flat" and addon.Media:GetStatusBar(choice) or nil

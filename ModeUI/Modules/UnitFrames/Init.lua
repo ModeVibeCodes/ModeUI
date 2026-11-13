@@ -69,6 +69,10 @@ local function Frame(side)
         -- horizontal offsets to the other side (off: same layout as the Player).
         mirrorText = false,
         showPower = true, powerHeight = 10,
+        -- Both bars: fill (foreground) and empty bar (background) textures and
+        -- opacity. The background is mostly see-through by default, so the fill
+        -- stands out against the world behind it (owner, November 13, 2026).
+        foregroundTexture = "mode", backgroundTexture = "flat", barForegroundOpacity = 100, barBackgroundOpacity = 25,
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
         portraitScale = 150, -- portrait diameter as a % of the bar block
         portraitRing = "class", portraitRingColor = Copy(M.ACCENT),
@@ -90,6 +94,7 @@ M.frameDefaults = { player = Frame("left"), target = Frame("right") }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, nameFontSize = { 8, 24, 1 }, healthFontSize = { 8, 24, 1 }, powerFontSize = { 6, 20, 1 },
     portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 }, levelFontSize = { 6, 24, 1 },
+    barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 },
     nameOffsetX = { -100, 100, 1 }, nameOffsetY = { -100, 100, 1 }, levelOffsetX = { -100, 100, 1 }, levelOffsetY = { -100, 100, 1 },
     healthTextOffsetX = { -100, 100, 1 }, healthTextOffsetY = { -100, 100, 1 },
     powerTextOffsetX = { -100, 100, 1 }, powerTextOffsetY = { -100, 100, 1 } }

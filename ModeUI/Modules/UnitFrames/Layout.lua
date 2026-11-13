@@ -82,15 +82,20 @@ function M:ApplyLayout(f, unit)
     panel:ClearAllPoints()
     panel:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.blockStart, -g.blockY)
     panel:SetPoint("BOTTOM" .. far, f, "BOTTOM" .. far, 0, g.blockY)
-    panel.fill:ClearAllPoints(); panel.fill:SetAllPoints()
-    Rounded(panel.fill, "UnitFrameFrame"); Tint(panel.fill, ONYX.border, 1)
-    -- The black gap sits exactly one rim in; the bars sit inside it, so it
-    -- also shows as the hairline between health and power.
-    Rounded(panel.border, "UnitFrameFrameInner")
-    panel.border:ClearAllPoints()
-    panel.border:SetPoint("TOPLEFT", panel, "TOPLEFT", g.border, -g.border)
-    panel.border:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -g.border, g.border)
-    Tint(panel.border, ONYX.inner, 1)
+    -- Every band holds the whole rim fill and the black gap one rim in; each
+    -- clips its copy, so together they draw the block minus the bars.
+    for i, fill in ipairs(panel.fills) do
+        fill:ClearAllPoints(); fill:SetAllPoints(panel)
+        Rounded(fill, "UnitFrameFrame"); Tint(fill, ONYX.border, 1)
+        local inner = panel.inners[i]
+        Rounded(inner, "UnitFrameFrameInner"); Inset(inner, panel, g.border); Tint(inner, ONYX.inner, 1)
+    end
+    -- The hole is the bars' rectangle: from the bars' start on the portrait
+    -- side to one rim and gap in from the other edges.
+    local start = g.inset - g.blockStart
+    Kit.PlaceBands(panel.bands, panel, near == "LEFT" and start or g.pad, g.pad, near == "LEFT" and g.pad or start, g.pad, g.px)
+    local level = panel:GetFrameLevel()
+    for _, band in ipairs(panel.bands) do band:SetFrameLevel(level); band.layer:SetFrameLevel(level) end
 
     local h, pw = f.health, f.power
     h:ClearAllPoints()
@@ -100,10 +105,17 @@ function M:ApplyLayout(f, unit)
     pw:ClearAllPoints()
     pw:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -g.gap); pw:SetPoint("TOPRIGHT", h, "BOTTOMRIGHT", 0, -g.gap)
     pw:SetHeight(g.powerHeight); pw:SetShown(fdb.showPower)
-    -- Every bar uses the Mode Gradient texture over the opaque track.
+    -- The 1px black hairline between health and power, solid like the rim.
+    local line = panel.hairline
+    line:SetTexture(FLAT); Tint(line, ONYX.inner, 1)
+    line:ClearAllPoints(); line:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, 0); line:SetPoint("BOTTOMRIGHT", pw, "TOPRIGHT", 0, 0)
+    line:SetShown(fdb.showPower)
+    -- Foreground (Mode Gradient by default) over the background track, which
+    -- shows the world through it at Background Opacity.
     for _, bar in ipairs({ h, pw }) do
-        Kit.ModeGradient(bar, bar == h and g.healthHeight or g.powerHeight, g.px)
-        bar.bg:SetTexture(FLAT); Tint(bar.bg, ONYX.track, 1)
+        bar:SetFrameLevel(level + 1)
+        Kit.BarForeground(bar, fdb.foregroundTexture, bar == h and g.healthHeight or g.powerHeight, g.px)
+        Kit.BarBackground(bar, fdb.backgroundTexture); Tint(bar.bg, ONYX.track, fdb.barBackgroundOpacity / 100)
     end
     f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
 

@@ -5,6 +5,27 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## See-through bar backgrounds, bar textures and opacity
+
+November 13, 2026, per the owner: the dark Onyx fill was hard to tell from the
+near-black empty bar. Each frame now has four bar settings, shared by its
+health and power bars and shown in the Layout tab's **Bar Textures** and
+**Bar Opacity** cards:
+
+- `foregroundTexture` (Mode Gradient) and `backgroundTexture` (Flat), or any
+  SharedMedia status bar (`Kit.BarTextureChoices`, shared with Nameplates).
+- `barForegroundOpacity` 100 (10–100%) fades the fills.
+- `barBackgroundOpacity` 25 (0–100%) fades the empty bar, so the world shows
+  through it. (`backgroundOpacity` is the panel opacity retired in layout
+  version 9, so the new keys carry a `bar` prefix.)
+
+New keys take their defaults on load, so existing frames get the see-through
+background without a layout-version change. For the background to be truly
+see-through, nothing opaque may sit under the bars: the rim and black gap are
+drawn as four clipped bands around the bars' rectangle (`Kit.Bands`,
+`Kit.PlaceBands`, moved from Nameplates into `Shared/Kit/Bands.lua`), and the
+1px hairline between health and power is its own solid texture.
+
 ## Near-black rim
 
 November 12, 2026, per the owner: the Onyx rim (`Kit.onyx.border`) is now
@@ -567,7 +588,8 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
 | --- | --- |
 | Visibility | `enabled` (true), `hideBlizzard` (true) |
 | Matching | `matchPlayer` (Target on): render with the Player's look and text layout; `mirrorText` (Target, off): mirror the Player's text alignment and horizontal offsets |
-| Layout | `scale` 100 (50–200%), `barWidth` 180 (100–400), `healthHeight` 26 (10–60), `showPower` (true), `powerHeight` 10 (2–30), `texture` satin / mode / flat / default / LibSharedMedia status bar |
+| Layout | `scale` 100 (50–200%), `barWidth` 180 (100–400), `healthHeight` 26 (10–60), `showPower` (true), `powerHeight` 10 (2–30) |
+| Bars | `foregroundTexture` mode / flat / `media:<name>`, `backgroundTexture` flat / `media:<name>`, `barForegroundOpacity` 100 (10–100%), `barBackgroundOpacity` 25 (0–100%) |
 | Portrait | `showPortrait` (true), `portraitStyle` portrait / class, `portraitSide` left (Target right), `portraitScale` 150 (100–200% of the bar block), `portraitRing` class / border / custom, `portraitRingColor` Mist |
 | Name | `showName` (true), `namePosition` above / bar, `nameAlign` RIGHT / LEFT / CENTER, `nameFontSize` 12 (8–24), `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `nameOffsetX`/`nameOffsetY` 0 (−100–100), `classSoftness` 40 (0–100%) |
 | Level | `levelStyle` badge (shown) / none, `levelFontSize` 11 (6–24), `levelColor` #B9B9B9, `levelOffsetX`/`levelOffsetY` 0 |

@@ -10,11 +10,20 @@ local Bar, Text, Circle = Kit.Bar, Kit.Text, Kit.Circle
 -- One face for both the secure button and its Edit Mode/preview stand-in.
 -- Bar block: slate rim fill, black gap inset by the rim, then the bars. The
 -- portrait sits above the block, so its full ring is drawn over the bar's end.
+-- The bars' background can be see-through (Background Opacity), so the rim and
+-- gap are drawn in four clipped bands around the bars (Kit.Bands) rather than
+-- behind them, and the hairline between health and power is its own texture.
 function M:BuildFace(f)
-    f.panel = CreateFrame("Frame", nil, f)
-    f.panel.fill = f.panel:CreateTexture(nil, "BACKGROUND", nil, 0)
-    f.panel.border = f.panel:CreateTexture(nil, "BORDER")
-    f.health, f.power = Bar(f.panel), Bar(f.panel)
+    local panel = CreateFrame("Frame", nil, f)
+    f.panel = panel
+    panel.bands, panel.fills, panel.inners = Kit.Bands(panel), {}, {}
+    for i, band in ipairs(panel.bands) do
+        panel.fills[i] = band.layer:CreateTexture(nil, "BACKGROUND", nil, 0)
+        panel.inners[i] = band.layer:CreateTexture(nil, "BORDER")
+    end
+    panel.fill, panel.border = panel.fills[1], panel.inners[1]
+    panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)
+    f.health, f.power = Bar(panel), Bar(panel)
     local p = CreateFrame("Frame", nil, f)
     f.portrait = p
     p.ring = Circle(p, "BACKGROUND", 0)

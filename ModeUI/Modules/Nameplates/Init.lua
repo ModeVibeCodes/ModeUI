@@ -270,19 +270,9 @@ local function ValidateGroup(value, default, label)
     assert(GROWS[value.grow], "Invalid nameplate aura grow direction: " .. label)
 end
 
--- Texture choices are "mode" (foreground only), "flat", or any SharedMedia
--- status bar ("media:<name>"); a missing one draws as the default until it loads.
-local function ValidTexture(value, foreground)
-    return value == "flat" or (foreground and value == "mode") or (type(value) == "string" and value:match("^media:.+") ~= nil)
-end
-function M.TextureChoices(foreground)
-    local list = { { id = "flat", label = "Flat" } }
-    if foreground then table.insert(list, 1, { id = "mode", label = "Mode Gradient" }) end
-    for _, choice in ipairs(addon.Media:GetStatusBars()) do
-        if choice.key ~= "default" then list[#list + 1] = { id = choice.key, label = choice.label } end
-    end
-    return list
-end
+-- Texture choices are shared with every bar (Shared/Kit/Shape.lua).
+local ValidTexture = Kit.ValidBarTexture
+M.TextureChoices = Kit.BarTextureChoices
 
 local function Validate(style, kind)
     assert(Public(style) and type(style) == "table", "Invalid nameplate settings: " .. kind)

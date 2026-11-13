@@ -60,6 +60,20 @@ world.run([====[
         assert(bar.bg.vertexColor[1]==O.track[1] and bar.bg.vertexColor[3]==O.track[3] and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
         assert(bar.fillTexture.drawLayer=='ARTWORK','fill drawn above the track')
     end
+    -- See-through background: 25% by default, so the rim and gap are four clipped
+    -- bands around the bars' rectangle (nothing opaque under the bars), with a
+    -- solid hairline between health and power.
+    local d=M.db.player
+    assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==25 and d.foregroundTexture=='mode' and d.backgroundTexture=='flat')
+    for _,bar in ipairs({p.health,p.power}) do assert(math.abs(bar.bg.vertexColor[4]-0.25)<1e-9,'25% background') end
+    assert(#p.panel.bands==4 and #p.panel.fills==4 and p.panel.bands[1].clipsChildren)
+    for i=1,4 do assert(p.panel.fills[i].texture==tex('UnitFrameFrame') and p.panel.inners[i].texture==tex('UnitFrameFrameInner')) end
+    -- Hole: from the bars' start (inset 60 - block start 35) to one rim and gap (4) in.
+    assert(Point(p.panel.bands[1],2)[5]==-4 and Point(p.panel.bands[2])[5]==4,'top and bottom bands stop at the bars')
+    assert(Point(p.panel.bands[3],2)[4]==25 and Point(p.panel.bands[4])[4]==-4,'side bands stop at the bars')
+    assert(Point(p.panel.bands[3])[5]==-4+1 and Point(p.panel.bands[3],2)[5]==4-1,'side bands overlap by a pixel')
+    assert(Point(t.panel.bands[3],2)[4]==4 and Point(t.panel.bands[4])[4]==-25,'target: the portrait side is the right')
+    local hl=p.panel.hairline;assert(hl:IsShown() and hl.vertexColor[1]==O.inner[1] and hl.vertexColor[4]==1 and Point(hl)[2]==p.health and Point(hl,2)[2]==p.power,'solid hairline')
     local mhp=Point(p.health);assert(mhp[1]=='TOPLEFT' and mhp[4]==60 and mhp[5]==-16 and p.health.height==27)
     local mht=Point(t.health);assert(mht[1]=='TOPRIGHT' and mht[4]==-60,'target mirrored: portrait on the right')
     assert(Point(p.power)[5]==-1 and p.power.height==10,'1px hairline between health and power')
@@ -120,6 +134,17 @@ world.run([====[
     assert(Near(t.health.statusBarColor[1],Soft(P.hostile)[1]),'matched target: NPC reaction color, pastel')
     assert(M:SetFrameOption('player','healthColorMode','custom') and M:SetFrameOption('player','healthColor',{0,0,1}) and p.health.statusBarColor[3]==1)
     assert(M:SetFrameOption('player','healthColorMode','default') and p.health.statusBarColor[1]==O.health[1])
+    -- Foreground and background opacity and textures, per frame; a matched Target follows the Player.
+    assert(p.health.statusBarColor[4]==1 and p.power.statusBarColor[4]==1,'opaque fill by default')
+    assert(M:SetFrameOption('player','barForegroundOpacity',50) and p.health.statusBarColor[4]==0.5 and p.power.statusBarColor[4]==0.5)
+    assert(t.health.statusBarColor[4]==0.5,'matched target follows')
+    assert(M:SetFrameOption('player','barBackgroundOpacity',0) and p.health.bg.vertexColor[4]==0 and t.health.bg.vertexColor[4]==0)
+    assert(not M:SetFrameOption('player','barForegroundOpacity',5) and not M:SetFrameOption('player','barBackgroundOpacity',101),'ranges')
+    assert(M:SetFrameOption('player','foregroundTexture','flat') and p.health.statusBarTexture==addon.Kit.FLAT and not p.health.sheen:IsShown())
+    assert(not M:SetFrameOption('player','backgroundTexture','mode') and not M:SetFrameOption('player','foregroundTexture','bogus'),'texture choices validated')
+    assert(M:SetFrameOption('player','foregroundTexture','mode') and p.health.sheen:IsShown())
+    assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',25))
+    assert(M:SetFrameOption('player','showPower',false) and not p.panel.hairline:IsShown() and M:SetFrameOption('player','showPower',true))
     assert(not M:SetFrameOption('player','healthColorMode','palette') and not M:SetFrameOption('player','healthColorMode','reaction'),'only Default, Class Color or Custom')
     assert(M:SetFrameOption('player','nameColorMode','class') and Near(p.nameText.color[1],soft[1]))
     assert(M:SetFrameOption('player','nameColorMode','custom') and M:SetFrameOption('player','nameColor',{1,0,0}) and p.nameText.color[1]==1 and p.nameText.color[2]==0)
@@ -398,7 +423,10 @@ restored.run([====[
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end
         assert(Visible(Row(section,'Editing')),'every element tab has the Editing switch')
     end
-    for _,title in ipairs({'Border Style','Palette','Background Color','Background Opacity','Rim Color','Rim Thickness','Name Sheen Strength','Empty Bar Color'}) do
+    -- Bar textures and opacity sit in Layout cards, two to a row.
+    assert(page.unitFrameForeground and page.unitFrameBackground and page.unitFrameForegroundOpacity and page.unitFrameBackgroundOpacity)
+    assert(page.unitFrameForeground:GetParent().rowLabel:GetText()=='Foreground' and page.unitFrameBackgroundOpacity:GetParent().rowLabel:GetText()=='Background Opacity')
+    for _,title in ipairs({'Border Style','Palette','Background Color','Rim Color','Rim Thickness','Name Sheen Strength','Empty Bar Color'}) do
         for _,section in ipairs(page.sections) do assert(not Find(section.title,title),'locked to Onyx: '..title) end
     end
     assert(not Visible(Row('Health','Custom Health Color')) and M:SetFrameOption('player','healthColorMode','custom') and Visible(Row('Health','Custom Health Color')))
