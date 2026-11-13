@@ -21,8 +21,10 @@ function M.Geometry(style, count, px)
     local horizontal = style.orientation == "horizontal"
     local columns, rows = horizontal and perLine or lines, horizontal and lines or perLine
     local g = { px = px, w = w, h = h, points = {}, columns = columns, rows = rows }
-    -- The rim (1px) and black gap (1px) sit inside the button; the icon fills the rest.
-    g.inset = style.border == "none" and 0 or 2 * px
+    -- The border (Border Size) and a 1px gap in the background color sit inside
+    -- the button; the icon fills the rest.
+    g.border = style.border == "none" and 0 or style.borderSize * px
+    g.inset = style.border == "none" and 0 or g.border + px
     g.width = columns * w + (columns - 1) * gap
     g.height = rows * h + (rows - 1) * gap
     local function Odd(v) return math.floor(v / px + 0.5) % 2 == 1 end

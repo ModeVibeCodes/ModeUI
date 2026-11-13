@@ -2,12 +2,14 @@ local _, addon = ...
 local M = addon.ActionBars
 if not M then return end
 
--- The Mode button skin, built like an aura icon: a rounded 1px rim in the
--- border color, a 1px black gap, then the icon cropped (never stretched) to
--- the button's shape. Blizzard's slot art and frame are faded; the highlight,
--- pushed, checked and flash states become flat Mode overlays on the icon.
--- The same code skins Blizzard's buttons, the empty slots, the Edit Mode
--- stand-ins and the settings preview, so they always match.
+-- The Mode button skin: a hollow border (Border Size, 2px by default, in the
+-- Border Color) around the background (Background Color with the
+-- ActionBarSlot texture lightening it), then the icon one pixel further in,
+-- cropped (never stretched) to the button's shape. Blizzard's slot art and
+-- frame are faded; the highlight, pushed, checked and flash states become
+-- flat Mode overlays on the icon. The same code skins Blizzard's buttons, the
+-- empty slots, the Edit Mode stand-ins and the settings preview, so they
+-- always match.
 --
 -- ModeUI never stores anything on Blizzard's button tables: its textures and
 -- state live in weak tables keyed by the button.
@@ -16,46 +18,55 @@ local ONYX, FLAT = Kit.onyx, Kit.FLAT
 M.art = setmetatable({}, { __mode = "k" })
 M.skinState = setmetatable({}, { __mode = "k" })
 
-local function Shape(texture, key, rounded)
-    if rounded and addon.Media:ApplyTexture(texture, key) then return end
-    if texture.ClearTextureSlice then texture:ClearTextureSlice() end
-    texture:SetTexture(FLAT)
-end
-
--- The rim and gap (and, for an empty slot, the dark well inside them).
-function M:Art(host, well)
+-- The border's four edges, the background fill and its texture. The border
+-- is hollow, so a see-through background never takes on its color.
+function M:Art(host)
     local art = self.art[host]
     if art then return art end
-    art = { rim = host:CreateTexture(nil, "BACKGROUND", nil, -8), gap = host:CreateTexture(nil, "BACKGROUND", nil, -7) }
-    if well then art.well = host:CreateTexture(nil, "BACKGROUND", nil, -6) end
+    art = { edges = {}, fill = host:CreateTexture(nil, "BACKGROUND", nil, -7), grain = host:CreateTexture(nil, "BACKGROUND", nil, -6) }
+    for i = 1, 4 do art.edges[i] = host:CreateTexture(nil, "BACKGROUND", nil, -8) end
     self.art[host] = art
     return art
 end
 
-function M.PaintArt(art, host, style, g)
-    local on = style.border ~= "none"
-    local rounded = on and style.border == "rounded" and g.w >= 8 and g.h >= 8
-    art.rim:SetShown(on)
-    if on then
-        art.rim:ClearAllPoints(); art.rim:SetAllPoints(host)
-        Shape(art.rim, "NameplateRim", rounded); Kit.Tint(art.rim, style.borderColor, 1)
-    end
-    Kit.Inset(art.gap, host, on and g.px or 0)
-    Shape(art.gap, "NameplateGap", rounded); Kit.Tint(art.gap, ONYX.inner, 1)
-    if art.well then
-        Kit.Inset(art.well, host, g.inset)
-        Shape(art.well, "NameplateGap", rounded); Kit.Tint(art.well, ONYX.track, 1)
-    end
+local function Edge(edge, host, point, x1, y1, relative, x2, y2)
+    edge:ClearAllPoints()
+    edge:SetPoint("TOPLEFT", host, point, x1, y1)
+    edge:SetPoint("BOTTOMRIGHT", host, relative, x2, y2)
 end
 
+-- Rounded leaves out each corner's outermost pixel, so the edges meet in a
+-- soft corner; Square fills it. In an empty slot (`slot`) the background
+-- shows at Background Opacity; behind an icon it's solid, so the pixel
+-- between border and icon is crisp. The slot texture adds its bevel and grain
+-- (ADD), so the Background Color stays the base.
+function M.PaintArt(art, host, style, g, slot)
+    local on = style.border ~= "none"
+    local t, cut = g.border, (on and style.border == "rounded") and g.px or 0
+    local top, bottom, left, right = art.edges[1], art.edges[2], art.edges[3], art.edges[4]
+    Edge(top, host, "TOPLEFT", cut, 0, "TOPRIGHT", -cut, -t)
+    Edge(bottom, host, "BOTTOMLEFT", cut, t, "BOTTOMRIGHT", -cut, 0)
+    Edge(left, host, "TOPLEFT", 0, -cut, "BOTTOMLEFT", t, cut)
+    Edge(right, host, "TOPRIGHT", -t, -cut, "BOTTOMRIGHT", 0, cut)
+    for _, edge in ipairs(art.edges) do
+        edge:SetTexture(FLAT); Kit.Tint(edge, style.borderColor, 1); edge:SetShown(on)
+    end
+    local alpha = slot and style.backgroundOpacity / 100 or 1
+    Kit.Inset(art.fill, host, t)
+    art.fill:SetTexture(FLAT); Kit.Tint(art.fill, style.backgroundColor, alpha)
+    Kit.Inset(art.grain, host, t)
+    if not addon.Media:ApplyTexture(art.grain, "ActionBarSlot") then art.grain:SetTexture(FLAT) end
+    if art.grain.SetBlendMode then art.grain:SetBlendMode("ADD") end
+    art.grain:SetVertexColor(1, 1, 1, alpha)
+end
 -- An empty slot: what shows where a button has no action.
 function M:BuildSlot(parent)
     local slot = CreateFrame("Frame", nil, parent)
-    self:Art(slot, true)
+    self:Art(slot)
     slot:Hide()
     return slot
 end
-function M:PaintSlot(slot, style, g) M.PaintArt(self:Art(slot, true), slot, style, g) end
+function M:PaintSlot(slot, style, g) M.PaintArt(self:Art(slot), slot, style, g, true) end
 
 -- Crops the icon to the button's shape: 8% off its edges, then the long side
 -- cut to the inner aspect, so a 42 by 38 button shows the icon unstretched.

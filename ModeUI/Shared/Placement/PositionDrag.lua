@@ -37,9 +37,13 @@ function PM:StopDragging(id)
     element.frame:StopMovingOrSizing()
     if element.frame:GetScript("OnUpdate") == element.dragUpdate then element.frame:SetScript("OnUpdate", nil) end
     element.dragging, element.module.dragging = false, false
+    if self.HideGuides then self:HideGuides() end
     local changed
     if not Combat() then
         local x, y = P:ReadFrame(element.subject)
+        -- Dropped near a guide (an offset of 0, the screen's center or another
+        -- element's center): snap onto it.
+        if self.GuideSnap then x, y = self:GuideSnap(element, x, y) end
         changed = x ~= element.position.x or y ~= element.position.y
         element.position.x, element.position.y = x, y
         self:ApplyPosition(id, true)

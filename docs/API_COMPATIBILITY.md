@@ -112,6 +112,26 @@ behavior on Forever is unverified until checked in game.
   drawn in four bands with `Frame:SetClipsChildren(true)`
   (`SimpleFrameAPIDocumentation.lua`; `AllowedWhenUntainted`, which a plain
   boolean always satisfies) so that nothing opaque sits behind the bar.
+- **Auras in 12.1: aura containers.** While auras are secret (combat,
+  encounters, Mythic+, PvP), addon code can no longer read or count a unit's
+  auras: Patch 12.1 notes say `GetUnitAuras` returns a secret vector and the
+  index/slot/instance APIs raise errors for addons (errors ModeUI's `pcall`
+  swallowed, so plates showed nothing). Plates in the world therefore use
+  Blizzard's `CustomAuraContainerTemplate` (`Blizzard_AuraContainer`, whose Lua
+  runs in the secure environment): one `AuraContainer` per plate and anchor,
+  `AddAuraGroup(key, filter, { maxFrameCount, layout, initializeFrame })` per
+  group, then `SetAuraGroupFilterString`/`MaxFrameCount`/`Layout`/`Enabled`,
+  `SetFlowLayoutAnchorPoint`/`Axis`/`GrowthDirection`, `SetUnit`, `SetEnabled`
+  and `UpdateAllAuras`. `initializeFrame` builds the Mode icon on each button and
+  registers it with `SetIcon`, `SetDurationCooldown`, `SetApplicationCount` and
+  `AddDispelTypeTexture` (`PreserveAsset` with a `customDispelColorMap`, "None"
+  for auras without a type). The container follows `UNIT_AURA` itself. Buttons
+  are styled once, so a change to the aura look builds new containers. Detected
+  with `C_XMLUtil.GetTemplateInfo`; clients without it, and the settings
+  preview, use `GetUnitAuras`. Center growth becomes rightward growth from a
+  centered first icon (flow layouts grow Left, Right, Up or Down only), and
+  target arrows clear the most icons a side row can hold. Native confirmation
+  is pending.
 - **Indicator.** `UnitLevel`, `UnitClassification`, `UnitIsQuestBoss` and
   `C_QuestLog.UnitIsRelatedToActiveQuest` document no secret returns; ModeUI
   still reads them through `Query.Plain` and hides a part on a secret or unknown
@@ -233,3 +253,31 @@ guarded, and native behavior on Forever is unverified until checked in game.
 - **Hooks only.** Every hook is `hooksecurefunc` on an instance method;
   ModeUI writes no fields to Blizzard tables. `GetNumShapeshiftForms` (used by
   `StanceBar.lua`, not in the generated docs) sizes the stance bar.
+
+### Action bars, second pass — November 13, 2026
+
+- **Keybind Mode.** `SetBinding(key, command)` (returns false when a key can't be
+  bound), `GetBindingKey(command)`, `GetBindingText(key, true)`,
+  `SaveBindings(GetCurrentBindingSet())` and `LoadBindings(GetCurrentBindingSet())`,
+  as `Blizzard_QuickKeybind/QuickKeybind.lua`, `Blizzard_ClickBindingUI` and
+  `Blizzard_Settings_Shared/Blizzard_Keybindings.lua` use them. These are old
+  global functions without generated docs, and bindings change only outside
+  combat. The keys pressed go through `CreateKeyChordStringUsingMetaKeyState`,
+  `IsKeyPressIgnoredForBinding` and `GetConvertedKeyOrButton`
+  (`Blizzard_SharedXML/BindingUtil.lua`), with plain fallbacks. Commands are
+  Blizzard's `commandNamePrefix` .. `BUTTON` .. index (`MainActionBar.xml`
+  `ACTION`, `MultiActionBars.xml` `MULTIACTIONBAR1-7` with Right = 3 and Left = 4,
+  `PetActionBar.xml` `BONUSACTION`, `StanceBar.xml` `SHAPESHIFT`). Saving in
+  combat (if combat starts mid-mode) is pcall-guarded.
+- **Live preview.** It reads Blizzard's own buttons: `icon:GetTexture()` and
+  `IsShown()`, `HotKey`/`Count`/`Name:GetText()`, and
+  `Cooldown:GetCooldownTimes()` (milliseconds; used only while public). Anything
+  that may be secret only goes to `SetTexture` or `SetText` (`AllowedWhenTainted`);
+  a secret text's width is never measured. Reading fields on Blizzard's tables
+  doesn't taint them.
+- **Placement.** Bars may anchor to bars before them through their stand-ins
+  (plain frames). Each secure bar is pinned to `UIParent` at its stand-in's
+  measured place, from `Positioning:Geometry` (`GetCenter`, effective scale), so a
+  protected frame never anchors to another frame. The alignment guides are
+  textures on a plain full-screen frame (`SetColorTexture`). The nudge arrows use
+  `Texture:SetRotation` when present.

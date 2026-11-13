@@ -1,6 +1,7 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 local HEIGHT = 434
+local ARROWS = { LEFT = { -1, 0 }, RIGHT = { 1, 0 }, UP = { 0, 1 }, DOWN = { 0, -1 } }
 
 -- Small owned dropdown; options are rebuilt on open, never polled.
 local function Dropdown(parent, width, choices, getter, setter)
@@ -195,8 +196,15 @@ function addon:CreateEditWindow()
     window:SetPropagateKeyboardInput(true)
     window:SetScript("OnKeyDown", function(_, key)
         if InCombatLockdown() or UnitAffectingCombat("player") then return end
-        window:SetPropagateKeyboardInput(key ~= "ESCAPE")
-        if key == "ESCAPE" then self:SetEditMode(false) end
+        -- Arrow keys nudge the selected element one pixel (ten with Shift).
+        local step = ARROWS[key]
+        local element = step and E:Selected()
+        window:SetPropagateKeyboardInput(key ~= "ESCAPE" and not element)
+        if key == "ESCAPE" then self:SetEditMode(false)
+        elseif element then
+            local size = IsShiftKeyDown and IsShiftKeyDown() and 10 or 1
+            self.PositionManager:Nudge(element.id, step[1] * size, step[2] * size)
+        end
     end)
     window:SetScript("OnHide", function()
         targets.menu:Hide(); placements.menu:Hide()

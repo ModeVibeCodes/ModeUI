@@ -83,6 +83,15 @@ function M:HideAuras(plate, group, from)
 end
 
 function M:UpdateAuras(plate)
+    -- In the world, aura containers read and update auras themselves; they are
+    -- only (re)configured when the plate gets a unit or its layout changes.
+    if not plate.sample and self:UsesAuraContainers() then
+        if plate.containerUnit ~= plate.unit or plate.containerDirty then
+            plate.containerUnit, plate.containerDirty = plate.unit, false
+            self:AttachAuraContainers(plate)
+        end
+        return
+    end
     local style, unit = self:Style(plate), plate.unit
     for _, group in ipairs(GROUPS) do
         local settings, count = style[group], 0
@@ -108,6 +117,10 @@ local STEP = { right = { 1, 0 }, left = { -1, 0 }, up = { 0, 1 }, down = { 0, -1
 -- Places every shown icon. Positions are worked out as centers relative to the
 -- health bar's center, then snapped to whole pixels at each icon's corner.
 function M:LayoutAuras(plate)
+    if not plate.sample and self:UsesAuraContainers() then
+        if plate.containerUnit then self:AttachAuraContainers(plate) end
+        return
+    end
     local style, px = self:Style(plate), plate.px or 1
     local spacing, gap = style.auraSpacing * px, 2 * px
     local boxWidth, boxHeight = plate.healthBox:GetWidth(), plate.healthBox:GetHeight()

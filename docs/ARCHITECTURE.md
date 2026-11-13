@@ -35,7 +35,7 @@ ModeUI/
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Border/                   pixel borders
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
-    Placement/                positions, Edit Mode, Preview, frame anchors
+    Placement/                positions, Edit Mode (guides, nudging), Preview, frame anchors
     Skin/                     re-skinning Blizzard frames; added with Chat Windows or Blizzard UI Windows
     Settings/                 settings window framework (window, pages, search, tabs)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker)
@@ -297,8 +297,10 @@ to widgets documented as accepting them.
   The shape textures come from `tools/build_shape_textures.lua`. Rims are near-black (`Kit.onyx.border`). Anchoring settings
   use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface default to Expressway, falling back to
   the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
-- **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI` and frame
-  names that start with `ModeUI`.
+- **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI`,
+  `SLASH_MODEUIKEYBIND1`/`SlashCmdList.MODEUIKEYBIND` (`/kb`, Action Bars' Keybind
+  Mode, asked for by the owner on November 13, 2026) and frame names that start
+  with `ModeUI`.
 - **Game-wide settings** (CVars, UI scale, loot) change only through the
   Optimizations module: each one is off by default, and turning it off puts back
   the game's previous value. Other modules never write them, and nothing rewrites
@@ -319,7 +321,7 @@ module is built.
 | 0 | Unit Frames | Interface | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
 | 1 | Nameplates | Interface | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
 | 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
-| 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
+| 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar), `Positioning:AddTarget` (bars anchor to bars), PositionGuides (alignment guides, snapping, `Nudge`). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
 | 4 | Chat Windows | Interface | Skin: chat frames, edit box, tabs. Kit: ScrollText | chat frame hooks that don't taint |
 | 5 | Damage Meters | Interface | Domain: combat data source | whether Forever has a built-in damage meter API and what it exposes |
 | 6 | Bags | Interface | Domain: Containers, Items. Kit: ItemButton. Templates: item slot | `C_Container` on Forever; secure use of items from addon buttons |

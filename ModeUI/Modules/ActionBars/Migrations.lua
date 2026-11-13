@@ -41,7 +41,41 @@ local function Validate(style, bar)
     assert(ValidConditions(style.customVisibility), "Invalid action bar conditions: " .. bar)
 end
 
+-- Version 1 -> 2: settings still at version 1's defaults take the new ones
+-- (42 by 36 buttons, amber cooldown numbers); Fade Until Mouseover becomes
+-- the Mouseover show choice. Background Opacity takes its default.
+local function SameColor(a, b) return type(a) == "table" and a[1] == b[1] and a[2] == b[2] and a[3] == b[3] end
+local function MigrateV1(db)
+    for _, bar in ipairs(M.bars) do
+        local style = db[bar]
+        if type(style) == "table" then
+            if style.height == 38 then style.height = 36 end
+            if SameColor(style.cooldownColor, { 1, 1, 1 }) then style.cooldownColor = Copy(M.COOLDOWN_COLOR) end
+            if style.fade == true and style.visibility == "always" then style.visibility = "mouseover" end
+            style.fade = nil
+        end
+    end
+    -- The bars' places live outside this table; OnInitialize moves them (Driver.lua).
+    db.movePlaces = true
+end
+
+-- Version 2 -> 3: a border color, macro color or spacing still at version
+-- 2's default takes the new one; Border Size and Background Color take theirs.
+local OLD_BORDER, OLD_MACRO = addon.Kit.onyx.border, addon.Kit.palette.muted
+local function MigrateV2(db)
+    for _, bar in ipairs(M.bars) do
+        local style = db[bar]
+        if type(style) == "table" then
+            if SameColor(style.borderColor, OLD_BORDER) then style.borderColor = Copy(M.BORDER_COLOR) end
+            if SameColor(style.macroColor, OLD_MACRO) then style.macroColor = Copy(M.MACRO_COLOR) end
+            if style.spacing == 2 then style.spacing = 1 end
+        end
+    end
+end
+
 function M.Initialize(db)
+    if db.version == 1 then MigrateV1(db); db.version = 2 end
+    if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid action bar settings version")
     for _, bar in ipairs(M.bars) do

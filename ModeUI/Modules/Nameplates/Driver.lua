@@ -85,7 +85,8 @@ function M:OnUnitRemoved(unit)
     self.byUnit[unit] = nil
     self:StopCast(plate)
     self:HideAuras(plate)
-    plate.unit = nil
+    self:DetachAuraContainers(plate)
+    plate.unit, plate.containerUnit = nil, nil
     plate:Hide()
     self:RestoreBlizzard(plate)
 end
