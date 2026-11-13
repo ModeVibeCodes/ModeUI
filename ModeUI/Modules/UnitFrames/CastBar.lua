@@ -68,7 +68,7 @@ function M:LayoutCast(f, unit)
     -- here at both ends. Inside the rim the box is black (the cast track is
     -- opaque); the black and the bar are rounded by end masks.
     local depth = Kit.CapDepth(height + 2 * g.pad, px)
-    Kit.PlaceCapRing(box.rim, box, 0, g.border, ONYX.border, depth, { LEFT = true, RIGHT = true })
+    Kit.PlaceCapRing(box.rim, box, 0, g.border, M.RIM_COLOR, depth, { LEFT = true, RIGHT = true })
     Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
     for side, mask in pairs(box.gapMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.border, true) end
     for side, mask in pairs(box.barMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.pad, true) end

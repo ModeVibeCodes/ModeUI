@@ -5,6 +5,30 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Level in the corner, a mirrored Target (layout version 15)
+
+November 13, 2026, per the owner: **Level Position** (`levelPosition`, Name &
+Level tab) is **Bottom Corner** by default: the level sits at the bottom of the
+health bar on the portrait side, 1px up, clear of the portrait across its own
+line like every bar text, with the health text alone at the other side. The
+old layout is **Beside Health Text**. The Target mirrors the Player by default
+(`mirrorText`), so its health text is on the left and its level bottom right.
+Layout version 15 turns mirroring on for a Target that matches the Player.
+Every bar text is anchored to its side of the health bar, so changing Frame
+Width moves each with its side.
+
+## Rounded-rectangle ends, a lighter rim, a softer fill line
+
+November 13, 2026, per the owner (with a rounded-rectangle reference): the
+ends are a straight edge with circular corners rather than a half oval. The
+cap textures are 64x256, a straight end with 64px round corners, used at a
+depth of a quarter of the box's height (`Kit.CAP_DEPTH = 0.25`) so the corners
+stay circular: 12px on the 46px bar block, 6px on the 22px cast bar. Unit
+frame rims (bar block, cast bar, badges, combo points, the portrait ring's
+Default) use `Kit.onyx.frameRim` #40454C, a little lighter than the Onyx
+border, to stand apart from the health bar. The fill end line is white at 22%
+instead of 45%.
+
 ## Half-oval ends, a line that hides at full, darker Mode Slate
 
 November 13, 2026, after the hard-edged borders were tried in game, per the
@@ -146,7 +170,11 @@ row sits over the name instead, so they never overlap. Bottom rows sit under
 the bars, past a cast bar below them. Rows stack away from the frame. Filters
 are game filter strings (`Domain.Auras.frameFilters`, without the nameplate
 filter) and aura fields go only to widgets that accept secrets, as on the
-nameplates. Icons don't take the mouse.
+nameplates. Hovering an icon shows the game's aura tooltip
+(`GameTooltip:SetUnitBuffByAuraInstanceID` / `SetUnitDebuffByAuraInstanceID`,
+from Forever's `TooltipDataHandler`); the ID may be secret only for
+Blizzard's own code, so while it is hidden the call fails under `pcall` and no
+tooltip shows. Icons take mouse motion only, where the client allows it.
 
 ## Cast bars
 

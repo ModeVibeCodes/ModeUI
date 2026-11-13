@@ -178,6 +178,14 @@ local function MigrateV13(db)
     end
 end
 
+-- Layout version 14 -> 15, per the owner: the level moves to the health bar's
+-- bottom corner (a new key, so frames take it on load), and a Target matching
+-- the Player mirrors its text: health on the left, level bottom right.
+local function MigrateV14(db)
+    local target = db.target
+    if type(target) == "table" and target.matchPlayer == true then target.mirrorText = true end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -190,7 +198,8 @@ function M.Initialize(db)
         if db.layoutVersion == 10 then MigrateV10(db); db.layoutVersion = 11 end
         if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = 12 end
         if db.layoutVersion == 12 then MigrateV12(db); db.layoutVersion = 13 end
-        if db.layoutVersion == 13 then MigrateV13(db); db.layoutVersion = M.LAYOUT_VERSION end
+        if db.layoutVersion == 13 then MigrateV13(db); db.layoutVersion = 14 end
+        if db.layoutVersion == 14 then MigrateV14(db); db.layoutVersion = M.LAYOUT_VERSION end
     end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")

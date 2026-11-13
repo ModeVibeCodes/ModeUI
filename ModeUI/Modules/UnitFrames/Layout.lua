@@ -87,7 +87,7 @@ function M:ApplyLayout(f, unit)
     -- portrait); end masks round the bars inside the gap to match.
     local depth = Kit.CapDepth(g.blockHeight, g.px)
     local rounded = { [far] = true, [near] = g.portrait == 0 }
-    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, ONYX.border, depth, rounded)
+    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, M.RIM_COLOR, depth, rounded)
     Kit.PlaceCapRing(panel.gap, panel, g.border, g.line, ONYX.inner, depth, rounded)
     Kit.PlaceEndMask(panel.farMask, panel, far, depth, g.pad, true)
     Kit.PlaceEndMask(panel.nearMask, panel, near, depth, g.pad, rounded[near])
@@ -187,10 +187,19 @@ function M:ApplyLayout(f, unit)
     -- centred text, the level sits at the bar's right.
     local level = fdb.levelStyle ~= "none"
     local position = fdb.healthTextPosition
-    local grouped = level and fdb.healthText ~= "none" and position ~= "CENTER"
+    local corner = level and fdb.levelPosition == "corner"
+    local grouped = level and not corner and fdb.healthText ~= "none" and position ~= "CENTER"
     local healthFirst = fdb.mirrored == true
     f.levelText:ClearAllPoints(); f.nameText:ClearAllPoints()
-    if grouped and (position == "LEFT") ~= healthFirst then
+    if corner then
+        -- Bottom Corner: the health bar's bottom on the portrait side, 1px up,
+        -- clear of the portrait across its own line (owner, November 13, 2026).
+        local line = math.ceil((fdb.levelFontSize + 2) / px) * px
+        local mid = g.barsTop + g.healthHeight - px - line / 2
+        f.levelText:SetPoint("BOTTOM" .. near, h, "BOTTOM" .. near, Clamped(Clearance(mid, fdb.levelFontSize, ly), lx), px + ly)
+        f.levelText:SetJustifyH(near)
+        SideText(f.healthText, h, position, hx, hy, fdb.healthFontSize, healthMid)
+    elseif grouped and (position == "LEFT") ~= healthFirst then
         -- The level is the outer text, at the bar's edge; the health text sits inside it.
         SideText(f.levelText, h, position, hx + lx, hy + ly, fdb.levelFontSize, healthMid)
         f.healthText:ClearAllPoints()
@@ -234,7 +243,7 @@ function M:ApplyLayout(f, unit)
     SideText(f.powerText, pw, fdb.powerTextPosition, fdb.powerTextOffsetX, fdb.powerTextOffsetY, fdb.powerFontSize, powerMid)
     f.powerText:SetShown(fdb.showPower and fdb.powerText ~= "none")
     LayoutLift(f.nameText, fdb, fdb.nameFontSize, path, g.px, fdb.showName, fdb.nameAlign)
-    LayoutLift(f.levelText, fdb, fdb.levelFontSize, path, g.px, level, "CENTER")
+    LayoutLift(f.levelText, fdb, fdb.levelFontSize, path, g.px, level, corner and near or "CENTER")
     LayoutLift(f.healthText, fdb, fdb.healthFontSize, path, g.px, fdb.healthText ~= "none", position)
     LayoutLift(f.powerText, fdb, fdb.powerFontSize, path, g.px, fdb.showPower and fdb.powerText ~= "none", fdb.powerTextPosition)
     self:PaintRing(f, unit)

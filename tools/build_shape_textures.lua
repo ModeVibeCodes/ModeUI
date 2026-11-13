@@ -16,7 +16,7 @@
 --   Nameplates/Stripes.tga diagonal stripes for the focus highlight (tiles seamlessly)
 --   Mode/SlateHatch.tga  ModeSlateHatch: 4x4 tile, gray 80% with a 1px full-white diagonal; tinted
 --                        Mode Slate / 0.8, so the base is Mode Slate and the lines a little lighter
---   Mode/CapRight.tga, CapLeft.tga  ModeCapRight/Left: a half ellipse filling the texture, flat side
+--   Mode/CapRight.tga, CapLeft.tga  ModeCapRight/Left: 64x256, a straight end with 64px round corners, open
 --                        at the left (Right) or right (Left); the rounded end of a box, and its mask
 --   Mode/CapHoleRight.tga, CapHoleLeft.tga  the same, inverted: masks that hollow a cap into a ring
 --   UnitFrames/Rested.tga  UnitFrameRested: a "Zz" in square strokes, for the rested badge
@@ -73,13 +73,14 @@ local function Strokes(segments, width)
     end
 end
 
--- A half ellipse filling a width x height texture, its flat side on the left
--- (or the right when `left`), optionally inverted (a hole).
+-- The rounded end of a box (owner's reference, November 13, 2026): a straight
+-- end edge with circular corners whose radius is the texture's width, open on
+-- the left (or the right when `left`); optionally inverted (a hole).
 local function Cap(width, height, left, hole)
     return function(x, y)
-        local u = left and (width - x) / width or x / width
-        local v = (y - height / 2) / (height / 2)
-        local inside = u * u + v * v <= 1
+        local u = left and width - x or x
+        local cy = math.max(width, math.min(height - width, y))
+        local inside = u * u + (y - cy) * (y - cy) <= width * width
         if hole then return inside and 0 or 1 end
         return inside and 1 or 0
     end
@@ -204,10 +205,10 @@ local TEXTURES = {
     { "Nameplates/Arrow.tga", 16, 16, Triangle(3, 2, 14, 8, 3, 14), true },
     { "Nameplates/Stripes.tga", 16, 16, Stripes(8, 3), true },
     { "ActionBars/Slot.tga", 64, 64, function() return 1 end, false, Slot(64) },
-    { "Mode/CapRight.tga", 64, 128, Cap(64, 128, false, false), true },
-    { "Mode/CapLeft.tga", 64, 128, Cap(64, 128, true, false), true },
-    { "Mode/CapHoleRight.tga", 64, 128, Cap(64, 128, false, true), true },
-    { "Mode/CapHoleLeft.tga", 64, 128, Cap(64, 128, true, true), true },
+    { "Mode/CapRight.tga", 64, 256, Cap(64, 256, false, false), true },
+    { "Mode/CapLeft.tga", 64, 256, Cap(64, 256, true, false), true },
+    { "Mode/CapHoleRight.tga", 64, 256, Cap(64, 256, false, true), true },
+    { "Mode/CapHoleLeft.tga", 64, 256, Cap(64, 256, true, true), true },
     { "UnitFrames/Rested.tga", 32, 32, Strokes({ { 5, 8, 16, 8 }, { 16, 8, 5, 21 }, { 5, 21, 16, 21 },
         { 19, 15, 27, 15 }, { 27, 15, 19, 24 }, { 19, 24, 27, 24 } }, 3), true },
     { "UnitFrames/Combat.tga", 32, 32, Strokes({ { 7, 7, 25, 25 }, { 25, 7, 7, 25 }, { 4, 22, 10, 28 }, { 22, 28, 28, 22 } }, 3), true },

@@ -9,7 +9,8 @@ if not M then return end
 -- just over the bar block, or over the name when it is above the frame on that
 -- side; bottom rows sit under the bars, or under a cast bar below them.
 -- Which auras show is a game filter string and their fields may be secret
--- (Shared/Domain/Auras.lua); icons are Kit.AuraIcon in the Mode look.
+-- (Shared/Domain/Auras.lua); icons are Kit.AuraIcon in the Mode look, with
+-- the game's aura tooltip on hover.
 local Kit, Auras = addon.Kit, addon.Domain.Auras
 M.AURA_CROP = 4 -- cropped icons are this many pixels wider than tall, like the nameplates'
 M.AURA_SAMPLE = 4
@@ -27,9 +28,35 @@ function M:AuraSize(adb, px)
     return width, adb.shape == "cropped" and math.max(px, width - self.AURA_CROP * px) or width
 end
 
+-- Hovering an icon shows the game's tooltip for that aura (owner, November 13,
+-- 2026): GameTooltip:SetUnitBuffByAuraInstanceID / SetUnitDebuffByAuraInstanceID
+-- (Blizzard_SharedXMLGame TooltipDataHandler). Their arguments may be secret
+-- only for Blizzard's own code, so while the game hides an aura's ID the call
+-- fails under pcall and no tooltip shows. Icons take mouse motion only where
+-- the client allows it, so clicks still reach the world.
+local TOOLTIP = { buffs = "SetUnitBuffByAuraInstanceID", debuffs = "SetUnitDebuffByAuraInstanceID" }
+local function ShowTooltip(icon)
+    local tip, method = GameTooltip, TOOLTIP[icon.auraGroup]
+    if not tip or not icon.auraUnit or icon.auraID == nil or not method or not tip[method] then return end
+    tip:SetOwner(icon, "ANCHOR_BOTTOMRIGHT")
+    if pcall(tip[method], tip, icon.auraUnit, icon.auraID, icon.auraFilter) then tip:Show() else tip:Hide() end
+end
+local function HideTooltip(icon)
+    if GameTooltip and GameTooltip.GetOwner and GameTooltip:GetOwner() == icon then GameTooltip:Hide() end
+end
+
 function M:AuraIcon(f, group, index)
     local pool = f.auraIcons[group]
-    pool[index] = pool[index] or Kit.AuraIcon(f.auraLayer)
+    if not pool[index] then
+        local icon = Kit.AuraIcon(f.auraLayer)
+        icon.auraGroup = group
+        if icon.SetMouseMotionEnabled and icon.SetMouseClickEnabled then
+            icon:SetMouseMotionEnabled(true); icon:SetMouseClickEnabled(false)
+        else icon:EnableMouse(true) end
+        icon:SetScript("OnEnter", ShowTooltip)
+        icon:SetScript("OnLeave", HideTooltip)
+        pool[index] = icon
+    end
     return pool[index]
 end
 
@@ -101,6 +128,7 @@ function M:UpdateAuras(unit)
             for index, aura in ipairs(Auras.Collect(unit, { filter }, adb.max)) do
                 local icon = self:AuraIcon(f, group, index)
                 Auras.Apply(icon, unit, aura, adb.timer, adb.count)
+                icon.auraUnit, icon.auraID, icon.auraFilter = unit, Auras.Field(aura, "auraInstanceID"), filter
                 self:AuraRim(icon, adb, icon.dispelType)
                 icon:Show()
                 count = index
@@ -119,6 +147,7 @@ function M:PaintAuraSample(g, unit)
         local count = adb.enabled and math.min(adb.max, self.AURA_SAMPLE) or 0
         for index = 1, count do
             local icon = self:AuraIcon(g, group, index)
+            icon.auraUnit, icon.auraID = nil, nil -- samples have no tooltip
             icon.icon:SetTexture(SAMPLE_ICONS[group])
             Kit.Write(icon.count, adb.count and index == 1 and "2" or "")
             icon.cooldown:Hide()
