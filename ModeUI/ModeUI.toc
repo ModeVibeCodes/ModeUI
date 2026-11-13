@@ -23,6 +23,16 @@ Shared\Runtime\DB.lua
 Shared\Runtime\Profiles.lua
 Shared\Runtime\Reload.lua
 Shared\Runtime\Lifecycle.lua
+Shared\Domain\Query.lua
+Shared\Domain\Health.lua
+Shared\Domain\Power.lua
+Shared\Domain\Name.lua
+Shared\Domain\Level.lua
+Shared\Domain\UnitColor.lua
+Shared\Domain\Portrait.lua
+Shared\Kit\Color.lua
+Shared\Kit\Shape.lua
+Shared\Kit\Text.lua
 Shared\Placement\DisplayModes.lua
 Shared\Placement\EditMode.lua
 Shared\Placement\Positioning.lua

@@ -6,7 +6,7 @@ document: add to it when a new idea or module changes the shape of things.
 
 > **Status (November 12, 2026):** the target layout below is being adopted in
 > phases (see [Restructure phases](#restructure-phases)). The shared code lives in
-> `Libs/` and `Shared/`, and the Runtime services below are in place. Until
+> `Libs/` and `Shared/`, and the Runtime services, Domain readers and Kit builders below are in place. Until
 > phase 5, the modules (Unit Frames, Profiles, Optimizations, Class Colors) are
 > still flat `Modules/*.lua` files with their pages in `Config/`, listed as legacy
 > in `tests/structure.lua`. New code goes in the new layout only.
@@ -196,6 +196,31 @@ Notes:
   language change never affects saved data. Translations go in
   `Shared/Locale/<code>.lua`, loaded after `Shared/Runtime/Locale.lua`.
 
+## Domain and Kit
+
+`Shared/Domain/` reads game data. It's the only code that calls `Unit*` APIs,
+and every call is guarded: a missing API, an error or a secret answer counts as
+"unknown". Values that may be secret are returned only so they can go straight
+to widgets documented as accepting them.
+
+| File | API |
+|---|---|
+| `Query.lua` | `Domain.Query.Call(fn, ...)`, `.Truthy(fn, ...)`, `.Plain(fn, ...)` |
+| `Health.lua` | `Domain.Health.Read(unit)` → okMax, max, okValue, value (secret); `.Percent(unit, curve)`; `.State(unit)` → `"Offline"`, `"Ghost"`, `"Dead"` or nil |
+| `Power.lua` | `Domain.Power.Read(unit)` → powerType, token, okMax, max, okValue, value; `.Percent(unit, powerType, curve)`; `.Color(token)` |
+| `Name.lua` | `Domain.Name.Get(unit)` → name (may be secret) or `""` |
+| `Level.lua` | `Domain.Level.Text(unit)` → `"60"`, `"60+"`, `"??"` or `""` |
+| `UnitColor.lua` | `Domain.UnitColor.Class(class)`, `.NativeClass(class)`, `.PlayerClass(unit)`, `.Reaction(unit)` → `"tapped"`, `"hostile"`, `"neutral"`, `"friendly"`; `.SetClassOverride(fn)` (Class Colors supplies the custom colors) |
+| `Portrait.lua` | `Domain.Portrait.Apply(icon, unit, style)`, `.SetIcon(icon, path)`, `.Exists(unit)` |
+
+`Shared/Kit/` builds frame pieces in the Mode look. It holds no game data.
+
+| File | API |
+|---|---|
+| `Color.lua` | `Kit.Tint(region, color, alpha)`, `.Lighten(color, t)`, `.Scale(color, f)`, `.Gradient(texture, top, bottom, alpha)`, `Kit.FLAT` |
+| `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)` |
+| `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`; `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA` |
+
 ## Rules every module follows
 
 - **Secret values.** Only `Shared/Domain` reads unit data. It returns secret
@@ -263,7 +288,7 @@ change to behavior, looks or saved data.
 | 1 | This document, AGENTS.md rules, `tests/structure.lua`, XML support in the harness | done |
 | 2 | Move files into `Libs/` and `Shared/*` with `git mv`; no code edits. The libraries now load before `Edition.lua` | done |
 | 3 | Runtime: `Core.lua` (from `Edition.lua` and the copied secret checks), `DB.lua`, `Reload.lua`, `Lifecycle.lua` (from `Modules.lua`, `Categories.lua` and the combat broadcast in `DisplayModes.lua`); add Events, Defer, Callbacks, Locale | done |
-| 4 | Domain and Kit: unit readers and frame builders out of `UnitFramesDisplay.lua` | planned |
+| 4 | Domain and Kit: unit readers and frame builders out of `UnitFramesDisplay.lua` | done |
 | 5 | Module folders: `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings), then `Profiles/`, `Optimizations/` and `ClassColors/` (Init, Driver, Settings) | planned |
 | 6 | Split `Widgets.lua` and `Window.lua` into `Shared/Settings/Widgets/`; modules register their own page layout | planned |
 | 7 | Module skeleton and the README "Adding a module" section | planned |

@@ -1,5 +1,5 @@
--- Shared/Runtime services: Events, Defer, Callbacks, Locale and the combat
--- broadcast. Simulated client; not WoW.
+-- Shared/Runtime services (Events, Defer, Callbacks, Locale, combat broadcast)
+-- and the Shared/Domain readers. Simulated client; not WoW.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 
@@ -62,6 +62,27 @@ world.run([==[
     testCombat = false
     FireEvent('PLAYER_REGEN_ENABLED')
     assert(refreshed == 1 and not M.borderPending and not M.pending)
+
+    -- Domain: guarded calls treat secret or failed answers as unknown.
+    local Q, D2 = addon.Domain.Query, addon.Domain
+    local secret = { secret = true }
+    assert(Q.Truthy(function() return true end) and not Q.Truthy(function() return secret end) and not Q.Truthy(nil))
+    assert(Q.Plain(function() return 1, secret end) == nil and Q.Plain(function() return 1, 2 end) == 1)
+    assert(not Q.Call(function() error('boom') end))
+    local level, classification = 60, 'elite'
+    local savedLevel, savedClass = UnitLevel, UnitClassification
+    UnitLevel = function() return level end; UnitClassification = function() return classification end
+    assert(D2.Level.Text('target') == '60+')
+    level, classification = -1, 'normal'; assert(D2.Level.Text('target') == '??')
+    level = secret; assert(D2.Level.Text('target') == '', 'a secret level shows nothing')
+    UnitLevel, UnitClassification = savedLevel, savedClass
+    assert(D2.Power.Color('RAGE')[1] == 0.86 and D2.Power.Color(nil) == D2.Power.defaultColor)
+    -- Class colors: a module's override wins, the game's color otherwise.
+    local UC = D2.UnitColor
+    local before = UC.override
+    UC.SetClassOverride(function(class) if class == 'MAGE' then return { r = 1, g = 0, b = 0 } end end)
+    assert(UC.Class('MAGE').r == 1 and UC.Class('DRUID').r == UC.NativeClass('DRUID').r)
+    UC.SetClassOverride(before)
 
     -- Combat start and end reach enabled modules.
     local states = {}

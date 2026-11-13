@@ -64,9 +64,7 @@ M.choiceKeys = { healthText = "healthText", powerText = "powerText", healthTextP
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
-function M.Number(v, low, high)
-    return M.Public(v) and type(v) == "number" and v == v and v >= low and v <= high
-end
+M.Number = addon.IsNumber
 local Public, Number = M.Public, M.Number
 
 local function Frame(side)

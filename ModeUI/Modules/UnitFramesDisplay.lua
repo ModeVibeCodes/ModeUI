@@ -1,41 +1,14 @@
 local _, addon = ...
 local M = addon.UnitFrames
 if not M then return end
-local Public, Number, P, ONYX = M.Public, M.Number, M.palette, M.onyx
-local FLAT = "Interface\\Buttons\\WHITE8X8"
+local Number, P, ONYX = M.Number, M.palette, M.onyx
+local Kit, Domain = addon.Kit, addon.Domain
+local UnitColor, Portrait = Domain.UnitColor, Domain.Portrait
+local FLAT = Kit.FLAT
 local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
-local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
-
--- Mode-toned power colors; no dependency on Blizzard's PowerBarColor table.
-local POWER_COLORS = { MANA = P.mana, RAGE = { 0.86, 0.30, 0.30 }, ENERGY = { 0.95, 0.82, 0.35 },
-    FOCUS = { 0.95, 0.58, 0.30 }, HAPPINESS = { 0.35, 0.80, 0.70 } }
-local DEFAULT_POWER = { 0.55, 0.55, 0.60 }
-
-local function Call(fn, ...)
-    if type(fn) ~= "function" then return false end
-    return pcall(fn, ...)
-end
--- Only plain booleans count; a secret or failed answer is "unknown".
-local function Truthy(fn, ...)
-    local ok, v = Call(fn, ...)
-    return ok and Public(v) and v == true
-end
-local function Plain(fn, ...)
-    local ok, v, w, x = Call(fn, ...)
-    if ok and Public(v) and Public(w) and Public(x) then return v, w, x end
-end
-local function Tint(region, color, alpha) region:SetVertexColor(color[1], color[2], color[3], alpha or 1) end
-local function Lighten(c, t) return { c[1] + (1 - c[1]) * t, c[2] + (1 - c[2]) * t, c[3] + (1 - c[3]) * t } end
-local function Scale(c, f) return { c[1] * f, c[2] * f, c[3] * f } end
+local Tint, Lighten, Scale, Gradient = Kit.Tint, Kit.Lighten, Kit.Scale, Kit.Gradient
+local Write = Kit.Write
 M.Lighten = Lighten
--- Vertical gradient on an already textured region; flat tint when the client
--- lacks SetGradient/CreateColor.
-local function Gradient(texture, top, bottom, alpha)
-    local ok = texture.SetGradient and CreateColor and pcall(texture.SetGradient, texture, "VERTICAL",
-        CreateColor(bottom[1], bottom[2], bottom[3], bottom[4] or alpha or 1), CreateColor(top[1], top[2], top[3], top[4] or alpha or 1))
-    if not ok then texture:SetVertexColor(top[1], top[2], top[3], top[4] or alpha or 1) end
-    return ok
-end
 
 -- Mirrored by portrait side: the portrait caps the outer end.
 local function Sides(fdb)
@@ -55,12 +28,7 @@ end
 
 -- One physical pixel in this frame's units (Blizzard's PixelUtil factor over
 -- the frame's effective scale); 1 when the client cannot report it.
-function M:PixelSize(f)
-    local factor = PixelUtil and Plain(PixelUtil.GetPixelToUIUnitFactor)
-    local scale = Plain(f.GetEffectiveScale, f)
-    if not (Number(factor, 0.01, 10) and Number(scale, 0.01, 100)) then return 1 end
-    return factor / scale
-end
+function M:PixelSize(f) return Kit.PixelSize(f) end
 
 -- The Onyx frame: a round portrait caps the outer end of one rounded bar
 -- block. Pixel perfect: every size is whole physical pixels (2px slate rim,
@@ -104,37 +72,9 @@ function M:Geometry(fdb, px)
     return g
 end
 
-local function Bar(parent)
-    local bar = CreateFrame("StatusBar", nil, parent)
-    bar.bg = bar:CreateTexture(nil, "BACKGROUND", nil, -8); bar.bg:SetAllPoints()
-    bar.sheen = bar:CreateTexture(nil, "OVERLAY")
-    bar.sheen:SetPoint("TOPLEFT"); bar.sheen:SetPoint("TOPRIGHT")
-    return bar
-end
-local function Text(layer, drawLayer)
-    local text = layer:CreateFontString(nil, drawLayer or "OVERLAY", "GameFontHighlight")
-    text:SetWordWrap(false)
-    return text
-end
--- The suite's text style: each text has an opaque shadow one screen pixel
--- down-right and, under it, a lifted shadow - one black copy 2px down-right at
--- 45%. Whole pixels and no blur, so text stays crisp with a slight pop.
-M.LIFT_PIXELS, M.LIFT_ALPHA = 2, 0.45
-local function Circle(frame, layer, sublevel)
-    local texture = frame:CreateTexture(nil, layer, nil, sublevel)
-    if not addon.Media:ApplyTexture(texture, "UnitFrameCircle") then addon.Media:ApplyTexture(texture, "ModeThumb") end
-    return texture
-end
-local function Inset(texture, host, inset)
-    texture:ClearAllPoints(); texture:SetPoint("TOPLEFT", host, "TOPLEFT", inset, -inset)
-    texture:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -inset, inset)
-end
-local function Rounded(texture, key)
-    if not addon.Media:ApplyTexture(texture, key) then
-        if texture.ClearTextureSlice then texture:ClearTextureSlice() end
-        texture:SetTexture(FLAT)
-    end
-end
+-- The suite's text style (see Shared/Kit/Text.lua).
+M.LIFT_PIXELS, M.LIFT_ALPHA = Kit.LIFT_PIXELS, Kit.LIFT_ALPHA
+local Bar, Text, Circle, Inset, Rounded = Kit.Bar, Kit.Text, Kit.Circle, Kit.Inset, Kit.Rounded
 
 -- One face for both the secure button and its Edit Mode/preview stand-in.
 -- Bar block: slate rim fill, black gap inset by the rim, then the bars. The
@@ -161,42 +101,11 @@ function M:BuildFace(f)
     for _, text in ipairs({ f.nameText, f.levelText, f.healthText, f.powerText }) do text.lift = Text(f.textLayer, "ARTWORK") end
 end
 
--- Text writes go to the text and its lift alike; secret values are passed
--- straight to SetText/SetFormattedText on both.
-local function Write(text, value)
-    text:SetText(value); text.lift:SetText(value)
-end
-local function Formatted(text, pattern, ...)
-    text:SetFormattedText(pattern, ...); text.lift:SetFormattedText(pattern, ...)
-end
 local function SetName(f, text, color)
     Write(f.nameText, text); f.nameText:SetTextColor(color[1], color[2], color[3], 1)
 end
 
-local function Font(text, fdb, size, path, px)
-    local flags = fdb.outline and "OUTLINE" or ""
-    if not text:SetFont(path, size, flags) then text:SetFont(addon.Media.gameFont, size, flags) end
-    local c = fdb.textColor
-    text:SetTextColor(c[1], c[2], c[3], 1)
-    text:SetShadowColor(0, 0, 0, fdb.shadow and 1 or 0)
-    text:SetShadowOffset(fdb.shadow and px or 0, fdb.shadow and -px or 0)
-end
--- The lift covers its text's box moved 2px down-right; it needs Text Shadow.
-local function LayoutLift(text, fdb, size, path, px, shown, justify)
-    local lift = text.lift
-    local on = shown and fdb.shadow and fdb.liftedShadow
-    lift:SetShown(on)
-    if not on then return end
-    local flags = fdb.outline and "OUTLINE" or ""
-    if not lift:SetFont(path, size, flags) then lift:SetFont(addon.Media.gameFont, size, flags) end
-    lift:SetTextColor(0, 0, 0, M.LIFT_ALPHA)
-    lift:SetShadowColor(0, 0, 0, 0); lift:SetShadowOffset(0, 0)
-    lift:SetJustifyH(justify)
-    local d = M.LIFT_PIXELS * px
-    lift:ClearAllPoints()
-    lift:SetPoint("TOPLEFT", text, "TOPLEFT", d, -d)
-    lift:SetPoint("BOTTOMRIGHT", text, "BOTTOMRIGHT", d, -d)
-end
+local Font, LayoutLift = Kit.Font, Kit.LayoutLift
 
 function M:BarTexture(fdb)
     if fdb.texture == "satin" then return addon.Media:GetTexture("UnitFrameBar") or FLAT, false end
@@ -413,20 +322,18 @@ function M:Soften(color, fdb)
     if t <= 0 then return color end
     return Lighten(color, t)
 end
+local REACTION_COLORS = { hostile = P.hostile, neutral = P.neutral, friendly = P.green }
 -- Class color for players (or Mode reaction colors when allowed), softened by
 -- the frame's Class Color Softness, else nil. `fdb` defaults to the unit's frame.
 function M:IdentityColor(unit, reactionOnly, fdb)
     fdb = fdb or self:FrameDB(unit)
-    if not reactionOnly and Truthy(UnitIsPlayer, unit) then
-        local _, class = Plain(UnitClass, unit)
-        local color = class and addon.ClassColors:GetColor(class)
+    if not reactionOnly then
+        local color = UnitColor.PlayerClass(unit)
         if color then return self:Soften({ color.r, color.g, color.b }, fdb) end
     end
-    if Truthy(UnitIsTapDenied, unit) then return P.tapped end
-    local reaction = Plain(UnitReaction, unit, "player")
-    if Number(reaction, 1, 8) then
-        return self:Soften(reaction <= 3 and P.hostile or reaction == 4 and P.neutral or P.green, fdb)
-    end
+    local reaction = UnitColor.Reaction(unit)
+    if reaction == "tapped" then return P.tapped end
+    if reaction then return self:Soften(REACTION_COLORS[reaction], fdb) end
 end
 -- Edit Mode/preview stand-ins show the player's own class, and an enemy for others.
 function M:SampleIdentity(unit, fdb)
@@ -459,23 +366,10 @@ function M:PaintRing(f, unit)
     Gradient(ring, Lighten(color, 0.35), Scale(color, 0.72))
 end
 
-local function SetIcon(icon, path)
-    if icon.SetAtlas then icon:SetTexCoord(0, 1, 0, 1) end
-    icon:SetTexture(path)
-end
 function M:PaintPortrait(f, unit, sampleUnit)
     local fdb = self:FrameDB(unit)
     if not fdb.showPortrait then return end
-    local icon = f.portrait.icon
-    local source = sampleUnit or unit
-    if fdb.portraitStyle == "class" and Truthy(UnitIsPlayer, source) then
-        local _, class = Plain(UnitClass, source)
-        local atlas = class and Plain(GetClassAtlas, class)
-        if type(atlas) == "string" and icon.SetAtlas and C_Texture and Plain(C_Texture.GetAtlasInfo, atlas)
-            and pcall(icon.SetAtlas, icon, atlas) then return end
-    end
-    icon:SetTexCoord(0, 1, 0, 1)
-    if not (Truthy(UnitExists, source) and Call(SetPortraitTexture, icon, source)) then SetIcon(icon, UNKNOWN_ICON) end
+    Portrait.Apply(f.portrait.icon, sampleUnit or unit, fdb.portraitStyle)
 end
 
 function M:PaintSample(g, unit)
@@ -493,58 +387,38 @@ function M:PaintSample(g, unit)
     local pmode = fdb.powerText
     Write(g.powerText, pmode == "current" and "1,200" or pmode == "both" and "1,200 · 60%" or "60%")
     if fdb.showPortrait then
-        if unit == "player" then self:PaintPortrait(g, unit, "player") else SetIcon(g.portrait.icon, UNKNOWN_ICON) end
+        if unit == "player" then self:PaintPortrait(g, unit, "player") else Portrait.SetIcon(g.portrait.icon, Portrait.UNKNOWN_ICON) end
     end
 end
 
--- Percent comes from the unit percent API through Blizzard's 0-100 curve; the
--- formatted text may itself be secret and is only given to SetFormattedText.
-local function SetValueText(text, mode, percentFn, unit, hasCurrent, current)
-    if mode == "none" then return end
-    local curve = CurveConstants and CurveConstants.ScaleTo100
-    local hasPercent, percent = false, nil
-    if curve then hasPercent, percent = percentFn(unit, curve) end
-    local hasValue, value = false, nil
-    if mode ~= "percent" and hasCurrent then hasValue, value = Call(AbbreviateNumbers, current) end
-    if mode == "both" and hasValue and hasPercent then
-        if pcall(Formatted, text, "%s · %.0f%%", value, percent) then return end
-    end
-    if mode ~= "percent" and hasValue and pcall(Write, text, value) then return end
-    if hasPercent and pcall(Formatted, text, "%.0f%%", percent) then return end
-    Write(text, "")
-end
-local function HealthPercent(unit, curve) return Call(UnitHealthPercent, unit, true, curve) end
+local Health, Power, Name, Level = Domain.Health, Domain.Power, Domain.Name, Domain.Level
 
 function M:UpdateHealth(unit)
     local f = self.frames and self.frames[unit]
     if not f or not self:FrameOn(unit) then return end
-    local okMax, max = Call(UnitHealthMax, unit)
-    local okValue, value = Call(UnitHealth, unit)
+    local okMax, max, okValue, value = Health.Read(unit)
     if okMax then pcall(f.health.SetMinMaxValues, f.health, 0, max) end
     if okValue then pcall(f.health.SetValue, f.health, value) end
     local color = self:HealthColor(unit)
     f.health:SetStatusBarColor(color[1], color[2], color[3])
     local mode = self:FrameDB(unit).healthText
     if mode == "none" then return end
-    if not Truthy(UnitIsConnected, unit) then Write(f.healthText, "Offline")
-    elseif Truthy(UnitIsGhost, unit) then Write(f.healthText, "Ghost")
-    elseif Truthy(UnitIsDeadOrGhost, unit) then Write(f.healthText, "Dead")
-    else SetValueText(f.healthText, mode, HealthPercent, unit, okValue, value) end
+    local state = Health.State(unit)
+    if state then Write(f.healthText, state)
+    else Kit.ValueText(f.healthText, mode, Health.Percent, unit, okValue, value) end
 end
 
 function M:UpdatePower(unit)
     local f = self.frames and self.frames[unit]
     local fdb = self:FrameDB(unit)
     if not f or not self:FrameOn(unit) or not fdb.showPower then return end
-    local powerType, token = Plain(UnitPowerType, unit)
-    local okMax, max = Call(UnitPowerMax, unit, powerType)
-    local okValue, value = Call(UnitPower, unit, powerType)
+    local powerType, token, okMax, max, okValue, value = Power.Read(unit)
     if okMax then pcall(f.power.SetMinMaxValues, f.power, 0, max) end
     if okValue then pcall(f.power.SetValue, f.power, value) end
     local color = fdb.powerColorMode == "custom" and fdb.powerColor
-        or (type(token) == "string" and POWER_COLORS[token]) or DEFAULT_POWER
+        or Power.Color(token)
     f.power:SetStatusBarColor(color[1], color[2], color[3])
-    SetValueText(f.powerText, fdb.powerText, function(u, curve) return Call(UnitPowerPercent, u, powerType, false, curve) end,
+    Kit.ValueText(f.powerText, fdb.powerText, function(u, curve) return Power.Percent(u, powerType, curve) end,
         unit, okValue, value)
 end
 
@@ -557,22 +431,16 @@ end
 function M:UpdateText(unit)
     local f, fdb = self.frames[unit], self:FrameDB(unit)
     if fdb.showName then
-        local ok, name = Call(UnitName, unit)
-        if not ok then name = "" end
-        SetName(f, name, self:NameColor(unit))
+        SetName(f, Name.Get(unit), self:NameColor(unit))
     end
     if fdb.levelStyle ~= "none" then
-        local level = Plain(UnitLevel, unit)
-        local classification = Plain(UnitClassification, unit)
-        local text = Number(level, 1, 1000) and tostring(level) or (Number(level, -1, -1) and "??" or "")
-        if classification == "elite" or classification == "rareelite" or classification == "worldboss" then text = text .. "+" end
-        Write(f.levelText, text)
+        Write(f.levelText, Level.Text(unit))
     end
 end
 
 function M:Update(unit)
     local f = self.frames and self.frames[unit]
-    if not f or not self:FrameOn(unit) or not Truthy(UnitExists, unit) then return end
+    if not f or not self:FrameOn(unit) or not Portrait.Exists(unit) then return end
     self:UpdateText(unit); self:UpdateHealth(unit); self:UpdatePower(unit); self:UpdatePortrait(unit)
 end
 function M:UpdateAll() for _, unit in ipairs(self.units) do self:Update(unit) end end

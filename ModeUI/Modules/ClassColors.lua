@@ -10,17 +10,12 @@ local M = { title = "Class Colors", category = "global", defaultEnabled = true,
 addon.ClassColors = M
 addon:RegisterModule("classColors", M)
 
--- WoW Forever's classes, in the order the game lists them.
-M.classes = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
+local UnitColor = addon.Domain.UnitColor
+M.classes = UnitColor.classes
 local KNOWN = {}
 for _, class in ipairs(M.classes) do KNOWN[class] = true end
--- Used only if the client can't report a class color.
-local FALLBACK = { WARRIOR = { .78, .61, .43 }, PALADIN = { .96, .55, .73 }, HUNTER = { .67, .83, .45 },
-    ROGUE = { 1, .96, .41 }, PRIEST = { 1, 1, 1 }, SHAMAN = { 0, .44, .87 }, MAGE = { .25, .78, .92 },
-    WARLOCK = { .53, .53, .93 }, DRUID = { 1, .49, .04 } }
-
 local Public = addon.IsPublic
-local function Number(v, low, high) return Public(v) and type(v) == "number" and v == v and v >= low and v <= high end
+local Number = addon.IsNumber
 
 function M.Initialize(db)
     if db.colors == nil then db.colors = {} end
@@ -44,33 +39,20 @@ function M:ClassName(class)
 end
 
 -- The game's color for a class, as { r, g, b } fields.
-function M:NativeColor(class)
-    if not Public(class) or type(class) ~= "string" then return end
-    local native
-    if C_ClassColor and type(C_ClassColor.GetClassColor) == "function" then
-        local ok, value = pcall(C_ClassColor.GetClassColor, class)
-        if ok and Public(value) then native = value end
-    end
-    native = native or (type(RAID_CLASS_COLORS) == "table" and RAID_CLASS_COLORS[class])
-    if Public(native) and type(native) == "table" and Number(native.r, 0, 1) and Number(native.g, 0, 1) and Number(native.b, 0, 1) then
-        return { r = native.r, g = native.g, b = native.b }
-    end
-    local color = FALLBACK[class]
-    if color then return { r = color[1], g = color[2], b = color[3] } end
-end
+function M:NativeColor(class) return UnitColor.NativeClass(class) end
 
 function M:IsCustom(class) return self.db ~= nil and self.db.colors[class] ~= nil end
 
 -- The color ModeUI uses for a class: the custom one while the module is on.
 -- Reads the validated profile directly, so modules that draw before this one
 -- initializes (Unit Frames) already get the custom colors at login.
-function M:GetColor(class)
-    if not Public(class) or type(class) ~= "string" then return end
+local function Custom(class)
     local db = addon.db and addon.db.modules and addon.db.modules.classColors
     local custom = type(db) == "table" and db.enabled == true and type(db.colors) == "table" and db.colors[class]
     if custom then return { r = custom[1], g = custom[2], b = custom[3] } end
-    return self:NativeColor(class)
 end
+UnitColor.SetClassOverride(Custom)
+function M:GetColor(class) return UnitColor.Class(class) end
 
 function M:SetColor(class, color)
     if not KNOWN[class] then return false end
