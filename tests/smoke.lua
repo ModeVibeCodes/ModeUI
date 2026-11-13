@@ -19,6 +19,8 @@ world.run([[
     assert(ModeUIDB.importedFrom=='none','nothing to import without Play The Game Tools')
     assert(ModeUIDB.schemaVersion==2 and ModeUIDB.activeProfile=='Default' and ModeUIDB.profiles.Default==addon.db,'Default profile')
     assert(messages[1]:find('ModeUI',1,true),'welcome line')
+    -- Settings are built on demand: no window or page until the user opens one.
+    assert(addon.configWindow==nil,'settings window waits for /modeui')
     SlashCmdList.MODEUI()
     local window=addon.configWindow
     assert(window:IsShown() and window.title:GetText()=='ModeUI' and window.brandLogo,'Mode brand header')

@@ -58,7 +58,7 @@ ModeUI/            the addon folder (this is what goes in Interface/AddOns)
 tests/             Lua smoke, Unit Frames and Global tests (simulated client, not WoW)
 tools/             texture generators (Python + Pillow)
 design/mode/       Mode theme source artwork and provenance
-docs/              design notes (docs/UNIT_FRAMES.md)
+docs/              architecture (docs/ARCHITECTURE.md) and design notes (docs/UNIT_FRAMES.md)
 ```
 
 ## Local development
@@ -77,12 +77,19 @@ The tests run on any Lua 5.1+ interpreter. They simulate the client and do not
 replace checking things in game.
 
 ```
+lua tests/structure.lua
 lua tests/smoke.lua
 lua tests/unit_frames.lua
 lua tests/global.lua
 ```
 
 ## Adding a module
+
+> ModeUI is moving to one folder per module (`Modules/<Name>/` with its own XML,
+> `Init.lua` and `Driver.lua`). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the
+> layout and the restructure phases. `tests/structure.lua` already rejects new flat
+> `Modules/<Name>.lua` files, so start new modules after phase 3. The steps below
+> describe how Unit Frames is wired today.
 
 1. Register its category in `Core/Categories.lua` if it needs a new one, for example
    `addon:RegisterCategory("nameplates", { title = "Nameplates" })`.

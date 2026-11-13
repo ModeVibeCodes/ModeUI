@@ -24,6 +24,55 @@ function H.Toc()
     return metadata, order
 end
 
+-- Expands XML includes the way the client does: <Script file> and <Include file>
+-- paths are relative to the XML file's folder. Only those two elements (inside
+-- <Ui>) are understood; anything else fails so the harness never silently skips
+-- code. Returns Lua paths relative to the addon folder, in load order, and for
+-- each one the TOC or XML file that loaded it, and the set of XML files read.
+local function Directory(path) return path:match("^(.*/)") or "" end
+local function Normalize(path)
+    local parts = {}
+    for part in path:gsub("\\", "/"):gmatch("[^/]+") do
+        if part == ".." then
+            assert(#parts > 0, "include path leaves the addon folder: " .. path)
+            parts[#parts] = nil
+        elseif part ~= "." then parts[#parts + 1] = part end
+    end
+    return table.concat(parts, "/")
+end
+
+function H.Files()
+    local _, order = H.Toc()
+    local files, loadedBy, visiting, xmlFiles = {}, {}, {}, {}
+    local function Add(path, from)
+        assert(path:match("%.lua$") or path:match("%.xml$"), "unexpected load entry " .. path .. " in " .. from)
+        if path:match("%.lua$") then
+            files[#files + 1] = path
+            loadedBy[#files] = from
+            return
+        end
+        assert(not visiting[path], "XML include loop at " .. path)
+        visiting[path] = true
+        xmlFiles[path] = true
+        local text = Read(H.addonDir .. path:gsub("/", sep))
+        text = text:gsub("<%?xml.-%?>", ""):gsub("<!%-%-.-%-%->", "")
+        local base = Directory(path)
+        for closing, tag, attributes, selfClosing in text:gmatch("<(/?)([%w_]+)(.-)(/?)>") do
+            if tag == "Script" or tag == "Include" then
+                assert(closing == "" and selfClosing == "/", path .. ": <" .. tag .. "> must be self-closing")
+                local file = attributes:match('file%s*=%s*"([^"]+)"')
+                assert(file, path .. ": <" .. tag .. "> needs a file attribute")
+                Add(Normalize(base .. file), path)
+            elseif tag ~= "Ui" then
+                error(path .. ": harness does not support <" .. tag .. ">")
+            end
+        end
+        visiting[path] = nil
+    end
+    for _, entry in ipairs(order) do Add(Normalize(entry), "ModeUI.toc") end
+    return files, loadedBy, xmlFiles
+end
+
 local loadChunk = loadstring or load
 local function Compile(source, name, env)
     if setfenv then
@@ -61,8 +110,7 @@ function H.Load(options)
     env.C_AddOns.GetAddOnMetadata = function(_, key) return metadata[key] end
     local addon = {}
     env.addon = addon
-    for _, name in ipairs(order) do
-        if not name:match("%.lua$") then error("unexpected TOC entry " .. name) end
+    for _, name in ipairs(H.Files()) do
         Compile(Read(H.addonDir .. name:gsub("/", sep)), name, env)("ModeUI", addon)
     end
     if options.saved then env.ModeUIDB = options.saved end
