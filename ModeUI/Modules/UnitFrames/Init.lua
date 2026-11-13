@@ -99,6 +99,8 @@ local function Frame(side, extra)
         -- opacity. The background is mostly see-through by default, so the fill
         -- stands out against the world behind it (owner, November 13, 2026).
         foregroundTexture = "mode", backgroundTexture = "flat", barForegroundOpacity = 100, barBackgroundOpacity = 25,
+        -- A 1px light line where the health fill ends.
+        fillEdge = true,
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
         portraitScale = 150, -- portrait diameter as a % of the bar block
         portraitRing = "class", portraitRingColor = Copy(M.ACCENT),

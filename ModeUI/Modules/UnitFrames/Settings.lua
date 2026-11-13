@@ -162,6 +162,7 @@ function M:CreateConfigPage(parent)
             function() return db().foregroundTexture end, Set("foregroundTexture"))
         page.unitFrameBackground = SelectIn(textures[2], 200, function() return addon.Kit.BarTextureChoices(false) end,
             function() return db().backgroundTexture end, Set("backgroundTexture"))
+        Toggles({ { "Fill End Line", "fillEdge" } })
         page:Group("Bar Opacity")
         local fade = page:Columns({ "Foreground Opacity", "Background Opacity" })
         page.unitFrameForegroundOpacity = SliderIn(fade[1], "barForegroundOpacity", "%")

@@ -5,6 +5,20 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Hard-edged borders and the fill end line
+
+November 13, 2026, per the owner: the rounded rim and gap textures were
+filtered when scaled, so the border looked inset and softly bled into the
+bars. The bar block and the cast box now draw a hard-edged border: four flat
+strips each for the 2px rim and the 2px black gap (`Kit.Edges`,
+`Kit.PlaceEdges`, square corners, whole pixels), plus a flat black cap under
+the portrait's end of the block up to the bars. Nothing sits under the bars,
+so their background still shows the world through it (the clipped bands are
+no longer needed here). The health fill also gets a 1px light line where it
+ends (`fillEdge`, on by default; **Fill End Line** on the Layout tab), placed
+on the fill texture's leading side (`Kit.FillEdge`), so it follows the fill
+direction and secret values alike.
+
 ## Fill direction, cast bar clearance, steady preview
 
 November 13, 2026, after the first look in game, per the owner:

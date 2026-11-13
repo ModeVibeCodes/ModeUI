@@ -9,7 +9,7 @@ if not M then return end
 -- portrait instead of running under it. Cast values can be secret: see
 -- Shared/Kit/Cast.lua and Shared/Domain/Cast.lua.
 local Kit, Cast = addon.Kit, addon.Domain.Cast
-local ONYX, Tint, Rounded = M.onyx, Kit.Tint, Kit.Rounded
+local ONYX, Tint = M.onyx, Kit.Tint
 local TIMER_STEP = 0.1
 M.CAST_SAMPLE = { text = "Frostbolt", timer = "1.4", value = 0.6 }
 
@@ -60,9 +60,14 @@ function M:LayoutCast(f, unit)
     box.clear = clear
     box:SetHeight(height + 2 * g.pad)
     box:SetFrameLevel(f.panel:GetFrameLevel())
-    box.rim:ClearAllPoints(); box.rim:SetAllPoints(box)
-    Rounded(box.rim, "UnitFrameFrame"); Tint(box.rim, ONYX.border, 1)
-    Rounded(box.gap, "UnitFrameFrameInner"); Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
+    -- Hard edges like the bar block: a flat rim and the black gap inside it
+    -- (the cast bar's own track is opaque, so the gap can fill behind it).
+    for _, region in ipairs({ box.rim, box.gap }) do
+        if region.ClearTextureSlice then region:ClearTextureSlice() end
+        region:SetTexture(Kit.FLAT)
+    end
+    box.rim:ClearAllPoints(); box.rim:SetAllPoints(box); Tint(box.rim, ONYX.border, 1)
+    Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
     -- The bar spans what the health bar spans; the icon, if any, takes a
     -- square from one end, a hairline of the black gap between them.
     local start = math.max(g.pad, g.inset - g.blockStart - clear)

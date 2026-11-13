@@ -8,7 +8,7 @@ local Kit = addon.Kit
 local FLAT = Kit.FLAT
 local CIRCLE_MASK = M.CIRCLE_MASK
 local Tint, Lighten = Kit.Tint, Kit.Lighten
-local Font, LayoutLift, Inset, Rounded = Kit.Font, Kit.LayoutLift, Kit.Inset, Kit.Rounded
+local Font, LayoutLift, Inset = Kit.Font, Kit.LayoutLift, Kit.Inset
 M.Lighten = Lighten
 
 -- Mirrored by portrait side: the portrait caps the outer end.
@@ -82,20 +82,18 @@ function M:ApplyLayout(f, unit)
     panel:ClearAllPoints()
     panel:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.blockStart, -g.blockY)
     panel:SetPoint("BOTTOM" .. far, f, "BOTTOM" .. far, 0, g.blockY)
-    -- Every band holds the whole rim fill and the black gap one rim in; each
-    -- clips its copy, so together they draw the block minus the bars.
-    for i, fill in ipairs(panel.fills) do
-        fill:ClearAllPoints(); fill:SetAllPoints(panel)
-        Rounded(fill, "UnitFrameFrame"); Tint(fill, ONYX.border, 1)
-        local inner = panel.inners[i]
-        Rounded(inner, "UnitFrameFrameInner"); Inset(inner, panel, g.border); Tint(inner, ONYX.inner, 1)
-    end
-    -- The hole is the bars' rectangle: from the bars' start on the portrait
-    -- side to one rim and gap in from the other edges.
+    -- Hard edges, whole pixels: the rim on the block's edge, the black gap one
+    -- rim in, and a black cap under the portrait's end up to the bars' start.
+    Kit.PlaceEdges(panel.rim, panel, 0, g.border, ONYX.border, 1)
+    Kit.PlaceEdges(panel.gap, panel, g.border, g.line, ONYX.inner, 1)
     local start = g.inset - g.blockStart
-    Kit.PlaceBands(panel.bands, panel, near == "LEFT" and start or g.pad, g.pad, near == "LEFT" and g.pad or start, g.pad, g.px)
+    local cap = panel.cap
+    cap:ClearAllPoints()
+    cap:SetPoint("TOP" .. near, panel, "TOP" .. near, sign * g.pad, -g.pad)
+    cap:SetPoint("BOTTOM" .. near, panel, "BOTTOM" .. near, sign * g.pad, g.pad)
+    cap:SetWidth(math.max(g.px, start - g.pad)); Tint(cap, ONYX.inner, 1)
+    cap:SetShown(start > g.pad)
     local level = panel:GetFrameLevel()
-    for _, band in ipairs(panel.bands) do band:SetFrameLevel(level); band.layer:SetFrameLevel(level) end
 
     local h, pw = f.health, f.power
     h:ClearAllPoints()
@@ -119,6 +117,8 @@ function M:ApplyLayout(f, unit)
         Kit.BarForeground(bar, fdb.foregroundTexture, bar == h and g.healthHeight or g.powerHeight, g.px)
         Kit.BarBackground(bar, fdb.backgroundTexture); Tint(bar.bg, ONYX.track, fdb.barBackgroundOpacity / 100)
     end
+    -- A 1px light line where the health fill ends (owner, November 13, 2026).
+    Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)
     f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
 
     -- Round portrait above the block: full ring, black gap, dark backing, image.

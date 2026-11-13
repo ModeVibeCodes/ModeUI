@@ -74,7 +74,7 @@ world.run([====[
     local cp1,cp2=Point(pc),Point(pc,2)
     assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[4]==26 and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT' and cp2[4]==0)
     assert(pc.clear==26,'clear of the portrait')
-    assert(pc.height==14+8 and pc.rim.texture==tex('UnitFrameFrame') and pc.gap.texture==tex('UnitFrameFrameInner'),'rim and gap like the frame')
+    assert(pc.height==14+8 and pc.rim.texture==addon.Kit.FLAT and pc.gap.texture==addon.Kit.FLAT and Point(pc.gap)[4]==2,'hard-edged rim and gap like the frame')
     local cb1,cb2=Point(pc.bar),Point(pc.bar,2)
     assert(cb1[1]=='TOPLEFT' and cb1[4]==4 and cb1[5]==-4,'bar one rim and gap in from the box')
     assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(4+14+1) and cb2[5]==4,'the icon takes the far end, a hairline apart')
@@ -193,26 +193,26 @@ world.run([====[
     assert(p.width==244 and p.height==70)
     local pp=Point(p.panel);assert(pp[1]=='TOPLEFT' and pp[4]==35 and pp[5]==-12,'bar block starts under the portrait centre')
     local pb=Point(p.panel,2);assert(pb[1]=='BOTTOMRIGHT' and pb[5]==12)
-    assert(p.panel.fill.texture==tex('UnitFrameFrame') and p.panel.fill.vertexColor[1]==O.border[1],'slate rim')
-    local ip=Point(p.panel.border);assert(p.panel.border.texture==tex('UnitFrameFrameInner') and ip[4]==2 and ip[5]==-2,'2px black gap inside the 2px rim')
-    assert(p.panel.border.vertexColor[1]==O.inner[1])
+    -- Hard edges: rim and gap are four flat strips each, square corners, whole pixels.
+    local rim,gap=p.panel.rim,p.panel.gap
+    for i=1,4 do assert(rim[i].texture==addon.Kit.FLAT and gap[i].texture==addon.Kit.FLAT and rim[i].vertexColor[1]==O.border[1] and gap[i].vertexColor[1]==O.inner[1],'flat strips') end
+    assert(rim[1].height==2 and Point(rim[1])[4]==0 and Point(rim[1])[5]==0 and rim[3].width==2 and Point(rim[3])[5]==-2,'2px rim on the edge, sides between top and bottom')
+    assert(gap[1].height==2 and Point(gap[1])[4]==2 and Point(gap[1])[5]==-2 and Point(gap[3])[5]==-4 and Point(gap[4],2)[5]==4,'2px black gap one rim in')
+    local cap=p.panel.cap;assert(cap:IsShown() and Point(cap)[1]=='TOPLEFT' and Point(cap)[4]==4 and cap.width==25-4 and cap.vertexColor[1]==O.inner[1],'black under the portrait up to the bars')
     for _,bar in ipairs({p.health,p.power}) do
         assert(bar.bg.vertexColor[1]==O.track[1] and bar.bg.vertexColor[3]==O.track[3] and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
         assert(bar.fillTexture.drawLayer=='ARTWORK','fill drawn above the track')
     end
-    -- See-through background: 25% by default, so the rim and gap are four clipped
-    -- bands around the bars' rectangle (nothing opaque under the bars), with a
-    -- solid hairline between health and power.
+    -- See-through background: nothing opaque under the bars (rim, gap and cap
+    -- surround them), with a solid hairline between health and power.
     local d=M.db.player
     assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==25 and d.foregroundTexture=='mode' and d.backgroundTexture=='flat')
     for _,bar in ipairs({p.health,p.power}) do assert(math.abs(bar.bg.vertexColor[4]-0.25)<1e-9,'25% background') end
-    assert(#p.panel.bands==4 and #p.panel.fills==4 and p.panel.bands[1].clipsChildren)
-    for i=1,4 do assert(p.panel.fills[i].texture==tex('UnitFrameFrame') and p.panel.inners[i].texture==tex('UnitFrameFrameInner')) end
-    -- Hole: from the bars' start (inset 60 - block start 35) to one rim and gap (4) in.
-    assert(Point(p.panel.bands[1],2)[5]==-4 and Point(p.panel.bands[2])[5]==4,'top and bottom bands stop at the bars')
-    assert(Point(p.panel.bands[3],2)[4]==25 and Point(p.panel.bands[4])[4]==-4,'side bands stop at the bars')
-    assert(Point(p.panel.bands[3])[5]==-4+1 and Point(p.panel.bands[3],2)[5]==4-1,'side bands overlap by a pixel')
-    assert(Point(t.panel.bands[3],2)[4]==4 and Point(t.panel.bands[4])[4]==-25,'target: the portrait side is the right')
+    assert(Point(t.panel.cap)[1]=='TOPRIGHT' and Point(t.panel.cap)[4]==-4,'target: the cap is on the right')
+    -- The end of the health fill gets a 1px light line, on the side it fills toward.
+    local fe=p.health.fillEdge;assert(fe and fe:IsShown() and fe.width==1 and Point(fe)[1]=='TOPRIGHT' and Point(fe)[2]==p.health.fillTexture)
+    assert(Point(t.health.fillEdge)[1]=='TOPLEFT','reverse fill: on the left')
+    assert(M:SetFrameOption('player','fillEdge',false) and not fe:IsShown() and M:SetFrameOption('player','fillEdge',true) and fe:IsShown())
     local hl=p.panel.hairline;assert(hl:IsShown() and hl.vertexColor[1]==O.inner[1] and hl.vertexColor[4]==1 and Point(hl)[2]==p.health and Point(hl,2)[2]==p.power,'solid hairline')
     local mhp=Point(p.health);assert(mhp[1]=='TOPLEFT' and mhp[4]==60 and mhp[5]==-16 and p.health.height==27)
     local mht=Point(t.health);assert(mht[1]=='TOPRIGHT' and mht[4]==-60,'target mirrored: portrait on the right')
