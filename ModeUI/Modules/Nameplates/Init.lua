@@ -91,7 +91,8 @@ local function Style(kind)
         focusFadeOthers = 100,
         -- Auras: settings for every group, then each group on its own.
         showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
-        auraBorderSize = 2, auraCCGlow = true,
+        auraBorderSize = 2, auraCorners = "sharp", auraCCGlow = true, auraGlowStyle = "gcd",
+        auraTimerColor = Copy(P.cooldown),
         auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
         auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85), auraBleedColor = RGB(200, 45, 45),
         -- Auras without a dispel type (Cheap Shot, most crowd control): orange for
@@ -110,7 +111,7 @@ M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendl
 M.identityKeys = { show = true }
 M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
     auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true,
-    auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true }
+    auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true, auraTimerColor = true }
 -- Aura border colors by the game's dispel type name.
 M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Disease = "auraDiseaseColor",
     Poison = "auraPoisonColor", Enrage = "auraEnrageColor", Bleed = "auraBleedColor" }
@@ -159,6 +160,8 @@ M.choices = {
         { id = "borderArrows", label = "Border and Arrows" }, { id = "none", label = "None" } },
     auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
     auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" } },
+    auraCorners = { { id = "sharp", label = "Sharp" }, { id = "rounded", label = "Rounded" } },
+    auraGlowStyle = { { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,
     questAnchor = M.elementAnchors, classificationAnchor = M.elementAnchors, levelAnchor = M.elementAnchors,
 }

@@ -87,8 +87,11 @@ aura filters decide what belongs to each, so secret aura data is never compared.
 - Every group: **Show Auras**, **Timer Swipe**, **Stack Count**, **Icon Shape**
   (Cropped: 6px wider than tall, the default, for example 32 x 26; or Square),
   **Borders** (By Type or Mode), **Border Size** (1-3px, 2 by default),
-  **Spacing**, **Timer Text** and **Crowd Control Glow** (a soft glow in the rim
-  color around crowd control, on by default).
+  **Corners** (Sharp: crisp, pixel-snapped square rims, the default; or Rounded),
+  **Spacing**, **Timer Text** in **Timer Text Color** (the action bar cooldown
+  color, #FFB12F, by default) and **Crowd Control Glow** in the rim color, with
+  **Glow Style**: GCD Flash (Blizzard's action button GCD flipbook,
+  `UI-HUD-ActionBar-GCD-Flipbook`, looping; the default) or Soft Glow.
 - Each group (pick it with **Group**): **Show This Group**, **Which** (Debuffs:
   Yours, Ones You Can Dispel, All; Buffs: Dispellable or Stealable, Important,
   Yours, All), **Anchor**, **Grow** (Right, Left, Up, Down, Center), **Offset X/Y**,
