@@ -322,3 +322,7 @@ guarded, and native behavior on Forever is unverified until checked in game.
   `UpdateHotkeys` (outside combat) to restore it. The preview's Blizzard proc
   style uses Blizzard's `ActionButtonSpellAlertTemplate` (`ActionButtonSpellAlerts.xml`)
   on a ModeUI frame.
+- **Glow menu closing.** The menu registers `GLOBAL_MOUSE_DOWN`
+  (`SystemDocumentation.lua`) while open and closes when the click is outside it
+  and its button (`IsMouseOver`). It is not in the settings popups list, so
+  scrolling the page leaves it open.

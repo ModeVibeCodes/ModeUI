@@ -268,13 +268,26 @@ How buttons react, on the **Glows** tab (per bar):
   clears desaturation when a button's action changes; a hook puts it back while
   the cooldown still runs, and ModeUI only undoes its own (a level-locked
   action stays gray).
-- **Per-button switches**: click a button in the preview to open its glow menu.
-  It has **Proc Glow on This Button** and **Glow When Ready on This Button**,
-  the bar's proc and ready glow styles, and **All Glow Settings** (the Glows
-  tab). The clicked button previews its glows: the proc glow (Blizzard's own
-  animation for the Blizzard style) and the ready glow. A proc lit on the real
-  bar also shows on its preview button. Switches are kept by place (`"1"` to
-  `"12"`), only while off.
+- **One glow at a time**: when a button wants its proc glow and its ready glow
+  together, a soft glow wins over a border (Blizzard's own proc animation counts
+  as a glow); two of the same kind, the proc glow wins. The other comes back when
+  the winner ends.
+- **The glow menu**: click a button in the preview. It opens the Bar tab and a
+  menu to the left of the button, which stays open while the page scrolls and
+  closes on a click anywhere else, its **X**, switching bars, leaving the page
+  or combat. It has:
+  - **This Button**: **Proc Glow**, **Glow When Ready** and **Desaturate on
+    Cooldown**, switches for just this button (the last two gray out while the
+    bar's own switch is off).
+  - **Copy**, **Paste** and **Apply to Bar**: copy this button's switches, paste
+    them onto another button (any bar), or give every button on this bar the
+    same switches.
+  - **This Bar**: the bar's Proc Glow and Ready Glow styles.
+  - **All Glow Settings** opens the Glows tab.
+
+  While the menu is open its button previews its glow (Blizzard's own animation
+  for the Blizzard style). A proc lit on the real bar also shows on its preview
+  button. Switches are kept by place (`"1"` to `"12"`), only while off.
 - Glow When Ready and Icon Opacity apply to action bars 1-8.
 
 ## Switching it off
@@ -329,7 +342,7 @@ Version 2 changed these from version 1:
 | `Text.lua` | the four texts, their hooks and lifted shadows |
 | `Visibility.lua` | show and page conditions, fading |
 | `Glow.lua` | proc glows, the ready glow, icon opacity and desaturation on cooldown |
-| `GlowMenu.lua` | the preview's glow menu, per-button glow switches and glow previews |
+| `GlowMenu.lua` | the preview's glow menu, per-button switches with copy, paste and apply to bar, glow previews |
 | `Keybind.lua` | Keybind Mode |
 | `Preview.lua` | the Edit Mode highlight and the live settings preview |
 | `Settings.lua` | the settings page |
