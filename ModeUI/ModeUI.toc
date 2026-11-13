@@ -92,6 +92,7 @@ Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Sidebar.lua
 Shared\Settings\Window.lua
+Shared\Settings\EditAnchor.lua
 Shared\Settings\EditMode.lua
 Modules\UnitFrames\UnitFrames.xml
 Modules\Nameplates\Nameplates.xml

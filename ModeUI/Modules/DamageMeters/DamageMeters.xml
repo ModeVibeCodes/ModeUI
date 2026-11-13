@@ -9,6 +9,7 @@
     <Script file="Render.lua"/>
     <Script file="Menu.lua"/>
     <Script file="Breakdown.lua"/>
+    <Script file="Blizzard.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
 </Ui>

@@ -7,6 +7,8 @@ local Combat, Plain = addon.InCombat, addon.IsPublic
 local function Lookup(self, id) return self:Element(id) end
 
 function PM:CanDrag(element)
+    -- While Anchor To waits for a click, nothing can be dragged or selected.
+    if self.picking then return false end
     if Combat() or not addon.editMode or not element.editMode or not element.module.enabled or not element.draggable then return false end
     if not element.canDrag then return true end
     local ok, allowed = pcall(element.canDrag, element)

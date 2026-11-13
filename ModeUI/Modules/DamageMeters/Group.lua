@@ -2,9 +2,9 @@ local _, addon = ...
 local M = addon.DamageMeters
 if not M then return end
 
--- Groups: a window with Group With set stacks on that window (Below or
--- Above it, Gap apart) and takes every shared setting from the window at the
--- head of its group: width, bars, text, header, frame, Show, opacity and the
+-- Groups: a window with Group With set stacks on that window (Above it by
+-- default, or Below, Gap apart) and takes every shared setting from the
+-- window at the head of its group: width, bars, text, header, frame, Show, opacity and the
 -- lock. It keeps its own meter, fight and Rows, so a group can grow up or
 -- down one window at a time. Groups can chain (3 on 2 on 1) but never loop.
 -- A grouped window has no place of its own: it hangs from the window it

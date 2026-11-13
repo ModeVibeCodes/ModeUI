@@ -27,6 +27,8 @@ function M:OnEnable()
     self.active = true
     for _, event in ipairs(DM.EVENTS) do Events:On(self, event, function(name) self:OnMeterEvent(name) end) end
     Events:On(self, "GROUP_ROSTER_UPDATE", function() self:UpdateShown() end)
+    -- Blizzard's meter loads with the game; this catches it loading later.
+    Events:On(self, "ADDON_LOADED", function(_, name) if name == "Blizzard_DamageMeter" then self:SyncBlizzard() end end)
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         Events:On(self, event, function() self:Refresh() end)
     end
@@ -45,6 +47,7 @@ function M:OnCombatStateChanged(inCombat)
     self:UpdateShown()
     self:UpdateGrips()
     if inCombat then self:StopResize() end
+    if not inCombat and self.blizzardPending then self:SyncBlizzard() end
     -- The ticker runs the fight timer.
     if inCombat then self:Ticker():Show(); return end
     self:RequestRender()
@@ -118,6 +121,7 @@ end
 
 function M:Refresh()
     self:ClearStyles()
+    self:SyncBlizzard()
     if self.active then self:Build() end
     -- The breakdown repaints its shell after any settings change.
     self.paintRevision = (self.paintRevision or 0) + 1

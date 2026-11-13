@@ -85,6 +85,17 @@ local function MigrateV2(db)
     end
 end
 
+-- Version 3 -> 4: groups stack Above by default. The owner grouped Window 2
+-- with Window 1 and it went below, off the screen; every window still on
+-- version 3's default (Below) turns Above. Hide Blizzard's Meter takes its
+-- default (on).
+local function MigrateV3(db)
+    for _, window in ipairs(M.windows) do
+        local style = db[window]
+        if type(style) == "table" and style.groupSide == "below" then style.groupSide = "above" end
+    end
+end
+
 -- A window can't group with itself, and groups never loop.
 local function ValidateGroups(db)
     for _, window in ipairs(M.windows) do
@@ -100,8 +111,11 @@ end
 function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
     if db.version == 2 then MigrateV2(db); db.version = 3 end
+    if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid damage meter settings version")
+    if db.hideBlizzard == nil then db.hideBlizzard = true end
+    assert(Public(db.hideBlizzard) and type(db.hideBlizzard) == "boolean", "Invalid damage meter setting: hideBlizzard")
     for _, window in ipairs(M.windows) do
         if db[window] == nil then db[window] = Copy(M.styleDefaults[window]) end
         Validate(db[window], window)

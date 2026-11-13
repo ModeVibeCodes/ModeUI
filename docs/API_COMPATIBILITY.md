@@ -379,17 +379,45 @@ checked against the user's local mainline copy (`WoWUI-live`, build
   CVar (`DamageMeter.lua`, `ShouldBeShown`). Third-party meters report that the
   game records only while it's on. ModeUI reads it with `C_CVar.GetCVarBool`
   and never writes it.
-- **Blizzard's window is left alone.** It is an Edit Mode system frame
+- **Blizzard's window is never written into.** It is an Edit Mode system frame
   (`EditModeDamageMeterSystemTemplate`). A third-party author (LittleThings)
   reported that writing into its session windows taints their refresh. ModeUI
-  neither reparents, hides nor calls into it. Its own Edit Mode Visibility
-  setting can hide it.
+  never calls into it or sets its fields. Hiding it is in the fourth pass
+  below.
 - **Death Recap.** `OpenDeathRecapUI(deathRecapID)` is what Blizzard's window
   calls. ModeUI calls it only out of combat, guarded.
 - **Unverified natively:** whether the game records with its option off,
   which meter types return data on Forever (one author reports Avoidable Damage
   Taken is unavailable there; the window then says "No avoidable damage
   taken."), and the exact client behavior of `AbbreviateNumbers` text.
+
+### Damage meters, fourth pass — November 13, 2026
+
+- **Hide Blizzard's Meter.** Blizzard's session windows are created as children
+  of the global `DamageMeter` frame
+  (`CreateFrame("FRAME", "DamageMeterSessionWindow" .. i, self, ...)` in
+  `DamageMeterMixin:SetupSessionWindow`), and the spell breakdown
+  (`SourceWindow`) sits inside each session window. The Forever branch's
+  `Blizzard_DamageMeter` matches mainline. So `DamageMeter:SetParent(hidden
+  ModeUI frame)` hides all of it and its mouse areas without touching the
+  `damageMeterEnabled` CVar. The CVar only gates `ShouldBeShown`, so recording
+  goes on. Blizzard's own `SetShown` calls still run, under a hidden parent.
+  Action Bars hides Blizzard bar art the same way. The frame isn't protected
+  (checked with `IsProtected`, deferred to after combat if it ever is).
+  Alternatives considered: the CVar would also stop Blizzard's recording as far
+  as third-party authors report, and alpha alone (as MidnightHiddenCombatMeter
+  does in combat) leaves its windows taking clicks. Unverified natively: that
+  Blizzard's Edit Mode is unbothered by the reparented system frame.
+- **Anchoring in Edit Mode.** `PositionManager:ChangeTarget` kept the old x/y
+  when the target changed, and those offsets were measured from the old anchor,
+  so a window could land off the screen. `PositionManager:AnchorTo` sets
+  target, side and x/y 0 (Screen keeps the place via `DetachAnchor`) and
+  refuses a target that already hangs from the element (`WouldLoop`, which
+  follows owned targets' saved anchors), because the client rejects a circular
+  `SetPoint`. **Anchor To...** reads `GetMouseFoci` only for named Blizzard
+  frames (as `FrameAnchors` did). ModeUI targets are matched by their rectangle
+  under `GetCursorPosition()`, since stand-ins don't take the mouse while it
+  waits. Clicks are seen through `GLOBAL_MOUSE_DOWN`.
 
 ### Damage meters, second pass — November 13, 2026
 

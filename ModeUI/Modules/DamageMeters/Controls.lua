@@ -192,13 +192,29 @@ function M:PinTopLeft(window)
         x = Snap(left - uiLeft), y = Snap(top - uiTop) })
 end
 
+-- Where a frame's top-left corner is, as a point on UIParent's bottom left.
+local function Corner(frame)
+    local left, top = frame:GetLeft(), frame:GetTop()
+    if not (Number(left) and Number(top)) then return end
+    return left - (UIParent:GetLeft() or 0), top - (UIParent:GetBottom() or 0)
+end
+
+-- The head of the group moves. Its stand-in rides along on its corner, so
+-- windows anchored on it in Edit Mode follow the drag as it happens (grouped
+-- windows hang from the head itself).
 function M:StartMove(window)
     local frame = self.frames[window]
     if not self:CanArrange(window) then return end
     local head = self:Leader(window)
+    local moved, mover = self.frames[head], self.movers[head]
     frame.dragged = true
     self.moving = head
-    self.frames[head]:StartMoving()
+    local x, y = Corner(moved)
+    if x then
+        moved:ClearAllPoints(); moved:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+        mover:ClearAllPoints(); mover:SetPoint("TOPLEFT", moved, "TOPLEFT", 0, 0)
+    end
+    moved:StartMoving()
 end
 
 -- Saves where the head of the group was dropped, the way Edit Mode does:
@@ -210,18 +226,19 @@ function M:StopMove()
     local frame, mover = self.frames[head], self.movers[head]
     frame:StopMovingOrSizing()
     if frame.SetUserPlaced then pcall(frame.SetUserPlaced, frame, false) end
-    local left, top = frame:GetLeft(), frame:GetTop()
+    local x, y = Corner(frame)
     local id = self.elementIds[head]
     local element = PM:Element(id)
-    if element and Number(left) and Number(top) and not addon.InCombat() then
-        mover:ClearAllPoints()
-        mover:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left - (UIParent:GetLeft() or 0), top - (UIParent:GetBottom() or 0))
-        element.subject.appliedAnchor = nil
-        local x, y = P:ReadFrame(element.subject)
+    -- The stand-in lets go of the window first (the window hangs from it again below).
+    mover:ClearAllPoints()
+    if x then mover:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y) end
+    if element then element.subject.appliedAnchor = nil end
+    if element and x and not addon.InCombat() then
+        local ox, oy = P:ReadFrame(element.subject)
         local px = Kit.PixelSize(mover)
-        if Number(x) and Number(y) then PM:SetOffsets(id, math.floor(x / px + 0.5) * px, math.floor(y / px + 0.5) * px) end
+        if Number(ox) and Number(oy) then PM:SetOffsets(id, math.floor(ox / px + 0.5) * px, math.floor(oy / px + 0.5) * px) end
         PM:ApplyPosition(id, true)
-    end
+    elseif not x then PM:ApplyPosition(id, true) end
     self:AnchorWindow(head, frame.g)
 end
 
