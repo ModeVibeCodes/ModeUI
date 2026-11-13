@@ -51,6 +51,46 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         for k, v in pairs(extra or {}) do unit[k] = v end
         return unit
     end
+    -- Auras: the stub applies filter strings the way the game does.
+    local TOKENS = { PLAYER = 'player', RAID = 'raid', CROWD_CONTROL = 'cc', DISPELLABLE = 'dispellable', IMPORTANT = 'important' }
+    function MatchesFilter(aura, filter)
+        for part in filter:gmatch('[^|]+') do
+            local token = part
+            local negated = token:sub(1, 1) == '!'
+            if negated then
+                if testRejectNegation then error('Unknown aura filter component') end
+                token = token:sub(2)
+            end
+            if token == 'HARMFUL' then if not aura.harmful then return false end
+            elseif token == 'HELPFUL' then if aura.harmful then return false end
+            elseif TOKENS[token] then if (aura[TOKENS[token]] == true) == negated then return false end end
+        end
+        return true
+    end
+    auraQueries = {}
+    C_UnitAuras = {
+        GetUnitAuras = function(unit, filter, max)
+            auraQueries[#auraQueries + 1] = filter
+            local list = {}
+            for _, aura in ipairs(units[unit] and units[unit].auras or {}) do
+                if MatchesFilter(aura, filter) and #list < max then list[#list + 1] = aura end
+            end
+            return list
+        end,
+        GetAuraApplicationDisplayCount = function(unit, id, minimum)
+            for _, aura in ipairs(units[unit].auras) do
+                if aura.auraInstanceID == id then
+                    if issecretvalue(aura.applications) then return Secret('count') end
+                    return (aura.applications or 0) >= minimum and tostring(aura.applications) or ''
+                end
+            end
+            return ''
+        end,
+        GetAuraDuration = function(unit, id) if testDurationObjects then return { duration = id } end error('no duration objects') end,
+    }
+    function methods:SetCooldownFromDurationObject(object) self.durationObject = object end
+    function methods:SetReverse(value) self.reverse = value end
+    function methods:SetHideCountdownNumbers(value) self.hideNumbers = value end
     function Friendly(extra)
         local unit = Hostile({ reaction = 5, canAttack = false })
         for k, v in pairs(extra or {}) do unit[k] = v end
@@ -63,7 +103,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'interface' and not M.enabled, 'registered, off by default')
-    assert(M.db.version == 2 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 3 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
 
@@ -157,6 +197,61 @@ world.run([==[
     units.nameplate1.channel = nil; FireEvent('UNIT_SPELLCAST_CHANNEL_STOP', 'nameplate1')
     assert(not plate.castBox:IsShown() and plate.casting == nil and plate.cast.scripts.OnUpdate == nil, 'cast bar stops')
 
+    -- Every bar is Mode Gradient; boxes have rounded rims like the unit frames.
+    local rounded = addon.Media:GetTexture('UnitFrameFrame')
+    assert(plate.health.statusBarTexture == Kit.FLAT and plate.health.sheen:IsShown() and plate.health.sheen.gradient, 'Mode Gradient health')
+    assert(plate.cast.statusBarTexture == Kit.FLAT and plate.cast.sheen:IsShown(), 'Mode Gradient cast bar')
+    assert(plate.healthBox.rim.texture == rounded and plate.healthBox.gap.texture == addon.Media:GetTexture('UnitFrameFrameInner'), 'rounded rim')
+    assert(not M:SetOption('enemy', 'texture', 'flat'), 'the bar texture is not a setting')
+    assert(M:SetOption('enemy', 'castHeight', 4) and plate.castBox.rim.texture == Kit.FLAT, 'too small to round: square rim')
+    assert(M:SetOption('enemy', 'castHeight', 8) and plate.castBox.rim.texture == rounded)
+
+    -- Auras: the game's filters pick them; crowd control, then debuffs, then buffs.
+    local SNARE = { auraInstanceID = 11, icon = 'snare', harmful = true, cc = true, duration = 6, expirationTime = 105 }
+    local DOT = { auraInstanceID = 12, icon = 'dot', harmful = true, player = true, applications = 3, duration = 18, expirationTime = 110 }
+    local OTHER = { auraInstanceID = 13, icon = 'other', harmful = true, dispellable = true, duration = 0, expirationTime = 0 }
+    local SHIELD = { auraInstanceID = 14, icon = 'shield', harmful = false, dispellable = true, duration = 15, expirationTime = 112 }
+    local SECRET = { auraInstanceID = 15, icon = Secret('icon'), harmful = true, player = true, applications = Secret('n'), duration = Secret('d'), expirationTime = Secret('e') }
+    units.nameplate1.auras = { SHIELD, OTHER, DOT, SNARE }
+    FireEvent('UNIT_AURA', 'nameplate1')
+    local icons = plate.auraIcons
+    assert(plate.auraCount == 3 and icons[1].icon.texture == 'snare' and icons[2].icon.texture == 'dot' and icons[3].icon.texture == 'shield',
+        'enemy defaults: crowd control, your debuffs, dispellable buffs')
+    assert(not (icons[4] and icons[4]:IsShown()), "others' debuffs left out")
+    assert(icons[2].count.text == '3' and icons[1].count.text == '', 'stack count from the game')
+    assert(icons[2].cooldown.cooldownStart == 92 and icons[2].cooldown.cooldownDuration == 18 and icons[2].cooldown:IsShown(), 'timer swipe')
+    local found = false
+    for _, query in ipairs(auraQueries) do if query == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' then found = true end end
+    assert(found, 'debuffs leave crowd control to its own group')
+    -- Placement: above the name, centered; left/right beside the health box.
+    local firstIcon = Point(icons[1])
+    assert(firstIcon[1] == 'BOTTOMLEFT' and firstIcon[2] == plate.name and firstIcon[3] == 'TOPLEFT', 'above the name')
+    assert(M:SetOption('enemy', 'auraPosition', 'below') and Point(icons[1])[2] == plate and Point(icons[1])[1] == 'TOPLEFT')
+    assert(M:SetOption('enemy', 'auraPosition', 'right') and Point(icons[1])[1] == 'LEFT' and Point(icons[1])[3] == 'RIGHT')
+    assert(M:SetOption('enemy', 'auraSize', 30) and math.abs(icons[1].width - 30) < 1, 'icon size')
+    assert(M:SetOption('enemy', 'auraMax', 2) and plate.auraCount == 2 and not icons[3]:IsShown(), 'most shown')
+    assert(M:SetOption('enemy', 'auraDebuffs', 'all') and M:SetOption('enemy', 'auraMax', 6))
+    assert(plate.auraCount == 4 and icons[2].icon.texture == 'other' and icons[3].icon.texture == 'dot', 'all debuffs, in the order the game returns them')
+    assert(not icons[2].cooldown:IsShown(), 'permanent aura: no swipe')
+    assert(M:SetOption('enemy', 'auraTimer', false) and not icons[3].cooldown:IsShown())
+    assert(M:SetOption('enemy', 'auraCount', false) and icons[3].count.text == '')
+    -- Secret auras: icon and count go only to SetTexture and SetText; no swipe from secret times.
+    assert(M:SetOption('enemy', 'auraTimer', true) and M:SetOption('enemy', 'auraCount', true))
+    units.nameplate1.auras = { SECRET }; FireEvent('UNIT_AURA', 'nameplate1')
+    assert(plate.auraCount == 1 and issecretvalue(icons[1].icon.texture) and issecretvalue(icons[1].count.text))
+    assert(not icons[1].cooldown:IsShown(), 'no swipe from secret times without a duration object')
+    testDurationObjects = true; FireEvent('UNIT_AURA', 'nameplate1')
+    assert(icons[1].cooldown.durationObject and icons[1].cooldown:IsShown(), 'duration object drawn natively')
+    testDurationObjects = nil
+    -- A client that rejects the negation still shows debuffs.
+    testRejectNegation = true; units.nameplate1.auras = { DOT }; FireEvent('UNIT_AURA', 'nameplate1')
+    assert(plate.auraCount == 1 and icons[1].icon.texture == 'dot', 'negation retried without it')
+    testRejectNegation = nil
+    assert(M:SetOption('enemy', 'showAuras', false) and plate.auraCount == 0 and not icons[1]:IsShown(), 'auras off')
+    assert(M:SetOption('enemy', 'showAuras', true))
+    units.nameplate1.auras = nil; FireEvent('UNIT_AURA', 'nameplate1')
+    assert(plate.auraCount == 0)
+
     -- The personal resource display and widget-only plates stay Blizzard's.
     units.nameplate3 = Friendly()
     local personal = CreateFrame('Frame', nil, UIParent)
@@ -205,6 +300,18 @@ world.run([==[
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
     assert(sample.targeted and sample.healthBox.rim.vertexColor[3] == P.accent[3], 'sample target rim')
     assert(sample.castBox:IsShown() and sample.cast.value == 0.6 and sample.castText.text == 'Shadow Bolt')
+    -- Sample auras follow the aura settings (enemy here: everything shown above).
+    local function Shown(p) local n = 0; for _, icon in ipairs(p.auraIcons) do if icon:IsShown() then n = n + 1 end end; return n end
+    assert(Shown(sample) == 4 and sample.auraIcons[1].icon.texture:find('Polymorph', 1, true), 'enemy sample auras')
+    assert(Shown(friend) == 1 and friend.auraIcons[1].icon.texture:find('AbominationExplosion', 1, true), 'friendly: dispellable debuff only')
+    assert(M:SetOption('friendly', 'auraBuffs', 'mine') and Shown(friend) == 2, 'preview follows Buffs')
+    assert(M:SetOption('friendly', 'auraCrowdControl', true) and Shown(friend) == 3 and friend.auraIcons[1].icon.texture:find('ChainsOfIce', 1, true))
+    assert(M:SetOption('friendly', 'showAuras', false) and Shown(friend) == 0)
+    assert(M:SetOption('friendly', 'showAuras', true))
+    -- One Nameplates tab replaces Plates and Health; Auras has its own.
+    local sections = {}
+    for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
+    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Markers', table.concat(sections, ','))
     assert(M:SetOption('enemy', 'healthText', 'both') and sample.healthText.text == '8,640 · 72%', 'preview follows settings')
     assert(M:SetOption('enemy', 'targetHighlight', false) and not sample.targeted)
     assert(M:SetOption('friendly', 'show', false) and not friend:IsShown() and view.captions.friendly.text:find("Blizzard", 1, true))
@@ -247,14 +354,29 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 2 and db.width == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 3 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
-        assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == 'flat' and style.outline == true, kind)
+        assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
         assert(style.show == true and style.showRaidIcon == false and style.healthText == 'current', kind)
     end
     assert(addon.modules.nameplates.enabled, 'module state kept')
 ]==], "nameplates_v1")
+
+-- Version 2 settings lose the texture choice and gain aura defaults.
+local v2 = world.saved()
+local np = v2.profiles.Default.modules.nameplates
+np.version = 2
+for _, kind in ipairs({ 'enemy', 'friendly' }) do
+    np[kind].texture = 'satin'
+    for key in pairs(np[kind]) do if key:find('^aura') or key == 'showAuras' then np[kind][key] = nil end end
+end
+H.Load({ before = STUBS, saved = v2 }).run([==[
+    local db = addon.Nameplates.db
+    assert(db.version == 3 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.enemy.showAuras and db.enemy.auraDebuffs == 'mine' and db.friendly.auraDebuffs == 'dispellable', 'aura defaults')
+    assert(db.enemy.width == 180, 'other settings kept')
+]==], "nameplates_v2")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

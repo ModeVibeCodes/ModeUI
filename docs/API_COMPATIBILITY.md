@@ -83,3 +83,34 @@ behavior on Forever is unverified until checked in game.
   use `SetAlphaFromBoolean` instead (`Blizzard_UnitFrame/Shared/UnitFrameUtil.lua`).
   Its alpha range (`SingleColorValue`, default 255) is undocumented, so ModeUI
   avoids it.
+
+## Nameplate auras — November 12, 2026
+
+Same source (`WoWUI-live` 12.1.5 mainline); unverified on Forever.
+
+- **Choosing auras.** `C_UnitAuras.GetUnitAuras(unit, filter, maxCount)` returns
+  a list whose contents can be secret while unit auras are restricted
+  (`ConditionalSecretContents`, `UnitAuraDocumentation.lua`). Which auras match
+  is decided by the game through filter strings (`AuraUtil.AuraFilters` in
+  `Blizzard_FrameXMLUtil`): `HARMFUL|PLAYER` (yours), `HARMFUL|RAID` (ones you
+  can dispel), `HARMFUL|CROWD_CONTROL`, `HELPFUL|DISPELLABLE`,
+  `HELPFUL|IMPORTANT`, `HELPFUL|PLAYER`, plus `INCLUDE_NAME_PLATE_ONLY` as
+  Blizzard's own nameplates use (`Blizzard_NamePlateAuras.lua`). A leading `!`
+  negates a component; debuffs use `!CROWD_CONTROL` when crowd control has
+  its own group, retried without it if a client rejects the negation. ModeUI
+  never compares an aura field.
+- **Icon and stacks.** `aura.icon` goes only to `Texture:SetTexture`. The stack
+  text comes from `C_UnitAuras.GetAuraApplicationDisplayCount(unit, id, 2)` (a
+  string, secret while restricted) and goes only to `FontString:SetText`.
+- **Timer swipe.** Every `Cooldown` setter (`SetCooldown`,
+  `SetCooldownFromDurationObject`, …) is `AllowedWhenUntainted`
+  (`FrameAPICooldownDocumentation.lua`), so a secret time can't be drawn by an
+  addon. ModeUI tries `C_UnitAuras.GetAuraDuration` with
+  `SetCooldownFromDurationObject` (pcall-guarded), then public
+  `duration`/`expirationTime` with `SetCooldown`, else hides the swipe.
+  Permanent auras (duration 0) have no swipe.
+- **Not used.** Blizzard's secure `CustomAuraContainerTemplate`
+  (`Blizzard_AuraContainer`, `UseSecureEnvironment`) can display secret auras
+  for addons. It's a larger API (groups, slots, processing policies, its own
+  buttons) and may not exist on Forever; it is the route to take if aura
+  timers in restricted content turn out to matter.

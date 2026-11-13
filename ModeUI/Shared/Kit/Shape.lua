@@ -42,3 +42,16 @@ function Kit.Rounded(texture, key)
         texture:SetTexture(Kit.FLAT)
     end
 end
+
+-- Mode Gradient: ModeUI's one bar texture, used by every skinned bar. A flat
+-- fill with a soft white gradient over its top half, drawn above the track.
+-- `bar` comes from Kit.Bar; barHeight and px are in the bar's units.
+function Kit.ModeGradient(bar, barHeight, px)
+    bar:SetStatusBarTexture(Kit.FLAT)
+    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
+    bar.sheen:SetTexture(Kit.FLAT)
+    bar.sheen:SetHeight(math.max(px, math.floor(barHeight / (2 * px)) * px))
+    Kit.Gradient(bar.sheen, { 1, 1, 1, 0.12 }, { 1, 1, 1, 0 }, 0.06)
+    bar.sheen:Show()
+end

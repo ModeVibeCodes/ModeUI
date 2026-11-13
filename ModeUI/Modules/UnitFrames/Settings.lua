@@ -109,8 +109,6 @@ function M:CreateConfigPage(parent)
     Tab("Layout", function()
         page:Group("Size")
         Slider("Scale", "scale", "%"); Slider("Bar Width", "barWidth")
-        page:Group("Bars")
-        Select("Bar Texture", function() return M:GetTextureChoices() end, function() return db().texture end, Set("texture"))
     end)
 
     Tab("Portrait", function()

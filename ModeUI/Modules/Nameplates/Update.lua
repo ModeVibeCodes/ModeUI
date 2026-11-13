@@ -18,6 +18,7 @@ function M:UpdatePlate(plate)
     self:UpdateRaidIcon(plate)
     self:UpdateTarget(plate)
     self:UpdateCast(plate)
+    self:UpdateAuras(plate)
 end
 
 function M:UpdateAll()

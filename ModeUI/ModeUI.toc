@@ -34,10 +34,12 @@ Shared\Domain\Cast.lua
 Shared\Domain\RaidIcon.lua
 Shared\Domain\Threat.lua
 Shared\Domain\Nameplate.lua
+Shared\Domain\Auras.lua
 Shared\Kit\Color.lua
 Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua
 Shared\Kit\Text.lua
+Shared\Kit\AuraIcon.lua
 Shared\Placement\DisplayModes.lua
 Shared\Placement\EditMode.lua
 Shared\Placement\Positioning.lua

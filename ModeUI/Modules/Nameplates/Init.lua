@@ -7,7 +7,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- raid marker and target highlight. Enemy and friendly plates each have their
 -- own settings. Unit values can be secret and only reach widgets documented as
 -- accepting them. See docs/NAMEPLATES.md.
--- Files: Init (this), Driver, Plate, Update, CastBar, Preview, Settings.
+-- Files: Init (this), Driver, Plate, Update, CastBar, Auras, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Nameplates"], category = "interface", defaultEnabled = false,
     configDescription = L["Onyx nameplates with health, names, cast bars and raid markers."],
@@ -16,7 +16,9 @@ addon.Nameplates = M
 addon:RegisterModule("nameplates", M)
 
 -- Version 2: separate enemy and friendly settings (version 1 had one set).
-M.VERSION = 2
+-- Version 3: auras added; every bar uses the Mode Gradient texture, so the
+-- texture choice is gone.
+M.VERSION = 3
 M.kinds = { "enemy", "friendly" }
 M.kindLabels = { enemy = "Enemy", friendly = "Friendly" }
 local P, RGB = Kit.palette, Kit.RGB
@@ -36,7 +38,11 @@ local function Style(kind)
         showName = true, nameFontSize = 10,
         showCastBar = true, castFontSize = 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
         showRaidIcon = true, targetHighlight = true,
-        texture = "satin", font = "game", fontMedia = "Expressway", outline = false, shadow = true, liftedShadow = true,
+        -- Auras: which kinds show, then where and how big.
+        showAuras = true, auraCrowdControl = enemy, auraDebuffs = enemy and "mine" or "dispellable",
+        auraBuffs = enemy and "dispellable" or "none", auraPosition = "above", auraAlign = "center",
+        auraSize = enemy and 20 or 16, auraSpacing = 2, auraMax = enemy and 6 or 4, auraTimer = true, auraCount = true,
+        font = "game", fontMedia = "Expressway", outline = false, shadow = true, liftedShadow = true,
         textColor = Copy(P.text),
     }
 end
@@ -46,15 +52,21 @@ M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendl
 M.identityKeys = { show = true }
 
 M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 }, softness = { 0, 100, 5 },
-    healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 } }
+    healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 },
+    auraSize = { 10, 40, 1 }, auraSpacing = { 0, 8, 1 }, auraMax = { 1, 12, 1 } }
 M.choices = {
     healthColorMode = { { id = "reaction", label = "Reaction and Class" }, { id = "reactionOnly", label = "Reaction" },
         { id = "onyx", label = "Onyx" }, { id = "custom", label = "Custom" } },
     healthText = { { id = "percent", label = "Percent" }, { id = "current", label = "Current Health" },
         { id = "both", label = "Current and Percent" }, { id = "none", label = "None" } },
+    auraDebuffs = { { id = "mine", label = "Yours" }, { id = "dispellable", label = "Ones You Can Dispel" },
+        { id = "all", label = "All" }, { id = "none", label = "None" } },
+    auraBuffs = { { id = "dispellable", label = "Dispellable or Stealable" }, { id = "important", label = "Important" },
+        { id = "mine", label = "Yours" }, { id = "all", label = "All" }, { id = "none", label = "None" } },
+    auraPosition = { { id = "above", label = "Above" }, { id = "below", label = "Below" }, { id = "left", label = "Left" },
+        { id = "right", label = "Right" } },
+    auraAlign = { { id = "left", label = "Left" }, { id = "center", label = "Center" }, { id = "right", label = "Right" } },
 }
-M.textures = { { id = "satin", label = "Satin" }, { id = "mode", label = "Mode" }, { id = "flat", label = "Flat" },
-    { id = "default", label = "Use Global Setting" } }
 
 local Public, Number = addon.IsPublic, addon.IsNumber
 local ALLOWED = {}
@@ -73,6 +85,7 @@ local function MigrateV1(db)
         db[kind] = style
     end
     for key in pairs(M.styleDefaults.enemy) do db[key] = nil end
+    db.texture = nil -- retired in version 3
 end
 
 local function Validate(style, kind)
@@ -90,15 +103,20 @@ local function Validate(style, kind)
         assert(Number(value, r[1], r[2]) and value == math.floor(value), "Invalid nameplate range: " .. kind .. "." .. key)
     end
     for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid nameplate choice: " .. kind .. "." .. key) end
-    local texture = style.texture
-    assert(texture == "satin" or texture == "mode" or texture == "flat" or texture == "default" or texture:sub(1, 6) == "media:",
-        "Invalid nameplate texture: " .. kind)
+end
+
+-- Version 2 -> 3: the texture choice is retired; new aura keys take defaults.
+local function MigrateV2(db)
+    for _, kind in ipairs(M.kinds) do
+        if type(db[kind]) == "table" then db[kind].texture = nil end
+    end
 end
 
 -- Fills defaults, migrates and validates; profile validation runs this on
 -- detached copies.
 function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
+    if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

@@ -7,7 +7,7 @@ local ONYX = M.onyx
 local Kit = addon.Kit
 local FLAT = Kit.FLAT
 local CIRCLE_MASK = M.CIRCLE_MASK
-local Tint, Lighten, Gradient = Kit.Tint, Kit.Lighten, Kit.Gradient
+local Tint, Lighten = Kit.Tint, Kit.Lighten
 local Font, LayoutLift, Inset, Rounded = Kit.Font, Kit.LayoutLift, Kit.Inset, Kit.Rounded
 M.Lighten = Lighten
 
@@ -70,12 +70,6 @@ end
 -- The suite's text style (see Shared/Kit/Text.lua).
 M.LIFT_PIXELS, M.LIFT_ALPHA = Kit.LIFT_PIXELS, Kit.LIFT_ALPHA
 
-function M:BarTexture(fdb)
-    if fdb.texture == "satin" then return addon.Media:GetTexture("UnitFrameBar") or FLAT, false end
-    if fdb.texture == "mode" then return FLAT, true end
-    return addon.Media:GetStatusBar(fdb.texture, self.id) or FLAT, false
-end
-
 function M:ApplyLayout(f, unit)
     local fdb = self:FrameDB(unit)
     -- Scale first: the pixel size depends on the frame's effective scale.
@@ -106,17 +100,10 @@ function M:ApplyLayout(f, unit)
     pw:ClearAllPoints()
     pw:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -g.gap); pw:SetPoint("TOPRIGHT", h, "BOTTOMRIGHT", 0, -g.gap)
     pw:SetHeight(g.powerHeight); pw:SetShown(fdb.showPower)
-    local texture, sheen = self:BarTexture(fdb)
+    -- Every bar uses the Mode Gradient texture over the opaque track.
     for _, bar in ipairs({ h, pw }) do
-        bar:SetStatusBarTexture(texture)
-        -- Keep the colored fill above the opaque track on every client.
-        local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
-        if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
+        Kit.ModeGradient(bar, bar == h and g.healthHeight or g.powerHeight, g.px)
         bar.bg:SetTexture(FLAT); Tint(bar.bg, ONYX.track, 1)
-        bar.sheen:SetTexture(FLAT)
-        bar.sheen:SetHeight(math.max(g.px, math.floor((bar == h and g.healthHeight or g.powerHeight) / (2 * g.px)) * g.px))
-        Gradient(bar.sheen, { 1, 1, 1, 0.12 }, { 1, 1, 1, 0 }, 0.06)
-        bar.sheen:SetShown(sheen)
     end
     f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
 

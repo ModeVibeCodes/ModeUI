@@ -5,6 +5,14 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Mode Gradient on every bar (layout version 12)
+
+November 12, 2026, per the owner: every ModeUI bar uses one texture, **Mode
+Gradient** (`Kit.ModeGradient`: a flat fill with a soft white gradient over its
+top half, the look the old "Mode" choice gave). The Bar Texture setting is gone,
+and layout version 12 removes the saved `texture` key from both frames. ModeUI's
+text and interface default to Expressway, with the bundled Lato as the fallback.
+
 November 11, 2026. First module of the **Interface** category and the start of
 the Play The Game Tools UI suite. Opt-in (default off), Forever only, built into
 PTG with no dependency on ModeTools or any other addon. Static/mock validated

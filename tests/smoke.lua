@@ -75,7 +75,7 @@ imported.run([[
     local M=addon.UnitFrames
     assert(ModeUIDB.importedFrom=='PlayTheGameTools:Mode','imported from the active PTG profile')
     assert(M.enabled and M.db.player.barWidth==260 and M.db.target.barWidth==210 and M.db.target.matchPlayer==false)
-    assert(M.db.layoutVersion==11 and M.db.player.nameColorMode=='sky','migrated to the current layout')
+    assert(M.db.layoutVersion==12 and M.db.player.nameColorMode=='sky','migrated to the current layout')
     local position=addon.PositionManager:GetPosition('unitFramesPlayer')
     assert(position.x==-300 and position.y==-150,'Player frame position imported')
     assert(PTGToolsDB.profiles.Mode.modules.unitFrames.layoutVersion==10,'PTG data left untouched')
@@ -103,3 +103,15 @@ for _, name in ipairs({ "Lato-Regular.ttf", "Lato-Bold.ttf" }) do
 end
 assert(#missing == 0, "missing assets: " .. table.concat(missing, ", "))
 print("assets: all present")
+
+-- ModeUI's interface uses Expressway when an installed provider brings it,
+-- and the bundled Lato otherwise.
+local function TitleFont(before)
+    local world = H.Load({ before = before })
+    return world.run([[ SlashCmdList.MODEUI(); return addon.configWindow.title.font[1] ]], "font")
+end
+assert(TitleFont(STUBS):find("Lato", 1, true), "Lato without Expressway")
+local provider = STUBS .. "\ntestProviderFonts = { [AYIJE_EXPRESSWAY] = true }\n"
+provider = "AYIJE_EXPRESSWAY = 'Interface' .. string.char(92) .. 'AddOns' .. string.char(92) .. 'AyijeUI' .. string.char(92) .. 'Media' .. string.char(92) .. 'Fonts' .. string.char(92) .. 'Expressway.ttf'\n" .. provider
+assert(TitleFont(provider):find("Expressway", 1, true), "Expressway by default when installed")
+print("fonts: Expressway by default")

@@ -132,6 +132,15 @@ local function MigrateV10(db)
     end
 end
 
+-- Layout version 11 -> 12, per the owner: every bar uses the Mode Gradient
+-- texture (Kit.ModeGradient), so the Bar Texture choice is retired.
+RETIRED[#RETIRED + 1] = "texture"
+local function MigrateV11(db)
+    for _, unit in ipairs(M.units) do
+        if type(db[unit]) == "table" then db[unit].texture = nil end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -141,7 +150,8 @@ function M.Initialize(db)
         if Number(from, 2, 7) then MigrateV2toV7(db, from); db.layoutVersion = 8 end
         if db.layoutVersion == 8 then MigrateV8(db); db.layoutVersion = 9 end
         if db.layoutVersion == 9 then MigrateV9(db); db.layoutVersion = 10 end
-        if db.layoutVersion == 10 then MigrateV10(db); db.layoutVersion = M.LAYOUT_VERSION end
+        if db.layoutVersion == 10 then MigrateV10(db); db.layoutVersion = 11 end
+        if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = M.LAYOUT_VERSION end
     end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
@@ -152,8 +162,5 @@ function M.Initialize(db)
         Fill(frame, M.frameDefaults[unit], unit .. ".")
         for key, r in pairs(M.frameRanges) do assert(Ranged(frame[key], r), "Invalid unit frame range: " .. unit .. "." .. key) end
         for key, list in pairs(M.choiceKeys) do assert(ALLOWED[list][frame[key]], "Invalid unit frame choice: " .. unit .. "." .. key) end
-        local texture = frame.texture
-        assert(texture == "satin" or texture == "mode" or texture == "default" or texture == "flat" or texture:sub(1, 6) == "media:",
-            "Invalid unit frame texture: " .. unit)
     end
 end

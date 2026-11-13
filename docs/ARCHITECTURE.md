@@ -250,6 +250,7 @@ to widgets documented as accepting them.
 | `RaidIcon.lua` | `Domain.RaidIcon.Apply(texture, unit)`: the marker through `SetSpriteSheetCell`, or hidden |
 | `Threat.lua` | `Domain.Threat.Status(unit)` → 0-3 or nil when unknown or secret |
 | `Nameplate.lua` | `Domain.Nameplate.ForUnit(unit)`, `.IsPlayerPlate(frame)`, `.WidgetsOnly(unit)`, `.ActiveUnits()` |
+| `Auras.lua` | `Domain.Auras.Filters(crowdControl, debuffs, buffs)` → filter strings; `.Collect(unit, filters, max)`; `.Apply(icon, unit, aura, showTimer, showCount)`; `.ApplyTimer(...)`; the game's filters choose auras, no secret field is compared |
 
 `Shared/Kit/` builds frame pieces in the Mode look. It holds no game data.
 
@@ -257,8 +258,9 @@ to widgets documented as accepting them.
 |---|---|
 | `Color.lua` | `Kit.Tint(region, color, alpha)`, `.Lighten(color, t)`, `.Scale(color, f)`, `.Gradient(texture, top, bottom, alpha)`, `Kit.FLAT` |
 | `Palette.lua` | `Kit.palette` (Mode text and gameplay colors), `Kit.onyx` (the Onyx skin), `Kit.RGB(r, g, b)`, `Kit.ColorFromBoolean(region, value, ifTrue, ifFalse)` for possibly secret booleans |
-| `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)` |
+| `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)`, `.ModeGradient(bar, barHeight, px)` (the one bar texture) |
 | `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`; `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA`; `Kit.FontPath(style, scope)` |
+| `AuraIcon.lua` | `Kit.AuraIcon(parent)`, `Kit.LayoutAuraIcon(icon, size, px, style, fontPath)`: slate-rimmed icon with swipe and stacks |
 
 ## Rules every module follows
 
@@ -272,6 +274,9 @@ to widgets documented as accepting them.
   keys under `ModeUIDB.positions`. Keys never change without a migration, and
   migrations never reset data. The top-level `schemaVersion` changes only when
   the shared layout of `ModeUIDB` does.
+- **Look.** Every bar uses `Kit.ModeGradient` (Mode Gradient); there is no bar
+  texture setting. Text and the interface default to Expressway, falling back to
+  the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
 - **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI` and frame
   names that start with `ModeUI`.
 - **Game-wide settings** (CVars, UI scale, loot) change only through the
@@ -292,7 +297,7 @@ module is built.
 | # | Module | Category | Adds to Shared | Things to research first |
 |---|---|---|---|---|
 | 0 | Unit Frames | Interface | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
-| 1 | Nameplates | Interface | Domain: Cast, RaidIcon, Threat, Nameplate. Kit: Palette, ColorFromBoolean, FontPath | done (native acceptance pending); auras still need research |
+| 1 | Nameplates | Interface | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
 | 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
 | 3 | Action Bars | Interface | Kit: Button, Keybind text. Templates: secure action button. Placement: bar layouts | which action bar APIs and secure templates Forever ships |
 | 4 | Chat Windows | Interface | Skin: chat frames, edit box, tabs. Kit: ScrollText | chat frame hooks that don't taint |

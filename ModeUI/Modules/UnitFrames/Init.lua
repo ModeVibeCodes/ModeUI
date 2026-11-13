@@ -24,7 +24,7 @@ M.defaultPositions = {
     player = { target = "screen", placement = "center", x = -280, y = -200 },
     target = { target = "screen", placement = "center", x = 280, y = -200 },
 }
-M.LAYOUT_VERSION = 11
+M.LAYOUT_VERSION = 12
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -81,7 +81,7 @@ local function Frame(side)
         healthText = "percent", healthTextPosition = "RIGHT", healthFontSize = 11, healthTextOffsetX = 0, healthTextOffsetY = 0,
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
         powerText = "none", powerTextPosition = "CENTER", powerFontSize = 9, powerTextOffsetX = 0, powerTextOffsetY = 0,
-        texture = "satin", font = "game", fontMedia = "Expressway", outline = false, shadow = true,
+        font = "game", fontMedia = "Expressway", outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
         -- a lighter second shadow 2px out (owner, layout version 11).
         liftedShadow = true, textColor = Copy(M.palette.text) }

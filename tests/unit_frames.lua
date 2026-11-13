@@ -13,8 +13,8 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==11 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
-    assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture=='satin')
+    assert(M.db.layoutVersion==12 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture==nil,'one bar texture: Mode Gradient')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
     assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='sky' and M.db.player.portraitRing=='class')
     assert(M.db.player.namePosition=='above' and M.db.player.nameAlign=='RIGHT' and M.db.player.classSoftness==40)
@@ -55,7 +55,7 @@ world.run([====[
     local ip=Point(p.panel.border);assert(p.panel.border.texture==tex('UnitFrameFrameInner') and ip[4]==2 and ip[5]==-2,'2px black gap inside the 2px rim')
     assert(p.panel.border.vertexColor[1]==O.inner[1])
     for _,bar in ipairs({p.health,p.power}) do
-        assert(bar.bg.vertexColor[1]==O.track[1] and bar.bg.vertexColor[3]==O.track[3] and bar.statusBarTexture==tex('UnitFrameBar'))
+        assert(bar.bg.vertexColor[1]==O.track[1] and bar.bg.vertexColor[3]==O.track[3] and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
         assert(bar.fillTexture.drawLayer=='ARTWORK','fill drawn above the track')
     end
     local mhp=Point(p.health);assert(mhp[1]=='TOPLEFT' and mhp[4]==60 and mhp[5]==-16 and p.health.height==27)
@@ -255,8 +255,8 @@ world.run([====[
     M:UpdateHealth('player');assert(p.healthText:GetText()=='90%','fallback to percent');AbbreviateNumbers=abbreviate
     units.player.dead=true;M:UpdateHealth('player');assert(p.healthText:GetText()=='Dead');units.player.dead=false
     assert(M:SetFrameOption('player','healthTextPosition','CENTER') and Point(p.healthText)[1]=='CENTER')
-    assert(M:SetFrameOption('player','texture','flat') and not p.health.sheen:IsShown())
-    assert(M:SetFrameOption('player','texture','mode') and p.health.sheen:IsShown() and p.health.sheen.gradient,'Mode sheen on flat bars')
+    assert(p.health.sheen:IsShown() and p.health.sheen.gradient and p.power.sheen:IsShown(),'Mode Gradient on every bar')
+    assert(not M:SetFrameOption('player','texture','flat'),'the bar texture is no longer a setting')
     assert(M:SetFrameOption('player','scale',120) and p.scale==1.2)
     assert(M:SetFrameOption('player','barWidth',240) and p.width==60+240+4)
 
@@ -269,7 +269,7 @@ world.run([====[
 
     -- Copy Style mirrors the look but keeps identity; Reset restores defaults.
     assert(M:CopyStyle('player','target'))
-    assert(M.db.target.barWidth==240 and M.db.target.texture=='mode' and M.db.target.portraitSide=='right' and M.db.target.enabled)
+    assert(M.db.target.barWidth==240 and M.db.target.portraitSide=='right' and M.db.target.enabled)
     assert(Point(t.portrait)[1]=='TOPRIGHT')
     assert(M:ResetFrame('target') and M.db.target.barWidth==180 and M.db.target.healthColorMode=='default' and M.db.target.portraitSide=='right')
     assert(M.db.target.matchPlayer==false,'reset keeps the identity toggle')
@@ -307,9 +307,9 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==11 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
+    assert(v1.layoutVersion==12 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
     assert(v1.player.healthText=='both' and v1.player.nameFontSize==14 and v1.player.healthColorMode=='default')
-    assert(v1.player.fontMedia=='Expressway' and v1.player.texture=='satin' and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
+    assert(v1.player.fontMedia=='Expressway' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
     assert(v1.target.enabled==false and v1.target.barWidth==180)
     local custom={player={width=220,height=36,powerHeight=8,showPower=true},target={width=220,height=36},classColor=false,healthColor={0,1,0}}
     M.Initialize(custom);assert(custom.player.healthColorMode=='custom' and custom.player.healthColor[2]==1)
@@ -319,7 +319,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==11 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
+    assert(v5.layoutVersion==12 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
     assert(v5.player.levelFontSize==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -332,7 +332,7 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==11 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==12 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='sky' and v8.target.nameColorMode=='sky','names adopt the default color')
     assert(v8.player.portraitRing=='class' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'class gradient ring unless custom')
@@ -343,7 +343,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==11 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
+    assert(v9.layoutVersion==12 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -351,10 +351,13 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==11 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
+    assert(v10.layoutVersion==12 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==true and v10.player.nameLift==nil and v10.target.nameLift==nil,'lift choice carried over')
     assert(v10.target.mirrorText==false,'matched Target now copies the Player text layout')
-    local kept={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
+    local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
+    v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
+    assert(v11.layoutVersion==12 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     kept.player.nameColorMode='class';kept.player.portraitRing='border';M.Initialize(kept)
     assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='border','later choices are not migrated')
     local bad=addon.ProfileCodec.Copy(M.db);bad.target.healthColorMode='x';assert(not pcall(M.Initialize,bad))
@@ -384,7 +387,7 @@ restored.run([====[
     end
     local function Row(section,title) return Find(section,title) or error('missing row '..section..' / '..title) end
     local function Visible(row) return not row.visibleWhen or row.visibleWhen() end
-    for section,list in pairs({Layout={'Scale','Bar Width','Bar Texture'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
+    for section,list in pairs({Layout={'Scale','Bar Width'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
         ['Name & Level']={'Name Color','Name Offset X','Class Color Softness','Level Font Size','Level Color','Level Offset Y'},
         Health={'Health Bar Height','Health Color','Health Text Offset X'},Power={'Power Bar Height','Power Text'},Text={'Font','Text Color'}}) do
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end

@@ -4,6 +4,8 @@
   Edit the addon in `ModeUI/`. Play The Game Tools is a separate addon and repo.
 - The settings window uses the Mode theme only. Keep new pages on the shared
   widgets in `Shared/Settings/` so they inherit it.
+- Every skinned bar uses the Mode Gradient texture (`Kit.ModeGradient`); there is
+  no bar texture setting. Fonts default to Expressway (bundled Lato as fallback).
 - Preserve functionality, appearance, settings and saved-variable keys unless
   the user asks for a specific change. Never reset `ModeUIDB`; migrate instead.
 - Read the relevant source before editing, and implement one focused feature at a time.

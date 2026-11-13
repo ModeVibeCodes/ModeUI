@@ -10,14 +10,6 @@ local Number = M.Number
 
 function M:CanConfigure() return not InCombatLockdown() and not UnitAffectingCombat("player") end
 function M:GetFonts() return addon.Media:GetFonts() end
-function M:GetTextureChoices()
-    local choices = { { id = "satin", label = "Satin" }, { id = "mode", label = "Mode" }, { id = "flat", label = "Flat" },
-        { id = "default", label = "Use Global Setting" } }
-    for _, item in ipairs(addon.Media:GetStatusBars()) do
-        if item.key ~= "default" then choices[#choices + 1] = { id = item.key, label = item.label } end
-    end
-    return choices
-end
 
 -- Values are written in place so config widgets keep their table references.
 local function Commit(self, unit, frame)
