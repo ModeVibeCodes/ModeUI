@@ -53,17 +53,22 @@ local function BandedBox(parent)
     return box
 end
 
-local function PlaceBands(box, inset)
+-- Plates move at sub-pixel positions while the camera turns, and each band's
+-- clip rectangle rounds to the pixel grid on its own; abutting bands could open
+-- a one-pixel seam in the rim for a frame. The side bands overlap the top and
+-- bottom bands by one physical pixel so no seam can open.
+local function PlaceBands(box, inset, px)
     local top, bottom, left, right = box.bands[1], box.bands[2], box.bands[3], box.bands[4]
+    local seam = px or 1
     for _, band in ipairs(box.bands) do band:ClearAllPoints() end
     top:SetPoint("TOPLEFT", box, "TOPLEFT", -BAND_ROOM, BAND_ROOM)
     top:SetPoint("BOTTOMRIGHT", box, "TOPRIGHT", BAND_ROOM, -inset)
     bottom:SetPoint("TOPLEFT", box, "BOTTOMLEFT", -BAND_ROOM, inset)
     bottom:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", BAND_ROOM, -BAND_ROOM)
-    left:SetPoint("TOPLEFT", box, "TOPLEFT", -BAND_ROOM, -inset)
-    left:SetPoint("BOTTOMRIGHT", box, "BOTTOMLEFT", inset, inset)
-    right:SetPoint("TOPLEFT", box, "TOPRIGHT", -inset, -inset)
-    right:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", BAND_ROOM, inset)
+    left:SetPoint("TOPLEFT", box, "TOPLEFT", -BAND_ROOM, -inset + seam)
+    left:SetPoint("BOTTOMRIGHT", box, "BOTTOMLEFT", inset, inset - seam)
+    right:SetPoint("TOPLEFT", box, "TOPRIGHT", -inset, -inset + seam)
+    right:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", BAND_ROOM, inset - seam)
     -- Bands under the bar; the text and aura layers sit above both.
     local level = box:GetFrameLevel()
     for _, band in ipairs(box.bands) do band:SetFrameLevel(level); band.layer:SetFrameLevel(level) end
@@ -143,7 +148,7 @@ function M.LayoutBox(box, width, barHeight, px, background, db)
         Kit.Inset(gap, box, px)
         Skin(gap, "NameplateGap", rounded); Tint(gap, ONYX.inner, 1)
     end
-    if box.bands then PlaceBands(box, inset) end
+    if box.bands then PlaceBands(box, inset, px) end
     local bar = box.bar
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)

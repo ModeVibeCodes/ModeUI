@@ -141,6 +141,9 @@ world.run([==[
         assert(box.rims[i].vertexColor[4] == 1 and box.gaps[i].vertexColor[4] == 1, 'solid rim and gap')
     end
     assert(box.bar:GetFrameLevel() > box.bands[1]:GetFrameLevel(), 'bar above the bands')
+    local leftTop, topBottom = Point(box.bands[3]), nil
+    for i = 1, box.bands[1]:GetNumPoints() do local p = { box.bands[1]:GetPoint(i) }; if p[1] == 'BOTTOMRIGHT' then topBottom = p end end
+    assert(leftTop[5] > topBottom[5], 'side bands overlap the top band so no seam opens')
     assert(plate.castBox.bands == nil and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
     -- The indicator reads level, classification and quest from the unit.
     assert(not plate.indicator:IsShown() and plate.indicatorWidth == 0, 'nothing known, nothing shown')
