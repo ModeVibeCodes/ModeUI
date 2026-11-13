@@ -4,15 +4,12 @@ local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "
 
 -- Files that predate the layout. Each phase of the restructure removes entries;
 -- new code may not be added to these.
-local LEGACY_DIRECTORIES = { Config = true }
-local LEGACY_MODULE_FILES = {
-    ["Modules/UnitFrames.lua"] = true, ["Modules/UnitFramesDisplay.lua"] = true,
-    ["Modules/Profiles.lua"] = true, ["Modules/Optimizations.lua"] = true, ["Modules/ClassColors.lua"] = true,
-}
+local LEGACY_DIRECTORIES = {}
+local LEGACY_MODULE_FILES = {}
 local LINE_BUDGET = 400
 local OVER_BUDGET = {
     ["Shared/Settings/Widgets.lua"] = true, ["Shared/Settings/Window.lua"] = true, ["Shared/Media/Media.lua"] = true,
-    ["Shared/Placement/PositionManager.lua"] = true, ["Modules/UnitFrames.lua"] = true, ["Modules/UnitFramesDisplay.lua"] = true,
+    ["Shared/Placement/PositionManager.lua"] = true,
 }
 local CODE_DIRECTORIES = { Libs = true, Shared = true, Modules = true }
 local ASSET_DIRECTORIES = { Media = true }

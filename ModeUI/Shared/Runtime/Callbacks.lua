@@ -21,4 +21,6 @@ addon.Messages = {
     MODULE_TOGGLED = "ModeUI_ModuleToggled",
     -- () after the Class Colors settings changed.
     CLASS_COLORS_CHANGED = "ModeUI_ClassColorsChanged",
+    -- (status) after a profile was created, switched, renamed, deleted or imported.
+    PROFILES_CHANGED = "ModeUI_ProfilesChanged",
 }

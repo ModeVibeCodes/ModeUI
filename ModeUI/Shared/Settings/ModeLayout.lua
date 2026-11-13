@@ -7,14 +7,9 @@ local function Measure(label)
     return math.max(1,math.ceil(width))
 end
 
--- Explicit presentation plans, never saved settings. ModeUI pages keep their
--- own sections; the Mode layer only restyles headings and color rows.
-W.ModeLayoutPlans={
-    unitFrames={decorateOnly=true},
-    profiles={decorateOnly=true},
-    optimizations={decorateOnly=true},
-    classColors={decorateOnly=true},
-}
+-- Each module may declare a presentation plan as module.modeLayout (never a
+-- saved setting). With { decorateOnly = true } the page keeps its own sections
+-- and the Mode layer only restyles headings and color rows.
 
 function W.ModeHeadingRule(parent,heading)
     local line=parent:CreateTexture(nil,"ARTWORK");line.modeAsset="ModeHeaderLine";W.Paint(line,T.line,0.7)
@@ -37,7 +32,8 @@ end
 -- remain the owners of their behavior. This layer only restyles them.
 function W.ApplyModeModuleLayout(page,id)
     if T.id~="mode" or page.modeLayout then return end
-    local plan=W.ModeLayoutPlans[id]
+    local module=addon.modules[id]
+    local plan=module and module.modeLayout
     if not plan then return end
     page.modeFooterLayout=true
     CompactColors(page)

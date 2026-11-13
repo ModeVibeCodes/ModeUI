@@ -45,11 +45,6 @@ Shared\Placement\PreviewStates.lua
 Shared\Border\Border.lua
 Shared\Placement\PositionHighlights.lua
 Shared\Settings\Theme.lua
-Modules\UnitFrames.lua
-Modules\UnitFramesDisplay.lua
-Modules\Profiles.lua
-Modules\Optimizations.lua
-Modules\ClassColors.lua
 Shared\Settings\Widgets.lua
 Shared\Settings\Pages.lua
 Shared\Settings\SectionTabs.lua
@@ -64,8 +59,8 @@ Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Window.lua
 Shared\Settings\EditMode.lua
-Config\UnitFrames.lua
-Config\Profiles.lua
-Config\Optimizations.lua
-Config\ClassColors.lua
+Modules\UnitFrames\UnitFrames.xml
+Modules\Profiles\Profiles.xml
+Modules\Optimizations\Optimizations.xml
+Modules\ClassColors\ClassColors.xml
 Shared\Runtime\Boot.lua

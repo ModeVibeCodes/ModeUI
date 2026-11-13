@@ -1,30 +1,13 @@
 local _, addon = ...
-if not addon.Edition or addon.Edition.name ~= "Forever" then return end
+local M = addon.ClassColors
+if not M then return end
 
--- Global > Class Colors: optional custom colors per class for every
--- class-colored ModeUI element. Changes apply right away (no reload); turning
--- the module off, or resetting a class, returns to the game's own color.
--- ModeUI's colors are its own; Play The Game Tools keeps its separate setting.
-local M = { title = "Class Colors", category = "global", defaultEnabled = true,
-    configDescription = "Custom colors for class-colored ModeUI elements, such as names and health bars." }
-addon.ClassColors = M
-addon:RegisterModule("classColors", M)
-
+-- Applying and changing the custom colors. Unit data reads them through
+-- Shared/Domain/UnitColor.lua; class-colored modules redraw on
+-- CLASS_COLORS_CHANGED.
 local UnitColor = addon.Domain.UnitColor
-M.classes = UnitColor.classes
-local KNOWN = {}
-for _, class in ipairs(M.classes) do KNOWN[class] = true end
-local Public = addon.IsPublic
-local Number = addon.IsNumber
-
-function M.Initialize(db)
-    if db.colors == nil then db.colors = {} end
-    assert(type(db.colors) == "table", "Invalid class colors.")
-    for class, color in pairs(db.colors) do
-        assert(KNOWN[class] and type(color) == "table", "Invalid class color: " .. tostring(class))
-        for i = 1, 3 do assert(Number(color[i], 0, 1), "Invalid class color channel: " .. class) end
-    end
-end
+local Public, Number = addon.IsPublic, addon.IsNumber
+local KNOWN = M.knownClasses
 
 function M:OnInitialize() self.Initialize(self.db) end
 -- Lifecycle callbacks run before the saved enabled flag changes; set it first.

@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'ModeUI/Media/Textures/UnitFrames'
 SS = 8  # supersampling factor for silhouettes
 
-# Shape constants shared with Modules/UnitFramesDisplay.lua and Shared/Media/Media.lua
+# Shape constants shared with Modules/UnitFrames/Layout.lua and Shared/Media/Media.lua
 # (slice margins must cover each corner radius).
 FRAME = (32, 32, 5)     # Onyx bar block rim; sliced at 6
 FRAME_INNER = (32, 32, 3) # inner dark line backing, inset 2px inside FrameFill; sliced at 4

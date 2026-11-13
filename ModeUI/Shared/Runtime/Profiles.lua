@@ -3,7 +3,7 @@ local _, addon = ...
 -- Account-wide profiles of ModeUI settings (modules, positions, shared media).
 -- The active profile is live; switching profiles applies on the next reload,
 -- so secure frames and every module start cleanly from the new settings.
-local P = { listeners = setmetatable({}, { __mode = "k" }) }
+local P = {}
 addon.Profiles = P
 local D -- addon.Database, resolved on first use
 local function DB() D = D or addon.Database; return D end
@@ -31,11 +31,9 @@ function P:Active() return Root().activeProfile end
 function P:Pending() return Root().pendingProfile end
 function P:Exists(name) return type(name) == "string" and Root().profiles[name] ~= nil end
 
-function P:RegisterListener(owner, callback) self.listeners[owner] = callback end
 function P:Notify(message)
     if message then self.status = message end
-    for owner, callback in pairs(self.listeners) do pcall(callback, owner, self.status) end
-    if addon.configWindow and addon.RefreshConfig then addon:RefreshConfig() end
+    addon:SendMessage(addon.Messages.PROFILES_CHANGED, self.status)
 end
 
 local function Result(ok, message)

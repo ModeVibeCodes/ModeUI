@@ -4,12 +4,9 @@ How the addon is laid out and how every module is built. This is a living
 document: add to it when a new idea or module changes the shape of things.
 `tests/structure.lua` enforces the parts that can be checked mechanically.
 
-> **Status (November 12, 2026):** the target layout below is being adopted in
-> phases (see [Restructure phases](#restructure-phases)). The shared code lives in
-> `Libs/` and `Shared/`, and the Runtime services, Domain readers and Kit builders below are in place. Until
-> phase 5, the modules (Unit Frames, Profiles, Optimizations, Class Colors) are
-> still flat `Modules/*.lua` files with their pages in `Config/`, listed as legacy
-> in `tests/structure.lua`. New code goes in the new layout only.
+> **Status (November 12, 2026):** the layout below is in place. Every module is a
+> folder with its own XML, `Init.lua` and `Driver.lua`. Remaining work is listed
+> under [Restructure phases](#restructure-phases).
 
 ## Folder layout
 
@@ -98,42 +95,75 @@ Every module is a folder with the same shape.
 ### `Init.lua`: what the module is
 
 Declarative only. It builds the module table, declares its constants and
-registers it. It creates no frames and registers no events.
+defaults, and registers it. It creates no frames and registers no events.
 
 ```lua
 local _, addon = ...
+if not addon.Edition or addon.Edition.name ~= "Forever" then return end
+
 local L = addon.L
-local M = {
-    title = L["Unit Frames"],
-    category = "interface",
-    defaultEnabled = true,
-}
+local M = { title = L["Unit Frames"], category = "interface", defaultEnabled = true,
+    configDescription = L["Player and Target frames in the Onyx look. Configure outside combat."],
+    -- The page keeps its own sections; the Mode layer restyles headings.
+    modeLayout = { decorateOnly = true } }
 addon.UnitFrames = M
 addon:RegisterModule("unitFrames", M)
 -- defaults, ranges, choice lists and other constants follow
 ```
+
+Every other file of the module starts with:
+
+```lua
+local _, addon = ...
+local M = addon.UnitFrames
+if not M then return end
+```
+
+Module fields Runtime reads:
+
+| Field | Meaning |
+|---|---|
+| `title` | sidebar and page title (through `L`) |
+| `category` | a registered category ID (`"interface"`, `"global"`) |
+| `defaultEnabled` | `false` to start switched off on a fresh profile |
+| `alwaysOn` | `true` for a module that can't be switched off (Profiles) |
+| `configDescription` | the line under the page title |
+| `modeLayout` | the page's Mode presentation plan, such as `{ decorateOnly = true }` |
+| `Initialize(db)` | a plain function (not a method) that fills defaults, migrates and validates the module's settings, erroring on bad data. Profile validation calls it on detached copies, so it must not touch frames or other state |
 
 The module ID (`"unitFrames"`) is also its saved-variable key and must never
 change once released.
 
 ### `Driver.lua`: what the module does
 
-The lifecycle hooks Runtime calls. Every hook is optional.
+The lifecycle hooks Runtime calls. Every hook is optional. `self.db` is the
+module's settings table and `self.enabled` its switch.
 
 | Hook | Called when | Rules |
 |---|---|---|
-| `OnInitialize()` | once, after `ModeUIDB` is ready | validate and migrate `self.db`; no protected frames yet |
-| `OnEnable()` / `OnDisable()` | the module switch changes, and at startup | protected work goes through `Defer` |
-| `OnCombatStateChanged(inCombat)` | entering and leaving combat | |
+| `OnInitialize()` | once at startup, after `ModeUIDB` is ready, whether or not the module is on | call `self.Initialize(self.db)`; subscribe to messages; build no protected frames |
+| `OnEnable()` / `OnDisable()` | the module switch changes, and at startup if it's on | build frames on first enable; protected work goes through `Defer` |
+| `OnCombatStateChanged(inCombat)` | entering and leaving combat, while enabled | |
 | `SetEditMode(on)` / `SetPreviewMode(on)` | Edit Mode or Preview changes | only outside combat |
-| `Refresh()` | settings or media changed | must be safe to call repeatedly |
-| `CreateConfigPage(parent)` | the settings page is opened for the first time | lives in `Settings.lua` |
+| `CreateConfigPage(parent)` | the settings page is opened for the first time | lives in `Settings.lua`; returns the page |
+
+A module talks to others only through `addon.Messages`. For example, Unit
+Frames redraws on `CLASS_COLORS_CHANGED` instead of Class Colors calling it.
 
 ### Other files
 
-Anything bigger than a few functions gets its own file, named for its job:
-`Migrations.lua`, `Layout.lua`, `Build.lua`, `Update.lua` and so on. Every file
-attaches to the same module table (`local M = addon.UnitFrames`).
+Anything bigger than a few functions gets its own file, named for its job.
+Unit Frames, the largest module, has:
+
+| File | Job |
+|---|---|
+| `Init.lua` | declaration, constants, defaults |
+| `Migrations.lua` | `Initialize(db)`: validation and layout-version migrations |
+| `Driver.lua` | lifecycle, settings changes, Blizzard's frames, events, secure refresh |
+| `Layout.lua` | pixel-perfect geometry and placing every region |
+| `Build.lua` | frame faces, secure buttons, Edit Mode stand-ins |
+| `Update.lua` | colors and live unit data |
+| `Settings.lua` | the settings page |
 
 **Line budget:** 400 lines per file, outside `Libs/`. Split at the budget and
 aim for under 300. The structure test fails on new files over the budget.
@@ -180,6 +210,7 @@ Messages in use (`addon.Messages`):
 |---|---|---|
 | `MODULE_TOGGLED` | `id, enabled` | a module was switched on or off; Edit Mode and the settings window refresh |
 | `CLASS_COLORS_CHANGED` | | Class Colors changed; class-colored modules redraw |
+| `PROFILES_CHANGED` | `status` | a profile was created, switched, renamed, deleted or imported; the Profiles module refreshes the window |
 
 Notes:
 
@@ -265,7 +296,7 @@ module is built.
 Every module gets design notes in `docs/<NAME>.md` (like `docs/UNIT_FRAMES.md`)
 and an entry in the README's module table.
 
-## Adding a module (once phase 3 lands)
+## Adding a module
 
 1. Create `Modules/<Name>/` with `<Name>.xml`, `Init.lua` and `Driver.lua`.
    Add `Settings.lua` if it has a settings page.
@@ -289,7 +320,7 @@ change to behavior, looks or saved data.
 | 2 | Move files into `Libs/` and `Shared/*` with `git mv`; no code edits. The libraries now load before `Edition.lua` | done |
 | 3 | Runtime: `Core.lua` (from `Edition.lua` and the copied secret checks), `DB.lua`, `Reload.lua`, `Lifecycle.lua` (from `Modules.lua`, `Categories.lua` and the combat broadcast in `DisplayModes.lua`); add Events, Defer, Callbacks, Locale | done |
 | 4 | Domain and Kit: unit readers and frame builders out of `UnitFramesDisplay.lua` | done |
-| 5 | Module folders: `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings), then `Profiles/`, `Optimizations/` and `ClassColors/` (Init, Driver, Settings) | planned |
+| 5 | Module folders: `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings), then `Profiles/`, `Optimizations/` and `ClassColors/` (Init, Driver, Settings) | done |
 | 6 | Split `Widgets.lua` and `Window.lua` into `Shared/Settings/Widgets/`; modules register their own page layout | planned |
 | 7 | Module skeleton and the README "Adding a module" section | planned |
 

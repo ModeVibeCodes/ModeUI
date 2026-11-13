@@ -52,10 +52,11 @@ each one on in only one addon. The ModeUI page shows a reminder while PTG is loa
 ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   ModeUI.toc
   Libs/            bundled libraries (LibStub, CallbackHandler, LibSharedMedia)
-  Shared/          code shared by modules: Runtime (startup, settings, profiles, modules),
-                   Placement (Edit Mode), Media, Border, Settings (window, widgets)
-  Modules/         Unit Frames, Profiles, Optimizations, Class Colors
-  Config/          the modules' settings pages (each moves into its module folder)
+  Shared/          code shared by modules: Runtime (startup, settings, profiles, modules,
+                   events, messages), Domain (unit data), Kit (frame pieces), Placement
+                   (Edit Mode), Media, Border, Settings (window, widgets)
+  Modules/         one folder per module (UnitFrames, Profiles, Optimizations, ClassColors),
+                   each with its own XML, Init.lua, Driver.lua and Settings.lua
   Media/           Mode theme textures, unit frame textures, Lato fonts
 tests/             Lua smoke, Unit Frames and Global tests (simulated client, not WoW)
 tools/             texture generators (Python + Pillow)
@@ -88,21 +89,18 @@ lua tests/global.lua
 
 ## Adding a module
 
-> ModeUI is moving to one folder per module (`Modules/<Name>/` with its own XML,
-> `Init.lua` and `Driver.lua`). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the
-> layout and the restructure phases. `tests/structure.lua` already rejects new flat
-> `Modules/<Name>.lua` files, so start new modules after phase 3. The steps below
-> describe how Unit Frames is wired today.
+Every module is a folder, `ModeUI/Modules/<Name>/`. The full contract is in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#the-module-contract), and
+`tests/structure.lua` enforces the layout.
 
-1. Register its category in `Shared/Runtime/Lifecycle.lua` if it needs a new one, for example
-   `addon:RegisterCategory("nameplates", { title = "Nameplates" })`.
-2. Add `Modules/<Name>.lua` that calls `addon:RegisterModule(id, module)` with
-   `category = "<category id>"`. Add a settings page in `Config/<Name>.lua` via
-   `module:CreateConfigPage(parent)`.
-3. Add the files to `ModeUI/ModeUI.toc`, with modules before `Shared\Settings\Widgets.lua`
-   and pages before `Shared\Runtime\Boot.lua`.
-4. Add the page to `W.ModeLayoutPlans` in `Shared/Settings/ModeLayout.lua` for the Mode
-   heading treatment.
+1. Create the folder with `<Name>.xml`, `Init.lua` (declares and registers the
+   module, loaded first), `Driver.lua` (lifecycle and logic) and, if it has a
+   page, `Settings.lua` (defines `M:CreateConfigPage(parent)` only).
+2. List `Modules\<Name>\<Name>.xml` in `ModeUI/ModeUI.toc`, after the other
+   modules and before `Shared\Runtime\Boot.lua`.
+3. Use an existing category, or register one in `Shared/Runtime/Lifecycle.lua`.
+4. Put anything another module could use in `Shared/` (Domain for game data,
+   Kit for frame pieces), and talk to other modules only through `addon.Messages`.
 
 ## License
 

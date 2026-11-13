@@ -12,7 +12,7 @@
   can be secret: pass them only to widgets documented as accepting them.
 - Secure frames are created, shown, moved and resized outside combat only.
 - Follow `docs/ARCHITECTURE.md`. New code goes in `Libs/`, `Shared/` or
-  `Modules/<Name>/`, never the legacy `Config/` folder. Each module is a
+  `Modules/<Name>/`. Each module is a
   folder with `<Name>.xml` (listed in the TOC), `Init.lua` loaded first, and
   `Driver.lua`. Code two modules need belongs in `Shared/`; modules never use each
   other's files. Files stay under 400 lines. Settings pages are built only when opened.

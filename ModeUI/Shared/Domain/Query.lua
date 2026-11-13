@@ -25,3 +25,13 @@ function Query.Plain(fn, ...)
     local ok, v, w, x = Call(fn, ...)
     if ok and Public(v) and Public(w) and Public(x) then return v, w, x end
 end
+
+-- Up to seven return values, with any secret one replaced by nil; nothing if
+-- the API is missing or failed.
+function Query.Read(fn, ...)
+    if type(fn) ~= "function" then return end
+    local results = { pcall(fn, ...) }
+    if not results[1] then return end
+    for i = 2, #results do if not Public(results[i]) then results[i] = nil end end
+    return unpack(results, 2, 8)
+end
