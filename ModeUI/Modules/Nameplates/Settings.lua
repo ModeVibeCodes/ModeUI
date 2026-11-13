@@ -9,7 +9,7 @@ if not M then return end
 -- every tab, then cards of related settings, side by side where they fit.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
-    local editing, auraGroup, indicatorPart = "enemy", "debuffs", "level"
+    local editing, auraGroup, indicatorPart, castText = "enemy", "debuffs", "level", "castText"
     local function Kind() return editing end
     local function db() return M.db[editing] end
     local function Group() return db()[auraGroup] end
@@ -20,6 +20,7 @@ function M:CreateConfigPage(parent)
     function page.SetAuraGroup(group) if M.auraGroupLabels[group] then auraGroup = group; page:Refresh(); page:Layout() end end
     function page.SetIndicatorPart(part) if M.indicatorPartLabels[part] then indicatorPart = part; page:Refresh(); page:Layout() end end
     page.nameplateIndicatorPart = function() return indicatorPart end
+    function page.SetCastText(key) castText = key; page:Refresh(); page:Layout() end
     local owner = M:AppearanceOwner(Kind)
     local function Refresh(fn) page.refreshers[#page.refreshers + 1] = fn end
     local function Set(key) return function(value) M:SetOption(editing, key, value) end end
@@ -190,8 +191,17 @@ function M:CreateConfigPage(parent)
             Slider(offset[1], "castX", "px"); Slider(offset[2], "castY", "px")
             page:Group(L["Content"])
             page.castIconPills = Pills("Spell Icon", M.choices.castIcon, function() return db().castIcon end, Set("castIcon"))
+            local icon = Columns({ "Icon Offset X", "Icon Offset Y" })
+            Slider(icon[1], "castIconX", "px"); Slider(icon[2], "castIconY", "px")
             page.castContentToggles = Toggles({ { "Spell Name", "castShowText" }, { "Cast Target", "castShowTarget" }, { "Timer", "castShowTimer" } })
-            Note("Cast Target shows who the caster is targeting, on a line past the bar. The timer stays empty while the game hides cast times and gives no duration.", 48)
+            local texts = { { id = "castText", label = "Spell Name" }, { id = "castTimer", label = "Timer" }, { id = "castTarget", label = "Cast Target" } }
+            page.castTextButtons = Pills("Position Of", texts, function() return castText end, page.SetCastText, 112)
+            page.castTextAnchorButtons = Anchor("Anchor", function() return db()[castText .. "Anchor"] end,
+                function(value) M:SetOption(editing, castText .. "Anchor", value) end, true)
+            local offset = Columns({ "Offset X", "Offset Y" })
+            SliderIn(offset[1], M.ranges.castTextX, function() return db()[castText .. "X"] end, function(value) M:SetOption(editing, castText .. "X", value) end, "px")
+            SliderIn(offset[2], M.ranges.castTextY, function() return db()[castText .. "Y"] end, function(value) M:SetOption(editing, castText .. "Y", value) end, "px")
+            Note("Left, Center and Right sit inside the cast bar; Top and Bottom anchors sit outside it. Cast Target is who the caster is targeting. The timer stays empty while the game hides cast times and gives no duration.", 48)
             page:Group(L["Colors"])
             local colors = Columns({ "Interruptible", "Not Interruptible" })
             Color(colors[1], "castColor"); Color(colors[2], "castLockedColor")
@@ -249,6 +259,27 @@ function M:CreateConfigPage(parent)
         Note("Arrows always sit outside the raid marker, the indicator and any aura row beside the bar.", 32)
     end)
 
+    Tab("Focus", function()
+        When(Plate, function()
+            page:Group(L["Focus"])
+            page.focusStylePills = Pills("Highlight", M.choices.focusStyle, function() return db().focusStyle end, Set("focusStyle"), 90)
+            Mark("focus")
+            local look = Columns({ "Color", "Stripe Opacity" })
+            Color(look[1], "focusColor")
+            page.focusStripeSlider = Slider(look[2], "focusStripeOpacity", "%")
+            local texture = Columns({ "Focus Texture" })
+            page.focusTextureSelect = SelectIn(texture[1], 200, function()
+                local list = { { id = "default", label = "Same as Foreground" } }
+                for _, choice in ipairs(M.TextureChoices(true)) do list[#list + 1] = choice end
+                return list
+            end, function() return db().focusTexture end, Set("focusTexture"))
+            local fade = Columns({ "Other Plates Opacity" })
+            page.focusFadeSlider = Slider(fade[1], "focusFadeOthers", "%")
+            Note("Your focus's plate shows the highlight and its own texture. Other Plates Opacity fades every other plate while you have a focus; 100% leaves them alone. A plate that is your target and focus shows the target's border.", 48)
+        end)
+        When(function() return not Plate() end, function() Note("Name Only plates have no focus highlight.") end)
+    end)
+
     Tab("Indicators", function()
         page:Group(L["Indicators"])
         page.indicatorToggles = Toggles({ { "Show Indicators", "showIndicator" } })
@@ -284,6 +315,12 @@ function M:CreateConfigPage(parent)
     end)
 
     W.SectionTabs(page)
+    -- The sample shows itself as your focus while the Focus tab is open.
+    local select = page.SelectSectionTab
+    function page:SelectSectionTab(...)
+        select(self, ...)
+        if self.configPreview and self.configPreview.Refresh then self.configPreview:Refresh() end
+    end
     page:Finish(); return page
 end
 

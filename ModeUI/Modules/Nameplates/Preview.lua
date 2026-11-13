@@ -132,7 +132,11 @@ function M:PaintSample(plate, style, sample, progress)
     Kit.Write(plate.healthText, HealthText(style.healthText, sample.health))
     if style.showRaidIcon and sample.raid then RaidIcon.ApplyIndex(plate.raidIcon, sample.raid) else plate.raidIcon:Hide() end
     self:PaintIndicator(plate, sample.quest, sample.classification, tostring(sample.level), Level.DifficultyColor(sample.level))
-    self:PaintTarget(plate, style.targetStyle ~= "none" and sample.targeted == true)
+    -- On the Focus tab the sample is your focus instead of your target.
+    local page = self.page
+    local focus = page and page.selectedSection and page.selectedSection.title == L["Focus"] or false
+    self:PaintTarget(plate, style.targetStyle ~= "none" and sample.targeted == true and not focus)
+    self:PaintFocus(plate, focus, focus)
     self:PaintSampleAuras(plate, style, sample)
     if not style.showCastBar or plate.nameOnly then self:StopCast(plate); return end
     plate.cast:SetMinMaxValues(0, 1); plate.cast:SetValue(progress)

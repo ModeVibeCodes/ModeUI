@@ -36,6 +36,7 @@ function M:OnEnable()
     Events:On(self, "NAME_PLATE_UNIT_ADDED", function(_, unit) self:OnUnitAdded(unit) end)
     Events:On(self, "NAME_PLATE_UNIT_REMOVED", function(_, unit) self:OnUnitRemoved(unit) end)
     Events:On(self, "PLAYER_TARGET_CHANGED", function() self:UpdateTargets() end)
+    Events:On(self, "PLAYER_FOCUS_CHANGED", function() self:UpdateFocuses() end)
     Events:On(self, "RAID_TARGET_UPDATE", function() self:ForEachPlate(self.UpdateRaidIcon) end)
     Events:On(self, "QUEST_LOG_UPDATE", function() self:ForEachPlate(self.UpdateIndicator) end)
     for event in pairs({ UI_SCALE_CHANGED = true, DISPLAY_SIZE_CHANGED = true }) do

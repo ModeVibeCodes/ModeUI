@@ -67,7 +67,7 @@ function M:PaintTarget(plate, targeted)
     local border = targeted and (style == "border" or style == "borderArrows")
     local glow = targeted and style == "glow"
     local arrows = targeted and (style == "arrows" or style == "borderArrows")
-    local rim = (border and not plate.nameOnly) and color or ONYX.border
+    local rim = (border and not plate.nameOnly) and color or self:FocusRimColor(plate) or ONYX.border
     for _, texture in ipairs(plate.healthBox.rims) do Kit.Tint(texture, rim, 1) end
     for _, texture in ipairs(plate.castBox.rims) do Kit.Tint(texture, rim, 1) end
     local outlined = border and not plate.nameOnly and db.targetThickness > 1

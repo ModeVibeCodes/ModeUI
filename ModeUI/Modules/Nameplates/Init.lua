@@ -75,6 +75,9 @@ local function Style(kind)
         showCastBar = true, castFontSize = 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
         castAnchor = "BOTTOM", castX = 0, castY = 0,
         castIcon = "LEFT", castShowText = true, castShowTarget = enemy, castShowTimer = true,
+        -- Cast texts by anchor around the cast bar: Left, Center and Right sit inside it.
+        castTextAnchor = "LEFT", castTextX = 0, castTextY = 0, castTimerAnchor = "RIGHT", castTimerX = 0, castTimerY = 0,
+        castTargetAnchor = "BOTTOM", castTargetX = 0, castTargetY = 0, castIconX = 0, castIconY = 0,
         showRaidIcon = true, raidAnchor = "LEFT", raidX = 0, raidY = 0, raidSize = 16,
         -- Indicator: quest icon, classification icon and level, by anchor.
         showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
@@ -83,6 +86,9 @@ local function Style(kind)
         levelAnchor = "LEFT", levelX = 0, levelY = 0, levelSize = 9,
         -- Target indicator: border, glow, arrows, border and arrows, or none.
         targetStyle = "border", targetColor = Copy(P.accent), targetThickness = 1, targetArrowSize = 12, targetArrowGap = 4,
+        -- Focus: a highlight, its own health bar texture, and fading other plates.
+        focusStyle = "border", focusColor = RGB(255, 181, 71), focusStripeOpacity = 40, focusTexture = "default",
+        focusFadeOthers = 100,
         -- Auras: settings for every group, then each group on its own.
         showAuras = true, auraSpacing = 2, auraTimer = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
         auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
@@ -98,7 +104,7 @@ M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
 M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly) }
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
-M.colorKeys = { healthColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
+M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
     auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true }
 -- Aura border colors by the game's dispel type name.
 M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Disease = "auraDiseaseColor",
@@ -109,6 +115,9 @@ M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = {
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },
     castX = { -50, 50, 1 }, castY = { -50, 50, 1 },
+    focusStripeOpacity = { 10, 100, 5 }, focusFadeOthers = { 20, 100, 5 },
+    castTextX = { -50, 50, 1 }, castTextY = { -50, 50, 1 }, castTimerX = { -50, 50, 1 }, castTimerY = { -50, 50, 1 },
+    castTargetX = { -50, 50, 1 }, castTargetY = { -50, 50, 1 }, castIconX = { -50, 50, 1 }, castIconY = { -50, 50, 1 },
     questX = { -50, 50, 1 }, questY = { -50, 50, 1 }, questSize = { 8, 32, 1 },
     classificationX = { -50, 50, 1 }, classificationY = { -50, 50, 1 }, classificationSize = { 8, 32, 1 },
     levelX = { -50, 50, 1 }, levelY = { -50, 50, 1 }, levelSize = { 6, 20, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
@@ -131,7 +140,11 @@ M.choices = {
     display = { { id = "plate", label = "Plate" }, { id = "name", label = "Name Only" } },
     nameColorMode = { { id = "text", label = "Text Color" }, { id = "class", label = "Class or Reaction" } },
     castAnchor = { { id = "BOTTOM", label = "Below" }, { id = "TOP", label = "Above" } },
-    castIcon = { { id = "LEFT", label = "Left" }, { id = "RIGHT", label = "Right" }, { id = "none", label = "Hidden" } },
+    castIcon = { { id = "LEFT", label = "Left" }, { id = "RIGHT", label = "Right" }, { id = "OUTLEFT", label = "Outside Left" },
+        { id = "OUTRIGHT", label = "Outside Right" }, { id = "none", label = "Hidden" } },
+    focusStyle = { { id = "border", label = "Border" }, { id = "glow", label = "Glow" }, { id = "stripes", label = "Stripes" },
+        { id = "none", label = "None" } },
+    castTextAnchor = M.elementAnchors, castTimerAnchor = M.elementAnchors, castTargetAnchor = M.elementAnchors,
     targetStyle = { { id = "border", label = "Border" }, { id = "glow", label = "Glow" }, { id = "arrows", label = "Arrows" },
         { id = "borderArrows", label = "Border and Arrows" }, { id = "none", label = "None" } },
     auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
@@ -287,6 +300,7 @@ local function Validate(style, kind)
     end
     for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid nameplate choice: " .. kind .. "." .. key) end
     assert(ValidTexture(style.foregroundTexture, true) and ValidTexture(style.backgroundTexture, false), "Invalid nameplate texture: " .. kind)
+    assert(style.focusTexture == "default" or ValidTexture(style.focusTexture, true), "Invalid nameplate focus texture: " .. kind)
     for _, group in ipairs(M.auraGroups) do
         ValidateGroup(style[group], M.styleDefaults[kind][group], kind .. "." .. group)
         if FILTERS[group] then assert(FILTERS[group][style[group].filter], "Invalid nameplate aura filter: " .. kind .. "." .. group) end

@@ -31,11 +31,13 @@ function M:LayoutPlate(plate)
     -- the cast bar and outside text move past it (Auras.lua).
     local onTop, onBottom = self:AttachedRoom(plate, "TOP"), self:AttachedRoom(plate, "BOTTOM")
     -- The cast bar sits below (or above) the health bar, then its offset.
+    -- Cast texts outside the cast bar take a line on their side of it (CastBar.lua).
     local castAbove, cx, cy = db.castAnchor == "TOP", Round(db.castX), Round(db.castY)
+    local castNear, castFar = self:CastTextRoom(plate)
     plate.castBox:ClearAllPoints()
-    if castAbove then plate.castBox:SetPoint("BOTTOMLEFT", plate.healthBox, "TOPLEFT", cx, gap + onTop + cy)
-    else plate.castBox:SetPoint("TOPLEFT", plate.healthBox, "BOTTOMLEFT", cx, -gap - onBottom + cy) end
-    local castRoom = (not nameOnly and db.showCastBar) and castHeight + gap + self:CastTargetHeight(plate) or 0
+    if castAbove then plate.castBox:SetPoint("BOTTOMLEFT", plate.healthBox, "TOPLEFT", cx, gap + onTop + castNear + cy)
+    else plate.castBox:SetPoint("TOPLEFT", plate.healthBox, "BOTTOMLEFT", cx, -gap - onBottom - castNear + cy) end
+    local castRoom = (not nameOnly and db.showCastBar) and castHeight + gap + castNear + castFar or 0
 
     local path = Kit.FontPath(db, self.id)
     plate.fontPath = path
@@ -94,6 +96,7 @@ function M:LayoutPlate(plate)
     self:LayoutIndicator(plate)
 
     self:LayoutTarget(plate)
+    self:LayoutFocus(plate)
     for group, pool in pairs(plate.auraIcons) do
         for _, auraIcon in ipairs(pool) do self:LayoutAuraIcon(plate, auraIcon, group) end
     end

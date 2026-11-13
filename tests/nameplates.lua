@@ -224,6 +224,26 @@ world.run([==[
     nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
     assert(not p2.targeted and p2.healthBox.rim.vertexColor[1] == Kit.onyx.border[1])
 
+    -- Focus: found like the target; a border, glow or stripes, its own texture, fading the others.
+    local amber = M.db.enemy.focusColor
+    nameplates.focus = first; FireEvent('PLAYER_FOCUS_CHANGED')
+    assert(plate.focused and not p2.focused and plate.healthBox.rim.vertexColor[1] == amber[1], 'focus border')
+    assert(p2:GetAlpha() == 1, 'others stay at 100% by default')
+    nameplates.target = first; FireEvent('PLAYER_TARGET_CHANGED')
+    assert(plate.healthBox.rim.vertexColor[3] == P.accent[3], 'the target border wins')
+    nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
+    assert(plate.healthBox.rim.vertexColor[1] == amber[1], 'focus border back')
+    assert(M:SetOption('enemy', 'focusStyle', 'stripes') and plate.focusStripes:IsShown() and math.abs(plate.focusStripes.vertexColor[4] - 0.4) < 1e-9, 'stripes')
+    assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and plate.focusStripes.texture == addon.Media:GetTexture('NameplateStripes'), 'stripes only')
+    assert(M:SetOption('enemy', 'focusStyle', 'glow') and plate.focusGlow:IsShown() and not plate.focusStripes:IsShown(), 'glow')
+    assert(M:SetOption('friendly', 'focusFadeOthers', 50) and p2:GetAlpha() == 0.5, 'other plates fade')
+    assert(M:SetOption('enemy', 'focusTexture', 'flat') and plate.health.statusBarTexture == Kit.FLAT, 'focus texture')
+    nameplates.focus = nil; FireEvent('PLAYER_FOCUS_CHANGED')
+    assert(not plate.focused and plate.health.sheen:IsShown() and p2:GetAlpha() == 1 and not plate.focusGlow:IsShown(), 'focus cleared')
+    assert(not M:SetOption('enemy', 'focusStyle', 'pulse') and not M:SetOption('enemy', 'focusTexture', 'rainbow'), 'refused')
+    for _, key in ipairs({ 'focusStyle', 'focusTexture' }) do assert(M:SetOption('enemy', key, M.styleDefaults.enemy[key])) end
+    assert(M:SetOption('friendly', 'focusFadeOthers', 100))
+
     -- Raid markers: a secret index goes only to SetSpriteSheetCell.
     units.nameplate1.raid = Secret('raid'); FireEvent('RAID_TARGET_UPDATE')
     assert(plate.raidIcon:IsShown() and issecretvalue(plate.raidIcon.spriteCell[1]) and plate.raidIcon.spriteCell[2] == 4)
@@ -330,6 +350,17 @@ world.run([==[
     local negated = false
     for _, query in ipairs(auraQueries) do if query == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' then negated = true end end
     assert(negated, 'debuffs leave crowd control to its own group')
+    -- In combat the game marks the list's contents secret (issecrettable is
+    -- true); its auras must still show, with secret icons passed straight on.
+    issecrettable = function(value) return type(value) == 'table' end
+    local CHEAP_SHOT = { auraInstanceID = 16, icon = Secret('cheap'), harmful = true, cc = true, duration = Secret('d'), expirationTime = Secret('e') }
+    units.nameplate1.auras = { SHIELD, DOT, CHEAP_SHOT }
+    FireEvent('UNIT_AURA', 'nameplate1')
+    assert(plate.auraShown.crowdControl == 1 and issecretvalue(A.crowdControl[1].icon.texture), 'crowd control with secret data shows')
+    assert(plate.auraShown.debuffs == 1 and plate.auraShown.buffs == 1, 'debuffs and buffs show while the list is secret')
+    issecrettable = nil
+    units.nameplate1.auras = { SHIELD, OTHER, DOT, SNARE }
+    FireEvent('UNIT_AURA', 'nameplate1')
     -- Default anchors: crowd control Left (past the raid marker), debuffs Top, buffs Right.
     -- Icons are cropped (4px wider than tall) and placed by their corner on
     -- whole pixels from the health bar's bottom left (180 x 16 here).
@@ -530,8 +561,11 @@ world.run([==[
     assert(M:SetOption('enemy', 'raidSize', 24) and math.abs(sample.raidIcon.width - 24) < 1)
     assert(M:SetOption('enemy', 'raidAnchor', 'LEFT') and M:SetOption('enemy', 'raidSize', 16) and M:SetOption('enemy', 'healthTextAnchor', 'RIGHT'))
     assert(M:SetOption('enemy', 'castAnchor', 'TOP') and Point(sample.castBox)[1] == 'BOTTOMLEFT' and Point(sample.castBox)[3] == 'TOPLEFT', 'cast bar above')
-    assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2 + M:CastTargetHeight(sample), 'name moves above the cast bar and its target line')
-    assert(Point(sample.castTarget)[1] == 'BOTTOM' and Point(sample.castTarget)[3] == 'TOP', 'target line above an upper cast bar')
+    local near, far = M:CastTextRoom(sample)
+    assert(near > 0 and far == 0, 'the target line sits between the bars when the cast bar is above')
+    assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2 + near, 'name moves above the cast bar and its target line')
+    assert(Point(sample.castTarget)[1] == 'TOP' and Point(sample.castTarget)[3] == 'BOTTOM', 'target line under the upper cast bar')
+    assert(Point(sample.castBox)[5] == 2 + near, 'the cast bar moves up past the target line')
     assert(M:SetOption('enemy', 'castAnchor', 'BOTTOM') and M:SetOption('enemy', 'castY', -3) and Point(sample.castBox)[5] == -5)
     assert(M:SetOption('enemy', 'castY', 0))
     -- Cast bar content: icon side, spell name, target line and timer.
@@ -543,9 +577,22 @@ world.run([==[
     assert(M:SetOption('enemy', 'castIcon', 'RIGHT') and Point(sample.castIcon)[1] == 'TOPRIGHT' and sample.castIcon:IsShown(), 'icon on the right')
     assert(M:SetOption('enemy', 'castIcon', 'none') and not sample.castIcon:IsShown() and Point(sample.cast)[2] == sample.castBox, 'icon hidden')
     assert(M:SetOption('enemy', 'castShowTimer', false) and not sample.castTimer:IsShown(), 'timer off')
-    assert(M:SetOption('enemy', 'castShowTarget', false) and not sample.castTarget:IsShown() and M:CastTargetHeight(sample) == 0, 'target off')
+    assert(M:SetOption('enemy', 'castShowTarget', false) and not sample.castTarget:IsShown() and select(2, M:CastTextRoom(sample)) == 0, 'target off')
     assert(M:SetOption('enemy', 'castShowText', false) and not sample.castText:IsShown(), 'spell name off')
     assert(not M:SetOption('enemy', 'castIcon', 'TOP'), 'bad icon side refused')
+    -- Positions: icon outside the box, and each text by anchor and offset.
+    assert(M:SetOption('enemy', 'castIcon', 'OUTLEFT') and Point(sample.castIcon)[1] == 'RIGHT' and Point(sample.castIcon)[3] == 'LEFT', 'icon outside left')
+    assert(math.abs(sample.castIcon.width - sample.castBox:GetHeight()) < 1 and sample.castIcon:IsShown(), 'outside icon as tall as the box')
+    assert(M:SetOption('enemy', 'castIconY', 2) and Point(sample.castIcon)[5] == 2, 'icon offset')
+    assert(M:SetOption('enemy', 'castShowText', true) and M:SetOption('enemy', 'castTextAnchor', 'BOTTOMRIGHT'), 'spell name below')
+    assert(Point(sample.castText)[1] == 'TOPRIGHT' and Point(sample.castText)[2] == sample.castBox, 'spell name outside, under the bar')
+    assert(select(2, M:CastTextRoom(sample)) > 0, 'a far line is reserved')
+    assert(M:SetOption('enemy', 'castTimerAnchor', 'CENTER') and Point(sample.castTimer)[1] == 'CENTER', 'timer centered inside')
+    assert(M:SetOption('enemy', 'castTextX', 3) and Point(sample.castText)[4] == 3, 'text offset')
+    assert(not M:SetOption('enemy', 'castTimerAnchor', 'MIDDLE'), 'bad anchor refused')
+    for _, key in ipairs({ 'castIconY', 'castTextAnchor', 'castTimerAnchor', 'castTextX' }) do
+        assert(M:SetOption('enemy', key, M.styleDefaults.enemy[key]))
+    end
     assert(M:SetOption('enemy', 'castIcon', 'LEFT') and M:SetOption('enemy', 'castShowTimer', true)
         and M:SetOption('enemy', 'castShowTarget', true) and M:SetOption('enemy', 'castShowText', true))
     -- Animated loops the cast.
@@ -557,8 +604,15 @@ world.run([==[
     -- Tabs, cards and the Editing switch.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target,Indicators', table.concat(sections, ','))
+    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target,Focus,Indicators', table.concat(sections, ','))
     assert(#page.cards > 5 and page.cards[1].frame:IsShown(), 'settings sit on cards')
+    -- On the Focus tab the sample shows itself as the focus, not the target.
+    local selected = page.selectedSection
+    page:SelectSectionTab(6)
+    assert(page.selectedSection.title == 'Focus' and sample.focused and not sample.targeted, 'focus sample')
+    assert(sample.healthBox.rim.vertexColor[1] == M.db.enemy.focusColor[1], 'focus border in the sample')
+    page:SelectSectionTab(selected)
+    assert(not sample.focused and sample.targeted, 'target sample again')
     local switch = page.nameplateEditButtons[1]
     switch[2].scripts.OnClick(switch[2])
     assert(page.nameplateEditing() == 'friendly' and page.nameplateEditButtons[3][2].selected, 'one switch across tabs')
