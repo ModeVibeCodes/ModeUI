@@ -47,6 +47,8 @@ function M:OnEnable()
     Events:On(self, "UPDATE_SHAPESHIFT_FORMS", function() self:Refresh() end)
     Events:On(self, "ACTIONBAR_SHOWGRID", function() self:SetGridShown(true) end)
     Events:On(self, "ACTIONBAR_HIDEGRID", function() self:SetGridShown(false) end)
+    -- Cooldown starts and ends (Glow.lua).
+    Events:On(self, "SPELL_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         Events:On(self, event, function() self:Refresh() end)
     end
@@ -78,6 +80,7 @@ function M:Apply()
     if self.active then
         self:Build()
         self:HideBlizzard()
+        self:HookProcs()
         for _, bar in ipairs(self.bars) do self:ApplyBar(bar) end
         self:RenderGhosts()
         self.applied = true
@@ -85,7 +88,7 @@ function M:Apply()
         self.applied = false
         self:Restore()
     end
-    if self.built then self:UpdateFade() end
+    if self.built then self:UpdateFade(); self:RefreshGlows() end
     if addon.EditMode then addon.EditMode:RefreshElements() end
     if self.page then self.page:Refresh() end
     self:RenderBarTags()

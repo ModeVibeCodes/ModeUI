@@ -39,6 +39,7 @@ local function Validate(style, bar)
     assert(style.buttons <= M.barSpecs[bar].count, "Invalid action bar button count: " .. bar)
     for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid action bar choice: " .. bar .. "." .. key) end
     assert(ValidConditions(style.customVisibility), "Invalid action bar conditions: " .. bar)
+    assert(ValidConditions(style.pageConditions), "Invalid action bar page conditions: " .. bar)
 end
 
 -- Version 1 -> 2: settings still at version 1's defaults take the new ones
@@ -73,9 +74,21 @@ local function MigrateV2(db)
     end
 end
 
+-- Version 3 -> 4: the owner asked for #101010 borders and 75% Background
+-- Opacity on every bar, so these replace whatever was set.
+local function MigrateV3(db)
+    for _, bar in ipairs(M.bars) do
+        local style = db[bar]
+        if type(style) == "table" then
+            style.borderColor, style.backgroundOpacity = Copy(M.BORDER_COLOR), M.BACKGROUND_OPACITY
+        end
+    end
+end
+
 function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
     if db.version == 2 then MigrateV2(db); db.version = 3 end
+    if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid action bar settings version")
     for _, bar in ipairs(M.bars) do

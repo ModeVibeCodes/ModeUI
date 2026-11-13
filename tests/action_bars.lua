@@ -13,6 +13,7 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         return setParent(self, parent)
     end
     function methods:IsMouseOver() return self.mouseOver == true end
+    function methods:GetAttribute(key) return self.attributes and self.attributes[key] end
     function methods:RemoveMaskTexture(mask) assert(self.mask == mask, 'removes its own mask'); self.mask = nil end
     function methods:GetTexture() return self.texture end
     function methods:GetCooldownTimes() return (self.realStart or 0) * 1000, (self.realDuration or 0) * 1000 end
@@ -52,6 +53,18 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
     end
     function UnregisterStateDriver(frame, state) if drivers[frame] then drivers[frame][state] = nil end end
     function SecureHandlerWrapScript(frame, script, header, body) wraps[#wraps + 1] = { frame = frame, script = script, header = header, body = body } end
+    frameRefs = {}
+    function SecureHandlerSetFrameRef(frame, label, ref) frameRefs[frame] = frameRefs[frame] or {}; frameRefs[frame][label] = ref end
+    -- Cooldowns by action slot; isActive and isOnGCD are never secret.
+    cooldowns = {}
+    C_ActionBar = { GetActionCooldown = function(action) return cooldowns[action] or { isActive = false, isOnGCD = false } end }
+    -- Blizzard's spell alerts: a frame on the button while its spell procs.
+    ActionButtonSpellAlertManager = { activeAlerts = {} }
+    function ActionButtonSpellAlertManager:ShowAlert(button)
+        button.SpellActivationAlert = button.SpellActivationAlert or CreateFrame('Frame', nil, button)
+        button.SpellActivationAlert:Show(); self.activeAlerts[button] = 1
+    end
+    function ActionButtonSpellAlertManager:HideAlert(button) if button.SpellActivationAlert then button.SpellActivationAlert:Hide() end self.activeAlerts[button] = nil end
     function SecureCmdOptionParse(text) if text:find('bogus', 1, true) then error('Unknown macro option') end return 'show' end
     local create = CreateFrame
     function CreateFrame(kind, name, parent, template)
@@ -119,12 +132,14 @@ world.run([==[
     assert(ActionButton1:GetParent() == ActionButton1.container, 'Blizzard keeps its buttons while off')
     for _, bar in ipairs(M.bars) do
         local style = M.db[bar]
-        assert(style.width == 42 and style.height == 36 and style.backgroundOpacity == 20, bar .. ' buttons are 42 by 36 on a 20% background')
+        assert(style.width == 42 and style.height == 36 and style.backgroundOpacity == 75, bar .. ' buttons are 42 by 36 on a 75% background')
         assert(math.floor(style.cooldownColor[1] * 255 + 0.5) == 255 and math.floor(style.cooldownColor[2] * 255 + 0.5) == 177
             and math.floor(style.cooldownColor[3] * 255 + 0.5) == 47, 'cooldown numbers are #FFB12F')
         local function Hex(c) return string.format('%02X%02X%02X', math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5), math.floor(c[3] * 255 + 0.5)) end
-        assert(Hex(style.borderColor) == '404542' and Hex(style.backgroundColor) == '040404' and Hex(style.macroColor) == '69A5B9', 'border, background and macro colors')
+        assert(Hex(style.borderColor) == '101010' and Hex(style.backgroundColor) == '040404' and Hex(style.macroColor) == '69A5B9', 'border, background and macro colors')
         assert(style.borderSize == 2 and style.spacing == 1, '2px border, 1px apart')
+        assert(style.procGlow == 'mode' and style.readyGlow and style.cooldownOpacity == 100, 'Mode proc glow, ready glow on, icons kept')
+        assert(style.paging == (bar == 'bar1'), 'bar 1 pages; the others start fixed')
     end
     assert(M.db.bar1.show and not M.db.bar6.show and M.db.bar4.orientation == 'vertical' and M.db.pet.buttons == 10)
 
@@ -151,7 +166,7 @@ world.run([==[
     local top, left = art.edges[1], art.edges[3]
     assert(top:IsShown() and top.vertexColor[1] == M.BORDER_COLOR[1] and #art.edges == 4, 'border in its own color')
     assert(top.points[1][4] == 1 and top.points[2][5] == -2 and left.points[2][4] == 2, '2px edges, corners left out (rounded)')
-    assert(art.fill.vertexColor[1] == M.BACKGROUND_COLOR[1] and art.fill.vertexColor[4] == 1 and art.fill.points[1][4] == 2, 'solid background behind the icon')
+    assert(art.fill.vertexColor[1] == M.BACKGROUND_COLOR[1] and art.fill.vertexColor[4] == 0.75 and art.fill.points[1][4] == 2, 'the background at Background Opacity on every button')
     assert(art.grain.texture:find('ActionBars/Slot', 1, true) and art.grain.blendMode == 'ADD', 'slot texture lightens the background')
     local icon = ActionButton1.icon
     assert(icon.mask == nil, 'Blizzard icon mask removed')
@@ -164,13 +179,13 @@ world.run([==[
     assert(ActionButton1.HighlightTexture.texture == Kit.FLAT, 'flat Mode highlight')
     local slot = M.slots.bar1[12]
     local slotArt = M.art[slot]
-    assert(slot:IsShown() and slotArt.fill.vertexColor[4] == 0.2 and slotArt.edges[1].vertexColor[4] == 1, 'empty slot: solid border, see-through inside')
+    assert(slot:IsShown() and slotArt.fill.vertexColor[4] == 0.75 and slotArt.edges[1].vertexColor[4] == 1, 'empty slot: solid border, see-through inside')
     assert(M:SetOption('bar1', 'backgroundOpacity', 60) and slotArt.fill.vertexColor[4] == 0.6 and slotArt.grain.vertexColor[4] == 0.6, 'Background Opacity')
     -- The border color never colors the background, and each has its own setting.
     assert(M:SetOption('bar1', 'borderColor', { 1, 0, 0 }) and slotArt.fill.vertexColor[1] == M.BACKGROUND_COLOR[1] and slotArt.edges[2].vertexColor[1] == 1)
     assert(M:SetOption('bar1', 'backgroundColor', { 0, 0, 1 }) and slotArt.fill.vertexColor[3] == 1 and slotArt.edges[2].vertexColor[3] == 0)
     assert(M:SetOption('bar1', 'borderSize', 1) and ActionButton1.icon.points[1][4] == 2, 'Border Size moves the icon in or out')
-    assert(M:ResetBar('bar1') and M.db.bar1.borderSize == 2 and M.db.bar1.backgroundOpacity == 20)
+    assert(M:ResetBar('bar1') and M.db.bar1.borderSize == 2 and M.db.bar1.backgroundOpacity == 75)
 
     -- Text: font, tucked into its corner, keybind color kept unless out of range.
     local hotkey = ActionButton1.HotKey
@@ -323,7 +338,7 @@ world.run([==[
     -- Settings page and preview: the player's own bar.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Bar,Buttons,Text,Visibility', 'four tabs')
+    assert(table.concat(sections, ',') == 'Bar,Buttons,Text,Glows,Visibility', 'five tabs')
     assert(page.buttonsSlider.high == 10, 'pet bar slider stops at ten')
     page.SetEditing('bar1')
     assert(page.buttonsSlider.high == 12)
@@ -349,7 +364,10 @@ world.run([==[
     first.scripts.OnMouseUp(first, 'LeftButton')
     assert(page.selectedSection.title == 'Bar', 'button click opens Bar')
     assert(M:SetOption('bar1', 'width', 30) and first.width == 30 and ActionButton1.width == 30, 'preview and bar follow the size')
-    assert(page.keybindButton, 'Keybind Mode on the page')
+    assert(page.keybindButton and page.keybindHeaderButton and page.keybindHeaderButton:GetParent() == page.previewArea, 'Keybind Mode on the Bar tab and in the preview header')
+    page.keybindHeaderButton.scripts.OnClick(page.keybindHeaderButton)
+    assert(M.binding and not addon.configWindow:IsShown(), 'the header button starts Keybind Mode')
+    M:SetKeybindMode(false); addon.configWindow:Show()
     -- Name tags on the bars while this page is open; the edited bar's is cyan.
     local tag1, tag2 = ModeUIActionBar1Tag, ModeUIActionBar2Tag
     assert(tag1:IsShown() and tag2:IsShown() and tag1.text.text == 'Action Bar 1' and Point(tag1)[2] == bar1, 'each bar is named on screen')
@@ -361,6 +379,55 @@ world.run([==[
     addon:SelectConfigPage('actionBars'); assert(tag1:IsShown(), 'and come back with it')
     addon.configWindow:Hide(); assert(not tag1:IsShown(), 'and go with the window')
     addon.configWindow:Show(); page.SetEditing('bar1')
+
+    -- Paging: Action Bar 1 follows the game's paging; others page when switched on.
+    assert(frameRefs[bar1].button1 == ActionButton1 and frameRefs[ModeUIActionBar2].button12 == MultiBarBottomLeftButton12, 'the paging snippet reaches each button')
+    assert(not frameRefs[ModeUIPetBar], 'the pet bar does not page')
+    assert(bar1.attributes['_onstate-modepage']:find('actionpage', 1, true))
+    assert(drivers[bar1].modepage == nil and bar1.attributes['state-modepage'] == 'none', "bar 1 follows the game's own paging")
+    assert(M:SetOption('bar1', 'paging', false) and drivers[bar1].modepage == '1', 'Page Switching off: page 1')
+    assert(M:SetOption('bar1', 'paging', true) and drivers[bar1].modepage == nil)
+    assert(M:SetOption('bar1', 'pageConditions', '[bonusbar:1] 7;') and drivers[bar1].modepage == '[bonusbar:1] 7; none', 'own conditions, own page when none match')
+    assert(M:SetOption('bar1', 'pageConditions', '') and drivers[bar1].modepage == nil)
+    assert(drivers[ModeUIActionBar2].modepage == nil, 'other bars keep their page')
+    assert(M:SetOption('bar2', 'paging', true) and drivers[ModeUIActionBar2].modepage == '[mod:shift] 2; [mod:ctrl] 3; [mod:alt] 4; none')
+    assert(M:SetOption('bar2', 'pageConditions', '[bogus] 3') and drivers[ModeUIActionBar2].modepage == nil, 'unreadable conditions keep the own page')
+    assert(M:SetOption('bar2', 'paging', false))
+
+    -- Proc glows: Mode Glow by default, with Blizzard's alert faded.
+    ActionButtonSpellAlertManager:ShowAlert(ActionButton2)
+    local proc = M.glows[ActionButton2].proc
+    assert(proc:IsShown() and proc.soft:IsShown() and proc.soft.vertexColor[1] == M.PROC_COLOR[1], 'gold Mode glow')
+    assert(ActionButton2.SpellActivationAlert:GetAlpha() == 0, "Blizzard's alert faded")
+    assert(M:SetOption('bar1', 'procGlow', 'border') and not proc.soft:IsShown() and proc.edges[1]:IsShown(), 'Border style')
+    assert(M:SetOption('bar1', 'procColor', { 0, 1, 0 }) and proc.edges[1].vertexColor[2] == 1, 'proc color')
+    assert(M:SetOption('bar1', 'procGlow', 'blizzard') and not proc:IsShown() and ActionButton2.SpellActivationAlert:GetAlpha() == 1, 'Blizzard style')
+    assert(M:SetOption('bar1', 'procGlow', 'none') and not proc:IsShown() and ActionButton2.SpellActivationAlert:GetAlpha() == 0, 'None')
+    assert(M:SetOption('bar1', 'procGlow', 'mode') and proc:IsShown())
+    ActionButtonSpellAlertManager:HideAlert(ActionButton2)
+    assert(not proc:IsShown(), 'the glow ends with the proc')
+
+    -- Cooldowns: a real cooldown ending lights the ready glow; the GCD doesn't.
+    local timers = {}
+    local after = C_Timer.After
+    C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+    ActionButton3.action = 3; ActionButton4.action = 4
+    assert(M:SetOption('bar1', 'cooldownOpacity', 40))
+    cooldowns[3] = { isActive = true, isOnGCD = false }; cooldowns[4] = { isActive = true, isOnGCD = true }
+    FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(ActionButton3.icon:GetAlpha() == 0.4 and ActionButton4.icon:GetAlpha() == 1, 'Icon Opacity on a real cooldown only')
+    cooldowns[3], cooldowns[4] = nil, nil
+    FireEvent('SPELL_UPDATE_COOLDOWN')
+    local ready = M.glows[ActionButton3] and M.glows[ActionButton3].ready
+    assert(ready and ready:IsShown() and ready.soft.vertexColor[3] == M.READY_COLOR[3], 'ready glow when the cooldown ends')
+    assert(not (M.glows[ActionButton4] and M.glows[ActionButton4].ready), 'nothing after the global cooldown')
+    assert(ActionButton3.icon:GetAlpha() == 1, 'full icon when ready')
+    for _, fn in ipairs(timers) do fn() end; assert(not ready:IsShown(), 'the glow lasts Glow Time')
+    assert(M:SetOption('bar1', 'readyGlow', false))
+    cooldowns[3] = { isActive = true, isOnGCD = false }; FireEvent('SPELL_UPDATE_COOLDOWN'); cooldowns[3] = nil; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(not ready:IsShown(), 'Glow When Ready off')
+    C_Timer.After = after
+    assert(M:SetOption('bar1', 'readyGlow', true) and M:SetOption('bar1', 'cooldownOpacity', 100))
 
     -- Copy and reset.
     assert(M:SetOption('bar1', 'border', 'square') and M:CopyStyleToAll('bar1'))
@@ -407,9 +474,9 @@ H.Load({ before = STUBS, saved = v1 }).run([==[
     local M, PM = addon.ActionBars, addon.PositionManager
     assert(M.db.bar1.borderColor[1] == M.BORDER_COLOR[1] and M.db.bar1.macroColor[3] == M.MACRO_COLOR[3] and M.db.bar1.spacing == 1, 'version 2 defaults move')
     assert(M.db.bar1.borderSize == 2 and M.db.bar1.backgroundColor[1] == M.BACKGROUND_COLOR[1], 'new settings take their defaults')
-    assert(M.db.bar2.borderColor[1] == 1 and M.db.bar2.spacing == 6, 'chosen colors and spacing stay')
-    assert(M.db.version == 3 and M.db.bar1.height == 36 and M.db.bar5.height == 40, 'default height moves; a chosen one stays')
-    assert(M.db.bar1.cooldownColor[2] == M.COOLDOWN_COLOR[2] and M.db.bar1.backgroundOpacity == 20)
+    assert(M.db.bar2.borderColor[1] == M.BORDER_COLOR[1] and M.db.bar2.spacing == 6, 'version 4 sets every border; chosen spacing stays')
+    assert(M.db.version == 4 and M.db.bar1.height == 36 and M.db.bar5.height == 40, 'default height moves; a chosen one stays')
+    assert(M.db.bar1.cooldownColor[2] == M.COOLDOWN_COLOR[2] and M.db.bar1.backgroundOpacity == 75 and M.db.bar3.backgroundOpacity == 75, 'version 4 sets 75% on every bar')
     assert(M.db.bar3.visibility == 'mouseover' and M.db.bar3.fade == nil and M.db.bar4.visibility == 'combat', 'fading becomes Mouseover')
     assert(PM:GetPosition('actionBarsBar2').target == 'actionBarsBar1', 'a default place stacks on bar 1')
     assert(PM:GetPosition('actionBarsBar3').target == 'screen' and PM:GetPosition('actionBarsBar3').x == 30, 'a moved bar stays put')

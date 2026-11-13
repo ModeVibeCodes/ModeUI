@@ -55,16 +55,18 @@ weak tables keyed by the button. Its only hooks are `hooksecurefunc` on:
   Sizes are whole physical pixels, and each bar is an even number of pixels each
   way, so a centered bar stays on the pixel grid.
 - **Border:** Rounded (by default), Square or None, **Border Size** 1-4px (2px
-  by default), in the **Border Color** (#404542 by default). The border is a
+  by default), in the **Border Color** (#101010 by default). The border is a
   hollow frame of four edges, so it never shows through a see-through
   background. Rounded leaves out each corner's outermost pixel.
 - **Background:** inside the border, the **Background Color** (#040404 by
   default) with a ModeUI texture laid over it to lighten it
   (`Media/Textures/ActionBars/Slot.tga`, made by `tools/build_shape_textures.lua`):
   a dark slot, lighter in the middle, with a soft highlight along the top,
-  darker edges and fine grain, after Blizzard's own recessed slots. Empty slots
-  show it at **Background Opacity** (20% by default). Behind an icon it's solid,
-  as the 1px line between border and icon.
+  darker edges and fine grain, after Blizzard's own recessed slots. It shows at
+  **Background Opacity** (75% by default) everywhere: in ModeUI's empty slots,
+  in Blizzard's own empty buttons (which the game shows with its Always Show
+  Buttons option, or while a spell is dragged), and as the 1px line between
+  border and icon. So every bar looks alike.
 - **Icon:** placed 1px inside the border. It's cropped, never stretched: 8% comes off
   the edges, then the long side is cut to the button's shape. Blizzard's rounded
   icon mask is removed.
@@ -191,11 +193,12 @@ combat.
 
 ## Settings page
 
-The preview above the four tabs is **your own bar**: the bar being edited, with
+The preview above the five tabs is **your own bar**: the bar being edited, with
 the spells, keybinds, counts, macro names and running cooldowns on its buttons
 right now. Empty places show as empty slots, and the preview redraws when your
 bars, bindings or cooldowns change. While you edit the **Cooldown** text, the
 first spell shows a sample cooldown if none is running; **Animated** runs it.
+**Keybind Mode** sits in the preview's header, so it's one click from every tab.
 
 While the page is open, each bar on screen wears a small name tag in its middle
 ("Action Bar 1", "Pet Bar", …), so you can tell the bars apart without Edit
@@ -204,16 +207,57 @@ Mode. The bar being edited has a cyan tag; clicking any tag edits that bar.
 Clicking a button opens the **Bar** tab; clicking a text opens the **Text** tab
 on that text. The tabs:
 
-- **Bar**: Show Bar, status, layout, size, copy and reset, Keybind Mode
+- **Bar**: Show Bar, status, layout, size, copy and reset, Keybind Mode, paging
 - **Buttons**: border style, size and color; background color and opacity;
   empty slots
 - **Text**: which text, then its place, size and color, and the font
+- **Glows**: proc glow, glow when ready, icon opacity on cooldown
 - **Visibility**: Show, custom conditions, opacity, Faded Opacity
 
 Every tab starts with **Editing**, the bar being changed, shared by every tab.
 **Copy Style to All Bars** copies size, borders, background, text and opacity.
 Each bar keeps its own buttons, lines and show settings. **Reset to Defaults**
 resets one bar's look.
+
+## Paging
+
+Action bars 1-8 can switch pages: the same twelve buttons show another page of
+actions. The bar's state driver picks a page from macro conditions, and a
+snippet in the game's secure environment sets it on each button
+(`actionpage`), so pages change in combat too.
+
+- **Page Switching** (on the **Bar** tab) turns it on or off for a bar.
+- **Page Conditions**: macro conditions that name a page, like
+  `[mod:shift] 2; [bonusbar:1] 7`. Pages 1-6 are the game's bars; 7-10 are
+  stance and form pages (`bonusbar:1` to `4`). When none match, the bar shows
+  its own page. Conditions the game can't read leave the bar on its own page.
+- **Action Bar 1**: on by default with no conditions, which means the game's own
+  paging (stances, forms, stealth, vehicles, override bars and the page keys).
+  Give it conditions to page it your own way. With Page Switching off it always
+  shows page 1.
+- **Bars 2-8**: off by default, each on its own page. Switched on, they start
+  with `[mod:shift] 2; [mod:ctrl] 3; [mod:alt] 4`.
+- The pet and stance bars don't page.
+
+## Glows
+
+How buttons react, on the **Glows** tab (per bar):
+
+- **Proc Glow**: how a proc (the game lighting up a spell to use now) shows.
+  **Mode Glow** (by default) is a soft glow around the button; **Border** is a
+  2px frame on it; **Blizzard** keeps the game's own animation; **None** shows
+  nothing. **Proc Color** (gold, #FFD25A, by default) and **Pulse** apply to Mode
+  Glow and Border. ModeUI hooks `ActionButtonSpellAlertManager:ShowAlert` and
+  `HideAlert` and fades Blizzard's alert frame unless Blizzard is chosen.
+- **Glow When Ready** (on by default): when a cooldown longer than the global
+  cooldown ends, the button lights for **Glow Time** (2 seconds by default), as a
+  **Glow** or **Border** in **Glow Color** (Mode cyan by default). ModeUI checks
+  `C_ActionBar.GetActionCooldown` on `SPELL_UPDATE_COOLDOWN`; its `isActive` and
+  `isOnGCD` fields are never secret, so this works in combat and ignores the
+  global cooldown.
+- **Icon Opacity** (on cooldown): fades an icon while its spell is on such a
+  cooldown. 100% (the default) leaves icons alone.
+- Glow When Ready and Icon Opacity apply to action bars 1-8.
 
 ## Switching it off
 
@@ -226,6 +270,12 @@ so ModeUI offers a reload. Turning the module back on needs no reload.
 `ModeUIDB.modules.actionBars` holds one table per bar: `bar1`-`bar8`, `pet`,
 `stance`. Positions are saved under `positions.actionBarsBar1` to
 `actionBarsBar8`, `actionBarsPet` and `actionBarsStance`.
+
+Version 4 changed these from version 3 (the owner asked for them on every bar):
+
+- Every bar's **Border Color** becomes #101010 and its **Background Opacity**
+  75%, whatever they were.
+- Paging and glows take their defaults.
 
 Version 3 changed these from version 2:
 
@@ -247,13 +297,14 @@ Version 2 changed these from version 1:
 | File | Job |
 |---|---|
 | `Init.lua` | declaration, the bars and their Blizzard buttons, anchor targets, defaults, ranges, choices |
-| `Migrations.lua` | `Initialize(db)`: defaults, validation and the version 2 migration |
+| `Migrations.lua` | `Initialize(db)`: defaults, validation and the migrations to version 4 |
 | `Driver.lua` | lifecycle, events, `/kb`, settings changes, copy and reset, the font and color owner, moving version 1 places |
-| `Bars.lua` | secure bars, moving Blizzard's buttons, hiding Blizzard's art, the vehicle-bar watch, Edit Mode stand-ins and live follow, switching off |
+| `Bars.lua` | secure bars, moving Blizzard's buttons, hiding Blizzard's art, the vehicle-bar watch, the paging snippet, Edit Mode stand-ins and live follow, switching off |
 | `Layout.lua` | pixel-perfect geometry and button counts |
 | `Skin.lua` | rim, gap, background, icon crop, state overlays, empty slots |
 | `Text.lua` | the four texts, their hooks and lifted shadows |
-| `Visibility.lua` | show conditions and fading |
+| `Visibility.lua` | show and page conditions, fading |
+| `Glow.lua` | proc glows, the ready glow and icon opacity on cooldown |
 | `Keybind.lua` | Keybind Mode |
 | `Preview.lua` | the Edit Mode highlight and the live settings preview |
 | `Settings.lua` | the settings page |

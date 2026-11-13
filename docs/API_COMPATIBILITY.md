@@ -257,3 +257,30 @@ guarded, and native behavior on Forever is unverified until checked in game.
   protected frame never anchors to another frame. The alignment guides are
   textures on a plain full-screen frame (`SetColorTexture`). The nudge arrows use
   `Texture:SetRotation` when present.
+
+### Action bars, paging and glows — November 13, 2026
+
+- **Paging.** `SecureHandlerSetFrameRef(header, "buttonN", button)`
+  (`SecureHandlers.lua`) gives each bar's state handler its buttons;
+  `HANDLE:GetFrameRef` and `HANDLE:SetAttribute` (`RestrictedFrames.lua`) set
+  `actionpage` from the restricted environment, which works in combat.
+  `SecureActionButtonMixin:CalculateAction` (`SecureTemplates.lua`) reads a
+  button's own `actionpage` before its `useparent-actionpage` bar, so a cleared
+  attribute (`nil`) hands the page back to Blizzard. A state driver that
+  matches nothing leaves its attribute unchanged (`resolveDriver` in
+  `SecureStateDriver.lua`), so page conditions always end in `none`.
+  `bonusbar:N` and `mod:*` are C-side macro conditions without generated docs.
+- **Procs.** `ActionButtonSpellAlertManager:ShowAlert(button)` and
+  `:HideAlert(button)` (`Blizzard_ActionBar/Shared/ActionButtonSpellAlerts.lua`)
+  create and show `button.SpellActivationAlert`, a plain child frame. ModeUI
+  hooks both with `hooksecurefunc` and only changes that frame's alpha.
+- **Cooldown state.** `C_ActionBar.GetActionCooldown(action)` returns a
+  `SpellCooldownInfo` that is secret while cooldowns are restricted, but its
+  `isActive` and `isOnGCD` fields are `NeverSecret`
+  (`SpellSharedDocumentation.lua`). `isOnGCD` is only trusted on
+  `SPELL_UPDATE_COOLDOWN`, the event ModeUI uses. `button.action` (Blizzard's
+  current slot) is read, never written. Icon Opacity uses region `SetAlpha`
+  (`AllowedWhenTainted`).
+- **Empty buttons.** Blizzard's own empty buttons (Always Show Buttons, or a
+  spell being dragged) are shown by Blizzard; ModeUI only draws their
+  background at Background Opacity.
