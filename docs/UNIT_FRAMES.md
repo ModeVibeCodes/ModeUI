@@ -40,12 +40,24 @@ health and power text settings.
   with Mirror Player Text each Player spot shows on the other side (Left ↔
   Right, Bottom Left ↔ Bottom Right…), its X offset and border alignment
   flipped.
-- **Settings**: the Text tab has a picker per spot (Health Bar, Border, Power
-  Bar groups), then **Slot Style** for one spot at a time (Style Slot, Font
-  Size, Offset X/Y, Color, Custom Color), then Names (Name Color, Class Color
-  Softness) and Font. The Name & Level tab is gone; Health and Power keep their
-  bar settings. Picking what a spot shows, or clicking a text in the preview,
-  switches Slot Style to that spot.
+- **Settings**: the Text tab lays the spots out like the frame, three equal
+  dropdowns to a line (Top Left, Top, Top Right; Left, Center, Right; Bottom
+  Left, Bottom, Bottom Right; then On the Border with Border Alignment, and
+  Power Left, Power Center, Power Right). A spot showing a text has a color
+  swatch (the game's color picker; Default returns to the default color) and
+  a font size (- / number / +) under its dropdown. Names (Name Color, Class
+  Color Softness) and Font follow. The Name & Level tab is gone; Health and
+  Power keep their bar settings. Clicking a text in the preview opens its
+  spot. Offsets stay saved (migrated ones still apply) but have no control.
+- **Each text once**: picking a text for a spot clears it from any other spot
+  on that frame (`M:SetTextOptions`), so moving the level from Left to Right
+  leaves Left empty.
+- **Preview and live controls** (owner, November 13, 2026): the preview draws
+  the sample at 80% (`M.PREVIEW_SCALE`) in a 150px area. Every settings slider
+  and the color picker apply the first change at once, then at most one
+  change every 0.12s while dragging (`W.Throttle`); letting go applies the
+  last value. Each change rebuilds the frames and the settings page, which
+  was what dropped frames when it ran on every slider step.
 - **Migration** (layout version 17): each frame's texts move to the matching
   spots, so nothing moves: the name On the Border (Above Frame names go to the
   border raised by the difference) or in the Left / Center / Right spot when it
