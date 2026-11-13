@@ -71,3 +71,14 @@ function Kit.ValueText(text, mode, percentFn, unit, hasCurrent, current)
     if hasPercent and pcall(Kit.Formatted, text, "%.0f%%", percent) then return end
     Kit.Write(text, "")
 end
+
+-- The font file for a style's font/fontMedia choice. Expressway (registered by
+-- Media from an installed AyijeUI or EllesmereUI copy) falls back to the
+-- bundled ModeUI Lato when unavailable. scope is the module ID.
+function Kit.FontPath(style, scope)
+    local media = addon.Media
+    if style.fontMedia == "Expressway" and not media:GetFont("Expressway") then
+        return media:GetFont("ModeUI Lato") or media.gameFont
+    end
+    return media:GetDisplayFont({ font = style.font, fontMedia = style.fontMedia }, false, scope)
+end

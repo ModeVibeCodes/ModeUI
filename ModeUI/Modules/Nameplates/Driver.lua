@@ -1,0 +1,175 @@
+local _, addon = ...
+local M = addon.Nameplates
+if not M then return end
+
+-- Lifecycle, events, settings changes and fading Blizzard's nameplate art.
+-- Plates are built and laid out in Plate.lua, filled in Update.lua, and their
+-- cast bars run in CastBar.lua.
+local Events, NP = addon.Events, addon.Domain.Nameplate
+local function Copy(value) return addon.ProfileCodec.Copy(value) end
+
+local UNIT_EVENTS = {
+    UNIT_HEALTH = "Health", UNIT_MAXHEALTH = "Health", UNIT_CONNECTION = "Health",
+    UNIT_NAME_UPDATE = "Name", UNIT_FACTION = "Color", UNIT_CLASSIFICATION_CHANGED = "Color",
+    UNIT_THREAT_SITUATION_UPDATE = "Color", UNIT_THREAT_LIST_UPDATE = "Color",
+    UNIT_SPELLCAST_START = "Cast", UNIT_SPELLCAST_STOP = "Cast", UNIT_SPELLCAST_FAILED = "Cast",
+    UNIT_SPELLCAST_INTERRUPTED = "Cast", UNIT_SPELLCAST_DELAYED = "Cast", UNIT_SPELLCAST_CHANNEL_START = "Cast",
+    UNIT_SPELLCAST_CHANNEL_UPDATE = "Cast", UNIT_SPELLCAST_CHANNEL_STOP = "Cast", UNIT_SPELLCAST_INTERRUPTIBLE = "Cast",
+    UNIT_SPELLCAST_NOT_INTERRUPTIBLE = "Cast", UNIT_SPELLCAST_EMPOWER_START = "Cast",
+    UNIT_SPELLCAST_EMPOWER_UPDATE = "Cast", UNIT_SPELLCAST_EMPOWER_STOP = "Cast",
+}
+M.unitEvents = UNIT_EVENTS
+
+function M:OnInitialize()
+    self.Initialize(self.db)
+    self.plates, self.byUnit, self.faded, self.fadeHooks = {}, {}, {}, {}
+    addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function() self:UpdateAll() end)
+end
+
+-- Runtime sets self.enabled after these return, so they keep their own state.
+function M:OnEnable()
+    self.active = true
+    Events:On(self, "NAME_PLATE_UNIT_ADDED", function(_, unit) self:OnUnitAdded(unit) end)
+    Events:On(self, "NAME_PLATE_UNIT_REMOVED", function(_, unit) self:OnUnitRemoved(unit) end)
+    Events:On(self, "PLAYER_TARGET_CHANGED", function() self:UpdateTargets() end)
+    Events:On(self, "RAID_TARGET_UPDATE", function() self:ForEachPlate(self.UpdateRaidIcon) end)
+    for event in pairs({ UI_SCALE_CHANGED = true, DISPLAY_SIZE_CHANGED = true }) do
+        Events:On(self, event, function() self:Refresh() end)
+    end
+    for event, part in pairs(UNIT_EVENTS) do
+        Events:On(self, event, function(_, unit) self:OnUnitEvent(part, unit) end)
+    end
+    for _, unit in ipairs(NP.ActiveUnits()) do self:OnUnitAdded(unit) end
+end
+
+function M:OnDisable()
+    self.active = false
+    Events:OffAll(self)
+    for unit in pairs(self.byUnit) do self:OnUnitRemoved(unit) end
+end
+
+function M:ForEachPlate(fn)
+    for _, plate in pairs(self.byUnit) do fn(self, plate) end
+end
+
+function M:OnUnitAdded(unit)
+    if not self.active or type(unit) ~= "string" then return end
+    if self.byUnit[unit] then self:OnUnitRemoved(unit) end
+    local nameplate = NP.ForUnit(unit)
+    -- The personal resource display and widget-only plates stay Blizzard's.
+    if not nameplate or NP.IsPlayerPlate(nameplate) or NP.WidgetsOnly(unit) then return end
+    local plate = self:EnsurePlate(nameplate)
+    plate.unit = unit
+    self.byUnit[unit] = plate
+    self:FadeBlizzard(nameplate)
+    self:LayoutPlate(plate)
+    plate:Show()
+    self:UpdatePlate(plate)
+end
+
+function M:OnUnitRemoved(unit)
+    local plate = type(unit) == "string" and self.byUnit[unit]
+    if not plate then return end
+    self.byUnit[unit] = nil
+    self:StopCast(plate)
+    plate.unit = nil
+    plate:Hide()
+    self:RestoreBlizzard(plate)
+end
+
+function M:OnUnitEvent(part, unit)
+    local plate = type(unit) == "string" and self.byUnit[unit]
+    if not plate then return end
+    if part == "Health" then self:UpdateHealth(plate)
+    elseif part == "Name" then self:UpdateName(plate)
+    elseif part == "Color" then self:UpdateHealthColor(plate)
+    else self:UpdateCast(plate) end
+end
+
+-- Blizzard's own unit frame keeps running (it handles clicks and stacking);
+-- only its art is faded, and kept faded if Blizzard resets the alpha.
+local function Fade(self, frame)
+    if type(frame) ~= "table" or not frame.SetAlpha then return end
+    self.faded[frame] = true
+    if not self.fadeHooks[frame] and hooksecurefunc then
+        self.fadeHooks[frame] = true
+        hooksecurefunc(frame, "SetAlpha", function(region)
+            if self.faded[region] and not self.fading then
+                self.fading = true; pcall(region.SetAlpha, region, 0); self.fading = false
+            end
+        end)
+    end
+    self.fading = true; pcall(frame.SetAlpha, frame, 0); self.fading = false
+end
+
+function M:FadeBlizzard(nameplate)
+    local plate = self.plates[nameplate]
+    -- Blizzard may acquire the unit frame after this handler runs; the hook
+    -- installed in EnsurePlate fades it then.
+    if nameplate.UnitFrame then
+        plate.blizzard = nameplate.UnitFrame
+        Fade(self, nameplate.UnitFrame)
+    end
+end
+
+function M:RestoreBlizzard(plate)
+    local frame = plate.blizzard
+    plate.blizzard = nil
+    if not frame or not self.faded[frame] then return end
+    self.faded[frame] = nil
+    pcall(frame.SetAlpha, frame, 1)
+end
+
+function M:OnBlizzardAcquired(nameplate)
+    local plate = self.plates[nameplate]
+    if plate and plate.unit and self.active then self:FadeBlizzard(nameplate) end
+end
+
+function M:Refresh()
+    if not self.plates then return end
+    for _, plate in pairs(self.byUnit) do
+        self:LayoutPlate(plate)
+        self:UpdatePlate(plate)
+    end
+end
+
+function M:CanConfigure() return not addon.InCombat() end
+
+function M:SetOption(key, value)
+    if not self:CanConfigure() or self.defaults[key] == nil or key == "version" then return false end
+    local candidate = Copy(self.db)
+    candidate[key] = Copy(value)
+    if not pcall(self.Initialize, candidate) then return false end
+    self.db[key] = candidate[key]
+    self:Refresh()
+    if self.page then self.page:Refresh() end
+    return true
+end
+
+function M:ResetSettings()
+    if not self:CanConfigure() then return false end
+    local enabled = self.db.enabled
+    for key in pairs(self.db) do self.db[key] = nil end
+    self.db.enabled = enabled
+    self.Initialize(self.db)
+    self:Refresh()
+    if self.page then self.page:Refresh() end
+    return true
+end
+
+-- Owner for the shared font and color widgets.
+function M:AppearanceOwner()
+    local owner = { db = { appearance = self.db } }
+    function owner.CanConfigure() return M:CanConfigure() end
+    function owner.GetFonts() return addon.Media:GetFonts() end
+    function owner.SetAppearance(_, key, value) return M:SetOption(key, value) end
+    return owner
+end
+
+function M:GetTextureChoices()
+    local choices = Copy(self.textures)
+    for _, item in ipairs(addon.Media:GetStatusBars()) do
+        if item.key ~= "default" then choices[#choices + 1] = { id = item.key, label = item.label } end
+    end
+    return choices
+end

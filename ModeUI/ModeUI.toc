@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: |cff00f0ffModeUI|r
-## Notes: Custom Mode interface for WoW Forever: unit frames, profiles, optimizations and class colors.
+## Notes: Custom Mode interface for WoW Forever: unit frames, nameplates, profiles, optimizations and class colors.
 ## Author: Mode
 ## Version: 0.1.0-beta.1
 ## IconTexture: Interface\AddOns\ModeUI\Media\Textures\Mode\Logo
@@ -30,7 +30,12 @@ Shared\Domain\Name.lua
 Shared\Domain\Level.lua
 Shared\Domain\UnitColor.lua
 Shared\Domain\Portrait.lua
+Shared\Domain\Cast.lua
+Shared\Domain\RaidIcon.lua
+Shared\Domain\Threat.lua
+Shared\Domain\Nameplate.lua
 Shared\Kit\Color.lua
+Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua
 Shared\Kit\Text.lua
 Shared\Placement\DisplayModes.lua
@@ -71,6 +76,7 @@ Shared\Settings\Sidebar.lua
 Shared\Settings\Window.lua
 Shared\Settings\EditMode.lua
 Modules\UnitFrames\UnitFrames.xml
+Modules\Nameplates\Nameplates.xml
 Modules\Profiles\Profiles.xml
 Modules\Optimizations\Optimizations.xml
 Modules\ClassColors\ClassColors.xml

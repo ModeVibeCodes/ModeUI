@@ -27,14 +27,8 @@ M.defaultPositions = {
 M.LAYOUT_VERSION = 11
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
--- Mode text plus Mode-toned gameplay colors.
-M.palette = {
-    text = RGB(212, 212, 212), accent = RGB(0, 240, 255), green = RGB(127, 219, 151), hostile = RGB(224, 102, 102),
-    neutral = RGB(232, 176, 75), tapped = RGB(140, 140, 140), mana = RGB(64, 150, 255), muted = RGB(185, 185, 185),
-}
--- The Onyx skin, locked for every frame: default health fill, empty bar, the
--- 2px slate rim and the 2px black gap inside it (owner, layout version 9).
-M.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(106, 115, 125), inner = RGB(0, 0, 0) }
+-- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
+M.palette, M.onyx = addon.Kit.palette, addon.Kit.onyx
 -- Plain-text name colors that contrast the cool Onyx/slate skin (owner's
 -- picks). Sky, the owner's own color (layout version 11), is the default.
 M.nameAccents = { sky = RGB(145, 198, 255), champagne = RGB(242, 223, 184), lilac = RGB(201, 187, 255),

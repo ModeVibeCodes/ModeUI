@@ -14,6 +14,7 @@ used to live in [Play The Game Tools](https://github.com/ModeVibeCodes/PlayTheGa
 | Category  | Module      | What it does |
 |-----------|-------------|--------------|
 | Interface | Unit Frames | Secure Player and Target frames in the locked Onyx skin: a round portrait with a class-gradient ring, a rounded health/power block inside a pixel-perfect slate rim, Sky names, and a lifted shadow on all text. Each element (Layout, Portrait, Name & Level, Health, Power, Text) has its own tab, and the Target can match the Player. |
+| Interface | Nameplates  | Onyx plates on enemies and friendly NPCs: health with reaction, class or threat colors, name, health text, cast bars that turn gray when they can't be interrupted, raid markers and a cyan rim on your target. Off by default. Friendly plates in instances and your personal resource display stay Blizzard's. |
 | Global    | Profiles    | Account-wide profiles of all ModeUI settings: create (from defaults), duplicate, rename, delete, switch (applies on reload) and import/export as a text string. Play The Game Tools keeps its own, separate profiles. |
 | Global    | Optimizations | Auto Loot, Fast Loot, Hide Error Text, Max Camera Distance and UI Scale (Pixel Perfect or custom). All off by default: ModeUI only changes a game setting while you have that optimization on, and turning it off puts back the game's previous value. |
 | Global    | Class Colors | Custom colors per class for ModeUI's class-colored elements (names, health bars, portrait rings). Changes apply right away; Reset returns a class to the game's color. |
@@ -55,10 +56,10 @@ ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   Shared/          code shared by modules: Runtime (startup, settings, profiles, modules,
                    events, messages), Domain (unit data), Kit (frame pieces), Placement
                    (Edit Mode), Media, Border, Settings (window, widgets)
-  Modules/         one folder per module (UnitFrames, Profiles, Optimizations, ClassColors),
+  Modules/         one folder per module (UnitFrames, Nameplates, Profiles, Optimizations, ClassColors),
                    each with its own XML, Init.lua, Driver.lua and Settings.lua
   Media/           Mode theme textures, unit frame textures, Lato fonts
-tests/             structure, runtime, smoke, Unit Frames, Global and template tests
+tests/             structure, runtime, smoke, Unit Frames, Nameplates, Global and template tests
                    (simulated client, not WoW)
 tools/             texture generators (Python + Pillow)
 design/mode/       Mode theme source artwork and provenance
@@ -87,6 +88,7 @@ lua tests/smoke.lua
 lua tests/unit_frames.lua
 lua tests/global.lua
 lua tests/template.lua
+lua tests/nameplates.lua
 ```
 
 ## Adding a module

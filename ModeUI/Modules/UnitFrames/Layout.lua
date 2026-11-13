@@ -19,13 +19,7 @@ end
 
 -- Text font: Expressway (registered by Media from an installed AyijeUI or
 -- EllesmereUI copy) falls back to the bundled ModeUI Lato when unavailable.
-function M:FontPath(fdb)
-    local media = addon.Media
-    if fdb.fontMedia == "Expressway" and not media:GetFont("Expressway") then
-        return media:GetFont("ModeUI Lato") or media.gameFont
-    end
-    return media:GetDisplayFont({ font = fdb.font, fontMedia = fdb.fontMedia }, false, self.id)
-end
+function M:FontPath(fdb) return Kit.FontPath(fdb, self.id) end
 
 -- One physical pixel in this frame's units (Blizzard's PixelUtil factor over
 -- the frame's effective scale); 1 when the client cannot report it.

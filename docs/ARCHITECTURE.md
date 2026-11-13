@@ -239,21 +239,26 @@ to widgets documented as accepting them.
 
 | File | API |
 |---|---|
-| `Query.lua` | `Domain.Query.Call(fn, ...)`, `.Truthy(fn, ...)`, `.Plain(fn, ...)` |
+| `Query.lua` | `Domain.Query.Call(fn, ...)`, `.Truthy(fn, ...)`, `.Plain(fn, ...)`, `.Read(fn, ...)` (up to seven values, secret ones as nil) |
 | `Health.lua` | `Domain.Health.Read(unit)` → okMax, max, okValue, value (secret); `.Percent(unit, curve)`; `.State(unit)` → `"Offline"`, `"Ghost"`, `"Dead"` or nil |
 | `Power.lua` | `Domain.Power.Read(unit)` → powerType, token, okMax, max, okValue, value; `.Percent(unit, powerType, curve)`; `.Color(token)` |
 | `Name.lua` | `Domain.Name.Get(unit)` → name (may be secret) or `""` |
 | `Level.lua` | `Domain.Level.Text(unit)` → `"60"`, `"60+"`, `"??"` or `""` |
 | `UnitColor.lua` | `Domain.UnitColor.Class(class)`, `.NativeClass(class)`, `.PlayerClass(unit)`, `.Reaction(unit)` → `"tapped"`, `"hostile"`, `"neutral"`, `"friendly"`; `.SetClassOverride(fn)` (Class Colors supplies the custom colors) |
 | `Portrait.lua` | `Domain.Portrait.Apply(icon, unit, style)`, `.SetIcon(icon, path)`, `.Exists(unit)` |
+| `Cast.lua` | `Domain.Cast.Read(unit)` → nil or { channel, text, texture, startMs, endMs, notInterruptible } (may be secret); `.Now()` |
+| `RaidIcon.lua` | `Domain.RaidIcon.Apply(texture, unit)`: the marker through `SetSpriteSheetCell`, or hidden |
+| `Threat.lua` | `Domain.Threat.Status(unit)` → 0-3 or nil when unknown or secret |
+| `Nameplate.lua` | `Domain.Nameplate.ForUnit(unit)`, `.IsPlayerPlate(frame)`, `.WidgetsOnly(unit)`, `.ActiveUnits()` |
 
 `Shared/Kit/` builds frame pieces in the Mode look. It holds no game data.
 
 | File | API |
 |---|---|
 | `Color.lua` | `Kit.Tint(region, color, alpha)`, `.Lighten(color, t)`, `.Scale(color, f)`, `.Gradient(texture, top, bottom, alpha)`, `Kit.FLAT` |
+| `Palette.lua` | `Kit.palette` (Mode text and gameplay colors), `Kit.onyx` (the Onyx skin), `Kit.RGB(r, g, b)`, `Kit.ColorFromBoolean(region, value, ifTrue, ifFalse)` for possibly secret booleans |
 | `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)` |
-| `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`; `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA` |
+| `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`; `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA`; `Kit.FontPath(style, scope)` |
 
 ## Rules every module follows
 
@@ -287,7 +292,7 @@ module is built.
 | # | Module | Category | Adds to Shared | Things to research first |
 |---|---|---|---|---|
 | 0 | Unit Frames | Interface | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
-| 1 | Nameplates | Interface | Domain: Cast, Auras, RaidIcon, Threat. Kit: Icon, Cooldown | what addons may change on nameplates in Forever; secret aura and cast data |
+| 1 | Nameplates | Interface | Domain: Cast, RaidIcon, Threat, Nameplate. Kit: Palette, ColorFromBoolean, FontPath | done (native acceptance pending); auras still need research |
 | 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
 | 3 | Action Bars | Interface | Kit: Button, Keybind text. Templates: secure action button. Placement: bar layouts | which action bar APIs and secure templates Forever ships |
 | 4 | Chat Windows | Interface | Skin: chat frames, edit box, tabs. Kit: ScrollText | chat frame hooks that don't taint |
