@@ -224,6 +224,7 @@ function PM:SetPosition(id, position, allowUnavailable)
         if Plain(frame) and frame and not addon.FrameAnchors:SafeFrame(frame) then return false,"unsafe-frame" end
     end
     if not P:Resolve(nextPosition.target) and not allowUnavailable then return false, "target-unavailable" end
+    if nextPosition.target ~= "screen" and self.WouldLoop and self:WouldLoop(id, nextPosition.target) then return false, "anchor-loop" end
     self:StopDragging(id)
     local previous = Copy(element.position)
     if previous.x == nextPosition.x and previous.y == nextPosition.y and previous.target == nextPosition.target
@@ -373,7 +374,8 @@ function PM:GetAllowedTargets(id)
     if not element then return {} end
     local targets = {}
     for _, target in ipairs(P:AvailableTargets()) do
-        if element.allowedTargets[target.id] and (element.supportsAnchoring or target.id == "screen") then targets[#targets + 1] = target end
+        if element.allowedTargets[target.id] and (element.supportsAnchoring or target.id == "screen")
+            and not (self.WouldLoop and self:WouldLoop(id, target.id)) then targets[#targets + 1] = target end
     end
     if element.allowedTargets.selected and addon.FrameAnchors and addon.FrameAnchors:ValidID(element.position.target) then
         targets[#targets+1]={id=element.position.target,label=element.position.target:sub(7)}
