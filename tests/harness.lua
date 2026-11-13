@@ -63,7 +63,8 @@ function H.Files()
                 local file = attributes:match('file%s*=%s*"([^"]+)"')
                 assert(file, path .. ": <" .. tag .. "> needs a file attribute")
                 Add(Normalize(base .. file), path)
-            elseif tag ~= "Ui" then
+            elseif tag ~= "Ui" and tag ~= "Font" then
+                -- <Font> declares a font object (Kit/Fonts.xml) and runs no code.
                 error(path .. ": harness does not support <" .. tag .. ">")
             end
         end

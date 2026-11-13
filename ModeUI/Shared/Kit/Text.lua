@@ -25,10 +25,43 @@ function Kit.Formatted(text, pattern, ...)
     text:SetFormattedText(pattern, ...); text.lift:SetFormattedText(pattern, ...)
 end
 
+-- Slug text: the client draws slug fonts from their glyph outlines, so they
+-- stay sharp at any size and scale. Only XML can mark a font slug (Font
+-- slug="true"); there is no Lua setter. Fonts.xml defines two slug templates,
+-- and each face, size and outline gets its own font object made from one with
+-- CreateFont and CopyFontObject, then SetFont for the face. That SetFont keeps
+-- the slug flag is assumed, not documented; if anything fails the text uses
+-- its plain font. `style.slug` turns it on.
+local slugFonts, slugCount = {}, 0
+function Kit.SlugFont(path, size, flags)
+    local key = path .. "|" .. size .. "|" .. flags
+    local cached = slugFonts[key]
+    if cached ~= nil then return cached or nil end
+    local template = flags ~= "" and _G.ModeUISlugFontOutline or _G.ModeUISlugFont
+    local font = false
+    if template and type(CreateFont) == "function" then
+        slugCount = slugCount + 1
+        local ok, made = pcall(CreateFont, "ModeUISlugFont" .. slugCount)
+        if ok and made and made.CopyFontObject then
+            made:CopyFontObject(template)
+            -- Font:SetFont documents no return value; check the face took.
+            if pcall(made.SetFont, made, path, size, flags) and made:GetFont() then font = made end
+        end
+    end
+    slugFonts[key] = font
+    return font or nil
+end
+
+local function ApplyFont(text, style, path, size, flags)
+    local slug = style.slug and Kit.SlugFont(path, size, flags)
+    if slug then text:SetFontObject(slug); return end
+    if not text:SetFont(path, size, flags) then text:SetFont(addon.Media.gameFont, size, flags) end
+end
+
 -- Font, color and the 1px shadow; px is one physical pixel.
 function Kit.Font(text, style, size, path, px)
     local flags = style.outline and "OUTLINE" or ""
-    if not text:SetFont(path, size, flags) then text:SetFont(addon.Media.gameFont, size, flags) end
+    ApplyFont(text, style, path, size, flags)
     local c = style.textColor
     text:SetTextColor(c[1], c[2], c[3], 1)
     text:SetShadowColor(0, 0, 0, style.shadow and 1 or 0)
@@ -42,7 +75,7 @@ function Kit.LayoutLift(text, style, size, path, px, shown, justify)
     lift:SetShown(on)
     if not on then return end
     local flags = style.outline and "OUTLINE" or ""
-    if not lift:SetFont(path, size, flags) then lift:SetFont(addon.Media.gameFont, size, flags) end
+    ApplyFont(lift, style, path, size, flags)
     lift:SetTextColor(0, 0, 0, Kit.LIFT_ALPHA)
     lift:SetShadowColor(0, 0, 0, 0); lift:SetShadowOffset(0, 0)
     lift:SetJustifyH(justify)

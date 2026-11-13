@@ -84,7 +84,7 @@ local function Style(kind)
         crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),
-        font = "game", fontMedia = "Expressway", outline = false, shadow = true, liftedShadow = true,
+        font = "game", fontMedia = "Expressway", outline = false, shadow = true, liftedShadow = true, slug = true,
         textColor = Copy(P.text),
     }
 end

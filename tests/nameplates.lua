@@ -264,6 +264,31 @@ world.run([==[
     assert(plate.castBox.rim.texture == rim and plate.castBox.gap.texture == gapTexture, 'cast box rounded like the health box')
     assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and Kit.onyx.border[1] < 0.2, 'near-black rim')
     assert(not M:SetOption('enemy', 'texture', 'flat'), 'the old texture key is gone')
+    -- Slug text: one font object per face, size and outline from the XML template.
+    assert(M.db.enemy.slug == true, 'slug text on by default')
+    assert(Kit.SlugFont('Fonts/Test.ttf', 10, '') == nil, 'no template, no slug font')
+    local made = {}
+    ModeUISlugFont, ModeUISlugFontOutline = { slug = true }, { slug = true, outline = true }
+    function CreateFont(name)
+        local font = { name = name }
+        function font:CopyFontObject(source) self.copied = source end
+        function font:SetFont(path, size, flags) self.font = { path, size, flags } end
+        function font:GetFont() return self.font and self.font[1] end
+        made[#made + 1] = font
+        return font
+    end
+    local slug = Kit.SlugFont('Fonts/Test.ttf', 11, 'OUTLINE')
+    assert(slug and slug.copied == ModeUISlugFontOutline and slug.font[2] == 11, 'copied from the outline template')
+    assert(Kit.SlugFont('Fonts/Test.ttf', 11, 'OUTLINE') == slug and #made == 1, 'cached')
+    local probe = plate.name
+    local applied
+    local setFontObject = probe.SetFontObject
+    probe.SetFontObject = function(_, font) applied = font end
+    Kit.Font(probe, { slug = true, outline = false, shadow = true, textColor = { 1, 1, 1 } }, 12, 'Fonts/Test.ttf', 1)
+    assert(applied and applied.copied == ModeUISlugFont and applied.font[2] == 12, 'slug text uses the slug font')
+    probe.SetFontObject = setFontObject
+    CreateFont, ModeUISlugFont, ModeUISlugFontOutline = nil, nil, nil
+    assert(M:SetOption('enemy', 'slug', false) and M:SetOption('enemy', 'slug', true))
     -- Foreground and background textures, for the health and cast bars.
     assert(M.db.enemy.foregroundTexture == 'mode' and M.db.enemy.backgroundTexture == 'flat', 'texture defaults')
     assert(M:SetOption('enemy', 'foregroundTexture', 'flat') and plate.health.statusBarTexture == Kit.FLAT and not plate.health.sheen:IsShown(), 'flat foreground')
