@@ -32,6 +32,10 @@
 --   Mode/Close.tga       ModeClose: a thin cross for close buttons
 --   Chat/Menu.tga        ChatMenu: a speech bubble outline, the chat menu button's glyph
 --   Chat/Channels.tga    ChatChannels: a "#", the chat channels button's glyph
+--   Mode/Minimize.tga    ModeMinimize: an arrow into the bottom-left corner (shrink a window)
+--   Mode/Maximize.tga    ModeMaximize: an arrow out to the top-right corner (expand a window)
+--   Mode/Sheen.tga       ModeSheen: 64x16, a soft diagonal band of light, brighter at the top,
+--                        laid over glass tabs (ADD) for a glassy glint
 local SAMPLES = 8
 local ROOT = "ModeUI/Media/Textures/"
 
@@ -247,6 +251,15 @@ local TEXTURES = {
     { "DamageMeters/Lock.tga", 16, 16, Padlock(false), true },
     { "DamageMeters/Unlock.tga", 16, 16, Padlock(true), true },
     { "DamageMeters/Grip.tga", 16, 16, Grip(), true },
+    { "Mode/Minimize.tga", 16, 16, Strokes({ { 11.5, 4.5, 5, 11 }, { 4.5, 6.5, 4.5, 11.5 }, { 4.5, 11.5, 9.5, 11.5 } }, 1.4), true },
+    { "Mode/Maximize.tga", 16, 16, Strokes({ { 4.5, 11.5, 11, 5 }, { 6.5, 4.5, 11.5, 4.5 }, { 11.5, 4.5, 11.5, 9.5 } }, 1.4), true },
+    { "Mode/Sheen.tga", 64, 16, function(x, y)
+        -- A band leaning right, 10 px wide, feathered (smoothstep), fading toward the bottom.
+        local distance = math.abs((x - 18) - (16 - y) * 0.9)
+        local t = math.max(0, math.min(1, 1 - distance / 10))
+        local band = t * t * (3 - 2 * t)
+        return band * (1 - 0.6 * y / 16)
+    end, false },
 }
 
 local function Coverage(shape, px, py, supersample)

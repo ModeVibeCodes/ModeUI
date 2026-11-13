@@ -89,6 +89,20 @@ function M:InstallHooks()
     if FCF_SetChatWindowFontSize then
         hooksecurefunc("FCF_SetChatWindowFontSize", function() if Active() then self:Refresh() end end)
     end
+    -- Blizzard sizes a tab to its text (measured in whatever font the text
+    -- had); a skinned chat tab is sized again in the Mode face right after.
+    -- Fixed sizes (dynamic dock tabs) and whisper tabs are left alone.
+    if PanelTemplates_TabResize then
+        hooksecurefunc("PanelTemplates_TabResize", function(tab, padding, absoluteSize, minWidth, maxWidth)
+            if Active() and tab and absoluteSize == nil and addon.Skin.parts[tab] and addon.Skin.parts[tab].glass then
+                self:SizeTab(tab, nil, padding, minWidth, maxWidth)
+            end
+        end)
+    end
+    -- Blizzard re-anchors the scroll bar when a window locks or resizes.
+    if FCF_UpdateScrollbarAnchors then
+        hooksecurefunc("FCF_UpdateScrollbarAnchors", function(frame) if Active() and frame then self:PlaceScrollBar(frame) end end)
+    end
 end
 
 -- Paints every chat window, its tab and edit box, and the compartment.
@@ -117,6 +131,8 @@ function M:SetOption(key, value)
     if not pcall(self.Initialize, candidate) then return false end
     self.db[key] = candidate[key]
     self:Refresh()
+    -- Rows shown only with another setting (Border Color with Border) follow.
+    if self.page then self.page:Layout() end
     return true
 end
 

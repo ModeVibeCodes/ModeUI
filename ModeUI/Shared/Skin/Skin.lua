@@ -124,16 +124,50 @@ end
 
 -- Font, flags and the crisp one-pixel shadow on a Blizzard font string or
 -- font instance (chat frames and edit boxes are font instances too). A size
--- of nil keeps the region's own size.
+-- of nil keeps the region's own size. FontStrings answer SetFont with
+-- true or false; a chat frame's SetFont (FontableFrameMixin, Lua) answers
+-- nothing, so only an explicit false falls back to the game font.
 function Skin.Font(region, path, size, outline, shadow, px)
     if not region or not region.SetFont then return false end
     local _, current = region:GetFont()
     size = size or (IsPublic(current) and current) or 12
     local flags = outline and "OUTLINE" or ""
-    if not region:SetFont(path, size, flags) then region:SetFont(addon.Media.gameFont, size, flags) end
+    if region:SetFont(path, size, flags) == false then region:SetFont(addon.Media.gameFont, size, flags) end
     if region.SetShadowColor then
         region:SetShadowColor(0, 0, 0, shadow and 1 or 0)
         region:SetShadowOffset(shadow and px or 0, shadow and -px or 0)
     end
     return true
+end
+
+-- Swaps only the face of a Blizzard font string: its size and flags stay
+-- (the text keeps the game's sizes and outlines, in the Mode face).
+function Skin.Face(region, path)
+    if not region or not region.GetFont or not region.SetFont then return false end
+    local current, size, flags = region:GetFont()
+    if not (IsPublic(size) and type(size) == "number" and size > 0) or current == path then return false end
+    flags = IsPublic(flags) and flags or ""
+    return region:SetFont(path, size, flags) ~= false
+end
+
+-- A crisp border drawn on its own frame above `host`'s children (as the unit
+-- frames' rim sits above their bars): four flat edges, `thickness` thick,
+-- square corners. The frame never takes the mouse. `lift` raises it above
+-- the host's own frame level (child art like a NineSlice can sit 500 up).
+function Skin.Edge(host, lift)
+    local parts = Skin.parts[host] or { regions = {} }
+    Skin.parts[host] = parts
+    if not parts.edge then
+        local edge = CreateFrame("Frame", nil, host)
+        edge:EnableMouse(false)
+        edge:SetAllPoints(host)
+        parts.edge, parts.edgeRim = edge, Kit.Rim(edge, "OVERLAY", 7)
+    end
+    local level = host:GetFrameLevel()
+    if IsPublic(level) and type(level) == "number" then parts.edge:SetFrameLevel(math.min(9000, level + (lift or 1))) end
+    return parts
+end
+function Skin.PaintEdge(parts, thickness, color, alpha)
+    Kit.PlaceRim(parts.edgeRim, parts.edge, thickness, 0, color, alpha or 1)
+    parts.edge:SetShown(thickness > 0)
 end

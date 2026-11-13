@@ -27,3 +27,23 @@
         assert(type(old) == 'function', 'hooksecurefunc needs an existing function: ' .. tostring(name))
         t[name] = function(...) local r = { old(...) }; hook(...); return unpack(r) end
     end
+    -- Font strings are regions too (GetRegions lists them with textures).
+    local createFontString = methods.CreateFontString
+    function methods:CreateFontString(...)
+        local text = createFontString(self, ...)
+        textures[#textures + 1] = text
+        return text
+    end
+    function methods:SetRotation(value) self.rotation = value end
+    function methods:GetAtlas() return self.atlas end
+    function methods:SetAtlas(value) self.atlas = value end
+    -- Frame types the Blizzard templates use, made as plain frames.
+    local createFrame = CreateFrame
+    function CreateFrame(kind, name, parent, ...)
+        if kind == 'CheckButton' or kind == 'DropdownButton' or kind == 'EventFrame' then
+            local frame = createFrame(kind == 'EventFrame' and 'Frame' or 'Button', name, parent, ...)
+            frame.kind = kind
+            return frame
+        end
+        return createFrame(kind, name, parent, ...)
+    end

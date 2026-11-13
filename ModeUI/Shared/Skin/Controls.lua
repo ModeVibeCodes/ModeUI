@@ -13,6 +13,11 @@ local Skin, Kit = addon.Skin, addon.Kit
 --                lighter segment with a two-pixel cyan bar on its window side
 --   SideTab      SelectedTexture + Icon + Background (LargeSideTabButton):
 --                a field around the icon, cyan rim when checked
+--   RightSideTab Icon + a checked texture, no Background (RightSideTabTemplate:
+--                Guild's Chat, Roster, Benefits and Info tabs): as SideTab
+--   Dropdown     WowStyle1/2DropdownTemplate (Background + Arrow) or the legacy
+--                UIDropDownMenuTemplate (Left/Middle/Right + Button): a field
+--                with a chevron (Extras.lua)
 --   Close        the close button: a field with a thin cross
 --   ScrollBar    Track.Thumb + Back/Forward: a slim track and thumb
 --   Inset        an inset frame's NineSlice and Bg: a darker field
@@ -54,9 +59,13 @@ function Skin.Kind(frame)
         return "ScrollBar"
     end
     if kind == "EditBox" and frame.Left and frame.Right and frame.Middle then return "Field" end
+    if kind == "DropdownButton" and frame.Arrow and frame.Background then return "Dropdown" end
+    if kind == "Frame" and frame.Left and frame.Middle and frame.Right and frame.Button and frame.Text then return "Dropdown" end
     if kind == "Button" or kind == "CheckButton" or kind == "DropdownButton" then
         if frame.LeftActive and frame.MiddleActive and frame.RightActive then return "Tab" end
         if frame.SelectedTexture and frame.Icon and frame.Background then return "SideTab" end
+        if kind == "CheckButton" and frame.Icon and not frame.Background and frame.GetCheckedTexture
+            and frame:GetCheckedTexture() then return "RightSideTab" end
         if frame.Left and frame.Middle and frame.Right and Text(frame) then return "Button" end
     end
     return nil
@@ -190,10 +199,11 @@ function Skin.PaintSideTab(tab)
     Skin.PaintPanel(parts, tab, checked and C.selected or C.field, 0.95, rim, parts.px or 1)
 end
 
--- Close: an 18 px field with a thin cross, Inset from the window's
--- top-right corner. Placing it is anchoring, so the caller does it outside
--- combat.
-function Skin.Close(button)
+-- A window button with a Mode glyph: Blizzard's art faded, a field with
+-- the glyph (ModeClose, ModeMinimize, ModeMaximize) whose rim and glyph
+-- turn cyan on hover. Placing it is anchoring, so the caller does it
+-- outside combat.
+function Skin.GlyphButton(button, glyph)
     FadeStates(button)
     Fade(button.Border)
     local parts = Parts(button)
@@ -202,7 +212,7 @@ function Skin.Close(button)
     if not parts.icon then
         parts.icon = button:CreateTexture(nil, "ARTWORK")
         parts.regions[parts.icon] = true
-        addon.Media:ApplyTexture(parts.icon, "ModeClose")
+        addon.Media:ApplyTexture(parts.icon, glyph)
         button:HookScript("OnEnter", function() parts.hovered = true; Skin.PaintClose(button) end)
         button:HookScript("OnLeave", function() parts.hovered = false; Skin.PaintClose(button) end)
     end
@@ -210,6 +220,7 @@ function Skin.Close(button)
     parts.icon:SetSize(Snap(16, px), Snap(16, px))
     Skin.PaintClose(button)
 end
+function Skin.Close(button) Skin.GlyphButton(button, "ModeClose") end
 function Skin.PaintClose(button)
     local parts = Skin.parts[button]
     if not parts or not parts.icon then return end
@@ -221,6 +232,8 @@ end
 -- thumb down the middle. The arrows stay clickable.
 function Skin.ScrollBar(bar)
     Fade(bar.Backplate)
+    -- A plain Background texture (the Guild roster's marble strip) goes too.
+    if bar.Background and bar.Background.GetObjectType and bar.Background:GetObjectType() == "Texture" then Fade(bar.Background) end
     local track, thumb = bar.Track, bar.Track.Thumb
     -- WowTrimScrollBar has a Background holder too; MinimalScrollBar doesn't.
     for _, key in ipairs({ "Background", "Track", "Thumb" }) do
@@ -250,9 +263,26 @@ function Skin.ScrollBar(bar)
     Kit.Tint(own.thumb, C.thumb, 1)
 end
 
--- An inset: Blizzard's inset border and background faded, a darker field.
+-- An inset: Blizzard's inset border and background faded, a darker field
+-- inside a one-pixel rim. Some insets sit ABOVE the content they frame (the
+-- Guild roster's InsetFrame is raised to level 100 over its rows), so the
+-- field is drawn on the inset's parent, under the content, and only the
+-- thin rim on the inset itself; the rows keep their full color.
 function Skin.Inset(inset)
     Skin.FadeNineSlice(inset.NineSlice); Fade(inset.Bg)
-    local parts = Parts(inset)
+    local host = inset:GetParent() or inset
+    local parts = Skin.parts[inset] or { regions = {} }
+    Skin.parts[inset] = parts
+    if not parts.fill then
+        parts.fill = host:CreateTexture(nil, "BACKGROUND", nil, -7)
+        parts.fill:SetTexture(Kit.FLAT)
+        parts.rim = Kit.Rim(inset, "BACKGROUND", -7)
+        for _, edge in ipairs(parts.rim) do parts.regions[edge] = true end
+        -- The field belongs to the host's textures too, so fading the host's
+        -- own art (fadeOwn) never takes it.
+        local own = Skin.parts[host] or { regions = {} }
+        Skin.parts[host] = own
+        own.regions[parts.fill] = true
+    end
     Skin.PaintPanel(parts, inset, C.field, 0.6, C.cardRim, Kit.PixelSize(inset))
 end

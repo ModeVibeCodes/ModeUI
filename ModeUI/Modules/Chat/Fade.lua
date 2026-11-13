@@ -2,11 +2,14 @@ local _, addon = ...
 local M = addon.Chat
 if not M then return end
 
--- Two eased levels drive every alpha:
---   tabLevel  1 while the chat is in use, 0 when it isn't: tabs and the
---             compartment move between Tabs When Away and full.
+-- Three eased levels drive every alpha:
+--   useLevel  1 while the chat is in use, 0 when it isn't: the scroll bar.
+--   tabLevel  1 while the chat was used in the last Idle Delay seconds, 0
+--             once it's idle: tabs and the compartment move between Tabs
+--             When Idle (100 keeps them full) and their own level (selected
+--             full, the others Other Tabs). Not tied to the window fade.
 --   fadeLevel 1 while the chat was used in the last Idle Delay seconds, then
---             Idle Opacity: the whole chat (windows, text, tabs, buttons).
+--             Idle Opacity: the windows (text, fill, border, edit band).
 -- "In use" means the mouse is over a window (with its tab row and edit box),
 -- a tab or the compartment, the edit box has focus, the chat menu or the tab
 -- overflow list is open, or a window is being moved. A whisper also counts
@@ -37,11 +40,14 @@ function M:InUse()
             local px = Kit.PixelSize(frame)
             local inset, quick = Snap(self.TEXT_INSET, px), frame.CombatLogQuickButtonFrame
             local height = quick and quick.GetHeight and quick:GetHeight()
-            local top = inset + Snap(self.TAB_HEIGHT, px) + (addon.IsNumber(height, 0, 200) and height or 0)
-            local bottom = inset + Snap(self.EDIT_GAP, px) + Snap(self.EDIT_HEIGHT, px)
-            if Over(frame, top, -bottom, -inset, inset) then return true end
+            inset = inset + self:Rim(px)
+            local editTop, editBottom = self:EditSpace(px)
+            local top = inset + editTop + Snap(self.db.tabHeight, px) + (addon.IsNumber(height, 0, 200) and height or 0)
+            local bottom = inset + editBottom
+            local right = inset + (self.db.scrollBar and Snap(self.SCROLL_GUTTER, px) or 0)
+            if Over(frame, top, -bottom, -inset, right) then return true end
         end
-        if Over(self:TabOf(frame)) then return true end
+        if Over(self:TabOf(frame)) or Over(edit) then return true end
     end
     if Over(self.compartment) then return true end
     local dock = GENERAL_CHAT_DOCK
@@ -64,7 +70,8 @@ function M:StartFade()
         fader:SetScript("OnUpdate", function(_, elapsed) self:FadeStep(elapsed) end)
         self.fader = fader
     end
-    self.tabLevel = self.tabLevel or 0
+    self.tabLevel = self.tabLevel or 1
+    self.useLevel = self.useLevel or 0
     self.fadeLevel = self.fadeLevel or 1
     self.lastUse = self.lastUse or GetTime()
     self.clock = self.TICK_SECONDS
@@ -73,21 +80,25 @@ end
 
 function M:StopFade()
     if self.fader then self.fader:Hide() end
-    self.tabLevel, self.fadeLevel = 1, 1
+    self.tabLevel, self.useLevel, self.fadeLevel = 1, 1, 1
     for _, frame in ipairs(self:ChatFrames()) do
         frame:SetAlpha(1)
         local tab = self:TabOf(frame)
         if tab then Skin.Unpin(tab) end
         if frame.ScrollToBottomButton then Skin.Unpin(frame.ScrollToBottomButton) end
+        if frame.ScrollBar then Skin.Unpin(frame.ScrollBar) end
     end
     local overflow = GENERAL_CHAT_DOCK and GENERAL_CHAT_DOCK.overflowButton
     if overflow then Skin.Unpin(overflow) end
     if self.compartment then self.compartment:SetAlpha(1) end
 end
 
+-- Whether the chat has gone unused for Idle Delay seconds.
+function M:IsIdle(now) return now - (self.lastUse or now) >= self.db.idleDelay end
+
 -- The idle target: full while recently used (or with Idle Fade off).
 function M:IdleTarget(now)
-    if not self.db.idleFade or now - (self.lastUse or now) < self.db.idleDelay then return 1 end
+    if not self.db.idleFade or not self:IsIdle(now) then return 1 end
     return self.db.idleOpacity / 100
 end
 
@@ -106,20 +117,21 @@ function M:FadeStep(elapsed)
         local now = GetTime()
         local using = self:InUse()
         if using then self.lastUse = now end
-        self.tabTarget, self.fadeTarget = using and 1 or 0, self:IdleTarget(now)
+        self.useTarget, self.fadeTarget = using and 1 or 0, self:IdleTarget(now)
+        self.tabTarget = self:IsIdle(now) and 0 or 1
         self:ApplyScrollButtons()
     end
+    local use = Ease(self.useLevel, self.useTarget or self.useLevel, elapsed)
     local tab = Ease(self.tabLevel, self.tabTarget or self.tabLevel, elapsed)
     local fade = Ease(self.fadeLevel, self.fadeTarget or self.fadeLevel, elapsed)
-    if tab ~= self.tabLevel or fade ~= self.fadeLevel then
-        self.tabLevel, self.fadeLevel = tab, fade
+    if tab ~= self.tabLevel or fade ~= self.fadeLevel or use ~= self.useLevel then
+        self.tabLevel, self.fadeLevel, self.useLevel = tab, fade, use
         self:ApplyAlpha()
     end
 end
 
--- A tab: Unselected Tab Opacity (selected tabs full) while in use, Tabs When
--- Away otherwise; a tab flashing for a new whisper stays full. Times the
--- idle level.
+-- A tab: full when selected, Other Tabs otherwise, easing to Tabs When Idle
+-- once the chat is idle; a tab flashing for a new whisper stays full.
 function M:TabAlpha(tab)
     if not self.active then return nil end
     local near = self:IsSelected(tab) and 1 or self.db.unselectedTabOpacity / 100
@@ -129,9 +141,19 @@ function M:TabAlpha(tab)
         alerting = ok and value == true
     end
     if alerting then near = 1 end
-    local away = alerting and 1 or self.db.awayTabOpacity / 100
-    local level = self.tabLevel or 0
-    return (away + (near - away) * level) * (self.fadeLevel or 1)
+    if alerting then return 1 end
+    -- Tabs When Idle scales the tab's own level: 100 keeps it as it is.
+    local idle = self.db.awayTabOpacity / 100
+    local level = self.tabLevel or 1
+    return near * (idle + (1 - idle) * level)
+end
+
+-- The scroll bar: with the mouse over the chat (it's in the window, which
+-- the idle fade dims too).
+function M:ScrollBarAlpha()
+    if not self.active then return nil end
+    if not self.db.scrollBar then return 0 end
+    return self.useLevel or 0
 end
 
 -- Scroll to Bottom shows while its window is scrolled up.
@@ -155,14 +177,15 @@ end
 -- overflow button and the compartment.
 function M:ApplyAlpha()
     if not self.active then return end
-    local fade, level = self.fadeLevel or 1, self.tabLevel or 0
+    local fade, level = self.fadeLevel or 1, self.tabLevel or 1
     for _, frame in ipairs(self:ChatFrames()) do
         frame:SetAlpha(fade)
         local tab = self:TabOf(frame)
         if tab and Skin.pins[tab] then tab:SetAlpha(self:TabAlpha(tab)) end
+        if frame.ScrollBar and Skin.pins[frame.ScrollBar] then frame.ScrollBar:SetAlpha(self:ScrollBarAlpha() or 0) end
     end
-    local away = self.db.awayTabOpacity / 100
-    local chrome = (away + (1 - away) * level) * fade
+    local idle = self.db.awayTabOpacity / 100
+    local chrome = idle + (1 - idle) * level
     local overflow = GENERAL_CHAT_DOCK and GENERAL_CHAT_DOCK.overflowButton
     if overflow and overflow.SetAlpha then Skin.PinAlpha(overflow, function() return self.active and chrome or nil end) end
     if self.compartment then self.compartment:SetAlpha(chrome) end

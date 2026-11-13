@@ -67,6 +67,7 @@ Shared\Border\Border.lua
 Shared\Placement\PositionHighlights.lua
 Shared\Skin\Skin.lua
 Shared\Skin\Controls.lua
+Shared\Skin\Extras.lua
 Shared\Skin\Frame.lua
 Shared\Settings\Theme.lua
 Shared\Settings\Widgets\Core.lua
