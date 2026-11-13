@@ -348,7 +348,12 @@ world.run([====[
     -- Top slots sit 1px under the bar's top, also clear of the ring across their line.
     assert(M:SetTextOption('player','topLeft','content','name'))
     local tp=Point(p.texts.topLeft);assert(tp[1]=='TOPLEFT' and tp[2]==p.health and tp[5]==-1 and tp[4]>=12,'top left, under the bar top')
-    assert(M:SetTextOption('player','topLeft','content','none') and not p.texts.topLeft:IsShown())
+    -- Each text shows once per frame: picking it for a spot clears its old spot.
+    assert(M.db.player.texts.border.content=='none' and not p.texts.border:IsShown() and p.texts.topLeft:GetText()=='Fixture','moved, not copied')
+    assert(M:SetTextOption('player','border','content','name') and M.db.player.texts.topLeft.content=='none' and not p.texts.topLeft:IsShown())
+    assert(M.db.player.texts.right.content=='healthPercent' and M:SetTextOption('player','left','content','level') and M.db.player.texts.bottomLeft.content=='none')
+    assert(M:SetTextOption('player','bottomLeft','content','level') and M.db.player.texts.left.content=='none','other texts stay put')
+    assert(M:SetTextOptions('player','right',{colorMode='custom',color={0,1,0}}) and p.texts.right.color[2]==1 and M:SetTextOption('player','right','colorMode','default'),'several settings in one change')
     assert(M:SetTextOption('player','powerLeft','content','powerPercent'))
     -- The power line's nearest edge is 8px under the ring's centre, where the ring
     -- still reaches 31px out: 32 + 31 + 2 - 54, rounded out, is 11.
@@ -729,13 +734,20 @@ restored.run([====[
     local function Visible(row) return not row.visibleWhen or row.visibleWhen() end
     for section,list in pairs({Layout={'Scale','Frame Width'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
         Health={'Health Bar Height','Health Color'},Power={'Power Bar Height','Power Color'},
-        Text={'Top Left','Right','Bottom Right','On the Border','Border Alignment','Power Center','Style Slot','Color','Name Color','Class Color Softness','Font','Text Color'}}) do
+        Text={'Name Color','Class Color Softness','Font','Text Color'}}) do
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end
         assert(Visible(Row(section,'Editing')),'every element tab has the Editing switch')
     end
     -- Bar textures and opacity sit in Layout cards, two to a row.
     assert(page.unitFrameForeground and page.unitFrameBackground and page.unitFrameForegroundOpacity and page.unitFrameBackgroundOpacity)
     assert(page.unitFrameForeground:GetParent().rowLabel:GetText()=='Foreground' and page.unitFrameBackgroundOpacity:GetParent().rowLabel:GetText()=='Background Opacity')
+    -- Slider drags apply the first step at once, then at most one value every
+    -- W.LIVE_SECONDS; the last value always applies (no rebuild on every step).
+    local fs=page.unitFrameForegroundOpacity
+    fs:SetValue(60,true);assert(M.db.player.barForegroundOpacity==60,'the first step applies at once')
+    fs:SetValue(70,true);assert(M.db.player.barForegroundOpacity==60,'quick steps wait')
+    Advance(0.2);assert(M.db.player.barForegroundOpacity==70,'the last value applies')
+    fs:SetValue(100,true);Advance(0.2);assert(M.db.player.barForegroundOpacity==100)
     for _,title in ipairs({'Border Style','Palette','Background Color','Rim Color','Rim Thickness','Name Sheen Strength','Empty Bar Color'}) do
         for _,section in ipairs(page.sections) do assert(not Find(section.title,title),'locked to Onyx: '..title) end
     end
@@ -747,14 +759,28 @@ restored.run([====[
         for _,section in ipairs(page.sections) do assert(not Find(section.title,title),'replaced by text slots: '..title) end
     end
     assert(M:ResetFrame('player'))
-    -- Text slots: one picker per spot; Slot Style edits one slot at a time.
-    assert(page.unitFrameTextSelects.topLeft and page.unitFrameTextSelects.border and page.unitFrameTextSelects.powerRight and page.unitFrameStyleSlot)
-    assert(page.unitFrameTextSlot()=='right' and not Visible(Row('Text','Custom Color')))
-    assert(M:SetTextOption('player','right','colorMode','custom') and Visible(Row('Text','Custom Color')) and M:SetTextOption('player','right','colorMode','default'))
-    page.SetTextSlot('border');assert(page.unitFrameTextSlot()=='border' and page.unitFrameTextSize and page.unitFrameTextX)
-    assert(M:SetTextOption('player','border','content','none') and not Visible(Row('Text','Border Alignment')) and M:SetTextOption('player','border','content','name'))
-    assert(M:SetFrameOption('player','showPower',false) and not Visible(Row('Text','Power Center')) and M:SetFrameOption('player','showPower',true))
-    page.SetTextSlot('right')
+    -- Text slots: three spots to a line in frame order (left, centre, right), every
+    -- dropdown the same width; a spot with a text has a swatch and a size under it.
+    assert(not Find('Text','Style Slot') and page.unitFrameStyleSlot==nil,'no Slot Style')
+    local S=page.unitFrameTextSelects
+    local function Cells(slot) return S[slot]:GetParent():GetParent():GetParent().row end
+    for _,line in ipairs({{'topLeft','top','topRight'},{'left','center','right'},{'bottomLeft','bottom','bottomRight'},{'powerLeft','powerCenter','powerRight'}}) do
+        local row=Cells(line[1]);assert(Cells(line[2])==row and Cells(line[3])==row and row.settingsTitles[2]==M.textSlotLabels[line[2]],'one line: '..line[1])
+        assert(Visible(row) and Point(S[line[1]])[1]=='TOPLEFT' and Point(S[line[1]],2)[1]=='TOPRIGHT','stretched across its cell')
+    end
+    assert(Cells('topLeft').settingsTitles[1]=='Top Left' and Cells('topLeft').settingsTitles[3]=='Top Right')
+    local right,top=page.unitFrameTextSizes.right,page.unitFrameTextSizes.top
+    assert(right.line:IsShown() and not top.line:IsShown(),'size and color only where a text is')
+    assert(page.unitFrameTextSwatches.right.sample.vertexColor[1]==M.db.player.textColor[1] and not right.reset:IsShown())
+    right.larger.scripts.OnClick();assert(M.db.player.texts.right.size==12 and M.frames.player.texts.right.font[2]==12,'+ grows the text')
+    right.smaller.scripts.OnClick();assert(M.db.player.texts.right.size==11)
+    page.unitFrameTextSwatches.right.scripts.OnClick();assert(ColorPickerFrame:IsShown())
+    ColorPickerFrame.r,ColorPickerFrame.g,ColorPickerFrame.b=1,0,0;ColorPickerFrame.swatchFunc()
+    assert(M.db.player.texts.right.colorMode=='custom' and M.db.player.texts.right.color[1]==1 and right.reset:IsShown(),'picked color is custom')
+    ColorPickerFrame.info.cancelFunc();assert(M.db.player.texts.right.colorMode=='default','cancel restores')
+    assert(page.unitFrameBorderAlign:IsShown() and M:SetTextOption('player','border','content','none') and not page.unitFrameBorderAlign:IsShown())
+    assert(M:SetTextOption('player','border','content','name'))
+    assert(M:SetFrameOption('player','showPower',false) and not Visible(Cells('powerLeft')) and M:SetFrameOption('player','showPower',true))
     -- Frames tab: Show and Hide Blizzard side by side for each of the five frames, and their tools.
     assert(page.unitFrameResetTargetTarget and page.unitFrameCopyFocus and page.unitFrameCopyPlayer and Row('Frames','Target of Focus Tools'))
     assert(page.unitFrameCopyPlayer.label:GetText()=='Copy Style to Target' and page.unitFrameCopyFocus.label:GetText()=='Copy Player Style')
@@ -785,7 +811,7 @@ restored.run([====[
     assert(face.auraShown.buffs==M.AURA_SAMPLE and face.castBox:IsShown() and face.combo:IsShown(),'buffs, cast bar and combo points')
     assert(face.texts.border:GetText()=='Target Frame' and face.health.value==75)
     local at=Point(face);assert(at[1]=='TOPLEFT' and at[2]==view.frame and at[3]=='TOPLEFT' and at[4]==math.floor(at[4]) and at[5]==math.floor(at[5]),'centred on whole pixels')
-    assert(math.abs(at[4]+face.geometry.width/2-view.frame:GetWidth()/2)<=1,'the frame centre on the preview centre')
+    assert(math.abs(at[4]+face.geometry.width/2-view.frame:GetWidth()/2/face:GetScale())<=1,'the frame centre on the preview centre')
     assert(M:SetAuraOption('target','buffs','enabled',false) and face.auraShown.buffs==0 and M:SetAuraOption('target','buffs','enabled',true),'follows the settings')
     -- One fixed size and spot: moving or resizing parts never moves the sample.
     local w0,h0=M:GetPreviewSize(view)
@@ -803,14 +829,15 @@ restored.run([====[
     face.health.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Health')
     face.combo.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Combo Points')
     face.portrait.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Portrait')
-    -- A text opens the Text tab on its own slot.
+    -- A text opens the Text tab at its own spot.
     page.SetEditing('player');local pf=view.faces.player;local hit
-    for _,child in ipairs(frames) do if child.jump and child.jump.group=='bottomLeft' and child:GetParent()==pf.textLayer then hit=child end end
-    assert(hit and hit.jump.target=='text','every text is clickable')
-    hit.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Text' and page.unitFrameTextSlot()=='bottomLeft')
-    page.SetTextSlot('right');page.SetEditing('target')
+    for _,child in ipairs(frames) do if child.jump and child.jump.target=='text:bottomLeft' and child:GetParent()==pf.textLayer then hit=child end end
+    assert(hit,'every text is clickable')
+    hit.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Text' and page.jumpTargets['text:bottomLeft'].section.title=='Text')
+    assert(pf.scale==M.PREVIEW_SCALE and M.PREVIEW_HEIGHT==150,'the sample draws at 80%')
+    page.SetEditing('target')
     page.SetEditing('targettarget');local small=view.faces.targettarget
-    assert(small:IsShown() and not face:IsShown() and small.scale==0.75 and not small.portrait:IsShown() and not small.castBox:IsShown())
+    assert(small:IsShown() and not face:IsShown() and math.abs(small.scale-0.75*M.PREVIEW_SCALE)<1e-9 and not small.portrait:IsShown() and not small.castBox:IsShown())
     local w,h=M:GetPreviewSize(view);assert(w==M.PREVIEW_WIDTH and h==M.PREVIEW_HEIGHT)
     -- More tabs than fit: a thin slider under them shows the overflow and drags it.
     local strip=page.sectionTabs

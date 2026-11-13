@@ -75,7 +75,7 @@ M.LIFT_PIXELS, M.LIFT_ALPHA = Kit.LIFT_PIXELS, Kit.LIFT_ALPHA
 function M:ApplyLayout(f, unit)
     local fdb = self:FrameDB(unit)
     -- Scale first: the pixel size depends on the frame's effective scale.
-    f:SetScale(fdb.scale / 100)
+    f:SetScale(fdb.scale / 100 * (f.previewScale or 1))
     local g = self:Geometry(fdb, self:PixelSize(f))
     f.geometry = g
     local near, far, sign = Sides(fdb)

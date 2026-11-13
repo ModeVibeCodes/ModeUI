@@ -61,7 +61,7 @@ function M:CreateConfigPage(parent)
 
     -- The live sample of the frame being edited (Preview.lua); clicking a part
     -- of it reveals the row marked here for that part.
-    page.configPreview = W.Preview(page, M, { contentHeight = 170 })
+    page.configPreview = W.Preview(page, M, { contentHeight = 150 })
     -- A tab about one frame's part (Combo Points) switches the sample to that frame.
     function page:OnSectionTabChanged() if self.configPreview then self.configPreview:Refresh() end end
     page.jumpTargets = {}

@@ -11,9 +11,10 @@ if not M then return end
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local CAST_SECONDS, HINT_HEIGHT = 2.5, 18
 -- One fixed size, so moving or resizing a part never resizes the preview or
--- moves the sample (owner, November 13, 2026). Room for the largest frame at
--- 100% with a name and buffs above and a cast bar below.
-M.PREVIEW_WIDTH, M.PREVIEW_HEIGHT = 440, 190
+-- moves the sample (owner, November 13, 2026). The sample draws at 80% of the
+-- frame's own scale (owner: the preview took too much of the page), with room
+-- for the largest frame at 100% with a name and buffs above and a cast bar below.
+M.PREVIEW_WIDTH, M.PREVIEW_HEIGHT, M.PREVIEW_SCALE = 440, 150, 0.8
 
 addon.PreviewStates:Register(M.id, {
     states = { { id = "static", label = "Static" }, { id = "animated", label = "Animated" } },
@@ -61,8 +62,8 @@ local function MakeClickable(face)
     face.jumpReady = true
     Clickable(face.health, "health"); Clickable(face.power, "power"); Clickable(face.portrait, "portrait")
     Clickable(face.castBox, "cast")
-    -- Each text opens the Text tab on its own slot.
-    for slot, text in pairs(face.texts) do Clickable(text, "text", slot, face.textLayer) end
+    -- Each text opens the Text tab at its own spot.
+    for slot, text in pairs(face.texts) do Clickable(text, "text:" .. slot, nil, face.textLayer) end
     if face.combo then Clickable(face.combo, "combo") end
 end
 
@@ -73,7 +74,7 @@ function M:RenderPreview(view)
     local face = view.faces[unit]
     if not face then
         face = CreateFrame("Frame", nil, view.frame)
-        face.unit, face.ghost, face.sample = unit, true, true
+        face.unit, face.ghost, face.sample, face.previewScale = unit, true, true, M.PREVIEW_SCALE
         self:BuildFace(face)
         view.faces[unit] = face
     end
@@ -86,7 +87,7 @@ function M:RenderPreview(view)
     if phase and face.castBox:IsShown() then face.castBox.bar:SetValue((phase % CAST_SECONDS) / CAST_SECONDS) end
     -- A fixed spot: the frame's centre on the preview's centre (above the
     -- hint line), on whole pixels. Offsets are in the sample's own scale.
-    local g, scale = face.geometry, self:FrameDB(unit).scale / 100
+    local g, scale = face.geometry, face:GetScale()
     local px = g.px
     local function Snap(v) return math.floor(v / px + 0.5) * px end
     local width, height = view.frame:GetWidth(), view.frame:GetHeight()
@@ -110,13 +111,11 @@ function M:CreateConfigPreview(parent)
     return view
 end
 
--- Opens the settings for a part of the sample: its tab, and the aura group
--- or text slot.
+-- Opens the settings for a part of the sample: its tab, and the aura group.
 function M:JumpTo(target, group)
     local page = self.page
     if not page or not page.jumpTargets or not page.jumpTargets[target] then return false end
     if group and target == "auras" and page.SetAuraGroup then page.SetAuraGroup(group) end
-    if group and target == "text" and page.SetTextSlot then page.SetTextSlot(group) end
     page:Reveal(page.jumpTargets[target])
     return true
 end

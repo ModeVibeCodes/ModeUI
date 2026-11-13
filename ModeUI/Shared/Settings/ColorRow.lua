@@ -39,11 +39,12 @@ function widgets.ColorRow(page, timer, title, key, enabledGetter, host, options)
         addon:CloseTimerColorPicker()
         local oldColor = timer.db.appearance[key]
         local previous = { oldColor[1], oldColor[2], oldColor[3] }
+        -- The picker reports every color under the cursor; apply them throttled.
+        local apply = widgets.Throttle(function(rgb) timer:SetAppearance(key, rgb); page:Refresh() end)
         local swatch = function()
             if not Enabled() then return end
             local r, g, b = ColorPickerFrame:GetColorRGB()
-            timer:SetAppearance(key, { r, g, b })
-            page:Refresh()
+            apply({ r, g, b })
         end
         addon.timerPickerCallback = swatch
         addon.timerPickerOwner = pick

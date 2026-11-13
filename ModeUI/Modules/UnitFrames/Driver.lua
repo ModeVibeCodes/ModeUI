@@ -53,10 +53,33 @@ function M:UpdateAllStatus()
     if not self.frames then return end
     for _, unit in ipairs(self.units) do self:UpdateStatus(unit) end
 end
--- One text slot's setting (content, size, color, offsets, alignment).
-function M:SetTextOption(unit, slot, key, value)
-    return self.labels[unit] ~= nil and self.slotPlaces[slot] ~= nil and self:SetNestedOption({ unit, "texts", slot }, key, value)
+-- Settings of one text slot (content, size, colorMode, color, x, y, align),
+-- changed together. Each text shows once per frame (owner, November 13,
+-- 2026): showing a text in a slot clears it from any other slot.
+function M:SetTextOptions(unit, slot, changes)
+    if not self:CanConfigure() or not self.labels[unit] or not self.slotPlaces[slot] then return false end
+    local copy = Copy(self.db)
+    local texts = copy[unit].texts
+    for key, value in pairs(changes) do
+        if texts[slot][key] == nil then return false end
+        texts[slot][key] = Copy(value)
+    end
+    local content = changes.content
+    if content ~= nil and content ~= "none" then
+        for other, s in pairs(texts) do if other ~= slot and s.content == content then s.content = "none" end end
+    end
+    if not pcall(self.Initialize, copy) then return false end
+    local live = self.db[unit].texts
+    for name, fresh in pairs(copy[unit].texts) do
+        local target = live[name]
+        for k in pairs(target) do target[k] = nil end
+        for k, v in pairs(fresh) do target[k] = v end
+    end
+    self:Refresh()
+    if self.page then self.page:Refresh(); self.page:Layout() end
+    return true
 end
+function M:SetTextOption(unit, slot, key, value) return self:SetTextOptions(unit, slot, { [key] = value }) end
 function M:SetCastOption(unit, key, value) return self.labels[unit] ~= nil and self:SetNestedOption({ unit, "castBar" }, key, value) end
 function M:SetAuraOption(unit, group, key, value)
     return self.labels[unit] ~= nil and self.auraGroupLabels[group] ~= nil and self:SetNestedOption({ unit, group }, key, value)

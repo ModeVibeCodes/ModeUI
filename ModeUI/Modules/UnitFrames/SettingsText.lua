@@ -2,64 +2,111 @@ local _, addon = ...
 local M, W = addon.UnitFrames, addon.ConfigWidgets
 if not M then return end
 
--- The Text tab: what each text slot shows (TextSlots.lua), one picker per
--- spot like EllesmereUI's text elements, then the style of one slot at a
--- time (font size, color, offsets), the name color and the font. Built by
--- CreateConfigPage (Settings.lua) with its helpers in `ui`.
+-- The Text tab: what each text slot shows (TextSlots.lua), one dropdown per
+-- spot laid out like the frame (left, centre, right; owner, November 13,
+-- 2026), all the same size. A spot with a text gets a small color swatch and
+-- font size under its dropdown. The general text settings (names, font)
+-- follow. Built by CreateConfigPage (Settings.lua) with its helpers in `ui`.
+local ROWS = { { "topLeft", "top", "topRight" }, { "left", "center", "right" }, { "bottomLeft", "bottom", "bottomRight" } }
+local CELL_HEIGHT = 92
+local function Copy(value) return addon.ProfileCodec.Copy(value) end
+
 function M:BuildTextTab(ui)
     local page, When = ui.page, ui.When
-    -- The slot the Slot Style controls edit; picking what a slot shows, or
-    -- clicking a text in the preview, switches to it.
-    local styling = "right"
     local function Slots() return ui.db().texts end
-    local function S() return Slots()[styling] end
-    function page.SetTextSlot(slot)
-        if M.slotPlaces[slot] then styling = slot; page:Refresh(); page:Layout() end
-    end
-    page.unitFrameTextSlot = function() return styling end
-    local n = M.NestedControls(ui, S, function(key, value) M:SetTextOption(ui.Editing(), styling, key, value) end)
     local contents = M.choices.textContent
-    local labels = {}
-    for _, choice in ipairs(contents) do labels[choice.id] = choice.label end
-    page.unitFrameTextSelects = {}
-    local function SlotSelect(slot)
-        page.unitFrameTextSelects[slot] = ui.Select(M.textSlotLabels[slot], function() return contents end,
-            function() return Slots()[slot].content end, function(v)
-                if M:SetTextOption(ui.Editing(), slot, "content", v) and v ~= "none" then page.SetTextSlot(slot) end
-            end)
+    page.unitFrameTextSelects, page.unitFrameTextSwatches, page.unitFrameTextSizes = {}, {}, {}
+
+    -- The color a slot's text shows: its custom color, else its default.
+    local function ShownColor(slot)
+        local s, unit = Slots()[slot], ui.Editing()
+        if s.colorMode == "custom" then return s.color end
+        if s.content == "level" then return M.palette.muted end
+        if M.contentKind[s.content] == "name" then return M:NameColor(unit, M:SampleIdentity(unit, M:FrameDB(unit))) end
+        return ui.db().textColor
     end
-    -- Style Slot lists every slot with what it shows.
-    local function StyleChoices()
-        local list = {}
-        for _, slot in ipairs(M.textSlots) do
-            list[#list + 1] = { id = slot, label = M.textSlotLabels[slot] .. " · " .. labels[Slots()[slot].content] }
+    -- The game's color picker; its live changes apply throttled, Cancel restores.
+    local function PickColor(slot)
+        if not M:CanConfigure() then return end
+        if not ColorPickerFrame and C_AddOns and C_AddOns.LoadAddOn then C_AddOns.LoadAddOn("Blizzard_ColorPickerFrame") end
+        if not ColorPickerFrame or not ColorPickerFrame.SetupColorPickerAndShow then return end
+        addon:CloseTimerColorPicker()
+        local unit, s = ui.Editing(), Slots()[slot]
+        local before, start = { colorMode = s.colorMode, color = Copy(s.color) }, ShownColor(slot)
+        local apply, flush = W.Throttle(function(rgb) M:SetTextOptions(unit, slot, { colorMode = "custom", color = rgb }) end)
+        local function Swatch() local r, g, b = ColorPickerFrame:GetColorRGB(); apply({ r, g, b }) end
+        addon.timerPickerCallback = Swatch
+        ColorPickerFrame:SetupColorPickerAndShow({ r = start[1], g = start[2], b = start[3], hasOpacity = false, swatchFunc = Swatch,
+            cancelFunc = function() flush(); M:SetTextOptions(unit, slot, before) end })
+    end
+
+    -- One spot: its dropdown across the cell, then (with a text) the swatch,
+    -- a font size stepper and, for a custom color, Default.
+    local function Cell(host, slot)
+        local select = ui.SelectIn(host, 200, function() return contents end, function() return Slots()[slot].content end,
+            function(v) M:SetTextOption(ui.Editing(), slot, "content", v) end)
+        select:ClearAllPoints(); select:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0); select:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, 0)
+        local line = CreateFrame("Frame", nil, host)
+        line:SetPoint("TOPLEFT", select, "BOTTOMLEFT", 0, -6); line:SetPoint("TOPRIGHT", select, "BOTTOMRIGHT", 0, -6); line:SetHeight(24)
+        local swatch = W.Button(line, "", 24, 24)
+        swatch:SetPoint("LEFT", 0, 0)
+        swatch.sample = W.Shape(swatch, "ModeFlat", "OVERLAY")
+        swatch.sample:SetPoint("TOPLEFT", 4, -4); swatch.sample:SetPoint("BOTTOMRIGHT", -4, 4)
+        swatch:SetScript("OnClick", function() PickColor(slot) end)
+        local function Size(delta)
+            local r = M.textRanges.size
+            M:SetTextOption(ui.Editing(), slot, "size", math.max(r[1], math.min(r[2], Slots()[slot].size + delta)))
         end
-        return list
+        local smaller = W.Button(line, "-", 24, 24); smaller:SetPoint("LEFT", swatch, "RIGHT", 10, 0)
+        smaller:SetScript("OnClick", function() Size(-1) end)
+        local size = W.NumericInput(line, function() return Slots()[slot].size end,
+            function(v) M:SetTextOption(ui.Editing(), slot, "size", math.floor(v + 0.5)) end, M.textRanges.size[1], M.textRanges.size[2], 36)
+        size:SetPoint("LEFT", smaller, "RIGHT", 2, 0)
+        local larger = W.Button(line, "+", 24, 24); larger:SetPoint("LEFT", size, "RIGHT", 2, 0)
+        larger:SetScript("OnClick", function() Size(1) end)
+        local reset = W.Button(line, "Default", 64, 24); reset:SetPoint("LEFT", larger, "RIGHT", 10, 0)
+        reset:SetScript("OnClick", function() M:SetTextOption(ui.Editing(), slot, "colorMode", "default") end)
+        page.refreshers[#page.refreshers + 1] = function()
+            local s = Slots()[slot]
+            line:SetShown(s.content ~= "none")
+            if s.content == "none" then return end
+            local c = ShownColor(slot)
+            swatch.sample:SetVertexColor(c[1], c[2], c[3], 1)
+            size:Refresh()
+            reset:SetShown(s.colorMode == "custom")
+        end
+        page.unitFrameTextSelects[slot], page.unitFrameTextSwatches[slot], page.unitFrameTextSizes[slot] = select, swatch,
+            { smaller = smaller, input = size, larger = larger, reset = reset, line = line }
+    end
+    -- A row of spots; clicking one of its texts in the preview opens it.
+    local function Spots(slots, titles)
+        local hosts = page:Columns(titles, CELL_HEIGHT)
+        for i, slot in ipairs(slots) do if slot then Cell(hosts[i], slot); ui.Mark("text:" .. slot) end end
+        return hosts
     end
 
     ui.Tab("Text", function()
         page:Group("Health Bar")
-        for _, slot in ipairs(M.healthSlots) do SlotSelect(slot) end
+        for _, row in ipairs(ROWS) do
+            local titles = {}
+            for i, slot in ipairs(row) do titles[i] = M.textSlotLabels[slot] end
+            Spots(row, titles)
+        end
         page:Group("Border")
-        SlotSelect("border")
-        When(function() return Slots().border.content ~= "none" end, function()
-            ui.Select("Border Alignment", function() return M.choices.textAlign end, function() return Slots().border.align end,
-                function(v) M:SetTextOption(ui.Editing(), "border", "align", v) end)
-        end)
+        local border = Spots({ "border", false, false }, { M.textSlotLabels.border, "Border Alignment", "" })
+        local align = ui.SelectIn(border[2], 200, function() return M.choices.textAlign end, function() return Slots().border.align end,
+            function(v) M:SetTextOption(ui.Editing(), "border", "align", v) end)
+        align:ClearAllPoints(); align:SetPoint("TOPLEFT", border[2], "TOPLEFT", 0, 0); align:SetPoint("TOPRIGHT", border[2], "TOPRIGHT", 0, 0)
+        page.unitFrameBorderAlign = align
+        page.refreshers[#page.refreshers + 1] = function()
+            local on = Slots().border.content ~= "none"
+            align:SetShown(on); border[2].rowLabel:SetShown(on)
+        end
         When(function() return ui.db().showPower end, function()
             page:Group("Power Bar")
-            for _, slot in ipairs(M.powerSlots) do SlotSelect(slot) end
+            Spots(M.powerSlots, { M.textSlotLabels.powerLeft, M.textSlotLabels.powerCenter, M.textSlotLabels.powerRight })
         end)
-        page:Group("Slot Style")
-        page.unitFrameStyleSlot = ui.Select("Style Slot", StyleChoices, function() return styling end, page.SetTextSlot)
-        ui.Mark("text")
-        local size = page:Columns({ "Font Size" })
-        page.unitFrameTextSize = n.Slider(size[1], M.textRanges.size, "size")
-        local offsets = page:Columns({ "Offset X", "Offset Y" })
-        page.unitFrameTextX = n.Slider(offsets[1], M.textRanges.x, "x", "px")
-        page.unitFrameTextY = n.Slider(offsets[2], M.textRanges.y, "y", "px")
-        page.unitFrameTextColor = n.Select("Color", M.choices.textColorMode, "colorMode")
-        When(function() return S().colorMode == "custom" end, function() n.Color("Custom Color", "color") end)
+        -- General text settings.
         page:Group("Names")
         -- Plain text: Sky by default, or Champagne, Lilac, Frost, class or custom.
         ui.Choice("Name Color", "nameColorMode")
