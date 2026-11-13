@@ -16,17 +16,20 @@ addon.Theme = {
 
 local function RGB(r, g, b, a) return { r / 255, g / 255, b / 255, a or 1 } end
 
--- Mode: graphite surfaces and a cyan accent. This is the only settings theme
--- ModeUI ships; it is the "mode" interface theme from Play The Game Tools.
+-- Mode: near-black graphite surfaces and a cyan accent. This is the only
+-- settings theme ModeUI ships. Grays were darkened toward black on November 12,
+-- 2026 (owner); settings are grouped on soft-bordered cards (card, cardBorder)
+-- drawn with the ModeFlat texture, and the accent marks what matters.
 local MODE = {
     primary = RGB(0, 240, 255), enabled = RGB(127, 219, 151),
     off = RGB(179, 179, 179), unavailable = RGB(114, 114, 114),
-    highlight = RGB(212, 212, 212), ink = RGB(24, 24, 24),
-    sidebar = RGB(35, 35, 35), field = RGB(37, 37, 37),
-    background = RGB(43, 43, 43), panel = RGB(48, 48, 48),
-    pageBackground = RGB(42, 42, 42), -- Mode page area; sidebar remains #232323.
-    surface = RGB(53, 53, 53), hover = RGB(53, 53, 53),
-    line = RGB(66, 66, 66), lineStrong = RGB(179, 179, 179),
+    highlight = RGB(212, 212, 212), ink = RGB(16, 16, 18),
+    sidebar = RGB(20, 20, 22), field = RGB(30, 30, 33),
+    background = RGB(24, 24, 26), panel = RGB(30, 30, 33),
+    pageBackground = RGB(22, 22, 24),
+    surface = RGB(34, 34, 37), hover = RGB(40, 40, 44),
+    card = RGB(29, 29, 32), cardBorder = RGB(42, 42, 46),
+    line = RGB(42, 42, 46), lineStrong = RGB(179, 179, 179),
     text = RGB(212, 212, 212), heading = RGB(212, 212, 212),
     secondary = RGB(179, 179, 179), muted = RGB(160, 160, 160),
 }

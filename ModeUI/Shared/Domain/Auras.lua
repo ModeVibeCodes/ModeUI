@@ -48,6 +48,9 @@ function Auras.Apply(icon, unit, aura, showTimer, showCount)
         if ok then text = count end
     end
     if not pcall(Write, icon.count, text) then Write(icon.count, "") end
+    -- The dispel type colors the rim when it's public ("Magic", "Curse", ...).
+    local dispel = Field(aura, "dispelName")
+    icon.dispelType = (addon.IsPublic(dispel) and type(dispel) == "string") and dispel or nil
     Auras.ApplyTimer(icon, showTimer and unit, id, Field(aura, "duration"), Field(aura, "expirationTime"))
 end
 

@@ -3,10 +3,10 @@ local M, W, T, L = addon.Nameplates, addon.ConfigWidgets, addon.InterfaceTheme, 
 if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
--- preview of both kinds sits above the tabs (Nameplates, Text, Cast Bar, Auras,
--- Markers); clicking a part of it jumps to that part's settings. Each tab
--- starts with an Editing switch for Enemy or Friendly, shared by every tab
--- for this session.
+-- preview of the kind being edited sits above the tabs (Nameplates, Text, Cast
+-- Bar, Auras, Target); clicking a part of it jumps to that part's settings.
+-- Every tab starts with the Editing switch (Enemy or Friendly), shared by
+-- every tab, then cards of related settings, side by side where they fit.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing, auraGroup = "enemy", "debuffs"
@@ -29,23 +29,23 @@ function M:CreateConfigPage(parent)
             row.visibleWhen = prior and function() return predicate() and prior() end or predicate
         end
     end
+    local function Shown() return db().show end
+    local function Plate() return db().display == "plate" end
     -- The settings a preview click jumps to.
     page.jumpTargets = {}
     local function Mark(target) local row = page.rows[#page.rows]; page.jumpTargets[target] = { section = row.section, row = row } end
-    local function Shown() return db().show end
-    local function SliderRow(label, range, get, set, suffix)
-        local row = page:Row(L[label], 48)
-        Refresh(W.Slider(row, range[1], range[2], range[3], get, function(value) set(math.floor(value + 0.5)) end, suffix, true))
-        return row.slider
+
+    -- Controls. Each takes the host it fills: a row, or one cell of Columns.
+    local function SliderIn(host, range, get, set, suffix)
+        Refresh(W.Slider(host, range[1], range[2], range[3], get, function(value) set(math.floor(value + 0.5)) end, suffix, true))
+        return host.slider
     end
-    local function Slider(label, key, suffix)
-        return SliderRow(label, M.ranges[key], function() return db()[key] end, Set(key), suffix)
+    local function Slider(host, key, suffix) return SliderIn(host, M.ranges[key], function() return db()[key] end, Set(key), suffix) end
+    local function GroupSlider(host, key, suffix)
+        return SliderIn(host, M.groupRanges[key], function() return Group()[key] end, SetGroup(key), suffix)
     end
-    local function GroupSlider(label, key, suffix)
-        return SliderRow(label, M.groupRanges[key], function() return Group()[key] end, SetGroup(key), suffix)
-    end
-    local function SelectRow(label, choices, get, set)
-        local button = W.Select(page:Row(L[label], 48), 260, choices, function()
+    local function SelectIn(host, width, choices, get, set)
+        local button = W.Select(host, width, choices, function()
             local value = get()
             for _, choice in ipairs(choices()) do if choice.id == value then return value, L[choice.label] end end
             return value, tostring(value)
@@ -53,124 +53,178 @@ function M:CreateConfigPage(parent)
         Refresh(function() button:Refresh() end)
         return button
     end
-    local function Select(label, choices, key) return SelectRow(label, choices, function() return db()[key] end, Set(key)) end
+    local function Select(host, width, list, key) return SelectIn(host, width, function() return list end, function() return db()[key] end, Set(key)) end
+    local function Pills(title, list, get, set, width)
+        local choices = {}
+        for _, item in ipairs(list) do choices[#choices + 1] = { label = L[item.label], value = item.id, width = width or 96 } end
+        local buttons, refresh = W.Exclusive(page:Row(L[title], 48), choices, get, set)
+        Refresh(refresh)
+        return buttons
+    end
     local function Toggles(entries)
         local items = {}
         for _, entry in ipairs(entries) do
             items[#items + 1] = { label = L[entry[1]], get = entry.get or function() return db()[entry[2]] end, set = entry.set or Set(entry[2]) }
         end
-        return page:ToggleGrid(items, { maxColumns = 2, minimumCellWidth = 210 })
+        return page:ToggleGrid(items, { maxColumns = 3, minimumCellWidth = 150 })
     end
-    local function Color(label, key, enabled) W.ColorRow(page, owner, L[label], key, enabled) end
-    local function Note(title, text, height)
-        local label = W.Label(page:Row(L[title], height or 52), L[text], nil, 0, -4, 420, T.muted); label:SetWordWrap(true)
+    local function Color(host, key, enabled) W.ColorRow(page, owner, host.rowLabel and host.rowLabel:GetText() or key, key, enabled, host) end
+    local function Note(text, height)
+        local host = page:Row("", height or 40)
+        host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
+        local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
         return label
     end
-    local function Action(row, text, width, callback)
-        local button = W.Button(row, text, width, 30, "secondary")
-        button:SetPoint("LEFT"); button:SetScript("OnClick", callback)
-        return button
+    local function Anchor(title, get, set, center)
+        local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })
+        local buttons, refresh = W.AnchorPicker(page:Row(L[title], W.ANCHOR_PICKER_HEIGHT + 16), get, set, labels, { center = center })
+        Refresh(refresh)
+        return buttons
+    end
+    local function Columns(titles, height)
+        local localized = {}
+        for i, title in ipairs(titles) do localized[i] = L[title] end
+        return page:Columns(localized, height)
     end
 
     page.configPreview = W.Preview(page, M, { contentHeight = 150 })
 
     -- Every tab starts with the Editing switch; a kind left to Blizzard shows
-    -- only its switch and a note.
+    -- only that switch and a note.
     page.nameplateEditButtons = {}
     local function Tab(title, build, always)
         page:Section(L[title], nil, false)
-        local buttons, refresh = W.Exclusive(page:Row(L["Editing"], 48, { "enemy", "friendly" }),
-            { { label = L["Enemy"], value = "enemy", width = 110 }, { label = L["Friendly"], value = "friendly", width = 110 } },
-            Kind, page.SetEditing)
-        Refresh(refresh)
-        page.nameplateEditButtons[#page.nameplateEditButtons + 1] = buttons
+        page.nameplateEditButtons[#page.nameplateEditButtons + 1] = Pills("Editing",
+            { { id = "enemy", label = "Enemy" }, { id = "friendly", label = "Friendly" } }, Kind, page.SetEditing, 110)
         if always then always() end
         When(function() return not Shown() end, function()
-            Note("Blizzard's Plates", "This kind uses Blizzard's own nameplates. Turn on Use ModeUI Plates on the Nameplates tab to style it.", 52)
+            Note("This kind uses Blizzard's own nameplates. Turn on Use ModeUI Plates on the Nameplates tab to style it.")
         end)
         When(Shown, build)
     end
 
     Tab("Nameplates", function()
-        page:Group(L["Size"])
-        page.widthSlider = Slider("Width", "width", "px")
-        page.healthHeightSlider = Slider("Health Height", "healthHeight", "px")
-        page:Group(L["Health"])
-        page.colorSelect = Select("Health Color", function() return M.choices.healthColorMode end, "healthColorMode"); Mark("health")
-        page.softnessSlider = Slider("Color Softness", "softness", "%")
-        Color("Custom Color", "healthColor", function() return db().healthColorMode == "custom" end)
-        page.healthTextSelect = Select("Health Text", function() return M.choices.healthText end, "healthText"); Mark("healthText")
-        When(function() return editing == "enemy" end, function()
-            page.healthToggles = Toggles({ { "Threat Colors", "threatColors" } })
-            Note("Threat Colors", "Red when an enemy is attacking you, orange when you're close to pulling it. Unknown while the game hides threat.", 52)
+        page.displayPills = Pills("Style", M.choices.display, function() return db().display end, Set("display"), 110)
+        When(Plate, function()
+            page:Group(L["Size"])
+            local size = Columns({ "Width", "Health Height" })
+            page.widthSlider = Slider(size[1], "width", "px")
+            page.healthHeightSlider = Slider(size[2], "healthHeight", "px")
+            page:Group(L["Health"])
+            local choose = Columns({ "Health Color", "Health Text" })
+            page.colorSelect = Select(choose[1], 200, M.choices.healthColorMode, "healthColorMode"); Mark("health")
+            page.healthTextSelect = Select(choose[2], 200, M.choices.healthText, "healthText")
+            local tune = Columns({ "Color Softness", "Custom Color" })
+            page.softnessSlider = Slider(tune[1], "softness", "%")
+            Color(tune[2], "healthColor", function() return db().healthColorMode == "custom" end)
+            When(function() return editing == "enemy" end, function()
+                page.healthToggles = Toggles({ { "Threat Colors", "threatColors" } })
+                Note("Threat Colors: red when an enemy is attacking you, orange when you're close to pulling it.", 32)
+            end)
         end)
-        page:Group(L["Style"])
-        local tools = page:Row(L["This Kind"], 48)
-        page.copyButton = Action(tools, "", 190, function() M:CopyStyle(editing, Other()) end)
-        page.resetButton = Action(tools, L["Reset to Defaults"], 150, function() M:ResetSettings(editing) end)
-        page.resetButton:ClearAllPoints(); page.resetButton:SetPoint("LEFT", page.copyButton, "RIGHT", 8, 0)
-        Refresh(function()
-            page.copyButton.label:SetText(L[editing == "enemy" and "Copy Style to Friendly" or "Copy Style to Enemy"])
+        When(function() return not Plate() end, function()
+            Note("Name Only shows just the name in its class color (players) or reaction color, with auras and the raid marker. Size the name on the Text tab.", 48)
         end)
-        Note("How It Works", "ModeUI draws over the game's nameplates, which still decide where plates appear and handle clicks. Friendly plates inside instances and your personal resource display keep Blizzard's look. Every bar uses the Mode Gradient texture.", 70)
+        page:Group(L["This Kind"])
+        local tools = page:Row(L["Style"], 48)
+        page.copyButton = W.Button(tools, "", 190, 30, "secondary")
+        page.copyButton:SetPoint("LEFT"); page.copyButton:SetScript("OnClick", function() M:CopyStyle(editing, Other()) end)
+        page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
+        page.resetButton:SetPoint("LEFT", page.copyButton, "RIGHT", 8, 0); page.resetButton:SetScript("OnClick", function() M:ResetSettings(editing) end)
+        Refresh(function() page.copyButton.label:SetText(L[editing == "enemy" and "Copy Style to Friendly" or "Copy Style to Enemy"]) end)
     end, function()
         page.showToggles = Toggles({ { "Use ModeUI Plates", "show" } })
     end)
 
     Tab("Text", function()
-        page.textToggles = Toggles({ { "Show Name", "showName" }, { "Outline", "outline" }, { "Text Shadow", "shadow" },
-            { "Lifted Shadow", "liftedShadow" } })
-        Mark("name")
-        local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 42), owner); Refresh(fontRefresh)
-        page.nameSizeSlider = Slider("Name Size", "nameFontSize")
-        page.healthSizeSlider = Slider("Health Text Size", "healthFontSize")
-        Color("Text Color", "textColor")
+        page:Group(L["Name"])
+        page.nameToggles = Toggles({ { "Show Name", "showName" } }); Mark("name")
+        page.nameColorPills = Pills("Name Color", M.choices.nameColorMode, function() return db().nameColorMode end, Set("nameColorMode"), 150)
+        When(Plate, function()
+            page.nameAnchorButtons = Anchor("Name Anchor", function() return db().nameAnchor end, Set("nameAnchor"), true)
+        end)
+        local name = Columns({ "Offset X", "Offset Y", "Size" })
+        Slider(name[1], "nameX", "px"); Slider(name[2], "nameY", "px"); page.nameSizeSlider = Slider(name[3], "nameFontSize")
+        When(Plate, function()
+            page:Group(L["Health Text"])
+            page.healthTextAnchorButtons = Anchor("Anchor", function() return db().healthTextAnchor end, Set("healthTextAnchor"), true)
+            Mark("healthText")
+            local health = Columns({ "Offset X", "Offset Y", "Size" })
+            Slider(health[1], "healthTextX", "px"); Slider(health[2], "healthTextY", "px"); page.healthSizeSlider = Slider(health[3], "healthFontSize")
+        end)
+        page:Group(L["Font"])
+        local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
+        page.textToggles = Toggles({ { "Outline", "outline" }, { "Text Shadow", "shadow" }, { "Lifted Shadow", "liftedShadow" } })
+        local color = Columns({ "Text Color" })
+        Color(color[1], "textColor")
     end)
 
     Tab("Cast Bar", function()
-        page.castToggles = Toggles({ { "Show Cast Bar", "showCastBar" } }); Mark("cast")
-        page.castHeightSlider = Slider("Cast Bar Height", "castHeight", "px")
-        page.castSizeSlider = Slider("Spell Name Size", "castFontSize")
-        Color("Interruptible", "castColor")
-        Color("Not Interruptible", "castLockedColor")
+        When(Plate, function()
+            page:Group(L["Cast Bar"])
+            page.castToggles = Toggles({ { "Show Cast Bar", "showCastBar" } }); Mark("cast")
+            page.castPositionPills = Pills("Position", M.choices.castAnchor, function() return db().castAnchor end, Set("castAnchor"))
+            local size = Columns({ "Height", "Spell Name Size" })
+            page.castHeightSlider = Slider(size[1], "castHeight", "px"); page.castSizeSlider = Slider(size[2], "castFontSize")
+            local offset = Columns({ "Offset X", "Offset Y" })
+            Slider(offset[1], "castX", "px"); Slider(offset[2], "castY", "px")
+            page:Group(L["Colors"])
+            local colors = Columns({ "Interruptible", "Not Interruptible" })
+            Color(colors[1], "castColor"); Color(colors[2], "castLockedColor")
+        end)
+        When(function() return not Plate() end, function() Note("Name Only plates have no cast bar.") end)
     end)
 
-    -- Auras: pick a group, then what it shows and where it sits.
+    -- Auras: how every icon looks, then each group's contents and place.
     Tab("Auras", function()
-        page.auraToggles = Toggles({ { "Show Auras", "showAuras" } })
+        page:Group(L["Auras"])
+        page.auraToggles = Toggles({ { "Show Auras", "showAuras" }, { "Timer Swipe", "auraTimer" }, { "Stack Count", "auraCount" } })
         When(function() return db().showAuras end, function()
-            local groupButtons, groupRefresh = W.Exclusive(page:Row(L["Group"], 48, { "crowd control", "debuffs", "buffs" }), {
-                { label = L["Crowd Control"], value = "crowdControl", width = 120 },
-                { label = L["Debuffs"], value = "debuffs", width = 96 }, { label = L["Buffs"], value = "buffs", width = 96 } },
-                function() return auraGroup end, page.SetAuraGroup)
-            Refresh(groupRefresh); page.auraGroupButtons = groupButtons; Mark("auras")
-            page.auraGroupToggles = Toggles({ { "Show This Group", "show",
-                get = function() return Group().show end, set = SetGroup("show") } })
+            page.auraShapePills = Pills("Icon Shape", M.choices.auraShape, function() return db().auraShape end, Set("auraShape"))
+            page.auraBorderPills = Pills("Borders", M.choices.auraBorder, function() return db().auraBorder end, Set("auraBorder"))
+            local spacing = Columns({ "Spacing" })
+            page.auraSpacingSlider = Slider(spacing[1], "auraSpacing", "px")
+            page:Group(L["Groups"])
+            page.auraGroupButtons = Pills("Group", { { id = "crowdControl", label = "Crowd Control" }, { id = "debuffs", label = "Debuffs" },
+                { id = "buffs", label = "Buffs" } }, function() return auraGroup end, page.SetAuraGroup, 112)
+            Mark("auras")
+            page.auraGroupToggles = Toggles({ { "Show This Group", "show", get = function() return Group().show end, set = SetGroup("show") } })
             When(function() return Group().show end, function()
                 When(function() return M.groupFilters[auraGroup] ~= nil end, function()
-                    page.auraFilterSelect = SelectRow("Which", function() return M.groupFilters[auraGroup] or {} end,
+                    local which = Columns({ "Which" })
+                    page.auraFilterSelect = SelectIn(which[1], 220, function() return M.groupFilters[auraGroup] or {} end,
                         function() return Group().filter end, SetGroup("filter"))
                 end)
-                local anchorRow = page:Row(L["Anchor"], W.ANCHOR_PICKER_HEIGHT + 8)
-                local anchorButtons, anchorRefresh = W.AnchorPicker(anchorRow, function() return Group().anchor end,
-                    SetGroup("anchor"), setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end }))
-                Refresh(anchorRefresh); page.auraAnchorButtons = anchorButtons
-                page.auraXSlider = GroupSlider("Offset X", "x", "px")
-                page.auraYSlider = GroupSlider("Offset Y", "y", "px")
-                page.auraSizeSlider = GroupSlider("Icon Size", "size", "px")
-                page.auraMaxSlider = GroupSlider("Most Shown", "max")
+                page.auraAnchorButtons = Anchor("Anchor", function() return Group().anchor end, SetGroup("anchor"))
+                page.auraGrowPills = Pills("Grow", M.growChoices, function() return Group().grow end, SetGroup("grow"), 70)
+                local offset = Columns({ "Offset X", "Offset Y" })
+                page.auraXSlider = GroupSlider(offset[1], "x", "px"); page.auraYSlider = GroupSlider(offset[2], "y", "px")
+                local size = Columns({ "Icon Size", "Most Shown" })
+                page.auraSizeSlider = GroupSlider(size[1], "size", "px"); page.auraMaxSlider = GroupSlider(size[2], "max")
             end)
-            page:Group(L["Every Group"])
-            page.auraSpacingSlider = Slider("Spacing", "auraSpacing", "px")
-            page.auraDetailToggles = Toggles({ { "Timer Swipe", "auraTimer" }, { "Stack Count", "auraCount" } })
-            Note("How Auras Work", "Crowd control means stuns, fears and polymorphs. The game decides which auras belong to each group. Top anchors sit above the name, Bottom anchors below the cast bar, Left and Right beside the health bar; groups on the same anchor stack outward.", 70)
+            When(function() return db().auraBorder == "type" end, function()
+                page:Group(L["Border Colors"])
+                local first = Columns({ "Magic", "Curse", "Disease" })
+                Color(first[1], "auraMagicColor"); Color(first[2], "auraCurseColor"); Color(first[3], "auraDiseaseColor")
+                local second = Columns({ "Poison", "Enrage" })
+                Color(second[1], "auraPoisonColor"); Color(second[2], "auraEnrageColor")
+                Note("Auras without a dispel type, and any aura while the game hides its details, keep the Mode rim.", 32)
+            end)
         end)
     end)
 
-    Tab("Markers", function()
-        page.markerToggles = Toggles({ { "Raid Markers", "showRaidIcon" }, { "Target Highlight", "targetHighlight" } })
-        Mark("markers")
-        Note("Target Highlight", "Your target's plate gets a cyan rim.", 40)
+    Tab("Target", function()
+        page:Group(L["Target Indicator"])
+        local style = Columns({ "Style", "Color" })
+        page.targetStyleSelect = Select(style[1], 200, M.choices.targetStyle, "targetStyle")
+        Color(style[2], "targetColor")
+        local sizes = Columns({ "Border Thickness", "Arrow Size", "Arrow Gap" })
+        Slider(sizes[1], "targetThickness", "px"); Slider(sizes[2], "targetArrowSize", "px"); Slider(sizes[3], "targetArrowGap", "px")
+        page:Group(L["Raid Marker"])
+        page.markerToggles = Toggles({ { "Show Raid Marker", "showRaidIcon" } }); Mark("markers")
+        page.raidAnchorButtons = Anchor("Anchor", function() return db().raidAnchor end, Set("raidAnchor"), true)
+        local raid = Columns({ "Size", "Offset X", "Offset Y" })
+        Slider(raid[1], "raidSize", "px"); Slider(raid[2], "raidX", "px"); Slider(raid[3], "raidY", "px")
     end)
 
     W.SectionTabs(page)

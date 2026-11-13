@@ -32,10 +32,14 @@ M.Textures = {
     UnitFrameFrameInner = { file = "UnitFrames/FrameInner.tga", slice = 4, rounded = true },
     UnitFrameCircle = { file = "UnitFrames/Circle.tga", rounded = true },
     UnitFrameBar = { file = "UnitFrames/BarSatin.tga" },
-    -- Nameplate rims: small corner radii so health and cast boxes round alike
-    -- (tools/build_nameplate_textures.lua).
+    -- Procedural shapes from tools/build_shape_textures.lua. ModeFlat is the
+    -- soft rounded fill for settings cards and elements; the nameplate rims use
+    -- small corner radii so health and cast boxes round alike.
+    ModeFlat = { file = "Mode/Flat.tga", slice = 5, rounded = true },
     NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
     NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
+    NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },
+    NameplateArrow = { file = "Nameplates/Arrow.tga", transparent = true },
 }
 
 

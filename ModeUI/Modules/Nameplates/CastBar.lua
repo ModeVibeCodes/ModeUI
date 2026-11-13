@@ -34,7 +34,7 @@ end
 
 function M:UpdateCast(plate)
     local unit, style = plate.unit, self:Style(plate)
-    local info = unit and style.showCastBar and Cast.Read(unit)
+    local info = unit and style.showCastBar and not plate.nameOnly and Cast.Read(unit)
     if not info then self:StopCast(plate); return end
     local bar = plate.cast
     pcall(bar.SetMinMaxValues, bar, info.startMs, info.endMs)

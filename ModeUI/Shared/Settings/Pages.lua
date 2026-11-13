@@ -1,5 +1,8 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
+-- Settings are grouped on cards: soft-bordered ModeFlat panels with an accent
+-- title (page:Group). Rows added outside a titled group share an untitled card.
+local CARD_PADDING, CARD_GAP = 12, 12
 
 -- The same responsive scrolling and row layout is used on every page.
 function W.Page(parent, minimumWidth)
@@ -8,6 +11,7 @@ function W.Page(parent, minimumWidth)
     page:SetPoint("TOPLEFT", 0, -36)
     page:SetPoint("BOTTOMRIGHT")
     page.rows, page.refreshers, page.sections, page.searchEntries, page.cursor = {}, {}, {}, {}, 0
+    page.cards = {}
     local scroll = CreateFrame("ScrollFrame", nil, page)
     scroll:SetPoint("TOPLEFT")
     scroll:SetPoint("BOTTOMRIGHT", -24, 0)
@@ -42,11 +46,11 @@ function W.Page(parent, minimumWidth)
         width=math.max(1,width-leftInset-self.contentInset)
         local cursor = self.layoutTopInset or 0
         local footers={}
-        local function Prepare(row,footer)
+        local function Prepare(row,footer,innerWidth)
             if not footer and row.settingsFooterMoved and row.settingsFooterRestore then
                 row.settingsFooterRestore();row.settingsFooterMoved=false
             end
-            local rowWidth=footer and math.max(1,content:GetWidth()-self.contentInset*2) or width
+            local rowWidth=footer and math.max(1,content:GetWidth()-self.contentInset*2) or innerWidth or width
             row:SetWidth(rowWidth)
             if row.layoutChildren then row:layoutChildren(rowWidth) end
             if footer then
@@ -73,14 +77,49 @@ function W.Page(parent, minimumWidth)
             row:SetShown(show)
             return show
         end
+        -- Rows of one card sit inside it with padding; cards are separated by a
+        -- gap and only drawn while at least one of their rows shows.
+        local px = addon.Kit.PixelSize(content)
+        local function Snap(value) return math.floor(value / px + 0.5) * px end
+        local openCard
+        local function CloseCard()
+            if openCard then openCard.bottom = cursor; cursor = cursor + CARD_PADDING; openCard = nil end
+        end
+        for _, card in ipairs(self.cards) do card.top, card.bottom = nil, nil end
         for _, row in ipairs(self.rows) do
             if self.modeFooterLayout and row.settingsFooterNote and (not row.settingsFooterInlineWhen or not row.settingsFooterInlineWhen()) then footers[#footers+1]=row
+            elseif row.card then
+                if row.card ~= openCard and Prepare(row,false,width-2*CARD_PADDING) then
+                    local wasCard = openCard ~= nil
+                    CloseCard()
+                    cursor = Snap(cursor + (wasCard and CARD_GAP - CARD_PADDING or (cursor > 0 and CARD_GAP or 0)))
+                    openCard = row.card; openCard.top = cursor; cursor = cursor + CARD_PADDING
+                    if row.divider then row.divider:Hide() end
+                    row:ClearAllPoints(); row:SetPoint("TOPLEFT", leftInset + CARD_PADDING, -cursor)
+                    row.offset = cursor; cursor = Snap(cursor + row:GetHeight())
+                elseif row.card == openCard and Prepare(row,false,width-2*CARD_PADDING) then
+                    if row.divider then row.divider:Show() end
+                    row:ClearAllPoints(); row:SetPoint("TOPLEFT", leftInset + CARD_PADDING, -cursor)
+                    row.offset = cursor; cursor = Snap(cursor + row:GetHeight())
+                end
             elseif Prepare(row,false) then
+                CloseCard()
                 cursor = cursor + (row.gapBefore or 0)
                 row:ClearAllPoints()
                 row:SetPoint("TOPLEFT", leftInset, -cursor)
                 row.offset = cursor
                 cursor = cursor + row:GetHeight() + (row.gapAfter or 4)
+            end
+        end
+        CloseCard()
+        for _, card in ipairs(self.cards) do
+            local shown = card.top ~= nil
+            card.frame:SetShown(shown)
+            if shown then
+                card.frame:ClearAllPoints()
+                card.frame:SetPoint("TOPLEFT", leftInset, -card.top)
+                card.frame:SetSize(width, card.bottom - card.top + CARD_PADDING)
+                addon.Kit.Inset(card.fill, card.frame, px)
             end
         end
         local visibleFooters,footerHeight={},0
@@ -165,6 +204,7 @@ function W.Page(parent, minimumWidth)
         self.sections[#self.sections + 1] = section
         self.activeSection = section
         self.activeGroup = nil
+        self.activeCard = nil
         header.section, header.sectionHeader = section, true
         header.gapBefore = #self.sections > 1 and sectionGap or 0
         self.searchEntries[#self.searchEntries + 1] = { label = title, section = section, row = header, kind = "section" }
@@ -201,6 +241,11 @@ function W.Page(parent, minimumWidth)
         self.rows[#self.rows + 1] = row
         row.section = self.activeSection
         row.gapAfter = 0
+        row.card = self:ActiveCard()
+        row:SetFrameLevel(content:GetFrameLevel() + 2)
+        -- Labels sit on the row's middle, level with the controls beside them.
+        label:ClearAllPoints(); label:SetPoint("LEFT", row, "LEFT", 0, 0)
+        if label.SetJustifyV then label:SetJustifyV("MIDDLE") end
         self.searchEntries[#self.searchEntries + 1] = { label = title, keywords = keywords, section = self.activeSection, row = row, kind = "setting" }
         controls.row, controls.rowLabel = row, label
         row.settingsHost,row.settingsLabel,row.settingsTitle,row.settingsGroup=controls,label,title,self.activeGroup
@@ -208,16 +253,63 @@ function W.Page(parent, minimumWidth)
         self.cursor = self.cursor + height + 4
         return controls
     end
+    -- A card: a soft rim (ModeFlat in cardBorder) with the card fill one pixel inside.
+    function page:NewCard(title)
+        local frame = CreateFrame("Frame", nil, content)
+        frame:SetFrameLevel(content:GetFrameLevel() + 1)
+        local rim, fill = frame:CreateTexture(nil, "BACKGROUND", nil, 0), frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+        for _, texture in ipairs({ rim, fill }) do
+            if not addon.Media:ApplyTexture(texture, "ModeFlat") then texture:SetTexture(addon.Kit.FLAT) end
+        end
+        rim:SetAllPoints(); rim:SetVertexColor(unpack(T.cardBorder)); fill:SetVertexColor(unpack(T.card))
+        local card = { frame = frame, rim = rim, fill = fill, title = title }
+        self.cards[#self.cards + 1] = card
+        self.activeCard = card
+        return card
+    end
+    function page:ActiveCard() return self.activeCard or self:NewCard() end
+    -- Starts a card titled in the accent color.
     function page:Group(title)
+        local card = self:NewCard(title)
         local row = CreateFrame("Frame", nil, content)
-        row:SetSize(400, 32)
-        row.section, row.gapBefore, row.gapAfter = self.activeSection, 12, 0
+        row:SetSize(400, 28)
+        row:SetFrameLevel(content:GetFrameLevel() + 2)
+        row.section, row.gapBefore, row.gapAfter, row.card, row.cardTitle = self.activeSection, 0, 0, card, true
         local heading=title:gsub("(%a)([%w]*)",function(first,rest) return first:upper()..rest end)
-        row.subsectionHeading=W.Heading(row, heading, T.fontSize.group, 0, -10, 360, T.secondary)
+        row.subsectionHeading=W.Heading(row, heading, T.fontSize.group, 0, -4, 360, T.primary)
         row.settingsGroupTitle=title;self.activeGroup=title
         row.modeFeature,row.modePanel=self.activeModeFeature,self.activeModePanel
         self.rows[#self.rows + 1] = row
-        self.cursor = self.cursor + 42
+        self.cursor = self.cursor + 28
+    end
+    -- One row of labeled cells side by side (sliders, choices, colors). Returns
+    -- a control host per title; each host is laid out under its own label.
+    function page:Columns(titles, height)
+        local controls = self:Row("", height or 60)
+        local row = controls.row
+        controls.rowLabel:Hide()
+        controls:ClearAllPoints(); controls:SetAllPoints(row)
+        table.remove(self.searchEntries) -- replace the empty row metadata
+        local cells, hosts = {}, {}
+        for i, title in ipairs(titles) do
+            local cell = CreateFrame("Frame", nil, controls)
+            cell.label = W.Label(cell, title, nil, 0, -8, 200, T.secondary)
+            local host = CreateFrame("Frame", nil, cell)
+            host:SetPoint("TOPLEFT", 0, -28); host:SetPoint("BOTTOMRIGHT", 0, 6)
+            host.row, host.rowLabel = row, cell.label
+            cells[i], hosts[i] = cell, host
+            self.searchEntries[#self.searchEntries + 1] = { label = title, section = self.activeSection, row = row, kind = "setting" }
+        end
+        function row:layoutChildren(width)
+            local gap = 24
+            local cellWidth = (width - gap * (#cells - 1)) / #cells
+            for i, cell in ipairs(cells) do
+                cell:ClearAllPoints(); cell:SetPoint("TOPLEFT", (i - 1) * (cellWidth + gap), 0)
+                cell:SetSize(cellWidth, self:GetHeight()); cell.label:SetWidth(cellWidth)
+            end
+        end
+        row.settingsColumns, row.settingsTitles = cells, titles
+        return hosts
     end
     -- Full-cell click targets and per-setting search entries; wraps to 1-3 columns.
     function page:ToggleGrid(items, options)

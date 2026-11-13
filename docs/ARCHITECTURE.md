@@ -275,7 +275,10 @@ to widgets documented as accepting them.
   migrations never reset data. The top-level `schemaVersion` changes only when
   the shared layout of `ModeUIDB` does.
 - **Look.** Every bar uses `Kit.ModeGradient` (Mode Gradient); there is no bar
-  texture setting. Rims are near-black (`Kit.onyx.border`). Anchoring settings
+  texture setting. Settings pages group rows on cards (`page:Group`: soft
+  ModeFlat panels with an accent title) and put related controls side by side
+  (`page:Columns`); row labels sit level with their controls. The palette is
+  near-black graphite (`card`, `cardBorder`, `line` in Theme.lua). Rims are near-black (`Kit.onyx.border`). Anchoring settings
   use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface default to Expressway, falling back to
   the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
 - **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI` and frame

@@ -2,8 +2,8 @@
 
 November 12, 2026. Second module of the **Interface** category. Off by default
 (turn it on with the switch in the page header). Static/mock validated only;
-**native acceptance is pending**. APIs and their secret-value rules are in
-[API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-nameplates--november-12-2026).
+**native acceptance is pending** for the latest changes. APIs and their
+secret-value rules are in [API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-nameplates--november-12-2026).
 
 ## What it draws
 
@@ -11,142 +11,152 @@ On every nameplate the game gives to addons, ModeUI parents its own plain
 frame and fades Blizzard's art. Each plate has:
 
 - **Health and cast boxes**: a 1px near-black rim (#25282C) and a 1px black gap
-  with rounded corners, then the bar. Both boxes use the same small-radius rim
-  textures (`Media/Textures/Nameplates`, from `tools/build_nameplate_textures.lua`),
-  so they round alike at every size. Insets are whole physical pixels. Only
-  boxes under 8 units stay square.
-- **Mode Gradient** on every bar: a flat fill with a soft white gradient over its
-  top half. It is ModeUI's only bar texture (`Kit.ModeGradient`), so there is no
-  texture setting.
-- **Name** above the box, and optional health text inside it (Percent, Current
-  Health, Current and Percent, None). All text uses the suite's lifted shadow.
-- **Health color**: Reaction and Class (players by class, NPCs by reaction),
-  Reaction, Onyx (the dark unit frame fill) or Custom. Class and reaction colors
-  are softened toward white by Color Softness (30% by default).
-- **Threat Colors** (on by default for enemies): red when the enemy is attacking you, orange
-  when you are close to pulling it. Unknown, and so not shown, while the game
-  restricts threat.
-- **Cast bar** below the health box with the spell icon and name. Amber when
-  interruptible, gray when not. Channels drain from right to left.
-- **Raid marker** left of the health box, and a **cyan rim** on your target's plate.
-- **Auras** (see below).
-- Text uses Expressway by default, like all of ModeUI.
+  with rounded corners, then the bar in **Mode Gradient** (ModeUI's only bar
+  texture). Both boxes use the same small-radius rim textures, so they round
+  alike at every size. Insets are whole physical pixels; boxes under 8 units stay square.
+- **Name** and **health text** (Percent, Current Health, Current and Percent, None).
+  All text uses the suite's lifted shadow and Expressway by default.
+- **Health color**: Reaction and Class, Reaction, Onyx or Custom, softened toward
+  white by Color Softness. **Threat Colors** (enemies, on by default): red when
+  the enemy is attacking you, orange when you're close to pulling it.
+- **Cast bar** with icon and spell name: amber when interruptible, gray when not;
+  channels drain from right to left.
+- **Auras** in three groups, the **raid marker**, and a **target indicator**.
+
+**Name Only** (the Style choice) draws just the name, centered, in the class
+color for players or the reaction color otherwise, with auras and the raid
+marker. It has no bars and no cast bar.
+
+## Placement
+
+Every element has an anchor, read like a compass around the health bar, and an
+Offset X and Y (up to 50 each way):
+
+| Anchor | Text (name, health text) | Raid marker and auras |
+|---|---|---|
+| Top Left / Top / Top Right | above the bar (above the cast bar when it's on top) | above everything over the bar |
+| Left / Center / Right | inside the bar | beside the bar (Center: in its middle) |
+| Bottom Left / Bottom / Bottom Right | below the bar (below the cast bar when it's below) | below everything under it |
+
+The cast bar sits **Below** or **Above** the health bar, with its own offsets.
+The raid marker has a **Size**. Anchors are picked with the anchor compass
+(`W.AnchorPicker`).
 
 ## Enemy and friendly plates
 
-Every plate is an **enemy** plate (a unit you can attack, `UnitCanAttack`) or a
-**friendly** one, and each kind has its own full set of settings: size, colors,
-text, cast bar and markers. **Use ModeUI Plates** turns ModeUI's plates on or off
-per kind; a kind switched off keeps Blizzard's plates. A unit that changes sides
-(a duel, mind control) switches kinds on `UNIT_FACTION`.
-
-- Enemy defaults: 140 x 12, percent health text, Threat Colors on.
-- Friendly defaults: 120 x 8, no health text, Threat Colors off.
-- **Copy Style to Friendly/Enemy** copies the whole look; Use ModeUI Plates stays
-  each kind's own. **Reset to Defaults** resets only the kind being edited.
-- Settings version 4. A version 1 profile (one shared set) copies its values into
-  both kinds; version 2 drops the retired texture choice and adds aura defaults;
-  version 3's single aura row becomes the three groups, placed where the row was.
+Every plate is an **enemy** plate (a unit you can attack) or a **friendly** one,
+and each kind has its own full settings. **Use ModeUI Plates** turns ModeUI off
+for one kind. A unit that changes sides switches kinds on `UNIT_FACTION`.
+**Copy Style to Friendly/Enemy** copies the whole look; **Reset to Defaults**
+resets the kind being edited.
 
 ## Auras
 
-Auras come in three groups, in this order: **Crowd Control** (stuns, fears,
-polymorphs), **Debuffs** and **Buffs**. On the **Auras** tab, pick a group with
-the **Group** switch, then set:
+Three groups, in order: **Crowd Control**, **Debuffs**, **Buffs**. The game's own
+aura filters decide what belongs to each, so secret aura data is never compared.
 
-- **Show This Group**, and **Which** for Debuffs (Yours, Ones You Can Dispel,
-  All) and Buffs (Dispellable or Stealable, Important, Yours, All). The game's
-  own aura filters decide what matches, so secret aura data is never compared.
-- **Anchor**: a compass of eight buttons around a small plate. **Top Left**,
-  **Top** and **Top Right** sit above the name; **Bottom Left**, **Bottom** and
-  **Bottom Right** below the cast bar, lined up with the plate's left edge,
-  middle or right edge. **Left** and **Right** sit beside the health bar and grow
-  outward (Left starts past the raid marker). Groups on the same anchor stack
-  outward in group order.
-- **Offset X** and **Offset Y** (up to 50 each way), **Icon Size** and **Most Shown**.
-- For every group: **Spacing**, **Timer Swipe** and **Stack Count**.
+- Every group: **Show Auras**, **Timer Swipe**, **Stack Count**, **Icon Shape**
+  (Cropped: 2px wider than tall, the default; or Square), **Borders** (By Type or
+  Mode) and **Spacing**.
+- Each group (pick it with **Group**): **Show This Group**, **Which** (Debuffs:
+  Yours, Ones You Can Dispel, All; Buffs: Dispellable or Stealable, Important,
+  Yours, All), **Anchor**, **Grow** (Right, Left, Up, Down, Center), **Offset X/Y**,
+  **Icon Size** and **Most Shown**. Groups on the same anchor continue as one
+  row in the first group's direction.
+- Icons are built like plate boxes: rounded rim, black gap, the icon inset 2px
+  and cropped so it is never stretched. With **By Type** borders the rim takes the
+  aura's dispel type color (Magic, Curse, Disease, Poison, Enrage, each
+  customizable); auras without a type, or whose type the game hides, keep the
+  Mode rim.
+- Defaults: enemies show crowd control on the Left (24px, up to 2), your debuffs
+  on Top (20px, up to 6), dispellable buffs on the Right (18px, up to 3).
+  Friendly plates show debuffs you can dispel on Top (16px, up to 4).
 
-Defaults: enemies show crowd control on the Left (24px, up to 2), your debuffs
-on Top (20px, up to 6) and dispellable buffs on the Right (18px, up to 3).
-Friendly plates show debuffs you can dispel on Top (16px, up to 4).
+## Target indicator
 
-Icons have a 1px rim. Stacks come from the game as text. The swipe is drawn when
-the game allows it; while auras are restricted (secret), icons and stacks still
-show but the swipe may not.
+**Style**: Border (the rims turn the target color; **Border Thickness** up to
+3px), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
+**Arrow Gap**), Border and Arrows, or None, in a **Color** of your choice (cyan
+by default). Arrows clear a raid marker on their side. Name Only plates color the
+name for Border and Glow. The target is found by comparing nameplate frames.
 
 ## Preview
 
-The top of the page shows a sample enemy plate (marked with a skull, shown as
-your target, casting Shadow Bolt) and a sample friendly plate (casting Flash
-Heal), each with sample auras. Both are built and laid out by the same code as
-plates in the world, so they always match the current settings: which auras
-show, where and how big, and a kind switched off.
-**Static** shows each cast 60% done; **Animated** loops the casts.
-**Click any part of a sample** (health bar, name, health text, cast bar, an aura
-or the raid marker) to jump to its settings: the page switches to that kind,
-that tab and, for an aura, its group, and scrolls to the setting. Parts light
-up under the mouse. **Pop Out**
-moves the preview into its own window, and **Collapse** hides it. It uses the
-shared settings preview (`W.Preview`) and `PreviewStates`.
+The top of the page shows one sample plate: the kind chosen with **Editing**,
+centered. It's built by the same code as the plates in the world, so it matches
+every setting, including Name Only, the target style and auras with their type
+colors. **Static** shows the cast 60% done; **Animated** loops it. **Click any
+part of the sample** (health bar, name, health text, cast bar, an aura or the raid
+marker) to jump to its settings; parts light up under the mouse.
+
+## Settings page
+
+Tabs: **Nameplates** (style, size, health), **Text** (name, health text, font),
+**Cast Bar**, **Auras**, **Target** (indicator and raid marker). Each tab starts
+with the Editing switch; settings are grouped on cards with accent titles, with
+related sliders and choices side by side.
 
 ## What stays Blizzard's
 
 - Where plates appear, their stacking, scale, clicks and hit areas.
 - Friendly plates inside instances (forbidden to addons).
-- Your personal resource display, and widget-only plates (objects and some
-  quest units).
+- Your personal resource display, and widget-only plates.
 
-Switching the module off gives every plate back to Blizzard at once. Plates are
-plain frames, never secure, so they also work in combat. Settings change outside
-combat, like every ModeUI page.
+Switching the module off gives every plate back to Blizzard. Plates are plain
+frames, never secure, so they also work in combat. Settings change outside combat.
+
+## Settings versions
+
+Version 5. Version 1 (one shared set) copies into both kinds; version 2 drops the
+retired texture choice; version 3's single aura row becomes the three groups;
+version 4's target highlight switch becomes a target style, and each aura group
+grows the way its anchor did. New settings take their defaults.
 
 ## Files
 
 | File | Job |
 |---|---|
-| `Init.lua` | declaration, per-kind defaults, ranges, choices, `Initialize(db)` validation and the version 1 migration |
-| `Driver.lua` | lifecycle, events, enemy or friendly kind, fading Blizzard's unit frame, per-kind settings, Copy Style and Reset |
-| `Plate.lua` | building a plate on a nameplate and its pixel-perfect layout |
-| `Update.lua` | health, name, colors, threat, raid marker, target highlight |
+| `Init.lua` | declaration, per-kind defaults, ranges, choices, validation, migrations |
+| `Driver.lua` | lifecycle, events, enemy or friendly kind, fading Blizzard's unit frame, per-kind settings |
+| `Plate.lua` | building a plate and laying out its boxes |
+| `Layout.lua` | placing every element by anchor and offset; Name Only |
+| `Target.lua` | target indicator styles and name colors |
+| `Update.lua` | health, name, colors, threat, raid marker |
 | `CastBar.lua` | cast and channel bars |
-| `Auras.lua` | aura icons: groups, order and placement |
-| `Preview.lua` | the sample enemy and friendly plates on the settings page |
-| `Settings.lua` | the settings page: preview, then tabs Nameplates, Text, Cast Bar, Auras, Markers, each with an Editing switch for Enemy or Friendly |
+| `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |
+| `Preview.lua` | the sample plate on the settings page and its click targets |
+| `Settings.lua` | the settings page |
 
-Shared pieces added for this module, and reusable by Party Frames and others:
-`Domain/Cast.lua`, `Domain/RaidIcon.lua`, `Domain/Threat.lua`,
-`Domain/Nameplate.lua`, `Kit/Palette.lua` (the Onyx and Mode colors, plus
-`Kit.ColorFromBoolean`) and `Kit.FontPath`.
+Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`;
+`Kit/Palette`, `AuraIcon`, `Kit.ModeGradient`, `Kit.FontPath`;
+`W.AnchorPicker`, `page:Columns` and the settings cards. Textures come from
+`tools/build_shape_textures.lua`.
 
 ## Not in this version
 
 - Class resource bars on enemy plates.
-- Dispel-type colors on aura rims (they need a color curve over secret data).
+- Aura rim colors while the game hides aura details (it would need the
+  dispel color curve on secret data).
 
 ## Manual check
 
 - **Navigation:** `/modeui`, then **Interface** › **Nameplates**.
-- **Action:** turn the module on with the switch in the page header. Check the
-  preview at the top of the page, use **Editing** to switch between **Enemy** and
-  **Friendly**, change a setting for each and watch the preview follow; try
-  **Animated** and **Use ModeUI Plates** off for Friendly. Look at enemies and
-  friendly NPCs in the open world. Target one, mark one with a raid marker, and
-  watch an enemy cast. On the **Auras** tab, pick each **Group** and move it with
-  the **Anchor** compass and offsets while watching the preview; click parts of
-  the preview to jump to their settings. Check auras on real enemies (apply a
-  debuff, find a buffed enemy). Then switch the module off.
-- **Required state:** out of combat to change settings; enemy nameplates shown
-  (the game's own nameplate setting).
+- **Action:**
+  - Turn the module on. Switch **Editing** between **Enemy** and **Friendly** and
+    watch the preview change.
+  - Set Friendly **Style** to **Name Only**.
+  - Move the name, health text, cast bar and raid marker with their anchors.
+  - On **Auras**, pick each **Group** and set **Anchor** and **Grow**.
+  - On **Target**, try each **Style**.
+  - Click parts of the preview.
+  - In the world, look at enemies and friendly players, target one, mark one,
+    and put a debuff on an enemy.
+- **Required state:** out of combat to change settings; enemy nameplates shown.
 - **Confirmation:**
-  - Onyx plates replace Blizzard's, with the right colors and names.
-  - The cast bar fills (or drains, for channels) and is gray when the cast
-    can't be interrupted.
-  - The target has a cyan rim and markers appear.
-  - Enemy and friendly plates follow their own settings, and the preview matches them.
-  - Health and cast boxes both have rounded corners with a near-black rim, and
-    every bar shows the Mode Gradient.
-  - Each aura group sits where its anchor says; clicking the preview jumps to
-    the right tab.
-  - Your debuffs appear above enemies with stacks and a timer swipe.
-  - Clicking a plate still targets.
-  - Switching off brings Blizzard's plates back.
+  - The preview matches the plates in the world.
+  - Friendly Name Only shows class-colored names.
+  - Every element sits where its anchor says.
+  - Auras are cropped with rims colored by type.
+  - The target style shows on your target.
+  - Settings sit on cards, the Editing pills line up with their label, and no
+    Lua errors appear.

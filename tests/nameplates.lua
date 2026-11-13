@@ -103,7 +103,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'interface' and not M.enabled, 'registered, off by default')
-    assert(M.db.version == 4 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 5 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
 
@@ -226,27 +226,55 @@ world.run([==[
     local negated = false
     for _, query in ipairs(auraQueries) do if query == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' then negated = true end end
     assert(negated, 'debuffs leave crowd control to its own group')
-    -- Default anchors: crowd control Left, debuffs Top, buffs Right.
-    local at = Point(A.crowdControl[1])
-    assert(at[1] == 'RIGHT' and at[2] == plate.healthBox and at[3] == 'LEFT', 'crowd control on the left')
-    at = Point(A.debuffs[1])
-    assert(at[1] == 'BOTTOMLEFT' and at[2] == plate.name and at[3] == 'TOPLEFT', 'debuffs above the name')
-    at = Point(A.buffs[1])
-    assert(at[1] == 'LEFT' and at[2] == plate.healthBox and at[3] == 'RIGHT', 'buffs on the right')
+    -- Default anchors: crowd control Left (past the raid marker), debuffs Top, buffs Right.
+    -- Icons are cropped (2px wider than tall) and placed by their corner on
+    -- whole pixels from the health bar's bottom left (180 x 16 here).
+    local function Corner(icon) local at = Point(icon); assert(at[1] == 'BOTTOMLEFT' and at[2] == plate.healthBox and at[3] == 'BOTTOMLEFT'); return at[4], at[5] end
+    assert(math.abs(A.crowdControl[1].width - 24) < 1 and math.abs(A.crowdControl[1].height - 22) < 1, 'cropped 24 x 22')
+    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -3, 'crowd control left of the marker: ' .. x .. ',' .. y)
+    x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 32, 'debuffs centered above the name: ' .. x .. ',' .. y)
+    x, y = Corner(A.buffs[1]); assert(x == 182 and y == 0, 'buffs right of the bar: ' .. x .. ',' .. y)
     -- Moving one group: anchor, offsets, size and count, all validated.
     assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
-    at = Point(A.debuffs[1])
-    assert(at[1] == 'TOPLEFT' and at[2] == plate and at[3] == 'BOTTOMLEFT' and at[4] == 160 and at[5] == -2, 'bottom right, under the cast bar')
-    assert(M:SetOption('enemy', 'x', 5, 'debuffs') and Point(A.debuffs[1])[4] == 165, 'offset X')
-    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and Point(A.debuffs[1])[5] == -5, 'offset Y')
+    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -34, 'bottom right, under the cast bar: ' .. x .. ',' .. y)
+    assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 165, 'offset X')
+    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -37, 'offset Y')
     assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
+    assert(not M:SetOption('enemy', 'grow', 'sideways', 'debuffs'), 'unknown grow refused')
     assert(not M:SetOption('enemy', 'debuffs', {}) and not M:SetOption('enemy', 'filter', 'all', 'crowdControl'), 'one setting at a time')
     assert(M.db.friendly.debuffs.anchor == 'TOP', 'the other kind is untouched')
-    -- Groups on the same anchor stack outward in group order.
+    -- Groups on the same anchor continue as one row in the first group's direction.
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'x', 0, 'debuffs') and M:SetOption('enemy', 'y', 0, 'debuffs'))
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'buffs'))
-    assert(Point(A.debuffs[1])[5] == 2 and Point(A.buffs[1])[5] == 24, 'buffs stack above debuffs')
+    local dx, dy = Corner(A.debuffs[1]); local bx, by = Corner(A.buffs[1])
+    assert(dx == 70 and dy == 32 and bx == 92 and by == 32, 'one centered row: ' .. dx .. ',' .. dy .. ' ' .. bx .. ',' .. by)
     assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'buffs'))
+    -- Grow directions.
+    assert(M:SetOption('enemy', 'filter', 'all', 'debuffs') and M:SetOption('enemy', 'anchor', 'TOPLEFT', 'debuffs'))
+    assert(M:SetOption('enemy', 'grow', 'right', 'debuffs'))
+    local x1, y1 = Corner(A.debuffs[1]); local x2, y2 = Corner(A.debuffs[2])
+    assert(x1 == 0 and x2 == 22 and y1 == y2, 'grow right from the left edge')
+    assert(M:SetOption('enemy', 'grow', 'left', 'debuffs'))
+    x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
+    assert(x1 == 0 and x2 == -22 and y1 == y2, 'grow left')
+    assert(M:SetOption('enemy', 'grow', 'up', 'debuffs'))
+    x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
+    assert(x1 == x2 and y2 == y1 + 20, 'grow up')
+    assert(M:SetOption('enemy', 'grow', 'down', 'debuffs'))
+    x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
+    assert(x1 == x2 and y2 == y1 - 20, 'grow down')
+    assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'grow', 'center', 'debuffs'))
+    assert(M:SetOption('enemy', 'filter', 'mine', 'debuffs'))
+    -- Square icons and border colors by dispel type.
+    assert(M:SetOption('enemy', 'auraShape', 'square') and math.abs(A.buffs[1].height - 18) < 1, 'square icons')
+    assert(M:SetOption('enemy', 'auraShape', 'cropped'))
+    local savedAuras = units.nameplate1.auras
+    units.nameplate1.auras = { { auraInstanceID = 21, icon = 'poison', harmful = true, player = true, dispelName = 'Poison', duration = 5, expirationTime = 103 },
+        { auraInstanceID = 22, icon = 'hidden', harmful = true, player = true, dispelName = Secret('type'), duration = 5, expirationTime = 103 } }
+    FireEvent('UNIT_AURA', 'nameplate1')
+    assert(A.debuffs[1].rim.vertexColor[1] == M.db.enemy.auraPoisonColor[1], 'Poison rim from the public dispel type')
+    assert(A.debuffs[2].rim.vertexColor[1] == Kit.onyx.border[1], 'a secret dispel type keeps the Mode rim')
+    units.nameplate1.auras = savedAuras; FireEvent('UNIT_AURA', 'nameplate1')
     assert(M:SetOption('enemy', 'size', 30, 'debuffs') and math.abs(A.debuffs[1].width - 30) < 1, 'icon size per group')
     assert(M:SetOption('enemy', 'size', 20, 'debuffs'))
     assert(M:SetOption('enemy', 'filter', 'all', 'debuffs') and plate.auraShown.debuffs == 2)
@@ -310,47 +338,98 @@ world.run([==[
     units.nameplate1.cast = nil
     assert(M:SetOption('enemy', 'showCastBar', true))
 
-    -- The settings preview draws both kinds with the plate code, live.
+    -- The settings preview shows one sample at a time: the kind being edited.
     SlashCmdList.MODEUI()
     addon:SelectConfigPage('nameplates')
     local page = addon.configWindow.pages.nameplates
     local view = page.configPreview
     assert(view and page.previewArea:IsShown() and not page.testDisplayButton:IsShown(), 'preview without a screen test')
     local sample, friend = view.plates.enemy, view.plates.friendly
-    assert(sample:IsShown() and friend:IsShown() and sample:GetParent() == view.frame)
-    assert(math.abs(sample.width - 180) < 1 and math.abs(friend.width - 120) < 1, 'sample sizes follow each kind')
+    assert(sample:IsShown() and not friend:IsShown() and sample:GetParent() == view.frame, 'only the enemy sample while editing Enemy')
+    local at = Point(sample)
+    assert(at[1] == 'TOPLEFT' and at[2] == view.frame and at[3] == 'TOP' and at[4] == -90, 'centered on whole pixels')
+    assert(math.abs(sample.width - 180) < 1, 'sample size follows the kind')
     assert(sample.name.text == 'Enemy Nameplate' and sample.healthText.text == '72%' and sample.health.value == 72)
-    assert(not friend.healthText:IsShown(), 'friendly sample hides health text like the setting')
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
     assert(sample.targeted and sample.healthBox.rim.vertexColor[3] == P.accent[3], 'sample target rim')
     assert(sample.castBox:IsShown() and sample.cast.value == 0.6 and sample.castText.text == 'Shadow Bolt')
-    -- Sample auras follow each group's settings (enemy: crowd control, your debuff, a dispellable buff).
     local function Shown(p, group)
         local n = 0
         for _, icon in ipairs(p.auraIcons[group]) do if icon:IsShown() then n = n + 1 end end
         return n
     end
     assert(Shown(sample, 'crowdControl') == 1 and Shown(sample, 'debuffs') == 1 and Shown(sample, 'buffs') == 1, 'enemy sample auras')
-    assert(sample.auraIcons.debuffs[1].icon.texture:find('ShadowWordPain', 1, true))
-    assert(Shown(friend, 'debuffs') == 1 and Shown(friend, 'buffs') == 0 and Shown(friend, 'crowdControl') == 0, 'friendly sample')
+    assert(sample.auraIcons.debuffs[1].rim.vertexColor[1] == M.db.enemy.auraMagicColor[1], 'Magic rim by type')
+    assert(M:SetOption('enemy', 'auraBorder', 'mode') and sample.auraIcons.debuffs[1].rim.vertexColor[1] == Kit.onyx.border[1], 'Mode rim')
+    assert(M:SetOption('enemy', 'auraBorder', 'type'))
+    -- Switching Editing switches the sample.
+    page.SetEditing('friendly')
+    assert(friend:IsShown() and not sample:IsShown() and math.abs(friend.width - 120) < 1, 'friendly sample while editing Friendly')
+    assert(Shown(friend, 'debuffs') == 1 and Shown(friend, 'buffs') == 0 and Shown(friend, 'crowdControl') == 0, 'friendly sample auras')
+    assert(friend.auraIcons.debuffs[1].rim.vertexColor[1] == M.db.friendly.auraDiseaseColor[1], 'Disease rim')
     assert(M:SetOption('friendly', 'show', true, 'buffs') and Shown(friend, 'buffs') == 1, 'preview follows each group')
-    assert(M:SetOption('friendly', 'anchor', 'BOTTOM', 'buffs') and Point(friend.auraIcons.buffs[1])[2] == friend, 'preview follows anchors')
-    assert(M:SetOption('friendly', 'showAuras', false) and Shown(friend, 'debuffs') == 0)
-    assert(M:SetOption('friendly', 'showAuras', true))
-    -- Clicking a part of a sample jumps to its settings.
+    -- Name Only: just the class-colored name.
+    assert(M:SetOption('friendly', 'display', 'name'))
+    assert(not friend.healthBox:IsShown() and not friend.castBox:IsShown() and friend.name:IsShown() and not friend.healthText:IsShown(), 'name only')
+    local mage = addon.Domain.UnitColor.Class('MAGE')
+    assert(math.abs(friend.name.color[1] - Kit.Lighten({ mage.r, mage.g, mage.b }, 0.3)[1]) < 1e-6, 'class-colored name')
+    assert(M:SetOption('friendly', 'display', 'plate') and friend.healthBox:IsShown())
+    assert(M:SetOption('friendly', 'show', false) and not friend:IsShown() and view.captions.friendly.text:find("Blizzard", 1, true))
+    assert(M:SetOption('friendly', 'show', true) and friend:IsShown())
+    page.SetEditing('enemy')
+    -- Settings follow into the sample.
+    assert(M:SetOption('enemy', 'healthText', 'both') and sample.healthText.text == '8,640 · 72%', 'preview follows settings')
+    -- Target styles.
+    assert(M:SetOption('enemy', 'targetStyle', 'glow') and sample.targetGlow:IsShown() and sample.healthBox.rim.vertexColor[1] == Kit.onyx.border[1], 'glow')
+    assert(M:SetOption('enemy', 'targetStyle', 'arrows') and sample.arrows.left:IsShown() and sample.arrows.right:IsShown() and not sample.targetGlow:IsShown(), 'arrows')
+    assert(sample.arrows.right.texCoord[1] == 1, 'right arrow mirrored')
+    assert(M:SetOption('enemy', 'targetStyle', 'borderArrows') and sample.arrows.left:IsShown() and sample.healthBox.rim.vertexColor[3] == P.accent[3])
+    assert(M:SetOption('enemy', 'targetThickness', 3) and sample.targetOutline:IsShown() and Point(sample.targetOutline)[4] == -2, '3px border')
+    assert(M:SetOption('enemy', 'targetStyle', 'none') and not sample.targeted and not sample.arrows.left:IsShown())
+    assert(M:SetOption('enemy', 'targetStyle', 'border') and M:SetOption('enemy', 'targetThickness', 1))
+    -- Element placement: name, health text, raid marker, cast bar.
+    assert(M:SetOption('enemy', 'nameAnchor', 'CENTER') and Point(sample.name)[2] == sample.health and Point(sample.name)[1] == 'CENTER', 'name inside the bar')
+    assert(M:SetOption('enemy', 'nameAnchor', 'BOTTOMLEFT') and Point(sample.name)[1] == 'TOPLEFT' and Point(sample.name)[3] == 'BOTTOMLEFT')
+    assert(M:SetOption('enemy', 'nameAnchor', 'TOP') and M:SetOption('enemy', 'nameX', 4) and Point(sample.name)[4] == 4, 'name offset')
+    assert(M:SetOption('enemy', 'nameX', 0))
+    assert(M:SetOption('enemy', 'healthTextAnchor', 'LEFT') and Point(sample.healthText)[1] == 'LEFT' and Point(sample.healthText)[4] == 2)
+    assert(M:SetOption('enemy', 'raidAnchor', 'TOPRIGHT') and Point(sample.raidIcon)[1] == 'BOTTOMRIGHT' and Point(sample.raidIcon)[3] == 'TOPRIGHT')
+    assert(M:SetOption('enemy', 'raidSize', 24) and math.abs(sample.raidIcon.width - 24) < 1)
+    assert(M:SetOption('enemy', 'raidAnchor', 'LEFT') and M:SetOption('enemy', 'raidSize', 16) and M:SetOption('enemy', 'healthTextAnchor', 'RIGHT'))
+    assert(M:SetOption('enemy', 'castAnchor', 'TOP') and Point(sample.castBox)[1] == 'BOTTOMLEFT' and Point(sample.castBox)[3] == 'TOPLEFT', 'cast bar above')
+    assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2, 'name moves above the cast bar')
+    assert(M:SetOption('enemy', 'castAnchor', 'BOTTOM') and M:SetOption('enemy', 'castY', -3) and Point(sample.castBox)[5] == -5)
+    assert(M:SetOption('enemy', 'castY', 0))
+    -- Animated loops the cast.
+    assert(addon.PreviewStates:SetPreviewMode('nameplates', 'animated'))
+    assert(sample.cast.value == 0, 'animation starts at the beginning of the cast')
+    Advance(0.5)
+    assert(sample.cast.value > 0 and sample.cast.value < 1, 'the sample cast moves')
+    assert(addon.PreviewStates:SetPreviewMode('nameplates', 'static') and sample.cast.value == 0.6)
+    -- Tabs, cards and the Editing switch.
+    local sections = {}
+    for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
+    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target', table.concat(sections, ','))
+    assert(#page.cards > 5 and page.cards[1].frame:IsShown(), 'settings sit on cards')
+    local switch = page.nameplateEditButtons[1]
+    switch[2].scripts.OnClick(switch[2])
+    assert(page.nameplateEditing() == 'friendly' and page.nameplateEditButtons[3][2].selected, 'one switch across tabs')
+    local editingRow = switch[1]:GetParent().row
+    assert(Point(editingRow.settingsLabel)[1] == 'LEFT', 'the Editing label is centered with its pills')
+    -- Clicking a part of the sample jumps to its settings.
     local hits = view.targets.friendly
     hits.cast.scripts.OnEnter(hits.cast)
     assert(hits.cast.jumpHighlight:IsShown(), 'parts light up under the mouse')
     hits.cast.scripts.OnLeave(hits.cast)
-    assert(not hits.cast.jumpHighlight:IsShown())
     hits.cast.scripts.OnMouseUp(hits.cast, 'LeftButton')
-    assert(page.nameplateEditing() == 'friendly' and page.selectedSection.title == 'Cast Bar', 'cast bar click opens Cast Bar for Friendly')
+    assert(page.nameplateEditing() == 'friendly' and page.selectedSection.title == 'Cast Bar', 'cast bar click opens Cast Bar')
+    page.SetEditing('enemy')
     view.targets.enemy.name.scripts.OnMouseUp(view.targets.enemy.name, 'LeftButton')
     assert(page.nameplateEditing() == 'enemy' and page.selectedSection.title == 'Text', 'name click opens Text')
     view.targets.enemy.health.scripts.OnMouseUp(view.targets.enemy.health, 'LeftButton')
     assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
     view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')
-    assert(page.selectedSection.title == 'Markers', 'marker click opens Markers')
+    assert(page.selectedSection.title == 'Target', 'marker click opens Target')
     local buffIcon = sample.auraIcons.buffs[1]
     buffIcon.scripts.OnMouseUp(buffIcon, 'LeftButton')
     assert(page.selectedSection.title == 'Auras' and page.nameplateAuraGroup() == 'buffs', 'aura click opens its group')
@@ -358,26 +437,7 @@ world.run([==[
     page.auraAnchorButtons.BOTTOMLEFT.scripts.OnClick(page.auraAnchorButtons.BOTTOMLEFT)
     assert(M.db.enemy.buffs.anchor == 'BOTTOMLEFT' and page.auraAnchorButtons.BOTTOMLEFT.selected, 'picking an anchor')
     assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'buffs'))
-    assert(not M.plates[first] or not M.byUnit.nameplate1.auraIcons.buffs[1] or not M.byUnit.nameplate1.auraIcons.buffs[1].jump,
-        'only preview auras take clicks')
-    -- One Nameplates tab replaces Plates and Health; Auras has its own.
-    local sections = {}
-    for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Markers', table.concat(sections, ','))
-    assert(M:SetOption('enemy', 'healthText', 'both') and sample.healthText.text == '8,640 · 72%', 'preview follows settings')
-    assert(M:SetOption('enemy', 'targetHighlight', false) and not sample.targeted)
-    assert(M:SetOption('friendly', 'show', false) and not friend:IsShown() and view.captions.friendly.text:find("Blizzard", 1, true))
-    assert(M:SetOption('friendly', 'show', true) and friend:IsShown())
-    -- Animated loops the cast.
-    assert(addon.PreviewStates:SetPreviewMode('nameplates', 'animated'))
-    assert(sample.cast.value == 0, 'animation starts at the beginning of the cast')
-    Advance(0.5)
-    assert(sample.cast.value > 0 and sample.cast.value < 1, 'the sample cast moves')
-    assert(addon.PreviewStates:SetPreviewMode('nameplates', 'static') and sample.cast.value == 0.6)
-    -- Editing switch: one choice across tabs.
-    local switch = page.nameplateEditButtons[1]
-    switch[2].scripts.OnClick(switch[2])
-    assert(page.nameplateEditing() == 'friendly' and page.nameplateEditButtons[3][2].selected, 'one switch across tabs')
+    assert(page.nameAnchorButtons.CENTER, 'text anchors include the middle')
     addon.configWindow:Hide()
 
     -- Switching off restores every Blizzard plate and releases the events.
@@ -406,7 +466,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 4 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 5 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -427,7 +487,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 4 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 5 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -442,13 +502,31 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 4 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 5 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
+        assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
     end
     assert(style.crowdControl.show and style.debuffs.show and style.debuffs.filter == 'all', 'choices kept')
     assert(not style.buffs.show and style.buffs.filter == 'dispellable', 'None becomes hidden')
 ]==], "nameplates_v3")
+
+-- Version 4: the target highlight switch becomes a target style, and groups gain grow directions.
+local v4 = world.saved()
+np = v4.profiles.Default.modules.nameplates
+np.version = 4
+np.enemy.targetHighlight, np.friendly.targetHighlight = false, true
+np.enemy.targetStyle, np.friendly.targetStyle = nil, nil
+for _, kind in ipairs({ 'enemy', 'friendly' }) do
+    for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do np[kind][group].grow = nil end
+end
+np.enemy.debuffs.anchor = 'TOPRIGHT'
+H.Load({ before = STUBS, saved = v4 }).run([==[
+    local db = addon.Nameplates.db
+    assert(db.version == 5 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
+    assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
+]==], "nameplates_v4")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

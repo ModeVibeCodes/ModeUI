@@ -2,9 +2,9 @@ local _, addon = ...
 local M = addon.Nameplates
 if not M then return end
 
--- Filling a plate from live unit data: health, name, colors, raid marker and
--- the target highlight, each with the plate's own kind settings. Secret values
--- go straight to widgets that accept them.
+-- Filling a plate from live unit data: health, name, colors and the raid
+-- marker, each with the plate's own kind settings. Secret values go straight to
+-- widgets that accept them. The target indicator is in Target.lua.
 local Kit, Domain = addon.Kit, addon.Domain
 local P, ONYX = Kit.palette, Kit.onyx
 local Health, Name, UnitColor, Threat = Domain.Health, Domain.Name, Domain.UnitColor, Domain.Threat
@@ -27,8 +27,13 @@ function M:UpdateAll()
 end
 
 function M:UpdateName(plate)
-    if not self:Style(plate).showName or not plate.unit then return end
+    local db = self:Style(plate)
+    if not (db.showName or plate.nameOnly) or not plate.unit then return end
     Kit.Write(plate.name, Name.Get(plate.unit))
+    if not plate.targeted then
+        local color = self:NameColor(plate)
+        plate.name:SetTextColor(color[1], color[2], color[3], 1)
+    end
 end
 
 function M:UpdateHealth(plate)
@@ -65,6 +70,15 @@ function M:ColorFor(style, class, reaction, threat)
     return Soften(self.reactionColors[reaction] or ONYX.health, style.softness)
 end
 
+-- The class color for players, else the reaction color, softened like health.
+function M:IdentityColor(plate)
+    local style, unit = self:Style(plate), plate.unit
+    local class = UnitColor.PlayerClass(unit)
+    if class then return Soften({ class.r, class.g, class.b }, style.softness) end
+    local reaction = UnitColor.Reaction(unit)
+    return Soften(self.reactionColors[reaction], style.softness)
+end
+
 function M:HealthColor(plate)
     local unit, style = plate.unit, self:Style(plate)
     local class = style.healthColorMode == "reaction" and UnitColor.PlayerClass(unit) or nil
@@ -81,24 +95,4 @@ end
 function M:UpdateRaidIcon(plate)
     if not self:Style(plate).showRaidIcon or not plate.unit then plate.raidIcon:Hide(); return end
     Domain.RaidIcon.Apply(plate.raidIcon, plate.unit)
-end
-
--- Rims: cyan on the target when the highlight is on, slate otherwise.
-function M:PaintTarget(plate, targeted)
-    local rim = targeted and P.accent or ONYX.border
-    Kit.Tint(plate.healthBox.rim, rim, 1)
-    Kit.Tint(plate.castBox.rim, rim, 1)
-    plate.targeted = targeted
-end
-
--- The target's nameplate frame is compared directly, so no secret unit
--- comparison is needed.
-function M:UpdateTarget(plate, targetPlate)
-    if targetPlate == nil then targetPlate = Domain.Nameplate.ForUnit("target") or false end
-    self:PaintTarget(plate, self:Style(plate).targetHighlight and plate.unit ~= nil and plate.nameplate == targetPlate)
-end
-
-function M:UpdateTargets()
-    local targetPlate = Domain.Nameplate.ForUnit("target") or false
-    for _, plate in pairs(self.byUnit) do self:UpdateTarget(plate, targetPlate) end
 end

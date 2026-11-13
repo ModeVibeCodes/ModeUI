@@ -3,20 +3,36 @@ local M = addon.Nameplates
 if not M then return end
 
 -- Aura icons on a plate, in three groups: crowd control, debuffs and buffs.
--- Each group has its own anchor around the plate, offset, icon size and count.
--- Which auras belong to a group is a game filter string, so the game decides
--- what matches and no secret aura data is compared (Domain/Auras.lua).
+-- Each group has its own anchor around the health bar, grow direction, offset,
+-- icon size and count. Which auras belong to a group is a game filter string,
+-- so the game decides what matches and no secret aura data is compared
+-- (Domain/Auras.lua).
 --
--- Anchors read like a compass. Top anchors sit above the name (or the health
--- bar when names are off) and Bottom anchors below the cast bar; Left, Center
--- and Right line the row up with the plate's edges or middle. Left and Right
--- sit beside the health bar and grow outward. Groups sharing an anchor stack
--- outward in group order.
+-- Anchors read like a compass. Top anchors sit above everything over the bar
+-- (name, cast bar), Bottom anchors below everything under it, lined up with the
+-- bar's left edge, middle or right edge; Left and Right sit beside the bar (past
+-- a raid marker on that side). Icons then grow Right, Left, Up, Down or from the
+-- Center. Groups sharing an anchor continue one after another in group order,
+-- in the first group's direction.
 local Kit, Auras = addon.Kit, addon.Domain.Auras
 local GROUPS = M.auraGroups
 
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
 local function Round(value, px) return math.floor(value / px + 0.5) * px end
+
+-- Icon width and height for a group: cropped icons are 2px wider than tall.
+function M:AuraSize(plate, group)
+    local style, px = self:Style(plate), plate.px or 1
+    local width = Snap(style[group].size, px)
+    local height = style.auraShape == "cropped" and math.max(px, width - 2 * px) or width
+    return width, height
+end
+
+function M:LayoutAuraIcon(plate, icon, group)
+    local width, height = self:AuraSize(plate, group)
+    local style = self:Style(plate)
+    Kit.LayoutAuraIcon(icon, width, height, plate.px or 1, style, plate.fontPath or Kit.FontPath(style, self.id))
+end
 
 function M:AuraIcon(plate, group, index)
     local pool = plate.auraIcons[group]
@@ -24,11 +40,16 @@ function M:AuraIcon(plate, group, index)
     if not icon then
         icon = Kit.AuraIcon(plate.auraLayer)
         pool[index] = icon
-        local style, px = self:Style(plate), plate.px or 1
-        Kit.LayoutAuraIcon(icon, Snap(style[group].size, px), px, style, plate.fontPath or Kit.FontPath(style, self.id))
+        self:LayoutAuraIcon(plate, icon, group)
     end
     icon.auraGroup = group
     return icon
+end
+
+-- The rim color for an icon: its dispel type's color with By Type borders.
+function M:AuraRimColor(style, dispelType)
+    local key = style.auraBorder == "type" and dispelType and self.dispelColorKeys[dispelType]
+    return key and style[key] or nil
 end
 
 -- Hides one group's icons from `from` on, or every group's when group is nil.
@@ -48,12 +69,12 @@ function M:UpdateAuras(plate)
     for _, group in ipairs(GROUPS) do
         local settings, count = style[group], 0
         if unit and style.showAuras and settings.show then
-            local crowdControlShown = style.crowdControl.show
-            local filter = Auras.GroupFilter(group, settings.filter, crowdControlShown)
+            local filter = Auras.GroupFilter(group, settings.filter, style.crowdControl.show)
             if filter then
                 for index, aura in ipairs(Auras.Collect(unit, { filter }, settings.max)) do
                     local icon = self:AuraIcon(plate, group, index)
                     Auras.Apply(icon, unit, aura, style.auraTimer, style.auraCount)
+                    Kit.TintAuraRim(icon, self:AuraRimColor(style, icon.dispelType))
                     icon:Show()
                     count = index
                 end
@@ -64,46 +85,62 @@ function M:UpdateAuras(plate)
     self:LayoutAuras(plate)
 end
 
-local TOP = { TOPLEFT = "LEFT", TOP = "CENTER", TOPRIGHT = "RIGHT" }
-local BOTTOM = { BOTTOMLEFT = "LEFT", BOTTOM = "CENTER", BOTTOMRIGHT = "RIGHT" }
+local STEP = { right = { 1, 0 }, left = { -1, 0 }, up = { 0, 1 }, down = { 0, -1 } }
 
--- Places every shown icon by its group's anchor and offset.
+-- Places every shown icon. Positions are worked out as centers relative to the
+-- health bar's center, then snapped to whole pixels at each icon's corner.
 function M:LayoutAuras(plate)
     local style, px = self:Style(plate), plate.px or 1
     local spacing, gap = style.auraSpacing * px, 2 * px
-    local stacked = {} -- distance already used outward from each anchor
-    local width = plate:GetWidth()
+    local boxWidth, boxHeight = plate.healthBox:GetWidth(), plate.healthBox:GetHeight()
+    local function Clear(side) return (style.showRaidIcon and style.raidAnchor == side) and (plate.markSize or 0) + 3 * px or 0 end
+    -- Gather each anchor's icons in group order.
+    local byAnchor, order = {}, {}
     for _, group in ipairs(GROUPS) do
         local settings, count = style[group], plate.auraShown[group] or 0
         if count > 0 then
-            local anchor, size = settings.anchor, Snap(settings.size, px)
-            local step = size + spacing
-            local row = count * step - spacing
-            local used = stacked[anchor] or 0
-            local dx, dy = Round(settings.x, px), Round(settings.y, px)
+            local list = byAnchor[settings.anchor]
+            if not list then list = { grow = settings.grow }; byAnchor[settings.anchor] = list; order[#order + 1] = settings.anchor end
+            local width, height = self:AuraSize(plate, group)
             for index = 1, count do
-                local icon, along = plate.auraIcons[group][index], (index - 1) * step
-                icon:ClearAllPoints()
-                if TOP[anchor] or BOTTOM[anchor] then
-                    local align = TOP[anchor] or BOTTOM[anchor]
-                    local start = align == "LEFT" and 0 or align == "RIGHT" and width - row or (width - row) / 2
-                    local x = Round(start + along, px) + dx
-                    if TOP[anchor] then
-                        local host = style.showName and plate.name or plate.healthBox
-                        icon:SetPoint("BOTTOMLEFT", host, "TOPLEFT", x, gap + used + dy)
-                    else
-                        icon:SetPoint("TOPLEFT", plate, "BOTTOMLEFT", x, -(gap + used) + dy)
-                    end
-                elseif anchor == "LEFT" then
-                    -- Left icons start past the raid marker so they never cover it.
-                    local clear = gap + (style.showRaidIcon and (plate.markSize or 0) + 3 * px or 0)
-                    icon:SetPoint("RIGHT", plate.healthBox, "LEFT", -(clear + used + along) + dx, dy)
-                else
-                    icon:SetPoint("LEFT", plate.healthBox, "RIGHT", gap + used + along + dx, dy)
-                end
+                list[#list + 1] = { icon = plate.auraIcons[group][index], w = width, h = height, dx = Round(settings.x, px), dy = Round(settings.y, px) }
             end
-            local horizontal = anchor == "LEFT" or anchor == "RIGHT"
-            stacked[anchor] = used + (horizontal and row or size) + spacing
+        end
+    end
+    for _, anchor in ipairs(order) do
+        local list = byAnchor[anchor]
+        local grow = list.grow
+        local vertical = grow == "up" or grow == "down" or (grow == "center" and (anchor == "LEFT" or anchor == "RIGHT"))
+        -- Length of the run along its axis, for centering.
+        local length = -spacing
+        for _, item in ipairs(list) do length = length + (vertical and item.h or item.w) + spacing end
+        local along = 0
+        for _, item in ipairs(list) do
+            local w, h = item.w, item.h
+            -- The first icon's center for this anchor, its inner edge on the plate.
+            local cx, cy
+            if anchor:find("^TOP") or anchor:find("^BOTTOM") then
+                local top = anchor:find("^TOP") ~= nil
+                cy = top and (boxHeight / 2 + plate.above + gap + h / 2) or -(boxHeight / 2 + plate.below + gap + h / 2)
+                cx = anchor:find("LEFT") and (-boxWidth / 2 + w / 2) or anchor:find("RIGHT") and (boxWidth / 2 - w / 2) or 0
+            elseif anchor == "LEFT" then
+                cx, cy = -(boxWidth / 2 + gap + Clear("LEFT") + w / 2), 0
+            else
+                cx, cy = boxWidth / 2 + gap + Clear("RIGHT") + w / 2, 0
+            end
+            local size = vertical and h or w
+            if grow == "center" then
+                local offset = -length / 2 + along + size / 2
+                if vertical then cy = cy + offset else cx = cx + offset end
+            else
+                local step = STEP[grow]
+                cx, cy = cx + step[1] * along, cy + step[2] * along
+            end
+            along = along + size + spacing
+            local left = Round(cx - w / 2 + boxWidth / 2, px) + item.dx
+            local bottom = Round(cy - h / 2 + boxHeight / 2, px) + item.dy
+            item.icon:ClearAllPoints()
+            item.icon:SetPoint("BOTTOMLEFT", plate.healthBox, "BOTTOMLEFT", left, bottom)
         end
     end
 end

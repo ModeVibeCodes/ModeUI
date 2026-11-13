@@ -48,6 +48,7 @@ The Unit Frames Onyx textures (ModeUI/Media/Textures/UnitFrames) are original
 procedural assets from tools/build_unit_frame_textures.py, Copyright (c) 2026
 Mode, MIT. They contain no third-party artwork.
 
-The nameplate rim textures (ModeUI/Media/Textures/Nameplates) are original
-procedural assets from tools/build_nameplate_textures.lua, Copyright (c) 2026
-Mode, MIT. They contain no third-party artwork.
+The nameplate textures (ModeUI/Media/Textures/Nameplates) and the ModeFlat
+settings fill (ModeUI/Media/Textures/Mode/Flat.tga) are original procedural
+assets from tools/build_shape_textures.lua, Copyright (c) 2026 Mode, MIT. They
+contain no third-party artwork.
