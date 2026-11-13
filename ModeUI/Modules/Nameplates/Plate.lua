@@ -23,12 +23,9 @@ local function LiftedText(layer)
     return text
 end
 
-function M:EnsurePlate(nameplate)
-    local plate = self.plates[nameplate]
-    if plate then return plate end
-    plate = CreateFrame("Frame", nil, nameplate)
-    plate.nameplate = nameplate
-    plate:SetPoint("CENTER", nameplate, "CENTER", 0, 0)
+-- A plate's frames, on any parent: a game nameplate, or the settings preview.
+function M:BuildPlate(parent)
+    local plate = CreateFrame("Frame", nil, parent)
     plate.healthBox = Box(plate)
     plate.health = plate.healthBox.bar
     plate.castBox = Box(plate)
@@ -40,6 +37,15 @@ function M:EnsurePlate(nameplate)
     plate.raidIcon = plate.textLayer:CreateTexture(nil, "OVERLAY")
     plate.castBox:Hide()
     plate:Hide()
+    return plate
+end
+
+function M:EnsurePlate(nameplate)
+    local plate = self.plates[nameplate]
+    if plate then return plate end
+    plate = self:BuildPlate(nameplate)
+    plate.nameplate = nameplate
+    plate:SetPoint("CENTER", nameplate, "CENTER", 0, 0)
     -- Blizzard acquires its unit frame for each new unit; fade it on arrival.
     if hooksecurefunc and type(nameplate.AcquireUnitFrame) == "function" then
         hooksecurefunc(nameplate, "AcquireUnitFrame", function(frame) self:OnBlizzardAcquired(frame) end)
@@ -48,8 +54,7 @@ function M:EnsurePlate(nameplate)
     return plate
 end
 
-function M:BarTexture()
-    local db = self.db
+function M:BarTexture(db)
     if db.texture == "satin" then return addon.Media:GetTexture("UnitFrameBar") or FLAT, false end
     if db.texture == "mode" then return FLAT, true end
     return addon.Media:GetStatusBar(db.texture, self.id) or FLAT, false
@@ -77,10 +82,10 @@ local function LayoutBox(box, width, barHeight, px, texture, sheen)
 end
 
 function M:LayoutPlate(plate)
-    local db, px = self.db, Kit.PixelSize(plate)
+    local db, px = self:Style(plate), Kit.PixelSize(plate)
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local width = Snap(db.width)
-    local texture, sheen = self:BarTexture()
+    local texture, sheen = self:BarTexture(db)
     local healthHeight = LayoutBox(plate.healthBox, width, Snap(db.healthHeight), px, texture, sheen)
     local gap = 2 * px
     local castHeight = LayoutBox(plate.castBox, width, Snap(db.castHeight), px, texture, false)

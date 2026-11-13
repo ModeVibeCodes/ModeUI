@@ -12,6 +12,11 @@ local ROWS, COLUMNS = 4, 4
 function RaidIcon.Apply(texture, unit)
     local ok, index = Q.Call(GetRaidTargetIndex, unit)
     if not ok or (Public(index) and index == nil) then texture:Hide(); return false end
+    return RaidIcon.ApplyIndex(texture, index)
+end
+
+-- Shows marker `index` (1 star .. 8 skull; may be secret) on `texture`.
+function RaidIcon.ApplyIndex(texture, index)
     texture:SetTexture(RaidIcon.TEXTURE)
     local placed = texture.SetSpriteSheetCell and pcall(texture.SetSpriteSheetCell, texture, index, ROWS, COLUMNS)
     if not placed then

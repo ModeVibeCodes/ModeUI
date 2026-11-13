@@ -3,6 +3,8 @@ local M = addon.Nameplates
 if not M then return end
 
 -- Lifecycle, events, settings changes and fading Blizzard's nameplate art.
+-- Every plate is an enemy or a friendly plate (plate.kind) and draws with that
+-- kind's settings, M:Style(plate).
 -- Plates are built and laid out in Plate.lua, filled in Update.lua, and their
 -- cast bars run in CastBar.lua.
 local Events, NP = addon.Events, addon.Domain.Nameplate
@@ -10,7 +12,7 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 local UNIT_EVENTS = {
     UNIT_HEALTH = "Health", UNIT_MAXHEALTH = "Health", UNIT_CONNECTION = "Health",
-    UNIT_NAME_UPDATE = "Name", UNIT_FACTION = "Color", UNIT_CLASSIFICATION_CHANGED = "Color",
+    UNIT_NAME_UPDATE = "Name", UNIT_FACTION = "Faction", UNIT_CLASSIFICATION_CHANGED = "Color",
     UNIT_THREAT_SITUATION_UPDATE = "Color", UNIT_THREAT_LIST_UPDATE = "Color",
     UNIT_SPELLCAST_START = "Cast", UNIT_SPELLCAST_STOP = "Cast", UNIT_SPELLCAST_FAILED = "Cast",
     UNIT_SPELLCAST_INTERRUPTED = "Cast", UNIT_SPELLCAST_DELAYED = "Cast", UNIT_SPELLCAST_CHANNEL_START = "Cast",
@@ -52,14 +54,20 @@ function M:ForEachPlate(fn)
     for _, plate in pairs(self.byUnit) do fn(self, plate) end
 end
 
+function M:Style(plate) return self.db[plate.kind or "enemy"] end
+function M:KindOf(unit) return NP.IsEnemy(unit) and "enemy" or "friendly" end
+
 function M:OnUnitAdded(unit)
     if not self.active or type(unit) ~= "string" then return end
     if self.byUnit[unit] then self:OnUnitRemoved(unit) end
     local nameplate = NP.ForUnit(unit)
-    -- The personal resource display and widget-only plates stay Blizzard's.
+    -- The personal resource display and widget-only plates stay Blizzard's,
+    -- and so does a kind whose ModeUI plates are switched off.
     if not nameplate or NP.IsPlayerPlate(nameplate) or NP.WidgetsOnly(unit) then return end
+    local kind = self:KindOf(unit)
+    if not self.db[kind].show then return end
     local plate = self:EnsurePlate(nameplate)
-    plate.unit = unit
+    plate.unit, plate.kind = unit, kind
     self.byUnit[unit] = plate
     self:FadeBlizzard(nameplate)
     self:LayoutPlate(plate)
@@ -80,7 +88,10 @@ end
 function M:OnUnitEvent(part, unit)
     local plate = type(unit) == "string" and self.byUnit[unit]
     if not plate then return end
-    if part == "Health" then self:UpdateHealth(plate)
+    if part == "Faction" then
+        -- A unit can turn hostile or friendly (duels, mind control).
+        if self:KindOf(unit) ~= plate.kind then self:OnUnitAdded(unit) else self:UpdateHealthColor(plate) end
+    elseif part == "Health" then self:UpdateHealth(plate)
     elseif part == "Name" then self:UpdateName(plate)
     elseif part == "Color" then self:UpdateHealthColor(plate)
     else self:UpdateCast(plate) end
@@ -125,44 +136,62 @@ function M:OnBlizzardAcquired(nameplate)
     if plate and plate.unit and self.active then self:FadeBlizzard(nameplate) end
 end
 
+-- Re-attaches every game nameplate, so a kind switched on or off takes effect.
 function M:Refresh()
-    if not self.plates then return end
-    for _, plate in pairs(self.byUnit) do
-        self:LayoutPlate(plate)
-        self:UpdatePlate(plate)
-    end
+    if not self.plates or not self.active then return end
+    for unit in pairs(self.byUnit) do self:OnUnitRemoved(unit) end
+    for _, unit in ipairs(NP.ActiveUnits()) do self:OnUnitAdded(unit) end
+end
+
+local function Changed(self)
+    self:Refresh()
+    if self.page then self.page:Refresh() end
 end
 
 function M:CanConfigure() return not addon.InCombat() end
 
-function M:SetOption(key, value)
-    if not self:CanConfigure() or self.defaults[key] == nil or key == "version" then return false end
+function M:SetOption(kind, key, value)
+    local defaults = self.styleDefaults[kind]
+    if not self:CanConfigure() or not defaults or defaults[key] == nil then return false end
     local candidate = Copy(self.db)
-    candidate[key] = Copy(value)
+    candidate[kind][key] = Copy(value)
     if not pcall(self.Initialize, candidate) then return false end
-    self.db[key] = candidate[key]
-    self:Refresh()
-    if self.page then self.page:Refresh() end
+    self.db[kind][key] = candidate[kind][key]
+    Changed(self)
     return true
 end
 
-function M:ResetSettings()
-    if not self:CanConfigure() then return false end
-    local enabled = self.db.enabled
-    for key in pairs(self.db) do self.db[key] = nil end
-    self.db.enabled = enabled
-    self.Initialize(self.db)
-    self:Refresh()
-    if self.page then self.page:Refresh() end
+-- Values are written in place so the settings widgets keep their tables.
+local function Replace(self, kind, style)
+    local target = self.db[kind]
+    for key in pairs(target) do target[key] = nil end
+    for key, value in pairs(style) do target[key] = value end
+    Changed(self)
     return true
 end
 
--- Owner for the shared font and color widgets.
-function M:AppearanceOwner()
-    local owner = { db = { appearance = self.db } }
+function M:ResetSettings(kind)
+    if not self:CanConfigure() or not self.styleDefaults[kind] then return false end
+    local style = Copy(self.styleDefaults[kind])
+    for key in pairs(self.identityKeys) do style[key] = self.db[kind][key] end
+    return Replace(self, kind, style)
+end
+
+-- Copies one kind's look to the other; whether each kind is shown stays its own.
+function M:CopyStyle(from, to)
+    if not self:CanConfigure() or not self.styleDefaults[from] or not self.styleDefaults[to] or from == to then return false end
+    local style = Copy(self.db[from])
+    for key in pairs(self.identityKeys) do style[key] = self.db[to][key] end
+    return Replace(self, to, style)
+end
+
+-- Owner for the shared font and color widgets; kind() names the kind being edited.
+function M:AppearanceOwner(kind)
+    local appearance = setmetatable({}, { __index = function(_, key) return M.db[kind()][key] end })
+    local owner = { db = { appearance = appearance } }
     function owner.CanConfigure() return M:CanConfigure() end
     function owner.GetFonts() return addon.Media:GetFonts() end
-    function owner.SetAppearance(_, key, value) return M:SetOption(key, value) end
+    function owner.SetAppearance(_, key, value) return M:SetOption(kind(), key, value) end
     return owner
 end
 

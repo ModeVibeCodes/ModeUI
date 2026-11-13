@@ -112,6 +112,8 @@ function W.Preview(page, module, options)
     local static=W.Button(area,"Static",64,24,"choice")
     local animated=W.Button(area,"Animated",78,24,"choice")
     animated:SetShown(addon.PreviewStates:CanAnimate(module.id) and true or false)
+    -- Only modules that can draw on screen outside the window offer the test.
+    test:SetShown(module.SetTestDisplay ~= nil)
     local function Mode(mode)
         addon.PreviewStates:SetPreviewMode(module.id,mode)
         page:UpdatePreviewLayout()
@@ -133,7 +135,7 @@ function W.Preview(page, module, options)
         local available=math.max(180,area:GetWidth()-90)
         local x,y=0,-6
         for _,button in ipairs({static,animated,test,pop,collapse}) do
-            if button~=animated or addon.PreviewStates:CanAnimate(module.id) then
+            if (button~=animated or addon.PreviewStates:CanAnimate(module.id)) and (button~=test or module.SetTestDisplay) then
                 button:SetWidth(math.max(button:GetWidth(),math.ceil(button.label:GetStringWidth())+12))
                 if x>0 and x+button:GetWidth()>available then x,y=0,y-30 end
                 button:ClearAllPoints();button:SetPoint("TOPLEFT",x,y);x=x+button:GetWidth()+4

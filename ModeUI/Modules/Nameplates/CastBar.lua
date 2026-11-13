@@ -14,25 +14,31 @@ local ONYX = Kit.onyx
 
 local function Tick(bar) bar:SetValue(Cast.Now()) end
 
-function M:UpdateCast(plate)
-    local unit = plate.unit
-    local info = unit and self.db.showCastBar and Cast.Read(unit)
-    if not info then self:StopCast(plate); return end
-    local bar, db = plate.cast, self.db
-    pcall(bar.SetMinMaxValues, bar, info.startMs, info.endMs)
-    if bar.SetReverseFill then bar:SetReverseFill(info.channel) end
+-- Colors, text and icon for a cast; shared with the preview.
+function M:PaintCast(plate, style, channel, notInterruptible, text, texture)
+    local bar = plate.cast
+    if bar.SetReverseFill then bar:SetReverseFill(channel) end
     local fill = bar:GetStatusBarTexture()
-    if info.channel then
+    if channel then
         Kit.Tint(fill, ONYX.track, 1)
-        Kit.ColorFromBoolean(bar.bg, info.notInterruptible, db.castLockedColor, db.castColor)
+        Kit.ColorFromBoolean(bar.bg, notInterruptible, style.castLockedColor, style.castColor)
     else
         Kit.Tint(bar.bg, ONYX.track, 1)
-        Kit.ColorFromBoolean(fill, info.notInterruptible, db.castLockedColor, db.castColor)
+        Kit.ColorFromBoolean(fill, notInterruptible, style.castLockedColor, style.castColor)
     end
-    pcall(Kit.Write, plate.castText, info.text)
-    if not pcall(plate.castIcon.SetTexture, plate.castIcon, info.texture) then plate.castIcon:SetTexture(nil) end
-    plate.casting = info.channel and "channel" or "cast"
+    pcall(Kit.Write, plate.castText, text)
+    if not pcall(plate.castIcon.SetTexture, plate.castIcon, texture) then plate.castIcon:SetTexture(nil) end
+    plate.casting = channel and "channel" or "cast"
     plate.castBox:Show()
+end
+
+function M:UpdateCast(plate)
+    local unit, style = plate.unit, self:Style(plate)
+    local info = unit and style.showCastBar and Cast.Read(unit)
+    if not info then self:StopCast(plate); return end
+    local bar = plate.cast
+    pcall(bar.SetMinMaxValues, bar, info.startMs, info.endMs)
+    self:PaintCast(plate, style, info.channel, info.notInterruptible, info.text, info.texture)
     Tick(bar)
     bar:SetScript("OnUpdate", Tick)
 end

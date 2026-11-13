@@ -19,6 +19,9 @@ function Nameplate.IsPlayerPlate(frame)
     return frame ~= nil and Nameplate.ForUnit("player") == frame
 end
 
+-- Whether the player can attack the unit: an enemy plate, else a friendly one.
+function Nameplate.IsEnemy(unit) return Q.Truthy(UnitCanAttack, "player", unit) end
+
 -- Units whose nameplate shows only UI widgets (objects, some quest units).
 function Nameplate.WidgetsOnly(unit) return Q.Truthy(UnitNameplateShowsWidgetsOnly, unit) end
 
