@@ -91,6 +91,7 @@ local function Style(kind)
         focusFadeOthers = 100,
         -- Auras: settings for every group, then each group on its own.
         showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
+        auraBorderSize = 2, auraCCGlow = true,
         auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
         auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85), auraBleedColor = RGB(200, 45, 45),
         -- Auras without a dispel type (Cheap Shot, most crowd control): orange for
@@ -119,6 +120,7 @@ M.dispelTypeIDs = { [0] = "none", [1] = "Magic", [2] = "Curse", [3] = "Disease",
     [9] = "Enrage", [10] = "none", [11] = "Bleed", [12] = "none" }
 
 M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 },
+    auraBorderSize = { 1, 3, 1 },
     healthOpacity = { 10, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },

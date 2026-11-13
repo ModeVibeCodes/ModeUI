@@ -33,7 +33,7 @@ end
 
 -- Everything buttons bake in when they are made.
 local function LookKey(style, path, px)
-    local parts = { style.auraShape, style.auraBorder, tostring(style.auraTimer), tostring(style.auraTimerText), tostring(style.auraCount), path, px,
+    local parts = { style.auraShape, style.auraBorder, style.auraBorderSize, tostring(style.auraCCGlow), tostring(style.auraTimer), tostring(style.auraTimerText), tostring(style.auraCount), path, px,
         tostring(style.outline), tostring(style.shadow), tostring(style.liftedShadow), tostring(style.slug) }
     local colors = { "auraNoTypeColor", "auraCCNoTypeColor" }
     for _, name in ipairs(DISPELS) do colors[#colors + 1] = M.dispelColorKeys[name] end
@@ -52,9 +52,9 @@ end
 -- (C_UnitAuras.GetAuraDispelTypeColor) colors auras whose type is secret; the
 -- name map is the fallback when the client has no color curves. "None" and the
 -- IDs without a named type take the no-type color.
-local function DispelColors(style, group)
+local function DispelColors(style, group, alpha)
     local none = NoTypeColor(style, group)
-    local function Color(c) return CreateColor(c[1], c[2], c[3], 1) end
+    local function Color(c) return CreateColor(c[1], c[2], c[3], alpha or 1) end
     if C_CurveUtil and C_CurveUtil.CreateColorCurve and Enum and Enum.LuaCurveType then
         local ok, curve = pcall(function()
             local made = C_CurveUtil.CreateColorCurve()
@@ -113,6 +113,16 @@ local function Initializer(style, group, width, height, px, path)
                 showWhenHarmful = true, showWhenHelpful = true, showWithoutDispelType = true }
             for key, value in pairs(colors) do options[key] = value end
             button:AddDispelTypeTexture(button.rim, options)
+        end
+        -- Crowd control glows in its rim color, softly.
+        if group == "crowdControl" and style.auraCCGlow then
+            local glowColors = style.auraBorder == "type" and DispelColors(style, group, Kit.AURA_GLOW_ALPHA)
+                or { customDispelColorMap = { None = CreateColor(style.auraCCNoTypeColor[1], style.auraCCNoTypeColor[2], style.auraCCNoTypeColor[3], Kit.AURA_GLOW_ALPHA) } }
+            local options = { style = Enum.CustomAuraButtonDispelTypeTextureStyle.PreserveAsset,
+                showWhenHarmful = true, showWhenHelpful = true, showWithoutDispelType = true }
+            for key, value in pairs(glowColors) do options[key] = value end
+            button.glow:Show()
+            button:AddDispelTypeTexture(button.glow, options)
         end
     end
 end

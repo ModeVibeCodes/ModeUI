@@ -20,8 +20,8 @@ local GROUPS = M.auraGroups
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
 local function Round(value, px) return math.floor(value / px + 0.5) * px end
 
--- Icon width and height for a group: cropped icons are 4px wider than tall.
-M.CROP_PIXELS = 4
+-- Icon width and height for a group: cropped icons are 6px wider than tall.
+M.CROP_PIXELS = 6
 function M:AuraSize(plate, group)
     local style, px = self:Style(plate), plate.px or 1
     local width = Snap(style[group].size, px)
@@ -73,6 +73,13 @@ function M:AuraRimColor(style, dispelType, group)
     return group == "crowdControl" and style.auraCCNoTypeColor or style.auraNoTypeColor
 end
 
+-- The glow color for an icon: crowd control with Crowd Control Glow on gets
+-- a glow in its rim color (the no-type crowd control color without By Type).
+function M:AuraGlowColor(style, dispelType, group)
+    if group ~= "crowdControl" or not style.auraCCGlow then return nil end
+    return self:AuraRimColor(style, dispelType, group) or style.auraCCNoTypeColor
+end
+
 -- Hides one group's icons from `from` on, or every group's when group is nil.
 function M:HideAuras(plate, group, from)
     for _, name in ipairs(group and { group } or GROUPS) do
@@ -105,6 +112,7 @@ function M:UpdateAuras(plate)
                     local icon = self:AuraIcon(plate, group, index)
                     Auras.Apply(icon, unit, aura, style.auraTimer, style.auraCount)
                     Kit.TintAuraRim(icon, self:AuraRimColor(style, icon.dispelType, group))
+                    Kit.GlowAura(icon, self:AuraGlowColor(style, icon.dispelType, group))
                     Kit.Write(icon.timer, "")
                     icon:Show()
                     count = index
