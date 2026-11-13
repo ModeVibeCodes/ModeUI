@@ -48,6 +48,11 @@ M.Textures = {
     ModeChevron = { file = "Mode/Chevron.tga", transparent = true },
     -- 4x4 tile for Mode Slate Hatch (Kit.BarBackground tiles it per pixel).
     ModeSlateHatch = { file = "Mode/SlateHatch.tga" },
+    -- Half-oval box ends and their hole masks (Kit.CapRing, Kit.EndMask).
+    ModeCapRight = { file = "Mode/CapRight.tga", rounded = true },
+    ModeCapLeft = { file = "Mode/CapLeft.tga", rounded = true },
+    ModeCapHoleRight = { file = "Mode/CapHoleRight.tga", transparent = true },
+    ModeCapHoleLeft = { file = "Mode/CapHoleLeft.tga", transparent = true },
     NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
     NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
     NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },

@@ -18,7 +18,8 @@ Kit.palette = {
 Kit.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(37, 40, 44), inner = RGB(0, 0, 0),
     -- Mode Slate (November 13, 2026): bar backgrounds in a near-neutral gray,
     -- clearly lighter than the Onyx fill, shown at a strong opacity.
-    slate = RGB(76, 78, 82), slateHatch = RGB(95, 98, 103) }
+    -- A touch darker since (#44464A, owner, November 13, 2026).
+    slate = RGB(68, 70, 74), slateHatch = RGB(85, 88, 93) }
 
 -- Colors a region from a boolean that may be secret: a public value picks the
 -- color here; a secret one goes to SetVertexColorFromBoolean, which accepts

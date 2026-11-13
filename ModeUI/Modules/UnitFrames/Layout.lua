@@ -82,10 +82,17 @@ function M:ApplyLayout(f, unit)
     panel:ClearAllPoints()
     panel:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.blockStart, -g.blockY)
     panel:SetPoint("BOTTOM" .. far, f, "BOTTOM" .. far, 0, g.blockY)
-    -- Hard edges, whole pixels: the rim on the block's edge, the black gap one
-    -- rim in, and a black cap under the portrait's end up to the bars' start.
-    Kit.PlaceEdges(panel.rim, panel, 0, g.border, ONYX.border, 1)
-    Kit.PlaceEdges(panel.gap, panel, g.border, g.line, ONYX.inner, 1)
+    -- The rim on the block's edge and the black gap one rim in, straight edges
+    -- on whole pixels and a half-oval far end (the near end too without a
+    -- portrait); end masks round the bars inside the gap to match.
+    local depth = Kit.CapDepth(g.blockHeight, g.px)
+    local rounded = { [far] = true, [near] = g.portrait == 0 }
+    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, ONYX.border, depth, rounded)
+    Kit.PlaceCapRing(panel.gap, panel, g.border, g.line, ONYX.inner, depth, rounded)
+    Kit.PlaceEndMask(panel.farMask, panel, far, depth, g.pad, true)
+    Kit.PlaceEndMask(panel.nearMask, panel, near, depth, g.pad, rounded[near])
+    local masks = { panel.farMask, panel.nearMask }
+    panel.depth = depth
     local start = g.inset - g.blockStart
     local cap = panel.cap
     cap:ClearAllPoints()
@@ -118,9 +125,11 @@ function M:ApplyLayout(f, unit)
         local barHeight = bar == h and g.healthHeight or g.powerHeight
         Kit.BarBackground(bar, fdb.backgroundTexture, g.width - g.inset - g.pad, barHeight, g.px)
         Tint(bar.bg, Kit.BarBackgroundColor(fdb.backgroundTexture), fdb.barBackgroundOpacity / 100)
+        Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, masks)
     end
     -- A 1px light line where the health fill ends (owner, November 13, 2026).
     Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)
+    Kit.AddMasks({ h.fillEdge, line }, masks)
     f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
 
     -- Round portrait above the block: full ring, black gap, dark backing, image.

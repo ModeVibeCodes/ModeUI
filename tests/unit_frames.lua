@@ -105,11 +105,12 @@ world.run([====[
     local cp1,cp2=Point(pc),Point(pc,2)
     assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[4]==26 and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT' and cp2[4]==0)
     assert(pc.clear==26,'clear of the portrait')
-    assert(pc.height==14+8 and pc.rim.texture==addon.Kit.FLAT and pc.gap.texture==addon.Kit.FLAT and Point(pc.gap)[4]==2,'hard-edged rim and gap like the frame')
+    assert(pc.height==14+8 and pc.depth==9 and pc.rim.ends.LEFT.cap:IsShown() and pc.rim.ends.RIGHT.cap:IsShown(),'rounded at both ends (0.4 of 22px)')
+    assert(pc.gap.texture==addon.Kit.FLAT and Point(pc.gap)[4]==2 and pc.gap.capMasks[pc.gapMasks.LEFT] and pc.bar.fillTexture.capMasks[pc.barMasks.RIGHT],'black inside and the bar, rounded to match')
     local cb1,cb2=Point(pc.bar),Point(pc.bar,2)
     assert(cb1[1]=='TOPLEFT' and cb1[4]==4 and cb1[5]==-4,'bar one rim and gap in from the box')
-    assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(4+14+1) and cb2[5]==4,'the icon takes the far end, a hairline apart')
-    local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-4 and pc.icon.width==14 and pc.icon.height==14)
+    assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(9+14+1) and cb2[5]==4,'the icon sits where the far end rounds, a hairline apart')
+    local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-9 and pc.icon.width==14 and pc.icon.height==14)
     assert(pc:GetFrameLevel()<p.portrait:GetFrameLevel(),'the portrait ring caps it')
     units.player.cast={name='Frostbolt',text='Frostbolt',icon=135846,start=1000,stop=3000}
     FireEvent('UNIT_SPELLCAST_START','player')
@@ -124,7 +125,7 @@ world.run([====[
     assert(Point(tcb.bar)[1]=='TOPRIGHT' and Point(tcb.bar)[4]==-4 and Point(tcb)[4]==-26 and Point(tcb.icon)[1]=='LEFT','mirrored on the Target')
     -- Settings: position, icon side, Blizzard's bar; validated; per frame even while matched.
     assert(M:SetCastOption('player','position','above') and Point(pc)[1]=='BOTTOMLEFT' and Point(pc)[3]=='TOPLEFT' and Point(pc)[5]==3)
-    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==4 and Point(pc.bar)[4]==4+14+1)
+    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==9 and Point(pc.bar)[4]==9+14+1)
     assert(M:SetCastOption('player','icon','none') and not pc.icon:IsShown() and Point(pc.bar,2)[4]==-4)
     assert(M:SetCastOption('player','gap',40) and Point(pc)[4]==0,'far enough down, it can start under the portrait centre')
     assert(M:SetCastOption('player','gap',3) and M:SetFrameOption('player','showPortrait',false) and Point(pc)[4]==0 and Point(pc.bar)[4]==4)
@@ -182,6 +183,7 @@ world.run([====[
     assert(M.db.focus.scale==90 and M.db.focus.barWidth==110 and M.db.focus.showPortrait==false and M.db.focus.namePosition=='bar' and not M.db.focus.attach)
     assert(not M.db.focus.matchPlayer and not d.matchPlayer)
     assert(tt.scale==0.75 and fo.scale==0.9 and not tt.portrait:IsShown() and not tt.levelText:IsShown(),'small frames')
+    assert(tt.panel.rim.ends.LEFT.cap:IsShown() and tt.panel.rim.ends.RIGHT.cap:IsShown() and Point(tt.panel.nearMask)[1]=='TOPLEFT','no portrait: rounded at both ends')
     local tn=Point(tt.nameText);assert(tn[1]=='LEFT' and tn[2]==tt.health and tn[4]==4 and tt.nameText.justifyH=='LEFT','name in the bar, on the left')
     -- Attached under the Target frame's bottom-right corner, button to button and
     -- stand-in to stand-in; attached frames leave the Position Manager.
@@ -224,11 +226,22 @@ world.run([====[
     assert(p.width==244 and p.height==70)
     local pp=Point(p.panel);assert(pp[1]=='TOPLEFT' and pp[4]==35 and pp[5]==-12,'bar block starts under the portrait centre')
     local pb=Point(p.panel,2);assert(pb[1]=='BOTTOMRIGHT' and pb[5]==12)
-    -- Hard edges: rim and gap are four flat strips each, square corners, whole pixels.
+    -- Straight edges are hard flat strips on whole pixels; the far end is a half oval
+    -- 18px deep (0.4 of the 46px block), a cap hollowed into a ring by a hole mask.
+    local tex=function(key) return (addon.Media:GetTexture(key)) end
     local rim,gap=p.panel.rim,p.panel.gap
-    for i=1,4 do assert(rim[i].texture==addon.Kit.FLAT and gap[i].texture==addon.Kit.FLAT and rim[i].vertexColor[1]==O.border[1] and gap[i].vertexColor[1]==O.inner[1],'flat strips') end
-    assert(rim[1].height==2 and Point(rim[1])[4]==0 and Point(rim[1])[5]==0 and rim[3].width==2 and Point(rim[3])[5]==-2,'2px rim on the edge, sides between top and bottom')
-    assert(gap[1].height==2 and Point(gap[1])[4]==2 and Point(gap[1])[5]==-2 and Point(gap[3])[5]==-4 and Point(gap[4],2)[5]==4,'2px black gap one rim in')
+    assert(p.panel.depth==18 and rim.top.texture==addon.Kit.FLAT and rim.top.height==2 and rim.top.vertexColor[1]==O.border[1])
+    assert(Point(rim.top)[4]==0 and Point(rim.top)[5]==0 and Point(rim.top,2)[4]==-18,'top strip from the near edge to where the far end rounds')
+    local rc=rim.ends.RIGHT;assert(rc.cap:IsShown() and not rc.strip:IsShown() and rc.cap.texture==tex('ModeCapRight') and rc.cap.width==18 and rc.cap.vertexColor[1]==O.border[1])
+    assert(rc.cap.mask==rc.hole and rc.hole.texture==tex('ModeCapHoleRight') and Point(rc.hole)[4]==-2 and Point(rc.hole)[5]==-2 and rc.hole.width==16,'hollowed 2px in: a ring')
+    assert(rim.ends.LEFT.strip:IsShown() and not rim.ends.LEFT.cap:IsShown() and rim.ends.LEFT.strip.width==2,'the portrait end stays straight under the portrait')
+    local gc=gap.ends.RIGHT;assert(gc.cap:IsShown() and gc.cap.vertexColor[1]==O.inner[1] and Point(gc.cap)[4]==-2 and gc.cap.width==16 and Point(gc.hole)[4]==-4 and gc.hole.width==14,'2px black gap one rim in')
+    assert(Point(gap.top)[4]==2 and Point(gap.top)[5]==-2 and Point(gap.top,2)[4]==-18)
+    -- The bars are rounded to the same end; the near mask is parked off the block.
+    local fm=p.panel.farMask;assert(fm.texture==tex('ModeCapRight') and Point(fm)[4]==-4 and Point(fm)[5]==-4 and fm.width==14)
+    assert(Point(p.panel.nearMask)[1]=='TOPRIGHT' and Point(p.panel.nearMask)[3]=='TOPLEFT','near mask parked past the near end')
+    assert(p.health.fillTexture.capMasks[fm] and p.health.bg.capMasks[fm] and p.power.fillTexture.capMasks[p.panel.nearMask])
+    assert(t.panel.rim.ends.LEFT.cap:IsShown() and t.panel.rim.ends.LEFT.cap.texture==tex('ModeCapLeft') and not t.panel.rim.ends.RIGHT.cap:IsShown(),'target: rounded on the left')
     local cap=p.panel.cap;assert(cap:IsShown() and Point(cap)[1]=='TOPLEFT' and Point(cap)[4]==4 and cap.width==25-4 and cap.vertexColor[1]==O.inner[1],'black under the portrait up to the bars')
     for _,bar in ipairs({p.health,p.power}) do
         assert(bar.bg.vertexColor[1]==O.slate[1] and bar.bg.vertexColor[3]==O.slate[3] and bar.bg.texture==addon.Kit.FLAT and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
@@ -247,6 +260,9 @@ world.run([====[
     -- The end of the health fill gets a 1px light line, on the side it fills toward.
     local fe=p.health.fillEdge;assert(fe and fe:IsShown() and fe.width==1 and Point(fe)[1]=='TOPRIGHT' and Point(fe)[2]==p.health.fillTexture)
     assert(Point(t.health.fillEdge)[1]=='TOPLEFT','reverse fill: on the left')
+    -- A full bar shows no line: it lives in a clip frame that stops 1px short of the bar's end.
+    local clip=p.health.fillEdgeClip;assert(clip.clipsChildren and fe:GetParent()==clip and Point(clip,2)[1]=='BOTTOMRIGHT' and Point(clip,2)[4]==-1)
+    assert(Point(t.health.fillEdgeClip)[4]==1 and Point(t.health.fillEdgeClip,2)[4]==0,'reverse: 1px short on the left')
     assert(M:SetFrameOption('player','fillEdge',false) and not fe:IsShown() and M:SetFrameOption('player','fillEdge',true) and fe:IsShown())
     local hl=p.panel.hairline;assert(hl:IsShown() and hl.vertexColor[1]==O.inner[1] and hl.vertexColor[4]==1 and Point(hl)[2]==p.health and Point(hl,2)[2]==p.power,'solid hairline')
     local mhp=Point(p.health);assert(mhp[1]=='TOPLEFT' and mhp[4]==60 and mhp[5]==-16 and p.health.height==27)
