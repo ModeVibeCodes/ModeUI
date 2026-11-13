@@ -26,6 +26,8 @@ function M:OnInitialize()
     self.Initialize(self.db)
     self.plates, self.byUnit, self.faded, self.fadeHooks = {}, {}, {}, {}
     addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function() self:UpdateAll() end)
+    -- SharedMedia textures can register after login; redraw plates using them.
+    addon.Media:RegisterStatusBarListener(self, function() if self.active then self:Refresh() end end)
 end
 
 -- Runtime sets self.enabled after these return, so they keep their own state.

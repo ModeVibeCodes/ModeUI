@@ -255,7 +255,18 @@ world.run([==[
     assert(plate.healthBox.rim.texture == rim and plate.healthBox.gap.texture == gapTexture, 'rounded health box')
     assert(plate.castBox.rim.texture == rim and plate.castBox.gap.texture == gapTexture, 'cast box rounded like the health box')
     assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and Kit.onyx.border[1] < 0.2, 'near-black rim')
-    assert(not M:SetOption('enemy', 'texture', 'flat'), 'the bar texture is not a setting')
+    assert(not M:SetOption('enemy', 'texture', 'flat'), 'the old texture key is gone')
+    -- Foreground and background textures, for the health and cast bars.
+    assert(M.db.enemy.foregroundTexture == 'mode' and M.db.enemy.backgroundTexture == 'flat', 'texture defaults')
+    assert(M:SetOption('enemy', 'foregroundTexture', 'flat') and plate.health.statusBarTexture == Kit.FLAT and not plate.health.sheen:IsShown(), 'flat foreground')
+    assert(plate.cast.statusBarTexture == Kit.FLAT and not plate.cast.sheen:IsShown(), 'cast bar follows')
+    assert(M:SetOption('enemy', 'foregroundTexture', 'media:Missing') and plate.health.sheen:IsShown(), 'missing media draws Mode Gradient')
+    assert(M:SetOption('enemy', 'backgroundTexture', 'media:Missing') and plate.health.bg.texture == Kit.FLAT, 'missing media draws flat')
+    assert(not M:SetOption('enemy', 'foregroundTexture', 'rainbow') and not M:SetOption('enemy', 'backgroundTexture', 'mode'), 'bad textures refused')
+    local labels = {}
+    for _, choice in ipairs(M.TextureChoices(true)) do labels[#labels + 1] = choice.id end
+    assert(labels[1] == 'mode' and labels[2] == 'flat' and M.TextureChoices(false)[1].id == 'flat', 'texture choices')
+    assert(M:SetOption('enemy', 'foregroundTexture', 'mode') and M:SetOption('enemy', 'backgroundTexture', 'flat'))
     assert(M:SetOption('enemy', 'castHeight', 4) and plate.castBox.rim.texture == rim, 'small cast bars stay rounded')
     assert(M:SetOption('enemy', 'castHeight', 8))
 

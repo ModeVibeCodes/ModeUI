@@ -60,6 +60,8 @@ local function Style(kind)
         healthColorMode = "reaction", healthColor = Copy(P.green), threatColors = enemy,
         -- Colors are used as they are; the bar and its background each fade.
         healthOpacity = 100, backgroundOpacity = 55,
+        -- Bar textures, for the health and cast bars: Mode Gradient and Flat by default.
+        foregroundTexture = "mode", backgroundTexture = "flat",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
         threatPullingColor = Copy(M.threatPalette.warning),
         healthText = enemy and "percent" or "none", healthFontSize = 9,
@@ -227,6 +229,20 @@ local function ValidateGroup(value, default, label)
     assert(GROWS[value.grow], "Invalid nameplate aura grow direction: " .. label)
 end
 
+-- Texture choices are "mode" (foreground only), "flat", or any SharedMedia
+-- status bar ("media:<name>"); a missing one draws as the default until it loads.
+local function ValidTexture(value, foreground)
+    return value == "flat" or (foreground and value == "mode") or (type(value) == "string" and value:match("^media:.+") ~= nil)
+end
+function M.TextureChoices(foreground)
+    local list = { { id = "flat", label = "Flat" } }
+    if foreground then table.insert(list, 1, { id = "mode", label = "Mode Gradient" }) end
+    for _, choice in ipairs(addon.Media:GetStatusBars()) do
+        if choice.key ~= "default" then list[#list + 1] = { id = choice.key, label = choice.label } end
+    end
+    return list
+end
+
 local function Validate(style, kind)
     assert(Public(style) and type(style) == "table", "Invalid nameplate settings: " .. kind)
     for key, default in pairs(M.styleDefaults[kind]) do
@@ -242,6 +258,7 @@ local function Validate(style, kind)
         assert(Number(value, r[1], r[2]) and value == math.floor(value), "Invalid nameplate range: " .. kind .. "." .. key)
     end
     for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid nameplate choice: " .. kind .. "." .. key) end
+    assert(ValidTexture(style.foregroundTexture, true) and ValidTexture(style.backgroundTexture, false), "Invalid nameplate texture: " .. kind)
     for _, group in ipairs(M.auraGroups) do
         ValidateGroup(style[group], M.styleDefaults[kind][group], kind .. "." .. group)
         if FILTERS[group] then assert(FILTERS[group][style[group].filter], "Invalid nameplate aura filter: " .. kind .. "." .. group) end

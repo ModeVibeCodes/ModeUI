@@ -110,6 +110,12 @@ function M:CreateConfigPage(parent)
             local size = Columns({ "Width", "Health Height" })
             page.widthSlider = Slider(size[1], "width", "px")
             page.healthHeightSlider = Slider(size[2], "healthHeight", "px")
+            page:Group(L["Textures"])
+            local textures = Columns({ "Foreground", "Background" })
+            page.foregroundSelect = SelectIn(textures[1], 200, function() return M.TextureChoices(true) end,
+                function() return db().foregroundTexture end, Set("foregroundTexture"))
+            page.backgroundSelect = SelectIn(textures[2], 200, function() return M.TextureChoices(false) end,
+                function() return db().backgroundTexture end, Set("backgroundTexture"))
             page:Group(L["Health"])
             local choose = Columns({ "Health Color", "Health Text" })
             page.colorSelect = Select(choose[1], 200, M.choices.healthColorMode, "healthColorMode"); Mark("health")

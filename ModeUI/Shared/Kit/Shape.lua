@@ -46,6 +46,24 @@ end
 -- Mode Gradient: ModeUI's one bar texture, used by every skinned bar. A flat
 -- fill with a soft white gradient over its top half, drawn above the track.
 -- `bar` comes from Kit.Bar; barHeight and px are in the bar's units.
+-- A bar's foreground texture choice: "mode" (Mode Gradient, the default),
+-- "flat", or "media:<name>" (a SharedMedia status bar texture; Mode Gradient
+-- while it isn't available).
+function Kit.BarForeground(bar, choice, barHeight, px)
+    local path = choice == "flat" and Kit.FLAT or (choice ~= "mode" and addon.Media:GetStatusBar(choice)) or nil
+    if not path then Kit.ModeGradient(bar, barHeight, px); return end
+    bar:SetStatusBarTexture(path)
+    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
+    bar.sheen:Hide()
+end
+
+-- A bar's background texture choice: "flat" (the default) or "media:<name>".
+function Kit.BarBackground(bar, choice)
+    local path = choice ~= "flat" and addon.Media:GetStatusBar(choice) or nil
+    bar.bg:SetTexture(path or Kit.FLAT)
+end
+
 function Kit.ModeGradient(bar, barHeight, px)
     bar:SetStatusBarTexture(Kit.FLAT)
     local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()

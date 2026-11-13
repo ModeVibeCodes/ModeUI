@@ -127,8 +127,9 @@ end
 local Skin = M.SkinRounded
 
 -- Lays out one box and returns its full height. `background` is the track's
--- opacity (0-1); only a banded box can show the world through it.
-function M.LayoutBox(box, width, barHeight, px, background)
+-- opacity (0-1); only a banded box can show the world through it. `db` gives
+-- the foreground and background texture choices.
+function M.LayoutBox(box, width, barHeight, px, background, db)
     local inset = 2 * px
     local height = barHeight + 2 * inset
     box:SetSize(width, height)
@@ -146,7 +147,8 @@ function M.LayoutBox(box, width, barHeight, px, background)
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)
     bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -inset, inset)
-    Kit.ModeGradient(bar, barHeight, px)
-    bar.bg:SetTexture(FLAT); Tint(bar.bg, ONYX.track, box.bands and background or 1)
+    Kit.BarForeground(bar, db and db.foregroundTexture or "mode", barHeight, px)
+    Kit.BarBackground(bar, db and db.backgroundTexture or "flat")
+    Tint(bar.bg, ONYX.track, box.bands and background or 1)
     return height
 end
