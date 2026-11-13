@@ -14,7 +14,7 @@ measures messages, and it never writes Blizzard's globals or fields.
 
 | Part | Look |
 |---|---|
-| Window | Blizzard's background and border textures (`CHAT_FRAME_TEXTURES`) are hidden, so its own fades skip them. A fill (Mode Slate #44464A at Background Opacity, 60%) inside a crisp square border, Border Size thick (2 px, the unit frames' rim color #40454C), drawn on its own frame above the window, as the unit frames' rim sits above their bars. |
+| Window | Blizzard's background and border textures (`CHAT_FRAME_TEXTURES`) are hidden, so its own fades skip them. A fill (the unit frames' default health color, Onyx #1C1E21, at Background Opacity, 60%) inside a crisp square border, Border Size thick (2 px, the unit frames' rim color #40454C), drawn on its own frame above the window, as the unit frames' rim sits above their bars. |
 | Box | Blizzard's `Background` region stays as the window's box, moved to Text Inset (6 px) plus the border around the messages, plus the edit box when it sits inside and the scroll bar's 10 px gutter (more on top for the combat log's quick buttons). The tab dock, button frame and alerts that Blizzard anchors to it follow. |
 | Text | Expressway by default (the Font setting), with a crisp one-pixel shadow. Each window keeps its own Font Size from its tab's right-click menu; Blizzard re-applies the size but keeps the face. |
 | Edit box | **Bottom** (default) or **Top**: joined to the window inside its border, on a band a little darker than the window, Edit Box Height tall, with a one-pixel divider toward the text that turns cyan while typing. **Below**: its own field Edit Gap under the window, with the window's border, cyan while typing. Its text, header and prompt use the chat face. |
@@ -59,7 +59,7 @@ Background, Edit Box, Buttons, Defaults), **Tabs** (Tab Style, Tab Fade) and
 module off stops the fades and asks for a reload to bring Blizzard's look
 back.
 
-Saved under `modules.chat` (version 2): `font`, `fontMedia`, `outline`,
+Saved under `modules.chat` (version 3): `font`, `fontMedia`, `outline`,
 `shadow`, `backgroundColor`, `backgroundOpacity`, `border`, `borderColor`,
 `borderSize`, `editPosition` (`bottom`, `top` or `below`), `editHeight`,
 `editGap`, `glassTabs` (Tab Style: true Glass, false Solid), `tabHeight`,
@@ -70,6 +70,9 @@ When Idle), `buttons` (`compartment` or `hidden`), `scrollBar`, `idleFade`,
 Version 2 (November 13, 2026, per the owner): values still at version 1's
 defaults move to the new ones (fill #0B0B0D → Mode Slate, 72% → 60%, border
 #25282C → #40454C) and the scroll bar is shown; values the user picked stay.
+Version 3 (same day, per the owner): the fill is the unit frames' default
+health color (Onyx #1C1E21), as the meters and tooltips; a fill still at
+version 2's Mode Slate follows.
 
 ## Files
 
@@ -97,7 +100,7 @@ alpha pin, fonts). Tests: `tests/chat.lua`.
   switch **Style** between Glass and Solid.
 - **Required state:** out of combat, with General and Combat Log docked
   (Blizzard's default) and a few lines of chat.
-- **Confirmation:** the chat is Mode Slate with a crisp 2px border and
+- **Confirmation:** the chat is dark Onyx (the health bar color) with a crisp 2px border and
   Expressway text; the edit box sits inside the border at the bottom, with no
   gap; tab names show in full and the selected tab stands taller than the
   others; the scroll bar is a slim gray line, and the Scroll to Bottom button

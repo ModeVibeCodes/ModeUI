@@ -219,6 +219,48 @@ stays smooth. Opacity changes may happen in combat. Showing,
 hiding, moving and sizing don't: anything that needs them waits for the end of
 combat.
 
+## Micro menu and bag bar
+
+Blizzard's **micro menu** and **bag bar** are two more bars on the page:
+**Micro Menu** and **Bag Bar** in **Editing**. ModeUI moves Blizzard's own
+buttons onto them, so clicks, tooltips, alerts and bags work as before, and
+gives them the same border, background, texture, text, font, size, spacing,
+lines, Edit Mode and opacity settings as the action bars.
+
+- **Which buttons:** the micro buttons Blizzard added to its micro menu (they
+  carry a `layoutIndex`), in its order. On the bag bar, left to right as
+  Blizzard shows them: key ring, reagent bag, bags 4 to 1, backpack. Only the
+  buttons Blizzard shows are laid out (it hides Help outside China, the key ring
+  without one, Housing while Timerunning), so a hidden one leaves no gap; when
+  Blizzard shows or hides one, the bar lays out again (after combat).
+- **The look:** micro buttons keep Blizzard's glyph (its Normal, Pushed,
+  Disabled and Highlight art) inside the Mode border, on the Background Color;
+  Blizzard's own button background, the Character button's portrait frame and
+  shadow, and the latency bar on the menu button fade out. Alerts flash as a
+  cyan overlay. Bag buttons are item buttons, so they take the action button
+  skin: the icon cropped (the square mask comes off), the frame art faded, the
+  pressed and highlight states flat, and a cyan overlay while that bag is open.
+- **Text:** the micro menu has none. On the bag bar, **Count** is the
+  backpack's free slots (Blizzard's `FreeSlots` text, shown while the game's
+  Display Free Bag Slots option is on).
+- **Sizes:** micro buttons 32 by 40 (Blizzard's shape), bag buttons 36 square.
+- **Show:** **Always**, **Mouseover** or **Hidden**. They stay through pet
+  battles and vehicles, when Blizzard moves its (now empty) micro menu away.
+- **Places:** the micro menu in the bottom-right corner, the bag bar on top of it
+  with the right edges lined up. Either can anchor to any bar, and any bar to
+  them.
+- **Not for these bars:** Keybind Mode, paging, glows and the On Cooldown look.
+- **Keeping the look:** Blizzard re-applies its micro button art in `SetPushed`
+  and `SetNormal` (every `UpdateMicroButtons`), its bag button art in
+  `UpdateTextures`, and re-anchors the bag buttons in `BagsBar:Layout` (when an
+  item is picked up, among others). Hooks restyle and re-place them, in combat
+  too (none of them is protected in Blizzard's source; if the client says one
+  is, combat leaves it for the refresh after). Blizzard's empty `MicroMenu` and
+  `BagsBar` fade to 0 alpha, which hides their frame art and the bag dividers.
+  ModeUI only hooks them; it never writes to them or calls their layout code.
+- **Switching off** gives the buttons back where they were and the two Blizzard
+  bars their alpha; Blizzard's look returns on reload.
+
 ## Settings page
 
 The preview above the five tabs is **your own bar**: the bar being edited, with
@@ -379,6 +421,7 @@ Version 2 changed these from version 1:
 | `Layout.lua` | pixel-perfect geometry and button counts |
 | `Skin.lua` | rim, gap, background, icon crop, state overlays, empty slots |
 | `Text.lua` | the four texts, their hooks and lifted shadows |
+| `Utility.lua` | the micro menu and bag bar: their buttons, skin, hooks and Show |
 | `Visibility.lua` | show and page conditions, fading |
 | `Glow.lua` | proc glows, the ready glow, icon opacity and desaturation on cooldown |
 | `GlowMenu.lua` | the preview's glow menu, per-button switches with copy, paste and apply to bar, glow previews |
@@ -402,8 +445,10 @@ Shared additions:
 
 ## Not in this version
 
-- Bars 9 and up, the extra action button, the zone ability, the vehicle leave
-  button and the micro menu. These stay Blizzard's.
+- Bars 9 and up, the extra action button, the zone ability and the vehicle
+  leave button. These stay Blizzard's.
+- Keybinds on micro and bag buttons in Keybind Mode (the game's Key Bindings
+  sets them).
 - Flyout direction: a flyout opens the way the hidden Blizzard bar would open it.
   Setting it would mean writing to Blizzard's buttons.
 - Range coloring on the pet bar: Blizzard updates it from the pet bar's own
@@ -429,6 +474,8 @@ Shared additions:
   - In the Edit Mode window, set Action Bar 3's **Snap To UI Element** to
     **Action Bar 1**.
   - Exit Edit Mode, type `/kb`, hover a button, press a key, then click **Save**.
+  - Pick **Micro Menu** in **Editing**, set **Show** to **Mouseover**, then pick
+    **Bag Bar** and pick up an item from a bag.
 - **Required state:** out of combat; spells on your bars.
 - **Confirmation:**
   - Buttons are 42 by 36, with a faint textured background in empty slots.
@@ -440,4 +487,7 @@ Shared additions:
   - Action Bar 3 shows only under the mouse. Action Bar 2 shows only in Edit
     Mode and `/kb`.
   - The new key works and is listed in the game's Key Bindings.
+  - The micro and bag buttons sit in Mode borders in the bottom-right corner;
+    the micro menu fades until the mouse is over it, and the bag buttons stay
+    in place when an item is picked up.
   - No Lua errors, and no "action blocked" message in combat.

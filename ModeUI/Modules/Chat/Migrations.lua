@@ -36,6 +36,12 @@ end
 function M.Initialize(db)
     if db.version == nil then db.version = M.VERSION end
     if db.version == 1 then MigrateV1(db) end
+    -- Version 3 (November 13, 2026, per the owner): the fill is the unit
+    -- frames' health color; a fill still at version 2's Mode Slate follows.
+    if db.version == 2 then
+        if Same(db.backgroundColor, M.SLATE_COLOR) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        db.version = 3
+    end
     assert(db.version == M.VERSION, "Invalid chat settings version")
     for key, default in pairs(M.defaults) do
         if db[key] == nil then db[key] = Copy(default) end

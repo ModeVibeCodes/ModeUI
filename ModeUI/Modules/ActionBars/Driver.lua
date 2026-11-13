@@ -125,6 +125,8 @@ function M:SetOption(bar, key, value)
     local defaults = self.styleDefaults[bar]
     if not self:CanConfigure() or not defaults or defaults[key] == nil then return false end
     if self.alphaKeys[key] then return SetAlpha(self, bar, key, value) end
+    -- The micro menu and bag bar show Always, on Mouseover or Hidden.
+    if key == "visibility" and self:IsUtility(bar) and not self.utilityVisibility[value] then return false end
     local candidate = Copy(self.db)
     candidate[bar][key] = Copy(value)
     if not pcall(self.Initialize, candidate) then return false end

@@ -344,6 +344,49 @@ guarded, and native behavior on Forever is unverified until checked in game.
   scrolling the page leaves it open.
 
 
+## Action bars: micro menu and bag bar — November 13, 2026
+
+From the `forever` branch of Gethe/wow-ui-source (build 1.60.1.70938); native
+behavior still needs in-game confirmation.
+
+- **Micro menu** (`Blizzard_MicroMenu`, Camelot overrides): buttons are parented
+  to `MicroMenu` by `MicroMenuMixin:AddButton`, which sets `layoutIndex`;
+  Forever adds Character, Profession, Spellbook, Talent, Legacy, QuestLog,
+  Housing, Guild, LFD, Collections, EJ, Help/Store and MainMenu (game rules
+  permitting). `MicroMenu:Layout` (a GridLayoutFrame) only moves its own
+  children, so reparented buttons stay put. Its `GetEdgeButton` returns nil when
+  empty; `HelpOpenWebTicketButton:SetPoint("CENTER", nil, ...)` then anchors to
+  its parent, the Character button. Vehicles and pet battles reparent
+  `MicroMenu` itself (`OverrideMicroMenuPosition`), not the buttons.
+- **Moving micro buttons** (found in game, November 13, 2026): reparenting a
+  shown micro button fires its `OnShow`/`OnHide`, which calls
+  `MicroMenuContainer:Layout()`. `GetEdgeButton` then compares the centers of
+  the lowest and highest `layoutIndex` buttons still on `MicroMenu`, shown or
+  not. A button hidden since load (Help) was never placed, so its center is
+  nil and the compare errors once it is first or last. ModeUI moves hidden
+  buttons first and gives them back last (`M:ShownLast`); moving a hidden
+  button fires nothing.
+- **Micro button art:** `LoadMicroButtonTextures` sets Normal/Pushed/Disabled/
+  Highlight atlases; `SetPushed`/`SetNormal` re-apply the highlight and toggle
+  `Background`/`PushedBackground`; `MainMenuMicroButton`'s OnUpdate re-sets its
+  atlases every second. Atlas changes keep a texture's anchors, so the inset
+  holds; the hooks re-inset anyway. `OnEnable`/`OnDisable` set the button's
+  alpha (0.5 disabled), so ModeUI fades its own bar, never the buttons.
+- **Bag bar** (`Blizzard_ActionBar` Camelot): 45x45 `SquareBagSlotButtonTemplate`
+  slots with a `SquareMask` on the icon, a `KeyRingButton` (hidden unless
+  `C_ActionBar.ShouldShowKeyring()`), dividers and no expand toggle.
+  `BaseBagSlotButtonMixin:UpdateTextures` re-applies the frame atlases;
+  `BagsBarMixin:Layout` re-anchors every shown bag button to `BagsBar` (on
+  `CURSOR_CHANGED` item pickups, `expandBagBar`, Edit Mode updates), so ModeUI
+  hooks it (`hooksecurefunc`) and re-places them. The backpack's free-slot text
+  is `MainMenuBarBackpackButton.FreeSlots` ("(%d)", shown by CVar
+  `displayFreeBagSlots`).
+- **Protection:** none of these buttons or frames inherits a secure template in
+  the source; runtime `IsProtected()` is unconfirmed, so combat re-placing
+  checks it and waits when it is true.
+- **Edit Mode:** `MicroMenuContainer` and `BagsBar` are Edit Mode systems;
+  `ApplySystemAnchor` moves only those frames, never the buttons.
+
 ## Interface damage meters — November 13, 2026
 
 Sources: Forever's own interface code on the `forever` branch of
@@ -703,6 +746,31 @@ Checked against the `forever` branch of Gethe/wow-ui-source and the local
   intrinsic `Button` (`GetObjectType` answers "Button"); ModeUI recognises
   them by `Background`, `Arrow` and DropdownButtonMixin's methods. The Guild
   chat edit box's middle piece is `Mid`.
+
+### Tooltip, second pass — November 13, 2026
+
+- **Screen.** `SetClampedToScreen(true)` and `SetClampRectInsets(0, 0, 0, 0)`
+  on each skinned tooltip (plain widget calls; GameTooltip isn't protected).
+  ModeUI's border is inside the tooltip, so clamping keeps it on the screen.
+- **Size.** `SetMinimumWidth` and `SetPadding(right, bottom, left, top)`,
+  reset by Blizzard's style calls, so set in the post-call and on show.
+- **Text colors.** `FontString:SetTextColor` takes plain colors; a line's
+  `GetText` is only compared when `issecretvalue` says it's public, and the
+  level number is recolored with `SetText` on that public text only.
+  `UnitIsPlayer`, `UnitReaction(unit, "player")`, `UnitIsTapDenied` and
+  `UnitLevel` (no secret returns) are called only with a public token from
+  `tooltip:GetUnit()`; `UnitClass` likewise (it's
+  `SecretWhenUnitIdentityRestricted`: a secret class leaves Blizzard's
+  colors). Level colors come from `GetCreatureDifficultyColor` /
+  `GetQuestDifficultyColor` when present. Quest lines come from the post-call's
+  tooltip data line types (`QuestTitle` 17, `QuestObjective` 8,
+  `QuestPlayer` 18), matched to the shown line by position or public text.
+- **Edit Mode.** `PositionManager:RegisterElement(..., { anyTarget = true })`
+  allows every target registered so far (the game's frames and ModeUI's
+  bars and meter windows) plus picked frames.
+- **Unverified natively:** the line Blizzard puts the class name on for
+  every player, `GetCreatureDifficultyColor` on Forever, and padding and
+  minimum width surviving every tooltip refresh.
 
 ## Game menu button and addon compartment — November 13, 2026
 

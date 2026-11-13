@@ -2,7 +2,8 @@ local _, addon = ...
 local M = addon.ActionBars
 if not M then return end
 
--- The bars: one secure header per bar holds Blizzard's buttons for it. The
+-- The bars: one secure header per action bar holds Blizzard's buttons for
+-- it (the micro menu and bag bar get a plain frame; see Utility.lua). The
 -- buttons keep their Blizzard bar as `bar`, so paging (stances, vehicles,
 -- override bars) still comes from Blizzard. Blizzard's bar art (the main bar,
 -- pet bar and stance bar) moves under a hidden frame; the other Blizzard bars
@@ -40,22 +41,30 @@ function M:Build()
     self.hider = CreateFrame("Frame", "ModeUIActionBarHider", UIParent)
     self.hider:Hide()
     for _, bar in ipairs(self.bars) do self:BuildBar(bar) end
+    self:HookUtilityLayouts()
 end
 
+-- The micro menu and bag bar get a plain frame (Utility.lua); action bars a
+-- secure header.
 function M:BuildBar(bar)
     local spec = self.barSpecs[bar]
-    local header = CreateFrame("Frame", self.frameNames[bar], UIParent, "SecureHandlerStateTemplate")
+    local header
+    if spec.utility then header = CreateFrame("Frame", self.frameNames[bar], UIParent)
+    else
+        header = CreateFrame("Frame", self.frameNames[bar], UIParent, "SecureHandlerStateTemplate")
+        header:SetAttribute("_onstate-modevis", self.STATE_SNIPPET)
+        header:SetAttribute("_onstate-modepage", self.PAGE_SNIPPET)
+    end
     header:SetFrameStrata("MEDIUM")
-    header:SetAttribute("_onstate-modevis", self.STATE_SNIPPET)
-    header:SetAttribute("_onstate-modepage", self.PAGE_SNIPPET)
     header:SetSize(1, 1); header:SetPoint("CENTER")
     header:Hide()
     self.headers[bar] = header
     self.slots[bar] = {}
-    local buttons = {}
+    local buttons, list = {}, spec.utility and self:CollectUtility(bar)
     for i = 1, spec.count do
         self.slots[bar][i] = self:BuildSlot(header)
-        local button = _G[spec.prefix .. i]
+        local button
+        if list then button = list[i] else button = _G[spec.prefix .. i] end
         if type(button) == "table" and button.SetParent then
             buttons[i], self.barOf[button], self.indexOf[button] = button, bar, i
             -- The paging snippet reaches the buttons of bars that page.
@@ -90,6 +99,7 @@ function M:HideBlizzard()
             end
         end
     end
+    self:FadeUtilityFrames(true)
 end
 
 -- A button moves onto its ModeUI bar (or, past the bar's count, the hidden
@@ -114,8 +124,16 @@ function M:ApplyBar(bar)
     local g = self.Geometry(style, math.max(1, count), self.PixelSize(header))
     header:SetSize(g.width, g.height)
     local level = header:GetFrameLevel()
+    -- The micro menu and bag bar lay out the buttons Blizzard shows; the ones
+    -- it hides wait on the bar for when it shows them.
+    local order = spec.utility and self:UtilityButtons(bar)
+    if order then
+        -- Hidden buttons move first (Utility.lua, ShownLast).
+        for _, button in ipairs(self:ShownLast(self.buttons[bar])) do Adopt(self, button, header); self:HookUtility(bar, button) end
+    end
     for i = 1, spec.count do
-        local button, slot = self.buttons[bar][i], self.slots[bar][i]
+        local slot, button = self.slots[bar][i]
+        if order then button = order[i] else button = self.buttons[bar][i] end
         local inside = i <= count
         if inside then
             self.Place(slot, header, g, i)
@@ -129,13 +147,20 @@ function M:ApplyBar(bar)
                 Adopt(self, button, header)
                 self.Place(button, header, g, i)
                 button:SetFrameLevel(level + 3)
-                self:SkinButton(button, style, g)
+                if order then self:SkinUtility(bar, button, style, g) else self:SkinButton(button, style, g) end
             else
                 -- Buttons past the bar's count wait on the hidden frame.
                 Adopt(self, button, self.hider)
             end
         end
     end
+    if order then header:SetShown(self:UtilityVisible(bar, count)) else self:ApplyDrivers(bar, header, count) end
+    self:SyncPosition(bar)
+    self:LayoutGhost(bar)
+end
+
+-- An action bar's show conditions and paging, run by the game.
+function M:ApplyDrivers(bar, header, count)
     RegisterStateDriver(header, "modevis", self:Conditions(bar, count))
     local paging = self:PageConditions(bar)
     if paging then RegisterStateDriver(header, "modepage", paging)
@@ -143,8 +168,6 @@ function M:ApplyBar(bar)
         UnregisterStateDriver(header, "modepage")
         if header:GetAttribute("state-modepage") ~= "none" then header:SetAttribute("state-modepage", "none") end
     end
-    self:SyncPosition(bar)
-    self:LayoutGhost(bar)
 end
 
 -- Switching the module off gives every button back to its Blizzard bar and
@@ -152,16 +175,25 @@ end
 function M:Restore()
     for _, bar in ipairs(self.bars) do
         local header = self.headers[bar]
-        UnregisterStateDriver(header, "modevis")
-        UnregisterStateDriver(header, "modepage")
-        -- Buttons follow their Blizzard bars' pages again.
-        header:SetAttribute("state-modepage", "none")
-        -- Leaving the vehicle bar must not show an emptied bar again.
-        header:SetAttribute("modeshown", nil)
+        if not self.barSpecs[bar].utility then
+            UnregisterStateDriver(header, "modevis")
+            UnregisterStateDriver(header, "modepage")
+            -- Buttons follow their Blizzard bars' pages again.
+            header:SetAttribute("state-modepage", "none")
+            -- Leaving the vehicle bar must not show an emptied bar again.
+            header:SetAttribute("modeshown", nil)
+        end
         header:Hide()
         if self.ghosts[bar] then self.ghosts[bar]:Hide() end
     end
-    for frame, home in pairs(self.homes or {}) do
+    self:FadeUtilityFrames(false)
+    -- Shown buttons go home first, hidden ones last (Utility.lua, ShownLast).
+    local frames = {}
+    for frame in pairs(self.homes or {}) do frames[#frames + 1] = frame end
+    local hiddenFirst = self:ShownLast(frames)
+    for i = #hiddenFirst, 1, -1 do
+        local frame = hiddenFirst[i]
+        local home = self.homes[frame]
         frame:SetParent(home.parent)
         if home.width then
             frame:ClearAllPoints()

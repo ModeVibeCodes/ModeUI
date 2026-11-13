@@ -2,7 +2,7 @@ local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
 -- Interface > Chat: Blizzard's chat windows in the Mode look. Each window gets
--- a Mode Slate fill inside a crisp 2px border (as the unit frames' health
+-- the unit frames' health color inside a crisp 2px border (as their health
 -- bars), Expressway text, glass tabs resting on the border (the selected one
 -- raised, the others tucked), one compartment for the chat buttons, the edit
 -- box joined to the window, and a slim scroll bar. When nobody uses the chat
@@ -17,13 +17,16 @@ local M = { title = L["Chat"], category = "interface", defaultEnabled = false,
 addon.Chat = M
 addon:RegisterModule("chat", M)
 
-M.VERSION = 2
+M.VERSION = 3
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
--- Colors: the window fill (Mode Slate, #44464A), its border (the unit
--- frames' rim, #40454C) and the edit box field (#0E0F11 on #2A2D32), as in the
--- settings window. Version 1 used #0B0B0D and #25282C (OLD_*, for migration).
-M.BACKGROUND_COLOR, M.BORDER_COLOR = Copy(Kit.onyx.slate), Copy(Kit.onyx.frameRim)
+-- Colors: the window fill (the unit frames' default health color, Onyx
+-- #1C1E21, as the meters and tooltips), its border (the unit frames' rim,
+-- #40454C) and the edit box field (#0E0F11 on #2A2D32), as in the settings
+-- window. Version 1 used #0B0B0D and #25282C, version 2 Mode Slate (#44464A)
+-- (OLD_* and SLATE, for migration).
+M.BACKGROUND_COLOR, M.BORDER_COLOR = Copy(Kit.onyx.health), Copy(Kit.onyx.frameRim)
+M.SLATE_COLOR = Copy(Kit.onyx.slate)
 M.OLD_BACKGROUND_COLOR, M.OLD_BORDER_COLOR = Kit.RGB(11, 11, 13), Copy(Kit.onyx.border)
 M.FIELD_COLOR, M.FIELD_RIM = Kit.RGB(14, 15, 17), Kit.RGB(42, 45, 50)
 -- The glass tab: a dark frosted fill, a faint light rim and a soft sheen.

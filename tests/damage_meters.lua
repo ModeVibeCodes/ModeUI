@@ -539,7 +539,7 @@ end
 old.window3.textColor = { 1, 0, 0 }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 4 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
+    assert(M.db.version == 5 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
     assert(M.db.window3.valueColor[2] == 0 and M.db.window3.nameColor[2] == 1, 'a chosen value color stays; names are white')
     assert(M.db.window1.nameOutline and M.db.window3.valueOutline and M.db.window1.textColor == nil and M.db.window1.outline == nil, 'outlined; old keys gone')
     assert(M.db.window1.decimals == 0 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
@@ -563,7 +563,7 @@ mod.window2.nameColorMode, mod.window2.decimals = "class", 2
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
     local s = M.db.window1
-    assert(M.db.version == 4 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
+    assert(M.db.version == 5 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
     assert(s.nameOutline and s.titleOutline, 'outline on (the owner asked)')
     assert(s.nameColor[1] == 1 and s.valueColor[1] == 0.5 and s.nameColorMode == 'custom', 'pure white names; values keep the text color')
     assert(s.titleColor[3] == 0 and s.titleSize == 13, 'title kept')
@@ -579,9 +579,21 @@ three.version, three.hideBlizzard = 3, nil
 three.window2.group, three.window2.groupSide, three.window3.groupSide = "window1", "below", "below"
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 4 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
+    assert(M.db.version == 5 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
     assert(M.db.hideBlizzard == true, "Hide Blizzard's Meter on")
 ]==], "migrate v3")
+
+-- Version 4 -> 5: a background still at #040404 takes the health color; a picked one stays.
+local v4 = restored.saved()
+local four = v4.profiles.Default.modules.damageMeters
+four.version = 4
+four.window1.backgroundColor = { 4 / 255, 4 / 255, 4 / 255 }
+four.window2.backgroundColor = { 1, 0, 0 }
+H.Load({ before = STUBS, saved = v4 }).run([==[
+    local M, Kit = addon.DamageMeters, addon.Kit
+    assert(M.db.version == 5 and M.db.window1.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
+    assert(M.db.window2.backgroundColor[1] == 1, 'a picked background stays')
+]==], "migrate v4")
 
 -- Bad saved data stops startup rather than being reset.
 local saved = restored.saved()

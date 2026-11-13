@@ -96,6 +96,17 @@ local function MigrateV3(db)
     end
 end
 
+-- Version 4 -> 5: the background is the Unit Frames' default health color
+-- (owner, November 13, 2026); a window still at version 4's #040404 follows.
+local function MigrateV4(db)
+    for _, window in ipairs(M.windows) do
+        local style = db[window]
+        if type(style) == "table" and SameColor(style.backgroundColor, M.OLD_BACKGROUND_COLOR) then
+            style.backgroundColor = Copy(M.BACKGROUND_COLOR)
+        end
+    end
+end
+
 -- A window can't group with itself, and groups never loop.
 local function ValidateGroups(db)
     for _, window in ipairs(M.windows) do
@@ -112,6 +123,7 @@ function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
     if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == 3 then MigrateV3(db); db.version = 4 end
+    if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid damage meter settings version")
     if db.hideBlizzard == nil then db.hideBlizzard = true end

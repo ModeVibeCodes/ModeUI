@@ -26,7 +26,7 @@ addon:RegisterModule("damageMeters", M)
 -- own texture.
 -- Version 4: groups stack Above by default (the owner wanted a grouped
 -- window on top of the one it follows), and Hide Blizzard's Meter.
-M.VERSION = 4
+M.VERSION = 5
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows, in sidebar order, with their Edit Mode element (and saved
@@ -55,10 +55,12 @@ M.defaultPositions = {
     window3 = { target = M.elementIds.window2, placement = "above", x = 0, y = 4 },
 }
 
--- Colors: the window rim (#101010), the background inside it (#040404),
--- bars for anything without a class (#78808C). The header is an Onyx bar:
--- the Unit Frames health fill (#1C1E21) in Mode Gradient.
-M.BORDER_COLOR, M.BACKGROUND_COLOR = Kit.RGB(16, 16, 16), Kit.RGB(4, 4, 4)
+-- Colors: the window rim (#101010), the background inside it (the Unit
+-- Frames' default health color, Onyx #1C1E21, as the chat and tooltips;
+-- #040404 until version 5), bars for anything without a class (#78808C). The
+-- header is an Onyx bar: the same health fill in Mode Gradient.
+M.BORDER_COLOR, M.BACKGROUND_COLOR = Kit.RGB(16, 16, 16), Copy(Kit.onyx.health)
+M.OLD_BACKGROUND_COLOR = Kit.RGB(4, 4, 4)
 M.HEADER_COLOR, M.OTHER_COLOR = Kit.onyx.health, Kit.RGB(120, 128, 140)
 M.TRACK_COLOR = Kit.onyx.track
 -- Names and values are pure white and outlined, so they read on any bar color.

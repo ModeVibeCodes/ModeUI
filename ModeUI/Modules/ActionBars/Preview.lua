@@ -67,7 +67,11 @@ end
 
 -- What one of Blizzard's buttons shows now. Values may be secret: they only
 -- go to SetTexture and SetText.
-local function Real(bar, index) local list = M.buttons[bar]; return list and list[index] or _G[M.barSpecs[bar].prefix .. index] end
+local function Real(bar, index)
+    if M.barSpecs[bar].utility then return M:UtilityButtons(bar)[index] end
+    local list = M.buttons[bar]
+    return list and list[index] or _G[M.barSpecs[bar].prefix .. index]
+end
 local function Shown(region)
     if not region or not region.IsShown then return false end
     local shown = region:IsShown()
@@ -145,15 +149,44 @@ local function Sample(view, index)
     button.hits = { button = Clickable(button, "buttons") }
     -- A click on the button opens its settings and its glow menu (GlowMenu.lua).
     button:SetScript("OnMouseUp", function(_, mouse)
-        if mouse == nil or mouse == "LeftButton" then M:JumpTo("buttons"); M:OpenGlowMenu(view, index, button) end
+        if mouse ~= nil and mouse ~= "LeftButton" then return end
+        M:JumpTo("buttons")
+        if not M.barSpecs[M:PreviewBar()].utility then M:OpenGlowMenu(view, index, button) end
     end)
     for _, part in ipairs(M.textParts) do button.hits[part] = Clickable(M.TextRegion(button, part), "text", part, button.textLayer) end
     view.buttons[index] = button
     return button
 end
 
+-- A micro button's picture: the Character button's portrait of you, else
+-- the glyph Blizzard shows on it (its Normal atlas).
+local function MicroPicture(button, real)
+    local icon = button.icon
+    if real.Portrait and type(SetPortraitTexture) == "function" then
+        icon:SetTexCoord(0.15, 0.85, 0.1, 0.9)
+        pcall(SetPortraitTexture, icon, "player")
+        return
+    end
+    local normal = real.GetNormalTexture and real:GetNormalTexture()
+    local atlas = normal and normal.GetAtlas and normal:GetAtlas()
+    if Public(atlas) and type(atlas) == "string" and icon.SetAtlas then icon:SetAtlas(atlas)
+    else icon:SetTexture(normal and normal:GetTexture() or nil) end
+end
+
 -- Fills one preview button from the real one; returns whether it has a spell.
-local function Fill(button, real)
+local function Fill(button, real, kind)
+    if kind == "micro" then
+        MicroPicture(button, real); button.icon:Show()
+        for _, key in ipairs({ "HotKey", "Count", "Name" }) do Kit.Write(button[key], "") end
+        return true
+    end
+    if kind == "bags" then
+        local icon = Icon(real)
+        button.icon:SetTexture(icon); button.icon:SetShown(icon ~= nil)
+        Kit.Write(button.Count, TextOf(M.TextRegion(real, "count"), true))
+        Kit.Write(button.HotKey, ""); Kit.Write(button.Name, "")
+        return true
+    end
     local icon = Icon(real)
     local filled = not Public(icon) or icon ~= nil
     button.icon:SetTexture(icon)
@@ -174,14 +207,18 @@ function M:RenderPreview(view)
     view.bar:ClearAllPoints(); view.bar:SetPoint("TOP", view.frame, "TOP", 0, -2 / scale)
     self:PaintPreviewAlpha(view)
     local phase = addon.PreviewStates:Sample(self.id)
-    local demo = self.page ~= nil and self.page.textPart ~= nil and self.page.textPart() == "cooldown"
+    local kind = self.barSpecs[bar].utility
+    -- The micro menu and bag bar have no glows or cooldowns.
+    if kind then view.glowIndex = nil end
+    local demo = not kind and self.page ~= nil and self.page.textPart ~= nil and self.page.textPart() == "cooldown"
     local filledCount = 0
     for i = 1, count do
         local button, real = Sample(view, i), Real(bar, i)
         self.Place(button, view.bar, g, i)
         self:SkinButton(button, style, g, true)
-        local filled = Fill(button, real)
-        self:PreviewGlows(view, button, i, style, real)
+        local filled
+        if kind then filled = real ~= nil and Fill(button, real, kind) else filled = Fill(button, real) end
+        self:PreviewGlows(view, button, i, style, not kind and real or nil)
         local start, duration = Cooldown(real)
         if filled and not start and demo then
             -- The sample cooldown, on the first button with a spell.
@@ -207,7 +244,7 @@ function M:RenderPreview(view)
     for i = count + 1, #view.buttons do view.buttons[i]:Hide() end
     local spec = self.barSpecs[bar]
     local caption = style.show and L[spec.label] or L[spec.label .. " is hidden"]
-    if filledCount == 0 then caption = caption .. " · " .. L["no spells on this bar yet"] end
+    if filledCount == 0 and not kind then caption = caption .. " · " .. L["no spells on this bar yet"] end
     view.caption:SetText(caption)
     self:RefreshGlowMenu()
 end
