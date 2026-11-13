@@ -5,10 +5,12 @@ document: add to it when a new idea or module changes the shape of things.
 `tests/structure.lua` enforces the parts that can be checked mechanically.
 
 > **Status (November 12, 2026):** the target layout below is being adopted in
-> phases (see [Restructure phases](#restructure-phases)). Until a phase lands,
-> the older `Core/`, `Config/` and flat `Modules/*.lua` files stay where they
-> are, listed as legacy in `tests/structure.lua`. New code goes in the new
-> layout only.
+> phases (see [Restructure phases](#restructure-phases)). The shared code now
+> lives in `Libs/` and `Shared/` under its pre-restructure file names (for example
+> `Shared/Runtime/Database.lua`, which becomes `DB.lua` in phase 3). Until
+> phase 5, the modules (Unit Frames, Profiles, Optimizations, Class Colors) are
+> still flat `Modules/*.lua` files with their pages in `Config/`, listed as legacy
+> in `tests/structure.lua`. New code goes in the new layout only.
 
 ## Folder layout
 
@@ -158,14 +160,15 @@ folder. We keep the settings inside the module and build pages lazily.
 
 | Service | Job | Today |
 |---|---|---|
-| Core | addon table, edition gate, version, `Public`/`Number` secret-safe checks | `Core/Edition.lua`, `Core/Init.lua`; the checks are copied into several files |
-| DB | defaults, schema check, never reset, call module migrations, one-time PTG import | `Core/Database.lua` |
-| Lifecycle | register modules, initialize, enable/disable, broadcast combat | `Core/Modules.lua`, `Core/DisplayModes.lua` |
+| Core | addon table, edition gate, version, `Public`/`Number` secret-safe checks | `Shared/Runtime/Edition.lua`, `Shared/Runtime/Boot.lua`; the checks are copied into several files |
+| DB | defaults, schema check, never reset, call module migrations, one-time PTG import | `Shared/Runtime/Database.lua` |
+| Lifecycle | register modules, initialize, enable/disable, broadcast combat | `Shared/Runtime/Modules.lua`, `Shared/Placement/DisplayModes.lua` |
 | Events | one frame for game events; modules subscribe and unsubscribe by owner | each module makes its own frames |
 | Callbacks | internal messages such as media or profile changes | missing |
-| Defer | `Defer:Run(key, fn)` runs now out of combat, otherwise queues it; the latest call per key wins; the queue empties on `PLAYER_REGEN_ENABLED` | separate `pending` flags in `DisplayModes.lua` |
+| Defer | `Defer:Run(key, fn)` runs now out of combat, otherwise queues it; the latest call per key wins; the queue empties on `PLAYER_REGEN_ENABLED` | separate `pending` flags in `Shared/Placement/DisplayModes.lua` |
 | Locale | `L["Text"]` returns the English text until a translation is registered | missing |
-| Boot | the startup sequence on `ADDON_LOADED`, then the slash command | `Core/Init.lua` |
+| Boot | the startup sequence on `ADDON_LOADED`, then the slash command | `Shared/Runtime/Boot.lua` |
+| Profiles | account-wide named profiles of the module, position and media settings; import and export | `Shared/Runtime/Profiles.lua` |
 
 Notes for building them:
 
@@ -192,8 +195,10 @@ Notes for building them:
   the shared layout of `ModeUIDB` does.
 - **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI` and frame
   names that start with `ModeUI`.
-- **No game-wide side effects** that Play The Game Tools already owns: CVars, UI
-  scale, loot, the global font rewrite.
+- **Game-wide settings** (CVars, UI scale, loot) change only through the
+  Optimizations module: each one is off by default, and turning it off puts back
+  the game's previous value. Other modules never write them, and nothing rewrites
+  the game-wide fonts.
 - **APIs:** before building a module, write down every API it relies on, with a
   Forever source link, in `docs/API_COMPATIBILITY.md`. Don't assume Retail
   behavior applies to Forever.
@@ -241,10 +246,10 @@ change to behavior, looks or saved data.
 | Phase | Work | Status |
 |---|---|---|
 | 1 | This document, AGENTS.md rules, `tests/structure.lua`, XML support in the harness | done |
-| 2 | Move files into `Libs/` and `Shared/*` with `git mv`; no code edits | planned |
-| 3 | Runtime: `Lifecycle.lua` and `Boot.lua` from `Modules.lua`/`Init.lua`; add Events, Defer, Callbacks, Locale | planned |
+| 2 | Move files into `Libs/` and `Shared/*` with `git mv`; no code edits. The libraries now load before `Edition.lua` | done |
+| 3 | Runtime: `Core.lua` (from `Edition.lua` and the copied secret checks), `DB.lua`, `Reload.lua`, `Lifecycle.lua` (from `Modules.lua`, `Categories.lua` and the combat broadcast in `DisplayModes.lua`); add Events, Defer, Callbacks, Locale | planned |
 | 4 | Domain and Kit: unit readers and frame builders out of `UnitFramesDisplay.lua` | planned |
-| 5 | `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings) | planned |
+| 5 | Module folders: `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings), then `Profiles/`, `Optimizations/` and `ClassColors/` (Init, Driver, Settings) | planned |
 | 6 | Split `Widgets.lua` and `Window.lua` into `Shared/Settings/Widgets/`; modules register their own page layout | planned |
 | 7 | Module skeleton and the README "Adding a module" section | planned |
 

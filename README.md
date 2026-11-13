@@ -51,9 +51,11 @@ each one on in only one addon. The ModeUI page shows a reminder while PTG is loa
 ```
 ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   ModeUI.toc
-  Core/            startup, settings, modules, media, Edit Mode positioning
-  Config/          Mode-themed settings window and widgets
+  Libs/            bundled libraries (LibStub, CallbackHandler, LibSharedMedia)
+  Shared/          code shared by modules: Runtime (startup, settings, profiles, modules),
+                   Placement (Edit Mode), Media, Border, Settings (window, widgets)
   Modules/         Unit Frames, Profiles, Optimizations, Class Colors
+  Config/          the modules' settings pages (each moves into its module folder)
   Media/           Mode theme textures, unit frame textures, Lato fonts
 tests/             Lua smoke, Unit Frames and Global tests (simulated client, not WoW)
 tools/             texture generators (Python + Pillow)
@@ -91,14 +93,14 @@ lua tests/global.lua
 > `Modules/<Name>.lua` files, so start new modules after phase 3. The steps below
 > describe how Unit Frames is wired today.
 
-1. Register its category in `Core/Categories.lua` if it needs a new one, for example
+1. Register its category in `Shared/Runtime/Categories.lua` if it needs a new one, for example
    `addon:RegisterCategory("nameplates", { title = "Nameplates" })`.
 2. Add `Modules/<Name>.lua` that calls `addon:RegisterModule(id, module)` with
    `category = "<category id>"`. Add a settings page in `Config/<Name>.lua` via
    `module:CreateConfigPage(parent)`.
-3. Add the files to `ModeUI/ModeUI.toc`, with modules before `Config\Widgets.lua`
-   and pages before `Core\Init.lua`.
-4. Add the page to `W.ModeLayoutPlans` in `Config/ModeLayout.lua` for the Mode
+3. Add the files to `ModeUI/ModeUI.toc`, with modules before `Shared\Settings\Widgets.lua`
+   and pages before `Shared\Runtime\Boot.lua`.
+4. Add the page to `W.ModeLayoutPlans` in `Shared/Settings/ModeLayout.lua` for the Mode
    heading treatment.
 
 ## License

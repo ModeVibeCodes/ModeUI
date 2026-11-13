@@ -5,7 +5,7 @@ does not replace third-party ownership or notices below. Most of ModeUI's core
 and settings framework comes from Play The Game Tools (Copyright (c) 2026 Mode,
 MIT), from the same author.
 
-## Bundled libraries (ModeUI/Core/Libs)
+## Bundled libraries (ModeUI/Libs)
 
 These are unmodified upstream sources:
 
@@ -32,7 +32,7 @@ https://typodermicfonts.com/license/.
 
 ## Media catalog
 
-Core/MediaCatalog.lua contains generated media name/path facts from installed
+Shared/Media/MediaCatalog.lua contains generated media name/path facts from installed
 providers. It distributes no provider font or texture files and no
 implementation code. Those references stay subject to their original owners'
 terms.

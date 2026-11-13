@@ -3,7 +3,7 @@
 - This repository is the home for Mode's custom interface modules for WoW Forever.
   Edit the addon in `ModeUI/`. Play The Game Tools is a separate addon and repo.
 - The settings window uses the Mode theme only. Keep new pages on the shared
-  widgets (`Config/` today, `Shared/Settings/` after the restructure) so they inherit it.
+  widgets in `Shared/Settings/` so they inherit it.
 - Preserve functionality, appearance, settings and saved-variable keys unless
   the user asks for a specific change. Never reset `ModeUIDB`; migrate instead.
 - Read the relevant source before editing, and implement one focused feature at a time.
@@ -12,7 +12,7 @@
   can be secret: pass them only to widgets documented as accepting them.
 - Secure frames are created, shown, moved and resized outside combat only.
 - Follow `docs/ARCHITECTURE.md`. New code goes in `Libs/`, `Shared/` or
-  `Modules/<Name>/`, never the legacy `Core/` or `Config/` folders. Each module is a
+  `Modules/<Name>/`, never the legacy `Config/` folder. Each module is a
   folder with `<Name>.xml` (listed in the TOC), `Init.lua` loaded first, and
   `Driver.lua`. Code two modules need belongs in `Shared/`; modules never use each
   other's files. Files stay under 400 lines. Settings pages are built only when opened.
