@@ -354,7 +354,13 @@ world.run([==[
     local view = page.configPreview
     for i = 1, 12 do assert(view.buttons[i] and view.buttons[i]:IsShown(), 'every button drawn, secret texts and all') end
     assert(issecretvalue(view.buttons[3].Count.text) and issecretvalue(view.buttons[4].HotKey.text), 'secret texts shown as they are')
-    assert(page.barSelects[1].label.text == 'Action Bar 1', 'the bar being edited is named')
+    assert(page.barSelect.label.text == 'Action Bar 1' and page.barSelect:GetParent():GetParent() == page.previewArea, 'Editing sits in the preview header')
+    local corner = Point(page.barSelect:GetParent())
+    assert(corner[1] == 'TOPRIGHT' and corner[2] == page.previewArea, 'at its top right')
+    assert(page.previewHeaderButtons[1] == page.keybindHeaderButton and page.previewReserveRight > 0, 'header buttons keep clear of it')
+    local editRows = 0
+    for _, row in ipairs(page.rows) do if row.settingsTitle == 'Editing' then editRows = editRows + 1 end end
+    assert(editRows == 0, 'no Editing rows in the tabs')
     local first = view.buttons[1]
     assert(first:IsShown() and first.width == 42 and first.height == 36, 'preview of the edited bar')
     assert(first.icon.texture == 'Interface/Icons/Spell1' and first.HotKey.text == '1', 'your own spell and keybind')

@@ -204,7 +204,7 @@ the spells, keybinds, counts, macro names and running cooldowns on its buttons
 right now. Empty places show as empty slots, and the preview redraws when your
 bars, bindings or cooldowns change. While you edit the **Cooldown** text, the
 first spell shows a sample cooldown if none is running; **Animated** runs it.
-**Keybind Mode** sits in the preview's header, so it's one click from every tab.
+**Keybind Mode** sits in the preview's header after Static, Animated and Collapse, and **Editing** at its top right, so both are one click from every tab. (Shared: a page can add its own header buttons with `previewHeaderButtons` and keep the top right clear with `previewReserveRight`.)
 
 While the page is open, each bar on screen wears a small name tag in its middle
 ("Action Bar 1", "Pet Bar", …), so you can tell the bars apart without Edit
@@ -220,7 +220,7 @@ on that text. The tabs:
 - **Glows**: proc glow, glow when ready, icon opacity on cooldown
 - **Visibility**: Show, custom conditions, opacity, Faded Opacity
 
-Every tab starts with **Editing**, the bar being changed, shared by every tab.
+**Editing** (the bar being changed) sits at the top right of the preview, so it's always in view and shared by every tab; a tab says so when that bar is hidden.
 **Copy Style to All Bars** copies size, borders, background, text and opacity.
 Each bar keeps its own buttons, lines and show settings. **Reset to Defaults**
 resets one bar's look.

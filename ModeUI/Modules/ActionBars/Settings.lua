@@ -85,20 +85,26 @@ function M:CreateConfigPage(parent)
     for _, bar in ipairs(M.bars) do barChoices[#barChoices + 1] = { id = bar, label = L[M.barSpecs[bar].label] } end
 
     page.configPreview = W.Preview(page, M, { contentHeight = 120 })
-    -- Keybind Mode from every tab: a button in the preview's header.
-    if page.previewCollapseButton then
+    -- The preview's header, seen from every tab: Keybind Mode after the
+    -- standard buttons, and Editing (the bar being changed) at the top right.
+    if page.previewArea then
         local keys = W.Button(page.previewArea, L["Keybind Mode"], 104, 24, "choice")
-        keys:SetPoint("LEFT", page.previewCollapseButton, "RIGHT", 4, 0)
         keys:SetScript("OnClick", function() M:SetKeybindMode(true) end)
         page.keybindHeaderButton = keys
+        page.previewHeaderButtons = { keys }
+        local editing = CreateFrame("Frame", nil, page.previewArea)
+        editing:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); editing:SetSize(264, 28)
+        page.editingLabel = W.Label(editing, L["Editing"], nil, 0, 0, 60, T.muted)
+        page.editingLabel:ClearAllPoints(); page.editingLabel:SetPoint("LEFT", 0, 0)
+        page.barSelect = SelectIn(editing, 200, function() return barChoices end, Bar, page.SetEditing)
+        page.barSelect:ClearAllPoints(); page.barSelect:SetPoint("RIGHT", 0, 0)
+        page.previewReserveRight = 276
+        page:UpdatePreviewLayout()
     end
 
-    -- Every tab starts with the Editing choice; a hidden bar says so.
-    page.barSelects = {}
+    -- Each tab says so when the bar being edited is hidden.
     local function Tab(title, build)
         page:Section(L[title], nil, false)
-        local editRow = page:Row(L["Editing"], 48)
-        page.barSelects[#page.barSelects + 1] = SelectIn(editRow, 200, function() return barChoices end, Bar, page.SetEditing)
         if title ~= "Bar" then
             When(function() return not db().show end, function() Note("This bar is hidden. Turn on Show Bar on the Bar tab to use it.") end)
         end
