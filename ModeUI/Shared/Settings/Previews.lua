@@ -51,10 +51,14 @@ function W.Preview(page, module, options)
     function page:UpdatePreviewLayout()
         if self.updatingPreview then return end
         self.updatingPreview=true
-        -- Reserve the top-right enable toggle. Wrap only on narrow layouts.
-        local available=math.max(180,area:GetWidth()-90)
+        -- Keep the top right clear (previewReserveRight: a page's own control
+        -- there). Wrap only on narrow layouts. previewHeaderButtons are the
+        -- page's own buttons, placed after the standard ones.
+        local available=math.max(180,area:GetWidth()-(self.previewReserveRight or 90))
         local x,y=0,-6
-        for _,button in ipairs({static,animated,test,collapse}) do
+        local buttons={static,animated,test,collapse}
+        for _,button in ipairs(self.previewHeaderButtons or {}) do buttons[#buttons+1]=button end
+        for _,button in ipairs(buttons) do
             if (button~=animated or addon.PreviewStates:CanAnimate(module.id)) and (button~=test or module.SetTestDisplay) then
                 button:SetWidth(math.max(button:GetWidth(),math.ceil(button.label:GetStringWidth())+12))
                 if x>0 and x+button:GetWidth()>available then x,y=0,y-30 end
