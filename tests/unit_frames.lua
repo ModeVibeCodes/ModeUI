@@ -135,6 +135,8 @@ world.run([====[
     assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(5+14+1) and cb2[5]==2,'the icon sits where the far end rounds, a hairline apart')
     local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-5 and pc.icon.width==14 and pc.icon.height==14)
     assert(pc:GetFrameLevel()<p.portrait:GetFrameLevel(),'the portrait ring caps it')
+    assert(pc.border.ring==pc.rim and pc.border.edge:GetFrameLevel()>pc.bar:GetFrameLevel() and pc.rim.top:GetParent()==pc.border.edge,'the same border, drawn over its bar')
+    assert(Point(pc.barMasks.RIGHT)[4]==-1 and pc.rim.top.vertexColor[1]==addon.Kit.BORDER_COLOR[1],'the bar rounded 1px under the rim')
     units.player.cast={name='Frostbolt',text='Frostbolt',icon=135846,start=1000,stop=3000}
     FireEvent('UNIT_SPELLCAST_START','player')
     assert(pc:IsShown() and pc.bar.low==1000 and pc.bar.high==3000 and pc.text:GetText()=='Frostbolt' and pc.icon.texture==135846)
@@ -271,13 +273,15 @@ world.run([====[
     -- a cap hollowed into a ring by a hole mask. One border: the lighter frame rim color,
     -- on its own layer above the bars and below the portrait; no black gap ring.
     local tex=function(key) return (addon.Media:GetTexture(key)) end
-    local rim,gap=p.panel.rim,p.panel.gap
+    -- The ModeUI border (Kit.ModeBorder), the standard for every border in ModeUI.
+    local K=addon.Kit;assert(K.BORDER_PIXELS==2 and K.BORDER_COLOR==O.frameRim and M.RIM_COLOR==K.BORDER_COLOR and p.panel.border.ring==p.panel.rim)
+    local rim=p.panel.rim
     assert(p.panel.depth==11 and rim.top:GetParent()==p.panel.edge and rim.top.texture==addon.Kit.FLAT and rim.top.height==2 and rim.top.vertexColor[1]==M.RIM_COLOR[1])
     assert(Point(rim.top)[4]==0 and Point(rim.top)[5]==0 and Point(rim.top,2)[4]==-11,'top strip from the near edge to where the far end rounds')
     local rc=rim.ends.RIGHT;assert(rc.cap:IsShown() and not rc.strip:IsShown() and rc.cap.texture==tex('ModeCapRight') and rc.cap.width==11 and rc.cap.vertexColor[1]==M.RIM_COLOR[1])
     assert(rc.cap.mask==rc.hole and rc.hole.texture==tex('ModeCapHoleRight') and Point(rc.hole)[4]==-2 and Point(rc.hole)[5]==-2 and rc.hole.width==9,'hollowed 2px in: a ring')
     assert(rim.ends.LEFT.strip:IsShown() and not rim.ends.LEFT.cap:IsShown() and rim.ends.LEFT.strip.width==2,'the portrait end stays straight under the portrait')
-    assert(not gap.top:IsShown() and not gap.ends.RIGHT.cap:IsShown() and not gap.ends.LEFT.strip:IsShown(),'no black gap ring')
+    assert(p.panel.gap==nil,'no black gap ring')
     assert(p.panel.edge:GetFrameLevel()>p.health:GetFrameLevel() and p.panel.edge:GetFrameLevel()<p.portrait:GetFrameLevel(),'rim over the bars, under the portrait')
     -- The bars are rounded to the same end, reaching 1px under the rim so their edge
     -- hides under it (no soft seam); the near mask is parked off the block.

@@ -53,6 +53,8 @@ M.textState = setmetatable({}, { __mode = "k" })
 
 -- The FontString for a part, or nil when the button has none.
 function M.TextRegion(button, part)
+    -- The backpack's Count is its free-slot count (Blizzard's FreeSlots).
+    if part == "count" and button.FreeSlots then return button.FreeSlots end
     if part ~= "cooldown" then return button[KEYS[part]] end
     if button.cooldownText then return button.cooldownText end
     local cooldown = button.cooldown

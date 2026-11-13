@@ -91,6 +91,7 @@ local function Overlay(texture, host, inset, color, alpha)
     texture:SetVertexColor(color[1], color[2], color[3], alpha)
 end
 local function Fade(region) if region and region.SetAlpha then region:SetAlpha(0) end end
+M.Overlay, M.Fade = Overlay, Fade
 
 -- Blizzard redraws the frame and pushed art when its bar settings change
 -- (UpdateButtonArt); this puts the Mode look back. In combat only the fading

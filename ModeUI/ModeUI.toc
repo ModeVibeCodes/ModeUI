@@ -45,6 +45,7 @@ Shared\Kit\Shape.lua
 Shared\Kit\Bands.lua
 Shared\Kit\Edges.lua
 Shared\Kit\Capsule.lua
+Shared\Kit\Border.lua
 Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
 Shared\Kit\Cast.lua

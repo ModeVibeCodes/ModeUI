@@ -26,12 +26,13 @@ function M:FontPath(fdb) return Kit.FontPath(fdb, self.id) end
 function M:PixelSize(f) return Kit.PixelSize(f) end
 
 -- The Onyx frame: a round portrait caps the outer end of one rounded bar
--- block. Pixel perfect: every size is whole physical pixels (2px slate rim,
--- 2px black gap, 1px hairline between health and power) and the frame is an
--- even number of pixels each way, so its centre anchor stays on the grid.
--- One crisp 2px border round the whole block (owner, November 13, 2026): the
--- black gap that sat inside the rim is gone (GAP 0), so the bars meet the rim.
-M.RIM, M.GAP, M.HAIRLINE = 2, 0, 1
+-- block. Pixel perfect: every size is whole physical pixels (the ModeUI
+-- border's 2px rim, 1px hairline between health and power) and the frame is
+-- an even number of pixels each way, so its centre anchor stays on the grid.
+-- One crisp border round the whole block (owner, November 13, 2026): no black
+-- gap inside the rim (GAP 0), so the bars meet the rim. This border became the
+-- standard for every border in ModeUI (Kit.ModeBorder, Shared/Kit/Border.lua).
+M.RIM, M.GAP, M.HAIRLINE = Kit.BORDER_PIXELS, 0, 1
 function M:Geometry(fdb, px)
     local g, p = {}, px or 1
     local function Snap(v) return math.max(p, math.floor(v / p + 0.5) * p) end
@@ -84,19 +85,14 @@ function M:ApplyLayout(f, unit)
     panel:ClearAllPoints()
     panel:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.blockStart, -g.blockY)
     panel:SetPoint("BOTTOM" .. far, f, "BOTTOM" .. far, 0, g.blockY)
-    -- The rim on the block's edge and the black gap one rim in, straight edges
-    -- on whole pixels and a half-oval far end (the near end too without a
-    -- portrait); end masks round the bars inside the gap to match.
-    local depth = Kit.CapDepth(g.blockHeight, g.px)
+    -- The ModeUI border: straight edges on whole pixels and a rounded far end
+    -- (the near end too without a portrait). Its end masks round the bars,
+    -- reaching one pixel under the rim, so the rim covers their soft edge and
+    -- no faint seam shows between them.
     local rounded = { [far] = true, [near] = g.portrait == 0 }
-    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, M.RIM_COLOR, depth, rounded)
-    if g.line > 0 then Kit.PlaceCapRing(panel.gap, panel, g.border, g.line, ONYX.inner, depth, rounded)
-    else Kit.HideCapRing(panel.gap) end
-    -- The bars' rounded end reaches one pixel under the rim, so their edge
-    -- covers the rim's soft inner curve and no faint seam shows between them.
-    local maskInset = math.max(0, g.pad - g.px)
-    Kit.PlaceEndMask(panel.farMask, panel, far, depth, maskInset, true)
-    Kit.PlaceEndMask(panel.nearMask, panel, near, depth, maskInset, rounded[near])
+    local depth = Kit.LayoutModeBorder(panel.border, panel, { px = g.px, height = g.blockHeight, rounded = rounded,
+        color = M.RIM_COLOR, level = panel:GetFrameLevel() + 2 })
+    panel.farMask, panel.nearMask = panel.border.masks[far], panel.border.masks[near]
     local masks = { panel.farMask, panel.nearMask }
     panel.depth = depth
     local start = g.inset - g.blockStart

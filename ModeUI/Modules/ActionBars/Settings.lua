@@ -17,8 +17,15 @@ function M:CreateConfigPage(parent)
     function page.SetEditing(bar)
         if not M.barSpecs[bar] then return end
         if bar ~= editing and M.glowMenu then M.glowMenu:Hide() end
-        editing = bar; page:Refresh(); page:Layout()
+        editing = bar
+        -- The bag bar's one text is its Count (the backpack's free slots).
+        if M.barSpecs[bar].utility == "bags" then textPart = "count" end
+        page:Refresh(); page:Layout()
     end
+    -- The micro menu and bag bar: no keybinds, paging, glows or cooldowns,
+    -- and the micro menu has no text.
+    local function Action() return not M:IsUtility(editing) end
+    local function HasText() return M.barSpecs[editing].utility ~= "micro" end
     function page.SetTextPart(part) if M.textPartLabels[part] then textPart = part; page:Refresh(); page:Layout() end end
     local owner = M:AppearanceOwner(Bar, Part)
     local function Refresh(fn) page.refreshers[#page.refreshers + 1] = fn end
@@ -139,8 +146,12 @@ function M:CreateConfigPage(parent)
         page.statusLabel = status
         page:Group(L["Layout"])
         local shape = Columns({ "Buttons", "Buttons per Line" })
-        local function Count() return M.barSpecs[editing].count end
-        -- The pet and stance bars hold ten buttons.
+        local function Count()
+            local list = M:IsUtility(editing) and M.buttons and M.buttons[editing]
+            return list and math.max(1, #list) or M.barSpecs[editing].count
+        end
+        -- The pet and stance bars hold ten buttons; the micro menu and bag bar
+        -- the buttons Blizzard gives them.
         Refresh(function() if shape[1].slider then shape[1].slider:SetMinMaxValues(1, Count()) end end)
         page.buttonsSlider = SliderIn(shape[1], M.ranges.buttons, function() return db().buttons end, Set("buttons"), nil, Count)
         page.perLineSlider = Slider(shape[2], "perLine")
@@ -151,11 +162,16 @@ function M:CreateConfigPage(parent)
         page.widthSlider = Slider(size[1], "width", "px"); Mark("buttons")
         page.heightSlider = Slider(size[2], "height", "px")
         page.spacingSlider = Slider(size[3], "spacing", "px")
-        page:Group(L["Keybinds"])
-        local keys = page:Row(L["Keybind Mode"], 48)
-        page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")
-        page.keybindButton:SetPoint("LEFT"); page.keybindButton:SetScript("OnClick", function() M:SetKeybindMode(true) end)
-        Note("Or type /kb. Hover a button and press a key to bind it; Escape clears it.", 32)
+        When(Action, function()
+            page:Group(L["Keybinds"])
+            local keys = page:Row(L["Keybind Mode"], 48)
+            page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")
+            page.keybindButton:SetPoint("LEFT"); page.keybindButton:SetScript("OnClick", function() M:SetKeybindMode(true) end)
+            Note("Or type /kb. Hover a button and press a key to bind it; Escape clears it.", 32)
+        end)
+        When(function() return not Action() end, function()
+            Note("Blizzard's own buttons, in the Mode look: the ones the game shows are laid out in order, so a button it hides leaves no gap.", 40)
+        end)
         -- Paging, for bars 1-8.
         When(function() return M.pages[editing] ~= nil end, function()
             page:Group(L["Paging"])
@@ -186,73 +202,87 @@ function M:CreateConfigPage(parent)
         page.slotToggles = Toggles({ { "Show Empty Slots", "showEmpty" } })
         Note("The background shows in empty slots at Background Opacity, with a textured slot finish, and as the thin line between border and icon. Dragging a spell shows every button so it can be dropped.", 48)
         -- On Cooldown: what an icon looks like until its ability is ready.
-        page:Group(L["On Cooldown"])
-        Note("While an ability is on cooldown (longer than the global cooldown), its icon can turn gray and fade until it's ready again. Action bars 1-8 only.", 40)
-        page.cooldownColorPills = Pills("Icon Color", ICON_COLORS,
-            function() return db().cooldownDesaturate and "desaturate" or "full" end,
-            function(mode) M:SetOption(editing, "cooldownDesaturate", mode == "desaturate") end, 110); Mark("cooldown")
-        local dim = Columns({ "Icon Opacity" })
-        page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
-        Note("Desaturate turns the icon gray; Full Color keeps it as it is. Click a button in the preview to set it for that button alone.", 32)
+        When(Action, function()
+            page:Group(L["On Cooldown"])
+            Note("While an ability is on cooldown (longer than the global cooldown), its icon can turn gray and fade until it's ready again. Action bars 1-8 only.", 40)
+            page.cooldownColorPills = Pills("Icon Color", ICON_COLORS,
+                function() return db().cooldownDesaturate and "desaturate" or "full" end,
+                function(mode) M:SetOption(editing, "cooldownDesaturate", mode == "desaturate") end, 110); Mark("cooldown")
+            local dim = Columns({ "Icon Opacity" })
+            page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
+            Note("Desaturate turns the icon gray; Full Color keeps it as it is. Click a button in the preview to set it for that button alone.", 32)
+        end)
     end)
 
     -- Text: pick a text, then its place, size and color; the font is shared.
     Tab("Text", function()
-        page:Group(L["Text"])
-        local parts = {}
-        for _, part in ipairs(M.textParts) do parts[#parts + 1] = { id = part, label = M.textPartLabels[part] } end
-        page.textPartButtons = Pills("Text", parts, Part, page.SetTextPart, 104); Mark("text")
-        page.textToggles = Toggles({ { "Show This Text", "part", get = function() return db()[PartKey("Show")] end, set = SetPart("Show") } })
-        When(function() return textPart == "hotkey" end, function()
-            page.shortToggles = Toggles({ { "Short Keybinds", "hotkeyShort" } })
-            Note("Short Keybinds writes modifiers as one letter: Shift-E is sE, Ctrl-1 is c1, Alt-Mouse Button 4 is aM4.", 32)
-        end)
-        local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })
-        local anchorButtons, anchorRefresh = W.AnchorPicker(page:Row(L["Anchor"], W.ANCHOR_PICKER_HEIGHT + 16),
-            function() return db()[PartKey("Anchor")] end, SetPart("Anchor"), labels, { center = true })
-        Refresh(anchorRefresh); page.textAnchorButtons = anchorButtons
-        local place = Columns({ "Size", "Offset X", "Offset Y" })
-        page.textSizeSlider = PartSlider(place[1], "Size")
-        PartSlider(place[2], "X", "px"); PartSlider(place[3], "Y", "px")
-        local color = Columns({ "Color" })
-        Color(color[1], "partColor")
-        When(function() return textPart == "cooldown" end, function()
-            Note("Cooldown numbers follow the game's own option for showing them, and use the crisp shadow.", 32)
-        end)
-        page:Group(L["Font"])
-        local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
-        page.fontToggles = Toggles({ { "Outline", "outline" }, { "Slug Text", "slug" } })
-        page.shadowPills = Pills("Text Shadow", addon.Kit.SHADOW_CHOICES, function() return addon.Kit.ShadowMode(db()) end, function(mode)
-            local shadow, lifted = addon.Kit.ShadowKeys(mode)
-            M:SetOption(editing, "shadow", shadow); M:SetOption(editing, "liftedShadow", lifted)
+        When(function() return not HasText() end, function() Note("The micro menu has no text.", 32) end)
+        When(HasText, function()
+            page:Group(L["Text"])
+            local parts = {}
+            for _, part in ipairs(M.textParts) do parts[#parts + 1] = { id = part, label = M.textPartLabels[part] } end
+            When(Action, function() page.textPartButtons = Pills("Text", parts, Part, page.SetTextPart, 104); Mark("text") end)
+            When(function() return not Action() end, function()
+                Note("Count is the backpack's free bag slots, shown while the game's Display Free Bag Slots option is on.", 40)
+            end)
+            page.textToggles = Toggles({ { "Show This Text", "part", get = function() return db()[PartKey("Show")] end, set = SetPart("Show") } })
+            When(function() return textPart == "hotkey" end, function()
+                page.shortToggles = Toggles({ { "Short Keybinds", "hotkeyShort" } })
+                Note("Short Keybinds writes modifiers as one letter: Shift-E is sE, Ctrl-1 is c1, Alt-Mouse Button 4 is aM4.", 32)
+            end)
+            local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })
+            local anchorButtons, anchorRefresh = W.AnchorPicker(page:Row(L["Anchor"], W.ANCHOR_PICKER_HEIGHT + 16),
+                function() return db()[PartKey("Anchor")] end, SetPart("Anchor"), labels, { center = true })
+            Refresh(anchorRefresh); page.textAnchorButtons = anchorButtons
+            local place = Columns({ "Size", "Offset X", "Offset Y" })
+            page.textSizeSlider = PartSlider(place[1], "Size")
+            PartSlider(place[2], "X", "px"); PartSlider(place[3], "Y", "px")
+            local color = Columns({ "Color" })
+            Color(color[1], "partColor")
+            When(function() return textPart == "cooldown" end, function()
+                Note("Cooldown numbers follow the game's own option for showing them, and use the crisp shadow.", 32)
+            end)
+            page:Group(L["Font"])
+            local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
+            page.fontToggles = Toggles({ { "Outline", "outline" }, { "Slug Text", "slug" } })
+            page.shadowPills = Pills("Text Shadow", addon.Kit.SHADOW_CHOICES, function() return addon.Kit.ShadowMode(db()) end, function(mode)
+                local shadow, lifted = addon.Kit.ShadowKeys(mode)
+                M:SetOption(editing, "shadow", shadow); M:SetOption(editing, "liftedShadow", lifted)
+            end)
         end)
     end)
 
     -- Glows: how buttons react to procs and cooldowns.
     Tab("Glows", function()
-        page:Group(L["Proc Glow"])
-        page.procPills = Pills("Style", M.choices.procGlow, function() return db().procGlow end, Set("procGlow"), 96); Mark("glows")
-        When(function() return db().procGlow == "mode" or db().procGlow == "border" end, function()
-            local proc = Columns({ "Proc Color" })
-            Color(proc[1], "procColor")
-            page.procToggles = Toggles({ { "Pulse", "procPulse" } })
+        When(function() return not Action() end, function() Note("Glows are for action bars; the micro menu and bag bar have none.", 32) end)
+        When(Action, function()
+            page:Group(L["Proc Glow"])
+            page.procPills = Pills("Style", M.choices.procGlow, function() return db().procGlow end, Set("procGlow"), 96); Mark("glows")
+            When(function() return db().procGlow == "mode" or db().procGlow == "border" end, function()
+                local proc = Columns({ "Proc Color" })
+                Color(proc[1], "procColor")
+                page.procToggles = Toggles({ { "Pulse", "procPulse" } })
+            end)
+            Note("A proc is the game lighting up a spell you should use now. Blizzard keeps the game's own animation; None shows nothing.", 32)
+            page:Group(L["Cooldown Ready"])
+            page.readyToggles = Toggles({ { "Glow When Ready", "readyGlow" } })
+            When(function() return db().readyGlow end, function()
+                page.readyPills = Pills("Style", M.choices.readyStyle, function() return db().readyStyle end, Set("readyStyle"))
+                local ready = Columns({ "Glow Color", "Glow Time" })
+                Color(ready[1], "readyColor")
+                page.readySlider = Slider(ready[2], "readyDuration", "s")
+            end)
+            Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. How an icon looks while it cools down is on the Buttons tab. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
         end)
-        Note("A proc is the game lighting up a spell you should use now. Blizzard keeps the game's own animation; None shows nothing.", 32)
-        page:Group(L["Cooldown Ready"])
-        page.readyToggles = Toggles({ { "Glow When Ready", "readyGlow" } })
-        When(function() return db().readyGlow end, function()
-            page.readyPills = Pills("Style", M.choices.readyStyle, function() return db().readyStyle end, Set("readyStyle"))
-            local ready = Columns({ "Glow Color", "Glow Time" })
-            Color(ready[1], "readyColor")
-            page.readySlider = Slider(ready[2], "readyDuration", "s")
-        end)
-        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. How an icon looks while it cools down is on the Buttons tab. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
     end)
 
     Tab("Visibility", function()
         page:Group(L["When to Show"])
         local show = Columns({ "Show" })
-        page.visibilitySelect = SelectIn(show[1], 260, function() return M.choices.visibility end,
+        -- The micro menu and bag bar: Always, Mouseover or Hidden.
+        local short = {}
+        for _, choice in ipairs(M.choices.visibility) do if M.utilityVisibility[choice.id] then short[#short + 1] = choice end end
+        page.visibilitySelect = SelectIn(show[1], 260, function() return Action() and M.choices.visibility or short end,
             function() return db().visibility end, Set("visibility")); Mark("visibility")
         When(function() return db().visibility == "custom" end, function()
             local host = page:Row(L["Conditions"], 48)
@@ -270,7 +300,7 @@ function M:CreateConfigPage(parent)
             local faded = Columns({ "Faded Opacity" })
             page.fadeSlider = Slider(faded[1], "fadeOpacity", "%")
         end)
-        Note("Mouseover keeps the bar at Faded Opacity until the mouse is over it. Hidden bars still show in Edit Mode and Keybind Mode. Every bar hides during pet battles. Action Bar 1 hides while the game shows its own vehicle bar, and the pet and stance bars while you control a vehicle.", 48)
+        Note("Mouseover keeps the bar at Faded Opacity until the mouse is over it. Hidden bars still show in Edit Mode and Keybind Mode. Action bars hide during pet battles (the micro menu and bag bar stay). Action Bar 1 hides while the game shows its own vehicle bar, and the pet and stance bars while you control a vehicle.", 48)
     end)
 
     -- Copy & Apply: the bar in Editing is the source; tick bars, then apply.
