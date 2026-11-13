@@ -22,6 +22,7 @@ local function Lookup(self, id)
     if not Plain(id) or type(id) ~= "string" then return nil end
     return self.elements[id]
 end
+function PM:Element(id) return Lookup(self, id) end
 local function Target(id) return Known(P.targets,id) or (addon.FrameAnchors and addon.FrameAnchors:ValidID(id)) end
 local function Allowed(element,id)
     return element.allowedTargets[id] or (element.allowedTargets.selected and addon.FrameAnchors and addon.FrameAnchors:ValidID(id))
@@ -205,63 +206,6 @@ function PM:ApplyPosition(id, force)
     return ok, status
 end
 
--- Width in UIParent units. Screen/missing/restricted targets have no matched width.
-function PM:GetAnchorWidth(id)
-    local element = Lookup(self, id)
-    if not element then return nil, "unknown-element" end
-    if Combat() then return nil, "combat" end
-    if element.position.target == "screen" then return nil, "screen" end
-    local target = P:Resolve(element.position.target)
-    if element.sizeCallback and element.sizeObserver and element.sizeTarget ~= target then return nil, "observer-unavailable" end
-    local _, _, width = P:Geometry(target)
-    return width
-end
-
--- A hidden, addon-owned two-point frame receives native size changes. Never hook
--- or resize the target. No polling; inaccessible geometry defers/falls back.
-function PM:SetAnchorSizeListener(id, callback)
-    local element = Lookup(self, id)
-    if not element then return false, "unknown-element" end
-    if Combat() then return false, "combat" end
-    if callback ~= nil and type(callback) ~= "function" then return false, "invalid-callback" end
-    element.sizeCallback = callback
-    self:RefreshAnchorSize(id)
-    return true
-end
-
-function PM:RefreshAnchorSize(id)
-    local element = Lookup(self, id)
-    if not element then return end
-    if Combat() then self.pending = true; return end
-    local target = element.sizeCallback and element.position.target ~= "screen" and P:Resolve(element.position.target) or nil
-    if not element.sizeObserver and target then
-        local observer = CreateFrame("Frame", nil, UIParent)
-        observer:EnableMouse(false); observer:Hide()
-        element.sizeObserver = observer
-        observer:SetScript("OnSizeChanged", function() self:RefreshAnchorSize(id) end)
-    end
-    if element.sizeObserver and element.sizeTarget ~= target then
-        element.sizeTarget = target
-        local observer = element.sizeObserver
-        observer:ClearAllPoints()
-        if target then
-            local ok = pcall(function()
-                observer:SetPoint("TOPLEFT", target, "TOPLEFT", 0, 0)
-                observer:SetPoint("BOTTOMRIGHT", target, "BOTTOMRIGHT", 0, 0)
-            end)
-            if not ok then observer:ClearAllPoints(); element.sizeTarget = nil end
-        end
-    end
-    local width = target and self:GetAnchorWidth(id) or nil
-    if element.lastAnchorWidth ~= width then
-        element.lastAnchorWidth = width
-        if element.sizeCallback then
-            local ok, message = pcall(element.sizeCallback, element, width)
-            if not ok then print("ModeUI: anchor size callback failed: " .. tostring(message)) end
-        end
-    end
-end
-
 function PM:SetPosition(id, position, allowUnavailable)
     local element = Lookup(self, id)
     if not element then return false, "unknown-element" end
@@ -393,89 +337,6 @@ function PM:ResetPosition(id)
     local element = Lookup(self, id)
     if not element then return false, "unknown-element" end
     return self:SetPosition(id, element.defaults)
-end
-
-function PM:CanDrag(element)
-    if Combat() or not addon.editMode or not element.editMode or not element.module.enabled or not element.draggable then return false end
-    if not element.canDrag then return true end
-    local ok, allowed = pcall(element.canDrag, element)
-    return ok and Plain(allowed) and allowed == true
-end
-
-function PM:StartDragging(id)
-    local element = Lookup(self, id)
-    if not element then return false, "unknown-element" end
-    if not self:CanDrag(element) then return false, "drag-not-allowed" end
-    if element.dragging then return true, "unchanged" end
-    if element.frame:GetScript("OnUpdate") then return false, "update-in-use" end
-    if not P:Resolve(element.position.target) then return false, "target-unavailable" end
-    self:FinishDrags()
-    self:SelectElement(id)
-    element.subject.appliedAnchor = nil
-    element.dragging, element.module.dragging = true, true
-    element.frame:StartMoving()
-    element.frame:SetScript("OnUpdate", element.dragUpdate)
-    return true
-end
-
-function PM:StopDragging(id)
-    local element = Lookup(self, id)
-    if not element then return false, "unknown-element" end
-    if element.legacy then element.module:StopDragging(); return true end
-    if not element.dragging then return true, "unchanged" end
-    element.frame:StopMovingOrSizing()
-    if element.frame:GetScript("OnUpdate") == element.dragUpdate then element.frame:SetScript("OnUpdate", nil) end
-    element.dragging, element.module.dragging = false, false
-    local changed
-    if not Combat() then
-        local x, y = P:ReadFrame(element.subject)
-        changed = x ~= element.position.x or y ~= element.position.y
-        element.position.x, element.position.y = x, y
-        self:ApplyPosition(id, true)
-    else self.pending = true; P.pending = true end
-    self:NotifyPosition(id, changed)
-    return true
-end
-
-function PM:FinishDrags()
-    for _, id in ipairs(self.order) do self:StopDragging(id) end
-end
-
-function PM:GetSelectedElement()
-    local element = self.elements[self.selected]
-    return element and element.editMode and element.module.enabled and element or nil
-end
-
-function PM:SelectElement(id)
-    local element = Lookup(self, id)
-    if not element then return false, "unknown-element" end
-    if Combat() or not addon.editMode or not element.editMode or not element.module.enabled then return false, "selection-not-allowed" end
-    self.selected = id
-    self:RefreshSelection()
-    return true
-end
-
-function PM:RefreshSelection()
-    if addon.editMode and not self:GetSelectedElement() then
-        self.selected = nil
-        for _, id in ipairs(self.order) do
-            local element = self.elements[id]
-            if element.editMode and element.module.enabled then self.selected = id; break end
-        end
-    elseif not addon.editMode then self.selected = nil end
-    addon.EditMode.selected = self.selected -- compatibility view, not another selector
-    for id, element in pairs(self.elements) do
-        if not addon.editMode or not element.module.enabled then self:StopDragging(id) end
-        if element.draggable then element.frame:EnableMouse(self:CanDrag(element) == true) end
-        local selected = id == self.selected
-        local show = addon.editMode and element.editMode and element.module.enabled and addon.EditMode.highlights
-        if self.UpdateEditDecoration then self:UpdateEditDecoration(element, selected, show) end
-        if element.onHighlight then element.onHighlight(element, selected, show)
-        elseif (element.legacy or element.frame == element.module.frame) and element.module.SetEditHighlight then
-            element.module:SetEditHighlight(selected, show)
-        end
-    end
-    self:NotifyPosition()
 end
 
 function PM:NotifyPosition(id, changed)

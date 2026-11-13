@@ -1,0 +1,180 @@
+local _, addon = ...
+local T = addon.InterfaceTheme
+local W = {}
+addon.ConfigWidgets = W
+
+-- Popups escape settings ScrollFrame clipping; anchors still follow the owned button.
+function W.PlacePopup(menu,button)
+    local ratio=button:GetEffectiveScale()/UIParent:GetEffectiveScale()
+    menu:SetScale(ratio)
+    local bottom=button.GetBottom and button:GetBottom()
+    local below=not (issecretvalue and issecretvalue(bottom)) and type(bottom)=="number" and bottom*ratio or 0
+    menu:ClearAllPoints()
+    if below<menu:GetHeight()*ratio+8 then menu:SetPoint("BOTTOMLEFT",button,"TOPLEFT",0,4)
+    else menu:SetPoint("TOPLEFT",button,"BOTTOMLEFT",0,-4) end
+end
+function W.Popup(button,width,height)
+    local menu=CreateFrame("Frame",nil,UIParent)
+    menu.modeMediaScope=addon.Media:FrameScope(button)
+    menu:Hide();menu:SetSize(width,height);menu:SetFrameStrata("TOOLTIP")
+    menu:SetFrameLevel(200);menu:SetClampedToScreen(true);menu:EnableMouse(true)
+    W.PlacePopup(menu,button)
+    return menu
+end
+
+local function InterfaceColor(color)
+    for key, original in pairs(addon.Theme) do
+        if color == original then return T[key] or color end
+    end
+    return color
+end
+W.InterfaceColor = InterfaceColor
+
+function W.StateColor(enabled)
+    return enabled and T.enabled or T.off
+end
+
+function W.CrispText(region)
+    -- Supported native pixel rounding; no global UI scale or font engine changes.
+    if region.SetRoundLayoutToNearestPixel then region:SetRoundLayoutToNearestPixel(true) end
+    if T.blizzardArt then
+        -- Stock interface text carries a soft drop shadow; it keeps gold and
+        -- parchment legible on the textured stone without raising contrast.
+        region:SetShadowColor(0, 0, 0, 0.85)
+        region:SetShadowOffset(1, -1)
+    else
+        region:SetShadowOffset(0, 0)
+    end
+end
+
+local function Paint(texture, color, alpha)
+    if texture.modeAsset then
+        local usable=texture.appliedModeAsset==texture.modeAsset or addon.Media:ApplyTexture(texture,texture.modeAsset,color)
+        if usable then
+            texture.appliedModeAsset=texture.modeAsset
+            texture:SetVertexColor(color[1], color[2], color[3], alpha or color[4] or 1)
+            return
+        end
+        if texture.modeAsset=="ModePillSurface" then
+            if addon.Media:ApplyTexture(texture,"ModeToggleSurface",color) then
+                texture:SetVertexColor(color[1],color[2],color[3],alpha or color[4] or 1)
+            else texture:SetColorTexture(0,0,0,0) end
+            return
+        end
+        if texture.modeAsset=="ModeCheckSurface" or texture.modeAsset=="ModeCheckMark" or texture.modeAsset=="ModeToggleSurface" then
+            -- The already bundled circular thumb remains a rounded fallback
+            -- while a new small-control file is unavailable to this client.
+            if addon.Media:ApplyTexture(texture,"ModeThumb",color) then
+                texture:SetVertexColor(color[1],color[2],color[3],alpha or color[4] or 1)
+            else texture:SetColorTexture(0,0,0,0) end
+            return
+        end
+        -- Missing borders must never become opaque rectangles over controls.
+        if texture.modeAsset:find("Border",1,true) then texture:SetColorTexture(0,0,0,0);return end
+    end
+    texture:SetColorTexture(color[1], color[2], color[3], alpha or color[4] or 1)
+end
+W.Paint = Paint
+
+-- Static neutral sheen over the large Figma material, below all controls/text.
+-- Reuses the gradient API already used by the Forever map renderer.
+function W.ModeSheen(frame,inset)
+    local texture=frame:CreateTexture(nil,"BACKGROUND",nil,2)
+    inset=inset or 0
+    texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
+    texture.modeAsset="ModeSurface";Paint(texture,{1,1,1,1})
+    if texture.SetGradient and CreateColor then
+        texture:SetGradient("VERTICAL",CreateColor(1,1,1,0.018),CreateColor(1,1,1,0))
+    else texture:SetAlpha(0.008) end
+    return texture
+end
+
+-- Fixed abstract material below page controls and the existing sheen. Missing
+-- artwork stays transparent so the darker base remains usable after /reload.
+function W.ModePageDetail(frame,inset)
+    local texture=frame:CreateTexture(nil,"BACKGROUND",nil,1)
+    inset=inset or 0
+    texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
+    texture.modeAsset="ModePageDetail"
+    if addon.Media:ApplyTexture(texture,"ModePageDetail") then
+        texture:SetVertexColor(1,1,1,0.18)
+    else texture:SetColorTexture(0,0,0,0) end
+    return texture
+end
+
+function W.Fill(frame, color, layer, inset, alpha)
+    color = InterfaceColor(color)
+    local texture = frame:CreateTexture(nil, layer or "BACKGROUND")
+    inset = inset or 0
+    texture:SetPoint("TOPLEFT", inset, -inset)
+    texture:SetPoint("BOTTOMRIGHT", -inset, inset)
+    Paint(texture, color, alpha)
+    if T.id=="mode" and color==T.line then
+        texture.modeAsset="ModeDivider";Paint(texture,color,alpha)
+    end
+    if color==T.panel or color==T.surface or color==T.sidebar or color==T.field or color==T.background or color==T.pageBackground then
+        -- Configuration surfaces belong to the interface theme. Global Texture
+        -- is reserved for module displays, never the settings window or popups.
+        if T.id == "mode" then
+            texture.modeAsset = "ModeSurface"
+            Paint(texture, color, alpha)
+        end
+    end
+    return texture
+end
+
+-- Four 1px edges. Vertical edges stop short of the corners so translucent
+-- outlines never double up.
+function W.Outline(frame, color, layer, inset, alpha, scope)
+    scope=scope or addon.Media:FrameScope(frame)
+    inset = inset or 0
+    local style=addon.Media:GlobalStyle("border",scope) or "thin"
+    if T.id == "mode" and not frame.modeSquareOutline and (frame.modeFixedSprite or style == "thin" or style == "none") then
+        local texture=frame:CreateTexture(nil,layer or "BORDER")
+        texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
+        texture.modeAsset=frame.modeBorderAsset or "ModeBorder"
+        local outline={edges={texture},shown=true,kind=style,rounded=true}
+        function outline:SetShown(shown) self.shown=shown;texture:SetShown(shown and self.kind~="none") end
+        function outline:SetColor(value,opacity)
+            Paint(texture,InterfaceColor(value),opacity or 0.36)
+            self.kind=addon.Media:GlobalStyle("border",scope)=="none" and "none" or "thin"
+            self:SetShown(self.shown)
+        end
+        outline:SetColor(color,alpha)
+        return outline
+    end
+    local edges = {}
+    local function Edge(a, ax, ay, b, bx, by, horizontal)
+        local edge = frame:CreateTexture(nil, layer or "BORDER")
+        edge:SetPoint(a, ax, ay); edge:SetPoint(b, bx, by)
+        if horizontal then edge:SetHeight(1) else edge:SetWidth(1) end
+        edges[#edges + 1] = edge
+        return edge
+    end
+    Edge("TOPLEFT", inset, -inset, "TOPRIGHT", -inset, -inset, true)
+    Edge("BOTTOMLEFT", inset, inset, "BOTTOMRIGHT", -inset, inset, true)
+    Edge("TOPLEFT", inset, -inset - 1, "BOTTOMLEFT", inset, inset + 1)
+    Edge("TOPRIGHT", -inset, -inset - 1, "BOTTOMRIGHT", -inset, inset + 1)
+    local outline = { edges = edges, shown = true }
+    function outline:SetColor(value, opacity)
+        for _, edge in ipairs(self.edges) do Paint(edge, InterfaceColor(value), opacity) end
+        local style=addon.Media:GlobalStyle("border",scope) or "thin"
+        self.kind=style=="none" and "none" or style=="thin" and "thin" or "shared"
+        if self.kind=="shared" then
+            if not self.view then self.view={};addon.Border.Create(self.view,frame) end
+            addon.Border.Apply(self.view,{borderStyle=style,borderColor=InterfaceColor(value),
+                borderOpacity=opacity or 1,inset=true,size=64})
+        end
+        self:SetShown(self.shown)
+    end
+    function outline:SetShown(shown)
+        self.shown=shown
+        for _,edge in ipairs(self.edges) do edge:SetShown(shown and self.kind=="thin") end
+        if self.view then
+            self.view.iconBorder:SetShown(shown and self.kind=="shared" and self.view.borderKind=="thin")
+            if self.view.borderFrame then self.view.borderFrame:SetShown(shown and self.kind=="shared" and self.view.borderKind=="shared") end
+        end
+    end
+    outline:SetColor(color, alpha)
+    return outline
+end

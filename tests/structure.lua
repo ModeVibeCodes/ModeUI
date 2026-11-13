@@ -7,10 +7,7 @@ local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "
 local LEGACY_DIRECTORIES = {}
 local LEGACY_MODULE_FILES = {}
 local LINE_BUDGET = 400
-local OVER_BUDGET = {
-    ["Shared/Settings/Widgets.lua"] = true, ["Shared/Settings/Window.lua"] = true, ["Shared/Media/Media.lua"] = true,
-    ["Shared/Placement/PositionManager.lua"] = true,
-}
+local OVER_BUDGET = {}
 local CODE_DIRECTORIES = { Libs = true, Shared = true, Modules = true }
 local ASSET_DIRECTORIES = { Media = true }
 

@@ -35,7 +35,7 @@ ModeUI/
     Placement/                positions, Edit Mode, Preview, frame anchors
     Skin/                     re-skinning Blizzard frames in the Mode look
     Settings/                 settings window framework (window, pages, search, tabs)
-      Widgets/                one file per widget kind
+      Widgets/                one file per widget kind (Core, Art, Text, Button, Switch, Header, Input)
     Templates/                XML virtual templates, added when a module needs one
   Modules/
     <Name>/
@@ -321,7 +321,7 @@ change to behavior, looks or saved data.
 | 3 | Runtime: `Core.lua` (from `Edition.lua` and the copied secret checks), `DB.lua`, `Reload.lua`, `Lifecycle.lua` (from `Modules.lua`, `Categories.lua` and the combat broadcast in `DisplayModes.lua`); add Events, Defer, Callbacks, Locale | done |
 | 4 | Domain and Kit: unit readers and frame builders out of `UnitFramesDisplay.lua` | done |
 | 5 | Module folders: `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings), then `Profiles/`, `Optimizations/` and `ClassColors/` (Init, Driver, Settings) | done |
-| 6 | Split `Widgets.lua` and `Window.lua` into `Shared/Settings/Widgets/`; modules register their own page layout | planned |
+| 6 | Split the files over budget: `Widgets.lua` into `Shared/Settings/Widgets/` (Core, Art, Text, Button, Switch, Header, Input), the sidebar out of `Window.lua` (`Sidebar.lua`), textures and scoped styles out of `Media.lua`, anchor width and dragging out of `PositionManager.lua`. Modules declare their own page layout (`modeLayout`, done in phase 5) | done |
 | 7 | Module skeleton and the README "Adding a module" section | planned |
 
 After phases 2–6, the in-game check is the same:
