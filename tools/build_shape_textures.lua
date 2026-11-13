@@ -14,6 +14,8 @@
 --   Nameplates/AuraGlow.tga small glow around an aura icon, hollow inside (sliced at 6)
 --   Nameplates/Arrow.tga target arrow pointing right (mirrored for the left)
 --   Nameplates/Stripes.tga diagonal stripes for the focus highlight (tiles seamlessly)
+--   Mode/SlateHatch.tga  ModeSlateHatch: 4x4 tile, gray 80% with a 1px full-white diagonal; tinted
+--                        Mode Slate / 0.8, so the base is Mode Slate and the lines a little lighter
 --   ActionBars/Slot.tga  ActionBarSlot: a dark action slot with a soft top bevel, darker edges and
 --                        fine grain, in color (not tinted) and shown at Background Opacity
 local SAMPLES = 8
@@ -113,6 +115,10 @@ local TEXTURES = {
     { "Nameplates/Arrow.tga", 16, 16, Triangle(3, 2, 14, 8, 3, 14), true },
     { "Nameplates/Stripes.tga", 16, 16, Stripes(8, 3), true },
     { "ActionBars/Slot.tga", 64, 64, function() return 1 end, false, Slot(64) },
+    { "Mode/SlateHatch.tga", 4, 4, function() return 1 end, false, function(x, y)
+        local v = (x + y) % 4 == 0 and 1 or 0.8
+        return v, v, v
+    end },
 }
 
 local function Coverage(shape, px, py, supersample)

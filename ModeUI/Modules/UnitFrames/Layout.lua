@@ -115,7 +115,9 @@ function M:ApplyLayout(f, unit)
         bar:SetFrameLevel(level + 1)
         if bar.SetReverseFill then bar:SetReverseFill(reverse) end
         Kit.BarForeground(bar, fdb.foregroundTexture, bar == h and g.healthHeight or g.powerHeight, g.px)
-        Kit.BarBackground(bar, fdb.backgroundTexture); Tint(bar.bg, ONYX.track, fdb.barBackgroundOpacity / 100)
+        local barHeight = bar == h and g.healthHeight or g.powerHeight
+        Kit.BarBackground(bar, fdb.backgroundTexture, g.width - g.inset - g.pad, barHeight, g.px)
+        Tint(bar.bg, Kit.BarBackgroundColor(fdb.backgroundTexture), fdb.barBackgroundOpacity / 100)
     end
     -- A 1px light line where the health fill ends (owner, November 13, 2026).
     Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)

@@ -43,6 +43,8 @@ M.Textures = {
     ModeSwitch = { file = "Mode/Switch.tga", slice = { 8, 0, 8, 0 }, rounded = true },
     ModeTrack = { file = "Mode/Track.tga", slice = { 2, 0, 2, 0 }, rounded = true },
     ModeChevron = { file = "Mode/Chevron.tga", transparent = true },
+    -- 4x4 tile for Mode Slate Hatch (Kit.BarBackground tiles it per pixel).
+    ModeSlateHatch = { file = "Mode/SlateHatch.tga" },
     NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
     NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
     NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },

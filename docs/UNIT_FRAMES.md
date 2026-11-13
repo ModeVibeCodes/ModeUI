@@ -5,6 +5,24 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Mode Slate backgrounds (layout version 14)
+
+November 13, 2026, per the owner: no pattern lines in bar backgrounds, and a
+stronger, more solid feel. Two new background textures, shared with the
+nameplates (`Kit.BarBackground`, `Kit.BarBackgroundColor`):
+
+- **Mode Slate** (`slate`): flat, tinted `Kit.onyx.slate` #4C4E52, a
+  near-neutral gray clearly lighter than the Onyx fill. The unit frame
+  default, at 70% Background Opacity.
+- **Mode Slate Hatch** (`slateHatch`): `Mode/SlateHatch.tga`, a 4×4 tile (80%
+  gray with a full-white diagonal) tinted #5F6267, so its base matches Mode
+  Slate and the lines are a little lighter. It tiles one texel per screen
+  pixel (`SetTexCoord` from the bar's size over `4 × px`, nearest filtering).
+  Kept for overlays such as overshields; also offered as a background.
+
+Layout version 14 moves a frame still on the old defaults (Flat, 25%) to Mode
+Slate at 70%; chosen textures and opacities stay.
+
 ## Hard-edged borders and the fill end line
 
 November 13, 2026, per the owner: the rounded rim and gap textures were

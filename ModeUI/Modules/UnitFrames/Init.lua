@@ -47,7 +47,8 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
     bottomleft = { point = "TOPLEFT", relative = "BOTTOMLEFT" }, right = { point = "LEFT", relative = "RIGHT" },
     left = { point = "RIGHT", relative = "LEFT" }, topright = { point = "BOTTOMRIGHT", relative = "TOPRIGHT" } }
 -- Version 13: Target of Target, Focus and Target of Focus defaults (see Migrations.lua).
-M.LAYOUT_VERSION = 13
+-- Version 14: Mode Slate bar backgrounds at 70%.
+M.LAYOUT_VERSION = 14
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -98,7 +99,9 @@ local function Frame(side, extra)
         -- Both bars: fill (foreground) and empty bar (background) textures and
         -- opacity. The background is mostly see-through by default, so the fill
         -- stands out against the world behind it (owner, November 13, 2026).
-        foregroundTexture = "mode", backgroundTexture = "flat", barForegroundOpacity = 100, barBackgroundOpacity = 25,
+        -- Mode Slate at 70% (owner, November 13, 2026): a solid near-neutral gray
+        -- behind the fill, strong enough not to feel see-through.
+        foregroundTexture = "mode", backgroundTexture = "slate", barForegroundOpacity = 100, barBackgroundOpacity = 70,
         -- A 1px light line where the health fill ends.
         fillEdge = true,
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,

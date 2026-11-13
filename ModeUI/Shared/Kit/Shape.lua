@@ -70,22 +70,51 @@ end
 
 -- Bar texture choices: "mode" (foreground only), "flat", or any SharedMedia
 -- status bar ("media:<name>"); a missing one draws as the default until it loads.
+-- Backgrounds may also be "slate" (Mode Slate: flat, a near-neutral gray well
+-- lighter than the Onyx fill) or "slateHatch" (Mode Slate Hatch: the same with
+-- a 1px diagonal every 4px, kept for overlays such as overshields).
+local BACKGROUNDS = { slate = true, slateHatch = true }
 function Kit.ValidBarTexture(value, foreground)
-    return value == "flat" or (foreground and value == "mode") or (type(value) == "string" and value:match("^media:.+") ~= nil)
+    return value == "flat" or (foreground and value == "mode") or (not foreground and BACKGROUNDS[value] == true)
+        or (type(value) == "string" and value:match("^media:.+") ~= nil)
 end
 function Kit.BarTextureChoices(foreground)
     local list = { { id = "flat", label = "Flat" } }
-    if foreground then table.insert(list, 1, { id = "mode", label = "Mode Gradient" }) end
+    if foreground then table.insert(list, 1, { id = "mode", label = "Mode Gradient" })
+    else
+        table.insert(list, 1, { id = "slateHatch", label = "Mode Slate Hatch" })
+        table.insert(list, 1, { id = "slate", label = "Mode Slate" })
+    end
     for _, choice in ipairs(addon.Media:GetStatusBars()) do
         if choice.key ~= "default" then list[#list + 1] = { id = choice.key, label = choice.label } end
     end
     return list
 end
 
--- A bar's background texture choice: "flat" (the default) or "media:<name>".
-function Kit.BarBackground(bar, choice)
-    local path = choice ~= "flat" and addon.Media:GetStatusBar(choice) or nil
-    bar.bg:SetTexture(path or Kit.FLAT)
+-- A bar's background texture: "flat", "slate", "slateHatch" or "media:<name>".
+-- The hatch tiles one texel per screen pixel when the bar's size (width,
+-- height) and pixel size (px) are given, so its lines stay 1px at any scale.
+function Kit.BarBackground(bar, choice, width, height, px)
+    local bg = bar.bg
+    if bg.ClearTextureSlice then bg:ClearTextureSlice() end
+    bg:SetTexCoord(0, 1, 0, 1)
+    if choice == "slateHatch" then
+        local path = addon.Media:GetTexture("ModeSlateHatch")
+        if path and bg:SetTexture(path, "REPEAT", "REPEAT", "NEAREST") ~= false then
+            if width and height and px then bg:SetTexCoord(0, width / (4 * px), 0, height / (4 * px)) end
+            return
+        end
+    end
+    local path = not BACKGROUNDS[choice] and choice ~= "flat" and addon.Media:GetStatusBar(choice) or nil
+    bg:SetTexture(path or Kit.FLAT)
+end
+
+-- The color a background texture is tinted: Mode Slate's gray (the hatch tile
+-- is 80% gray, so its tint is a fifth lighter), else the Onyx track.
+function Kit.BarBackgroundColor(choice)
+    if choice == "slate" then return Kit.onyx.slate end
+    if choice == "slateHatch" then return Kit.onyx.slateHatch end
+    return Kit.onyx.track
 end
 
 function Kit.ModeGradient(bar, barHeight, px)

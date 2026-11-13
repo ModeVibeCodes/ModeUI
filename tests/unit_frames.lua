@@ -13,7 +13,7 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==13 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.layoutVersion==14 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture==nil,'one bar texture: Mode Gradient')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
     assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='sky' and M.db.player.portraitRing=='class')
@@ -200,14 +200,18 @@ world.run([====[
     assert(gap[1].height==2 and Point(gap[1])[4]==2 and Point(gap[1])[5]==-2 and Point(gap[3])[5]==-4 and Point(gap[4],2)[5]==4,'2px black gap one rim in')
     local cap=p.panel.cap;assert(cap:IsShown() and Point(cap)[1]=='TOPLEFT' and Point(cap)[4]==4 and cap.width==25-4 and cap.vertexColor[1]==O.inner[1],'black under the portrait up to the bars')
     for _,bar in ipairs({p.health,p.power}) do
-        assert(bar.bg.vertexColor[1]==O.track[1] and bar.bg.vertexColor[3]==O.track[3] and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
+        assert(bar.bg.vertexColor[1]==O.slate[1] and bar.bg.vertexColor[3]==O.slate[3] and bar.bg.texture==addon.Kit.FLAT and bar.statusBarTexture==addon.Kit.FLAT and bar.sheen:IsShown(),'Mode Gradient bars')
         assert(bar.fillTexture.drawLayer=='ARTWORK','fill drawn above the track')
     end
     -- See-through background: nothing opaque under the bars (rim, gap and cap
     -- surround them), with a solid hairline between health and power.
     local d=M.db.player
-    assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==25 and d.foregroundTexture=='mode' and d.backgroundTexture=='flat')
-    for _,bar in ipairs({p.health,p.power}) do assert(math.abs(bar.bg.vertexColor[4]-0.25)<1e-9,'25% background') end
+    assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==70 and d.foregroundTexture=='mode' and d.backgroundTexture=='slate','Mode Slate at 70%')
+    for _,bar in ipairs({p.health,p.power}) do assert(math.abs(bar.bg.vertexColor[4]-0.7)<1e-9,'70% background') end
+    assert(M:SetFrameOption('player','backgroundTexture','slateHatch') and p.health.bg.texture==addon.Media:GetTexture('ModeSlateHatch') and p.health.bg.vertexColor[1]==O.slateHatch[1])
+    local hc=p.health.bg.texCoord;assert(hc[2]==(244-60-4)/4 and hc[4]==27/4,'the hatch tiles one texel per pixel')
+    assert(M:SetFrameOption('player','backgroundTexture','flat') and p.health.bg.vertexColor[1]==O.track[1] and p.health.bg.texCoord[2]==1)
+    assert(M:SetFrameOption('player','backgroundTexture','slate') and not M:SetFrameOption('player','foregroundTexture','slate'))
     assert(Point(t.panel.cap)[1]=='TOPRIGHT' and Point(t.panel.cap)[4]==-4,'target: the cap is on the right')
     -- The end of the health fill gets a 1px light line, on the side it fills toward.
     local fe=p.health.fillEdge;assert(fe and fe:IsShown() and fe.width==1 and Point(fe)[1]=='TOPRIGHT' and Point(fe)[2]==p.health.fillTexture)
@@ -289,7 +293,7 @@ world.run([====[
     assert(M:SetFrameOption('player','foregroundTexture','flat') and p.health.statusBarTexture==addon.Kit.FLAT and not p.health.sheen:IsShown())
     assert(not M:SetFrameOption('player','backgroundTexture','mode') and not M:SetFrameOption('player','foregroundTexture','bogus'),'texture choices validated')
     assert(M:SetFrameOption('player','foregroundTexture','mode') and p.health.sheen:IsShown())
-    assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',25))
+    assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',70))
     assert(M:SetFrameOption('player','showPower',false) and not p.panel.hairline:IsShown() and M:SetFrameOption('player','showPower',true))
     assert(not M:SetFrameOption('player','healthColorMode','palette') and not M:SetFrameOption('player','healthColorMode','reaction'),'only Default, Class Color or Custom')
     assert(M:SetFrameOption('player','nameColorMode','class') and Near(p.nameText.color[1],soft[1]))
@@ -491,7 +495,7 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==13 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
+    assert(v1.layoutVersion==14 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
     assert(v1.player.healthText=='both' and v1.player.nameFontSize==14 and v1.player.healthColorMode=='default')
     assert(v1.player.fontMedia=='Expressway' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
     assert(v1.target.enabled==false and v1.target.barWidth==180)
@@ -503,7 +507,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==13 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
+    assert(v5.layoutVersion==14 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
     assert(v5.player.levelFontSize==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -516,7 +520,7 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==13 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==14 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='sky' and v8.target.nameColorMode=='sky','names adopt the default color')
     assert(v8.player.portraitRing=='class' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'class gradient ring unless custom')
@@ -527,7 +531,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==13 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
+    assert(v9.layoutVersion==14 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -535,20 +539,25 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==13 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
+    assert(v10.layoutVersion==14 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==true and v10.player.nameLift==nil and v10.target.nameLift==nil,'lift choice carried over')
     assert(v10.target.mirrorText==false,'matched Target now copies the Player text layout')
     local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
-    assert(v11.layoutVersion==13 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    assert(v11.layoutVersion==14 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
     -- Version 12 -> 13: new small-frame defaults, but a changed setting stays.
     local v12={layoutVersion=12,targettarget={scale=100,showPortrait=true,namePosition='above',nameAlign='CENTER',barWidth=110},
         focus={scale=120,showPortrait=true,barWidth=150,healthHeight=22,levelStyle='badge',nameFontSize=12}}
     M.Initialize(v12)
-    assert(v12.layoutVersion==13 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
+    assert(v12.layoutVersion==14 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
     assert(v12.targettarget.nameAlign=='CENTER' and v12.focus.scale==120,'user changes kept')
     assert(v12.focus.barWidth==110 and v12.focus.healthHeight==16 and v12.focus.levelStyle=='none' and v12.focus.nameFontSize==11)
     assert(v12.targettarget.attach==true and v12.focustarget.attach==true and v12.focus.attach==false,'new keys take defaults')
+    -- Version 13 -> 14: Mode Slate at 70% for frames still on the old Flat / 25%.
+    local v13={layoutVersion=13,player={backgroundTexture='flat',barBackgroundOpacity=25},target={backgroundTexture='media:Smooth',barBackgroundOpacity=40}}
+    M.Initialize(v13)
+    assert(v13.layoutVersion==14 and v13.player.backgroundTexture=='slate' and v13.player.barBackgroundOpacity==70)
+    assert(v13.target.backgroundTexture=='media:Smooth' and v13.target.barBackgroundOpacity==40,'chosen backgrounds stay')
     local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     kept.player.nameColorMode='class';kept.player.portraitRing='border';M.Initialize(kept)
     assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='border','later choices are not migrated')
@@ -658,7 +667,7 @@ restored.run([====[
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
-    assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==25,'edits the Focus only')
+    assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==70,'edits the Focus only')
     assert(M:ResetFrame('focus'))
     -- Placement shows only for frames that attach; its offsets only while attached.
     assert(not Visible(Row('Layout','Attach Point')),'Focus has no parent frame')

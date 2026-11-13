@@ -160,6 +160,18 @@ local function MigrateV12(db)
     end
 end
 
+-- Layout version 13 -> 14, per the owner: bar backgrounds become Mode Slate at
+-- 70%. A frame still on the old Flat texture or the old 25% takes the new one.
+local function MigrateV13(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" then
+            if frame.backgroundTexture == "flat" then frame.backgroundTexture = "slate" end
+            if frame.barBackgroundOpacity == 25 then frame.barBackgroundOpacity = 70 end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -171,7 +183,8 @@ function M.Initialize(db)
         if db.layoutVersion == 9 then MigrateV9(db); db.layoutVersion = 10 end
         if db.layoutVersion == 10 then MigrateV10(db); db.layoutVersion = 11 end
         if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = 12 end
-        if db.layoutVersion == 12 then MigrateV12(db); db.layoutVersion = M.LAYOUT_VERSION end
+        if db.layoutVersion == 12 then MigrateV12(db); db.layoutVersion = 13 end
+        if db.layoutVersion == 13 then MigrateV13(db); db.layoutVersion = M.LAYOUT_VERSION end
     end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
