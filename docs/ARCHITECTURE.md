@@ -4,9 +4,10 @@ How the addon is laid out and how every module is built. This is a living
 document: add to it when a new idea or module changes the shape of things.
 `tests/structure.lua` enforces the parts that can be checked mechanically.
 
-> **Status (November 12, 2026):** the layout below is in place. Every module is a
-> folder with its own XML, `Init.lua` and `Driver.lua`. Remaining work is listed
-> under [Restructure phases](#restructure-phases).
+> **Status (November 12, 2026):** the layout below is in place and all seven
+> restructure phases are done. Every module is a folder with its own XML,
+> `Init.lua` and `Driver.lua`, and every file is under the line budget. Folders
+> marked "added with" don't exist yet; the first module that needs one creates it.
 
 ## Folder layout
 
@@ -17,23 +18,25 @@ ModeUI/
   Media/                      fonts and textures only; no code
   Shared/                     code used by more than one module
     Runtime/                  the core every other file depends on
-      Core.lua                addon table, edition check, version, secret-safe helpers
+      Core.lua                edition check and the secret-safe IsPublic, IsNumber, InCombat
       DB.lua                  ModeUIDB defaults, schema check, runs module migrations, PTG import
       Lifecycle.lua           module registry: register, initialize, enable, disable, combat broadcast
       Events.lua              shared game-event dispatcher
       Callbacks.lua           internal messages between modules (CallbackHandler-1.0)
       Defer.lua               out-of-combat queue for protected frame work
       Locale.lua              string table (English now)
+      ProfileCodec.lua        bounded copy, export and import of settings tables
+      Profiles.lua            account-wide named profiles
       Feedback.lua            chat output (PrintAction)
       Reload.lua              reload requests and prompt state
       Boot.lua                ADDON_LOADED startup sequence; always the last file loaded
-    Forever/                  client adapters (reload, secret checks, curve constants)
+    Forever/                  client adapters; added with the first one a module needs
     Domain/                   game-data readers; the only code that calls Unit* APIs
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Border/                   pixel borders
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
     Placement/                positions, Edit Mode, Preview, frame anchors
-    Skin/                     re-skinning Blizzard frames in the Mode look
+    Skin/                     re-skinning Blizzard frames; added with Chat Windows or Blizzard UI Windows
     Settings/                 settings window framework (window, pages, search, tabs)
       Widgets/                one file per widget kind (Core, Art, Text, Button, Switch, Header, Input)
     Templates/                XML virtual templates, added when a module needs one
@@ -66,7 +69,7 @@ Libs  →  Shared/Runtime  →  Shared/Forever  →  Shared/Domain, Kit, Border,
 WoW's TOC can't use wildcards, so the order is explicit:
 
 1. `Libs/` files.
-2. `Shared/Runtime/Core.lua`, then `Shared/Forever/`, then the rest of `Runtime`.
+2. `Shared/Runtime/Core.lua`, then the rest of `Runtime` (and `Shared/Forever/` once it exists).
 3. `Domain`, `Kit`, `Border`, `Media`, `Placement`, `Skin`, then the `Settings` framework.
 4. One `Modules\<Name>\<Name>.xml` line per module, in sidebar order.
 5. `Shared/Runtime/Boot.lua`, last.
@@ -298,16 +301,18 @@ and an entry in the README's module table.
 
 ## Adding a module
 
-1. Create `Modules/<Name>/` with `<Name>.xml`, `Init.lua` and `Driver.lua`.
-   Add `Settings.lua` if it has a settings page.
-2. Add `Modules\<Name>\<Name>.xml` to `ModeUI.toc`, after the Shared files and
+1. Copy [docs/module-template](module-template/) to `Modules/<Name>/` and
+   follow its README. It's a complete, tested module (`tests/template.lua`), so
+   the new one starts with the right shape.
+2. Add `Modules\<Name>\<Name>.xml` to `ModeUI.toc`, after the other modules and
    before `Shared\Runtime\Boot.lua`.
-3. Pick an existing category, or register a new one in Runtime.
-4. Put anything another module could use in `Shared/` instead of the module.
+3. Pick an existing category, or register a new one in `Shared/Runtime/Lifecycle.lua`.
+4. Put anything another module could use in `Shared/` instead of the module:
+   game data in Domain, frame pieces in Kit. Add a message to `addon.Messages`
+   when another module needs to hear about a change.
 5. Record its APIs in `docs/API_COMPATIBILITY.md` and its design in
    `docs/<NAME>.md`.
-6. Add tests, and run `tests/structure.lua`, `tests/smoke.lua` and
-   `tests/unit_frames.lua`.
+6. Add tests, and run every test listed in the README.
 
 ## Restructure phases
 
@@ -322,7 +327,7 @@ change to behavior, looks or saved data.
 | 4 | Domain and Kit: unit readers and frame builders out of `UnitFramesDisplay.lua` | done |
 | 5 | Module folders: `Modules/UnitFrames/` (Init, Migrations, Driver, Layout, Build, Update, Settings), then `Profiles/`, `Optimizations/` and `ClassColors/` (Init, Driver, Settings) | done |
 | 6 | Split the files over budget: `Widgets.lua` into `Shared/Settings/Widgets/` (Core, Art, Text, Button, Switch, Header, Input), the sidebar out of `Window.lua` (`Sidebar.lua`), textures and scoped styles out of `Media.lua`, anchor width and dragging out of `PositionManager.lua`. Modules declare their own page layout (`modeLayout`, done in phase 5) | done |
-| 7 | Module skeleton and the README "Adding a module" section | planned |
+| 7 | `docs/module-template` (a working module checked by `tests/template.lua`) and the README "Adding a module" section | done |
 
 After phases 2–6, the in-game check is the same:
 

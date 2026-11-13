@@ -88,6 +88,8 @@ end
 -- options.before: Lua run after the addon files load, before ADDON_LOADED.
 -- options.saved: table assigned to ModeUIDB before ADDON_LOADED.
 -- options.ptg: table assigned to PTGToolsDB (Play The Game Tools' saved data).
+-- options.files: extra Lua files (repo-relative) loaded as addon files after
+-- the TOC, before ADDON_LOADED; used to run docs/module-template.
 function H.Load(options)
     options = options or {}
     local env = setmetatable({}, { __index = _G })
@@ -112,6 +114,9 @@ function H.Load(options)
     env.addon = addon
     for _, name in ipairs(H.Files()) do
         Compile(Read(H.addonDir .. name:gsub("/", sep)), name, env)("ModeUI", addon)
+    end
+    for _, name in ipairs(options.files or {}) do
+        Compile(Read(H.root .. name:gsub("/", sep)), name, env)("ModeUI", addon)
     end
     if options.saved then env.ModeUIDB = options.saved end
     if options.ptg then env.PTGToolsDB = options.ptg end

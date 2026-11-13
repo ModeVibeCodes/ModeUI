@@ -58,7 +58,8 @@ ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   Modules/         one folder per module (UnitFrames, Profiles, Optimizations, ClassColors),
                    each with its own XML, Init.lua, Driver.lua and Settings.lua
   Media/           Mode theme textures, unit frame textures, Lato fonts
-tests/             Lua smoke, Unit Frames and Global tests (simulated client, not WoW)
+tests/             structure, runtime, smoke, Unit Frames, Global and template tests
+                   (simulated client, not WoW)
 tools/             texture generators (Python + Pillow)
 design/mode/       Mode theme source artwork and provenance
 docs/              architecture (docs/ARCHITECTURE.md) and design notes (docs/UNIT_FRAMES.md)
@@ -85,6 +86,7 @@ lua tests/runtime.lua
 lua tests/smoke.lua
 lua tests/unit_frames.lua
 lua tests/global.lua
+lua tests/template.lua
 ```
 
 ## Adding a module
@@ -93,9 +95,10 @@ Every module is a folder, `ModeUI/Modules/<Name>/`. The full contract is in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#the-module-contract), and
 `tests/structure.lua` enforces the layout.
 
-1. Create the folder with `<Name>.xml`, `Init.lua` (declares and registers the
-   module, loaded first), `Driver.lua` (lifecycle and logic) and, if it has a
-   page, `Settings.lua` (defines `M:CreateConfigPage(parent)` only).
+1. Copy [docs/module-template](docs/module-template/) to the folder and follow its
+   README. It has `<Name>.xml`, `Init.lua` (declares and registers the module,
+   loaded first), `Driver.lua` (lifecycle and logic) and `Settings.lua` (the page,
+   built only when opened).
 2. List `Modules\<Name>\<Name>.xml` in `ModeUI/ModeUI.toc`, after the other
    modules and before `Shared\Runtime\Boot.lua`.
 3. Use an existing category, or register one in `Shared/Runtime/Lifecycle.lua`.
