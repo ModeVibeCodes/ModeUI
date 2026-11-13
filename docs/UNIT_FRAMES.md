@@ -5,6 +5,24 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Texts colored by the unit
+
+November 13, 2026, per the owner: a text spot's color (`texts.<slot>.colorMode`)
+can also be **Reaction** (hostile red, neutral yellow, friendly green, tapped
+gray, softened by Class Color Softness), **Class Color** (a player's class
+color, anyone else by reaction) or, for the level only, **Level Difficulty**
+(`GetCreatureDifficultyColor` for the unit's level against yours; a skull
+level is red). A mode that doesn't suit the text (Level Difficulty on a name)
+shows the default color; an unknown color does too. These colors are
+repainted whenever the frame's unit, faction or level updates
+(`M:PaintUnitColoredTexts`); stand-ins show the Player friendly and the other
+frames as a level 60 enemy. In the Health Bar and Power Bar tabs each spot with
+a text shows icons for the modes that suit it, at the right of its size
+controls: three stripes for Reaction, your class icon for Class Color and five
+stripes for Level Difficulty. Clicking the lit icon goes back to the default;
+right-clicking the swatch does too (the Default button is gone). No saved key
+changes: the new values are extra choices of `colorMode`.
+
 ## Settings by part, Class Resource (layout version 18)
 
 November 13, 2026, per the owner:
