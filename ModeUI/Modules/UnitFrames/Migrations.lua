@@ -250,6 +250,13 @@ local function MigrateV17(db)
     end
 end
 
+-- Version 18 -> 19: a Focus cast bar still at the old 3px gap moves to the
+-- 8px the owner asked for. Full Width (on) and Bar Width take their defaults.
+local function MigrateV18(db)
+    local cast = type(db.focus) == "table" and db.focus.castBar
+    if type(cast) == "table" and Public(cast) and cast.gap == 3 then cast.gap = 8 end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -266,7 +273,8 @@ function M.Initialize(db)
     if db.layoutVersion == 14 then MigrateV14(db); db.layoutVersion = 15 end
     if db.layoutVersion == 15 then MigrateV15(db); db.layoutVersion = 16 end
     if db.layoutVersion == 16 then MigrateV16(db); db.layoutVersion = 17 end
-    if db.layoutVersion == 17 then MigrateV17(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 17 then MigrateV17(db); db.layoutVersion = 18 end
+    if db.layoutVersion == 18 then MigrateV18(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

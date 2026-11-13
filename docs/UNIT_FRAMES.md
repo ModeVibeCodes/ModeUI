@@ -5,6 +5,43 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Editing marks, cast bar width, Focus cast gap (layout version 19)
+
+November 13, 2026, per the owner:
+
+- **Editing** lists each frame with **On** (Mode green) or **Off** (muted)
+  beside its name, as Action Bars marks its bars; the dot and the separate
+  On / Off label beside the list are gone. **Turn On** still shows for a frame
+  that is off.
+- **Portrait** tab: **Show Portrait** comes first, then Status, then the
+  portrait's look. A matched Target takes it from the Player (as before).
+- **Mirror on a Right-Side Portrait** is now called **Keep Relative Text
+  Positions**, the name the owner asked for. It still does what it did: on a
+  right-hand portrait the Rested and Combat badges swap to the mirrored
+  corners, so they keep their place relative to the bars (`status.mirror`).
+- **Cast Bar**: **Bar Height** and **Gap** were already there, beside each
+  other under Placement. The owner found no size option besides them, so
+  **Full Width** (on: the bar block's width, short of the portrait, as
+  before) and **Bar Width** (off: that wide, centred under the same span)
+  join them (`castBar.fullWidth`, `castBar.width`, 40-400).
+- **Focus cast bar** sits 8px from the frame by default (`CastDefaults`).
+  Layout version 19 moves a Focus cast bar still at the old 3px to 8px; a gap
+  you chose stays.
+
+Manual check (layout version 19):
+- **Navigation:** **Interface** › **Unit Frames**, the **Editing** list at the
+  preview's top right; then the **Portrait** and **Cast Bar** tabs.
+- **Action:** open the Editing list; turn Focus off with **Show Frame** and
+  open the list again; Turn On. On the Portrait tab, look at the first
+  setting. On the Cast Bar tab (Editing: Focus), untick **Full Width** and
+  move **Bar Width**, then change **Bar Height**.
+- **Required state:** out of combat, Focus set.
+- **Confirmation:** every frame reads "On" in green or "Off" in gray beside
+  its name; Focus reads Off while off. Show Portrait is the Portrait tab's
+  first setting, and the badge switch reads Keep Relative Text Positions. The
+  Focus cast bar hangs 8px under the frame, narrows and stays centred under
+  the bars with Bar Width, and grows taller with Bar Height.
+
 ## Settings by part, Class Resource (layout version 18)
 
 November 13, 2026, per the owner:
@@ -170,7 +207,8 @@ round badges sit on the portrait ring's corners (`Status.lua`, **Status** on
 the Portrait tab): **Rested** (Player only, top left, Sky icon) and **Combat**
 (bottom left, red icon). Each has its own switch and corner; badges are an
 even pixel size centred on the ring and swap to the outer side on a right-hand
-portrait (**Mirror on a Right-Side Portrait**). **Combat Ring** turns the ring
+portrait (**Mirror on a Right-Side Portrait**, now **Keep Relative Text
+Positions**). **Combat Ring** turns the ring
 red while the unit is in combat. **Pulse When Pulled** (Player) pulses a red
 halo behind the ring while you are in combat and have no enemy targeted that is
 itself in combat (`Domain.Status.PulledUnawares`); targeting the attacker

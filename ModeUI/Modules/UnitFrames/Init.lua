@@ -54,7 +54,9 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 17: text slots replace the name, level, health and power text keys.
 -- Version 18: the power bar and cast bar get their own textures (and the power
 -- bar its own opacity), copied from the shared bar textures.
-M.LAYOUT_VERSION = 18
+-- Version 19: the Focus cast bar sits 8px from the frame (owner); cast bars
+-- get Full Width and Bar Width.
+M.LAYOUT_VERSION = 19
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -165,9 +167,10 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 -- box with the frame's rim and gap under (or over) the bar block, its bar
 -- lined up with the health bar. On for the Player, Target and Focus.
 M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 3, icon = "far",
+    fullWidth = true, width = 160,
     foregroundTexture = "mode", backgroundTexture = "slate",
     showText = true, showTimer = true, fontSize = 10, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
-M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 } }
+M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
 M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "Hidden" } }
 M.castChoices = { position = "castPosition", icon = "castIcon" }
@@ -175,6 +178,8 @@ local CAST_OFF = { targettarget = true, focustarget = true }
 function M.CastDefaults(unit)
     local defaults = Copy(M.castDefaults)
     defaults.enabled = not CAST_OFF[unit]
+    -- The owner asked for the Focus cast bar 8px from the frame.
+    if unit == "focus" then defaults.gap = 8 end
     return defaults
 end
 -- Buffs and debuffs (owner, November 13, 2026), in db[unit].buffs and
