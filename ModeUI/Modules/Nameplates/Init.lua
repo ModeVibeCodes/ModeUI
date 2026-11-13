@@ -1,7 +1,7 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Interface > Nameplates: ModeUI's own plates in the Onyx look, drawn on the
+-- Frames > Nameplates: ModeUI's own plates in the Onyx look, drawn on the
 -- game's nameplates. The game keeps placing, stacking and clicking its
 -- nameplates; ModeUI fades Blizzard's art and draws health, name, cast bar,
 -- auras, raid marker and target highlight. Enemy and friendly plates each have
@@ -9,7 +9,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- documented as accepting them. See docs/NAMEPLATES.md.
 -- Files: Init (this), Driver, Plate, Update, CastBar, Auras, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
-local M = { title = L["Nameplates"], category = "interface", defaultEnabled = false,
+local M = { title = L["Nameplates"], category = "frames", defaultEnabled = false,
     configDescription = L["Onyx nameplates with health, names, cast bars, auras and raid markers."],
     modeLayout = { decorateOnly = true } }
 addon.Nameplates = M

@@ -10,7 +10,7 @@ local world = H.Load({ before = STUBS, saved = { modules = { unitFrames = { enab
 world.run([====[
     local M=addon.UnitFrames
     local P,O=M.palette,M.onyx
-    assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
+    assert(M and addon.modules.unitFrames==M and M.category=='frames' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
     assert(M.db.layoutVersion==19 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')

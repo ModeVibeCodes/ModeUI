@@ -1,7 +1,7 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Interface suite: secure Player, Target, Target of Target, Focus and Target
+-- Frames > Unit Frames: secure Player, Target, Target of Target, Focus and Target
 -- of Focus frames in the locked Onyx skin
 -- (round portrait capping a rounded bar block inside a slate rim).
 -- Forever runs the mainline client, so unit values can be secret. They are only
@@ -10,7 +10,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Files: Init (this), TextSlots, Migrations, Driver, Native, Layout, Texts, Build, Update,
 -- Combo, CastBar, Auras, Status, Preview, Settings, SettingsExtra, SettingsText.
 local L = addon.L
-local M = { title = L["Unit Frames"], category = "interface", defaultEnabled = true,
+local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true,
     configDescription = L["Player, Target, Target of Target and Focus frames in the Onyx look. Configure outside combat."],
     -- The settings page keeps its own sections; the Mode layer restyles headings.
     modeLayout = { decorateOnly = true } }

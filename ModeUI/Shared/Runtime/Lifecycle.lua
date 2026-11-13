@@ -17,8 +17,13 @@ function addon:RegisterCategory(id, definition)
     self.categoryOrder[#self.categoryOrder + 1] = id
 end
 
-addon:RegisterCategory("interface", { title = L["Interface"] })
+-- Sidebar order (owner, November 13, 2026): Global, then Interface (Blizzard's
+-- own UI restyled: windows, chat, meters, bars), then Frames (unit frames,
+-- nameplates and, later, party frames). Within a category, modules keep the
+-- order their XML is listed in ModeUI.toc.
 addon:RegisterCategory("global", { title = L["Global"] })
+addon:RegisterCategory("interface", { title = L["Interface"] })
+addon:RegisterCategory("frames", { title = L["Frames"] })
 
 function addon:RegisterModule(id, module)
     assert(not self.initialized, "ModeUI: register modules before initialization.")

@@ -29,7 +29,7 @@ November 13, 2026, per the owner:
   you chose stays.
 
 Manual check (layout version 19):
-- **Navigation:** **Interface** › **Unit Frames**, the **Editing** list at the
+- **Navigation:** **Frames** › **Unit Frames**, the **Editing** list at the
   preview's top right; then the **Portrait** and **Cast Bar** tabs.
 - **Action:** open the Editing list; turn Focus off with **Show Frame** and
   open the list again; Turn On. On the Portrait tab, look at the first
@@ -429,7 +429,7 @@ top half, the look the old "Mode" choice gave). The Bar Texture setting is gone,
 and layout version 12 removes the saved `texture` key from both frames. ModeUI's
 text and interface default to Expressway, with the bundled Lato as the fallback.
 
-November 11, 2026. First module of the **Interface** category and the start of
+November 11, 2026. First module (in the **Frames** category since November 13) and the start of
 the Play The Game Tools UI suite. Opt-in (default off), Forever only, built into
 PTG with no dependency on ModeTools or any other addon. Static/mock validated
 only; **native acceptance is pending**.

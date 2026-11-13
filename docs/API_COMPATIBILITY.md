@@ -703,3 +703,37 @@ Checked against the `forever` branch of Gethe/wow-ui-source and the local
   intrinsic `Button` (`GetObjectType` answers "Button"); ModeUI recognises
   them by `Background`, `Arrow` and DropdownButtonMixin's methods. The Guild
   chat edit box's middle piece is `Mid`.
+
+## Game menu button and addon compartment — November 13, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source (Forever loads
+the game type `camelot`). Code: `Shared/Settings/Launchers.lua`.
+
+- **Game menu.** `Blizzard_GameMenu.toc` loads `Shared/GameMenuFrame.lua` for
+  camelot. `GameMenuFrameMixin:InitButtons()` runs on every show (and on
+  `STORE_STATUS_CHANGED`/`TRIAL_STATUS_UPDATE`): it empties `self.buttons`,
+  calls `Reset()` (releases the pooled buttons) and adds Options, Shop,
+  `AddSection()`, AddOns, Edit Mode, Support, Macros, `AddSection()`, Log Out,
+  Exit Game and Return to Game. Forever's `AddButton(text, callback,
+  isDisabled, disabledText, useGoldRedButton)` appends to `self.buttons`;
+  `MainMenuFrameMixin:AddButton` (`Blizzard_SharedXML/Shared/Frame/MainMenuFrameTemplates.lua`)
+  gives each button a `layoutIndex`, the pending `topPadding` (20 after
+  `AddSection`) and calls `MarkDirty()`. ModeUI post-hooks `InitButtons` with
+  `hooksecurefunc`, adds its button, moves it in `self.buttons` before the
+  first button after Options that starts a section (AddOns), gives it and that
+  button a 20 px `topPadding`, renumbers `layoutIndex` and narration in list
+  order (as Play The Game Tools does, so both addons' buttons fit), and
+  re-runs `ResetGamepadButtons`/`SetupGamepadButtons`. It adds nothing in
+  combat. The click does what Blizzard's own buttons do: `PlaySound(SOUNDKIT.IG_MAINMENU_OPTION)`,
+  `HideUIPanel(GameMenuFrame)`, then opens the settings window.
+- **Addon compartment.** `Blizzard_Minimap.toc` loads the mainline
+  `AddonCompartment.lua`, then camelot's own `Camelot/AddonCompartment.lua` and
+  `.xml` (the mainline XML is excluded for camelot). Camelot keeps the mixin
+  and only restyles `AddonCompartmentFrame` (a
+  `DropdownButton` on `MinimapCluster`). `AddonCompartmentMixin:RegisterAddon({ text,
+  icon, func, funcOnEnter, funcOnLeave })` adds an entry and shows the button;
+  entries are sorted by text with hyperlinks stripped. Registering this way
+  needs no global function (the TOC's `AddonCompartmentFunc` would).
+- **Unverified natively:** the button's exact spot when other addons also add
+  game menu buttons, and the compartment entry's sort position with a color
+  code at the start of its text.
