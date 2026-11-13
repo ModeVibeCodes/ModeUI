@@ -67,10 +67,15 @@ function M:BuildWindow(window)
     frame.window = window
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
-    frame.header:SetScript("OnClick", function(header, button) self:ToggleMenu(window, header, button) end)
+    -- A click that ends a header drag doesn't open the menu.
+    frame.header:SetScript("OnClick", function(header, button)
+        if frame.dragged then frame.dragged = nil; return end
+        self:ToggleMenu(window, header, button)
+    end)
     frame:SetScript("OnMouseWheel", function(_, delta) self:Scroll(window, -delta) end)
     frame:Hide()
     self.frames[window] = frame
+    self:BuildControls(frame)
     self:CreateMover(window)
     frame:SetPoint("TOPLEFT", self.movers[window], "TOPLEFT", 0, 0)
     return frame
@@ -80,6 +85,7 @@ function M:Build()
     if self.built then return end
     self.built = true
     for _, window in ipairs(self.windows) do self:BuildWindow(window) end
+    for _, window in ipairs(self.windows) do self:BindControls(window) end
 end
 
 -- One row's place and look; its data is filled by Render.lua.
@@ -116,7 +122,7 @@ function M:PaintShell(frame, style, rows)
     local px = Kit.PixelSize(frame)
     local g = self.Geometry(style, px, rows)
     local path = Kit.FontPath(style, self.id)
-    frame.g, frame.fontPath = g, path
+    frame.g, frame.fontPath, frame.style = g, path, style
     frame:SetSize(g.width, g.height)
     Kit.Inset(frame.fill, frame, g.border)
     Kit.Tint(frame.fill, style.backgroundColor, style.backgroundOpacity / 100)
@@ -154,15 +160,17 @@ function M:PaintShell(frame, style, rows)
         self:PaintRow(frame.rows[i], frame, style, g, i, path)
     end
     for i = g.rows + 1, #frame.rows do frame.rows[i]:Hide() end
+    self:LayoutControls(frame, style, g, frame.window)
     return g
 end
 
 function M:PaintWindow(window)
-    local frame, style = self.frames[window], self.db[window]
+    local frame, style = self.frames[window], self:Style(window)
     local g = self:PaintShell(frame, style)
     frame:SetAlpha(style.opacity / 100)
     local mover = self.movers[window]
     mover:SetSize(g.width, g.height)
+    self:AnchorWindow(window, g)
     -- Click Through lets clicks and the mouse wheel pass to the world.
     local mouse = not style.clickThrough
     frame.header:EnableMouse(mouse)
@@ -199,7 +207,7 @@ function M:CreateMover(window)
     mover:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     local ok, element = addon.PositionManager:RegisterElement(self.elementIds[window], mover, { moduleId = self.id,
         defaultPosition = self.defaultPositions[window], allowedTargets = self.allowedTargets[window],
-        canDrag = function() return self.active == true and self.db[window].show end })
+        canDrag = function() return self.active == true and self.db[window].show and not self:IsGrouped(window) end })
     assert(ok, "ModeUI: damage meter position registration failed: " .. tostring(element))
     element.label = L[self.windowLabels[window]]
     mover:Hide()
@@ -209,16 +217,17 @@ function M:LayoutMover(window)
     local mover = self.movers[window]
     Kit.Tint(mover.fill, Kit.palette.accent, 0.18)
     Kit.Font(mover.label, { outline = true, shadow = true, textColor = { 1, 1, 1 } }, 12,
-        Kit.FontPath(self.db[window], self.id), Kit.PixelSize(mover))
+        Kit.FontPath(self:Style(window), self.id), Kit.PixelSize(mover))
     mover.label:SetText(L[self.windowLabels[window]])
 end
 
--- In Edit Mode every window that's switched on shows, with its stand-in over it.
+-- In Edit Mode every window that's switched on shows, with its stand-in over
+-- it. A grouped window has none: it moves with the window it follows.
 function M:RenderMovers()
     for _, window in ipairs(self.windows) do
         local mover = self.movers[window]
         if mover then
-            local show = self.editing == true and self.active == true and self.db[window].show
+            local show = self.editing == true and self.active == true and self.db[window].show and not self:IsGrouped(window)
             addon.PositionManager:SetEditable(self.elementIds[window], show)
             mover:SetShown(show)
         end

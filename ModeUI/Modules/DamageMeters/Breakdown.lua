@@ -46,7 +46,7 @@ end
 function M:OpenBreakdown(window, row)
     local source = row.source
     if not source or self.editing or self.testing then return end
-    local style = self.db[window]
+    local style = self:Style(window)
     local info = DM.typeById[style.meterType]
     if info.deaths then
         local recap = source.deathRecapID
@@ -91,7 +91,7 @@ function M:RenderBreakdown()
     local panel = self.breakdown
     if not panel or not panel:IsShown() then return end
     local window = panel.window
-    local frame, style = self.frames[window], self.db[window]
+    local frame, style = self.frames[window], self:Style(window)
     local info = DM.typeById[style.meterType]
     local session = self:SessionOf(window)
     local known = self:FindBreakdownSource(panel, session, style.meterType)

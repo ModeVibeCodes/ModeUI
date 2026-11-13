@@ -59,7 +59,7 @@ end
 
 -- The menu's entries for a window: { column, heading | label, selected, choice }.
 function M:MenuItems(window)
-    local style, items = self.db[window], {}
+    local style, items = self:Style(window), {}
     for _, group in ipairs(GROUPS) do
         items[#items + 1] = { column = 1, heading = L[group] }
         for _, info in ipairs(DM.types) do

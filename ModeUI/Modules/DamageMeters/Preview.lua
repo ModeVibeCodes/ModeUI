@@ -68,7 +68,7 @@ local function Scale(style)
 end
 
 function M:GetPreviewSize()
-    local scale, g = Scale(self.db[self:PreviewWindow()])
+    local scale, g = Scale(self:Style(self:PreviewWindow()))
     return math.max(300, g.width * scale), g.height * scale + 8 + CAPTION_HEIGHT
 end
 
@@ -86,7 +86,7 @@ end
 
 function M:RenderPreview(view)
     local window = self:PreviewWindow()
-    local style = self.db[window]
+    local style = self:Style(window)
     local scale = Scale(style)
     local shell = view.window
     shell:SetScale(scale)
@@ -124,6 +124,9 @@ function M:CreateConfigPreview(parent)
     view.window.header:SetFrameLevel(view.window:GetFrameLevel() + 2)
     view.window.header:SetScript("OnClick", nil)
     Clickable(view.window.header, "header")
+    -- The header buttons, as on the real window; here they open Header.
+    self:BuildControls(view.window)
+    for _, button in pairs(view.window.buttons) do button:SetScript("OnClick", function() M:JumpTo("header") end) end
     view.caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
     view.hint = W.Label(frame, L["Click a part to open its settings"], nil, 0, 0, 220, T.faint or T.muted)

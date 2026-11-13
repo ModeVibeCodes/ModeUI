@@ -374,3 +374,35 @@ checked against the user's local mainline copy (`WoWUI-live`, build
   which meter types return data on Forever (one author reports Avoidable Damage
   Taken is unavailable there; the window then says "No avoidable damage
   taken."), and the exact client behavior of `AbbreviateNumbers` text.
+
+### Damage meters, second pass — November 13, 2026
+
+- **Decimals.** `AbbreviateNumbers(number, options)` takes
+  `options.breakpointData`, a list of `NumberAbbreviationBreakpoint`
+  (`breakpoint`, `abbreviation`, `significandDivisor`, `fractionDivisor`,
+  `abbreviationIsGlobal`; `LocalizationSharedDocumentation.lua`), largest first.
+  [warcraft.wiki.gg](https://warcraft.wiki.gg/wiki/API_AbbreviateNumbers)
+  gives the formula from the pre-12.0 Lua version: at or above a breakpoint,
+  `floor(n / significandDivisor) / fractionDivisor` plus the suffix; below them
+  all, `tostring(n)`. That is why a per-second amount under a thousand showed
+  every decimal in game ("165.71428571429"). `Kit.ShortNumber` gives K, M, B
+  and T breakpoints for 0-2 decimals and a last one at 0 (else 1) that rounds
+  small numbers down to whole ones. The validity rules
+  (`RequiresValidAbbreviationBreakpoints`) aren't documented, so the fullest set
+  the client accepts is tried once per decimals on a public number, falling
+  back to the plain call. `C_StringUtil.RoundToNearestString` and
+  `FloorToNearestString` (`AllowedWhenTainted`) were the alternative for small
+  numbers. Unverified natively: whether the client prints trailing zeros
+  ("5.0K").
+- **Moving and resizing by hand.** The window (a plain, unprotected frame) is
+  `SetMovable` and `StartMoving`/`StopMovingOrSizing` from its header's
+  `OnDragStart`/`OnDragStop`. `SetUserPlaced(false)` (guarded) keeps the
+  client's layout cache from restoring the drop over ModeUI's saved place. The
+  drop is saved through Position Manager (`Positioning:ReadFrame`, then
+  `SetOffsets`), and the window hangs from its stand-in again. Resizing reads
+  `GetCursorPosition()` over `UIParent:GetEffectiveScale()` and changes Width
+  and Rows settings. Both run only out of combat, because Position Manager
+  saves no places in combat.
+- **Header glyphs.** Own textures (`Media/Textures/DamageMeters`), not
+  Blizzard atlases, which may not exist on Forever. Tooltips show only public
+  text.
