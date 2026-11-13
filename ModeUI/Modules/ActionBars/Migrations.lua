@@ -40,6 +40,14 @@ local function Validate(style, bar)
     for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid action bar choice: " .. bar .. "." .. key) end
     assert(ValidConditions(style.customVisibility), "Invalid action bar conditions: " .. bar)
     assert(ValidConditions(style.pageConditions), "Invalid action bar page conditions: " .. bar)
+    -- Per-button glow switches: a place ("1"-"12") to { proc, ready } set false.
+    for place, glows in pairs(style.buttonGlows) do
+        local index = type(place) == "string" and place:match("^%d+$") and tonumber(place)
+        assert(index and index >= 1 and index <= M.barSpecs[bar].count and type(glows) == "table", "Invalid action bar button glow: " .. bar)
+        for kind, on in pairs(glows) do
+            assert((kind == "proc" or kind == "ready") and on == false, "Invalid action bar button glow: " .. bar)
+        end
+    end
 end
 
 -- Version 1 -> 2: settings still at version 1's defaults take the new ones
@@ -85,10 +93,19 @@ local function MigrateV3(db)
     end
 end
 
+-- Version 4 -> 5: keybinds 2px smaller on every bar, as the owner asked.
+local function MigrateV4(db)
+    for _, bar in ipairs(M.bars) do
+        local style = db[bar]
+        if type(style) == "table" and addon.IsNumber(style.hotkeySize) then style.hotkeySize = math.max(6, style.hotkeySize - 2) end
+    end
+end
+
 function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
     if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == 3 then MigrateV3(db); db.version = 4 end
+    if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid action bar settings version")
     for _, bar in ipairs(M.bars) do

@@ -9,6 +9,7 @@
     <Script file="Visibility.lua"/>
     <Script file="Keybind.lua"/>
     <Script file="Glow.lua"/>
+    <Script file="GlowMenu.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
 </Ui>

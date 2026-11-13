@@ -14,6 +14,39 @@ if not M then return end
 -- written from Lua, so they get the crisp shadow only.
 local Kit, Public = addon.Kit, addon.IsPublic
 local KEYS = { hotkey = "HotKey", count = "Count", macro = "Name" }
+-- Short keybinds: modifiers become one letter with no hyphen ("SHIFT-E" or
+-- "s-E" becomes "sE"), and long key names a short form ("Mouse Button 4" M4).
+local LONG = { { "SHIFT%-", "s-" }, { "Shift%-", "s-" }, { "CTRL%-", "c-" }, { "Ctrl%-", "c-" }, { "ALT%-", "a-" },
+    { "Alt%-", "a-" }, { "META%-", "m-" }, { "Mouse Wheel Up", "WU" }, { "Mouse Wheel Down", "WD" },
+    { "MOUSEWHEELUP", "WU" }, { "MOUSEWHEELDOWN", "WD" }, { "Middle Mouse", "M3" }, { "Mouse Button ", "M" },
+    { "^BUTTON(%d)", "M%1" }, { "Num Pad ", "N" }, { "NUMPAD", "N" }, { "Spacebar", "Spc" }, { "SPACE", "Spc" },
+    { "Page Up", "PU" }, { "Page Down", "PD" }, { "PAGEUP", "PU" }, { "PAGEDOWN", "PD" }, { "Backspace", "Bs" },
+    { "Insert", "Ins" }, { "Delete", "Del" } }
+function M.ShortKey(text)
+    if not addon.IsPublic(text) or type(text) ~= "string" then return text end
+    for _, swap in ipairs(LONG) do text = text:gsub(swap[1], swap[2]) end
+    -- "s-c-E" -> "scE": every one-letter modifier loses its hyphen.
+    local before
+    repeat before = text; text = text:gsub("^(%l*)([scam])%-(.)", "%1%2%3") until text == before
+    return text
+end
+
+-- The keybind's text, shortened when Short Keybinds is on. Turning it off
+-- asks Blizzard to write it again (outside combat).
+function M:ShortenHotkey(button, style)
+    local text, state = button.HotKey, self.skinState[button]
+    if not text or not state then return end
+    if style.hotkeyShort then
+        local value = text:GetText()
+        local short = self.ShortKey(value)
+        if addon.IsPublic(value) and short ~= value then text:SetText(short) end
+        state.shortened = true
+    elseif state.shortened and not addon.InCombat() then
+        state.shortened = false
+        local update = button.UpdateHotkeys or button.SetHotkeys
+        if update then pcall(update, button, button.buttonType) end
+    end
+end
 local PAD = 1 -- pixels between a text and the icon's edge
 M.lifts = setmetatable({}, { __mode = "k" })
 M.textState = setmetatable({}, { __mode = "k" })
@@ -120,6 +153,7 @@ end
 
 function M:StyleTexts(button, style, g, sample)
     for _, part in ipairs(self.textParts) do StylePart(self, button, part, style, g, sample) end
+    if not sample then self:ShortenHotkey(button, style) end
     -- Blizzard re-places the keybind when bindings change.
     local state = self.skinState[button]
     if state and not sample and not state.hotkeyHooked and hooksecurefunc then
@@ -130,6 +164,7 @@ function M:StyleTexts(button, style, g, sample)
                     local current = M.skinState[hooked]
                     if not current then return end
                     -- Re-placing waits for the refresh after combat.
+                    M:ShortenHotkey(hooked, current.style)
                     if addon.InCombat() then M:Refresh(); return end
                     StylePart(M, hooked, "hotkey", current.style, current.g)
                 end)
