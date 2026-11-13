@@ -857,7 +857,9 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
 - **Edit Mode.** PTG's Position Manager refuses protected frames, so each
   frame has a plain stand-in, `PlayTheGameTools<Unit>UnitFramePreview`,
   registered as `unitFramesPlayer`/`unitFramesTarget` (screen anchoring only).
-  The stand-in uses the same Mode face with sample values. The secure button
+  The stand-in uses the same Mode face with sample values; its name is yours
+  on the Player and "Name" on the others, since the handle centered above it
+  names the frame ("Player Frame") in volt green. The secure button
   copies its anchor and scale outside combat. Saved positions live in the shared
   `positions` table.
 - **Native frames.** "Hide Blizzard … Frame" sets the alpha of the native

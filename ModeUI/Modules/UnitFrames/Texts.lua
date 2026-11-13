@@ -172,11 +172,15 @@ function M:UpdatePowerTexts(f, unit, powerType, okValue, value)
     end
 end
 
--- Stand-ins: the frame's title, level 60 and fixed sample numbers.
+-- Stand-ins: level 60 and fixed sample numbers. The settings sample names its
+-- frame; an Edit Mode stand-in, whose handle already does, shows a name the
+-- way the frame would: your own on the Player, "Name" on the others.
 local SAMPLE = { healthPercent = "75%", healthCurrent = "3,450", healthBoth = "3,450 · 75%", healthDeficit = "-1150",
     powerPercent = "60%", powerCurrent = "1,200", powerBoth = "1,200 · 60%" }
 function M:PaintTextSample(g, unit, identity)
-    self:WriteNames(g, unit, self.titles[unit], "60", identity)
+    local L = addon.L
+    local name = g.sample and L[self.titles[unit]] or unit == "player" and Name.Get("player") or L["Name"]
+    self:WriteNames(g, unit, name, "60", identity)
     for _, kind in ipairs({ "health", "power" }) do
         for _, entry in ipairs(g.textKinds[kind]) do Write(entry.text, SAMPLE[entry.content]) end
     end

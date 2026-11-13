@@ -4,9 +4,9 @@ if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
 -- preview of the bar being edited sits above the tabs (Bar, Buttons, Text,
--- Visibility); clicking a part of it jumps to its settings. Every tab starts
--- with the Editing choice (which bar), shared by every tab, then cards of
--- related settings, side by side where they fit.
+-- Glows, Visibility, Copy & Apply); clicking a part of it jumps to its settings.
+-- Editing (which bar) sits in the preview header, shared by every tab; each
+-- tab holds cards of related settings, side by side where they fit.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing, textPart = "bar1", "hotkey"
@@ -122,7 +122,7 @@ function M:CreateConfigPage(parent)
     -- Each tab says so when the bar being edited is hidden.
     local function Tab(title, build)
         page:Section(L[title], nil, false)
-        if title ~= "Bar" then
+        if title ~= "Bar" and title ~= "Copy & Apply" then
             When(function() return not db().show end, function() Note("This bar is hidden. Turn on Show Bar on the Bar tab to use it.") end)
         end
         build()
@@ -147,40 +147,6 @@ function M:CreateConfigPage(parent)
         page.widthSlider = Slider(size[1], "width", "px"); Mark("buttons")
         page.heightSlider = Slider(size[2], "height", "px")
         page.spacingSlider = Slider(size[3], "spacing", "px")
-        -- Apply Style: tick bars, then give them this bar's look.
-        page:Group(L["Apply Style"])
-        local targets, items = {}, {}
-        for _, bar in ipairs(M.bars) do
-            items[#items + 1] = { M.barSpecs[bar].label, "apply",
-                get = function() return bar ~= editing and targets[bar] == true end,
-                set = function(on) if bar ~= editing then targets[bar] = on or nil end end }
-        end
-        page.applyTargets = targets
-        page.applyToggles = Toggles(items)
-        local apply = page:Row(L["Apply"], 48)
-        page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
-        page.applyButton:SetPoint("LEFT")
-        page.applyAllButton = W.Button(apply, L["Apply to All Bars"], 150, 30, "secondary")
-        page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
-        local result = W.Label(apply, "", nil, 0, 0, 160, T.muted)
-        result:ClearAllPoints(); result:SetPoint("LEFT", page.applyAllButton, "RIGHT", 10, 0)
-        page.applyResult = result
-        local function Report(ok, count)
-            result:SetText(ok and string.format(L["Applied to %d bars."], count or 0) or L["Choose bars first."])
-        end
-        page.applyButton:SetScript("OnClick", function()
-            local chosen = false
-            for bar in pairs(targets) do if bar ~= editing then chosen = true end end
-            if not chosen then Report(false); return end
-            Report(M:CopyStyleTo(editing, targets))
-        end)
-        page.applyAllButton:SetScript("OnClick", function() Report(M:CopyStyleToAll(editing)) end)
-        Refresh(function() if editing ~= page.applyResultBar then result:SetText(""); page.applyResultBar = editing end end)
-        page:Group(L["This Bar"])
-        local reset = page:Row(L["Style"], 48)
-        page.resetButton = W.Button(reset, L["Reset to Defaults"], 150, 30, "secondary")
-        page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetBar(editing) end)
-        Note("Apply Style gives the ticked bars this bar's size, borders, background, text, glows and opacity; each keeps its own buttons, lines, paging and show settings. The bar being edited is skipped.", 48)
         page:Group(L["Keybinds"])
         local keys = page:Row(L["Keybind Mode"], 48)
         page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")
@@ -296,6 +262,50 @@ function M:CreateConfigPage(parent)
             page.fadeSlider = Slider(faded[1], "fadeOpacity", "%")
         end)
         Note("Mouseover keeps the bar at Faded Opacity until the mouse is over it. Hidden bars still show in Edit Mode and Keybind Mode. Every bar hides during pet battles. Action Bar 1 hides while the game shows its own vehicle bar, and the pet and stance bars while you control a vehicle.", 48)
+    end)
+
+    -- Copy & Apply: the bar in Editing is the source; tick bars, then apply.
+    Tab("Copy & Apply", function()
+        page:Group(L["Copy From"])
+        local source = W.Label(page:Row(L["Bar"], 32), "", nil, 0, -6, 300, T.text)
+        Refresh(function() source:SetText(L[M.barSpecs[editing].label]) end)
+        page.applySource = source
+        Note("The bar chosen in Editing, at the top right. Its size, borders, background, text, glows and opacity are copied; each bar keeps its own buttons, lines, paging and show settings.", 48)
+        page:Group(L["Apply To"])
+        local targets, items = {}, {}
+        for _, bar in ipairs(M.bars) do
+            items[#items + 1] = { M.barSpecs[bar].label, "apply",
+                get = function() return bar ~= editing and targets[bar] == true end,
+                set = function(on) if bar ~= editing then targets[bar] = on or nil end end }
+        end
+        page.applyTargets = targets
+        page.applyToggles = Toggles(items)
+        local apply = page:Row("", 40)
+        apply.rowLabel:Hide(); apply:ClearAllPoints(); apply:SetAllPoints(apply.row)
+        page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
+        page.applyButton:SetPoint("LEFT")
+        page.applyAllButton = W.Button(apply, L["Apply to All Bars"], 150, 30, "secondary")
+        page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
+        local result = W.Label(apply, "", nil, 0, 0, 160, T.muted)
+        result:ClearAllPoints(); result:SetPoint("LEFT", page.applyAllButton, "RIGHT", 10, 0)
+        page.applyResult = result
+        local function Report(ok, count)
+            result:SetText(ok and string.format(L["Applied to %d bars."], count or 0) or L["Choose bars first."])
+        end
+        page.applyButton:SetScript("OnClick", function()
+            local chosen = false
+            for bar in pairs(targets) do if bar ~= editing then chosen = true end end
+            if not chosen then Report(false); return end
+            Report(M:CopyStyleTo(editing, targets))
+        end)
+        page.applyAllButton:SetScript("OnClick", function() Report(M:CopyStyleToAll(editing)) end)
+        Refresh(function() if editing ~= page.applyResultBar then result:SetText(""); page.applyResultBar = editing end end)
+        page:Group(L["Reset"])
+        local reset = page:Row("", 40)
+        reset.rowLabel:Hide(); reset:ClearAllPoints(); reset:SetAllPoints(reset.row)
+        page.resetButton = W.Button(reset, L["Reset to Defaults"], 150, 30, "secondary")
+        page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetBar(editing) end)
+        Note("Puts the bar in Editing back to ModeUI's defaults.", 32)
     end)
 
     -- While this page is open, each bar on screen wears a name tag (Preview.lua).

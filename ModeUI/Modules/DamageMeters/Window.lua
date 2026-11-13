@@ -219,25 +219,19 @@ function M:CreateMover(window)
     mover:SetSize(240, 160)
     mover.fill = mover:CreateTexture(nil, "BACKGROUND", nil, -8)
     mover.fill:SetAllPoints(); mover.fill:SetTexture(FLAT)
-    mover.label = Kit.Text(mover)
-    mover.label:SetPoint("CENTER")
     self.movers[window] = mover
     -- Measured before registering; the Position Manager then moves it.
     mover:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     local ok, element = addon.PositionManager:RegisterElement(self.elementIds[window], mover, { moduleId = self.id,
         defaultPosition = self.defaultPositions[window], allowedTargets = self.allowedTargets[window],
-        canDrag = function() return self.active == true and self.db[window].show and not self:IsGrouped(window) end })
+        label = L[self.windowLabels[window]], canDrag = function() return self.active == true and self.db[window].show and not self:IsGrouped(window) end })
     assert(ok, "ModeUI: damage meter position registration failed: " .. tostring(element))
-    element.label = L[self.windowLabels[window]]
     mover:Hide()
 end
 
 function M:LayoutMover(window)
     local mover = self.movers[window]
     Kit.Tint(mover.fill, Kit.palette.accent, 0.18)
-    Kit.Font(mover.label, { outline = true, shadow = true, textColor = { 1, 1, 1 } }, 12,
-        Kit.FontPath(self.PartStyle(self:Style(window), "title"), self.id), Kit.PixelSize(mover))
-    mover.label:SetText(L[self.windowLabels[window]])
 end
 
 -- In Edit Mode every window that's switched on shows, with its stand-in over

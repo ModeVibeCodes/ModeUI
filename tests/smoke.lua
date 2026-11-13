@@ -9,7 +9,7 @@ assert(metadata["X-ModeUI-Edition"] == "Forever" and metadata.Interface == "1600
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='unitFrames,nameplates,actionBars,damageMeters,profiles,optimizations,classColors')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='unitFrames,nameplates,actionBars,damageMeters,chat,windows,profiles,optimizations,classColors')
     assert(table.concat(addon.categoryOrder,',')=='interface,global' and addon.categories.interface.title=='Interface' and addon.categories.global.title=='Global')
     assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
@@ -35,7 +35,7 @@ world.run([[
     local nested=window.sidebarModuleButtons.unitFrames
     assert(nested and nested:IsShown() and nested.label:GetText()=='· Unit Frames','Unit Frames nested under Interface')
     local count=0;for _ in pairs(window.sidebarModuleButtons) do count=count+1 end
-    assert(count==7,'seven pages in the sidebar')
+    assert(count==9,'nine pages in the sidebar')
     assert(window.sidebarModuleButtons.nameplates:IsShown(),'Nameplates nested under Interface')
     addon:SelectConfigPage('nameplates');assert(window.pages.nameplates:IsShown() and window.moduleHeader.title:GetText()=='Nameplates')
     assert(window.sidebarModuleButtons.actionBars:IsShown(),'Action Bars nested under Interface')

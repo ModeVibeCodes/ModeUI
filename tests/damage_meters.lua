@@ -83,6 +83,8 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         GetSessionDurationSeconds = function(sessionType) Public(sessionType); return 75 end,
         ResetAllCombatSessions = function() resets = resets + 1 end,
     }
+    -- Blizzard's own meter frame (Blizzard_DamageMeter), which holds its windows.
+    DamageMeter = CreateFrame('Frame', nil, UIParent)
     C_Spell = {
         GetSpellName = function(id) if issecretvalue(id) then return Secret('spell name') end return 'Spell' .. id end,
         GetSpellTexture = function(id) if issecretvalue(id) then return Secret('icon') end return 'Interface/Icons/Spell' .. id end,
@@ -107,8 +109,15 @@ world.run([==[
     assert(select(2, Kit.ShortNumber(1284000, 2)) == '1.28M' and select(2, Kit.ShortNumber(5432, 0)) == '5K', 'decimals after the suffix')
     assert(issecretvalue(select(2, Kit.ShortNumber(Secret('n'), 1))), 'secret numbers pass through')
 
+    assert(DamageMeter:GetParent() == UIParent and M.db.hideBlizzard, "Blizzard's meter stays while the module is off")
     addon:SetModuleEnabled('damageMeters', true)
     local w1, w2 = ModeUIDamageMeter1, ModeUIDamageMeter2
+    -- Hide Blizzard's Meter (on by default): its frame goes under a hidden one, the game option untouched.
+    assert(DamageMeter:GetParent() == M.hider and not M.hider:IsShown() and M:BlizzardHidden(), "Blizzard's meter tucked away")
+    assert(M:SetHideBlizzard(false) and DamageMeter:GetParent() == UIParent and not M.db.hideBlizzard, 'back when the setting is off')
+    assert(not M:SetHideBlizzard('yes') and M:SetHideBlizzard(true) and DamageMeter:GetParent() == M.hider)
+    addon:SetModuleEnabled('damageMeters', false); assert(DamageMeter:GetParent() == UIParent, 'and when the module is off')
+    addon:SetModuleEnabled('damageMeters', true); assert(DamageMeter:GetParent() == M.hider)
     assert(M.built and w1 and w2 and ModeUIDamageMeter3, 'three windows')
     assert(w1:IsShown() and not w2:IsShown(), 'only switched-on windows show')
     assert(not w1.secure and not (w1.IsProtected and w1:IsProtected()), 'plain frames: they update in combat')
@@ -257,6 +266,7 @@ world.run([==[
     local mover1 = ModeUIDamageMeter1Mover
     w1.header.scripts.OnDragStart(w1.header)
     assert(M.moving == 'window1' and w1.moving, 'the header drags the window')
+    assert(Point(mover1)[2] == w1 and Point(w1)[2] == UIParent, 'its stand-in rides along, so windows anchored on it follow the drag')
     w1:ClearAllPoints(); w1:SetPoint('TOPLEFT', UIParent, 'BOTTOMLEFT', 100, 500)
     local dropLeft, dropTop = w1:GetLeft(), w1:GetTop()
     w1.header.scripts.OnDragStop(w1.header)
@@ -330,9 +340,46 @@ world.run([==[
     assert(addon:SetEditMode(true))
     local mover2 = ModeUIDamageMeter2Mover
     assert(mover1:IsShown() and mover2:IsShown() and w2:IsShown(), 'hidden windows show while editing')
-    assert(mover2.label.text == 'Window 2' and mover2.fill.vertexColor[3] == Kit.palette.accent[3], 'named and highlighted')
+    assert(not mover2.label and mover2.fill.vertexColor[3] == Kit.palette.accent[3], 'named and highlighted')
     assert(row1.name.text == '1. Valeria' and w1.rows[4].name.text == '4. Mode', 'sample fight while editing')
     assert(not w1.grip:IsShown(), 'Edit Mode moves windows, not the grip')
+    -- Anchoring: a new target or side puts X and Y back at 0, so nothing lands off the screen.
+    local E, A, id3 = addon.EditMode, addon.EditAnchor, 'damageMetersWindow3'
+    assert(M:SetOption('window3', 'show', true))
+    local away = { target = 'screen', placement = 'center', x = 900, y = 300 }
+    assert(PM:SetPosition(id3, away) and E:Select(id3) and E:SetTarget('damageMetersWindow1'))
+    local p3 = PM:GetPosition(id3)
+    assert(p3.target == 'damageMetersWindow1' and p3.placement == 'above' and p3.x == 0 and p3.y == 0, 'a new target: on top of it at 0, 0')
+    assert(PM:SetOffsets(id3, 30, 40) and E:SetPlacement('below'))
+    p3 = PM:GetPosition(id3)
+    assert(p3.placement == 'below' and p3.x == 0 and p3.y == 0, 'a new side: 0, 0 again')
+    assert(PM:SetOffsets(id3, 5, 5) and E:ResetOffset() and PM:GetPosition(id3).x == 0 and PM:GetPosition(id3).y == 0, 'Reset Offset')
+    assert(PM:WouldLoop('damageMetersWindow1', id3) and not PM:WouldLoop(id3, 'damageMetersWindow2'), 'loops are seen')
+    -- Anchor To: click it, then the element to hang from; the sides window follows.
+    local anchorTo = addon.editWindow.anchorToButton
+    assert(PM:SetPosition(id3, away) and anchorTo:IsEnabled())
+    anchorTo.scripts.OnClick(anchorTo)
+    assert(A:Active() and A.overlay:IsShown() and not PM:CanDrag(PM:Element('damageMetersWindow1')), 'waiting for a click; nothing drags meanwhile')
+    assert(anchorTo.label.text == 'Cancel' and A.overlay.text.text:find('Window 3', 1, true))
+    cursorX, cursorY = ModeUIDamageMeter2Mover:GetCenter()
+    A:Track(); assert(A.overlay.outline:IsShown() and A.overlay.text.text:find('to Window 2', 1, true), 'what a click would pick')
+    A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'LeftButton')
+    p3 = PM:GetPosition(id3)
+    assert(p3.target == 'damageMetersWindow2' and p3.placement == 'above' and p3.x == 0 and p3.y == 0, 'on top of what was clicked, at 0, 0')
+    assert(not A:Active() and not PM.picking and A.sidesFrame:IsShown() and anchorTo.label.text == 'Anchor To...', 'then the sides window')
+    assert(A.sidesFrame.compass.TOP.selected, 'Above chosen')
+    A.sidesFrame.compass.BOTTOMLEFT.scripts.OnClick(A.sidesFrame.compass.BOTTOMLEFT)
+    p3 = PM:GetPosition(id3)
+    assert(p3.placement == 'below' and p3.point == 'TOPLEFT' and p3.relativePoint == 'BOTTOMLEFT' and p3.x == 0 and p3.y == 0, 'below, left edges together')
+    A.sidesFrame.undo.scripts.OnClick(A.sidesFrame.undo)
+    p3 = PM:GetPosition(id3)
+    assert(p3.target == 'screen' and p3.x == 900 and not A.sidesFrame:IsShown(), 'Undo puts it back')
+    -- Escape or a right-click cancels; a click on nothing waits.
+    assert(A:Start(id3)); A.overlay.scripts.OnKeyDown(A.overlay, 'ESCAPE'); assert(not A:Active() and PM:CanDrag(PM:Element(id3)))
+    assert(A:Start(id3)); cursorX, cursorY = -5000, -5000
+    A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'LeftButton'); assert(A:Active(), 'nothing there')
+    A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'RightButton'); assert(not A:Active())
+    assert(PM:ResetPosition(id3) and M:SetOption('window3', 'show', false))
     assert(addon:SetEditMode(false) and not mover2:IsShown() and not w2:IsShown() and not w1.rows[4]:IsShown())
 
     -- Groups: window 2 follows window 1, matching it but keeping its own meter and rows.
@@ -340,7 +387,7 @@ world.run([==[
     assert(M:SetOption('window2', 'group', 'window1') and M.db.window2.group == 'window1')
     assert(w2:IsShown() and M.db.window1.visibility == 'always', 'Show comes from the group: window 2 shows with window 1')
     p = Point(w2)
-    assert(p[1] == 'TOPLEFT' and p[2] == w1 and p[3] == 'BOTTOMLEFT' and p[4] == 0 and p[5] == -2, 'stacked under window 1, 2px apart')
+    assert(p[1] == 'BOTTOMLEFT' and p[2] == w1 and p[3] == 'TOPLEFT' and p[4] == 0 and p[5] == 2, 'stacked on top of window 1 by default, 2px apart')
     assert(w2.width == w1.width and w2.header.title.text == 'HEALING DONE', 'same width, its own meter')
     assert(M:SetOption('window2', 'nameSize', 14) and M.db.window1.nameSize == 14 and M.db.window2.nameSize == 12, 'shared settings are saved on the group')
     assert(w1.rows[1].name.font[2] == 14 and w2.rows[1].name.font[2] == 14, 'and change the whole group')
@@ -351,9 +398,10 @@ world.run([==[
     for _, choice in ipairs(M:GroupChoices('window1')) do assert(choice.id ~= 'window2' and choice.id ~= 'window1', 'loop choices left out') end
     assert(M:SetOption('window3', 'show', true) and M:SetOption('window3', 'group', 'window2'), 'a chain')
     assert(Point(w3)[2] == w2 and M:Leader('window3') == 'window1' and w3.width == 320, 'under window 2, styled by window 1')
-    assert(M:SetOption('window2', 'groupSide', 'above'))
+    assert(M:SetOption('window2', 'groupSide', 'below'))
     p = Point(w2)
-    assert(p[1] == 'BOTTOMLEFT' and p[2] == w1 and p[3] == 'TOPLEFT' and p[5] == 2, 'or above it')
+    assert(p[1] == 'TOPLEFT' and p[2] == w1 and p[3] == 'BOTTOMLEFT' and p[5] == -2, 'or below it')
+    assert(M:SetOption('window2', 'groupSide', 'above'))
     assert(Point(w2.grip)[1] == 'TOPRIGHT' and w2.grip.up, 'its grip grows it upward')
     cursorX, cursorY = 0, 0; w2.grip.scripts.OnMouseDown(w2.grip)
     cursorY = 38; w2.grip.scripts.OnUpdate(w2.grip); w2.grip.scripts.OnMouseUp(w2.grip)
@@ -460,7 +508,7 @@ end
 old.window3.textColor = { 1, 0, 0 }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 3 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
+    assert(M.db.version == 4 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
     assert(M.db.window3.valueColor[2] == 0 and M.db.window3.nameColor[2] == 1, 'a chosen value color stays; names are white')
     assert(M.db.window1.nameOutline and M.db.window3.valueOutline and M.db.window1.textColor == nil and M.db.window1.outline == nil, 'outlined; old keys gone')
     assert(M.db.window1.decimals == 0 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
@@ -484,7 +532,7 @@ mod.window2.nameColorMode, mod.window2.decimals = "class", 2
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
     local s = M.db.window1
-    assert(M.db.version == 3 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
+    assert(M.db.version == 4 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
     assert(s.nameOutline and s.titleOutline, 'outline on (the owner asked)')
     assert(s.nameColor[1] == 1 and s.valueColor[1] == 0.5 and s.nameColorMode == 'custom', 'pure white names; values keep the text color')
     assert(s.titleColor[3] == 0 and s.titleSize == 13, 'title kept')
@@ -492,6 +540,17 @@ H.Load({ before = STUBS, saved = v2 }).run([==[
     assert(s.headerColor[1] == Kit.onyx.health[1] and s.headerTexture == 'mode', 'the old header becomes Onyx')
     assert(s.font == nil and s.textColor == nil and s.liftedShadow == nil, 'old keys gone')
 ]==], "migrate v2")
+
+-- Version 3: groups went Below by default (the owner's went off the screen).
+local v3 = restored.saved()
+local three = v3.profiles.Default.modules.damageMeters
+three.version, three.hideBlizzard = 3, nil
+three.window2.group, three.window2.groupSide, three.window3.groupSide = "window1", "below", "below"
+H.Load({ before = STUBS, saved = v3 }).run([==[
+    local M = addon.DamageMeters
+    assert(M.db.version == 4 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
+    assert(M.db.hideBlizzard == true, "Hide Blizzard's Meter on")
+]==], "migrate v3")
 
 -- Bad saved data stops startup rather than being reset.
 local saved = restored.saved()
@@ -502,5 +561,8 @@ local looped = restored.saved()
 looped.profiles.Default.modules.damageMeters.window1.group = "window2"
 looped.profiles.Default.modules.damageMeters.window2.group = "window1"
 assert(not pcall(H.Load, { before = STUBS, saved = looped }), "a group loop is refused")
+local hiding = restored.saved()
+hiding.profiles.Default.modules.damageMeters.hideBlizzard = "yes"
+assert(not pcall(H.Load, { before = STUBS, saved = hiding }), "Hide Blizzard's Meter must be on or off")
 
 print("damage meters: all checks passed")

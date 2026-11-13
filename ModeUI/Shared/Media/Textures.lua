@@ -61,6 +61,13 @@ M.Textures = {
     -- The action slot background (in color, not tinted), stretched to the slot.
     ActionBarSlot = { file = "ActionBars/Slot.tga" },
     NameplateStripes = { file = "Nameplates/Stripes.tga", transparent = true },
+    -- Skins (Shared/Skin): the frosted chat tab, feathered at its sides and
+    -- top, and the close button's cross.
+    ModeGlass = { file = "Mode/Glass.tga", slice = 6, rounded = true },
+    ModeClose = { file = "Mode/Close.tga", transparent = true },
+    -- Chat compartment glyphs: the chat menu's speech bubble and Channels' "#".
+    ChatMenu = { file = "Chat/Menu.tga", transparent = true },
+    ChatChannels = { file = "Chat/Channels.tga", transparent = true },
     -- Damage meter header glyphs and the resize grip, tinted in game.
     DamageMeterReset = { file = "DamageMeters/Reset.tga", transparent = true },
     DamageMeterLock = { file = "DamageMeters/Lock.tga", transparent = true },

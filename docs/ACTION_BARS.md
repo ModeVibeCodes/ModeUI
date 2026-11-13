@@ -131,8 +131,9 @@ default, or Lifted).
 ## Edit Mode
 
 **Edit Mode** shows every bar that's switched on, even ones set to Hidden or In
-Combat, with all its slots. A cyan highlight with the bar's name in the middle
-sits over each one; that's the stand-in you drag.
+Combat, with all its slots. A cyan highlight sits over each one; that's the
+stand-in you drag. The bar's name ("Action Bar 1") is on the handle centered
+above it, in volt green (#CCFF00); the highlight itself carries no text.
 
 - **The bar follows live** while you drag, frame by frame.
 - **Anchoring:** **Snap To UI Element** in the Edit Mode window anchors a bar to
@@ -213,12 +214,13 @@ Mode. The bar being edited has a cyan tag; clicking any tag edits that bar.
 Clicking a button opens the **Bar** tab and its glow menu (see Glows); clicking a text opens the **Text** tab
 on that text. The tabs:
 
-- **Bar**: Show Bar, status, layout, size, Apply Style, reset, Keybind Mode, paging
+- **Bar**: Show Bar, status, layout, size, Keybind Mode, paging
 - **Buttons**: border style, size and color; background color and opacity;
   empty slots
 - **Text**: which text, then its place, size and color, and the font
 - **Glows**: proc glow, glow when ready, icon opacity on cooldown
 - **Visibility**: Show, custom conditions, opacity, Faded Opacity
+- **Copy & Apply**: Copy From (the bar in Editing), Apply To, Reset
 
 **Editing** (the bar being changed) sits at the top right of the preview, so it's
 always in view and shared by every tab. Its list marks bars that are **Off** (Show
@@ -226,12 +228,13 @@ Bar off) or **Hidden** (Show set to Hidden). When the chosen bar is either, a
 **Turn On** button appears beside it: it switches Show Bar on, and sets Show back
 to Always if it was Hidden. A tab also says so when that bar is off.
 
-**Apply Style** (Bar tab): tick bars, then **Apply to Selected**, or use **Apply
-to All Bars**. The ticked bars get the edited bar's size, borders, background,
-text, glows and opacity; each keeps its own buttons, lines, paging, show
-settings and per-button glow switches. The edited bar is skipped, and the
-result ("Applied to 2 bars.") shows beside the buttons. **Reset to Defaults** (This
-Bar) resets one bar's look.
+**Copy & Apply** tab: **Copy From** names the source, the bar in Editing. Under
+**Apply To**, tick bars, then **Apply to Selected**, or use **Apply to All Bars**.
+The ticked bars get the source's size, borders, background, text, glows and
+opacity; each keeps its own buttons, lines, paging, show settings and
+per-button glow switches. The source is skipped, and the result ("Applied to 2
+bars.") shows beside the buttons. **Reset** holds **Reset to Defaults** for the
+bar in Editing.
 
 ## Paging
 
@@ -402,8 +405,8 @@ Shared additions:
 - **Confirmation:**
   - Buttons are 42 by 36, with a faint textured background in empty slots.
   - Keybinds sit tight in the top-right corner. Cooldown numbers are amber.
-  - In Edit Mode, each bar is highlighted with its name centered, and moves with
-    the mouse without lag.
+  - In Edit Mode, each bar is highlighted, its name in volt green on the handle
+    centered above it, and moves with the mouse without lag.
   - A cyan line appears near the center, and the bar snaps onto it.
   - Each arrow click moves the bar one pixel.
   - Action Bar 3 shows only under the mouse. Action Bar 2 shows only in Edit

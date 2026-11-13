@@ -16,7 +16,9 @@ used to live in [Play The Game Tools](https://github.com/ModeVibeCodes/PlayTheGa
 | Interface | Unit Frames | Secure Player, Target, Target of Target, Focus and Target of Focus frames in the locked Onyx skin, with Mode cast bars, buffs and debuffs, combo points around the Target portrait and a click-to-edit live preview: a round portrait with a class-gradient ring, a rounded health/power block inside a pixel-perfect slate rim, Sky names, and a lifted shadow on all text. Text slots (nine on the health bar, one on the border, three on the power bar) each show a name, level, health or power text you pick. Each element (Layout, Portrait, Health, Power, Cast Bar, Auras, Combo Points, Text) has its own tab, and the Target can match the Player. |
 | Interface | Nameplates  | Onyx plates with separate Enemy and Friendly settings and a live preview on the settings page: health with reaction, class or threat colors, name, health text, cast bars that turn gray when they can't be interrupted, auras (crowd control, debuffs, buffs; position and size per kind), raid markers and a cyan rim on your target. Rounded rims and the Mode Gradient bar texture. Off by default. Friendly plates in instances and your personal resource display stay Blizzard's. |
 | Interface | Action Bars | Blizzard's own action buttons (bars 1-8, pet and stance) on ModeUI bars in the Mode look, with a live preview of your own bar: 42 by 36 buttons by default, rows or columns, size and spacing, rounded, square or no border with its own size and color, cropped icons, a textured slot background with its own color and opacity, page switching (macro conditions), proc glows (Mode Glow, Border, Blizzard or None), a glow when a cooldown is ready, gray icons on cooldown, short keybinds (sE), a glow menu on each preview button, keybind, count, macro name and cooldown text each with its own place, size and color, Show (Always, Mouseover, Hidden, combat, target or custom macro conditions) and opacity. Move, anchor and nudge bars in Edit Mode; bind keys with `/kb`. Each bar wears a name tag while the page is open. Actions, paging and keybinds stay Blizzard's. Off by default. |
-| Interface | Damage Meters | Up to three meter windows in the Mode look, fed by the game's own damage meter: Damage Done, DPS, Damage Taken, Healing Done, HPS, Interrupts, Dispels, Deaths and more, for the current fight, overall or an earlier fight. Class-colored Mode Gradient bars with class icons, rank, name, amount and per second (whole numbers or 1-3 decimals, your choice of separator; percent after the fight) in white outlined text with each text (name, value, title, timer) styled on its own, an Onyx header bar with the meter, timer and buttons for the fight (C/O), Reset and the lock, Always Show Me, scrolling, a header menu, a spell breakdown beside the window and Death Recap. Unlocked, drag a header to move a window and its corner grip to resize it; windows anchored on it take its width. Group windows to stack them above or below one another with matching settings and their own meter and rows. Every part is adjustable: size, rows, spacing, padding, rim, background, header, bar textures and colors, fonts and text, decimals, and when each window shows. Pixel-perfect sizes, a live preview and Edit Mode placement. Needs the game's own Damage Meter option on; Blizzard's meter window is left alone. Off by default. |
+| Interface | Damage Meters | Up to three meter windows in the Mode look, fed by the game's own damage meter: Damage Done, DPS, Damage Taken, Healing Done, HPS, Interrupts, Dispels, Deaths and more, for the current fight, overall or an earlier fight. Class-colored Mode Gradient bars with class icons, rank, name, amount and per second (whole numbers or 1-3 decimals, your choice of separator; percent after the fight) in white outlined text with each text (name, value, title, timer) styled on its own, an Onyx header bar with the meter, timer and buttons for the fight (C/O), Reset and the lock, Always Show Me, scrolling, a header menu, a spell breakdown beside the window and Death Recap. Unlocked, drag a header to move a window and its corner grip to resize it; windows anchored on it take its width. Group windows to stack them above or below one another with matching settings and their own meter and rows. Every part is adjustable: size, rows, spacing, padding, rim, background, header, bar textures and colors, fonts and text, decimals, and when each window shows. Pixel-perfect sizes, a live preview and Edit Mode placement. Needs the game's own Damage Meter option on; Blizzard's own meter window is hidden while the module is on (Hide Blizzard's Meter) and keeps recording. Off by default. |
+| Interface | Chat | Blizzard's chat windows in the Mode look: a near-black fill inside a one-pixel rim, Expressway text (each window keeps its own size), glass tabs that fade when the mouse leaves (the selected one white with a cyan bar), a button compartment at the end of the tab row (Channels, voice, Chat Menu; Social and Text to Speech above it), a matching edit box whose rim turns cyan while typing, and an idle fade to 40% after 8 seconds without use (a whisper wakes it). Background, border, tabs, fades and buttons are adjustable. Off by default. |
+| Interface | Windows | Blizzard's windows in the Mode look: Character, Spellbook and Talents, Professions, Social, Guild, Group Finder, Collections, Achievements, World Map, Quests and Gossip, Merchant, Mail, Bank, Trade, Inspect, Trainer, Auction House, Dressing Room, Pet Stable, Raid, Macros, AddOn List, Game Menu and Game Settings. A dark fill, a one-pixel rim, a title strip with Expressway titles, a square close button, and Mode tabs, buttons, fields, side tabs, scroll bars and insets. Each window can be left out; load-on-demand windows are skinned when they load. Off by default. |
 | Global    | Profiles    | Account-wide profiles of all ModeUI settings: create (from defaults), duplicate, rename, delete, switch (applies on reload) and import/export as a text string. Play The Game Tools keeps its own, separate profiles. |
 | Global    | Optimizations | Auto Loot, Fast Loot, Hide Error Text, Max Camera Distance and UI Scale (Pixel Perfect or custom). All off by default: ModeUI only changes a game setting while you have that optimization on, and turning it off puts back the game's previous value. |
 | Global    | Class Colors | Custom colors per class for ModeUI's class-colored elements (names, health bars, portrait rings). Changes apply right away; Reset returns a class to the game's color. |
@@ -31,7 +33,9 @@ theme ModeUI has.
 - **Edit Mode** in the window header lets you drag every unit frame and each
   action bar and damage meter window. Cyan guides show when an element nears the center or an
   offset of 0, and it snaps there. The arrows beside the selected element (or the
-  arrow keys) move it one pixel. **Preview** shows sample frames.
+  arrow keys) move it one pixel. **Anchor To...** in the Edit Mode window hangs the selected
+  element from the next one you click, then offers its sides; anchoring always starts at X and Y 0.
+  **Preview** shows sample frames.
 - `/kb` opens Keybind Mode for the action bars: hover a button and press a key.
 - Size, visibility and position changes made in combat are applied once combat ends,
   because Blizzard protects clickable unit frames.
@@ -60,15 +64,15 @@ ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   Libs/            bundled libraries (LibStub, CallbackHandler, LibSharedMedia)
   Shared/          code shared by modules: Runtime (startup, settings, profiles, modules,
                    events, messages), Domain (unit data), Kit (frame pieces), Placement
-                   (Edit Mode), Media, Border, Settings (window, widgets)
-  Modules/         one folder per module (UnitFrames, Nameplates, ActionBars, DamageMeters, Profiles, Optimizations, ClassColors),
+                   (Edit Mode), Media, Border, Skin (Blizzard frames), Settings (window, widgets)
+  Modules/         one folder per module (UnitFrames, Nameplates, ActionBars, DamageMeters, Chat, Windows, Profiles, Optimizations, ClassColors),
                    each with its own XML, Init.lua, Driver.lua and Settings.lua
   Media/           Mode theme textures, unit frame textures, Lato fonts
-tests/             structure, runtime, smoke, Unit Frames, Nameplates, Action Bars, Damage Meters, Global and template tests
+tests/             structure, runtime, smoke, Unit Frames, Nameplates, Action Bars, Damage Meters, Chat, Windows, Global and template tests
                    (simulated client, not WoW)
 tools/             texture generators (Python + Pillow; ModeFlat and nameplate shapes in plain Lua)
 design/mode/       Mode theme source artwork and provenance
-docs/              architecture (docs/ARCHITECTURE.md) and design notes (docs/UNIT_FRAMES.md, NAMEPLATES.md, ACTION_BARS.md, DAMAGE_METERS.md)
+docs/              architecture (docs/ARCHITECTURE.md) and design notes (docs/UNIT_FRAMES.md, NAMEPLATES.md, ACTION_BARS.md, DAMAGE_METERS.md, CHAT.md, WINDOWS.md)
 ```
 
 ## Local development
@@ -96,6 +100,8 @@ lua tests/template.lua
 lua tests/nameplates.lua
 lua tests/action_bars.lua
 lua tests/damage_meters.lua
+lua tests/chat.lua
+lua tests/windows.lua
 ```
 
 ## Adding a module

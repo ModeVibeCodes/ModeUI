@@ -567,8 +567,11 @@ world.run([====[
     local ghost=M.ghosts.player
     assert(not ghost.secure and not ghost:IsShown())
     assert(addon:SetEditMode(true) and ghost:IsShown() and M.ghosts.target:IsShown())
-    assert(ghost.texts.border:GetText()=='Player Frame' and ghost.texts.border.color[1]==M.ACCENT[1])
-    assert(ghost.texts.border.lift:GetText()=='Player Frame' and ghost.texts.border.lift:IsShown() and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
+    assert(ghost.texts.border:GetText()=='Fixture' and ghost.texts.border.color[1]==M.ACCENT[1],'the player stand-in shows your name')
+    assert(M.ghosts.target.texts.border:GetText()=='Name','other stand-ins show a sample name, not the frame title')
+    local handle=addon.PositionManager.elements.unitFramesPlayer.decoration
+    assert(handle and handle.label:GetText()=='Player Frame' and addon.PositionManager.elements.unitFramesTarget.decoration.label:GetText()=='Target Frame','each handle names its frame')
+    assert(ghost.texts.border.lift:GetText()=='Fixture' and ghost.texts.border.lift:IsShown() and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
     assert(ghost.width==p.width and Near(RingTop(ghost).r,Soft(soft,0.35)[1]),'stand-in matches size and class ring')
     assert(Near(RingTop(M.ghosts.target).r,Soft(Soft(P.hostile),0.35)[1]),'target stand-in shows an enemy ring')
     local gc=M.ghosts.target.combo;assert(gc:IsShown() and gc.points[3].bar.value==M.COMBO_SAMPLE and gc.points[5]:IsShown(),'stand-in shows sample combo points')

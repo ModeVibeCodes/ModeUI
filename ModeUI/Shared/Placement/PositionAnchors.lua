@@ -62,3 +62,51 @@ function PM:RefreshAnchorSize(id)
         end
     end
 end
+
+-- The element a target id stands for, when it is another ModeUI element's
+-- frame (a target added with Positioning:AddTarget).
+local function ElementOf(self, target)
+    for _, item in ipairs(P.targets) do
+        if item.id == target then
+            local frame = _G[item.name]
+            return frame and self.frames[frame]
+        end
+    end
+end
+
+-- Whether anchoring `id` to `target` would close a loop: the target, or
+-- something it hangs from, already hangs from `id`.
+function PM:WouldLoop(id, target)
+    local current = target
+    for _ = 1, 32 do
+        local other = ElementOf(self, current)
+        if not other then return false end
+        if other == id then return true end
+        current = self.elements[other] and self.elements[other].position.target
+    end
+    return true
+end
+
+-- Anchoring to another element (Edit Mode's target list, Anchor To and its
+-- side choices): the element goes onto the chosen side of the target with
+-- X and Y back at 0, so it sits right there whatever its old offsets were.
+-- Without a side it goes Above a new target (or keeps its side on the same
+-- one). Choosing the Screen from another target keeps it where it is.
+-- point/relativePoint (both or neither) line up edges, e.g. Above with the
+-- left edges together.
+function PM:AnchorTo(id, target, placement, point, relativePoint)
+    local element = Lookup(self, id)
+    if not element then return false, "unknown-element" end
+    if Combat() then return false, "combat" end
+    local position, reason = self:GetPosition(id)
+    if not position then return false, reason end
+    if placement == nil then
+        if target == position.target then return true, "unchanged" end
+        if target == "screen" then return self:DetachAnchor(id) end
+        placement = "above"
+    end
+    if target ~= "screen" and self:WouldLoop(id, target) then return false, "anchor-loop" end
+    position.target, position.placement, position.point, position.relativePoint = target, placement, point, relativePoint
+    position.x, position.y = 0, 0
+    return self:SetPosition(id, position, true)
+end

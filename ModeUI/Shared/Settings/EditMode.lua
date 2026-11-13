@@ -123,7 +123,7 @@ function addon:CreateEditWindow()
         local element = E:Selected()
         return element and self.PositionManager:GetPosition(element.id)
     end
-    local targets = Dropdown(window, 300, function()
+    local targets = Dropdown(window, 188, function()
         local element = E:Selected()
         return self.PositionManager:GetAllowedTargets(element and element.id)
     end, function()
@@ -136,6 +136,14 @@ function addon:CreateEditWindow()
         return id, "Saved target unavailable"
     end, function(id) E:SetTarget(id) end)
     targets:SetPoint("TOPLEFT", 20, -228)
+    -- Anchor To: click it, then click the element to hang from (EditAnchor.lua).
+    local anchorTo = W.Button(window, "Anchor To...", 104, 28, "secondary")
+    anchorTo:SetPoint("TOPLEFT", 216, -228)
+    anchorTo:SetScript("OnClick", function()
+        local A, element = self.EditAnchor, E:Selected()
+        if A:Active() then A:Stop() elseif element then A:Start(element.id) end
+        self:RefreshEditWindow()
+    end)
     local placements = Dropdown(window, 188, function() return P.placements end, function()
         local p = Position()
         local placement = P:Placement(p and p.placement)
@@ -181,6 +189,10 @@ function addon:CreateEditWindow()
         xSlider:SetEnabled(available); ySlider:SetEnabled(available)
         refreshX(); refreshY()
         targets:SetEnabled(anchoring); placements:SetEnabled(anchoring and available); reset:SetEnabled(anchoring and available)
+        local picking = self.EditAnchor:Active()
+        anchorTo:SetEnabled(picking or self.EditAnchor:CanPick(element))
+        anchorTo:SetSelected(picking)
+        anchorTo.label:SetText(picking and "Cancel" or "Anchor To...")
         targets:Refresh(); placements:Refresh()
         highlights:SetSelected(E.highlights)
         refreshing = false
@@ -190,6 +202,7 @@ function addon:CreateEditWindow()
     window.xInput, window.yInput = xInput, yInput
     window.xSlider, window.ySlider = xSlider, ySlider
     window.targetDropdown, window.placementDropdown, window.resetOffset = targets, placements, reset
+    window.anchorToButton = anchorTo
     window.settingsButton, window.exitButton, window.highlightButton = settings, exit, highlights
     window.selectedLabel = selected
     window:EnableKeyboard(true)
@@ -208,6 +221,7 @@ function addon:CreateEditWindow()
     end)
     window:SetScript("OnHide", function()
         targets.menu:Hide(); placements.menu:Hide()
+        self.EditAnchor:Finish()
         window:StopMovingOrSizing(); window.moving = false
         if self.editMode and not window.ending then self:SetEditMode(false) end
     end)
