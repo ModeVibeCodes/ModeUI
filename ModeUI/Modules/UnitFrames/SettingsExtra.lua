@@ -89,6 +89,13 @@ function M:BuildCastTab(ui)
             local size = page:Columns({ "Bar Height", "Gap" })
             page.unitFrameCastHeight = n.Slider(size[1], M.castRanges.height, "height", "px")
             n.Slider(size[2], M.castRanges.gap, "gap", "px")
+            -- Full Width spans the bar block (short of the portrait); off, Bar
+            -- Width sets it, centred under that span.
+            page.unitFrameCastFullWidth = n.Toggles({ n.Toggle("Full Width", "fullWidth") })
+            When(function() return not C().fullWidth end, function()
+                local width = page:Columns({ "Bar Width" })
+                page.unitFrameCastWidth = n.Slider(width[1], M.castRanges.width, "width", "px")
+            end)
             page:Group("Textures")
             local textures = page:Columns({ "Foreground", "Background" })
             page.unitFrameCastForeground = ui.SelectIn(textures[1], 200, function() return addon.Kit.BarTextureChoices(true) end,
@@ -165,7 +172,7 @@ function M:BuildStatusControls(ui)
         page.unitFrameCombatCorner = n.SelectIn(corners[2], M.choices.statusCorner, "combatCorner")
         local size = page:Columns({ "Badge Size" })
         n.Slider(size[1], M.statusRanges.badgeSize, "badgeSize", "px")
-        n.Toggles({ n.Toggle("Mirror on a Right-Side Portrait", "mirror"), n.Toggle("Combat Ring", "combatRing") })
+        n.Toggles({ n.Toggle("Keep Relative Text Positions", "mirror"), n.Toggle("Combat Ring", "combatRing") })
         When(function() return St().combatRing or St().pulse end, function() n.Color("Combat Ring Color", "ringColor") end)
         -- Something pulled you that you haven't targeted: the ring pulses until you do.
         When(Player, function()

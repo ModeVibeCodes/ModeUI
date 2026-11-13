@@ -147,15 +147,12 @@ function addon:CreateConfig()
     window.headerArt:SetPoint("BOTTOMLEFT", sidebarWidth + 2, 0); window.headerArt:SetPoint("BOTTOMRIGHT", -1, 0)
     window.headerArt:SetHeight(1)
     if mode then window.headerArt:Hide() end
-    window.title = W.Heading(header, "ModeUI", T.fontSize.section, 20 + edge, -21, sidebarWidth - 24 - edge, mode and T.heading or T.text)
+    -- The brand is the ModeUI wordmark alone, no logo (owner, November 13, 2026).
+    window.title = W.Heading(header, "ModeUI", T.fontSize.brand, 20 + edge, -21, sidebarWidth - 24 - edge, mode and T.heading or T.text)
     if mode then
         window.title:SetTextColor(unpack(T.primary))
-        local logo=header:CreateTexture(nil,"ARTWORK")
-        logo:SetPoint("LEFT",14,0);logo:SetSize(38,38)
-        addon.Media:ApplyTexture(logo,"ModeLogo")
-        window.brandLogo=logo
-        window.title:ClearAllPoints();window.title:SetPoint("LEFT",logo,"RIGHT",8,0)
-        window.title:SetWidth(sidebarWidth-72)
+        window.title:ClearAllPoints();window.title:SetPoint("LEFT",header,"LEFT",22,0)
+        window.title:SetWidth(sidebarWidth-30)
     end
     window.title:SetWordWrap(false)
     local controls = CreateFrame("Frame", nil, header)
@@ -233,8 +230,12 @@ function addon:CreateConfig()
     local pages, navigationButtons = {}, {}
     local categoryNavigation = self:CreateCategoryNavigation(body, navigationButtons)
     window.categoryNavigation = categoryNavigation
-    -- ModeUI opens on its first module (Interface > Unit Frames).
+    -- ModeUI opens on the first page in the sidebar (Global > Profiles).
     local selected = self.moduleOrder[1]
+    for _, id in ipairs(self.categoryOrder) do
+        local first = self.categories[id].modules[1]
+        if first then selected = first; break end
+    end
     local RefreshSidebar
     -- Session-local disclosure state: mode categories start expanded on reload.
     local collapsed = {}
@@ -356,4 +357,14 @@ function addon:ToggleConfig()
     if self.editMode then self:SetEditMode(false); return end
     if not self.configWindow then self:CreateConfig() end
     self.configWindow:SetShown(not self.configWindow:IsShown())
+end
+
+-- Shows the settings window (leaving Edit Mode first) without ever closing it:
+-- the game menu button and the minimap's addon compartment use this.
+function addon:OpenConfig()
+    if not self.initialized then return false end
+    if self.editMode then self:SetEditMode(false) end
+    if not self.configWindow then self:CreateConfig() end
+    self.configWindow:Show()
+    return true
 end

@@ -1,6 +1,6 @@
-# Interface: Nameplates
+# Frames: Nameplates
 
-November 12, 2026. Second module of the **Interface** category. Off by default
+November 12, 2026. Second module ModeUI built; in the **Frames** category since November 13. Off by default
 (turn it on with the switch in the page header). Static/mock validated only;
 **native acceptance is pending** for the latest changes. APIs and their
 secret-value rules are in [API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-nameplates--november-12-2026).
@@ -168,7 +168,8 @@ settings take their defaults.
 
 | File | Job |
 |---|---|
-| `Init.lua` | declaration, per-kind defaults, ranges, choices, validation, migrations |
+| `Init.lua` | declaration, per-kind defaults, ranges and choices |
+| `Migrations.lua` | `Initialize(db)`: validation and the settings-version migrations |
 | `Driver.lua` | lifecycle, events, enemy or friendly kind, fading Blizzard's unit frame, per-kind settings |
 | `Plate.lua` | building a plate and laying out its boxes |
 | `Layout.lua` | placing every element by anchor and offset; Name Only |
@@ -178,6 +179,7 @@ settings take their defaults.
 | `Update.lua` | health, name, colors, threat, raid marker |
 | `CastBar.lua` | cast and channel bars, icon side, target line and timer |
 | `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |
+| `AuraContainers.lua` | auras through Blizzard's secure custom aura containers while auras are secret |
 | `Preview.lua` | the sample plate on the settings page and its click targets |
 | `Settings.lua` | the settings page |
 
@@ -194,7 +196,7 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`;
 
 ## Manual check
 
-- **Navigation:** `/modeui`, then **Interface** › **Nameplates**.
+- **Navigation:** `/modeui`, then **Frames** › **Nameplates**.
 - **Action:**
   - Turn the module on. Switch **Editing** between **Enemy** and **Friendly** and
     watch the preview change.

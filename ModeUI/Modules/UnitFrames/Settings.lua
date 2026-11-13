@@ -73,33 +73,32 @@ function M:CreateConfigPage(parent)
     local function Mark(target) local row = page.rows[#page.rows]; page.jumpTargets[target] = { section = row.section, row = row } end
 
     -- Editing (the frame every tab changes) sits at the preview's top right,
-    -- as on Action Bars, with whether that frame is on and Turn On when it is off.
-    local frameChoices = {}
-    for _, unit in ipairs(M.units) do frameChoices[#frameChoices + 1] = { id = unit, label = M.labels[unit] } end
+    -- as on Action Bars. Each frame in its list says On or Off beside its
+    -- name, and Turn On shows when the frame being edited is off.
+    local function Hex(c) return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5), math.floor(c[3] * 255 + 0.5)) end
+    function M.FrameStateLabel(unit)
+        local on = M.db[unit].enabled
+        return M.labels[unit] .. "  " .. (on and Hex(T.enabled) .. "On" or Hex(T.muted) .. "Off") .. "|r"
+    end
+    local function FrameChoices()
+        local list = {}
+        for _, unit in ipairs(M.units) do list[#list + 1] = { id = unit, label = M.FrameStateLabel(unit) } end
+        return list
+    end
     function page.SetEditing(unit) if M.labels[unit] then editing = unit; page:Refresh(); page:Layout() end end
     if page.previewArea then
         local corner = CreateFrame("Frame", nil, page.previewArea)
-        corner:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); corner:SetSize(430, 28)
-        local select = SelectIn(corner, 200, function() return frameChoices end, Unit, page.SetEditing)
+        corner:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); corner:SetSize(370, 28)
+        local select = SelectIn(corner, 220, FrameChoices, Unit, page.SetEditing)
         select:ClearAllPoints(); select:SetPoint("RIGHT", 0, 0)
         local label = W.Label(corner, "Editing", nil, 0, 0, 52, T.muted)
         label:ClearAllPoints(); label:SetPoint("RIGHT", select, "LEFT", -8, 0); label:SetJustifyH("RIGHT")
-        local state = W.Label(corner, "", nil, 0, 0, 30, T.muted)
-        state:ClearAllPoints(); state:SetPoint("RIGHT", label, "LEFT", -12, 0); state:SetJustifyH("LEFT")
-        local dot = W.Shape(corner, "ModeCircle", "OVERLAY")
-        dot:SetSize(8, 8); dot:SetPoint("RIGHT", state, "LEFT", -6, 0)
         local turnOn = W.Button(corner, "Turn On", 80, 24, "choice")
-        turnOn:SetPoint("RIGHT", dot, "LEFT", -10, 0)
+        turnOn:SetPoint("RIGHT", label, "LEFT", -8, 0)
         turnOn:SetScript("OnClick", function() M:SetFrameOption(editing, "enabled", true) end)
-        page.refreshers[#page.refreshers + 1] = function()
-            local on = M.db[editing].enabled
-            state:SetText(on and "On" or "Off")
-            local c = on and T.enabled or T.danger
-            dot:SetVertexColor(c[1], c[2], c[3], 1)
-            turnOn:SetShown(not on)
-        end
-        page.unitFrameEditSelect, page.unitFrameState, page.unitFrameStateDot, page.unitFrameTurnOn = select, state, dot, turnOn
-        page.previewReserveRight = 440
+        page.refreshers[#page.refreshers + 1] = function() turnOn:SetShown(not M.db[editing].enabled) end
+        page.unitFrameEditSelect, page.unitFrameTurnOn = select, turnOn
+        page.previewReserveRight = 380
         page:UpdatePreviewLayout()
     end
 
@@ -219,8 +218,9 @@ function M:CreateConfigPage(parent)
         end)
     end)
 
+    -- Show Portrait comes first, then the status badges on the portrait,
+    -- then its look. A matched Target takes Show Portrait from the Player.
     Tab("Portrait", function()
-        Toggles({ { "Show Portrait", "showPortrait" } }); Mark("portrait")
         When(function() return db().showPortrait end, function()
             Choice("Portrait Style", "portraitStyle"); Choice("Portrait Side", "portraitSide")
             -- A share of the bar block's height, so it grows and shrinks with the bars.
@@ -228,7 +228,10 @@ function M:CreateConfigPage(parent)
             Choice("Portrait Ring", "portraitRing")
             When(function() return db().portraitRing == "custom" end, function() Color("Portrait Ring Color", "portraitRingColor") end)
         end)
-    end, false, function() M:BuildStatusControls(ui) end)
+    end, false, function()
+        Style(function() Toggles({ { "Show Portrait", "showPortrait" } }); Mark("portrait") end)
+        M:BuildStatusControls(ui)
+    end)
 
     M:BuildCastTab(ui)
     M:BuildAurasTab(ui)

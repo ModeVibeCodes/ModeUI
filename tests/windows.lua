@@ -113,14 +113,36 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
     function chatTab:SetChecked(value) self.isChecked = value end
     function chatTab:GetChecked() return self.isChecked end
     guild.ChatTab = chatTab
+    -- The Guild chat's edit box (Left/Right/Mid) and a dropdown that answers "Button".
+    local chatEdit = CreateFrame('EditBox', nil, guild); Textures(chatEdit, { 'Left', 'Right', 'Mid' }); guild.ChatEditBox = chatEdit
+    local listDropdown = CreateFrame('Button', nil, guild); Textures(listDropdown, { 'Background', 'Arrow' })
+    listDropdown.Text = listDropdown:CreateFontString(); function listDropdown:SetupMenu() end
+    guild.ListDropdown = listDropdown
 
     -- The Character window: panes, the paper doll, the model, three slots.
     local character = MakeWindow('CharacterFrame')
     character.LeftPaneHost = CreateFrame('Frame', nil, character); Textures(character.LeftPaneHost, { 'Background' })
     character.RightPaneHost = CreateFrame('Frame', nil, character)
+    character.RightPaneHost.art = character.RightPaneHost:CreateTexture(nil, 'BACKGROUND')
+    local divider = CreateFrame('Frame', nil, character.RightPaneHost); divider.art = divider:CreateTexture(nil, 'OVERLAY')
+    CharacterStatsPaneScrollBox = CreateFrame('Frame', 'CharacterStatsPaneScrollBox', character.RightPaneHost)
+    Textures(CharacterStatsPaneScrollBox, { 'ClassBackground', 'Border' })
+    local statBox = CreateFrame('Frame', nil, CharacterStatsPaneScrollBox)
+    statBox.rows = {}
+    function statBox:RegisterCallback() end
+    function statBox:GetFrames() return self.rows end
+    function statBox:ForEachFrame(fn) for _, row in ipairs(self.rows) do fn(row) end end
+    local header = CreateFrame('Frame', nil, statBox); Textures(header, { 'Background' }); header.Title = header:CreateFontString()
+    local statRow = CreateFrame('Frame', nil, statBox); Textures(statRow, { 'Background' })
+    statRow.Label, statRow.Value = statRow:CreateFontString(), statRow:CreateFontString()
+    statBox.rows = { header, statRow }
+    CharacterStatsPaneScrollBox.ScrollBox = statBox
+    character.RightPaneToggleButton = CreateFrame('Button', nil, character); States(character.RightPaneToggleButton)
     PaperDollFrame = CreateFrame('Frame', 'PaperDollFrame', character)
+    PaperDollFrame.TopBackgroundStripHost = CreateFrame('Frame', nil, PaperDollFrame)
+    Textures(PaperDollFrame.TopBackgroundStripHost, { 'TopBackgroundStrip', 'TopBackgroundStripBottomEdge' })
     CharacterModelScene = CreateFrame('Frame', 'CharacterModelScene', PaperDollFrame)
-    for _, slot in ipairs({ { 'Head', 1 }, { 'Hands', 10 }, { 'MainHand', 16 } }) do
+    for _, slot in ipairs({ { 'Head', 1 }, { 'Wrist', 9 }, { 'Hands', 10 }, { 'MainHand', 16 } }) do
         local button = CreateFrame('Button', 'Character' .. slot[1] .. 'Slot', PaperDollFrame)
         button:SetID(slot[2]); button:SetSize(37, 37)
         button.IconBorder = button:CreateTexture(nil, 'OVERLAY')
@@ -246,6 +268,19 @@ world.run([==[
     dropdown.callbacks.OnMenuClose.fn(dropdown.callbacks.OnMenuClose.owner, dropdown, menu)
     assert(not panel:IsShown() and panel:GetParent() == UIParent, 'taken back when the menu closes')
 
+    assert(guild.ChatEditBox.Mid.alpha == 0 and Skin.parts[guild.ChatEditBox].box, 'the Guild chat box: a field')
+    assert(guild.ListDropdown.Arrow.alpha == 0 and Skin.parts[guild.ListDropdown].chevron, 'a dropdown that answers Button')
+    -- Character window: the stats pane in Onyx.
+    local right = CharacterFrame.RightPaneHost
+    assert(right.art.alpha == 0 and CharacterStatsPaneScrollBox.ClassBackground.alpha == 0 and CharacterStatsPaneScrollBox.Border.alpha == 0)
+    assert(Skin.parts[right].field and Skin.parts[right].divider:GetWidth() == 1, 'an Onyx field and a divider')
+    local header, statRow = unpack(CharacterStatsPaneScrollBox.ScrollBox.rows)
+    assert(header.Background.alpha == 0 and Skin.parts[header].fill and header.Title.color[1] == C.heading[1], 'category: Onyx strip')
+    assert(statRow.Background.desaturated and statRow.Background.vertexColor[4] == 0.35 and statRow.Label.color[1] == C.label[1], 'rows: gray stripe')
+    local strip = PaperDollFrame.TopBackgroundStripHost
+    assert(strip.TopBackgroundStrip.alpha == 0 and Skin.parts[strip].divider, 'the rock strip goes')
+    assert(Skin.parts[CharacterFrame.RightPaneToggleButton].icon.texture:find('Chevron'), 'pane button glyph')
+
     -- Load-on-demand: a secure window loaded in combat waits for the end of it.
     testCombat = true
     local journal = MakeWindow('CollectionsJournal'); journal.protected = true
@@ -264,9 +299,16 @@ world.run([==[
     -- Character window: stats display.
     local statsFrame = ModeUICharacterStats
     assert(statsFrame and statsFrame:IsShown() and statsFrame:GetParent() == PaperDollFrame)
-    local a = Point(statsFrame); assert(a[1] == 'TOPLEFT' and a[2] == CharacterModelScene and a[4] == 8 and a[5] == -8, 'at Stats Anchor of the model')
+    local area = M.statsArea
+    assert(area and Point(area)[2] == CharacterHeadSlot and Point(area, 2)[2] == CharacterHandsSlot and Point(area, 3)[2] == CharacterWristSlot,
+        'the model area: between the slot columns, above the weapons')
+    local a = Point(statsFrame); assert(a[1] == 'TOPLEFT' and a[2] == area and a[4] == 8 and a[5] == -8, 'at Stats Anchor of the area')
     local lines = statsFrame.lines
-    assert(lines[1].label.text == 'Agility' and lines[1].value.text == '120' and lines[1].label.color[2] == 240 / 255, 'Main Stat: the highest, cyan')
+    assert(lines[1].label.text == 'Agility' and lines[1].value.text == '120' and lines[1].label.color[1] == M.STAT_COLORS.agility[1],
+        'Main Stat: the highest, in its attribute\'s color')
+    assert(lines[2].label.color[1] == M.STAT_COLORS.stamina[1] and lines[2].value.color[1] == C.heading[1], 'stat colors; values white')
+    assert(M:SetStatColor('agility', { 0, 1, 0 }) and lines[1].label.color[2] == 1, 'Stat Colors')
+    assert(not M:SetStatColor('mainStat', { 0, 1, 0 }) and not M:SetStatColor('agility', { 2, 0, 0 }))
     assert(lines[2].label.text == 'Stamina' and lines[2].value.text == '80')
     assert(lines[3].label.text == 'Armor' and lines[3].value.text == '900')
     assert(lines[4].value.text == '12.50%' and lines[5].value.text == '3.00%' and lines[6].value.text == '3.00%', 'crit, hit (+rating), haste')
@@ -278,6 +320,14 @@ world.run([==[
     armor = 900
     assert(M:SetOption('charStatsAnchor', 'BOTTOMRIGHT') and M:SetOption('charStatsX', -4))
     a = Point(statsFrame); assert(a[1] == 'BOTTOMRIGHT' and a[4] == -4)
+    -- Never past the area: offsets clamped, width no wider than the area.
+    area:SetWidth(200); area:SetHeight(100)
+    assert(M:SetOption('charStatsX', -300) and Point(statsFrame)[4] == -50 and statsFrame:GetWidth() == 150, 'kept inside the area')
+    assert(M:SetOption('charStatsX', 40) and Point(statsFrame)[4] == 0, 'never past the right column')
+    area:SetWidth(120); M:CharacterRefresh(); assert(statsFrame:GetWidth() == 120, 'as wide as the area at most')
+    area.width, area.height = nil, nil
+    assert(M.SummarizeEnchant('Lesser Strength and Agility') == 'Lesser Strength & Agility')
+    assert(M.ShortStat('+3 Strength and Agility') == '+3 Str & Agi', '"and" reads "&"')
     assert(not M:SetOption('charStatsAnchor', 'MIDDLE') and not M:SetOption('charStatsX', 900))
     assert(M:SetOption('charStats', false) and not statsFrame:IsShown())
     assert(M:SetOption('charStats', true) and statsFrame:IsShown())

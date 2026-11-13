@@ -6,8 +6,8 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- paging, cooldowns, range and keybinds work as before; ModeUI owns where
 -- each bar sits, how it's laid out, the button skin, the text and when the
 -- bar shows. Every bar has its own settings. See docs/ACTION_BARS.md.
--- Files: Init (this), Migrations, Driver, Bars, Layout, Skin, Text, Fade,
--- Preview, Settings.
+-- Files: Init (this), Migrations, Driver, Layout, Skin, Text, Bars, Visibility,
+-- Keybind, Glow, GlowMenu, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Action Bars"], category = "interface", defaultEnabled = false,
     configDescription = L["Action bars in the Mode look: layout, size, borders, text and when each bar shows."],
@@ -54,13 +54,16 @@ for _, bar in ipairs(M.bars) do
     local spec = M.barSpecs[bar]
     M.frameNames[bar] = spec.pet and "ModeUIPetBar" or spec.stance and "ModeUIStanceBar" or "ModeUIActionBar" .. bar:sub(4)
 end
--- Every bar can be anchored to a bar listed before it (never in a loop),
--- through its stand-in, as well as to the screen and the game's frames.
+-- Every bar can be anchored to any other bar through its stand-in, as well
+-- as to the screen and the game's frames. Loops are refused when an anchor is
+-- chosen (PositionManager:WouldLoop), not by list order.
 local BASE_TARGETS = { "screen", "player", "target", "focus", "minimap", "party" }
 M.allowedTargets = {}
 for index, bar in ipairs(M.bars) do
     local allowed = Copy(BASE_TARGETS)
-    for earlier = 1, index - 1 do allowed[#allowed + 1] = M.elementIds[M.bars[earlier]] end
+    for other, otherBar in ipairs(M.bars) do
+        if other ~= index then allowed[#allowed + 1] = M.elementIds[otherBar] end
+    end
     M.allowedTargets[bar] = allowed
     addon.Positioning:AddTarget(M.elementIds[bar], L[M.barSpecs[bar].label], M.frameNames[bar] .. "Mover")
 end

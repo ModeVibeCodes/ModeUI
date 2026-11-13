@@ -57,9 +57,10 @@ addon.InterfaceTheme = {
     blizzardArt = false,
     -- One spacing scale and one font scale for every settings surface: page
     -- titles (page), section tabs and headings (section), card titles (card),
-    -- sidebar captions, uppercase (group), setting labels (body), help (small).
+    -- sidebar captions, uppercase (group), setting labels (body), help (small)
+    -- and the ModeUI wordmark in the header (brand, 7 px above section).
     spacing = addon.Theme.spacing,
-    fontSize = { small = 12, body = 13, group = 12, card = 19, section = 14, page = 24, display = 24 },
+    fontSize = { small = 12, body = 13, group = 12, card = 19, section = 14, brand = 21, page = 24, display = 24 },
 }
 for key, color in pairs(MODE) do addon.InterfaceTheme[key] = Copy(color) end
 

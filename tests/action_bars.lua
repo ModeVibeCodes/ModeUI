@@ -313,7 +313,13 @@ world.run([==[
     assert(not ModeUIActionBar6Mover:IsShown() and not PM.elements.actionBarsBar6.editMode, 'hidden bars are not movable')
     local targets = {}
     for _, target in ipairs(PM:GetAllowedTargets('actionBarsBar3')) do targets[target.id] = true end
-    assert(targets.actionBarsBar1 and targets.actionBarsBar2 and not targets.actionBarsBar3 and not targets.actionBarsBar4, 'anchors to earlier bars only')
+    assert(targets.actionBarsBar1 and targets.actionBarsBar4 and targets.actionBarsBar5 and not targets.actionBarsBar3, 'anchors to any other bar')
+    assert(not targets.actionBarsPet and not targets.actionBarsStance, 'but not to the pet and stance bars stacked on it')
+    -- Bar 2 hangs from bar 1, so bar 1 can't hang from bar 2 (a loop).
+    targets = {}
+    for _, target in ipairs(PM:GetAllowedTargets('actionBarsBar1')) do targets[target.id] = true end
+    assert(targets.actionBarsBar4 and not targets.actionBarsBar2 and not targets.actionBarsBar3 and not targets.actionBarsBar1, 'never in a loop')
+    assert(select(2, PM:SetPosition('actionBarsBar1', { target = 'actionBarsBar3', placement = 'above', x = 0, y = 0 })) == 'anchor-loop')
     assert(PM:SetPosition('actionBarsBar1', { target = 'screen', placement = 'center', point = 'BOTTOM', relativePoint = 'BOTTOM', x = 0, y = 80 }))
     p = Point(bar1)
     assert(p[1] == 'BOTTOMLEFT' and p[2] == UIParent and p[5] == mover1:GetBottom() - UIParent:GetBottom(), 'the bar follows its stand-in')
@@ -369,6 +375,25 @@ world.run([==[
     assert(element.decoration.handle:IsMouseEnabled(), 'its name handle takes the click too')
     assert(not PM:StartDragging('actionBarsBar1'), 'no dragging while picking')
     A:Stop()
+    -- Pointing Action Bar 1 at bar 2 (which sits on it) says why it can't.
+    local cursor = GetCursorPosition
+    local bx, by = ModeUIActionBar2Mover:GetCenter()
+    GetCursorPosition = function() return bx, by end
+    assert(A:Start('actionBarsBar1'))
+    A:Track()
+    assert(not A.overlay.outline:IsShown() and A.overlay.text.text:find('Action Bar 2 already hangs from Action Bar 1', 1, true), 'a loop is explained')
+    A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'LeftButton')
+    assert(A:Active() and PM:GetPosition('actionBarsBar1').target == 'screen', 'and not picked')
+    A:Stop()
+    -- Action Bar 4 picks Action Bar 1 (listed before or after, either works).
+    bx, by = mover1:GetCenter()
+    local before4 = PM:GetPosition('actionBarsBar4')
+    assert(A:Start('actionBarsBar4')); A:Track()
+    assert(A.overlay.outline:IsShown() and A.overlay.text.text:find('to Action Bar 1', 1, true))
+    A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'LeftButton')
+    assert(not A:Active() and PM:GetPosition('actionBarsBar4').target == 'actionBarsBar1', 'anchored to the clicked bar')
+    A:CloseSides(); assert(PM:SetPosition('actionBarsBar4', before4))
+    GetCursorPosition = cursor
     assert(not PM.picking and mover1:IsMouseEnabled() and PM:CanDrag(element), 'back to dragging')
     -- Stacks stay on the screen: Action Bar 1 at the top edge turns the bars
     -- stacked above it to grow downward, each one under the last.

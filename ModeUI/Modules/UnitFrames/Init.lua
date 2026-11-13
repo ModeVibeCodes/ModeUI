@@ -1,7 +1,7 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Interface suite: secure Player, Target, Target of Target, Focus and Target
+-- Frames > Unit Frames: secure Player, Target, Target of Target, Focus and Target
 -- of Focus frames in the locked Onyx skin
 -- (round portrait capping a rounded bar block inside a slate rim).
 -- Forever runs the mainline client, so unit values can be secret. They are only
@@ -10,12 +10,16 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Files: Init (this), TextSlots, Migrations, Driver, Native, Layout, Texts, Build, Update,
 -- Combo, CastBar, Auras, Status, Preview, Settings, SettingsExtra, SettingsText.
 local L = addon.L
-local M = { title = L["Unit Frames"], category = "interface", defaultEnabled = true,
+local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true,
     configDescription = L["Player, Target, Target of Target and Focus frames in the Onyx look. Configure outside combat."],
     -- The settings page keeps its own sections; the Mode layer restyles headings.
     modeLayout = { decorateOnly = true } }
 addon.UnitFrames = M
 addon:RegisterModule("unitFrames", M)
+-- Play The Game Tools carried these frames first: on ModeUI's first start the
+-- active PTG profile's unitFrames settings and these positions are copied
+-- once (Shared/Runtime/DB.lua).
+M.ptgImport = { positions = { "unitFramesPlayer", "unitFramesTarget" } }
 
 M.CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 
@@ -54,7 +58,9 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 17: text slots replace the name, level, health and power text keys.
 -- Version 18: the power bar and cast bar get their own textures (and the power
 -- bar its own opacity), copied from the shared bar textures.
-M.LAYOUT_VERSION = 18
+-- Version 19: the Focus cast bar sits 8px from the frame (owner); cast bars
+-- get Full Width and Bar Width.
+M.LAYOUT_VERSION = 19
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -165,9 +171,10 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 -- box with the frame's rim and gap under (or over) the bar block, its bar
 -- lined up with the health bar. On for the Player, Target and Focus.
 M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 3, icon = "far",
+    fullWidth = true, width = 160,
     foregroundTexture = "mode", backgroundTexture = "slate",
     showText = true, showTimer = true, fontSize = 10, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
-M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 } }
+M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
 M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "Hidden" } }
 M.castChoices = { position = "castPosition", icon = "castIcon" }
@@ -175,6 +182,8 @@ local CAST_OFF = { targettarget = true, focustarget = true }
 function M.CastDefaults(unit)
     local defaults = Copy(M.castDefaults)
     defaults.enabled = not CAST_OFF[unit]
+    -- The owner asked for the Focus cast bar 8px from the frame.
+    if unit == "focus" then defaults.gap = 8 end
     return defaults
 end
 -- Buffs and debuffs (owner, November 13, 2026), in db[unit].buffs and

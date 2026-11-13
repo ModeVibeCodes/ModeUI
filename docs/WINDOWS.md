@@ -60,15 +60,28 @@ On the **Character** tab, working with either look:
 
 - **Style**: ModeUI or Blizzard for the Character window (its switch on the
   Windows tab).
+- **Stats pane** (with the ModeUI style): Blizzard's class art, stone,
+  ornate category bars and gold dividers are faded; the pane is an Onyx field
+  with a one-pixel divider, each category ("General", "Primary Attributes")
+  an Onyx strip with a white title, and the alternating row stripe a faint
+  gray. The rock strip behind the level line and the pane's page arrow are
+  restyled too.
 - **Stats Display**: a small block over the character model, one line per
   picked stat (Main Stat, Stamina, Armor, Crit, Hit and Haste by default;
   also Strength, Agility, Intellect, Spirit, Attack Power, Ranged Attack
   Power, Spell Power, Healing, Spell Crit, Ranged Crit, Spell Hit, Spell
   Haste, Expertise, Dodge, Parry, Block and Mana Regen per 5 seconds while
   casting). Main Stat is the specialization's primary stat, or the highest of
-  Strength, Agility and Intellect, and its label is cyan. **Stats Anchor**
-  (a compass of nine points on the model), **Offset X/Y** and **Nudge**
-  buttons (one pixel at a time), **Stats Text Size**, **Stats Background**.
+  Strength, Agility and Intellect. Labels are in each stat's color (**Stat
+  Colors**, one row per shown stat): Strength red, Agility yellow, Intellect
+  blue, Stamina amber, Spirit green, attack power orange, spell power violet,
+  crit red, hit amber, haste light blue, avoidance pale blue; Main Stat takes
+  its attribute's; values are white. The block lives in the model area
+  between the slot columns, above the weapons (a frame anchored to the head,
+  wrist and hands slots): **Stats Anchor** is one of nine points of that
+  area, **Offset X/Y** and **Nudge** (one pixel at a time) are kept inside
+  it, and the block is never wider than it, so it never reaches a slot.
+  **Stats Text Size**, **Stats Background**.
   Every value comes from the functions Forever's own paper doll calls; a
   secret (stats restricted) or missing value shows a dash.
 - **Rarity Borders**: a crisp square border round each equipment slot,
@@ -79,7 +92,8 @@ On the **Character** tab, working with either look:
   column, left of the right column, above the weapons. The enchant's name in
   cyan; a weapon without one shows its temporary enhancement (a poison, oil
   or stone) in green. Under it, the stat it gives: from the line itself
-  ("+15 Agility" is shortened to "+15 Agi", "(+8 Damage)" to "+8 Dmg"), or for
+  ("+15 Agility" is shortened to "+15 Agi", "(+8 Damage)" to "+8 Dmg", and
+  "and" reads "&": "+3 Str & Agi"), or for
   a few well-known proc enchants and poisons (Crusader, Fiery Weapon,
   Lifestealing, Icy Chill, Unholy Weapon, Demonslaying, Instant, Deadly,
   Crippling, Mind-numbing and Wound Poison) from a short English table.
@@ -104,7 +118,8 @@ Saved under `modules.windows` (version 2): `style` (`modeui` or `blizzard`),
 `font`, `fontMedia`, `titleSize`, `tabSize`, `outline`, `shadow`, `bodyFont`,
 `tabs`, `buttons`, `fields`, `dropdowns`, `scrollBars`, `insets`,
 `charStats`, `charStatsBackground`, `charStatsAnchor`, `charStatsX`,
-`charStatsY`, `charStatsSize`, `charStatList` (stat ID → on), `charBorders`,
+`charStatsY`, `charStatsSize`, `charStatList` (stat ID → on), `charStatColors`
+(stat ID → color), `charBorders`,
 `charBorderSize`, `charEnchants`, `charEnchantSize`.
 
 Version 2 (November 13, 2026, per the owner): a border still at version 1's
@@ -120,6 +135,7 @@ is filled in from the defaults.
 | `Driver.lua` | lifecycle, load-on-demand, skinning on show, style, looks, scale, settings |
 | `CharacterStats.lua` | the stats display |
 | `Character.lua` | rarity borders, enchant text, Character window events |
+| `CharacterPanel.lua` | the stats pane, top strip and pane button in Onyx |
 | `Settings.lua` | the page: Look and Windows tabs |
 | `SettingsCharacter.lua` | the page's Character tab |
 

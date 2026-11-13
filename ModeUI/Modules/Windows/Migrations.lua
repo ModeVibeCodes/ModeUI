@@ -61,6 +61,13 @@ function M.Initialize(db)
     for id, on in pairs(db.charStatList) do
         assert(type(id) == "string" and type(on) == "boolean", "Invalid character stat: " .. tostring(id))
     end
+    for id, color in pairs(M.STAT_COLORS) do
+        if db.charStatColors[id] == nil then db.charStatColors[id] = Copy(color) end
+    end
+    for id, color in pairs(db.charStatColors) do
+        assert(type(id) == "string" and type(color) == "table", "Invalid stat color: " .. tostring(id))
+        for i = 1, 3 do assert(Number(color[i], 0, 1), "Invalid stat color: " .. id) end
+    end
     for key, r in pairs(M.ranges) do
         local value = db[key]
         assert(Number(value, r[1], r[2]) and value == math.floor(value), "Invalid window range: " .. key)
