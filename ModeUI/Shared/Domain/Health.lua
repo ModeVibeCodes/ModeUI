@@ -17,9 +17,14 @@ end
 -- ok, percent through a 0-100 curve (CurveConstants.ScaleTo100); may be secret.
 function Health.Percent(unit, curve) return Q.Call(UnitHealthPercent, unit, true, curve) end
 
--- "Offline", "Ghost", "Dead" or nil while the unit is alive and connected.
+-- Game objects with a nameplate (pickups, interactables) have no health to show.
+function Health.IsObject(unit) return Q.Truthy(UnitIsGameObject, unit) end
+
+-- "Offline" (players only), "Ghost", "Dead" or nil while the unit is alive.
+-- Objects and NPCs are never offline, even though the game reports them as
+-- not connected.
 function Health.State(unit)
-    if not Q.Truthy(UnitIsConnected, unit) then return "Offline" end
+    if Q.Truthy(UnitIsPlayer, unit) and not Q.Truthy(UnitIsConnected, unit) then return "Offline" end
     if Q.Truthy(UnitIsGhost, unit) then return "Ghost" end
     if Q.Truthy(UnitIsDeadOrGhost, unit) then return "Dead" end
 end

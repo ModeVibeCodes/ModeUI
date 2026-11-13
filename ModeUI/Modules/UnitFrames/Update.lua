@@ -101,6 +101,8 @@ function M:UpdateHealth(unit)
     f.health:SetStatusBarColor(color[1], color[2], color[3])
     local mode = self:FrameDB(unit).healthText
     if mode == "none" then return end
+    -- Objects (pickups, interactables) have no health to show.
+    if Health.IsObject(unit) then Write(f.healthText, ""); return end
     local state = Health.State(unit)
     if state then Write(f.healthText, state)
     else Kit.ValueText(f.healthText, mode, Health.Percent, unit, okValue, value) end

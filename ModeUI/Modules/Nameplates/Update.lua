@@ -44,6 +44,8 @@ function M:UpdateHealth(plate)
     if okValue then pcall(bar.SetValue, bar, value) end
     local mode = self:Style(plate).healthText
     if mode == "none" then return end
+    -- Pickups and other objects keep their plate but show no health text.
+    if Health.IsObject(unit) then Kit.Write(plate.healthText, ""); return end
     local state = Health.State(unit)
     if state then Kit.Write(plate.healthText, state)
     else Kit.ValueText(plate.healthText, mode, Health.Percent, unit, okValue, value) end

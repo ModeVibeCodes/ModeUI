@@ -304,6 +304,20 @@ world.run([==[
     units.nameplate1.auras = nil; FireEvent('UNIT_AURA', 'nameplate1')
     assert(plate.auraCount == 0)
 
+    -- Pickups and other objects keep a plate but show no health text; only
+    -- players are ever "Offline" (the game reports objects as not connected).
+    function UnitIsGameObject(u) return units[u] and units[u].object == true end
+    local pickup = AddPlate('nameplate7', Friendly({ name = 'Rocket Car Rubble', connected = false, object = true, health = 0, max = 0 }))
+    assert(M.byUnit.nameplate7 and pickup.UnitFrame:GetAlpha() == 0, 'objects keep a plate')
+    assert(M:SetOption('friendly', 'healthText', 'percent'))
+    assert(M.byUnit.nameplate7.healthText.text == '', 'no Offline or other text on an object')
+    units.nameplate7.object = false; FireEvent('UNIT_HEALTH', 'nameplate7')
+    assert(M.byUnit.nameplate7.healthText.text ~= 'Offline', 'an NPC is never Offline')
+    units.nameplate7.isPlayer = true; FireEvent('UNIT_HEALTH', 'nameplate7')
+    assert(M.byUnit.nameplate7.healthText.text == 'Offline', 'a disconnected player is Offline')
+    assert(M:SetOption('friendly', 'healthText', 'none'))
+    RemovePlate('nameplate7')
+
     -- The personal resource display and widget-only plates stay Blizzard's.
     units.nameplate3 = Friendly()
     local personal = CreateFrame('Frame', nil, UIParent)
