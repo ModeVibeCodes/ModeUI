@@ -32,10 +32,17 @@ M.Textures = {
     UnitFrameFrameInner = { file = "UnitFrames/FrameInner.tga", slice = 4, rounded = true },
     UnitFrameCircle = { file = "UnitFrames/Circle.tga", rounded = true },
     UnitFrameBar = { file = "UnitFrames/BarSatin.tga" },
-    -- Procedural shapes from tools/build_shape_textures.lua. ModeFlat is the
-    -- soft rounded fill for settings cards and elements; the nameplate rims use
-    -- small corner radii so health and cast boxes round alike.
+    -- Procedural shapes from tools/build_shape_textures.lua. ModeFlat rounds
+    -- settings controls (4 px corners) and ModeCard the cards (6 px); the
+    -- switch track and slider track are stadiums sliced only left and right
+    -- ({ left, top, right, bottom }). The nameplate rims use small corner
+    -- radii so health and cast boxes round alike.
     ModeFlat = { file = "Mode/Flat.tga", slice = 5, rounded = true },
+    ModeCard = { file = "Mode/Card.tga", slice = 7, rounded = true },
+    ModeCircle = { file = "Mode/Circle.tga", rounded = true },
+    ModeSwitch = { file = "Mode/Switch.tga", slice = { 8, 0, 8, 0 }, rounded = true },
+    ModeTrack = { file = "Mode/Track.tga", slice = { 2, 0, 2, 0 }, rounded = true },
+    ModeChevron = { file = "Mode/Chevron.tga", transparent = true },
     NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
     NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
     NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },
@@ -56,7 +63,9 @@ function M:ApplyTexture(texture, key, fallback)
     local usable = (not asset.slice or texture.SetTextureSliceMargins ~= nil)
         and texture:SetTexture(self.textureBase .. asset.file, "CLAMP", "CLAMP")
     if usable then
-        if asset.slice then texture:SetTextureSliceMargins(asset.slice, asset.slice, asset.slice, asset.slice) end
+        local slice = asset.slice
+        if type(slice) == "table" then texture:SetTextureSliceMargins(slice[1], slice[2], slice[3], slice[4])
+        elseif slice then texture:SetTextureSliceMargins(slice, slice, slice, slice) end
         if asset.crop then texture:SetTexCoord(unpack(asset.crop)) end
     else
         local color = fallback or { 0, 0, 0, 1 }

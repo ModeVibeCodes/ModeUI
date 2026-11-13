@@ -1,10 +1,11 @@
 local _,addon=...
 local W=addon.ConfigWidgets
 
--- Shared compact chooser, with plain centered selected text and bounded menu.
+-- Shared compact chooser: a 28 px field with the chosen label at the left, a
+-- chevron at the right, and a bounded menu.
 function W.Select(parent,width,choices,getter,setter)
-    local button=W.Button(parent,"",width or 260,30)
-    button:SetPoint("LEFT");button.label:SetJustifyH("CENTER");button.label:SetWidth((width or 260)-16)
+    local button=W.Button(parent,"",width or 260,28)
+    button:SetPoint("LEFT");W.DropdownLabel(button)
     local menu=W.Popup(button,width or 260,240)
     W.Texture(menu,"Window")
     local scroll=CreateFrame("ScrollFrame",nil,menu);scroll:SetPoint("TOPLEFT",6,-6);scroll:SetPoint("BOTTOMRIGHT",-6,6);scroll:EnableMouseWheel(true)
@@ -21,6 +22,7 @@ function W.Select(parent,width,choices,getter,setter)
         for i,item in ipairs(items) do
             if not rows[i] then
                 local row=W.Button(content,"",(width or 260)-12,28,"tab");rows[i]=row;row:SetPoint("TOPLEFT",0,-(i-1)*30)
+                row.label:ClearAllPoints();row.label:SetPoint("LEFT",10,0);row.label:SetJustifyH("LEFT")
                 row:SetScript("OnClick",function() menu:Hide();setter(row.choice.id);button:Refresh() end)
             end
             local row=rows[i];row:SetWidth(actualWidth-12);row.label:SetWidth(actualWidth-28)

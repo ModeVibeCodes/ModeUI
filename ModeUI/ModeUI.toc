@@ -59,6 +59,7 @@ Shared\Border\Border.lua
 Shared\Placement\PositionHighlights.lua
 Shared\Settings\Theme.lua
 Shared\Settings\Widgets\Core.lua
+Shared\Settings\Widgets\Shape.lua
 Shared\Settings\Widgets\Art.lua
 Shared\Settings\Widgets\Text.lua
 Shared\Settings\Widgets\Button.lua

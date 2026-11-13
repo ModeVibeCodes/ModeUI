@@ -1,39 +1,13 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 
-function W.FitModeTab(button,width)
-    local available=math.max(1,width-16)
-    button.label:SetWordWrap(false);button.label:SetWidth(0)
-    addon.Media:BindInterfaceFont(button.label,GameFontHighlight,12)
-    local measured=button.label:GetStringWidth()
-    if not (issecretvalue and issecretvalue(measured)) and type(measured)=="number" and measured==measured and measured>available and measured<math.huge then
-        addon.Media:BindInterfaceFont(button.label,GameFontHighlight,math.max(8,12*available/measured))
-    end
-    button.label:SetWidth(available)
-    if button.selectionEdge then W.AlignTextLine(button,button.selectionEdge) end
-end
-
--- The capsule export is 4:1. Keep that aspect ratio instead of stretching its
--- round ends into ellipses on pages with only two or three sections.
-function W.LayoutModePills(buttons,available)
-    if available<64 or #buttons==0 then return end
-    local gap=8
-    local width=math.min(128,math.max(1,(available-24-gap*(#buttons-1))/#buttons))
-    local height=width/4
-    local start=(available-width*#buttons-gap*(#buttons-1))/2
-    for i,button in ipairs(buttons) do
-        local x=start+(i-1)*(width+gap)
-        button:ClearAllPoints();button:SetPoint("TOPLEFT",x,(height-36)/2);button:SetSize(width,height)
-        W.FitModeTab(button,width)
-        button.tabX,button.tabWidth=x,width
-    end
-    return width
-end
+-- Text tabs, 34 px tall, on one hairline: the chosen tab is in the text color
+-- with a 2 px accent underline, the others muted.
+local TAB_HEIGHT, TAB_PADDING, TAB_GAP = 34, 14, 4
 
 -- Session-only presentation of existing section/row metadata, also used by search.
 function W.SectionTabs(page, order)
     if page.sectionTabs or #page.sections < 2 then return end
-    local modePills=T.id=="mode" and page.modePillSections
     local sections = {}
     if order then
         for _, title in ipairs(order) do
@@ -42,16 +16,16 @@ function W.SectionTabs(page, order)
     else for _, section in ipairs(page.sections) do sections[#sections+1] = section end end
     assert(#sections == #page.sections, "ModeUI: settings tabs must include every section.")
     local strip = CreateFrame("Frame", nil, page)
-    strip:SetHeight(modePills and 40 or 34)
-    if modePills then strip:SetPoint("TOPLEFT");strip:SetPoint("TOPRIGHT",-24,0) end
-    -- Underline tabs rest on one baseline hairline across the strip.
-    strip.baseline = W.Fill(strip, T.line, "BACKGROUND")
-    strip.baseline:ClearAllPoints(); strip.baseline:SetPoint("BOTTOMLEFT", 0, 2); strip.baseline:SetPoint("BOTTOMRIGHT", 0, 2)
+    strip:SetHeight(TAB_HEIGHT + 1)
+    strip:SetPoint("TOPLEFT"); strip:SetPoint("TOPRIGHT", -24, 0)
+    -- The tabs rest on one hairline across the strip.
+    strip.baseline = W.Shape(strip, nil, "BACKGROUND")
+    strip.baseline:SetVertexColor(unpack(T.line))
+    strip.baseline:SetPoint("BOTTOMLEFT", 0, 0); strip.baseline:SetPoint("BOTTOMRIGHT", 0, 0)
     strip.baseline:SetHeight(1)
-    if modePills then strip.baseline:Hide() end
     local viewport = CreateFrame("ScrollFrame", nil, strip)
     viewport:SetPoint("TOPLEFT", 0, 0); viewport:SetPoint("BOTTOMRIGHT", 0, 0)
-    local content = CreateFrame("Frame", nil, viewport); content:SetSize(1, modePills and 38 or 32); viewport:SetScrollChild(content)
+    local content = CreateFrame("Frame", nil, viewport); content:SetSize(1, TAB_HEIGHT + 1); viewport:SetScrollChild(content)
     local left = W.Button(strip, "<", 26, 28, "secondary"); left:SetPoint("LEFT")
     local right = W.Button(strip, ">", 26, 28, "secondary"); right:SetPoint("RIGHT")
     strip.buttons, strip.sections, strip.viewport = {}, sections, viewport
@@ -64,27 +38,18 @@ function W.SectionTabs(page, order)
         left:SetEnabled(offset > 0); right:SetEnabled(offset < (self.maximum or 0))
     end
     function strip:Layout()
-        if modePills then
-            -- Anchored children can still report zero while their parent is
-            -- resolving size. Keep the existing hit targets until the viewport
-            -- delivers its own size event, rather than saving one-pixel pills.
-            local available=viewport:GetWidth()
-            if available<64 then return end
-            W.LayoutModePills(self.buttons,available)
-            content:SetWidth(available);self.maximum=0;self:Scroll(0);return
-        end
         local x = 0
         for i, section in ipairs(sections) do
             local button = self.buttons[i]
             button.label:SetWidth(0)
             local measured = button.label:GetStringWidth()
             if (issecretvalue and issecretvalue(measured)) or type(measured) ~= "number" or measured~=measured or measured<0 or measured==math.huge then measured = #section.title * 8 end
-            local width = math.max(64, math.ceil(measured) + 28)
-            button:ClearAllPoints(); button:SetPoint("TOPLEFT", x, 0); button:SetSize(width, 30)
-            button.label:SetWidth(width-24);button.label:SetWordWrap(false)
-            if T.id=="mode" and button.underline then W.AlignTextLine(button,button.underline) end
+            local width = math.max(64, math.ceil(measured) + 2 * TAB_PADDING)
+            button:ClearAllPoints(); button:SetPoint("TOPLEFT", x, 0); button:SetSize(width, TAB_HEIGHT)
+            button.label:SetWidth(width - 2 * TAB_PADDING + 4); button.label:SetWordWrap(false)
+            W.AlignTextLine(button, button.underline)
             button.tabX, button.tabWidth = x, width
-            x = x + width + 4
+            x = x + width + TAB_GAP
         end
         content:SetWidth(x)
         self.maximum = math.max(0, x - viewport:GetWidth())
@@ -119,14 +84,8 @@ function W.SectionTabs(page, order)
         if addon.CloseFontDropdown then addon:CloseFontDropdown() end
     end
     for i, section in ipairs(sections) do
-        local button = W.Button(content, section.title, 100, 30, modePills and "roundedTab" or "underline")
-        if T.id=="mode" then
-            button.underline=button.selectionEdge;W.AlignTextLine(button,button.underline)
-        else
-            button.underline = W.Fill(button, T.primary, "OVERLAY")
-            button.underline:ClearAllPoints(); button.underline:SetPoint("BOTTOMLEFT", 10, 0)
-            button.underline:SetPoint("BOTTOMRIGHT", -10, 0); button.underline:SetHeight(2)
-        end
+        local button = W.Button(content, section.title, 100, TAB_HEIGHT, "underline")
+        button.underline = button.selectionEdge
         button.underline:Hide()
         button:SetScript("OnClick", function() page:SelectSectionTab(section) end)
         strip.buttons[i] = button
@@ -135,10 +94,6 @@ function W.SectionTabs(page, order)
     right:SetScript("OnClick", function() strip:Scroll(offset + 160) end)
     viewport:EnableMouseWheel(true); viewport:SetScript("OnMouseWheel", function(_, delta) strip:Scroll(offset - delta * 100) end)
     strip:SetScript("OnSizeChanged", function() strip:Layout() end)
-    if modePills then
-        viewport:SetScript("OnSizeChanged",function() strip:Layout() end)
-        strip:HookScript("OnShow",function() strip:Layout() end)
-    end
     page.sectionTabs = strip
     addon.Media:RegisterFontListener(strip, function(owner) owner:Layout() end)
     strip:Layout()
@@ -146,7 +101,7 @@ function W.SectionTabs(page, order)
     if page.UpdatePreviewLayout then page:UpdatePreviewLayout() end
 end
 
--- Section tabs pinned above the page's scroll area (Mode pill tabs). Pages
+-- Section tabs pinned above the page's scroll area. Pages
 -- without a Preview layer use this to reserve the tab strip's height.
 function W.PinnedSectionTabs(page)
     W.SectionTabs(page)

@@ -38,7 +38,7 @@ ModeUI/
     Placement/                positions, Edit Mode, Preview, frame anchors
     Skin/                     re-skinning Blizzard frames; added with Chat Windows or Blizzard UI Windows
     Settings/                 settings window framework (window, pages, search, tabs)
-      Widgets/                one file per widget kind (Core, Art, Text, Button, Switch, Header, Input, AnchorPicker)
+      Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker)
     Templates/                XML virtual templates, added when a module needs one
   Modules/
     <Name>/
@@ -275,10 +275,22 @@ to widgets documented as accepting them.
   migrations never reset data. The top-level `schemaVersion` changes only when
   the shared layout of `ModeUIDB` does.
 - **Look.** Every bar uses `Kit.ModeGradient` (Mode Gradient); there is no bar
-  texture setting. Settings pages group rows on cards (`page:Group`: soft
-  ModeFlat panels with an accent title) and put related controls side by side
-  (`page:Columns`); row labels sit level with their controls. The palette is
-  near-black graphite (`card`, `cardBorder`, `line` in Theme.lua). Rims are near-black (`Kit.onyx.border`). Anchoring settings
+  texture setting. Settings pages group rows on cards (`page:Group`: ModeCard
+  panels, 6 px corners, a one-pixel `cardBorder` rim, 16 px padding, 12 px
+  apart, with a small uppercase accent title) and put related controls side by
+  side (`page:Columns`); standard rows put 28 px controls on a 36 px pitch with
+  the label centered on them. Controls are drawn by `Widgets/Shape.lua` as a
+  rounded fill inside a one-physical-pixel rim (`W.Box`, 4 px corners): buttons
+  are fields with a `rim` that turns accent on hover (primary buttons are
+  accent with ink text, quiet ones text only); toggles are 28x16 pill switches;
+  exclusive choices are segments in one field, the chosen one on `accentFill`;
+  sliders are a 4 px track with a ringed round thumb and a 48x24 value field;
+  dropdowns are fields with a chevron. Section tabs are text tabs with a 2 px
+  accent underline; sidebar captions are small uppercase `faint` text and the
+  chosen module row has an accent bar on its left. The palette (Theme.lua) is
+  near-black graphite with a cyan accent; the type scale is
+  `InterfaceTheme.fontSize` (page 20, section 14, body 13, small 12, group 11).
+  The shape textures come from `tools/build_shape_textures.lua`. Rims are near-black (`Kit.onyx.border`). Anchoring settings
   use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface default to Expressway, falling back to
   the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
 - **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI` and frame

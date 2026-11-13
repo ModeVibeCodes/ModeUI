@@ -179,7 +179,7 @@ function W.Preview(page, module, options)
         if self.sectionTabs then
             self.sectionTabs:ClearAllPoints(); self.sectionTabs:SetPoint("TOPLEFT",0,-h-6)
             self.sectionTabs:SetPoint("TOPRIGHT",-24,-h-6)
-            top=h+46
+            top=h+6+self.sectionTabs:GetHeight()+12
         end
         if self.LayoutSectionPanel then top=self:LayoutSectionPanel(top) end
         self.scroll:ClearAllPoints(); self.scroll:SetPoint("TOPLEFT",0,-top); self.scroll:SetPoint("BOTTOMRIGHT",-24,0)

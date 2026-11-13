@@ -181,14 +181,14 @@ function addon:CreateConfig()
     end)
     drag:SetScript("OnDragStop", function() self:FinishWindowInteraction() end)
     window.header, window.headerBar, window.headerControls = drag, header, controls
-    local function HeaderButton(label, width)
-        local button = W.Button(controls, label, width, 28, "secondary")
+    local function HeaderButton(label, width, style)
+        local button = W.Button(controls, label, width, 28, style or "secondary")
         button:SetFrameLevel(controls:GetFrameLevel() + 1)
         button:EnableMouse(true)
         button:RegisterForClicks("LeftButtonUp")
         return button
     end
-    local close = HeaderButton("X", 28)
+    local close = HeaderButton("X", 28, "quiet")
     close:SetPoint("RIGHT")
     close:SetScript("OnClick", function() window:Hide() end)
     local edit = HeaderButton("Edit Mode", 92)
@@ -322,13 +322,14 @@ function addon:CreateConfig()
     window:RegisterEvent("UI_SCALE_CHANGED")
     window:RegisterEvent("DISPLAY_SIZE_CHANGED")
     window:SetScript("OnEvent", function()
-        self:FinishWindowInteraction(); self:UpdateWindowBounds()
+        self:FinishWindowInteraction(); self:UpdateWindowBounds(); W.RefreshPixelInsets()
         self:UpdateModulePreviewBounds()
         if self.EditMode then self.EditMode:ViewportChanged() end
     end)
     window:SetScript("OnShow", function()
         if self.ReloadManager.prompt then self.ReloadManager.prompt:Hide() end
-        self:UpdateWindowBounds(); Select(selected, true)
+        -- One-pixel rims follow the window's scale, which is set here.
+        self:UpdateWindowBounds(); W.RefreshPixelInsets(); Select(selected, true)
         -- Fills in labels left blank by a font still loading on a fresh launch.
         addon.Media:ScheduleTextRedraw()
     end)

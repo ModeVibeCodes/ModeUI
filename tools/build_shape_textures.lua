@@ -2,7 +2,12 @@
 -- tinted in game. Run from the repository root with any Lua 5.1+:
 --   lua tools/build_shape_textures.lua
 --
---   Mode/Flat.tga        ModeFlat: soft rounded fill for settings elements (radius 4, sliced at 5)
+--   Mode/Flat.tga        ModeFlat: soft rounded fill for settings controls (radius 4, sliced at 5)
+--   Mode/Card.tga        ModeCard: settings cards (radius 6, sliced at 7)
+--   Mode/Circle.tga      ModeCircle: switch knobs and slider thumbs (unsliced)
+--   Mode/Switch.tga      ModeSwitch: 32x16 stadium switch track (sliced 8 left and right)
+--   Mode/Track.tga       ModeTrack: 8x4 stadium slider track (sliced 2 left and right)
+--   Mode/Chevron.tga     ModeChevron: small down chevron for dropdowns
 --   Nameplates/Rim.tga   plate and aura rims (radius 3, sliced at 4)
 --   Nameplates/Gap.tga   the black gap inside a rim (radius 2, sliced at 3)
 --   Nameplates/Glow.tga  soft target glow around a plate, hollow inside (sliced at 12)
@@ -11,10 +16,10 @@ local SAMPLES = 8
 local ROOT = "ModeUI/Media/Textures/"
 
 -- Shape tests take a point in pixel units and return coverage 0-1.
-local function RoundedRect(size, radius)
+local function RoundedRect(width, height, radius)
     return function(x, y)
-        local cx = math.max(radius, math.min(size - radius, x))
-        local cy = math.max(radius, math.min(size - radius, y))
+        local cx = math.max(radius, math.min(width - radius, x))
+        local cy = math.max(radius, math.min(height - radius, y))
         local dx, dy = x - cx, y - cy
         return dx * dx + dy * dy <= radius * radius and 1 or 0
     end
@@ -46,12 +51,36 @@ local function Triangle(ax, ay, bx, by, cx, cy)
     end
 end
 
+-- A stroked polyline with round joins and caps, `thickness` pixels wide.
+local function Stroke(points, thickness)
+    local half = thickness / 2
+    local function Distance(px, py, ax, ay, bx, by)
+        local vx, vy = bx - ax, by - ay
+        local t = math.max(0, math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)))
+        local dx, dy = px - (ax + t * vx), py - (ay + t * vy)
+        return math.sqrt(dx * dx + dy * dy)
+    end
+    return function(x, y)
+        for i = 1, #points - 1 do
+            local a, b = points[i], points[i + 1]
+            if Distance(x, y, a[1], a[2], b[1], b[2]) <= half then return 1 end
+        end
+        return 0
+    end
+end
+
+-- { path, width, height, shape, supersample }
 local TEXTURES = {
-    { "Mode/Flat.tga", 16, RoundedRect(16, 4), true },
-    { "Nameplates/Rim.tga", 16, RoundedRect(16, 3), true },
-    { "Nameplates/Gap.tga", 16, RoundedRect(16, 2), true },
-    { "Nameplates/Glow.tga", 32, Glow(32, 12, 2, 11), false },
-    { "Nameplates/Arrow.tga", 16, Triangle(3, 2, 14, 8, 3, 14), true },
+    { "Mode/Flat.tga", 16, 16, RoundedRect(16, 16, 4), true },
+    { "Mode/Card.tga", 16, 16, RoundedRect(16, 16, 6), true },
+    { "Mode/Circle.tga", 16, 16, RoundedRect(16, 16, 8), true },
+    { "Mode/Switch.tga", 32, 16, RoundedRect(32, 16, 8), true },
+    { "Mode/Track.tga", 8, 4, RoundedRect(8, 4, 2), true },
+    { "Mode/Chevron.tga", 16, 16, Stroke({ { 4.5, 6 }, { 8, 9.5 }, { 11.5, 6 } }, 1.6), true },
+    { "Nameplates/Rim.tga", 16, 16, RoundedRect(16, 16, 3), true },
+    { "Nameplates/Gap.tga", 16, 16, RoundedRect(16, 16, 2), true },
+    { "Nameplates/Glow.tga", 32, 32, Glow(32, 12, 2, 11), false },
+    { "Nameplates/Arrow.tga", 16, 16, Triangle(3, 2, 14, 8, 3, 14), true },
 }
 
 local function Coverage(shape, px, py, supersample)
@@ -68,10 +97,10 @@ end
 local function U16(value) return string.char(value % 256, math.floor(value / 256) % 256) end
 
 -- Uncompressed 32-bit TGA, top-left origin, BGRA pixels.
-local function WriteTGA(path, size, shape, supersample)
-    local parts = { string.char(0, 0, 2, 0, 0, 0, 0, 0), U16(0), U16(0), U16(size), U16(size), string.char(32, 0x28) }
-    for y = 0, size - 1 do
-        for x = 0, size - 1 do
+local function WriteTGA(path, width, height, shape, supersample)
+    local parts = { string.char(0, 0, 2, 0, 0, 0, 0, 0), U16(0), U16(0), U16(width), U16(height), string.char(32, 0x28) }
+    for y = 0, height - 1 do
+        for x = 0, width - 1 do
             local alpha = math.floor(Coverage(shape, x, y, supersample) * 255 + 0.5)
             parts[#parts + 1] = string.char(255, 255, 255, alpha)
         end
@@ -82,6 +111,6 @@ local function WriteTGA(path, size, shape, supersample)
 end
 
 for _, texture in ipairs(TEXTURES) do
-    WriteTGA(ROOT .. texture[1], texture[2], texture[3], texture[4])
+    WriteTGA(ROOT .. texture[1], texture[2], texture[3], texture[4], texture[5])
     print("wrote " .. ROOT .. texture[1])
 end

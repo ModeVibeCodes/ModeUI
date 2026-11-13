@@ -1,13 +1,15 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
--- Settings are grouped on cards: soft-bordered ModeFlat panels with an accent
--- title (page:Group). Rows added outside a titled group share an untitled card.
-local CARD_PADDING, CARD_GAP = 12, 12
+-- Settings are grouped on cards: ModeCard panels (6 px corners, a one-pixel
+-- cardBorder rim) with an uppercase accent title (page:Group). Rows added
+-- outside a titled group share an untitled card. Standard rows put 28 px
+-- controls on a 36 px pitch, labels centered on them.
+local CARD_PADDING, CARD_GAP = 16, 12
+local ROW_HEIGHT, ROW_INSET, LEGACY_ROW_HEIGHT = 36, 4, 48
 
 -- The same responsive scrolling and row layout is used on every page.
 function W.Page(parent, minimumWidth)
     local page = CreateFrame("Frame", nil, parent)
-    page.modePillSections=T.id=="mode" and parent.modeMediaScope~=nil
     page:SetPoint("TOPLEFT", 0, -36)
     page:SetPoint("BOTTOMRIGHT")
     page.rows, page.refreshers, page.sections, page.searchEntries, page.cursor = {}, {}, {}, {}, 0
@@ -98,7 +100,6 @@ function W.Page(parent, minimumWidth)
                     row:ClearAllPoints(); row:SetPoint("TOPLEFT", leftInset + CARD_PADDING, -cursor)
                     row.offset = cursor; cursor = Snap(cursor + row:GetHeight())
                 elseif row.card == openCard and Prepare(row,false,width-2*CARD_PADDING) then
-                    if row.divider then row.divider:Show() end
                     row:ClearAllPoints(); row:SetPoint("TOPLEFT", leftInset + CARD_PADDING, -cursor)
                     row.offset = cursor; cursor = Snap(cursor + row:GetHeight())
                 end
@@ -208,7 +209,7 @@ function W.Page(parent, minimumWidth)
         header.section, header.sectionHeader = section, true
         header.gapBefore = #self.sections > 1 and sectionGap or 0
         self.searchEntries[#self.searchEntries + 1] = { label = title, section = section, row = header, kind = "section" }
-        -- Plain heading on the canvas; rows below carry their own dividers.
+        -- Plain heading on the canvas, above the cards of its rows.
         local heading = W.Heading(header, title, T.fontSize.section, 0, -8, 360, T.text)
         heading:SetPoint("TOPRIGHT", -92, -8)
         header.heading = heading
@@ -224,20 +225,18 @@ function W.Page(parent, minimumWidth)
         self.cursor = self.cursor + header:GetHeight()
         return section
     end
+    -- height: nil or the old standard 48 is a standard 36 px row; other
+    -- heights (notes, pickers, editors) are kept.
     function page:Row(title, height, keywords)
-        height = height or 52
+        if height == nil or height == LEGACY_ROW_HEIGHT then height = ROW_HEIGHT end
         local row = CreateFrame("Frame", nil, content)
         row:SetPoint("TOPLEFT", 0, -self.cursor)
         row:SetSize(400, height)
-        -- Rows sit directly on the canvas, separated by a single top hairline.
-        row.divider = W.Fill(row, T.line, "BORDER")
-        row.divider:ClearAllPoints(); row.divider:SetPoint("TOPLEFT"); row.divider:SetPoint("TOPRIGHT")
-        row.divider:SetHeight(1)
         local label = W.Label(row, title, nil, 0, -17, 172)
         label:SetWordWrap(true)
         local controls = CreateFrame("Frame", nil, row)
-        controls:SetPoint("TOPLEFT", 184, -10)
-        controls:SetPoint("BOTTOMRIGHT", -14, 10)
+        controls:SetPoint("TOPLEFT", 184, -ROW_INSET)
+        controls:SetPoint("BOTTOMRIGHT", -14, ROW_INSET)
         self.rows[#self.rows + 1] = row
         row.section = self.activeSection
         row.gapAfter = 0
@@ -253,14 +252,11 @@ function W.Page(parent, minimumWidth)
         self.cursor = self.cursor + height + 4
         return controls
     end
-    -- A card: a soft rim (ModeFlat in cardBorder) with the card fill one pixel inside.
+    -- A card: a rounded rim (ModeCard in cardBorder) with the card fill one pixel inside.
     function page:NewCard(title)
         local frame = CreateFrame("Frame", nil, content)
         frame:SetFrameLevel(content:GetFrameLevel() + 1)
-        local rim, fill = frame:CreateTexture(nil, "BACKGROUND", nil, 0), frame:CreateTexture(nil, "BACKGROUND", nil, 1)
-        for _, texture in ipairs({ rim, fill }) do
-            if not addon.Media:ApplyTexture(texture, "ModeFlat") then texture:SetTexture(addon.Kit.FLAT) end
-        end
+        local rim, fill = W.Shape(frame, "ModeCard", "BACKGROUND", 0), W.Shape(frame, "ModeCard", "BACKGROUND", 1)
         rim:SetAllPoints(); rim:SetVertexColor(unpack(T.cardBorder)); fill:SetVertexColor(unpack(T.card))
         local card = { frame = frame, rim = rim, fill = fill, title = title }
         self.cards[#self.cards + 1] = card
@@ -268,19 +264,19 @@ function W.Page(parent, minimumWidth)
         return card
     end
     function page:ActiveCard() return self.activeCard or self:NewCard() end
-    -- Starts a card titled in the accent color.
+    -- Starts a card titled in small uppercase accent text.
     function page:Group(title)
         local card = self:NewCard(title)
         local row = CreateFrame("Frame", nil, content)
-        row:SetSize(400, 28)
+        row:SetSize(400, 24)
         row:SetFrameLevel(content:GetFrameLevel() + 2)
         row.section, row.gapBefore, row.gapAfter, row.card, row.cardTitle = self.activeSection, 0, 0, card, true
-        local heading=title:gsub("(%a)([%w]*)",function(first,rest) return first:upper()..rest end)
-        row.subsectionHeading=W.Heading(row, heading, T.fontSize.group, 0, -4, 360, T.primary)
+        row.subsectionHeading=W.Heading(row, title:upper(), T.fontSize.group, 0, 0, 360)
+        row.subsectionHeading:SetTextColor(unpack(T.primary))
         row.settingsGroupTitle=title;self.activeGroup=title
         row.modeFeature,row.modePanel=self.activeModeFeature,self.activeModePanel
         self.rows[#self.rows + 1] = row
-        self.cursor = self.cursor + 28
+        self.cursor = self.cursor + 24
     end
     -- One row of labeled cells side by side (sliders, choices, colors). Returns
     -- a control host per title; each host is laid out under its own label.
@@ -293,9 +289,9 @@ function W.Page(parent, minimumWidth)
         local cells, hosts = {}, {}
         for i, title in ipairs(titles) do
             local cell = CreateFrame("Frame", nil, controls)
-            cell.label = W.Label(cell, title, nil, 0, -8, 200, T.secondary)
+            cell.label = W.Label(cell, title, nil, 0, -2, 200, T.text)
             local host = CreateFrame("Frame", nil, cell)
-            host:SetPoint("TOPLEFT", 0, -28); host:SetPoint("BOTTOMRIGHT", 0, 6)
+            host:SetPoint("TOPLEFT", 0, -24); host:SetPoint("BOTTOMRIGHT", 0, 8)
             host.row, host.rowLabel = row, cell.label
             cells[i], hosts[i] = cell, host
             self.searchEntries[#self.searchEntries + 1] = { label = title, section = self.activeSection, row = row, kind = "setting" }
@@ -311,9 +307,10 @@ function W.Page(parent, minimumWidth)
         row.settingsColumns, row.settingsTitles = cells, titles
         return hosts
     end
-    -- Full-cell click targets and per-setting search entries; wraps to 1-3 columns.
+    -- Full-cell click targets and per-setting search entries; wraps to 1-3
+    -- columns. Each cell is a switch with its label 10 px to the right.
     function page:ToggleGrid(items, options)
-        local controls = self:Row("", 38)
+        local controls = self:Row("", ROW_HEIGHT)
         local row = controls.row
         controls.rowLabel:Hide()
         controls:ClearAllPoints(); controls:SetAllPoints(row)
@@ -322,9 +319,10 @@ function W.Page(parent, minimumWidth)
         for i, item in ipairs(items) do
             local cell = CreateFrame("Button", nil, controls)
             cell:EnableMouse(true); cell:RegisterForClicks("LeftButtonUp")
-            local toggle = W.Button(cell, "", 30, 30, "checkbox")
-            toggle:SetPoint("TOPLEFT", -7, -6)
-            local label = W.Label(cell, item.label, nil, 28, -13, 120)
+            local toggle = W.Button(cell, "", 28, 28, "checkbox")
+            toggle:SetPoint("LEFT", 0, 0)
+            local label = W.Label(cell, item.label, nil, 0, 0, 120)
+            label:ClearAllPoints(); label:SetPoint("LEFT", toggle, "RIGHT", 10, 0)
             label:SetWordWrap(true)
             local function Click() item.set(not item.get()); self:Refresh() end
             cell:SetScript("OnClick", Click); toggle:SetScript("OnClick", Click)
@@ -338,11 +336,11 @@ function W.Page(parent, minimumWidth)
         function row:layoutChildren(width)
             local columns = math.max(1, math.min(options and options.maxColumns or 3, #items, math.floor(width / (options and options.minimumCellWidth or 180))))
             local cellWidth = width / columns
-            self:SetHeight(math.ceil(#items / columns) * 42)
+            self:SetHeight(math.ceil(#items / columns) * ROW_HEIGHT)
             for i, cell in ipairs(cells) do
-                cell.frame:ClearAllPoints(); cell.frame:SetSize(cellWidth, 42)
-                cell.frame:SetPoint("TOPLEFT", ((i-1)%columns)*cellWidth, -math.floor((i-1)/columns)*42)
-                cell.label:SetWidth(cellWidth-36)
+                cell.frame:ClearAllPoints(); cell.frame:SetSize(cellWidth, ROW_HEIGHT)
+                cell.frame:SetPoint("TOPLEFT", ((i-1)%columns)*cellWidth, -math.floor((i-1)/columns)*ROW_HEIGHT)
+                cell.label:SetWidth(cellWidth-46)
             end
         end
         self.toggleGrids = self.toggleGrids or {}; self.toggleGrids[#self.toggleGrids+1] = cells

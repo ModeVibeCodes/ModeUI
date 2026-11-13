@@ -108,8 +108,28 @@ local SKIN = {
 }
 W.Skin = SKIN
 
+-- Mode input fields: a rounded field with a one-pixel rim that turns accent
+-- while the input owns keyboard focus. Returns the fill with an outline handle.
+local function ModeInputField(frame, layer)
+    local box = W.Box(frame, "ModeFlat", layer or "BACKGROUND")
+    local rim = T.rim
+    local function Draw() box:SetColors(T.field, rim) end
+    local texture = box.fill
+    texture.outline = {
+        SetColor = function(_, color) rim = color; Draw() end,
+        SetShown = function(_, shown) box:SetShown(shown) end,
+    }
+    Draw()
+    if frame.HookScript and frame.HasFocus then
+        frame:HookScript("OnEditFocusGained", function() rim = T.primary; Draw() end)
+        frame:HookScript("OnEditFocusLost", function() rim = T.rim; Draw() end)
+    end
+    return texture
+end
+
 function W.Texture(frame, key, layer, inset, alpha)
     local skin = assert(SKIN[key], "ModeUI: unknown texture " .. tostring(key))
+    if key == "InputField" and not T.blizzardArt then return ModeInputField(frame, layer) end
     if T.blizzardArt then
         -- Window surfaces take the stock tooltip backdrop; their silver edge is
         -- then already drawn. Without a backdrop both keep the flat drawing.

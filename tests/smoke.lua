@@ -27,7 +27,7 @@ world.run([[
     assert(window:IsShown() and window.title:GetText()=='ModeUI' and window.brandLogo,'Mode brand header')
     assert(window.moduleHeader.title:GetText()=='Unit Frames','opens on Interface > Unit Frames')
     assert(window.selectedCategory=='interface' and window.pages.unitFrames:IsShown())
-    assert(window.navigationButtons.interface.label:GetText()=='Interface' and window.navigationButtons.global.label:GetText()=='Global','category headings')
+    assert(window.navigationButtons.interface.label:GetText()=='INTERFACE' and window.navigationButtons.global.label:GetText()=='GLOBAL','category headings (uppercase captions)')
     assert(window.navigationButtons.dashboard==nil and window.navigationButtons.globalSettings==nil,'no Dashboard or Global Settings')
     assert(window.profileButton==nil,'no profile button')
     local nested=window.sidebarModuleButtons.unitFrames

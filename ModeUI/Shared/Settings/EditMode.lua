@@ -4,7 +4,8 @@ local HEIGHT = 434
 
 -- Small owned dropdown; options are rebuilt on open, never polled.
 local function Dropdown(parent, width, choices, getter, setter)
-    local button = W.Button(parent, "", width, 30)
+    local button = W.Button(parent, "", width, 28)
+    W.DropdownLabel(button)
     local menu = CreateFrame("Frame", nil, button)
     menu:Hide()
     menu:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -4)
@@ -17,7 +18,6 @@ local function Dropdown(parent, width, choices, getter, setter)
     function button:Refresh()
         local id, text = getter()
         self.label:SetText(text)
-        self.label:SetJustifyH("CENTER")
         if not menu:IsShown() then return end
         local items = choices()
         menu:SetHeight(12 + #items * 30)
@@ -116,7 +116,7 @@ function addon:CreateEditWindow()
     end
     local xInput, xSlider, refreshX = Coordinate("x", -104)
     local yInput, ySlider, refreshY = Coordinate("y", -162)
-    W.Heading(window, "Snap To UI Element", T.fontSize.group, 20, -204, 300, T.text)
+    W.Heading(window, "Snap To UI Element", T.fontSize.section, 20, -204, 300, T.text)
     local P = self.Positioning
     local function Position()
         local element = E:Selected()

@@ -17,21 +17,24 @@ addon.Theme = {
 local function RGB(r, g, b, a) return { r / 255, g / 255, b / 255, a or 1 } end
 
 -- Mode: near-black graphite surfaces and a cyan accent. This is the only
--- settings theme ModeUI ships. Grays were darkened toward black on November 12,
--- 2026 (owner); settings are grouped on soft-bordered cards (card, cardBorder)
--- drawn with the ModeFlat texture, and the accent marks what matters.
+-- settings theme ModeUI ships. The November 2026 redesign (owner-approved
+-- mockup): settings sit on cards (card, cardBorder; ModeCard texture), controls
+-- are fields with a one-pixel rim (field, rim), and the accent marks what is
+-- chosen (primary; accentFill behind a selected segment).
 local MODE = {
-    primary = RGB(0, 240, 255), enabled = RGB(127, 219, 151),
-    off = RGB(179, 179, 179), unavailable = RGB(114, 114, 114),
-    highlight = RGB(212, 212, 212), ink = RGB(16, 16, 18),
-    sidebar = RGB(20, 20, 22), field = RGB(30, 30, 33),
-    background = RGB(24, 24, 26), panel = RGB(30, 30, 33),
-    pageBackground = RGB(22, 22, 24),
-    surface = RGB(34, 34, 37), hover = RGB(40, 40, 44),
-    card = RGB(29, 29, 32), cardBorder = RGB(42, 42, 46),
-    line = RGB(42, 42, 46), lineStrong = RGB(179, 179, 179),
-    text = RGB(212, 212, 212), heading = RGB(212, 212, 212),
-    secondary = RGB(179, 179, 179), muted = RGB(160, 160, 160),
+    primary = RGB(0, 240, 255), accentFill = RGB(10, 58, 64),
+    enabled = RGB(127, 219, 151), danger = RGB(255, 90, 95),
+    off = RGB(184, 184, 191), unavailable = RGB(102, 102, 110),
+    highlight = RGB(244, 244, 245), ink = RGB(11, 11, 13),
+    background = RGB(11, 11, 13), pageBackground = RGB(11, 11, 13),
+    sidebar = RGB(16, 16, 19), navSelected = RGB(29, 29, 33),
+    card = RGB(23, 23, 26), cardBorder = RGB(38, 38, 43), panel = RGB(23, 23, 26),
+    field = RGB(32, 32, 36), surface = RGB(32, 32, 36), hover = RGB(42, 42, 47),
+    rim = RGB(48, 48, 54), line = RGB(38, 38, 43), lineStrong = RGB(179, 179, 179),
+    -- Switch and slider tracks.
+    track = RGB(42, 42, 48), trackRim = RGB(58, 58, 66),
+    text = RGB(228, 228, 231), heading = RGB(228, 228, 231),
+    secondary = RGB(184, 184, 191), muted = RGB(154, 154, 162), faint = RGB(110, 110, 118),
 }
 
 addon.InterfaceThemes = {
@@ -47,9 +50,11 @@ local function Copy(color) return { color[1], color[2], color[3], color[4] or 1 
 addon.InterfaceTheme = {
     id = "mode",
     blizzardArt = false,
-    -- One spacing scale and one font scale for every settings surface.
+    -- One spacing scale and one font scale for every settings surface: page
+    -- titles (page), section tabs and headings (section), card titles and
+    -- sidebar captions, uppercase (group), setting labels (body), help (small).
     spacing = addon.Theme.spacing,
-    fontSize = { small = 11, body = 12, group = 13, section = 15, page = 18, display = 20 },
+    fontSize = { small = 12, body = 13, group = 11, section = 14, page = 20, display = 20 },
 }
 for key, color in pairs(MODE) do addon.InterfaceTheme[key] = Copy(color) end
 
