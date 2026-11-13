@@ -54,9 +54,25 @@ function M:OnInitialize()
     self.Initialize(self.db)
     self.frames, self.ghosts, self.watched = {}, {}, {}
     self.nativeHidden, self.nativeAlpha, self.nativeHooks, self.nativeMouse = {}, {}, {}, {}
+    local function OnEvent(_, event, unit) self:OnEvent(event, unit) end
     self.events = CreateFrame("Frame")
-    self.events:SetScript("OnEvent", function(_, event, unit) self:OnEvent(event, unit) end)
+    self.events:SetScript("OnEvent", OnEvent)
     self.events:RegisterEvent("PLAYER_REGEN_ENABLED")
+    -- A frame's unit events filter to at most two units, so the focus has its own.
+    self.focusEvents = CreateFrame("Frame")
+    self.focusEvents:SetScript("OnEvent", OnEvent)
+    -- The game sends no unit events for "targettarget" or "focustarget", so
+    -- their frames refresh on a short timer while shown, as Blizzard's own
+    -- Target of Target does (TargetOfTargetMixin, OnUpdate).
+    self.poller = CreateFrame("Frame")
+    self.poller:Hide()
+    local waited = 0
+    self.poller:SetScript("OnUpdate", function(_, elapsed)
+        waited = waited + (M.Number(elapsed, 0, 60) and elapsed or 0)
+        if waited < self.POLL_SECONDS then return end
+        waited = 0
+        for unit in pairs(self.polledUnits) do self:Update(unit) end
+    end)
     addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function() self:OnClassColorsChanged() end)
 end
 function M:OnEnable()
@@ -109,19 +125,23 @@ function M:FrameDB(unit)
     return self.matchedTarget
 end
 
+M.POLL_SECONDS = 0.1
+-- UNIT_TARGET: the target or focus picked a new target, so its Target of
+-- Target (or Target of Focus) changes at once.
 local UNIT_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_POWER_FREQUENT", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER",
     "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_CONNECTION", "UNIT_CLASSIFICATION_CHANGED",
-    "UNIT_PORTRAIT_UPDATE", "UNIT_MODEL_CHANGED" }
+    "UNIT_PORTRAIT_UPDATE", "UNIT_MODEL_CHANGED", "UNIT_TARGET" }
 function M:SetEvents(on)
     if (self.eventsOn or false) == on then return end
     self.eventsOn = on
-    local f = self.events
+    local f, focus = self.events, self.focusEvents
     for _, event in ipairs(UNIT_EVENTS) do
-        if on then f:RegisterUnitEvent(event, "player", "target") else f:UnregisterEvent(event) end
+        if on then f:RegisterUnitEvent(event, "player", "target"); focus:RegisterUnitEvent(event, "focus")
+        else f:UnregisterEvent(event); focus:UnregisterEvent(event) end
     end
     -- Scale/resolution changes re-snap the pixel-perfect borders (registered by
     -- Blizzard's own Forever UI in SharedUIPanelTemplates.lua).
-    for _, event in ipairs({ "PLAYER_TARGET_CHANGED", "PLAYER_ENTERING_WORLD", "PORTRAITS_UPDATED",
+    for _, event in ipairs({ "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "PLAYER_ENTERING_WORLD", "PORTRAITS_UPDATED",
         "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         if on then f:RegisterEvent(event) else f:UnregisterEvent(event) end
     end
@@ -135,10 +155,11 @@ function M:Refresh()
     self.pending = false
     -- Secure buttons are created on first enable, never in combat.
     if self.active then self:CreateDisplay() end
-    local any = false
+    local any, polled = false, false
     for _, unit in ipairs(self.units) do
         local on = self:FrameOn(unit)
         any = any or on
+        polled = polled or (on and self.polledUnits[unit] == true)
         local f = self.frames[unit]
         if self.ghosts[unit] then self:ApplyLayout(self.ghosts[unit], unit) end
         if f then
@@ -150,6 +171,7 @@ function M:Refresh()
     end
     self:SyncNative()
     self:SetEvents(any)
+    self.poller:SetShown(polled)
     self:RenderGhosts()
     self:UpdateAll()
     if addon.EditMode then addon.EditMode:RefreshElements() end
@@ -158,10 +180,13 @@ end
 function M:OnEvent(event, unit)
     if event == "PLAYER_REGEN_ENABLED" then
         if self.pending then self:Refresh() end
-    elseif event == "PLAYER_TARGET_CHANGED" then self:Update("target")
+    elseif event == "PLAYER_TARGET_CHANGED" then self:Update("target"); self:Update("targettarget")
+    elseif event == "PLAYER_FOCUS_CHANGED" then self:Update("focus"); self:Update("focustarget")
     elseif event == "PLAYER_ENTERING_WORLD" or event == "PORTRAITS_UPDATED" then self:UpdateAll()
     elseif event == "UI_SCALE_CHANGED" or event == "DISPLAY_SIZE_CHANGED" then self:Refresh()
-    elseif unit == "player" or unit == "target" then
+    elseif event == "UNIT_TARGET" then
+        if unit == "target" or unit == "focus" then self:Update(unit .. "target") end
+    elseif unit == "player" or unit == "target" or unit == "focus" then
         if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" or event == "UNIT_CONNECTION" then self:UpdateHealth(unit)
         elseif event == "UNIT_POWER_FREQUENT" or event == "UNIT_MAXPOWER" or event == "UNIT_DISPLAYPOWER" then self:UpdatePower(unit)
         elseif event == "UNIT_PORTRAIT_UPDATE" or event == "UNIT_MODEL_CHANGED" then self:UpdatePortrait(unit)

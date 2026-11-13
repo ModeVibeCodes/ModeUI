@@ -45,7 +45,7 @@ function M:CreateDisplay()
     if self.displayCreated then return end
     self.displayCreated = true
     for _, unit in ipairs(self.units) do
-        local label = self.labels[unit]
+        local label = self.frameNames[unit]
         local b = CreateFrame("Button", "ModeUI" .. label .. "UnitFrame", UIParent, "SecureUnitButtonTemplate")
         b.unit = unit
         b:SetAttribute("unit", unit); b:SetAttribute("*type1", "target"); b:SetAttribute("*type2", "togglemenu")
@@ -65,7 +65,7 @@ end
 -- Position Manager refuses protected frames, so Edit Mode moves a plain stand-in
 -- and the secure button copies its anchor outside combat.
 function M:CreateGhost(unit)
-    local label = self.labels[unit]
+    local label = self.frameNames[unit]
     local g = CreateFrame("Frame", "ModeUI" .. label .. "UnitFramePreview", UIParent)
     g.unit, g.ghost = unit, true
     g:SetFrameStrata("HIGH")

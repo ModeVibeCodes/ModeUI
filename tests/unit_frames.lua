@@ -42,6 +42,32 @@ world.run([====[
     assert(TargetFrameToT:GetAlpha()==0 and TargetFrameToT.mouse==false and TargetFrameToTDebuff1.mouse==false and TargetFrameToTDebuff4.mouse==false,'Blizzard Target of Target fades with the Target frame')
     TargetFrameToT:SetAlpha(1);assert(TargetFrameToT:GetAlpha()==0,'kept faded when Blizzard restores it')
 
+    -- Target of Target, Focus and Target of Focus: secure frames of their own,
+    -- each replacing Blizzard's; Blizzard's Focus frame fades like the Target.
+    local tt,fo,ft=M.frames.targettarget,M.frames.focus,M.frames.focustarget
+    assert(tt.secure and fo.secure and ft.secure and watched[tt] and watched[fo] and watched[ft])
+    assert(ModeUITargetTargetUnitFrame==tt and ModeUIFocusUnitFrame==fo and ModeUIFocusTargetUnitFrame==ft and ModeUIFocusUnitFramePreview==M.ghosts.focus)
+    assert(tt.attributes.unit=='targettarget' and fo.attributes.unit=='focus' and ft.attributes.unit=='focustarget')
+    assert(FocusFrame.TargetFrameContainer:GetAlpha()==0 and FocusFrame.TargetFrameContent:GetAlpha()==0 and FocusFrame.mouse==false)
+    assert(FocusFrameToT:GetAlpha()==0 and FocusFrameToTDebuff3.mouse==false,'Blizzard Target of Focus fades too')
+    for _,id in ipairs({'unitFramesTargetTarget','unitFramesFocus','unitFramesFocusTarget'}) do assert(addon.PositionManager.elements[id],id) end
+    assert(M.db.targettarget.barWidth==110 and M.db.targettarget.levelStyle=='none' and M.db.focustarget.healthHeight==16)
+    assert(M.db.focus.portraitSide=='right' and M.db.focus.barWidth==150 and not M.db.focus.matchPlayer and not M.db.targettarget.matchPlayer)
+    assert(tt.width<p.width and tt.height<p.height and not tt.levelText:IsShown(),'Target of Target is small, without a level')
+    -- The game sends no unit events for targettarget/focustarget: a short timer refreshes them.
+    assert(M.poller:IsShown());Advance(0.2)
+    units.targettarget={exists=true,health=300,max=600,power=10,powerMax=100,token='RAGE',name='Totfix',level=12,reaction=2,connected=true}
+    Advance(0.05);assert(tt.nameText:GetText()~='Totfix','waits for the timer')
+    Advance(0.06);assert(tt.nameText:GetText()=='Totfix' and tt.healthText:GetText()=='50%','refreshed on the timer')
+    units.focus={exists=true,health=50,max=100,power=20,powerMax=100,token='MANA',name='Focusfix',level=30,reaction=5,connected=true}
+    FireEvent('PLAYER_FOCUS_CHANGED');assert(fo.nameText:GetText()=='Focusfix' and fo.healthText:GetText()=='50%')
+    units.focus.health=25;FireEvent('UNIT_HEALTH','focus');assert(fo.healthText:GetText()=='25%','focus unit events')
+    units.targettarget.name='Swapped';FireEvent('UNIT_TARGET','target');assert(tt.nameText:GetText()=='Swapped','new target of target at once')
+    assert(M:SetFrameOption('targettarget','enabled',false) and M.poller:IsShown(),'the Target of Focus still needs the timer')
+    assert(M:SetFrameOption('focustarget','enabled',false) and not M.poller:IsShown(),'no timer without them')
+    assert(M:SetFrameOption('targettarget','enabled',true) and M:SetFrameOption('focustarget','enabled',true) and M.poller:IsShown())
+    units.targettarget,units.focus=nil,nil
+
     -- Onyx frame: round portrait cap over one rounded bar block, 2px rim + 2px gap, 1px hairline.
     local tex=function(key) return (addon.Media:GetTexture(key)) end
     local mg=p.geometry
@@ -319,16 +345,21 @@ world.run([====[
     assert(M:SetFrameOption('target','enabled',false))
     assert(not watched[t] and not t:IsShown() and TargetFrame.TargetFrameContainer:GetAlpha()==1 and TargetFrame.mouse==true)
     assert(TargetFrame.TargetFrameContent:GetAlpha()==0.9,'original native alpha restored')
-    assert(TargetFrameToT:GetAlpha()==1 and TargetFrameToT.mouse==true and TargetFrameToTDebuff2.mouse==true,'Target of Target and its debuffs restored')
+    assert(TargetFrameToT:GetAlpha()==0,'the ModeUI Target of Target still replaces Blizzard\'s')
+    assert(M:SetFrameOption('targettarget','enabled',false) and TargetFrameToT:GetAlpha()==1 and TargetFrameToT.mouse==true and TargetFrameToTDebuff2.mouse==true,'Target of Target and its debuffs restored')
     assert(M:SetFrameOption('target','enabled',true) and watched[t])
     assert(TargetFrameToT:GetAlpha()==0 and M:SetFrameOption('target','hideBlizzard',false) and TargetFrameToT:GetAlpha()==1)
     assert(M:SetFrameOption('target','hideBlizzard',true) and TargetFrameToT:GetAlpha()==0,'Hide Blizzard Target Frame covers its Target of Target')
+    assert(M:SetFrameOption('targettarget','enabled',true) and M:SetFrameOption('targettarget','hideBlizzard',false) and TargetFrameToT:GetAlpha()==0,'still covered by the Target')
+    assert(M:SetFrameOption('targettarget','hideBlizzard',true))
     testLockdown=true;testCombat=true
     addon:SetModuleEnabled('unitFrames',false)
     assert(M.pending and watched[p],'disable deferred in combat')
     testLockdown=false;testCombat=false
     FireEvent('PLAYER_REGEN_ENABLED')
     assert(not watched[p] and not watched[t] and PlayerFrame.mouse==true and PlayerFrame.PlayerFrameContainer:GetAlpha()==1)
+    assert(FocusFrame.TargetFrameContainer:GetAlpha()==1 and FocusFrame.mouse==true and FocusFrameToT:GetAlpha()==1 and TargetFrameToT:GetAlpha()==1)
+    assert(not watched[M.frames.focus] and not M.poller:IsShown(),'every frame and the timer stop')
 
     -- Phase-1 migration: changed values carry over once, everything else adopts Onyx.
     local v1={layoutVersion=nil,scale=100,texture='default',classColor=true,fontSize=14,outline=false,shadow=true,
@@ -434,14 +465,25 @@ restored.run([====[
     assert(not Visible(Row('Portrait','Portrait Ring Color')) and M:SetFrameOption('player','portraitRing','custom') and Visible(Row('Portrait','Portrait Ring Color')))
     assert(not Find('Name & Level','Glow Strength') and not Find('Name & Level','Name Glow'),'glow controls are gone')
     assert(M:ResetFrame('player'))
-    local switch=page.unitFrameEditButtons[2]
-    switch[2].scripts.OnClick();assert(page.unitFrameEditing()=='target' and switch[2].selected,'switch to the Target')
-    assert(page.unitFrameEditButtons[5][2].selected,'one switch state across tabs')
+    -- Frames tab: Show and Hide Blizzard side by side for each of the five frames, and their tools.
+    assert(page.unitFrameResetTargetTarget and page.unitFrameCopyFocus and page.unitFrameCopyPlayer and Row('Frames','Target of Focus Tools'))
+    assert(page.unitFrameCopyPlayer.label:GetText()=='Copy Style to Target' and page.unitFrameCopyFocus.label:GetText()=='Copy Player Style')
+    assert(M:SetFrameOption('player','barWidth',200));page.unitFrameCopyFocus.scripts.OnClick()
+    assert(M.db.focus.barWidth==200 and M.db.focus.portraitSide=='right','copies the Player look, keeps its side')
+    page.unitFrameResetFocus.scripts.OnClick();assert(M.db.focus.barWidth==150 and M:ResetFrame('player'))
+    -- Editing picks one of the five frames, shared by every tab.
+    assert(#page.unitFrameEditSelects==6)
+    page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
+    assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
+    assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==25,'edits the Focus only')
+    assert(M:ResetFrame('focus'))
+    page.SetEditing('target');assert(page.unitFrameEditing()=='target' and page.unitFrameEditSelects[2].label:GetText()=='Target','switch to the Target')
+    assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')
     assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Layout','Scale')))
     assert(M:SetFrameOption('target','barWidth',220) and M.db.player.barWidth==180)
     assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))
-    switch[1].scripts.OnClick();assert(page.unitFrameEditing()=='player' and Visible(Row('Layout','Scale')))
+    page.SetEditing('player');assert(page.unitFrameEditing()=='player' and Visible(Row('Layout','Scale')))
     assert(M:SetFrameOption('player','enabled',false) and Visible(Row('Layout','Frame Hidden')) and not Visible(Row('Layout','Scale')))
     assert(M:SetFrameOption('player','enabled',true))
 ]====]

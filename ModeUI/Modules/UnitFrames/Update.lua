@@ -79,7 +79,7 @@ function M:PaintSample(g, unit)
     g.health:SetMinMaxValues(0, 100); g.health:SetValue(75)
     local power = fdb.powerColorMode == "custom" and fdb.powerColor or P.mana
     g.power:SetMinMaxValues(0, 100); g.power:SetValue(60); g.power:SetStatusBarColor(power[1], power[2], power[3], alpha)
-    SetName(g, self.labels[unit] .. " Frame", self:NameColor(unit, identity))
+    SetName(g, self.titles[unit], self:NameColor(unit, identity))
     Write(g.levelText, "60")
     local mode = fdb.healthText
     Write(g.healthText, mode == "current" and "3,450" or mode == "both" and "3,450 · 75%" or "75%")

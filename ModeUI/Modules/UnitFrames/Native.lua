@@ -7,13 +7,19 @@ if not M then return end
 -- their clicks while a ModeUI frame that replaces them is on with Hide
 -- Blizzard set. Nothing is reparented and no events are unregistered.
 --
--- `parts` are the frame's art children (faded; the frame keeps running).
--- `also` are whole frames that sit on it and would otherwise float on their
--- own: Blizzard's Target of Target is a child of the Target frame, so it fades
--- with it (Blizzard_UnitFrame TargetFrameMixin:CreateTargetofTarget).
+-- `parts` are the frame's art children (faded; the frame keeps running); a
+-- frame without parts fades whole. `also` are whole frames that sit on it and
+-- would otherwise float on their own: Blizzard's Target of Target and Target
+-- of Focus are children of the Target and Focus frames, so they fade with them
+-- (Blizzard_UnitFrame TargetFrameMixin:CreateTargetofTarget). The Focus frame
+-- is built from the Target frame's template, so it has the same parts.
+local TARGET_PARTS = { "TargetFrameContainer", "TargetFrameContent" }
 M.native = {
     player = { frame = "PlayerFrame", parts = { "PlayerFrameContainer", "PlayerFrameContent" } },
-    target = { frame = "TargetFrame", parts = { "TargetFrameContainer", "TargetFrameContent" }, also = { "TargetFrameToT" } },
+    target = { frame = "TargetFrame", parts = TARGET_PARTS, also = { "TargetFrameToT" } },
+    targettarget = { frame = "TargetFrameToT" },
+    focus = { frame = "FocusFrame", parts = TARGET_PARTS, also = { "FocusFrameToT" } },
+    focustarget = { frame = "FocusFrameToT" },
 }
 -- Blizzard's Target of Target debuff icons take the mouse for their tooltips
 -- (TargetofTargetDebuffFrameTemplate, enableMouse), so a faded one lets go too.
@@ -55,25 +61,26 @@ local function Release(self, frame, released)
 end
 
 local function Faded(region) return type(region) == "table" and region.SetAlpha and region.GetAlpha end
+-- A whole frame (a Target of Target): faded, and it and its debuffs let go of the mouse.
+local function Whole(name, faded, released)
+    local frame = _G[name]
+    if not Faded(frame) then return end
+    faded[frame], released[frame] = true, true
+    for i = 1, DEBUFFS do
+        local debuff = _G[name .. "Debuff" .. i]
+        if type(debuff) == "table" then released[debuff] = true end
+    end
+end
 -- What one ModeUI frame hides: faded regions and frames whose clicks it releases.
 local function Collect(spec, faded, released)
     local native = _G[spec.frame]
     if type(native) ~= "table" then return end
+    if not spec.parts then Whole(spec.frame, faded, released); return end
     released[native] = true
-    for _, key in ipairs(spec.parts or {}) do
+    for _, key in ipairs(spec.parts) do
         if Faded(native[key]) then faded[native[key]] = true end
     end
-    if not spec.parts and Faded(native) then faded[native] = true end
-    for _, name in ipairs(spec.also or {}) do
-        local frame = _G[name]
-        if Faded(frame) then
-            faded[frame], released[frame] = true, true
-            for i = 1, DEBUFFS do
-                local debuff = _G[name .. "Debuff" .. i]
-                if type(debuff) == "table" then released[debuff] = true end
-            end
-        end
-    end
+    for _, name in ipairs(spec.also or {}) do Whole(name, faded, released) end
 end
 
 -- Matches Blizzard's frames to the ModeUI frames now on: a region stays faded

@@ -5,6 +5,22 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Target of Target, Focus and Target of Focus
+
+November 13, 2026, per the owner: three more secure frames in the same skin,
+`targettarget`, `focus` and `focustarget`, each saved under its unit token
+with the full per-frame settings set (the Target is still the only frame that
+can match the Player). Target of Target and Target of Focus default to a small
+frame (bar width 110, health 16, power 6, no level) with the portrait on the
+left; Focus is 150 wide with the portrait on the right. Each has its own Edit
+Mode element (`unitFramesTargetTarget`, `unitFramesFocus`,
+`unitFramesFocusTarget`) and Hide Blizzard option. Blizzard's Focus frame is
+built from the Target frame template, so it fades the same parts; Blizzard's
+Target of Target and Target of Focus fade whole, also while their Target or
+Focus frame is hidden. The Frames tab shows Show and Hide Blizzard side by
+side for each frame, and the element tabs pick the frame from an **Editing**
+dropdown. Existing profiles gain the three frames with their defaults on load.
+
 ## See-through bar backgrounds, bar textures and opacity
 
 November 13, 2026, per the owner: the dark Onyx fill was hard to tell from the
@@ -574,8 +590,13 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
   `PLAYER_REGEN_ENABLED`. Settings controls refuse changes in combat. Health,
   power, text and portrait updates continue in combat.
 - **Events.** One event frame with unit-filtered `RegisterUnitEvent` for
-  player/target, plus `PLAYER_TARGET_CHANGED`, `PLAYER_ENTERING_WORLD` and
-  `PORTRAITS_UPDATED`, registered only while a frame is shown. No polling.
+  player/target and a second one for focus (a frame filters to at most two
+  units), plus `UNIT_TARGET`, `PLAYER_TARGET_CHANGED`, `PLAYER_FOCUS_CHANGED`,
+  `PLAYER_ENTERING_WORLD` and `PORTRAITS_UPDATED`, registered only while a
+  frame is shown. The game sends no unit events for `targettarget` or
+  `focustarget`, so while either frame is on a hidden-when-unused timer
+  refreshes them every 0.1 s, as Blizzard's own Target of Target does with
+  `OnUpdate`.
 
 ## Settings (`modules.unitFrames`)
 
@@ -621,7 +642,12 @@ validation). Settings change only through `SetFrameOption`, `ResetFrame` and
   resources stay where Blizzard places them; move them with Blizzard's Edit
   Mode if needed.
 - No cast bar, auras, combat feedback, threat or raid icon on PTG frames yet.
-  Focus, target of target, pet, party and raid frames are later phases.
+  Pet, party and raid frames are later phases.
+- Whether Forever's rules let players set a focus is unverified. The Focus
+  frame only shows while a focus exists (unit watch), so it stays hidden if not.
+- Blizzard's combo points on Forever (`ComboFrame`, Camelot) are parented to
+  the Target frame and centred on its portrait; they keep working and stay
+  visible where that portrait was.
 
 ## Manual checks (native acceptance)
 
