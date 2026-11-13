@@ -419,7 +419,7 @@ function M:IdentityColor(unit, reactionOnly, fdb)
     fdb = fdb or self:FrameDB(unit)
     if not reactionOnly and Truthy(UnitIsPlayer, unit) then
         local _, class = Plain(UnitClass, unit)
-        local color = class and addon.GlobalSettings:GetClassColor(class)
+        local color = class and addon.ClassColors:GetColor(class)
         if color then return self:Soften({ color.r, color.g, color.b }, fdb) end
     end
     if Truthy(UnitIsTapDenied, unit) then return P.tapped end

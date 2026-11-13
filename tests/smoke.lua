@@ -1,4 +1,4 @@
--- ModeUI startup, Mode-themed window, one Interface > Unit Frames page,
+-- ModeUI startup, Mode-themed window with Interface and Global categories,
 -- settings restoration and the one-time Play The Game Tools import; not WoW.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 
@@ -9,38 +9,48 @@ assert(metadata["X-ModeUI-Edition"] == "Forever" and metadata.Interface == "1600
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and #addon.moduleOrder==1 and addon.moduleOrder[1]=='unitFrames')
-    assert(#addon.categoryOrder==1 and addon.categoryOrder[1]=='interface' and addon.categories.interface.title=='Interface')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='unitFrames,profiles,optimizations,classColors')
+    assert(table.concat(addon.categoryOrder,',')=='interface,global' and addon.categories.interface.title=='Interface' and addon.categories.global.title=='Global')
+    assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
     assert(addon.InterfaceTheme.primary[2]==240/255,'Mode cyan accent')
     assert(SLASH_MODEUI1=='/modeui' and SLASH_PLAYTHEGAMETOOLS1==nil)
     assert(addon.modules.unitFrames.enabled,'unit frames are on for a fresh install')
     assert(ModeUIDB.importedFrom=='none','nothing to import without Play The Game Tools')
+    assert(ModeUIDB.schemaVersion==2 and ModeUIDB.activeProfile=='Default' and ModeUIDB.profiles.Default==addon.db,'Default profile')
     assert(messages[1]:find('ModeUI',1,true),'welcome line')
     SlashCmdList.MODEUI()
     local window=addon.configWindow
     assert(window:IsShown() and window.title:GetText()=='ModeUI' and window.brandLogo,'Mode brand header')
     assert(window.moduleHeader.title:GetText()=='Unit Frames','opens on Interface > Unit Frames')
     assert(window.selectedCategory=='interface' and window.pages.unitFrames:IsShown())
-    assert(window.navigationButtons.interface.label:GetText()=='Interface','Interface category heading')
+    assert(window.navigationButtons.interface.label:GetText()=='Interface' and window.navigationButtons.global.label:GetText()=='Global','category headings')
     assert(window.navigationButtons.dashboard==nil and window.navigationButtons.globalSettings==nil,'no Dashboard or Global Settings')
     assert(window.profileButton==nil,'no profile button')
     local nested=window.sidebarModuleButtons.unitFrames
     assert(nested and nested:IsShown() and nested.label:GetText()=='· Unit Frames','Unit Frames nested under Interface')
     local count=0;for _ in pairs(window.sidebarModuleButtons) do count=count+1 end
-    assert(count==1,'one module in the sidebar')
+    assert(count==4,'four pages in the sidebar')
+    for _,id in ipairs({'profiles','optimizations','classColors'}) do
+        assert(window.sidebarModuleButtons[id]:IsShown(),id..' nested under Global')
+        addon:SelectConfigPage(id);assert(window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)
+    end
+    addon:SelectConfigPage('profiles');assert(not window.moduleHeader.toggle:IsShown(),'Profiles has no on/off switch')
+    addon:SelectConfigPage('optimizations');assert(window.moduleHeader.toggle:IsShown())
+    addon:SetModuleEnabled('profiles',false);assert(addon.modules.profiles.enabled,'Profiles stays on')
+    addon:SelectConfigPage('unitFrames')
     -- Edit Mode opens the ModeUI edit panel with the frames as movable elements.
     assert(addon:SetEditMode(true) and addon.editWindow:IsShown() and not window:IsShown())
     assert(addon.PositionManager.elements.unitFramesPlayer and addon.PositionManager.elements.unitFramesTarget)
     assert(addon:SetEditMode(false) and window:IsShown())
     window:Hide()
-    addon.db.window.x=123;addon.db.window.y=45
+    addon.root.window.x=123;addon.root.window.y=45
     addon:SetModuleEnabled('unitFrames',false)
 ]], "smoke")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })
 restored.run([[
-    assert(addon.db.window.x==123 and addon.db.window.y==45,'window position persists')
+    assert(addon.root.window.x==123 and addon.root.window.y==45 and addon.db.window==nil,'window position persists, account-wide')
     assert(not addon.modules.unitFrames.enabled,'module state persists')
     assert(ModeUIDB.importedFrom=='none','import is one-time')
 ]], "restore")

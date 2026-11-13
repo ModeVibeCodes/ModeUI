@@ -320,6 +320,13 @@ function M:OnDisable()
 end
 function M:SetEditMode(enabled) self.editing = enabled and self.active or false; self:RenderGhosts() end
 function M:SetPreviewMode(enabled) self.previewing = enabled and self.active or false; self:RenderGhosts() end
+-- Global > Class Colors changed: recolor names, health and portrait rings now.
+function M:OnClassColorsChanged()
+    if not self.frames then return end
+    self:UpdateAll()
+    -- Preview stand-ins are re-laid out only outside combat, as everywhere else.
+    if not InCombatLockdown() then self:RenderGhosts() end
+end
 
 function M:FrameOn(unit) return self.active == true and self.db[unit].enabled == true end
 

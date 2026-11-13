@@ -1,19 +1,31 @@
 local _, addon = ...
 
--- ModeUI keeps one account-wide settings table. Unknown keys are preserved and
--- invalid data stops startup instead of being reset.
-local SCHEMA_VERSION = 1
-local defaults = {
-    schemaVersion = SCHEMA_VERSION,
-    window = { x = 0, y = 0 },
-    -- Shared media defaults read by the Mode widgets and the unit frames'
-    -- "Use Global Setting" choices. ModeUI has no page to change them yet.
+-- ModeUIDB holds account data plus named profiles of ModeUI settings:
+--   ModeUIDB = { schemaVersion = 2, activeProfile = "Default", pendingProfile = nil,
+--                profiles = { Default = { modules = {}, positions = {}, globalMedia = {} } },
+--                window = { x, y }, importedFrom, mediaRegistry, optimizationOriginals }
+-- Unknown keys are preserved, and invalid data stops startup instead of being reset.
+local SCHEMA_VERSION = 2
+local D = {}
+addon.Database = D
+
+-- Account-wide keys; everything else in a schema 1 table belonged to the profile.
+D.accountKeys = { schemaVersion = true, profiles = true, activeProfile = true, pendingProfile = true,
+    failedProfile = true, window = true, importedFrom = true, mediaRegistry = true, optimizationOriginals = true }
+D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {} }
+D.profileDefaults = {
+    -- Shared media read by the Mode widgets and the unit frames' "Use Global
+    -- Setting" choices. ModeUI has no page to change them yet.
     globalMedia = { font = "game", texture = "default", border = "thin", overrides = {} },
     modules = {},
     positions = {},
 }
+-- The keys a profile may contain (import/export accept nothing else).
+D.profileKeys = { globalMedia = true, modules = true, positions = true }
+D.DEFAULT_PROFILE = "Default"
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
+D.Copy = Copy
 
 local function ApplyDefaults(target, source, path)
     for key, value in pairs(source) do
@@ -26,17 +38,54 @@ local function ApplyDefaults(target, source, path)
     end
 end
 
+-- A detached, normalized copy of a profile, or nil and a reason. Every
+-- registered module fills its defaults and validates its own settings.
+function D:ValidateProfile(source)
+    local ok, result = pcall(function()
+        assert(type(source) == "table", "Profile must be a table.")
+        local profile = Copy(source)
+        ApplyDefaults(profile, self.profileDefaults, "profile")
+        for _, id in ipairs(addon.moduleOrder) do
+            local module = addon.modules[id]
+            if profile.modules[id] == nil then profile.modules[id] = {} end
+            local db = profile.modules[id]
+            assert(type(db) == "table", "Invalid module settings: " .. id)
+            if db.enabled == nil then db.enabled = module.defaultEnabled ~= false end
+            assert(type(db.enabled) == "boolean", "Invalid module enable state: " .. id)
+            if module.alwaysOn then db.enabled = true end
+            if module.Initialize then module.Initialize(db) end
+        end
+        assert(type(profile.positions) == "table", "Invalid positions.")
+        return profile
+    end)
+    if ok then return result end
+    return nil, tostring(result):gsub("^[^:]*:%d+: ", ""):sub(1, 240)
+end
+
+function D:NewProfile() return self:ValidateProfile({}) end
+
+-- Schema 1 kept one flat settings table; it becomes the Default profile.
+local function MigrateV1(root)
+    local profile = {}
+    for key, value in pairs(root) do
+        if not D.accountKeys[key] then profile[key] = value end
+    end
+    for key in pairs(profile) do root[key] = nil end
+    root.profiles = { [D.DEFAULT_PROFILE] = profile }
+    root.activeProfile = D.DEFAULT_PROFILE
+end
+
 -- Play The Game Tools carried these unit frames before ModeUI. The first time
 -- ModeUI starts (no saved unit frame settings yet), copy the active PTG
 -- profile's unit frame settings and positions. PTGToolsDB is only read.
-local function ImportFromPlayTheGameTools(db)
-    if db.importedFrom ~= nil or db.modules.unitFrames ~= nil then return end
-    db.importedFrom = "none"
-    local root = PTGToolsDB
-    if type(root) ~= "table" or type(root.profiles) ~= "table" then return end
-    local selection = type(root.accountSelection) == "table" and root.accountSelection or nil
-    local name = selection and selection.activeProfile or root.defaultProfile
-    local profile = type(name) == "string" and root.profiles[name]
+local function ImportFromPlayTheGameTools(root, db)
+    if root.importedFrom ~= nil or (type(db.modules) == "table" and db.modules.unitFrames ~= nil) then return end
+    root.importedFrom = "none"
+    local ptg = PTGToolsDB
+    if type(ptg) ~= "table" or type(ptg.profiles) ~= "table" then return end
+    local selection = type(ptg.accountSelection) == "table" and ptg.accountSelection or nil
+    local name = selection and selection.activeProfile or ptg.defaultProfile
+    local profile = type(name) == "string" and ptg.profiles[name]
     local modules = type(profile) == "table" and profile.modules
     local frames = type(modules) == "table" and modules.unitFrames
     if type(frames) ~= "table" then return end
@@ -44,7 +93,9 @@ local function ImportFromPlayTheGameTools(db)
     if not ok or type(copy) ~= "table" then return end
     -- Only keep a copy that passes ModeUI's own validation and migration.
     if not addon.UnitFrames or not pcall(addon.UnitFrames.Initialize, copy) then return end
+    db.modules = type(db.modules) == "table" and db.modules or {}
     db.modules.unitFrames = copy
+    db.positions = type(db.positions) == "table" and db.positions or {}
     local positions = type(profile.positions) == "table" and profile.positions or {}
     for _, id in ipairs({ "unitFramesPlayer", "unitFramesTarget" }) do
         if type(positions[id]) == "table" and db.positions[id] == nil then
@@ -52,20 +103,50 @@ local function ImportFromPlayTheGameTools(db)
             if okPosition then db.positions[id] = position end
         end
     end
-    db.importedFrom = "PlayTheGameTools:" .. name
+    root.importedFrom = "PlayTheGameTools:" .. name
 end
 
 function addon:InitializeDatabase()
     if ModeUIDB == nil then ModeUIDB = {} end
     assert(type(ModeUIDB) == "table", "ModeUIDB must be a table; settings were not reset.")
-    local db = ModeUIDB
-    assert(db.schemaVersion == nil or db.schemaVersion == SCHEMA_VERSION, "ModeUI: unsupported database version; settings were not reset.")
-    ApplyDefaults(db, defaults, "ModeUIDB")
+    local root = ModeUIDB
+    local version = root.schemaVersion
+    assert(version == nil or version == 1 or version == SCHEMA_VERSION, "ModeUI: unsupported database version; settings were not reset.")
+    if root.profiles == nil then MigrateV1(root) end
+    root.schemaVersion = SCHEMA_VERSION
+    ApplyDefaults(root, D.accountDefaults, "ModeUIDB")
     for _, key in ipairs({ "x", "y" }) do
-        local value = db.window[key]
+        local value = root.window[key]
         assert(type(value) == "number" and value == value and math.abs(value) < math.huge, "ModeUI: invalid window position.")
     end
-    ImportFromPlayTheGameTools(db)
-    self.db = db
-    return db
+    for name in pairs(root.profiles) do
+        assert(addon.Profiles:Name(name) == name, "ModeUI: invalid profile name; settings were not reset.")
+    end
+    if next(root.profiles) == nil then root.profiles[D.DEFAULT_PROFILE] = {} end
+    if not root.profiles[root.activeProfile] then
+        root.activeProfile = root.profiles[D.DEFAULT_PROFILE] and D.DEFAULT_PROFILE or addon.Profiles:List(root)[1]
+    end
+
+    -- A profile chosen last session applies now; a broken one leaves the
+    -- current profile in place and is reported rather than retried forever.
+    local status
+    local requested = root.pendingProfile
+    root.pendingProfile = nil
+    if requested ~= nil and requested ~= root.activeProfile then
+        if root.profiles[requested] and D:ValidateProfile(root.profiles[requested]) then
+            root.activeProfile, root.failedProfile = requested, nil
+            status = "Switched to " .. requested .. "."
+        else
+            root.failedProfile = requested
+            status = "Profile " .. tostring(requested) .. " could not be loaded; kept " .. root.activeProfile .. "."
+        end
+    end
+    local active = root.profiles[root.activeProfile]
+    if type(active) == "table" then ImportFromPlayTheGameTools(root, active) end
+    local profile, reason = D:ValidateProfile(active)
+    assert(profile, "ModeUI: profile " .. root.activeProfile .. " is invalid (" .. tostring(reason) .. "); settings were not reset.")
+    root.profiles[root.activeProfile] = profile
+    self.root, self.db = root, profile
+    self.Profiles.status = status
+    return profile
 end

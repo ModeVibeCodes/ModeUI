@@ -19,7 +19,7 @@ local function Installed(path)
 end
 function M:RememberMedia(kind,name)
     if self.discoveryRunning or not self.library then return end
-    local root=addon.db
+    local root=addon.root
     if not root then return end
     if root.mediaRegistry==nil then root.mediaRegistry={} end
     if type(root.mediaRegistry)~="table" then return end -- Preserve unknown data.
@@ -62,7 +62,7 @@ function M:DiscoverMedia()
         end
     end
     for _,entry in ipairs(self.providerCatalog or {}) do Register(entry[1],entry[2],entry[3]) end
-    local root=addon.db
+    local root=addon.root
     local cache=root and root.mediaRegistry
     if type(cache)=="table" then
         for kind in pairs(kinds) do

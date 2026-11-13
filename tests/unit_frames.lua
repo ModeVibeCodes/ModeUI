@@ -87,7 +87,7 @@ world.run([====[
     M:UpdateAll()
     local function Soft(c,amount) amount=amount or 0.4;return {c[1]+(1-c[1])*amount,c[2]+(1-c[2])*amount,c[3]+(1-c[3])*amount} end
     local function Near(a,b) return math.abs(a-b)<1e-9 end
-    local rc=addon.GlobalSettings:GetClassColor('ROGUE');local rogue={rc.r,rc.g,rc.b}
+    local rc=addon.ClassColors:GetColor('ROGUE');local rogue={rc.r,rc.g,rc.b}
     assert(p.health.statusBarColor[1]==O.health[1] and t.health.statusBarColor[1]==O.health[1],'Onyx #1C1E21 health by default')
     assert(p.nameText.color[1]==M.ACCENT[1] and t.nameText.color[2]==M.ACCENT[2] and p.nameText:GetText()=='Fixture','plain Sky names')
     assert(t.nameText.text.label=='name','secret target name passed straight to SetText')

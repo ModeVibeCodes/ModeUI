@@ -11,6 +11,9 @@ end
 -- own sections; the Mode layer only restyles headings and color rows.
 W.ModeLayoutPlans={
     unitFrames={decorateOnly=true},
+    profiles={decorateOnly=true},
+    optimizations={decorateOnly=true},
+    classColors={decorateOnly=true},
 }
 
 function W.ModeHeadingRule(parent,heading)

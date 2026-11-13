@@ -12,3 +12,4 @@ function addon:RegisterCategory(id, definition)
 end
 
 addon:RegisterCategory("interface", { title = "Interface" })
+addon:RegisterCategory("global", { title = "Global" })

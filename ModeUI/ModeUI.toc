@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: |cff00f0ffModeUI|r
-## Notes: Custom Mode interface for WoW Forever: Player and Target unit frames.
+## Notes: Custom Mode interface for WoW Forever: unit frames, profiles, optimizations and class colors.
 ## Author: Mode
 ## Version: 0.1.0-beta.1
 ## IconTexture: Interface\AddOns\ModeUI\Media\Textures\Mode\Logo
@@ -15,6 +15,7 @@ Core\Libs\CallbackHandler-1.0.lua
 Core\Libs\LibSharedMedia-3.0.lua
 Core\ProfileCodec.lua
 Core\Database.lua
+Core\Profiles.lua
 Core\ReloadManager.lua
 Core\Categories.lua
 Core\Modules.lua
@@ -26,7 +27,6 @@ Core\FrameAnchors.lua
 Core\Media.lua
 Core\MediaCatalog.lua
 Core\MediaDiscovery.lua
-Core\GlobalSettings.lua
 Core\Feedback.lua
 Core\PreviewStates.lua
 Core\Border.lua
@@ -34,6 +34,9 @@ Core\PositionHighlights.lua
 Config\Theme.lua
 Modules\UnitFrames.lua
 Modules\UnitFramesDisplay.lua
+Modules\Profiles.lua
+Modules\Optimizations.lua
+Modules\ClassColors.lua
 Config\Widgets.lua
 Config\Pages.lua
 Config\SectionTabs.lua
@@ -43,9 +46,13 @@ Config\Search.lua
 Config\FontDropdown.lua
 Config\Select.lua
 Config\ColorRow.lua
+Config\TextInput.lua
 Config\Categories.lua
 Config\Reload.lua
 Config\Window.lua
 Config\EditMode.lua
 Config\UnitFrames.lua
+Config\Profiles.lua
+Config\Optimizations.lua
+Config\ClassColors.lua
 Core\Init.lua

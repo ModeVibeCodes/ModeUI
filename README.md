@@ -14,6 +14,9 @@ used to live in [Play The Game Tools](https://github.com/ModeVibeCodes/PlayTheGa
 | Category  | Module      | What it does |
 |-----------|-------------|--------------|
 | Interface | Unit Frames | Secure Player and Target frames in the locked Onyx skin: a round portrait with a class-gradient ring, a rounded health/power block inside a pixel-perfect slate rim, Sky names, and a lifted shadow on all text. Each element (Layout, Portrait, Name & Level, Health, Power, Text) has its own tab, and the Target can match the Player. |
+| Global    | Profiles    | Account-wide profiles of all ModeUI settings: create (from defaults), duplicate, rename, delete, switch (applies on reload) and import/export as a text string. Play The Game Tools keeps its own, separate profiles. |
+| Global    | Optimizations | Auto Loot, Fast Loot, Hide Error Text, Max Camera Distance and UI Scale (Pixel Perfect or custom). All off by default: ModeUI only changes a game setting while you have that optimization on, and turning it off puts back the game's previous value. |
+| Global    | Class Colors | Custom colors per class for ModeUI's class-colored elements (names, health bars, portrait rings). Changes apply right away; Reset returns a class to the game's color. |
 
 The settings window uses the **Mode** theme from Play The Game Tools: graphite
 surfaces, a cyan accent, Lato type and the Mode control artwork. It's the only
@@ -34,7 +37,14 @@ theme ModeUI has.
 The first time ModeUI loads, it copies the Unit Frames settings and frame
 positions from your active Play The Game Tools profile, if PTG has any. It only
 reads PTG's data and never changes it. After that, ModeUI keeps its own
-account-wide settings in `ModeUIDB`.
+account-wide settings in `ModeUIDB`, organized into profiles (Global → Profiles).
+
+### Running alongside Play The Game Tools
+
+Both addons can be installed together or on their own. They keep separate
+settings, frames and slash commands. PTG also has its own Optimizations: if both
+addons set the camera distance or UI scale, the last one to apply wins, so turn
+each one on in only one addon. The ModeUI page shows a reminder while PTG is loaded.
 
 ## Repository layout
 
@@ -43,9 +53,9 @@ ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   ModeUI.toc
   Core/            startup, settings, modules, media, Edit Mode positioning
   Config/          Mode-themed settings window and widgets
-  Modules/         interface modules (UnitFrames.lua, UnitFramesDisplay.lua)
+  Modules/         Unit Frames, Profiles, Optimizations, Class Colors
   Media/           Mode theme textures, unit frame textures, Lato fonts
-tests/             Lua smoke and Unit Frames tests (simulated client, not WoW)
+tests/             Lua smoke, Unit Frames and Global tests (simulated client, not WoW)
 tools/             texture generators (Python + Pillow)
 design/mode/       Mode theme source artwork and provenance
 docs/              design notes (docs/UNIT_FRAMES.md)
@@ -69,6 +79,7 @@ replace checking things in game.
 ```
 lua tests/smoke.lua
 lua tests/unit_frames.lua
+lua tests/global.lua
 ```
 
 ## Adding a module

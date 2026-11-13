@@ -186,14 +186,6 @@ function M:CreateConfigPage(parent)
 
     local note = W.Label(page:Row("About Unit Frames", 130), "Each tab customizes one part of the frame; use Editing at the top of a tab to switch between the Player and Target. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside a pixel-perfect slate rim and black gap, with a hairline between health and power. The rim, gap, empty bar and background are fixed; health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text layout, optionally mirrored. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. Hiding a Blizzard frame only fades its main art and bars, so pet frames, combo points, target auras and cast bars keep working.", nil, 0, -4, 420, T.muted)
     note:SetWordWrap(true); page:FooterNote(note)
-    W.SectionTabs(page)
-    -- Same treatment as Reskins: no Preview layer reserves the tab strip height.
-    if page.sectionTabs then
-        page.sectionTabs:ClearAllPoints(); page.sectionTabs:SetPoint("TOPLEFT"); page.sectionTabs:SetPoint("TOPRIGHT", -24, 0)
-        local top = page.sectionTabs:GetHeight() + 12
-        page.scroll:ClearAllPoints(); page.scroll:SetPoint("TOPLEFT", 0, -top); page.scroll:SetPoint("BOTTOMRIGHT", -24, 0)
-        page.scrollbar:ClearAllPoints(); page.scrollbar:SetPoint("TOPRIGHT", -4, -top - 4); page.scrollbar:SetPoint("BOTTOMRIGHT", -4, 4)
-        page.tabContentTop = top
-    end
+    W.PinnedSectionTabs(page)
     page:Finish(); return page
 end

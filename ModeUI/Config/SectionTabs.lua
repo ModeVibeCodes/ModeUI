@@ -145,3 +145,15 @@ function W.SectionTabs(page, order)
     page:SelectSectionTab(1)
     if page.UpdatePreviewLayout then page:UpdatePreviewLayout() end
 end
+
+-- Section tabs pinned above the page's scroll area (Mode pill tabs). Pages
+-- without a Preview layer use this to reserve the tab strip's height.
+function W.PinnedSectionTabs(page)
+    W.SectionTabs(page)
+    if not page.sectionTabs then return end
+    page.sectionTabs:ClearAllPoints(); page.sectionTabs:SetPoint("TOPLEFT"); page.sectionTabs:SetPoint("TOPRIGHT", -24, 0)
+    local top = page.sectionTabs:GetHeight() + 12
+    page.scroll:ClearAllPoints(); page.scroll:SetPoint("TOPLEFT", 0, -top); page.scroll:SetPoint("BOTTOMRIGHT", -24, 0)
+    page.scrollbar:ClearAllPoints(); page.scrollbar:SetPoint("TOPRIGHT", -4, -top - 4); page.scrollbar:SetPoint("BOTTOMRIGHT", -4, 4)
+    page.tabContentTop = top
+end

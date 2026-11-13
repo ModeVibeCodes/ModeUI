@@ -20,14 +20,14 @@ function addon:RecoverWindowPosition()
     local maxX=width/2+w/2-keep
     local minY=-height/2-h/2+keep
     local maxY=height/2-h/2+HEADER_HEIGHT*ratio-keep
-    self.db.window.x=math.max(minX,math.min(maxX,self.db.window.x))
-    self.db.window.y=math.max(minY,math.min(maxY,self.db.window.y))
+    self.root.window.x=math.max(minX,math.min(maxX,self.root.window.x))
+    self.root.window.y=math.max(minY,math.min(maxY,self.root.window.y))
     return true
 end
 function addon:ResetConfigWindowPosition()
     if InCombat() then print("ModeUI: reset the configuration window outside combat.");return false end
     self:FinishWindowInteraction()
-    self.db.window.x,self.db.window.y=0,0
+    self.root.window.x,self.root.window.y=0,0
     if not self.configWindow then self:CreateConfig() end
     self:UpdateWindowBounds();self.configWindow:Show();return true
 end
@@ -41,14 +41,14 @@ function addon:FinishWindowInteraction()
     local x, y = window:GetCenter()
     local parentX, parentY = UIParent:GetCenter()
     if x and y and parentX and parentY then
-        self.db.window.x, self.db.window.y = x * ratio - parentX, y * ratio - parentY
+        self.root.window.x, self.root.window.y = x * ratio - parentX, y * ratio - parentY
     end
     if InCombat() then
         window.boundsPending = true
     else
         self:RecoverWindowPosition()
         window:ClearAllPoints()
-        window:SetPoint("CENTER", UIParent, "CENTER", self.db.window.x / ratio, self.db.window.y / ratio)
+        window:SetPoint("CENTER", UIParent, "CENTER", self.root.window.x / ratio, self.root.window.y / ratio)
     end
 end
 
@@ -63,7 +63,7 @@ function addon:UpdateWindowBounds(initial)
     window:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     if not InCombat() then self:RecoverWindowPosition() end
     window:ClearAllPoints()
-    window:SetPoint("CENTER", UIParent, "CENTER", self.db.window.x / scale, self.db.window.y / scale)
+    window:SetPoint("CENTER", UIParent, "CENTER", self.root.window.x / scale, self.root.window.y / scale)
     window.boundsPending = false
 end
 

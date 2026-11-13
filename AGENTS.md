@@ -12,7 +12,7 @@
   can be secret: pass them only to widgets documented as accepting them.
 - Secure frames are created, shown, moved and resized outside combat only.
 - Keep `ModeUI/ModeUI.toc` load order correct. No placeholder functionality.
-- Run `lua tests/smoke.lua` and `lua tests/unit_frames.lua`. Do not claim native
+- Run `lua tests/smoke.lua`, `lua tests/unit_frames.lua` and `lua tests/global.lua`. Do not claim native
   testing without the user's in-game confirmation.
 - Manual checks must state Navigation, Action, Required state and Confirmation,
   using the actual control labels. Do not invent UI paths.
