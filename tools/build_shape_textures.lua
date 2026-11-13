@@ -21,6 +21,10 @@
 --   Mode/CapHoleRight.tga, CapHoleLeft.tga  the same, inverted: masks that hollow a cap into a ring
 --   UnitFrames/Rested.tga  UnitFrameRested: a "Zz" in square strokes, for the rested badge
 --   UnitFrames/Combat.tga  UnitFrameCombat: crossed swords with guards, for the combat badge
+--   DamageMeters/Reset.tga  a circular arrow (Reset All Data)
+--   DamageMeters/Lock.tga   a closed padlock (window locked)
+--   DamageMeters/Unlock.tga an open padlock (window unlocked)
+--   DamageMeters/Grip.tga   three diagonal lines in the bottom-right corner (resize)
 --   ActionBars/Slot.tga  ActionBarSlot: a dark action slot with a soft top bevel, darker edges and
 --                        fine grain, in color (not tinted) and shown at Background Opacity
 local SAMPLES = 8
@@ -135,6 +139,57 @@ local function Stroke(points, thickness)
     end
 end
 
+-- Any of several shapes.
+local function Union(...)
+    local shapes = { ... }
+    return function(x, y)
+        for _, shape in ipairs(shapes) do if shape(x, y) > 0 then return 1 end end
+        return 0
+    end
+end
+
+-- Points along a circle's arc, from `from` to `to` degrees (0 is right,
+-- 90 is down in texture space).
+local function Arc(cx, cy, radius, from, to, steps)
+    local points = {}
+    for i = 0, steps do
+        local a = math.rad(from + (to - from) * i / steps)
+        points[#points + 1] = { cx + radius * math.cos(a), cy + radius * math.sin(a) }
+    end
+    return points
+end
+
+-- Damage meter header glyphs: a circular arrow, padlocks and a resize grip.
+local function Reset()
+    -- The arc leaves a gap at the top; the arrowhead sits on its right end,
+    -- pointing along the arc into the gap.
+    local start = -40
+    local arc = Arc(8, 8.5, 4.6, start, 250, 24)
+    local a = math.rad(start)
+    local ex, ey = arc[1][1], arc[1][2]
+    local nx, ny, dx, dy = math.cos(a), math.sin(a), math.sin(a), -math.cos(a)
+    return Union(Stroke(arc, 1.6), Triangle(ex + nx * 2.6, ey + ny * 2.6, ex - nx * 2.6, ey - ny * 2.6, ex + dx * 3, ey + dy * 3))
+end
+local function Padlock(open)
+    local body = function(x, y) return (x >= 3.5 and x <= 12.5 and y >= 7.5 and y <= 14) and RoundedRect(9, 6.5, 1.5)(x - 3.5, y - 7.5) or 0 end
+    local shackle = open and { { 10.5, 7.5 } } or { { 5.5, 7.5 } }
+    local arc = Arc(8, 5, 2.5, 180, 360, 12)
+    if open then
+        shackle = { { 10.5, 7.5 }, { 10.5, 4.2 } }
+        for i = #arc, 1, -1 do shackle[#shackle + 1] = { arc[i][1], arc[i][2] - 0.8 } end
+        shackle[#shackle + 1] = { 5.5, 5.4 }
+    else
+        shackle = { { 5.5, 7.5 }, { 5.5, 5 } }
+        for _, p in ipairs(arc) do shackle[#shackle + 1] = p end
+        shackle[#shackle + 1] = { 10.5, 7.5 }
+    end
+    return Union(body, Stroke(shackle, 1.6))
+end
+local function Grip()
+    return Union(Stroke({ { 14.5, 5.5 }, { 5.5, 14.5 } }, 1.3), Stroke({ { 14.5, 9.5 }, { 9.5, 14.5 } }, 1.3),
+        Stroke({ { 14.5, 13.5 }, { 13.5, 14.5 } }, 1.3))
+end
+
 -- { path, width, height, shape, supersample[, color] }
 local TEXTURES = {
     { "Mode/Flat.tga", 16, 16, RoundedRect(16, 16, 4), true },
@@ -161,6 +216,10 @@ local TEXTURES = {
         local v = (x + y) % 4 == 0 and 1 or 0.8
         return v, v, v
     end },
+    { "DamageMeters/Reset.tga", 16, 16, Reset(), true },
+    { "DamageMeters/Lock.tga", 16, 16, Padlock(false), true },
+    { "DamageMeters/Unlock.tga", 16, 16, Padlock(true), true },
+    { "DamageMeters/Grip.tga", 16, 16, Grip(), true },
 }
 
 local function Coverage(shape, px, py, supersample)

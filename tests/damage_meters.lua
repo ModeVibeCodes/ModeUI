@@ -1,8 +1,9 @@
 -- Damage Meters: windows fed by a stubbed C_DamageMeter (the game's meter),
--- pixel geometry, rows, numbers, secret values in combat, Always Show Me,
--- scrolling, the header menu, earlier fights, the spell breakdown, show
--- settings, Edit Mode, Test on Screen, the settings page and its preview,
--- validation and persistence. Simulated client; not WoW rendering or taint.
+-- pixel geometry, rows, numbers and decimals, secret values in combat,
+-- Always Show Me, scrolling, the header menu and buttons, earlier fights, the
+-- spell breakdown, show settings, lock, moving and resizing by hand, groups,
+-- Edit Mode, Test on Screen, the settings page and its preview, validation,
+-- migration and persistence. Simulated client; not WoW rendering or taint.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
     local methods = getmetatable(UIParent).__index
@@ -16,6 +17,23 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         local get = methods[name]
         methods[name] = function(self, ...) if self.secretContent then return Secret('measure') end return get(self, ...) end
     end
+    function methods:GetTop() local _, y = self:GetCenter(); return y + self:GetHeight() / 2 end
+    function methods:GetRight() local x = self:GetCenter(); return x + self:GetWidth() / 2 end
+    cursorX, cursorY = 0, 0
+    function GetCursorPosition() return cursorX, cursorY end
+    -- The client's abbreviation (C code): breakpoints largest first; at or
+    -- above one, floor(n / significandDivisor) / fractionDivisor plus its
+    -- suffix; below them all, the number as it is. Secret in, secret out.
+    function AbbreviateNumbers(value, options)
+        if issecretvalue(value) then return Secret('abbr') end
+        for _, b in ipairs(options and options.breakpointData or {}) do
+            if value >= b.breakpoint then
+                local places = math.floor(math.log(b.fractionDivisor, 10) + 0.5)
+                return string.format('%.' .. places .. 'f', math.floor(value / b.significandDivisor) / b.fractionDivisor) .. b.abbreviation
+            end
+        end
+        return tostring(value)
+    end
     Enum = { DamageMeterType = { DamageDone = 0, Dps = 1, HealingDone = 2, Hps = 3, Absorbs = 4, Interrupts = 5, Dispels = 6,
         DamageTaken = 7, AvoidableDamageTaken = 8, Deaths = 9, EnemyDamageTaken = 10 },
         DamageMeterSessionType = { Overall = 0, Current = 1, Expired = 2 } }
@@ -27,7 +45,8 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
     -- In combat every amount, name and GUID is secret; classes and "you" never are.
     local function S(value, label) if testCombat then return Secret(label or 'amount') end return value end
     -- One fight, ranked by the game: a mage, you (a rogue) and a creature.
-    fight = { { name = 'Valeria', class = 'MAGE', amount = 5000, guid = 'Player-1' },
+    -- Per second has every decimal, as the game gives it.
+    fight = { { name = 'Valeria', class = 'MAGE', amount = 5432, guid = 'Player-1' },
         { name = 'Fixture', class = 'ROGUE', amount = 3000, guid = 'Player-2', me = true },
         { name = 'Wolf', class = '', amount = 500, creature = 1234 } }
     calls = {}
@@ -35,7 +54,7 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         local sources, total = {}, 0
         for i, f in ipairs(fight) do
             sources[i] = { name = S(f.name, 'name'), classFilename = f.class, totalAmount = S(f.amount),
-                amountPerSecond = S(math.floor(f.amount / 10)), isLocalPlayer = f.me == true,
+                amountPerSecond = S(f.amount / 30.2), isLocalPlayer = f.me == true,
                 sourceGUID = f.guid and S(f.guid, 'guid') or nil, sourceCreatureID = f.creature,
                 deathRecapID = f.recap or 0, deathTimeSeconds = S(f.died or 0) }
             total = total + f.amount
@@ -77,8 +96,13 @@ world.run([==[
     assert(M.db.window1.show and not M.db.window2.show and not M.db.window3.show, 'one window on by default')
     assert(M.db.window1.meterType == 'damageDone' and M.db.window2.meterType == 'healingDone' and M.db.window3.meterType == 'damageTaken')
     assert(M.db.window1.barTexture == 'mode' and M.db.window1.fontMedia == 'Expressway', 'Mode Gradient and Expressway')
+    assert(M.db.window1.decimals == 1 and not M.db.window1.locked and M.db.window1.group == 'none', 'one decimal, unlocked, on its own')
     assert(DM.Clock(65) == '1:05' and DM.Clock(Secret('t')) == '' and DM.Clock(nil) == '', 'clock text')
     assert(#DM.types == 10 and DM.typeById.dps.perSecond and DM.typeById.interrupts.count, 'the meters Blizzard offers')
+    local ok, short = Kit.ShortNumber(165.71428571429, 1)
+    assert(ok and short == '165', 'whole numbers below a thousand')
+    assert(select(2, Kit.ShortNumber(1284000, 2)) == '1.28M' and select(2, Kit.ShortNumber(5432, 0)) == '5K', 'decimals after the suffix')
+    assert(issecretvalue(select(2, Kit.ShortNumber(Secret('n'), 1))), 'secret numbers pass through')
 
     addon:SetModuleEnabled('damageMeters', true)
     local w1, w2 = ModeUIDamageMeter1, ModeUIDamageMeter2
@@ -100,20 +124,33 @@ world.run([==[
     assert(rim[1].vertexColor[1] == M.BORDER_COLOR[1] and w1.fill.vertexColor[4] == 0.75, 'rim color and 75% background')
     assert(w1.divider:IsShown() and Point(w1.divider)[5] == -21, 'divider under the header')
 
+    -- Header buttons: 16px glyphs, 2px apart, centered in the header; the timer left of them.
+    local b = w1.buttons
+    assert(b.lock.width == 16 and b.lock:IsShown() and Point(b.lock)[4] == -4 and Point(b.lock)[5] == -2, 'lock in the corner')
+    assert(Point(b.reset)[4] == -22 and Point(b.session)[4] == -40, 'reset, then the fight')
+    assert(Point(w1.header.info)[2] == b.session and b.session.text.text == 'C', 'C for Current Fight')
+    assert(b.lock.icon.texture:find('DamageMeters/Unlock', 1, true) and b.reset.icon.texture:find('DamageMeters/Reset', 1, true))
+    assert(w1.grip:IsShown() and Point(w1.grip)[1] == 'BOTTOMRIGHT' and w1.grip.width == 16, 'resize grip while unlocked')
+
     -- Out of combat: names, ranks, numbers and bars from the game.
-    assert(w1.header.title.text == 'DAMAGE DONE' and w1.header.info.text == 'Current · 1:15', 'header: meter, fight and time')
-    assert(row1.name.text == '1. Valeria' and row1.value.text == '5000 (500)', 'rank, name, amount and per second')
-    assert(row1.bar.high == 5000 and row1.bar.value == 5000 and row2.bar.value == 3000, 'bars scale to the top amount')
+    assert(w1.header.title.text == 'DAMAGE DONE' and w1.header.info.text == '1:15', 'header: meter and time')
+    assert(row1.name.text == '1. Valeria' and row1.value.text == '5.4K (179)', 'rank, name, one decimal, whole per second')
+    assert(row1.name.color[1] == 1 and row1.name.color[3] == 1 and row1.value.color[2] == 1, 'white text')
+    assert(row1.name.font[3] == 'OUTLINE' and row1.value.font[3] == 'OUTLINE', 'outlined to stand out on any bar')
+    assert(row1.bar.high == 5432 and row1.bar.value == 5432 and row2.bar.value == 3000, 'bars scale to the top amount')
     local mage = addon.Domain.UnitColor.Class('MAGE')
     assert(row1.bar.statusBarColor[1] == mage.r and row1.bar.statusBarColor[4] == 1, 'class colored')
     assert(row1.icon.atlas == 'classicon-mage' and row1.icon:IsShown(), 'class icon')
     assert(row3.name.text == '3. Wolf' and row3.bar.statusBarColor[1] == M.OTHER_COLOR[1] and not row3.icon:IsShown(), 'no class: Other Color, no icon')
     assert(not w1.rows[4]:IsShown() and not w1.empty:IsShown(), 'unused rows hide')
-    assert(M:SetOption('window1', 'showPercent', true) and row1.value.text == '5000 (500) · 59%', 'percent of the total')
-    assert(M:SetOption('window1', 'numbers', 'primary') and row1.value.text == '5000 · 59%')
-    assert(M:SetOption('window1', 'meterType', 'dps') and row1.value.text == '500 · 59%' and w1.header.title.text == 'DPS', 'DPS leads with per second')
-    assert(M:SetOption('window1', 'numbers', 'both') and row1.value.text == '500 (5000) · 59%')
-    assert(M:SetOption('window1', 'meterType', 'interrupts') and row1.value.text == '5000 · 59%', 'counts have no per second')
+    assert(M:SetOption('window1', 'decimals', 2) and row1.value.text == '5.43K (179)', 'two decimals')
+    assert(M:SetOption('window1', 'decimals', 0) and row1.value.text == '5K (179)', 'none')
+    assert(not M:SetOption('window1', 'decimals', 3) and M:SetOption('window1', 'decimals', 1), 'up to two')
+    assert(M:SetOption('window1', 'showPercent', true) and row1.value.text == '5.4K (179) · 61%', 'percent of the total')
+    assert(M:SetOption('window1', 'numbers', 'primary') and row1.value.text == '5.4K · 61%')
+    assert(M:SetOption('window1', 'meterType', 'dps') and row1.value.text == '179 · 61%' and w1.header.title.text == 'DPS', 'DPS leads with per second')
+    assert(M:SetOption('window1', 'numbers', 'both') and row1.value.text == '179 (5.4K) · 61%')
+    assert(M:SetOption('window1', 'meterType', 'interrupts') and row1.value.text == '5K · 61%', 'counts are whole, with no per second')
     assert(M:SetOption('window1', 'showRank', false) and row1.name.text == 'Valeria')
     assert(M:SetOption('window1', 'nameColorMode', 'class') and row1.name.color[1] == mage.r, 'class-colored names')
     assert(M:SetOption('window1', 'barColorMode', 'custom') and row1.bar.statusBarColor[3] == M.db.window1.barColor[3], 'one custom color')
@@ -127,8 +164,9 @@ world.run([==[
     assert(row1.name.text.formatted == '%d. %s' and issecretvalue(row1.name.text.secret), 'secret name, ranked by the game')
     assert(row1.value.text.formatted == '%s (%s)' and issecretvalue(row1.value.text.secret), 'secret numbers; no percent in combat')
     assert(row1.bar.statusBarColor[1] == mage.r and row1.icon.atlas == 'classicon-mage', 'class is never secret')
-    assert(w1.header.info.text == 'Current · 1:15', 'the fight timer stays public')
+    assert(w1.header.info.text == '1:15', 'the fight timer stays public')
     assert(row2.name.text.formatted == '%d. %s', 'still in the game order')
+    assert(not w1.grip:IsShown(), 'no resizing in combat')
     -- Clicking a row in combat: the GUID is secret, so no call; the panel says when it fills in.
     local before = #calls
     row1.scripts.OnClick(row1, 'LeftButton')
@@ -136,7 +174,7 @@ world.run([==[
     assert(panel:IsShown() and panel.empty:IsShown() and panel.empty.text == 'Spell details show after combat.', 'breakdown waits for combat to end')
     for i = before + 1, #calls do assert(calls[i][1] ~= 'source', 'no breakdown call with a secret GUID') end
     testCombat = false; FireEvent('PLAYER_REGEN_ENABLED'); Advance(0.3)
-    assert(row1.value.text == '5000 (500)' and row1.name.text == '1. Valeria', 'public again after combat')
+    assert(row1.value.text == '5.4K (179)' and row1.name.text == '1. Valeria', 'public again after combat')
     local asked = false
     for i = before + 1, #calls do if calls[i][1] == 'source' and calls[i][2] == 'Player-1' then asked = true end end
     assert(panel.guid == 'Player-1' and asked, 'found by rank once public, then asked by GUID')
@@ -176,14 +214,56 @@ world.run([==[
     local hogger = Entry('Hogger  1:05')
     assert(hogger, 'earlier fights listed with their length')
     hogger.scripts.OnClick(hogger)
-    assert(M.sessionIds.window1 == 7 and calls[#calls][1] == 'id' and w1.header.info.text == 'Hogger · 1:05', 'an earlier fight')
+    assert(M.sessionIds.window1 == 7 and calls[#calls][1] == 'id' and w1.header.info.text == '1:05' and b.session.text.text == '1', 'an earlier fight: its number on the button')
     assert(M.db.window1.session == 'current', 'earlier fights are not saved')
+    assert(M:SetOption('window1', 'showSession', true) and w1.header.info.text == 'Hogger · 1:05', 'Show Fight adds its name')
+    assert(M:SetOption('window1', 'showSession', false))
     row1.scripts.OnClick(row1, 'RightButton'); assert(menu.catcher:IsShown(), 'right-clicking a row opens the menu too')
     menu.catcher.scripts.OnClick(menu.catcher); assert(not menu.catcher:IsShown(), 'clicking elsewhere closes it')
     w1.header.scripts.OnClick(w1.header, 'LeftButton')
     Entry('Reset All Data').scripts.OnClick(Entry('Reset All Data'))
-    assert(resets == 1 and M.sessionIds.window1 == nil and w1.header.info.text == 'Current · 1:15', 'reset clears the fights')
+    assert(resets == 1 and M.sessionIds.window1 == nil and b.session.text.text == 'C', 'reset clears the fights')
     assert(M:SetOption('window1', 'meterType', 'damageDone'))
+
+    -- The fight and reset buttons.
+    b.session.scripts.OnClick(b.session, 'LeftButton')
+    assert(M.db.window1.session == 'overall' and b.session.text.text == 'O' and calls[#calls][2] == 0, 'C switches to Overall')
+    b.session.scripts.OnClick(b.session, 'LeftButton'); assert(M.db.window1.session == 'current' and b.session.text.text == 'C')
+    b.session.scripts.OnClick(b.session, 'RightButton'); assert(menu.catcher:IsShown(), 'right-click lists the fights')
+    menu.catcher.scripts.OnClick(menu.catcher)
+    b.reset.scripts.OnClick(b.reset); assert(resets == 2, 'reset button')
+
+    -- Moving by the header: the stand-in follows and keeps its anchor.
+    local mover1 = ModeUIDamageMeter1Mover
+    w1.header.scripts.OnDragStart(w1.header)
+    assert(M.moving == 'window1' and w1.moving, 'the header drags the window')
+    w1:ClearAllPoints(); w1:SetPoint('TOPLEFT', UIParent, 'BOTTOMLEFT', 100, 500)
+    local dropLeft, dropTop = w1:GetLeft(), w1:GetTop()
+    w1.header.scripts.OnDragStop(w1.header)
+    assert(math.abs(mover1:GetLeft() - dropLeft) < 0.01 and math.abs(mover1:GetTop() - dropTop) < 0.01, 'saved where it was dropped')
+    assert(PM:GetPosition('damageMetersWindow1').point == 'RIGHT' and Point(w1)[2] == mover1, 'same anchor, window back on its stand-in')
+    w1.header.scripts.OnClick(w1.header, 'LeftButton'); assert(not menu.catcher:IsShown(), 'the drag does not open the menu')
+    -- Resizing by the grip: width follows the cursor, rows step whole rows; the top-left stays put.
+    cursorX, cursorY = 200, 300
+    w1.grip.scripts.OnMouseDown(w1.grip)
+    cursorX, cursorY = 260, 262
+    w1.grip.scripts.OnUpdate(w1.grip)
+    assert(M.db.window1.width == 300 and M.db.window1.rows == 10 and w1.width == 300, '60 wider, two rows taller')
+    local pinned = PM:GetPosition('damageMetersWindow1')
+    assert(pinned.point == 'TOPLEFT' and pinned.relativePoint == 'TOPLEFT', 'pinned by its top-left corner')
+    -- The mock keeps a frame's center when it resizes; the client keeps its anchor point, here the top-left corner.
+    p = Point(mover1)
+    assert(p[1] == 'TOPLEFT' and p[2] == UIParent and p[3] == 'TOPLEFT' and p[4] == dropLeft - UIParent:GetLeft() and p[5] == dropTop - UIParent:GetTop(), 'top-left corner stays put')
+    w1.grip.scripts.OnMouseUp(w1.grip); assert(M.resizing == nil and not w1.grip.scripts.OnUpdate)
+    -- Locked: no moving or resizing, by the button or the setting.
+    b.lock.scripts.OnClick(b.lock)
+    assert(M.db.window1.locked and not w1.grip:IsShown() and b.lock.icon.texture:find('DamageMeters/Lock', 1, true), 'locked')
+    w1.header.scripts.OnDragStart(w1.header); assert(M.moving == nil, 'a locked window stays')
+    w1.header.scripts.OnClick(w1.header, 'LeftButton'); assert(menu.catcher:IsShown(), 'its menu still opens')
+    menu.catcher.scripts.OnClick(menu.catcher)
+    assert(M:SetOption('window1', 'locked', false) and w1.grip:IsShown())
+    assert(M:SetOption('window1', 'headerButtons', false) and not b.lock:IsShown() and Point(w1.header.info)[2] == w1.header, 'Header Buttons off')
+    assert(M:SetOption('window1', 'headerButtons', true))
 
     -- Deaths open the game's Death Recap.
     fight[2].recap, fight[2].died = 9, 125
@@ -194,19 +274,20 @@ world.run([==[
     assert(M:SetOption('window1', 'meterType', 'damageDone'))
 
     -- Settings are checked before they're kept.
-    assert(not M:SetOption('window1', 'width', 50) and M.db.window1.width == 240, 'width range')
+    assert(not M:SetOption('window1', 'width', 50) and M.db.window1.width == 300, 'width range')
     assert(not M:SetOption('window1', 'meterType', 'bogus') and not M:SetOption('window1', 'barTexture', 'nope'), 'known choices only')
     assert(not M:SetOption('window1', 'borderColor', { 2, 0, 0 }), 'colors are 0-1')
+    assert(not M:SetOption('window1', 'group', 'window1'), 'not grouped with itself')
     assert(M:SetOption('window1', 'barTexture', 'flat') and row1.bar.statusBarTexture == Kit.FLAT and not row1.bar.sheen:IsShown(), 'Flat texture')
     assert(M:SetOption('window1', 'barTexture', 'mode') and row1.bar.sheen:IsShown(), 'Mode Gradient')
     assert(M:SetOption('window1', 'border', 'none') and not rim[1]:IsShown() and not w1.divider:IsShown() and Point(row1)[4] == 1, 'no rim, no divider')
     assert(M:SetOption('window1', 'border', 'square') and Point(rim[1], 1)[4] == 0, 'square corners')
     assert(M:SetOption('window1', 'header', false) and not w1.header:IsShown() and Point(row1)[5] == -2, 'no header: rows start under the rim')
     assert(M:SetOption('window1', 'header', true) and M:SetOption('window1', 'icon', 'none') and not row1.icon:IsShown() and Point(row1.bar)[4] == 0, 'no icon: the bar fills the row')
-    assert(M:SetOption('window1', 'clickThrough', true) and not row1.mouse, 'Click Through')
+    assert(M:SetOption('window1', 'clickThrough', true) and not row1.mouse and not w1.grip:IsShown(), 'Click Through')
     assert(M:SetOption('window1', 'clickThrough', false) and row1.mouse)
-    -- Copy Style keeps each window's meter, fight and show settings.
-    assert(M:SetOption('window1', 'width', 300) and M:CopyStyleToAll('window1'))
+    -- Copy Style keeps each window's meter, fight, show settings and group.
+    assert(M:CopyStyleToAll('window1'))
     assert(M.db.window2.width == 300 and M.db.window2.meterType == 'healingDone' and not M.db.window2.show, 'look copied, identity kept')
 
     -- Show: Always, In Combat, In a Group, Hidden.
@@ -226,10 +307,46 @@ world.run([==[
     assert(PM:GetPosition('damageMetersWindow2').target == 'damageMetersWindow1', 'window 2 stacks on window 1')
     assert(addon:SetEditMode(true))
     local mover2 = ModeUIDamageMeter2Mover
-    assert(ModeUIDamageMeter1Mover:IsShown() and mover2:IsShown() and w2:IsShown(), 'hidden windows show while editing')
+    assert(mover1:IsShown() and mover2:IsShown() and w2:IsShown(), 'hidden windows show while editing')
     assert(mover2.label.text == 'Window 2' and mover2.fill.vertexColor[3] == Kit.palette.accent[3], 'named and highlighted')
     assert(row1.name.text == '1. Valeria' and w1.rows[4].name.text == '4. Mode', 'sample fight while editing')
+    assert(not w1.grip:IsShown(), 'Edit Mode moves windows, not the grip')
     assert(addon:SetEditMode(false) and not mover2:IsShown() and not w2:IsShown() and not w1.rows[4]:IsShown())
+
+    -- Groups: window 2 follows window 1, matching it but keeping its own meter and rows.
+    local w3 = ModeUIDamageMeter3
+    assert(M:SetOption('window2', 'group', 'window1') and M.db.window2.group == 'window1')
+    assert(w2:IsShown() and M.db.window1.visibility == 'always', 'Show comes from the group: window 2 shows with window 1')
+    p = Point(w2)
+    assert(p[1] == 'TOPLEFT' and p[2] == w1 and p[3] == 'BOTTOMLEFT' and p[4] == 0 and p[5] == -2, 'stacked under window 1, 2px apart')
+    assert(w2.width == w1.width and w2.header.title.text == 'HEALING DONE', 'same width, its own meter')
+    assert(M:SetOption('window2', 'nameSize', 14) and M.db.window1.nameSize == 14 and M.db.window2.nameSize == 12, 'shared settings are saved on the group')
+    assert(w1.rows[1].name.font[2] == 14 and w2.rows[1].name.font[2] == 14, 'and change the whole group')
+    assert(M:SetOption('window2', 'rows', 3) and M.db.window2.rows == 3 and M.db.window1.rows == 10, 'rows are its own')
+    assert(w2.height == M.Geometry(M:Style('window2'), 1).height and w2.height < w1.height)
+    assert(M:SetOption('window2', 'width', 320) and M.db.window1.width == 320 and w1.width == 320 and w2.width == 320, 'width from either window')
+    assert(not M:SetOption('window1', 'group', 'window2'), 'groups never loop')
+    for _, choice in ipairs(M:GroupChoices('window1')) do assert(choice.id ~= 'window2' and choice.id ~= 'window1', 'loop choices left out') end
+    assert(M:SetOption('window3', 'show', true) and M:SetOption('window3', 'group', 'window2'), 'a chain')
+    assert(Point(w3)[2] == w2 and M:Leader('window3') == 'window1' and w3.width == 320, 'under window 2, styled by window 1')
+    assert(M:SetOption('window2', 'groupSide', 'above'))
+    p = Point(w2)
+    assert(p[1] == 'BOTTOMLEFT' and p[2] == w1 and p[3] == 'TOPLEFT' and p[5] == 2, 'or above it')
+    assert(Point(w2.grip)[1] == 'TOPRIGHT' and w2.grip.up, 'its grip grows it upward')
+    cursorX, cursorY = 0, 0; w2.grip.scripts.OnMouseDown(w2.grip)
+    cursorY = 38; w2.grip.scripts.OnUpdate(w2.grip); w2.grip.scripts.OnMouseUp(w2.grip)
+    assert(M.db.window2.rows == 5 and M.db.window1.rows == 10, 'dragging up adds rows to that window only')
+    w2.header.scripts.OnDragStart(w2.header); assert(M.moving == 'window1', 'dragging a grouped window moves the group')
+    w2.header.scripts.OnDragStop(w2.header)
+    assert(M:SetOption('window2', 'locked', true) and M.db.window1.locked and not w1.grip:IsShown() and not w2.grip:IsShown(), 'one lock for the group')
+    assert(M:SetOption('window1', 'locked', false))
+    assert(addon:SetEditMode(true))
+    assert(mover1:IsShown() and not mover2:IsShown() and not ModeUIDamageMeter3Mover:IsShown(), 'only the head has a stand-in')
+    assert(addon:SetEditMode(false))
+    -- Leaving the group: back on its own stand-in, with its own settings.
+    assert(M:SetOption('window3', 'group', 'none') and M:SetOption('window2', 'group', 'none'))
+    assert(Point(w2)[2] == mover2 and w2.rows[1].name.font[2] == 12 and M:Style('window2') == M.db.window2, 'its own place and look again')
+    assert(M:SetOption('window3', 'show', false) and M:SetOption('window2', 'visibility', 'hidden') and not w2:IsShown())
 
     -- The game's meter off or unavailable: the window says why.
     fight = {}; meterOn = false; M:RenderAll()
@@ -245,10 +362,11 @@ world.run([==[
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
     assert(table.concat(sections, ',') == 'Window,Bars,Text,Header,Frame', 'five tabs')
+    assert(page.groupSelect and page.decimalPills and page.mouseToggles, 'group, decimals and lock settings')
     local view = page.configPreview
     local shell = view.window
-    assert(shell.width == 300 and shell.rows[1].name.text == '1. Valeria' and shell.rows[1].value.text == '1284000 (13660)', 'preview: the sample fight in the edited window')
-    assert(shell.header.title.text == 'DAMAGE DONE' and view.caption.text == 'Window 1 · sample fight')
+    assert(shell.width == 320 and shell.rows[1].name.text == '1. Valeria' and shell.rows[1].value.text == '1.2M (13.6K)', 'preview: the sample fight in the edited window')
+    assert(shell.header.title.text == 'DAMAGE DONE' and view.caption.text == 'Window 1 · sample fight' and shell.buttons.session.text.text == 'C')
     page.SetEditing('window2')
     assert(page.windowEditing() == 'window2' and shell.header.title.text == 'HEALING DONE' and shell.rows[1].name.text == '1. Ysolde', 'follows the window being edited')
     page.SetEditing('window1')
@@ -260,6 +378,8 @@ world.run([==[
     assert(page.selectedSection.title == 'Text', 'name click opens Text')
     view.background.scripts.OnMouseUp(view.background, 'LeftButton')
     assert(page.selectedSection.title == 'Frame', 'frame click opens Frame')
+    shell.buttons.reset.scripts.OnClick(shell.buttons.reset)
+    assert(page.selectedSection.title == 'Header' and resets == 2, 'preview buttons open Header and reset nothing')
     assert(M:SetOption('window1', 'rowHeight', 22) and shell.rows[1].height == 22 and w1.rows[1].height == 22, 'preview and window follow the settings')
     assert(page.statusLabel.text:find('Edit Mode', 1, true), 'status line')
     assert(addon:SetEditMode(true))
@@ -284,6 +404,7 @@ restored.run([==[
     local M = addon.DamageMeters
     assert(M.enabled and M.db.window1.width == 260 and M.db.window1.rowHeight == 22 and M.db.window2.visibility == 'hidden', 'settings persist')
     assert(ModeUIDamageMeter1:IsShown() and ModeUIDamageMeter1.width == 260)
+    assert(addon.PositionManager:GetPosition('damageMetersWindow1').point == 'TOPLEFT', 'the place it was resized at persists')
 ]==], "restore")
 
 -- No meter API on the client: the windows say so instead of failing.
@@ -293,10 +414,32 @@ H.Load({ before = STUBS .. "\nC_DamageMeter = nil", saved = world.saved() }).run
     assert(not w1.rows[1]:IsShown())
 ]==], "no meter")
 
+-- Version 1: gray text without outline and the fight name in the header.
+-- Text still at version 1's gray turns white and outlined; a chosen color stays.
+local v1 = restored.saved()
+local old = v1.profiles.Default.modules.damageMeters
+old.version = 1
+for _, window in ipairs({ "window1", "window2", "window3" }) do
+    local style = old[window]
+    style.textColor, style.outline, style.showSession = { 212 / 255, 212 / 255, 212 / 255 }, false, true
+    style.decimals, style.locked, style.group, style.groupSide, style.groupGap, style.headerButtons = nil, nil, nil, nil, nil, nil
+end
+old.window3.textColor = { 1, 0, 0 }
+H.Load({ before = STUBS, saved = v1 }).run([==[
+    local M = addon.DamageMeters
+    assert(M.db.version == 2 and M.db.window1.textColor[2] == 1 and M.db.window1.outline and not M.db.window1.showSession, 'white, outlined, no fight name')
+    assert(M.db.window3.textColor[2] == 0 and not M.db.window3.outline, 'a chosen color stays as it was')
+    assert(M.db.window1.decimals == 1 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
+]==], "migrate v1")
+
 -- Bad saved data stops startup rather than being reset.
 local saved = restored.saved()
 saved.profiles.Default.modules.damageMeters.window1.rows = "many"
 local ok = pcall(H.Load, { before = STUBS, saved = saved })
 assert(not ok, "invalid damage meter settings are refused")
+local looped = restored.saved()
+looped.profiles.Default.modules.damageMeters.window1.group = "window2"
+looped.profiles.Default.modules.damageMeters.window2.group = "window1"
+assert(not pcall(H.Load, { before = STUBS, saved = looped }), "a group loop is refused")
 
 print("damage meters: all checks passed")

@@ -61,6 +61,11 @@ M.Textures = {
     -- The action slot background (in color, not tinted), stretched to the slot.
     ActionBarSlot = { file = "ActionBars/Slot.tga" },
     NameplateStripes = { file = "Nameplates/Stripes.tga", transparent = true },
+    -- Damage meter header glyphs and the resize grip, tinted in game.
+    DamageMeterReset = { file = "DamageMeters/Reset.tga", transparent = true },
+    DamageMeterLock = { file = "DamageMeters/Lock.tga", transparent = true },
+    DamageMeterUnlock = { file = "DamageMeters/Unlock.tga", transparent = true },
+    DamageMeterGrip = { file = "DamageMeters/Grip.tga", transparent = true },
 }
 
 

@@ -11,7 +11,9 @@ function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing = "window1"
     local function Window() return editing end
-    local function db() return M.db[editing] end
+    -- What the window draws with: a grouped window's shared settings are its group's.
+    local function db() return M:Style(editing) end
+    local function Grouped() return M:IsGrouped(editing) end
     page.windowEditing = Window
     function page.SetEditing(window) if M.windowLabels[window] then editing = window; page:Refresh(); page:Layout() end end
     local owner = M:AppearanceOwner(Window)
@@ -89,6 +91,13 @@ function M:CreateConfigPage(parent)
         if title ~= "Window" then
             When(function() return not db().show end, function() Note("This window is off. Turn on Show Window on the Window tab to use it.") end)
         end
+        When(Grouped, function()
+            local note = Note("", 32)
+            Refresh(function()
+                local head = L[M.windowLabels[M:Leader(editing)]]
+                note:SetText(string.format(L["Grouped: these settings are shared with %s, so changing them changes the whole group. Meter, Fight and Rows stay this window's own."], head))
+            end)
+        end)
         build()
     end
 
@@ -116,8 +125,18 @@ function M:CreateConfigPage(parent)
         page.visibilitySelect = SelectIn(show[1], 200, function() return Localized(M.choices.visibility) end,
             function() return db().visibility end, Set("visibility"))
         page.opacitySlider = Slider(show[2], "opacity", "%")
-        page.mouseToggles = Toggles({ { "Click Through", "clickThrough" } })
-        Note("Hidden windows still show in Edit Mode. Click Through lets clicks and the mouse wheel pass to the game world.", 32)
+        page.mouseToggles = Toggles({ { "Lock Window", "locked" }, { "Click Through", "clickThrough" } })
+        Note("Unlocked, drag a window's header to move it and the grip in its corner to resize it (out of combat). The lock button in the header does the same as Lock Window. Hidden windows still show in Edit Mode. Click Through lets clicks and the mouse wheel pass to the game world.", 48)
+        page:Group(L["Group"])
+        local group = Columns({ "Group With" })
+        page.groupSelect = SelectIn(group[1], 200, function() return M:GroupChoices(editing) end,
+            function() return M.db[editing].group end, Set("group")); Mark("group")
+        When(Grouped, function()
+            page.groupSidePills = Choice("Side", "groupSide", 96)
+            local gap = Columns({ "Gap" })
+            page.groupGapSlider = Slider(gap[1], "groupGap", "px")
+        end)
+        Note("A grouped window stacks below or above the window it follows and matches its group: width, bars, text, header, frame, Show and the lock. It keeps its own meter, fight and Rows, so a group grows up or down a window at a time. Move the group by its first window.", 48)
         page:Group(L["This Window"])
         local tools = page:Row(L["Style"], 48)
         page.copyButton = W.Button(tools, L["Copy Style to All Windows"], 200, 30, "secondary")
@@ -172,10 +191,12 @@ function M:CreateConfigPage(parent)
         page.rankToggles = Toggles({ { "Show Rank", "showRank" } })
         page:Group(L["Numbers"])
         page.numberPills = Choice("Show", "numbers", 170)
+        page.decimalPills = Pills("Decimals", { { id = 0, label = "0" }, { id = 1, label = "1" }, { id = 2, label = "2" } },
+            function() return db().decimals end, Set("decimals"), 56)
         local value = Columns({ "Value Size" })
         page.valueSizeSlider = Slider(value[1], "valueSize")
         page.percentToggles = Toggles({ { "Show Percent", "showPercent" } })
-        Note("DPS and HPS show the per-second amount first. The game hides exact amounts from addons during combat, so Percent shows once the fight ends.", 48)
+        Note("Decimals sets the places after K, M and B (12.3K); numbers under a thousand and counts are whole. DPS and HPS show the per-second amount first. The game hides exact amounts from addons during combat, so Percent shows once the fight ends.", 48)
     end)
 
     Tab("Header", function()
@@ -191,8 +212,9 @@ function M:CreateConfigPage(parent)
             local title = Columns({ "Title Color" })
             Color(title[1], "titleColor")
             page.titleToggles = Toggles({ { "Uppercase Title", "titleUpper" }, { "Show Fight", "showSession" }, { "Show Timer", "showTimer" } })
+            page.buttonToggles = Toggles({ { "Header Buttons", "headerButtons" } })
         end)
-        Note("Without a header, pick the meter and fight on the Window tab, or right-click a row.", 32)
+        Note("Header Buttons: the fight (C for Current, O for Overall, a number for an earlier fight; click to switch, right-click for the list), Reset All Data and the lock. Show Fight adds the fight's full name to the header text. Without a header, pick the meter and fight on the Window tab, or right-click a row.", 48)
     end)
 
     Tab("Frame", function()

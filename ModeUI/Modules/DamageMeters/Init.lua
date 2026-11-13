@@ -6,8 +6,8 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- draws them. Each window has its own meter (Damage Done, DPS, Healing...),
 -- fight (Current, Overall or an earlier one), size, bars, text and when it
 -- shows. Blizzard's meter window is never touched. See docs/DAMAGE_METERS.md.
--- Files: Init (this), Migrations, Driver, Layout, Window, Render, Menu,
--- Breakdown, Preview, Settings.
+-- Files: Init (this), Migrations, Driver, Group, Layout, Window, Controls,
+-- Render, Menu, Breakdown, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local DM = addon.Domain.DamageMeter
 local M = { title = L["Damage Meters"], category = "interface", defaultEnabled = false,
@@ -16,7 +16,10 @@ local M = { title = L["Damage Meters"], category = "interface", defaultEnabled =
 addon.DamageMeters = M
 addon:RegisterModule("damageMeters", M)
 
-M.VERSION = 1
+-- Version 2: white outlined text (the owner asked for text that stands out
+-- on any bar color), Decimals, header buttons (fight, Reset, lock) with the
+-- fight name off the header text, Lock Window, and groups.
+M.VERSION = 2
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows, in sidebar order, with their Edit Mode element (and saved
@@ -50,11 +53,16 @@ M.defaultPositions = {
 M.BORDER_COLOR, M.BACKGROUND_COLOR = Kit.RGB(16, 16, 16), Kit.RGB(4, 4, 4)
 M.HEADER_COLOR, M.OTHER_COLOR = Kit.RGB(20, 21, 24), Kit.RGB(120, 128, 140)
 M.TRACK_COLOR = Kit.onyx.track
+-- Text is white, outlined, so it reads on any bar color.
+M.TEXT_COLOR = { 1, 1, 1 }
 
 local function Style(window)
     return {
         show = window == "window1", meterType = window == "window2" and "healingDone" or window == "window3" and "damageTaken" or "damageDone",
-        session = "current", visibility = "always", opacity = 100, clickThrough = false,
+        session = "current", visibility = "always", opacity = 100, clickThrough = false, locked = false,
+        -- Group With: another window this one stacks on (Below or Above, Gap
+        -- apart) and takes every shared setting from.
+        group = "none", groupSide = "below", groupGap = 2,
         -- Size: the window is as tall as its rows, so it always fits them exactly.
         width = 240, rows = 8, rowHeight = 18, spacing = 1, padding = 1,
         -- Frame
@@ -62,15 +70,16 @@ local function Style(window)
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 75,
         -- Header
         header = true, headerHeight = 20, headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
-        titleSize = 11, titleColor = Copy(Kit.palette.accent), titleUpper = true, showSession = true, showTimer = true,
+        titleSize = 11, titleColor = Copy(Kit.palette.accent), titleUpper = true, showSession = false, showTimer = true,
+        headerButtons = true,
         -- Bars
         barTexture = "mode", barBackground = "flat", barOpacity = 100, barBackgroundOpacity = 25,
         barColorMode = "class", barColor = Copy(Kit.palette.accent), otherColor = Copy(M.OTHER_COLOR),
         icon = "class", alwaysShowMe = true,
         -- Text
-        font = "game", fontMedia = "Expressway", outline = false, shadow = true, liftedShadow = false, slug = true,
-        nameSize = 12, valueSize = 12, textInset = 4, nameColorMode = "white", textColor = Copy(Kit.palette.text),
-        showRank = true, numbers = "both", showPercent = false,
+        font = "game", fontMedia = "Expressway", outline = true, shadow = true, liftedShadow = false, slug = true,
+        nameSize = 12, valueSize = 12, textInset = 4, nameColorMode = "white", textColor = Copy(M.TEXT_COLOR),
+        showRank = true, numbers = "both", showPercent = false, decimals = 1,
     }
 end
 M.styleDefaults = {}
@@ -78,8 +87,12 @@ for _, window in ipairs(M.windows) do M.styleDefaults[window] = Style(window) en
 M.defaults = { version = M.VERSION }
 for _, window in ipairs(M.windows) do M.defaults[window] = Copy(M.styleDefaults[window]) end
 
--- Keys Copy Style leaves alone: whether, what and when a window shows.
-M.identityKeys = { show = true, meterType = true, session = true, visibility = true }
+-- Keys Copy Style leaves alone: whether, what and when a window shows, and its group.
+M.identityKeys = { show = true, meterType = true, session = true, visibility = true,
+    group = true, groupSide = true, groupGap = true }
+-- Keys a grouped window keeps as its own; every other setting comes from the
+-- window at the head of its group, so the group matches.
+M.ownKeys = { show = true, meterType = true, session = true, rows = true, group = true, groupSide = true, groupGap = true }
 M.colorKeys = { borderColor = true, backgroundColor = true, headerColor = true, titleColor = true,
     barColor = true, otherColor = true, textColor = true }
 -- Values for which the texture choices are checked by Kit.ValidBarTexture.
@@ -89,7 +102,7 @@ M.ranges = { width = { 120, 600, 1 }, rows = { 1, 40, 1 }, rowHeight = { 10, 40,
     padding = { 0, 10, 1 }, borderSize = { 1, 4, 1 }, backgroundOpacity = { 0, 100, 5 },
     headerHeight = { 14, 40, 1 }, headerOpacity = { 0, 100, 5 }, titleSize = { 6, 32, 1 },
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, opacity = { 10, 100, 5 },
-    nameSize = { 6, 32, 1 }, valueSize = { 6, 32, 1 }, textInset = { 0, 20, 1 } }
+    nameSize = { 6, 32, 1 }, valueSize = { 6, 32, 1 }, textInset = { 0, 20, 1 }, decimals = { 0, 2, 1 }, groupGap = { 0, 20, 1 } }
 
 local meterChoices = {}
 for _, info in ipairs(DM.types) do meterChoices[#meterChoices + 1] = { id = info.id, label = info.label } end
@@ -103,4 +116,7 @@ M.choices = {
     nameColorMode = { { id = "white", label = "Text Color" }, { id = "class", label = "Class" } },
     icon = { { id = "class", label = "Class Icon" }, { id = "none", label = "None" } },
     numbers = { { id = "primary", label = "Amount" }, { id = "both", label = "Amount and Per Second" } },
+    group = { { id = "none", label = "None" } },
+    groupSide = { { id = "below", label = "Below" }, { id = "above", label = "Above" } },
 }
+for _, window in ipairs(M.windows) do M.choices.group[#M.choices.group + 1] = { id = window, label = M.windowLabels[window] } end

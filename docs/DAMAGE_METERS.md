@@ -74,6 +74,49 @@ earlier fights with their length. **Reset All Data** is at the bottom.
 Right-clicking a row opens the same menu. The mouse wheel scrolls through the
 ranking.
 
+**Header buttons** (Header › Header Buttons, on by default) sit at the
+header's right, right to left: the lock, Reset All Data, and the fight. The
+fight button shows where the window is without spelling it out: **C** for
+Current Fight, **O** for Overall, or an earlier fight's number in the menu's
+list. Clicking it switches Current and Overall; right-clicking opens the menu.
+The glyphs (`Media/Textures/DamageMeters`, from `tools/build_shape_textures.lua`)
+are 16 physical pixels when the header has room, so they draw one to one at
+any UI scale. Each shows its name on hover.
+
+## Lock, moving and resizing
+
+**Lock Window** (Window tab, or the lock button) is off by default. Unlocked,
+outside combat and outside Edit Mode:
+
+- **Dragging a header** moves the window. A grouped window moves its whole
+  group. The drop is saved the way Edit Mode saves it: an offset from the
+  window's anchor, on whole pixels, so a window anchored to another stays
+  anchored.
+- **The grip** (three diagonal lines, faint until hovered) sits in the corner
+  that grows. Width follows the cursor and **Rows** change a whole row at a
+  time. The first resize pins the window by its top-left corner to the screen,
+  so that corner stays put. A window grouped above another has its grip at the
+  top right and grows upward.
+
+Combat hides the grip and ignores drags. Click Through windows can't be moved
+or resized by hand.
+
+## Groups
+
+Window tab › **Group With**: None, or another window. A grouped window stacks
+**Below** or **Above** that window (Side), **Gap** apart (2px by default), and
+takes every shared setting from the window at the head of its group: width,
+bars, text, header, frame, Show, opacity and the lock. It keeps its own
+**Meter**, **Fight** and **Rows**, so a group grows up or down one window at a
+time. Changing a shared setting on any window of a group saves it on the head,
+so the whole group changes. Groups can chain (Window 3 on 2 on 1) but never
+loop. The choices leave out windows that would make a loop, and saved data
+with a loop is refused.
+
+A grouped window has no Edit Mode stand-in of its own. It hangs from the window
+it follows, so moving the head moves the group. Its own saved place is kept, and
+it returns there when it leaves the group.
+
 Clicking a row opens its **spell breakdown** beside the window, on the side
 facing the middle of the screen. It's drawn like the window, with spell icons
 and bars in the source's color. Pet spells read "Spell (Pet)". It follows the
@@ -93,22 +136,29 @@ the pixel grid. From the outside in:
 | Background | #040404 at 75% | Frame › Background Color, Background Opacity |
 | Header | 20px, #141518 | Header › Height, Header Color, Header Opacity |
 | Title | 11, uppercase, Mode cyan | Header › Text Size, Title Color, Uppercase Title |
-| Fight and timer | right side of the header | Header › Show Fight, Show Timer |
+| Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
+| Timer | left of the buttons | Header › Show Timer, Show Fight (adds the fight's name) |
 | Divider | 1px in the rim color | shown when there is a header and a rim |
 | Padding | 1px | Window › Padding |
 | Rows | 8 rows, 18 high, 1 apart, 240 wide | Window › Width, Rows, Row Height, Spacing |
 | Icon | square class icon, 1px gap | Bars › Icon |
 | Bar | Mode Gradient, class colored | Bars › Foreground, Bar Opacity, Bar Color (Class or Custom), Other Color |
 | Empty bar | Flat, Onyx track at 25% | Bars › Background, Background Opacity |
-| Text | Expressway 12, crisp shadow, 4px in | Text › Font, Outline, Slug Text, Text Shadow, Name Size, Value Size, Text Inset |
+| Text | Expressway 12, white, outlined, crisp shadow, 4px in | Text › Font, Outline, Slug Text, Text Shadow, Name Size, Value Size, Text Inset, Text Color |
 
-Rounded leaves out each corner's outermost pixel (`Kit.Rim`/`Kit.PlaceRim`,
+Text is white and outlined by default, so it reads on any bar color (the owner
+found gray text hard to read on a bright rogue-yellow bar). Rounded leaves out
+each corner's outermost pixel (`Kit.Rim`/`Kit.PlaceRim`,
 shared). **Other Color** (#78808C) is for anything without a class, like pets
 and creatures. **Name Color** is Text Color or Class (Class Colors' custom
 colors apply).
 
 Numbers: **Amount** shows one number. **Amount and Per Second** (the default)
-adds the other in parentheses. DPS and HPS lead with the per-second amount.
+adds the other in parentheses. **Decimals** (0, 1 or 2; 1 by default) sets the
+places after K, M, B and T: "5.4K", "5.43K", "5K". Numbers under a thousand
+are whole ("179", never "179.87417218543"), and so are counts.
+`Kit.ShortNumber` builds `AbbreviateNumbers` breakpoints for this, so it works
+on secret amounts too (see API_COMPATIBILITY.md). DPS and HPS lead with the per-second amount.
 Interrupts and Dispels have no per-second amount. **Show Percent** adds
 " · 59%" after the fight. **Show Rank** puts "1." before the name.
 
@@ -144,27 +194,35 @@ you, for Always Show Me. Healing meters rank the healers first.
 Five tabs, each starting with **Editing** (which window):
 
 - **Window:** Show Window, Status, Meter, Fight, Width, Rows, Row Height,
-  Spacing, Padding, Show, Opacity, Click Through, Copy Style to All Windows,
-  Reset to Defaults, Reset All Data.
+  Spacing, Padding, Show, Opacity, Lock Window, Click Through, Group With,
+  Side, Gap, Copy Style to All Windows, Reset to Defaults, Reset All Data.
 - **Bars:** Foreground, Background, Bar Opacity, Background Opacity, Bar
   Color, Custom Color, Other Color, Icon, Always Show Me.
 - **Text:** Font, Outline, Slug Text, Text Shadow, Name Size, Text Inset, Name
-  Color, Text Color, Show Rank, Show (numbers), Value Size, Show Percent.
+  Color, Text Color, Show Rank, Show (numbers), Decimals, Value Size, Show
+  Percent.
 - **Header:** Show Header, Height, Text Size, Header Color, Header Opacity,
-  Title Color, Uppercase Title, Show Fight, Show Timer.
+  Title Color, Uppercase Title, Show Fight, Show Timer, Header Buttons.
 - **Frame:** Border, Border Size, Border Color, Background Color, Background
   Opacity.
 
-Copy Style copies everything except what each window shows and when: Show
-Window, Meter, Fight and Show. Reset to Defaults keeps those too.
+Copy Style copies everything except what each window shows and when, and its
+group: Show Window, Meter, Fight, Show, Group With, Side and Gap. Reset to
+Defaults keeps those too. On a grouped window, every tab says which window the
+group shares its settings with. Copy Style and Reset act on the group's head.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.damageMeters`, version 1: `window1`, `window2` and
+`ModeUIDB` profile `modules.damageMeters`, version 2: `window1`, `window2` and
 `window3`, each a full style table (`Init.lua`'s `Style`). Positions are under
 `positions.damageMetersWindow1` to `3`. `Initialize` fills defaults and
-validates every key, range, color, choice and texture. Bad data stops startup;
-it is never reset.
+validates every key, range, color, choice, texture and group (no window grouped
+with itself, no loops). Bad data stops startup; it is never reset.
+
+Version 1 → 2: text still at version 1's gray (#D4D4D4) turns white and
+outlined, and the header text drops the fight's name, which is now on its
+button. A chosen text color stays as it was. New settings take their defaults:
+Decimals 1, Lock Window off, Group With None (Below, 2px), Header Buttons on.
 
 ## Files
 
@@ -172,11 +230,14 @@ it is never reset.
 |---|---|
 | `Shared/Domain/DamageMeter.lua` | guarded `C_DamageMeter` reads, meter types, sessions, spells, class atlases, clock text |
 | `Shared/Kit/Shape.lua` | `Kit.Rim`, `Kit.PlaceRim`: the hollow pixel rim |
+| `Shared/Kit/Text.lua` | `Kit.ShortNumber(value, decimals)`: abbreviated numbers with set decimals, secret-safe |
 | `Init.lua` | declaration, windows, positions, colors, defaults, ranges, choices |
-| `Migrations.lua` | `Initialize(db)`: validation |
+| `Migrations.lua` | `Initialize(db)`: validation, the version 2 migration, group loops |
+| `Group.lua` | groups: the head of a group, the settings a window draws with, where a grouped window hangs |
 | `Driver.lua` | lifecycle, events, the render throttle (4 a second, timer every 0.5s in combat), show rules, settings changes |
 | `Layout.lua` | pixel geometry |
 | `Window.lua` | building and painting windows, rows and stand-ins |
+| `Controls.lua` | header buttons, the lock, moving by the header, resizing by the grip |
 | `Render.lua` | filling rows: bars, names, numbers, icons, header, empty text, scrolling |
 | `Menu.lua` | the header menu |
 | `Breakdown.lua` | the spell breakdown and Death Recap |
@@ -243,7 +304,37 @@ concatenation or measurement, and the stub refuses secret arguments.
        and "Window 2".
      - Window 2 follows Window 1.
      - After `/reload` they stay put.
-6. **Pixel check**
+6. **Decimals, buttons, lock and resizing**
+   - **Navigation:** the window on screen, and **Interface** › **Damage Meters**
+     › **Text** tab.
+   - **Action:**
+     - Set **Decimals** to 0, 1 and 2.
+     - Click the **C** button, then right-click it.
+     - Click the lock.
+     - Unlock, drag the header, then drag the grip in the bottom-right corner.
+   - **Required state:** out of combat, after a fight.
+   - **Confirmation:**
+     - Numbers read "5K", "5.4K" and "5.43K", and small per-second numbers are
+       whole.
+     - **C** becomes **O** (Overall), and right-click lists the fights.
+     - Locked, the grip disappears and the header no longer drags.
+     - Unlocked, the window moves, and the grip changes width and whole rows
+       with the top-left corner fixed. After `/reload` the place and size stay.
+7. **Groups**
+   - **Navigation:** **Window** tab, **Editing**: Window 2.
+   - **Action:**
+     - Turn on **Show Window**, set **Group With** to Window 1 and **Side** to
+       Below.
+     - Change **Rows**, then Width.
+     - Drag Window 1's header.
+   - **Required state:** out of combat.
+   - **Confirmation:**
+     - Window 2 sits 2px under Window 1, matches its width, text and look, and
+       keeps its own meter.
+     - Rows change only Window 2. Width changes both.
+     - Dragging moves both.
+     - **Group With**: None puts Window 2 back where it was.
+8. **Pixel check**
    - **Navigation:** **Global** › **Optimizations**, UI Scale Pixel Perfect (or
      the game's own scale).
    - **Action:** look at a window's rim, divider and bar edges up close.
