@@ -390,3 +390,100 @@ checked against the user's local mainline copy (`WoWUI-live`, build
   which meter types return data on Forever (one author reports Avoidable Damage
   Taken is unavailable there; the window then says "No avoidable damage
   taken."), and the exact client behavior of `AbbreviateNumbers` text.
+
+## Interface chat and windows — November 13, 2026
+
+Sources: Forever's own interface code on the `forever` branch of
+[Gethe/wow-ui-source](https://github.com/Gethe/wow-ui-source/tree/forever/Interface/AddOns)
+(Forever is the `camelot` game type: `WOW_PROJECT_ID = WOW_PROJECT_CAMELOT`,
+[ProjectConstants.lua](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_ProjectConstants/Camelot/ProjectConstants.lua)),
+checked against the user's local mainline copy (build 12.1.5.70575).
+[Chat details](CHAT.md), [Windows details](WINDOWS.md).
+
+**Chat** ([FloatingChatFrame.lua](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_ChatFrameBase/Mainline/FloatingChatFrame.lua),
+[FloatingChatFrame.xml](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_ChatFrameBase/Mainline/FloatingChatFrame.xml)):
+
+- **Frames.** `ChatFrame1`–`ChatFrame10` and their `ChatFrameNTab`; the count
+  is `Constants.ChatFrameConstants.MaxChatWindows` (10). `NUM_CHAT_WINDOWS` is
+  only defined behind the `loadDeprecationFallbacks` CVar, so ModeUI doesn't
+  use it. Temporary whisper windows (`ChatFrame11+`) come from
+  `FCF_OpenTemporaryWindow`; `CHAT_FRAMES` lists every window by name.
+- **Art.** Chat windows use `FloatingBorderedFrame` (no NineSlice): the
+  `Background` region and eight named border textures, plus the button frame's,
+  all listed in `CHAT_FRAME_TEXTURES`. `FCF_FadeInChatFrame`/`FadeOut` fade only
+  textures that are shown, so hidden ones stay hidden. `Background` is anchored
+  once by `FloatingChatFrame_UpdateBackgroundAnchors` (−2, +3 / +15, −6 with the
+  scroll bar), which the combat log calls again; the dock and button frame are
+  anchored to it (`FCF_SetButtonSide`, `FCFDock_*`). ModeUI re-anchors the region
+  after that function (post-hook).
+- **Tabs.** `ChatTabArtTemplate`: `Left`, `Middle`, `Right`, `ActiveLeft/Middle/Right`,
+  `HighlightLeft/Middle/Right`, `glow`, `Text` (centered 5 px below the middle
+  of a 32 px tab). `FCFTab_UpdateColors(tab, selected)` shows the active art and
+  colors the text; `FCFTab_UpdateAlpha` and the fades call `SetAlpha` on tabs.
+  The `CHAT_FRAME_TAB_*` alphas are read through `ChatFrameUtil.GetTabAlphas`
+  inside `securecallfunction`; Blizzard keeps them away from addon taint on
+  purpose (it feeds `UIFrameFade`), so ModeUI never writes them. It post-hooks
+  each tab's `SetAlpha` instead (`Skin.PinAlpha`), the approach long used by
+  chat addons. `ChatFrameUtil.IsTabAlerting(tab)` and
+  `FCFDock_GetSelectedWindow(dock)` are only read.
+- **Edit box.** `ChatFrameEditBoxTemplate`: `$parentLeft/Mid/Right`,
+  `focusLeft/Mid/Right`, `header`, `headerSuffix`, `languageHeader`, `prompt`,
+  `NewcomerHint`. Blizzard anchors it once in XML. `ChatEdit_*` globals are only
+  deprecated aliases, so nothing is hooked there; ModeUI only calls widget
+  setters and `HookScript`s focus.
+- **Buttons.** `ChatFrameMenuButton` (a `DropdownButton`) and
+  `ChatFrameChannelButton` are children of `ChatFrame1ButtonFrame`;
+  `ChatFrameToggleVoiceDeafenButton`/`MuteButton` hang from the channel button.
+  `QuickJoinToastButton` and `TextToSpeechButtonFrame` are contained alerts of
+  `ChatAlertFrame`, which is anchored once in its `OnLoad`. ModeUI reparents the
+  four chat buttons into its compartment and re-anchors `ChatAlertFrame`.
+  `C_VoiceChat.GetActiveChannelID` is only read.
+- **Fonts.** `ChatFrameMixin` re-applies `GetFont()`'s file and flags with the
+  saved size on `UPDATE_CHAT_WINDOWS`, so a face set with `SetFont` stays and the
+  per-window size is Blizzard's. The setters go through
+  `ScrollingMessageFrameSecureMixin` ("secure elevation barriers").
+- **Not protected.** No chat frame is protected. Secure slash commands typed in
+  the edit box run from its `ParseText`; ModeUI never replaces its scripts,
+  methods or fields. Chat messages can be secret (`SecretInChatMessagingLockdown`,
+  secret whisper tab names): ModeUI never reads or measures message, tab or
+  header text.
+
+**Windows** ([SharedUIPanelTemplates.xml](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml)):
+
+- **Templates.** `PortraitFrameBaseTemplate` (`NineSlice`, `PortraitContainer`,
+  `FrameGlow`, `TitleContainer.TitleText`), `PortraitFrameTexturedBaseTemplate`
+  (adds `Bg`, `TopTileStreaks`), `ButtonFrameTemplate` (adds `Inset` with its
+  own `NineSlice` and `Bg`), `DefaultPanelTemplate`, `BasicFrameTemplate` (corner
+  and edge textures, `TitleBg`). NineSlice pieces: `TopLeftCorner` … `Center`
+  ([NineSlice.lua](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_SharedXML/NineSlice.lua)).
+  `ApplyLayout` re-sets atlases but never alpha, so faded pieces stay faded.
+  `SetTitle` only sets text. Forever's `CharacterFrame` is
+  `PortraitFrameBaseTemplate` with its art in `LeftPaneHost`/`RightPaneHost`
+  ([CharacterFrame.xml](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_UIPanels_Game/Camelot/CharacterFrame.xml)).
+  `SettingsPanel`'s title is `NineSlice.Text`, so pieces are faded one by one.
+- **Controls.** `PanelTabButtonTemplate`/`TabSystemButtonTemplate`
+  (`Left…RightActive`, highlights, `Text`): `PanelTemplates_SelectTab`,
+  `DeselectTab` and `SetDisabledTabState` only show and hide art and reset the
+  font, so ModeUI post-hooks them. Side tabs (`LargeSideTabButtonTemplate`:
+  `Background`, `Icon`, `SelectedTexture`). `UIPanelCloseButton` (Forever's
+  `UIPanelCloseButtonDefaultAnchors` places it once in `OnLoad`).
+  `MinimalScrollBar` and `WowTrimScrollBar` (`Track`, `Track.Thumb`, `Back`,
+  `Forward`, `Backplate`, `Background`) re-set atlases on state changes, so
+  their textures are faded, not replaced.
+- **Load on demand.** `PlayerSpellsFrame` (`Blizzard_PlayerSpells`),
+  `ProfessionsFrame` (`Blizzard_Professions`), `CollectionsJournal`
+  (`Blizzard_Collections`), `AchievementFrame` (`Blizzard_AchievementUI`),
+  `LFGListingFrame`/`LFGBrowseFrame` (`Blizzard_GroupFinder_VanillaStyle`),
+  `InspectFrame`, `ClassTrainerFrame`, `AuctionHouseFrame`, `MacroFrame`; ModeUI
+  skins them on `ADDON_LOADED`. Not on Forever: `PVEFrame`, `EncounterJournal`,
+  `PVPUIFrame`, `ProfessionsBookFrame`.
+- **Combat.** `SetPoint`, `SetSize`, `Show`/`Hide` and `SetParent` are blocked
+  on protected objects in combat; `SetAlpha`, `SetTexture`, `SetVertexColor`,
+  `SetFont` and `CreateTexture` are not. Collections and Professions hold
+  `SecureFrameTemplate` children, so windows reporting `IsProtected()` are
+  skinned through `Defer`. ModeUI never calls `ShowUIPanel`/`HideUIPanel`.
+- **Unverified natively:** that the glass tab, sheen and rims render at
+  exactly one physical pixel at the user's UI scale; that no window path is
+  tainted (casting from the spellbook, using toys, the Game Menu buttons, which
+  Blizzard rebuilds on every show); that `ChatAlertFrame` keeps its new anchor;
+  and the World Map's look without a fill.

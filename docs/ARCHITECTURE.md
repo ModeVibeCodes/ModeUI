@@ -36,7 +36,7 @@ ModeUI/
     Border/                   pixel borders
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
     Placement/                positions, Edit Mode (guides, nudging), Preview, frame anchors
-    Skin/                     re-skinning Blizzard frames; added with Chat Windows or Blizzard UI Windows
+    Skin/                     re-skinning Blizzard frames (Skin, Controls, Frame): Chat and Windows
     Settings/                 settings window framework (window, pages, search, tabs)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker)
     Templates/                XML virtual templates, added when a module needs one
@@ -70,7 +70,7 @@ WoW's TOC can't use wildcards, so the order is explicit:
 
 1. `Libs/` files.
 2. `Shared/Runtime/Core.lua`, then the rest of `Runtime` (and `Shared/Forever/` once it exists).
-3. `Domain`, `Kit`, `Border`, `Media`, `Placement`, `Skin`, then the `Settings` framework.
+3. `Domain`, `Kit`, `Media`, `Placement`, `Border`, `Skin` (Skin, Controls, Frame), then the `Settings` framework.
 4. One `Modules\<Name>\<Name>.xml` line per module, in sidebar order.
 5. `Shared/Runtime/Boot.lua`, last.
 
@@ -268,6 +268,20 @@ to widgets documented as accepting them.
 | `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`; `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA`; `Kit.FontPath(style, scope)` |
 | `AuraIcon.lua` | `Kit.AuraIcon(parent)`, `Kit.LayoutAuraIcon(icon, size, px, style, fontPath)`: slate-rimmed icon with swipe and stacks |
 
+## Skin
+
+`Shared/Skin/` restyles Blizzard's own frames. Blizzard's art is faded (alpha)
+or hidden, never destroyed; ModeUI's textures go on top. Nothing is stored on
+Blizzard's frame tables (ModeUI's pieces live in weak tables keyed by the
+frame), Blizzard's globals and fields are never written, and every hook is a
+post-hook (`hooksecurefunc`, `HookScript`).
+
+| File | API |
+|---|---|
+| `Skin.lua` | `Skin.colors` (the Mode skin palette), `Skin.Snap(value, px)`, `.Once(frame, key, fn)`, `.Fade(region)`, `.FadeTextures(frame, keep)`, `.Suppress(region)`/`.Release(region)` (hidden, and hidden again whenever Blizzard shows it), `.PinAlpha(frame, getter)`/`.Unpin(frame)` (ModeUI's alpha put back after each Blizzard `SetAlpha`), `.Panel(host, layer, sublevel)`, `.PaintPanel(parts, box, fill, alpha, rimColor, thickness)`, `.Font(region, path, size, outline, shadow, px)` |
+| `Controls.lua` | `Skin.Kind(frame)` → `"Button"`, `"Field"`, `"Tab"`, `"SideTab"`, `"ScrollBar"` or nil (by template keys); `.Button`, `.Field`, `.Tab`, `.SideTab`, `.Close`, `.ScrollBar`, `.Inset`, `.FadeNineSlice` |
+| `Frame.lua` | `Skin.Window(frame, style, options)` (art faded, fill, rim, title strip, close, inset, controls six levels deep), `.PaintWindow(frame, style)`, `.TitleOf(frame)`, `.CloseOf(frame)`, `.PlaceClose(frame, close)` (outside combat for protected windows) |
+
 ## Rules every module follows
 
 - **Secret values.** Only `Shared/Domain` reads unit data. It returns secret
@@ -331,10 +345,10 @@ module is built.
 | 1 | Nameplates | Interface | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
 | 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
 | 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar), `Positioning:AddTarget` (bars anchor to bars), PositionGuides (alignment guides, snapping, `Nudge`). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
-| 4 | Chat Windows | Interface | Skin: chat frames, edit box, tabs. Kit: ScrollText | chat frame hooks that don't taint |
+| 4 | Chat | Interface | Skin: panel, suppress, alpha pin, fonts | done (native acceptance pending); tab alphas pinned, never Blizzard's constants |
 | 5 | Damage Meters | Interface | Domain: DamageMeter (the game's own meter through `C_DamageMeter`). Kit: Rim, PlaceRim | done (native acceptance pending); Forever loads Blizzard_DamageMeter |
 | 6 | Bags | Interface | Domain: Containers, Items. Kit: ItemButton. Templates: item slot | `C_Container` on Forever; secure use of items from addon buttons |
-| 7 | Blizzard UI Windows | Interface | Skin: frame stripping, Mode borders, buttons, tabs, scroll bars | per-window taint risk; load-on-demand Blizzard addons |
+| 7 | Windows | Interface | Skin: window frames, controls by template keys (buttons, fields, tabs, side tabs, close, scroll bars, insets) | done (native acceptance pending); secure windows skinned out of combat |
 | 8 | Minimap | Interface | Skin: minimap shape and border. Kit: addon-button collector | minimap APIs and cluster frames on Forever |
 
 Every module gets design notes in `docs/<NAME>.md` (like `docs/UNIT_FRAMES.md`)

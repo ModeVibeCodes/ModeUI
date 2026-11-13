@@ -23,6 +23,11 @@
 --   UnitFrames/Combat.tga  UnitFrameCombat: crossed swords with guards, for the combat badge
 --   ActionBars/Slot.tga  ActionBarSlot: a dark action slot with a soft top bevel, darker edges and
 --                        fine grain, in color (not tinted) and shown at Background Opacity
+--   Mode/Glass.tga       ModeGlass: a frosted tab: top corners rounded (radius 3), edges feathered
+--                        over 2px for a soft blurred look, lighter at the top (sliced at 6)
+--   Mode/Close.tga       ModeClose: a thin cross for close buttons
+--   Chat/Menu.tga        ChatMenu: a speech bubble outline, the chat menu button's glyph
+--   Chat/Channels.tga    ChatChannels: a "#", the chat channels button's glyph
 local SAMPLES = 8
 local ROOT = "ModeUI/Media/Textures/"
 
@@ -134,6 +139,22 @@ local function Stroke(points, thickness)
     end
 end
 
+-- A frosted glass tab: a rect with rounded top corners whose edges fade out
+-- over `blur` pixels (smoothstep), and whose body thins from full at the top
+-- to `floor` at the bottom, so the tint reads as glass with a soft sheen.
+local function Glass(size, radius, blur, floor)
+    return function(x, y)
+        local cx = math.max(radius + blur, math.min(size - radius - blur, x))
+        local cy = math.max(radius + blur, y)
+        local distance = y < radius + blur and math.sqrt((x - cx) ^ 2 + (y - cy) ^ 2) - radius
+            or math.max(blur - x, x - (size - blur)) + 0
+        local t = math.max(0, math.min(1, (blur - distance) / blur))
+        local edge = t * t * (3 - 2 * t)
+        local body = 1 - (1 - floor) * (y / size)
+        return edge * body
+    end
+end
+
 -- { path, width, height, shape, supersample[, color] }
 local TEXTURES = {
     { "Mode/Flat.tga", 16, 16, RoundedRect(16, 16, 4), true },
@@ -156,6 +177,12 @@ local TEXTURES = {
     { "UnitFrames/Rested.tga", 32, 32, Strokes({ { 5, 8, 16, 8 }, { 16, 8, 5, 21 }, { 5, 21, 16, 21 },
         { 19, 15, 27, 15 }, { 27, 15, 19, 24 }, { 19, 24, 27, 24 } }, 3), true },
     { "UnitFrames/Combat.tga", 32, 32, Strokes({ { 7, 7, 25, 25 }, { 25, 7, 7, 25 }, { 4, 22, 10, 28 }, { 22, 28, 28, 22 } }, 3), true },
+    { "Mode/Glass.tga", 16, 16, Glass(16, 3, 2, 0.7), true },
+    { "Mode/Close.tga", 16, 16, Strokes({ { 4.5, 4.5, 11.5, 11.5 }, { 11.5, 4.5, 4.5, 11.5 } }, 1.4), true },
+    { "Chat/Menu.tga", 16, 16, Stroke({ { 2.5, 2.5 }, { 13.5, 2.5 }, { 13.5, 10.5 }, { 7.5, 10.5 }, { 4.5, 13.5 },
+        { 4.5, 10.5 }, { 2.5, 10.5 }, { 2.5, 2.5 } }, 1), true },
+    { "Chat/Channels.tga", 16, 16, Strokes({ { 5.5, 3.5, 5.5, 12.5 }, { 10.5, 3.5, 10.5, 12.5 },
+        { 3.5, 5.5, 12.5, 5.5 }, { 3.5, 10.5, 12.5, 10.5 } }, 1), true },
     { "Mode/SlateHatch.tga", 4, 4, function() return 1 end, false, function(x, y)
         local v = (x + y) % 4 == 0 and 1 or 0.8
         return v, v, v

@@ -1,0 +1,10 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="Init.lua"/>
+    <Script file="Migrations.lua"/>
+    <Script file="Driver.lua"/>
+    <Script file="Window.lua"/>
+    <Script file="Tabs.lua"/>
+    <Script file="Buttons.lua"/>
+    <Script file="Fade.lua"/>
+    <Script file="Settings.lua"/>
+</Ui>
