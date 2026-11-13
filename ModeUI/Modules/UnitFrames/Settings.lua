@@ -221,6 +221,7 @@ function M:CreateConfigPage(parent)
     end)
 
     M:BuildCastTab(ui)
+    M:BuildAurasTab(ui)
     M:BuildComboTab(ui)
 
     Tab("Text", function()

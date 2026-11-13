@@ -41,6 +41,7 @@ function M:BuildFace(f)
     for _, text in ipairs({ f.nameText, f.levelText, f.healthText, f.powerText }) do text.lift = Text(f.textLayer, "ARTWORK") end
     if f.unit == "target" then self:BuildCombo(f) end
     self:BuildCast(f)
+    self:BuildAuras(f)
 end
 
 function M:CreateDisplay()

@@ -205,4 +205,5 @@ function M:ApplyLayout(f, unit)
     self:PaintRing(f, unit)
     if f.combo then self:ResetComboLayout(f) end
     self:LayoutCast(f, unit)
+    self:LayoutAuras(f, unit)
 end

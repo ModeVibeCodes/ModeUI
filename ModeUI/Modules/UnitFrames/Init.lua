@@ -165,9 +165,40 @@ function M.CastDefaults(unit)
     defaults.enabled = not CAST_OFF[unit]
     return defaults
 end
+-- Buffs and debuffs (owner, November 13, 2026), in db[unit].buffs and
+-- db[unit].debuffs, with the same options. Rows start at a corner of the
+-- health bar's span, lined up with its edge, so they never reach over the
+-- portrait. Buffs are on for the Target, at its top right; debuffs start off,
+-- under the frame.
+M.auraGroups = { "buffs", "debuffs" }
+M.auraGroupLabels = { buffs = "Buffs", debuffs = "Debuffs" }
+M.auraDefaults = { enabled = false, filter = "all", anchor = "TOPRIGHT", grow = "left", size = 20, spacing = 2, max = 8,
+    perRow = 8, x = 0, y = 0, shape = "cropped", border = "type", timer = true, count = true }
+M.auraRanges = { size = { 10, 40, 1 }, spacing = { 0, 10, 1 }, max = { 1, 16, 1 }, perRow = { 1, 16, 1 },
+    x = { -100, 100, 1 }, y = { -100, 100, 1 } }
+M.choices.auraAnchor = { { id = "TOPRIGHT", label = "Top Right" }, { id = "TOPLEFT", label = "Top Left" },
+    { id = "BOTTOMRIGHT", label = "Bottom Right" }, { id = "BOTTOMLEFT", label = "Bottom Left" } }
+M.choices.auraGrow = { { id = "left", label = "Left" }, { id = "right", label = "Right" } }
+M.choices.auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } }
+M.choices.auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" } }
+M.choices.buffsFilter = { { id = "all", label = "All" }, { id = "mine", label = "Yours" },
+    { id = "dispellable", label = "Dispellable or Stealable" } }
+M.choices.debuffsFilter = { { id = "all", label = "All" }, { id = "mine", label = "Yours" },
+    { id = "dispellable", label = "Ones You Can Dispel" } }
+-- Rim colors by the game's dispel type name, as Blizzard's DebuffTypeColor.
+M.dispelColors = { Magic = RGB(51, 153, 255), Curse = RGB(153, 0, 255), Disease = RGB(153, 102, 0), Poison = RGB(0, 153, 0) }
+function M.AuraDefaults(unit, group)
+    local defaults = Copy(M.auraDefaults)
+    if group == "buffs" then defaults.enabled = unit == "target"
+    else defaults.anchor, defaults.grow = "BOTTOMRIGHT", "left" end
+    return defaults
+end
+function M.AuraChoices(group)
+    return { filter = group .. "Filter", anchor = "auraAnchor", grow = "auraGrow", shape = "auraShape", border = "auraBorder" }
+end
 -- Settings every frame keeps for itself: a Target matching the Player still
 -- uses its own cast bar and auras (unlike identity keys, Copy Style and Reset
 -- include them).
-M.ownKeys = { castBar = true }
+M.ownKeys = { castBar = true, buffs = true, debuffs = true }
 M.defaults = { layoutVersion = M.LAYOUT_VERSION, comboPoints = Copy(M.comboDefaults) }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end

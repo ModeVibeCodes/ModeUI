@@ -185,6 +185,9 @@ function M.Initialize(db)
         assert(Kit.ValidBarTexture(frame.foregroundTexture, true) and Kit.ValidBarTexture(frame.backgroundTexture, false),
             "Invalid unit frame texture: " .. unit)
         M.ValidateTable(frame, "castBar", M.CastDefaults(unit), M.castRanges, M.castChoices)
+        for _, group in ipairs(M.auraGroups) do
+            M.ValidateTable(frame, group, M.AuraDefaults(unit, group), M.auraRanges, M.AuraChoices(group))
+        end
     end
     M.ValidateTable(db, "comboPoints", M.comboDefaults, M.comboRanges, { arc = "comboArc" })
 end

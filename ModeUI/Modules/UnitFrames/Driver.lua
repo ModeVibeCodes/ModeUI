@@ -49,6 +49,9 @@ function M:SetNestedOption(path, key, value)
 end
 function M:SetComboOption(key, value) return self:SetNestedOption({ "comboPoints" }, key, value) end
 function M:SetCastOption(unit, key, value) return self.labels[unit] ~= nil and self:SetNestedOption({ unit, "castBar" }, key, value) end
+function M:SetAuraOption(unit, group, key, value)
+    return self.labels[unit] ~= nil and self.auraGroupLabels[group] ~= nil and self:SetNestedOption({ unit, group }, key, value)
+end
 function M:ResetFrame(unit)
     if not self:CanConfigure() or not self.labels[unit] then return false end
     local frame = Copy(self.frameDefaults[unit])
@@ -156,7 +159,7 @@ local UNIT_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_POWER_FREQUENT", "U
     "UNIT_PORTRAIT_UPDATE", "UNIT_MODEL_CHANGED", "UNIT_TARGET",
     "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED",
     "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP",
-    "UNIT_SPELLCAST_INTERRUPTIBLE", "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" }
+    "UNIT_SPELLCAST_INTERRUPTIBLE", "UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "UNIT_AURA" }
 function M:SetEvents(on)
     if (self.eventsOn or false) == on then return end
     self.eventsOn = on
@@ -218,6 +221,7 @@ function M:OnEvent(event, unit)
         if unit == "target" or unit == "focus" then self:Update(unit .. "target") end
     elseif unit == "player" or unit == "target" or unit == "focus" then
         if event:find("^UNIT_SPELLCAST") then self:UpdateCast(unit)
+        elseif event == "UNIT_AURA" then self:UpdateAuras(unit)
         elseif event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" or event == "UNIT_CONNECTION" then self:UpdateHealth(unit)
         elseif event == "UNIT_POWER_FREQUENT" or event == "UNIT_MAXPOWER" or event == "UNIT_DISPLAYPOWER" then
             self:UpdatePower(unit)

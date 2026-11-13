@@ -79,3 +79,43 @@ function M:BuildCastTab(ui)
         end)
     end, true)
 end
+
+-- Buffs and Debuffs share one set of controls; the group switch at the top
+-- picks which one they edit. A tab of the frame's own.
+function M:BuildAurasTab(ui)
+    local page, When = ui.page, ui.When
+    local group = "buffs"
+    local function A() return ui.db()[group] end
+    function page.SetAuraGroup(name) if M.auraGroupLabels[name] then group = name; page:Refresh(); page:Layout() end end
+    page.unitFrameAuraGroup = function() return group end
+    local n = Nested(ui, A, function(key, value) M:SetAuraOption(ui.Editing(), group, key, value) end)
+    ui.Tab("Auras", function()
+        local buttons, refresh = W.Exclusive(page:Row("Group", 48), { { label = "Buffs", value = "buffs", width = 110 },
+            { label = "Debuffs", value = "debuffs", width = 110 } }, function() return group end, page.SetAuraGroup)
+        page.refreshers[#page.refreshers + 1] = refresh
+        page.unitFrameAuraButtons = buttons
+        page.unitFrameAuraToggles = n.Toggles({ { label = "Show", get = function() return A().enabled end,
+            set = function(v) M:SetAuraOption(ui.Editing(), group, "enabled", v) end } })
+        When(function() return A().enabled end, function()
+            page:Group("Which Auras")
+            for _, name in ipairs(M.auraGroups) do
+                When(function() return group == name end, function() n.Select("Filter", M.choices[name .. "Filter"], "filter") end)
+            end
+            local count = page:Columns({ "Max Shown", "Per Row" })
+            n.Slider(count[1], M.auraRanges.max, "max"); n.Slider(count[2], M.auraRanges.perRow, "perRow")
+            page:Group("Placement")
+            local place = page:Columns({ "Corner", "Grow" })
+            page.unitFrameAuraAnchor = n.SelectIn(place[1], M.choices.auraAnchor, "anchor")
+            n.SelectIn(place[2], M.choices.auraGrow, "grow")
+            local offsets = page:Columns({ "Offset X", "Offset Y" })
+            n.Slider(offsets[1], M.auraRanges.x, "x", "px"); n.Slider(offsets[2], M.auraRanges.y, "y", "px")
+            page:Group("Icons")
+            local look = page:Columns({ "Icon Size", "Spacing" })
+            page.unitFrameAuraSize = n.Slider(look[1], M.auraRanges.size, "size", "px")
+            n.Slider(look[2], M.auraRanges.spacing, "spacing", "px")
+            local skin = page:Columns({ "Shape", "Border" })
+            n.SelectIn(skin[1], M.choices.auraShape, "shape"); n.SelectIn(skin[2], M.choices.auraBorder, "border")
+            n.Toggles({ n.Toggle("Timer Swipe", "timer"), n.Toggle("Stack Count", "count") })
+        end)
+    end, true)
+end

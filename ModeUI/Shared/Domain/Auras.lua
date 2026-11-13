@@ -14,6 +14,11 @@ local NAMEPLATE = "INCLUDE_NAME_PLATE_ONLY"
 Auras.debuffFilters = { mine = "HARMFUL|PLAYER|" .. NAMEPLATE, dispellable = "HARMFUL|RAID", all = "HARMFUL|" .. NAMEPLATE }
 Auras.buffFilters = { dispellable = "HELPFUL|DISPELLABLE", important = "HELPFUL|IMPORTANT", mine = "HELPFUL|PLAYER", all = "HELPFUL" }
 Auras.crowdControlFilter = "HARMFUL|CROWD_CONTROL|" .. NAMEPLATE
+-- Unit frames show every aura of a kind, not just the nameplate ones.
+Auras.frameFilters = {
+    buffs = { all = "HELPFUL", mine = "HELPFUL|PLAYER", dispellable = "HELPFUL|DISPELLABLE" },
+    debuffs = { all = "HARMFUL", mine = "HARMFUL|PLAYER", dispellable = "HARMFUL|RAID" },
+}
 -- Debuffs leave out crowd control when it has its own group.
 Auras.WITHOUT_CROWD_CONTROL = "|!CROWD_CONTROL"
 

@@ -5,6 +5,27 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Buffs and debuffs
+
+November 13, 2026, per the owner: each frame shows buffs and debuffs
+(`Auras.lua`, the **Auras** tab with a Buffs/Debuffs switch), each group with
+the same options in `db[unit].buffs` / `db[unit].debuffs` (own keys):
+`enabled` (buffs on for the Target only; debuffs off), `filter` all / mine /
+dispellable, `anchor` (a corner: Top Right, Top Left, Bottom Right, Bottom
+Left), `grow` left/right, `max` 8, `perRow` 8, `x`/`y`, `size` 20, `spacing` 2,
+`shape` cropped (4px wider than tall, like the nameplates) / square, `border`
+by dispel type / Mode, `timer` and `count`.
+
+A group's rows start at a corner of the health bar's span: Top Right puts the
+first icon's right edge on the health bar's right edge, so the row lines up
+with the bars and never reaches over the portrait. Top rows sit 2px over the
+bar block; when the name is above the frame on the same side (or centred) the
+row sits over the name instead, so they never overlap. Bottom rows sit under
+the bars, past a cast bar below them. Rows stack away from the frame. Filters
+are game filter strings (`Domain.Auras.frameFilters`, without the nameplate
+filter) and aura fields go only to widgets that accept secrets, as on the
+nameplates. Icons don't take the mouse.
+
 ## Cast bars
 
 November 13, 2026, per the owner: each frame has a cast bar in the Mode skin

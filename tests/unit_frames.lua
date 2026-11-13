@@ -100,6 +100,36 @@ world.run([====[
     assert(M:SetCastOption('target','enabled',false) and TargetFrameSpellBar:GetAlpha()==1 and M:SetCastOption('target','enabled',true))
     assert(M.db.targettarget.castBar.enabled==false and M.db.focus.castBar.enabled==true)
 
+    -- Auras: buffs on the Target by default, debuffs off; each group its own settings.
+    assert(M.db.target.buffs.enabled and not M.db.target.debuffs.enabled and not M.db.player.buffs.enabled and not M.db.focus.buffs.enabled)
+    units.target.helpful={{icon=136078,auraInstanceID=1,applications=3,duration=10,expirationTime=20},{icon=136090,auraInstanceID=2}}
+    units.target.harmful={{icon=136207,auraInstanceID=3,dispelName='Magic'}}
+    FireEvent('UNIT_AURA','target')
+    local b1,b2=t.auraIcons.buffs[1],t.auraIcons.buffs[2]
+    assert(b1:IsShown() and b2:IsShown() and t.auraShown.buffs==2 and t.auraShown.debuffs==0 and auraFilters[#auraFilters]=='HELPFUL')
+    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.rim.vertexColor[1]==O.border[1])
+    -- Top right: the first icon's right edge on the health bar's right edge (clear of
+    -- the portrait), cropped icons growing left. The matched name is right-aligned
+    -- above the frame, so the row sits over the name instead of on it.
+    local q=Point(b1);assert(q[1]=='BOTTOMRIGHT' and q[2]==t.health and q[3]=='TOPRIGHT' and q[4]==0 and q[5]==4+3+14+2,'over the name')
+    assert(b1.width==20 and b1.height==16 and Point(b2)[4]==-(20+2) and Point(b2)[5]==q[5],'cropped, growing left')
+    assert(M:SetFrameOption('player','nameAlign','LEFT') and Point(b1)[5]==4+2,'with the name on the other side, right on the bar block')
+    assert(M:SetFrameOption('player','nameAlign','RIGHT'))
+    assert(M:SetAuraOption('target','buffs','perRow',1) and Point(b2)[4]==0 and Point(b2)[5]==q[5]+16+2,'a new row above')
+    assert(M:SetAuraOption('target','buffs','shape','square') and b1.height==20 and M:SetAuraOption('target','buffs','perRow',8))
+    assert(M:SetAuraOption('target','buffs','filter','mine') and auraFilters[#auraFilters]=='HELPFUL|PLAYER')
+    assert(M:SetAuraOption('target','buffs','max',1) and not b2:IsShown() and M:ResetFrame('target') and b2:IsShown(),'reset restores the auras')
+    -- Debuffs: under the bars, past the cast bar below them; rims by dispel type.
+    assert(M:SetAuraOption('target','debuffs','enabled',true));local d1=t.auraIcons.debuffs[1]
+    assert(d1:IsShown() and d1.rim.vertexColor[3]==M.dispelColors.Magic[3])
+    local dq=Point(d1);assert(dq[1]=='TOPRIGHT' and dq[2]==t.power and dq[5]==-(4+2+3+14+8),'below the cast bar')
+    assert(M:SetCastOption('target','position','above') and Point(d1)[5]==-(4+2) and M:SetCastOption('target','position','below'))
+    assert(M:SetAuraOption('target','debuffs','border','mode') and d1.rim.vertexColor[1]==O.border[1])
+    assert(not M:SetAuraOption('target','debuffs','anchor','MIDDLE') and not M:SetAuraOption('target','debuffs','size',99) and not M:SetAuraOption('target','nope','size',20))
+    assert(M:FrameDB('target').buffs==M.db.target.buffs,'a matched Target keeps its own auras')
+    assert(M:SetAuraOption('target','debuffs','enabled',false) and not d1:IsShown())
+    units.target.helpful,units.target.harmful=nil,nil;FireEvent('UNIT_AURA','target');assert(not b1:IsShown())
+
     -- Target of Target, Focus and Target of Focus: secure frames of their own,
     -- each replacing Blizzard's; Blizzard's Focus frame fades like the Target.
     local tt,fo,ft=M.frames.targettarget,M.frames.focus,M.frames.focustarget
@@ -416,6 +446,8 @@ world.run([====[
     assert(ghost.width==p.width and Near(RingTop(ghost).r,Soft(soft,0.35)[1]),'stand-in matches size and class ring')
     assert(Near(RingTop(M.ghosts.target).r,Soft(Soft(P.hostile),0.35)[1]),'target stand-in shows an enemy ring')
     local gc=M.ghosts.target.combo;assert(gc:IsShown() and gc.points[3].bar.value==M.COMBO_SAMPLE and gc.points[5]:IsShown(),'stand-in shows sample combo points')
+    local ga=M.ghosts.target;assert(ga.auraShown.buffs==M.AURA_SAMPLE and ga.auraIcons.buffs[1]:IsShown() and ga.auraShown.debuffs==0,'sample buffs')
+    assert(ga.castBox:IsShown() and ga.castBox.text:GetText()=='Frostbolt' and not M.ghosts.player.auraIcons.buffs[1],'sample cast; no buffs on the Player')
     assert(addon.PositionManager:SetOffsets('unitFramesPlayer',-300,-150))
     local point,gp=Point(p),Point(ghost)
     assert(point[1]==gp[1] and point[3]==gp[3] and point[4]==gp[4] and point[5]==gp[5] and p.scale==ghost.scale,'secure button copies the stand-in anchor at the same scale')
@@ -529,8 +561,8 @@ restored.run([====[
     if not addon.EnsureConfigPage then addon:ToggleConfig() end
     local page=addon:EnsureConfigPage('unitFrames')
     local titles={};for _,section in ipairs(page.sections) do titles[#titles+1]=section.title end
-    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Cast Bar|Combo Points|Text','one tab per frame element; no Border tab')
-    assert(page.sectionTabs and #page.sectionTabs.buttons==9)
+    assert(table.concat(titles,'|')=='Frames|Layout|Portrait|Name & Level|Health|Power|Cast Bar|Auras|Combo Points|Text','one tab per frame element; no Border tab')
+    assert(page.sectionTabs and #page.sectionTabs.buttons==10)
     local function Find(section,title)
         for _,row in ipairs(page.rows) do if row.section and row.section.title==section and row.settingsTitle==title then return row end end
     end
@@ -563,11 +595,17 @@ restored.run([====[
     assert(page.unitFrameComboArc and page.unitFrameComboSize and Visible(Row('Combo Points','Arc Position')))
     assert(M:SetComboOption('enabled',false) and not Visible(Row('Combo Points','Arc Position')) and M:SetComboOption('enabled',true))
     -- Editing picks one of the five frames, shared by every tab.
-    assert(#page.unitFrameEditSelects==7)
+    assert(#page.unitFrameEditSelects==8)
     -- Cast Bar edits the frame's own cast bar, even on a matched Target.
     assert(page.unitFrameCastPosition and page.unitFrameCastHeight and Visible(Row('Cast Bar','Position')))
     page.SetEditing('target');assert(M.db.target.matchPlayer and Visible(Row('Cast Bar','Spell Icon')) and not Visible(Row('Layout','Scale')))
     page.SetEditing('targettarget');assert(not Visible(Row('Cast Bar','Position')),'off by default on the Target of Target')
+    -- Auras: Buffs and Debuffs share the controls; the group switch picks one.
+    page.SetEditing('target');assert(page.unitFrameAuraGroup()=='buffs' and page.unitFrameAuraAnchor and Visible(Row('Auras','Filter')))
+    local function Shared() return Visible(page.unitFrameAuraAnchor:GetParent().row) end
+    assert(Shared());page.unitFrameAuraButtons[2].scripts.OnClick();assert(page.unitFrameAuraGroup()=='debuffs' and not Shared(),'debuffs start off')
+    assert(M:SetAuraOption('target','debuffs','enabled',true) and Shared() and M:SetAuraOption('target','debuffs','enabled',false))
+    page.SetAuraGroup('buffs')
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
