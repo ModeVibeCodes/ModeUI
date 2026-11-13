@@ -5,6 +5,19 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Text never reaches the portrait
+
+November 13, 2026, per the owner: every text stays over the bars. A text on
+the portrait side (health, level, power, a name on the bar, a name above the
+frame) measures the ring's **outer** edge across its own line, the band of
+its font at its Y offset, and stops 2px before it, rounded out to whole
+pixels: `clear = R + √(R² − d²) + 2px − inset`, where `R` is the portrait's
+outer radius, `d` the line's edge nearest the portrait's centre and `inset`
+where the bars start. A line past the circle gets no tuck. X offsets move a
+text away from the portrait freely; toward it they stop at that line. At
+default sizes bar texts keep their 12px inset; a name above the frame sits
+closer (1px in from the bars), since the ring curves away up there.
+
 ## Mode Slate backgrounds (layout version 14)
 
 November 13, 2026, per the owner: no pattern lines in bar backgrounds, and a

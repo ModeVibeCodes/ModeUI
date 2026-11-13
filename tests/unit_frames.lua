@@ -238,7 +238,7 @@ world.run([====[
     assert(Point(ring.icon)[4]==4 and ring.icon.mask.texture=='Interface\\CHARACTERFRAME\\TempPortraitAlphaMask','circular portrait')
     assert(p.nameClip==nil and p.nameShine==nil and p.panel.ringBorder==nil,'plain name, single ring')
     assert(p.textLayer:GetFrameLevel()>ring:GetFrameLevel(),'text above the portrait')
-    local np=Point(p.nameText);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==12 and np[5]==4+3 and p.nameText.justifyH=='RIGHT','name right-aligned above')
+    local np=Point(p.nameText);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==1 and np[5]==4+3 and p.nameText.justifyH=='RIGHT','name right-aligned above')
     assert(p.nameText.font[1]:find('Lato') and p.healthText.font[1]:find('Lato'),'Expressway falls back to ModeUI Lato when not installed')
     assert(t.nameText.justifyH=='RIGHT','matched target copies the Player name alignment')
     local lp=Point(p.levelText);assert(lp[1]=='RIGHT' and lp[2]==p.healthText and lp[4]==-6,'level before the right-aligned health text')
@@ -247,8 +247,26 @@ world.run([====[
     -- health text, which clears the Target's own portrait curve.
     local th=Point(t.healthText);assert(th[1]=='RIGHT' and th[2]==t.health and th[4]==-4-8,'health text on the right, like the Player')
     local tl=Point(t.levelText);assert(tl[1]=='RIGHT' and tl[2]==t.healthText and tl[4]==-6,'level before it, like the Player')
-    assert(Point(t.nameText,2)[4]==-(8+4) and Point(p.nameText,2)[4]==0,'name kept clear of the portrait')
+    -- The name above the frame clears the ring at its own height: the ring curves away
+    -- there (26px above its centre it reaches 23.4px out), so 1px in from the bars.
+    assert(Point(t.nameText,2)[4]==-1 and Point(p.nameText,2)[4]==0,'name clear of the portrait at its own height')
     assert(p.levelText.color[1]==P.muted[1])
+    -- Bar text never reaches the portrait: 2px before the ring's outer edge across
+    -- its own line (at the bars' middle: 35 + 35 + 2 - 60 = 12 from the bars' edge),
+    -- and an X offset toward the portrait stops there.
+    assert(M:SetFrameOption('player','healthTextPosition','LEFT') and Point(p.levelText)[4]==12,'the outer text at the clearance')
+    assert(M:SetFrameOption('player','levelOffsetX',-9) and Point(p.levelText)[4]==12,'an offset into the ring stops at the line')
+    assert(M:SetFrameOption('player','levelOffsetX',5) and Point(p.levelText)[4]==17,'away from the portrait it moves freely')
+    assert(M:SetFrameOption('player','levelOffsetX',0) and M:SetFrameOption('player','healthTextPosition','RIGHT'))
+    assert(M:SetFrameOption('player','powerText','percent') and M:SetFrameOption('player','powerTextPosition','LEFT'))
+    -- The power line's nearest edge is 8px under the ring's centre, where the ring
+    -- still reaches 34.1px out: 35 + 34.1 + 2 - 60, rounded out, is 12.
+    assert(Point(p.powerText)[4]==12,'the power text measured across its own line')
+    -- A big level font in a tall bar is measured across its own taller band.
+    assert(M:SetFrameOption('player','powerTextOffsetY',-12) and Point(p.powerText)[4]<12,'lower, where the ring has curved away, it can sit closer')
+    assert(M:SetFrameOption('player','powerTextOffsetY',0))
+    assert(M:SetFrameOption('player','powerText','none') and M:SetFrameOption('player','powerTextPosition','CENTER'))
+    assert(Point(t.healthText)[4]==-12,'target: mirrored on the right')
 
     M:UpdateAll()
     local function Soft(c,amount) amount=amount or 0.4;return {c[1]+(1-c[1])*amount,c[2]+(1-c[2])*amount,c[3]+(1-c[3])*amount} end
@@ -377,7 +395,7 @@ world.run([====[
     assert(M:SetFrameOption('player','healthText','percent') and M:SetFrameOption('player','healthTextPosition','RIGHT'))
     assert(M:SetFrameOption('player','healthTextOffsetX',5) and M:SetFrameOption('player','healthTextOffsetY',-2))
     assert(Point(p.healthText)[4]==-4+5 and Point(p.healthText)[5]==-2,'health text offset')
-    assert(M:FrameDB('target').healthTextOffsetX==5 and Point(t.healthText)[4]==-4+5-8,'matched target copies offsets')
+    assert(M:FrameDB('target').healthTextOffsetX==5 and Point(t.healthText)[4]==-12,'matched target copies offsets; toward its portrait they stop at the line')
     assert(M:SetFrameOption('target','mirrorText',true) and M:FrameDB('target').healthTextOffsetX==-5,'mirrored offsets')
     assert(Point(t.healthText)[1]=='LEFT' and Point(t.healthText)[2]==t.health and Point(t.healthText)[4]==4-5)
     assert(Point(t.levelText)[1]=='LEFT' and Point(t.levelText)[2]==t.healthText and Point(t.levelText)[4]==6,'level after the health text')
@@ -386,7 +404,7 @@ world.run([====[
     assert(Point(p.levelText)[4]==-6-45 and Point(t.healthText)[4]==4-1 and Point(t.levelText)[4]==6+45,'mirror keeps the level clear of the health text')
     assert(M:SetFrameOption('target','mirrorText',false) and Point(t.healthText)[1]=='RIGHT' and Point(t.levelText)[4]==-6-45,'same layout as the Player')
     assert(M:SetFrameOption('player','levelOffsetX',0) and M:SetFrameOption('player','healthTextOffsetX',5))
-    assert(M:SetFrameOption('player','nameOffsetX',3) and M:SetFrameOption('player','nameOffsetY',4) and Point(p.nameText)[5]==4+3+4 and Point(p.nameText)[4]==12+3)
+    assert(M:SetFrameOption('player','nameOffsetX',3) and M:SetFrameOption('player','nameOffsetY',4) and Point(p.nameText)[5]==4+3+4 and Point(p.nameText)[4]==0+3,'4px higher the ring is past the name: no tuck')
     assert(M:SetFrameOption('player','levelOffsetX',-2) and Point(p.levelText)[4]==-6-2)
     for _,key in ipairs({'healthTextOffsetX','healthTextOffsetY','nameOffsetX','nameOffsetY','levelOffsetX'}) do assert(M:SetFrameOption('player',key,0)) end
     assert(M:SetFrameOption('player','levelColor',{1,0,0}) and M:SetFrameOption('player','levelFontSize',14))
