@@ -101,7 +101,8 @@ function M:RefreshCatchers()
         local list = self.catchers[bar] or {}
         self.catchers[bar] = list
         local header, style = self.headers[bar], self.db[bar]
-        local count = self.binding and style.show and self:ButtonCount(bar) or 0
+        -- The micro menu and bag bar have no action bindings.
+        local count = self.binding and style.show and not self.barSpecs[bar].utility and self:ButtonCount(bar) or 0
         local g = self.Geometry(style, math.max(1, count), self.PixelSize(header))
         for i = 1, math.max(count, #list) do
             local catcher = list[i]

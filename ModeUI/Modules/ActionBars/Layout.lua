@@ -53,9 +53,11 @@ end
 function M.PixelSize(frame) return Kit.PixelSize(frame) end
 
 -- How many buttons a bar shows: its Buttons setting, and for the stance bar
--- no more than the stances the character has (0 hides the bar).
+-- no more than the stances the character has (0 hides the bar); the micro
+-- menu and bag bar no more than the buttons Blizzard shows.
 function M:ButtonCount(bar)
     local style = self.db[bar]
+    if self.barSpecs[bar].utility then return math.min(style.buttons, #self:UtilityButtons(bar)) end
     if not self.barSpecs[bar].stance then return style.buttons end
     local ok, forms = addon.Domain.Query.Call(GetNumShapeshiftForms)
     if not ok or not addon.IsNumber(forms, 0, 100) then return 0 end

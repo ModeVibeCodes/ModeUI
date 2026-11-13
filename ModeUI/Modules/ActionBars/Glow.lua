@@ -102,7 +102,7 @@ end
 
 function M:ApplyProc(button)
     local bar = self.barOf[button]
-    if not bar then return end
+    if not bar or self.barSpecs[bar].utility then return end
     local style = self.db[bar]
     local allowed = self.GlowOn(style, self.indexOf[button], "proc")
     local on = self.active == true and self.procs[button] == true and allowed

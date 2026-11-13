@@ -6,8 +6,11 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- paging, cooldowns, range and keybinds work as before; ModeUI owns where
 -- each bar sits, how it's laid out, the button skin, the text and when the
 -- bar shows. Every bar has its own settings. See docs/ACTION_BARS.md.
--- Files: Init (this), Migrations, Driver, Bars, Layout, Skin, Text, Fade,
--- Preview, Settings.
+-- The micro menu and the bag bar are bars here too (Utility.lua): Blizzard's
+-- micro and bag buttons on ModeUI bars with the same skin, text, Edit Mode
+-- and Show choices (Always, Mouseover, Hidden).
+-- Files: Init (this), Migrations, Driver, Bars, Layout, Skin, Text, Utility,
+-- Visibility, Keybind, Glow, GlowMenu, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Action Bars"], category = "interface", defaultEnabled = false,
     configDescription = L["Action bars in the Mode look: layout, size, borders, text and when each bar shows."],
@@ -33,7 +36,9 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The bars, in sidebar order. `prefix` names Blizzard's buttons (prefix..1
 -- to prefix..count); `blizzard` lists Blizzard bars whose art ModeUI hides.
-M.bars = { "bar1", "bar2", "bar3", "bar4", "bar5", "bar6", "bar7", "bar8", "pet", "stance" }
+-- `utility` marks the micro menu and bag bar: their buttons come from
+-- Utility.lua (at most `count`), on a plain frame rather than a secure one.
+M.bars = { "bar1", "bar2", "bar3", "bar4", "bar5", "bar6", "bar7", "bar8", "pet", "stance", "micro", "bags" }
 M.barSpecs = {
     bar1 = { label = "Action Bar 1", prefix = "ActionButton", count = 12, blizzard = { "MainActionBar", "MainMenuBar" }, override = true },
     bar2 = { label = "Action Bar 2", prefix = "MultiBarBottomLeftButton", count = 12 },
@@ -45,14 +50,20 @@ M.barSpecs = {
     bar8 = { label = "Action Bar 8", prefix = "MultiBar7Button", count = 12 },
     pet = { label = "Pet Bar", prefix = "PetActionButton", count = 10, blizzard = { "PetActionBar" }, pet = true },
     stance = { label = "Stance Bar", prefix = "StanceButton", count = 10, blizzard = { "StanceBar" }, stance = true },
+    micro = { label = "Micro Menu", utility = "micro", count = 16 },
+    bags = { label = "Bag Bar", utility = "bags", count = 7 },
 }
+-- Show choices for the micro menu and bag bar.
+M.utilityVisibility = { always = true, mouseover = true, hidden = true }
+function M:IsUtility(bar) return self.barSpecs[bar] ~= nil and self.barSpecs[bar].utility ~= nil end
 -- Edit Mode element (and saved position key) per bar, and the frame names:
 -- the secure bar and its Edit Mode stand-in ("Mover").
 M.elementIds, M.frameNames = {}, {}
 for _, bar in ipairs(M.bars) do
     M.elementIds[bar] = "actionBars" .. bar:sub(1, 1):upper() .. bar:sub(2)
     local spec = M.barSpecs[bar]
-    M.frameNames[bar] = spec.pet and "ModeUIPetBar" or spec.stance and "ModeUIStanceBar" or "ModeUIActionBar" .. bar:sub(4)
+    M.frameNames[bar] = spec.pet and "ModeUIPetBar" or spec.stance and "ModeUIStanceBar"
+        or spec.utility == "micro" and "ModeUIMicroMenu" or spec.utility == "bags" and "ModeUIBagBar" or "ModeUIActionBar" .. bar:sub(4)
 end
 -- Every bar can be anchored to any other bar through its stand-in, as well
 -- as to the screen and the game's frames. Loops are refused when an anchor is
@@ -70,7 +81,8 @@ end
 
 -- Default places: Action Bar 1 pinned to the bottom of the screen with 2, 3,
 -- the pet bar and the stance bar stacked on it; 4 on the right edge with 5
--- beside it; 6 to 8 (hidden) near the middle.
+-- beside it; 6 to 8 (hidden) near the middle; the micro menu in the
+-- bottom-right corner with the bag bar on it, right edges lined up.
 local function At(point, x, y) return { target = "screen", placement = "center", point = point, relativePoint = point, x = x, y = y } end
 local function On(bar, placement, x, y) return { target = M.elementIds[bar], placement = placement, x = x, y = y } end
 M.defaultPositions = {
@@ -78,6 +90,8 @@ M.defaultPositions = {
     bar4 = At("RIGHT", -8, 0), bar5 = On("bar4", "left", -4, 0),
     bar6 = At("CENTER", 0, -120), bar7 = At("CENTER", 0, -162), bar8 = At("CENTER", 0, -204),
     pet = On("bar3", "above", 0, 4), stance = On("pet", "above", 0, 4),
+    micro = At("BOTTOMRIGHT", -8, 8),
+    bags = { target = M.elementIds.micro, placement = "above", point = "BOTTOMRIGHT", relativePoint = "TOPRIGHT", x = 0, y = 4 },
 }
 -- Version 1's defaults; a saved place still equal to one moves to the new default.
 M.oldDefaultPositions = { bar2 = At("BOTTOM", 0, 58), bar3 = At("BOTTOM", 0, 100), bar5 = At("RIGHT", -52, 0),
@@ -101,14 +115,17 @@ local function Part(prefix, show, size, anchor, color)
 end
 
 -- One bar's settings. Bars 4 and 5 stand upright at the right edge; 6 to 8
--- start hidden. Every button is 42 by 36 by default.
+-- start hidden. Every action button is 42 by 36 by default; micro buttons
+-- 32 by 40 (Blizzard's shape) and bag buttons 36 square.
+local SIZES = { micro = { 32, 40 }, bags = { 36, 36 } }
 local function Style(bar)
     local spec = M.barSpecs[bar]
     local upright = bar == "bar4" or bar == "bar5"
+    local size = SIZES[spec.utility] or { 42, 36 }
     local style = {
         show = bar ~= "bar6" and bar ~= "bar7" and bar ~= "bar8",
         buttons = spec.count, perLine = spec.count, orientation = upright and "vertical" or "horizontal", start = "TOPLEFT",
-        width = 42, height = 36, spacing = 1,
+        width = size[1], height = size[2], spacing = 1,
         border = "rounded", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
         backgroundColor = Copy(M.BACKGROUND_COLOR), showEmpty = true, backgroundOpacity = M.BACKGROUND_OPACITY,
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
@@ -124,7 +141,8 @@ local function Style(bar)
         buttonGlows = {},
     }
     for key, value in pairs(Part("hotkey", true, 9, "TOPRIGHT", P.text)) do style[key] = value end
-    for key, value in pairs(Part("count", true, 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
+    -- On the bag bar, Count is the backpack's free slots.
+    for key, value in pairs(Part("count", true, spec.utility and 10 or 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
     for key, value in pairs(Part("macro", false, 10, "BOTTOM", M.MACRO_COLOR)) do style[key] = value end
     for key, value in pairs(Part("cooldown", true, 14, "CENTER", M.COOLDOWN_COLOR)) do style[key] = value end
     return style
@@ -141,7 +159,7 @@ M.identityKeys = { show = true, buttons = true, perLine = true, orientation = tr
 M.colorKeys = { borderColor = true, backgroundColor = true, procColor = true, readyColor = true }
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
-M.ranges = { buttons = { 1, 12, 1 }, perLine = { 1, 12, 1 }, width = { 16, 80, 1 }, height = { 16, 80, 1 },
+M.ranges = { buttons = { 1, 16, 1 }, perLine = { 1, 16, 1 }, width = { 16, 80, 1 }, height = { 16, 80, 1 },
     spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 }, borderSize = { 1, 4, 1 },
     readyDuration = { 1, 10, 1 }, cooldownOpacity = { 20, 100, 5 } }
 for _, part in ipairs(M.textParts) do
