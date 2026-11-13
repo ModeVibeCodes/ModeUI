@@ -27,11 +27,14 @@ function M:LayoutPlate(plate)
     plate.textLayer:SetFrameLevel(plate.healthBox:GetFrameLevel() + 3)
     plate.auraLayer:SetFrameLevel(plate.healthBox:GetFrameLevel() + 4)
 
+    -- Aura groups set to Sit on Health Bar take a band right against the bar;
+    -- the cast bar and outside text move past it (Auras.lua).
+    local onTop, onBottom = self:AttachedRoom(plate, "TOP"), self:AttachedRoom(plate, "BOTTOM")
     -- The cast bar sits below (or above) the health bar, then its offset.
     local castAbove, cx, cy = db.castAnchor == "TOP", Round(db.castX), Round(db.castY)
     plate.castBox:ClearAllPoints()
-    if castAbove then plate.castBox:SetPoint("BOTTOMLEFT", plate.healthBox, "TOPLEFT", cx, gap + cy)
-    else plate.castBox:SetPoint("TOPLEFT", plate.healthBox, "BOTTOMLEFT", cx, -gap + cy) end
+    if castAbove then plate.castBox:SetPoint("BOTTOMLEFT", plate.healthBox, "TOPLEFT", cx, gap + onTop + cy)
+    else plate.castBox:SetPoint("TOPLEFT", plate.healthBox, "BOTTOMLEFT", cx, -gap - onBottom + cy) end
     local castRoom = (not nameOnly and db.showCastBar) and castHeight + gap + self:CastTargetHeight(plate) or 0
 
     local path = Kit.FontPath(db, self.id)
@@ -41,8 +44,8 @@ function M:LayoutPlate(plate)
     local nameAbove = nameShown and not nameOnly and db.nameAnchor:find("^TOP") ~= nil
     local nameBelow = nameShown and not nameOnly and db.nameAnchor:find("^BOTTOM") ~= nil
     -- Room taken above and below the health bar, for markers and auras.
-    plate.above = (castAbove and castRoom or 0) + (nameAbove and nameHeight + gap or 0)
-    plate.below = (castAbove and 0 or castRoom) + (nameBelow and nameHeight + gap or 0)
+    plate.above = onTop + (castAbove and castRoom or 0) + (nameAbove and nameHeight + gap or 0)
+    plate.below = onBottom + (castAbove and 0 or castRoom) + (nameBelow and nameHeight + gap or 0)
     if nameOnly then
         -- The name is centered on the bar's place; room for any overhang.
         local overhang = math.max(0, Snap((nameHeight - healthHeight) / 2))
@@ -55,10 +58,10 @@ function M:LayoutPlate(plate)
         local justify = h == "" and "CENTER" or h
         text:ClearAllPoints()
         if anchor:find("^TOP") then
-            text:SetPoint("BOTTOM" .. h, plate.healthBox, "TOP" .. h, Round(dx), gap + (castAbove and castRoom or 0) + Round(dy))
+            text:SetPoint("BOTTOM" .. h, plate.healthBox, "TOP" .. h, Round(dx), gap + onTop + (castAbove and castRoom or 0) + Round(dy))
             text:SetWidth(width)
         elseif anchor:find("^BOTTOM") then
-            text:SetPoint("TOP" .. h, plate.healthBox, "BOTTOM" .. h, Round(dx), -gap - (castAbove and 0 or castRoom) + Round(dy))
+            text:SetPoint("TOP" .. h, plate.healthBox, "BOTTOM" .. h, Round(dx), -gap - onBottom - (castAbove and 0 or castRoom) + Round(dy))
             text:SetWidth(width)
         else
             local point = h == "" and "CENTER" or h

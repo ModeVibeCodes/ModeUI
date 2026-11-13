@@ -47,7 +47,8 @@ M.defaultGrow = { TOPLEFT = "right", TOP = "center", TOPRIGHT = "left", LEFT = "
 -- where: an anchor around the plate, the grow direction, an offset, the icon
 -- size and how many.
 local function Group(show, filter, anchor, size, max)
-    return { show = show, filter = filter, anchor = anchor, grow = M.defaultGrow[anchor], x = 0, y = 0, size = size, max = max }
+    return { show = show, filter = filter, anchor = anchor, grow = M.defaultGrow[anchor], x = 0, y = 0, size = size, max = max,
+        attach = false }
 end
 
 -- One kind's settings. `show` off leaves that kind's plates to Blizzard;

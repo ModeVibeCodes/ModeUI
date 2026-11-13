@@ -317,6 +317,14 @@ world.run([==[
     assert(M.db.friendly.debuffs.anchor == 'TOP', 'the other kind is untouched')
     -- Groups on the same anchor continue as one row in the first group's direction.
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'x', 0, 'debuffs') and M:SetOption('enemy', 'y', 0, 'debuffs'))
+    -- Sit on Health Bar: the group hugs the bar's top edge and the name moves past it.
+    local nameY, boxHeight = Point(plate.name)[5], plate.healthBox:GetHeight()
+    assert(M.db.enemy.debuffs.attach == false, 'groups start off the bar')
+    assert(M:SetOption('enemy', 'attach', true, 'debuffs'))
+    x, y = Corner(A.debuffs[1]); assert(y == boxHeight + 2, 'debuffs sit on the bar: ' .. y)
+    assert(Point(plate.name)[5] == nameY + A.debuffs[1].height + 2, 'name moves past the aura band')
+    assert(M:SetOption('enemy', 'anchor', 'LEFT', 'debuffs') and Point(plate.name)[5] == nameY, 'side anchors take no band')
+    assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'attach', false, 'debuffs') and Point(plate.name)[5] == nameY)
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'buffs'))
     local dx, dy = Corner(A.debuffs[1]); local bx, by = Corner(A.buffs[1])
     assert(dx == 70 and dy == 32 and bx == 92 and by == 32, 'one centered row: ' .. dx .. ',' .. dy .. ' ' .. bx .. ',' .. by)

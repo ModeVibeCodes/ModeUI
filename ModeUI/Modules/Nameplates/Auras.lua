@@ -29,6 +29,23 @@ function M:AuraSize(plate, group)
     return width, height
 end
 
+-- The band that groups set to Sit on Health Bar take above ("TOP") or below
+-- ("BOTTOM") the bar: their tallest icon plus a gap, or 0. Only Top and Bottom
+-- anchors can sit on the bar.
+function M:AttachedRoom(plate, side)
+    local style, px = self:Style(plate), plate.px or 1
+    if not style.showAuras or plate.nameOnly then return 0 end
+    local tallest = 0
+    for _, group in ipairs(GROUPS) do
+        local settings = style[group]
+        if settings.show and settings.attach and settings.anchor:find("^" .. side) then
+            local _, height = self:AuraSize(plate, group)
+            tallest = math.max(tallest, height)
+        end
+    end
+    return tallest > 0 and tallest + 2 * px or 0
+end
+
 function M:LayoutAuraIcon(plate, icon, group)
     local width, height = self:AuraSize(plate, group)
     local style = self:Style(plate)
@@ -103,7 +120,10 @@ function M:LayoutAuras(plate)
         local settings, count = style[group], plate.auraShown[group] or 0
         if count > 0 then
             local list = byAnchor[settings.anchor]
-            if not list then list = { grow = settings.grow }; byAnchor[settings.anchor] = list; order[#order + 1] = settings.anchor end
+            if not list then
+                list = { grow = settings.grow, attach = settings.attach }
+                byAnchor[settings.anchor] = list; order[#order + 1] = settings.anchor
+            end
             local width, height = self:AuraSize(plate, group)
             for index = 1, count do
                 list[#list + 1] = { icon = plate.auraIcons[group][index], w = width, h = height, dx = Round(settings.x, px), dy = Round(settings.y, px) }
@@ -124,7 +144,9 @@ function M:LayoutAuras(plate)
             local cx, cy
             if anchor:find("^TOP") or anchor:find("^BOTTOM") then
                 local top = anchor:find("^TOP") ~= nil
-                cy = top and (boxHeight / 2 + plate.above + gap + h / 2) or -(boxHeight / 2 + plate.below + gap + h / 2)
+                -- On the bar's edge, or past everything above or below it.
+                local past = list.attach and 0 or (top and plate.above or plate.below)
+                cy = top and (boxHeight / 2 + past + gap + h / 2) or -(boxHeight / 2 + past + gap + h / 2)
                 cx = anchor:find("LEFT") and (-boxWidth / 2 + w / 2) or anchor:find("RIGHT") and (boxWidth / 2 - w / 2) or 0
             elseif anchor == "LEFT" then
                 cx, cy = -(boxWidth / 2 + gap + Clear("LEFT") + w / 2), 0
