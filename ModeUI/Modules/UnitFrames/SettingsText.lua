@@ -2,20 +2,23 @@ local _, addon = ...
 local M, W = addon.UnitFrames, addon.ConfigWidgets
 if not M then return end
 
--- The Text tab: what each text slot shows (TextSlots.lua), one dropdown per
--- spot laid out like the frame (left, centre, right; owner, November 13,
--- 2026), all the same size. A spot with a text gets a small color swatch and
--- font size under its dropdown. The general text settings (names, font)
--- follow. Built by CreateConfigPage (Settings.lua) with its helpers in `ui`.
+-- Text spots (TextSlots.lua): one dropdown per spot laid out like the frame
+-- (left, centre, right; owner, November 13, 2026), all the same size, in the
+-- tab of the bar they sit on (Health Bar: its nine spots and the border; Power
+-- Bar: its three). A spot with a text gets a small color swatch and font size
+-- under its dropdown. The Text tab holds the general text settings (names,
+-- font). Built by CreateConfigPage (Settings.lua) with its helpers in `ui`.
 local ROWS = { { "topLeft", "top", "topRight" }, { "left", "center", "right" }, { "bottomLeft", "bottom", "bottomRight" } }
 local CELL_HEIGHT = 92
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
-function M:BuildTextTab(ui)
+-- The spots of one bar ("health" or "power").
+function M:BuildTextSpots(ui, part)
     local page, When = ui.page, ui.When
     local function Slots() return ui.db().texts end
     local contents = M.choices.textContent
-    page.unitFrameTextSelects, page.unitFrameTextSwatches, page.unitFrameTextSizes = {}, {}, {}
+    page.unitFrameTextSelects = page.unitFrameTextSelects or {}
+    page.unitFrameTextSwatches, page.unitFrameTextSizes = page.unitFrameTextSwatches or {}, page.unitFrameTextSizes or {}
 
     -- The color a slot's text shows: its custom color, else its default.
     local function ShownColor(slot)
@@ -85,28 +88,32 @@ function M:BuildTextTab(ui)
         return hosts
     end
 
+    if part == "power" then
+        page:Group("Text")
+        Spots(M.powerSlots, { M.textSlotLabels.powerLeft, M.textSlotLabels.powerCenter, M.textSlotLabels.powerRight })
+        return
+    end
+    page:Group("Text")
+    for _, row in ipairs(ROWS) do
+        local titles = {}
+        for i, slot in ipairs(row) do titles[i] = M.textSlotLabels[slot] end
+        Spots(row, titles)
+    end
+    local border = Spots({ "border", false, false }, { M.textSlotLabels.border, "Border Alignment", "" })
+    local align = ui.SelectIn(border[2], 200, function() return M.choices.textAlign end, function() return Slots().border.align end,
+        function(v) M:SetTextOption(ui.Editing(), "border", "align", v) end)
+    align:ClearAllPoints(); align:SetPoint("TOPLEFT", border[2], "TOPLEFT", 0, 0); align:SetPoint("TOPRIGHT", border[2], "TOPRIGHT", 0, 0)
+    page.unitFrameBorderAlign = align
+    page.refreshers[#page.refreshers + 1] = function()
+        local on = Slots().border.content ~= "none"
+        align:SetShown(on); border[2].rowLabel:SetShown(on)
+    end
+end
+
+-- General text settings: name colors and the font.
+function M:BuildTextTab(ui)
+    local page, When = ui.page, ui.When
     ui.Tab("Text", function()
-        page:Group("Health Bar")
-        for _, row in ipairs(ROWS) do
-            local titles = {}
-            for i, slot in ipairs(row) do titles[i] = M.textSlotLabels[slot] end
-            Spots(row, titles)
-        end
-        page:Group("Border")
-        local border = Spots({ "border", false, false }, { M.textSlotLabels.border, "Border Alignment", "" })
-        local align = ui.SelectIn(border[2], 200, function() return M.choices.textAlign end, function() return Slots().border.align end,
-            function(v) M:SetTextOption(ui.Editing(), "border", "align", v) end)
-        align:ClearAllPoints(); align:SetPoint("TOPLEFT", border[2], "TOPLEFT", 0, 0); align:SetPoint("TOPRIGHT", border[2], "TOPRIGHT", 0, 0)
-        page.unitFrameBorderAlign = align
-        page.refreshers[#page.refreshers + 1] = function()
-            local on = Slots().border.content ~= "none"
-            align:SetShown(on); border[2].rowLabel:SetShown(on)
-        end
-        When(function() return ui.db().showPower end, function()
-            page:Group("Power Bar")
-            Spots(M.powerSlots, { M.textSlotLabels.powerLeft, M.textSlotLabels.powerCenter, M.textSlotLabels.powerRight })
-        end)
-        -- General text settings.
         page:Group("Names")
         -- Plain text: Sky by default, or Champagne, Lilac, Frost, class or custom.
         ui.Choice("Name Color", "nameColorMode")

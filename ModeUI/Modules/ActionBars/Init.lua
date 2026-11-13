@@ -54,13 +54,16 @@ for _, bar in ipairs(M.bars) do
     local spec = M.barSpecs[bar]
     M.frameNames[bar] = spec.pet and "ModeUIPetBar" or spec.stance and "ModeUIStanceBar" or "ModeUIActionBar" .. bar:sub(4)
 end
--- Every bar can be anchored to a bar listed before it (never in a loop),
--- through its stand-in, as well as to the screen and the game's frames.
+-- Every bar can be anchored to any other bar through its stand-in, as well
+-- as to the screen and the game's frames. Loops are refused when an anchor is
+-- chosen (PositionManager:WouldLoop), not by list order.
 local BASE_TARGETS = { "screen", "player", "target", "focus", "minimap", "party" }
 M.allowedTargets = {}
 for index, bar in ipairs(M.bars) do
     local allowed = Copy(BASE_TARGETS)
-    for earlier = 1, index - 1 do allowed[#allowed + 1] = M.elementIds[M.bars[earlier]] end
+    for other, otherBar in ipairs(M.bars) do
+        if other ~= index then allowed[#allowed + 1] = M.elementIds[otherBar] end
+    end
     M.allowedTargets[bar] = allowed
     addon.Positioning:AddTarget(M.elementIds[bar], L[M.barSpecs[bar].label], M.frameNames[bar] .. "Mover")
 end

@@ -138,8 +138,9 @@ above it, in volt green (#CCFF00); the highlight itself carries no text.
 - **The bar follows live** while you drag, frame by frame.
 - **Anchoring:** **Snap To UI Element** in the Edit Mode window anchors a bar to
   the screen, the game's Player, Target, Focus or Party frames, the minimap, or
-  any bar listed before it. For example, bar 3 can anchor to bar 1 or 2, but not
-  the other way round, so anchors never loop. A bar anchored to another moves
+  any other bar. A bar can't anchor to one that already hangs from it (bar 1
+  can't go on bar 2 while bar 2 sits on bar 1), so anchors never loop; Anchor To
+  says so when you point at such a bar. A bar anchored to another moves
   with it. The secure bar itself is always pinned to the screen where its
   stand-in is, so it never hangs from another frame in combat.
 - **Anchor To** clicks: while **Anchor To...** waits for a click, every

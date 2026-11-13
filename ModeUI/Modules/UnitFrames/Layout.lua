@@ -124,13 +124,16 @@ function M:ApplyLayout(f, unit)
     -- Foreground (Mode Gradient by default) over the background track, which
     -- shows the world through it at Background Opacity.
     local reverse = fdb.fillDirection == "reverse"
-    for _, bar in ipairs({ h, pw }) do
+    -- Each bar has its own textures and background opacity.
+    local looks = { { h, g.healthHeight, fdb.foregroundTexture, fdb.backgroundTexture, fdb.barBackgroundOpacity },
+        { pw, g.powerHeight, fdb.powerForegroundTexture, fdb.powerBackgroundTexture, fdb.powerBackgroundOpacity } }
+    for _, look in ipairs(looks) do
+        local bar, barHeight, fill, back, opacity = look[1], look[2], look[3], look[4], look[5]
         bar:SetFrameLevel(level + 1)
         if bar.SetReverseFill then bar:SetReverseFill(reverse) end
-        Kit.BarForeground(bar, fdb.foregroundTexture, bar == h and g.healthHeight or g.powerHeight, g.px)
-        local barHeight = bar == h and g.healthHeight or g.powerHeight
-        Kit.BarBackground(bar, fdb.backgroundTexture, g.width - g.inset - g.pad, barHeight, g.px)
-        Tint(bar.bg, Kit.BarBackgroundColor(fdb.backgroundTexture), fdb.barBackgroundOpacity / 100)
+        Kit.BarForeground(bar, fill, barHeight, g.px)
+        Kit.BarBackground(bar, back, g.width - g.inset - g.pad, barHeight, g.px)
+        Tint(bar.bg, Kit.BarBackgroundColor(back), opacity / 100)
         Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, masks)
     end
     -- A 1px light line where the health fill ends (owner, November 13, 2026).

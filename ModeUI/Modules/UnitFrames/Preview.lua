@@ -23,7 +23,7 @@ addon.PreviewStates:Register(M.id, {
 })
 
 -- Tabs for a part only one frame has show that frame, whatever Editing says.
-M.previewSectionUnits = { ["Combo Points"] = "target" }
+M.previewSectionUnits = { ["Class Resource"] = "target" }
 -- The frame the page is editing (or the one the open tab is about), else the Player.
 function M:PreviewUnit()
     local page = self.page

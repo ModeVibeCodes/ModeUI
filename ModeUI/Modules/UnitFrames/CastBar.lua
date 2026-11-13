@@ -54,12 +54,15 @@ function M:LayoutCast(f, unit)
         if edge < radius then clear = math.ceil((math.sqrt(radius * radius - edge * edge) + 2 * px) / px) * px end
     end
     box:ClearAllPoints()
-    if cdb.position == "above" then
-        box:SetPoint("BOTTOM" .. near, f.panel, "TOP" .. near, sign * clear, gap)
-        box:SetPoint("BOTTOM" .. far, f.panel, "TOP" .. far, 0, gap)
+    local edge, toward, dy = "TOP", "BOTTOM", -gap
+    if cdb.position == "above" then edge, toward, dy = "BOTTOM", "TOP", gap end
+    if cdb.fullWidth then
+        box:SetPoint(edge .. near, f.panel, toward .. near, sign * clear, dy)
+        box:SetPoint(edge .. far, f.panel, toward .. far, 0, dy)
     else
-        box:SetPoint("TOP" .. near, f.panel, "BOTTOM" .. near, sign * clear, -gap)
-        box:SetPoint("TOP" .. far, f.panel, "BOTTOM" .. far, 0, -gap)
+        -- Bar Width, centred under the span Full Width would fill.
+        box:SetPoint(edge, f.panel, toward, Round(sign * clear / 2), dy)
+        box:SetWidth(Snap(cdb.width))
     end
     box.clear = clear
     box:SetHeight(height + 2 * g.pad)
@@ -89,8 +92,9 @@ function M:LayoutCast(f, unit)
     bar:SetPoint("TOP" .. near, box, "TOP" .. near, sign * nearInset, -g.pad)
     bar:SetPoint("BOTTOM" .. far, box, "BOTTOM" .. far, -sign * farInset, g.pad)
     bar:SetFrameLevel(box:GetFrameLevel() + 1)
-    Kit.BarForeground(bar, fdb.foregroundTexture, height, px)
-    Kit.BarBackground(bar, fdb.backgroundTexture)
+    -- The cast bar's own textures (Cast Bar tab).
+    Kit.BarForeground(bar, cdb.foregroundTexture, height, px)
+    Kit.BarBackground(bar, cdb.backgroundTexture)
     Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, { box.barMasks.LEFT, box.barMasks.RIGHT })
     box.textLayer:SetFrameLevel(bar:GetFrameLevel() + 2)
     -- Spell name from the left, seconds left on the right, in the frame's font.

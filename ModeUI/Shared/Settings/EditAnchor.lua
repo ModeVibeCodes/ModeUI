@@ -80,27 +80,27 @@ end
 -- What under the cursor the element may hang from: the smallest listed
 -- frame there (other ModeUI elements, the Player Frame...), else a named
 -- frame when the element takes any. Never itself, never a loop, and never
--- through the Edit Mode window.
+-- through the Edit Mode window. Another element's name handle picks it too
+-- (and first). The third result, when nothing can be picked, is the label of
+-- a listed frame under the cursor that would close a loop.
 function A:Candidate(element)
     local cx, cy = Cursor()
     if not cx or not element then return end
     if addon.editWindow and Visible(addon.editWindow) and Under(addon.editWindow, cx, cy) then return end
-    local best, frame, area
+    local best, frame, area, looped
     for _, item in ipairs(P.targets) do
         if item.id ~= "screen" and element.allowedTargets[item.id] then
             local target = P:Resolve(item.id)
-            -- Another element's name handle picks it too (and first).
             local owner = target and PM.frames[target]
             local handle = owner and PM.elements[owner].decoration and PM.elements[owner].decoration.handle
             local size = target and target ~= element.frame and Visible(target)
                 and (handle and Visible(handle) and Under(handle, cx, cy) and 0 or Under(target, cx, cy))
-            if size and (not area or size < area) and not PM:WouldLoop(element.id, item.id) then
-                best, frame, area = item.id, target, size
-            end
+            if size and PM:WouldLoop(element.id, item.id) then looped = looped or item.label
+            elseif size and (not area or size < area) then best, frame, area = item.id, target, size end
         end
     end
     if not best and element.allowedTargets.selected then best, frame = F:PickCandidate() end
-    return best, frame
+    return best, frame, not best and looped or nil
 end
 
 local function Outline(parent)
@@ -148,9 +148,13 @@ function A:Track()
     local element = PM:Element(self.elementId)
     if Combat() or not element or not addon.editMode then self:Stop(); return end
     local overlay = self.overlay
-    local target, frame = self:Candidate(element)
+    local target, frame, looped = self:Candidate(element)
     overlay.outline:Hide()
     local name = element.label or element.module.title
+    if looped then
+        overlay.text:SetText(looped .. " already hangs from " .. name .. ", so it can't hold it. Escape cancels.")
+        return
+    end
     if not target then overlay.text:SetText("Anchor " .. name .. ": click the element to anchor it to. Escape cancels."); return end
     local x, y, width, height = P:Geometry(frame)
     if x then
