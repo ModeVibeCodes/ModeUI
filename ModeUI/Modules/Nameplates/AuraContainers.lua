@@ -21,7 +21,7 @@ if not M then return end
 -- Blizzard_CustomAuraButton.lua) and docs/API_COMPATIBILITY.md.
 local Kit, Auras = addon.Kit, addon.Domain.Auras
 local TEMPLATE = "CustomAuraContainerTemplate"
-local DISPELS = { "Magic", "Curse", "Disease", "Poison", "Enrage" }
+local DISPELS = { "Magic", "Curse", "Disease", "Poison", "Enrage", "Bleed" }
 
 function M:UsesAuraContainers()
     if self.auraContainers == nil then
@@ -33,40 +33,86 @@ end
 
 -- Everything buttons bake in when they are made.
 local function LookKey(style, path, px)
-    local parts = { style.auraShape, style.auraBorder, tostring(style.auraTimer), tostring(style.auraCount), path, px,
+    local parts = { style.auraShape, style.auraBorder, tostring(style.auraTimer), tostring(style.auraTimerText), tostring(style.auraCount), path, px,
         tostring(style.outline), tostring(style.shadow), tostring(style.liftedShadow), tostring(style.slug) }
-    for _, name in ipairs(DISPELS) do
-        local c = style[M.dispelColorKeys[name]]
+    local colors = { "auraNoTypeColor", "auraCCNoTypeColor" }
+    for _, name in ipairs(DISPELS) do colors[#colors + 1] = M.dispelColorKeys[name] end
+    for _, key in ipairs(colors) do
+        local c = style[key]
         parts[#parts + 1] = string.format("%.3f,%.3f,%.3f", c[1], c[2], c[3])
     end
     return table.concat(parts, "|")
 end
 
-local function DispelColors(style)
-    local map = { None = CreateColor(Kit.onyx.border[1], Kit.onyx.border[2], Kit.onyx.border[3], 1) }
-    for _, name in ipairs(DISPELS) do
-        local c = style[M.dispelColorKeys[name]]
-        map[name] = CreateColor(c[1], c[2], c[3], 1)
+local function NoTypeColor(style, group)
+    return group == "crowdControl" and style.auraCCNoTypeColor or style.auraNoTypeColor
+end
+
+-- The rim colors by dispel type. A step curve on the game's dispel type IDs
+-- (C_UnitAuras.GetAuraDispelTypeColor) colors auras whose type is secret; the
+-- name map is the fallback when the client has no color curves. "None" and the
+-- IDs without a named type take the no-type color.
+local function DispelColors(style, group)
+    local none = NoTypeColor(style, group)
+    local function Color(c) return CreateColor(c[1], c[2], c[3], 1) end
+    if C_CurveUtil and C_CurveUtil.CreateColorCurve and Enum and Enum.LuaCurveType then
+        local ok, curve = pcall(function()
+            local made = C_CurveUtil.CreateColorCurve()
+            made:SetType(Enum.LuaCurveType.Step)
+            for id, name in pairs(M.dispelTypeIDs) do
+                made:AddPoint(id, Color(name == "none" and none or style[M.dispelColorKeys[name]]))
+            end
+            return made
+        end)
+        if ok and curve then return { customDispelColorCurve = curve } end
     end
-    return map
+    local map = { None = Color(none) }
+    for _, name in ipairs(DISPELS) do map[name] = Color(style[M.dispelColorKeys[name]]) end
+    return { customDispelColorMap = map }
+end
+
+-- Seconds as whole numbers, minutes past a minute ("12", "3m"); nil leaves
+-- the game's own format. Made once.
+function M:AuraTimeFormatter()
+    if self.timeFormatter == nil then
+        self.timeFormatter = false
+        if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter then
+            local ok, formatter = pcall(function()
+                local made = C_StringUtil.CreateNumericRuleFormatter()
+                made:AddBreakpoint({ threshold = 0, step = 1, format = "%d" })
+                made:AddBreakpoint({ threshold = 60, format = "%dm", components = { { div = 60, step = 1 } } })
+                return made
+            end)
+            if ok and formatter then self.timeFormatter = formatter end
+        end
+    end
+    return self.timeFormatter or nil
 end
 
 -- Styles one button as it is made: the parts of Kit.AuraIcon on the button,
 -- then registers them so the container fills them (possibly with secrets).
-local function Initializer(style, width, height, px, path)
-    local colors = style.auraBorder == "type" and DispelColors(style) or nil
+local function Initializer(style, group, width, height, px, path)
+    local colors = style.auraBorder == "type" and DispelColors(style, group) or nil
+    local formatter = M:AuraTimeFormatter()
     return function(button)
         Kit.AuraIconParts(button)
         Kit.LayoutAuraIcon(button, width, height, px, style, path)
         Kit.TintAuraRim(button, nil)
         button:SetIcon(button.icon)
         if style.auraTimer then button:SetDurationCooldown(button.cooldown) else button.cooldown:Hide() end
+        -- The time text is filled by the game; its lifted copy can't follow.
+        button.timer.lift:Hide()
+        if style.auraTimerText then
+            button:SetDurationText(button.timer, formatter and { textFormatter = formatter } or nil)
+        else button.timer:Hide() end
         -- The stack count is filled by the game; its lifted copy can't follow.
         button.count.lift:Hide()
         if style.auraCount then button:SetApplicationCount(button.count) else button.count:Hide() end
         if colors then
-            button:AddDispelTypeTexture(button.rim, { style = Enum.CustomAuraButtonDispelTypeTextureStyle.PreserveAsset,
-                showWhenHarmful = true, showWhenHelpful = true, showWithoutDispelType = true, customDispelColorMap = colors })
+            local options = { style = Enum.CustomAuraButtonDispelTypeTextureStyle.PreserveAsset,
+                showWhenHarmful = true, showWhenHelpful = true, showWithoutDispelType = true }
+            for key, value in pairs(colors) do options[key] = value end
+            button:AddDispelTypeTexture(button.rim, options)
         end
     end
 end
@@ -101,7 +147,7 @@ local function Container(self, plate, anchor, groups, style, px, path)
         local width, height = self:AuraSize(plate, group)
         local filter = Auras.GroupFilter(group, style[group].filter, style.crowdControl.show) or "HARMFUL"
         container:AddAuraGroup(group, filter, { maxFrameCount = style[group].max, layout = Layout(self, plate, group, style, px),
-            initializeFrame = Initializer(style, width, height, px, path) })
+            initializeFrame = Initializer(style, group, width, height, px, path) })
     end
     container.lookKey = key
     container:SetEnabled(false)

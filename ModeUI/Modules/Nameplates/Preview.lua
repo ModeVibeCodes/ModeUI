@@ -112,7 +112,8 @@ function M:PaintSampleAuras(plate, style, sample)
             icon.jumpKind = plate.kind
             icon.icon:SetTexture(aura.icon)
             Kit.Write(icon.count, (style.auraCount and aura.count) and tostring(aura.count) or "")
-            Kit.TintAuraRim(icon, self:AuraRimColor(style, aura.dispel))
+            Kit.TintAuraRim(icon, self:AuraRimColor(style, aura.dispel, group))
+            Kit.Write(icon.timer, style.auraTimerText and tostring(math.max(0, aura.duration - aura.elapsed)) or "")
             if style.auraTimer then
                 icon.cooldown:SetCooldown(GetTime() - aura.elapsed, aura.duration); icon.cooldown:Show()
             else icon.cooldown:Hide() end
@@ -146,36 +147,54 @@ function M:PaintSample(plate, style, sample, progress)
     Kit.Formatted(plate.castTimer, "%.1f", CAST_SECONDS * (1 - progress))
 end
 
--- Room the sample needs above and below its health bar, and beside it.
-local function Room(style)
-    local top, bottom, side = (style.showName and style.nameFontSize + 6 or 4), style.castHeight + 8, 40
-    if style.raidAnchor:find("^TOP") then top = top + style.raidSize + 2 end
+-- How far the sample reaches past its health bar on each side, measured from
+-- the laid-out plate: rows above and below share one band (the tallest item
+-- counts), and each side counts only what sits on it, so the whole sample can
+-- be centered and the preview kept as short as it can be.
+function M:PreviewBounds(plate, style, sample)
+    local px, gap = plate.px or 1, 2 * plate.px
+    local up, down = 0, 0
+    local side = { LEFT = self:SideRoom(plate, "LEFT"), RIGHT = self:SideRoom(plate, "RIGHT") }
+    local function Band(anchor, height)
+        if anchor:find("^TOP") then up = math.max(up, height) elseif anchor:find("^BOTTOM") then down = math.max(down, height) end
+    end
+    if style.showRaidIcon then Band(style.raidAnchor, plate.markSize or style.raidSize) end
     if style.showIndicator then
         for _, part in ipairs(M.indicatorParts) do
-            local anchor, size = style[part .. "Anchor"], part == "level" and 16 or style[part .. "Size"]
-            if anchor:find("^TOP") then top = top + size + 2
-            elseif anchor == "LEFT" or anchor == "RIGHT" then side = side + size + 2 end
+            if style[M.indicatorShowKeys[part]] then Band(style[part .. "Anchor"], part == "level" and style.levelSize + 2 or style[part .. "Size"]) end
         end
     end
-    if style.showAuras then
+    if style.showAuras and not plate.nameOnly then
         for _, group in ipairs(M.auraGroups) do
-            local settings = style[group]
-            if settings.show then
-                local size = settings.size + style.auraSpacing
-                if settings.anchor:find("^TOP") then top = top + size + math.max(0, settings.y)
-                elseif settings.anchor:find("^BOTTOM") then bottom = bottom + size + math.max(0, -settings.y)
-                else side = side + math.min(settings.max, 3) * size + math.abs(settings.x) end
+            local settings, count = style[group], #self:SampleAuras(style, sample, group)
+            if count > 0 then
+                local width, height = self:AuraSize(plate, group)
+                local anchor = settings.anchor
+                if side[anchor] then
+                    side[anchor] = side[anchor] + count * (width + style.auraSpacing * px) + math.abs(settings.x)
+                elseif not settings.attach then
+                    Band(anchor, height + math.abs(settings.y))
+                end
             end
         end
     end
-    if style.targetStyle == "arrows" or style.targetStyle == "borderArrows" then side = side + style.targetArrowSize + style.targetArrowGap end
-    return top, bottom, side
+    if style.targetStyle == "arrows" or style.targetStyle == "borderArrows" then
+        for key in pairs(side) do side[key] = side[key] + style.targetArrowGap * px + style.targetArrowSize end
+    end
+    local top = plate.above + (up > 0 and up + gap or 0)
+    local bottom = plate.below + (down > 0 and down + gap or 0)
+    return top, bottom, side.LEFT, side.RIGHT
 end
 
-function M:GetPreviewSize()
-    local style = self.db[self:PreviewKind()]
-    local top, bottom, side = Room(style)
-    return math.max(320, style.width + 2 * side), top + style.healthHeight + 4 + bottom + 6 + HINT_HEIGHT
+function M:GetPreviewSize(view)
+    local kind = self:PreviewKind()
+    local style, plate = self.db[kind], view and view.plates and view.plates[kind]
+    if not plate or not style.show then return 320, 60 end
+    -- Measures the sample as it was last drawn; laying it out again here would
+    -- undo its painted colors.
+    if not plate.px then self:LayoutPlate(plate) end
+    local top, bottom, left, right = self:PreviewBounds(plate, style, self.previewSamples[kind])
+    return math.max(320, plate:GetWidth() + left + right + 16), 4 + top + plate:GetHeight() + bottom + 6 + HINT_HEIGHT
 end
 
 function M:RenderPreview(view)
@@ -188,13 +207,14 @@ function M:RenderPreview(view)
         if kind ~= shownKind then
             plate:Hide(); caption:Hide()
         else
-            local top = Room(style)
             caption:Show()
             if style.show then
                 self:LayoutPlate(plate)
                 local px = plate.px or 1
-                local x = math.floor(-plate:GetWidth() / 2 / px + 0.5) * px
-                plate:ClearAllPoints(); plate:SetPoint("TOPLEFT", view.frame, "TOP", x, -math.floor(top / px + 0.5) * px)
+                -- Center everything the sample shows, not just its health bar.
+                local top, _, left, right = self:PreviewBounds(plate, style, self.previewSamples[kind])
+                local x = math.floor((-plate:GetWidth() / 2 + (left - right) / 2) / px + 0.5) * px
+                plate:ClearAllPoints(); plate:SetPoint("TOPLEFT", view.frame, "TOP", x, -math.floor((top + 4) / px + 0.5) * px)
                 plate:Show()
                 self:PaintSample(plate, style, self.previewSamples[kind], progress)
                 FitText(view.targets[kind].name, plate.name)
