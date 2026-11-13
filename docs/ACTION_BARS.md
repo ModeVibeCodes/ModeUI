@@ -194,7 +194,9 @@ then owns keys 1-12. **Show Bar** (on the **Bar** tab) off turns a bar off
 completely, in Edit Mode too. Keybinds still work for hidden bars, as they do
 for Blizzard's.
 
-**Opacity** fades the whole bar. Opacity changes may happen in combat. Showing,
+**Opacity** fades the whole bar. Moving the Opacity and Faded Opacity sliders
+only sets the alpha on the bar and the preview, with no rebuild, so dragging
+stays smooth. Opacity changes may happen in combat. Showing,
 hiding, moving and sizing don't: anything that needs them waits for the end of
 combat.
 
@@ -216,9 +218,9 @@ on that text. The tabs:
 
 - **Bar**: Show Bar, status, layout, size, Keybind Mode, paging
 - **Buttons**: border style, size and color; background color and opacity;
-  empty slots
+  empty slots; On Cooldown (Icon Color, Icon Opacity)
 - **Text**: which text, then its place, size and color, and the font
-- **Glows**: proc glow, glow when ready, icon opacity on cooldown
+- **Glows**: proc glow, glow when ready
 - **Visibility**: Show, custom conditions, opacity, Faded Opacity
 - **Copy & Apply**: Copy From (the bar in Editing), Apply To, Reset
 
@@ -228,13 +230,16 @@ Bar off) or **Hidden** (Show set to Hidden). When the chosen bar is either, a
 **Turn On** button appears beside it: it switches Show Bar on, and sets Show back
 to Always if it was Hidden. A tab also says so when that bar is off.
 
-**Copy & Apply** tab: **Copy From** names the source, the bar in Editing. Under
-**Apply To**, tick bars, then **Apply to Selected**, or use **Apply to All Bars**.
-The ticked bars get the source's size, borders, background, text, glows and
-opacity; each keeps its own buttons, lines, paging, show settings and
-per-button glow switches. The source is skipped, and the result ("Applied to 2
-bars.") shows beside the buttons. **Reset** holds **Reset to Defaults** for the
-bar in Editing.
+**Copy & Apply** tab: **Copy From** is a dropdown showing the source, the bar in
+Editing; choosing a bar there changes Editing too. **Apply To** is a pick list:
+each bar has a check box, clicking a bar ticks or unticks it and the list stays
+open, and the field reads "Choose bars", the bar's name, or "3 bars selected".
+The source shows as **Source** and can't be picked. The list closes on a click
+outside it. Then **Apply to Selected**, or **Apply to All Bars**. The picked
+bars get the source's size, borders, background, text, glows and opacity; each
+keeps its own buttons, lines, paging, show settings and per-button glow
+switches. The result ("Applied to 2 bars.") shows beside the buttons. **Reset**
+holds **Reset to Defaults** for the bar in Editing.
 
 ## Paging
 
@@ -272,10 +277,14 @@ How buttons react, on the **Glows** tab (per bar):
   `C_ActionBar.GetActionCooldown` on `SPELL_UPDATE_COOLDOWN`; its `isActive` and
   `isOnGCD` fields are never secret, so this works in combat and ignores the
   global cooldown.
+- **On Cooldown** (Buttons tab) starts by saying what it covers: an ability on
+  a cooldown longer than the global cooldown.
+- **Icon Color**: **Desaturate** (the default) turns the icon gray while that
+  cooldown runs and gives its color back when it's ready; **Full Color** keeps
+  it as it is. It's the saved `cooldownDesaturate` switch.
 - **Icon Opacity** (on cooldown): fades an icon while its spell is on such a
   cooldown. 100% (the default) leaves icons alone.
-- **Desaturate Icon** (on by default): the icon turns gray while that cooldown
-  runs and gets its color back when it's ready. Off keeps full color. Blizzard
+- Desaturation details: Blizzard
   clears desaturation when a button's action changes; a hook puts it back while
   the cooldown still runs, and ModeUI only undoes its own (a level-locked
   action stays gray).

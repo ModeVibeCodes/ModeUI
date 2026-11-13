@@ -548,28 +548,64 @@ world.run([==[
     local copyTab
     for _, section in ipairs(page.sections) do if section.title == 'Copy & Apply' then copyTab = section end end
     assert(copyTab and page.sections[#page.sections] == copyTab, 'Copy & Apply is the last tab')
-    local cells = page.applyToggles
+    local pick = page.applyTargetSelect
+    -- Clicks the pick list's row for a bar; the menu stays open.
+    local function Pick(bar)
+        if not pick.menu:IsShown() then pick.scripts.OnClick(pick) end
+        for _, row in ipairs(pick.rows) do
+            if row:IsShown() and row.choice.id == bar then
+                if row.choice.disabled then return 'disabled' end
+                row.scripts.OnClick(row); return true
+            end
+        end
+    end
     for _, row in ipairs(page.rows) do
         if row.settingsGroupTitle == 'Apply To' or row.settingsGroupTitle == 'Copy From' or row.settingsGroupTitle == 'Reset' then
             assert(row.section == copyTab, 'copy, apply and reset sit on the Copy & Apply tab')
         end
         assert(row.settingsGroupTitle ~= 'Apply Style' and row.settingsGroupTitle ~= 'This Bar', 'the Bar tab no longer holds them')
     end
-    assert(page.applySource.text == 'Action Bar 1', 'the source is the bar in Editing')
+    assert(page.applySource.label.text == 'Action Bar 1', 'Copy From shows the bar in Editing')
     assert(M:SetOption('bar1', 'borderSize', 3))
-    cells[3].frame.scripts.OnClick(cells[3].frame); cells[5].frame.scripts.OnClick(cells[5].frame)
-    cells[1].frame.scripts.OnClick(cells[1].frame)
+    assert(pick.label.text == 'Choose bars', 'nothing picked yet')
+    assert(Pick('bar3') and Pick('bar5') and Pick('bar1') == 'disabled', 'the source cannot be picked')
+    assert(pick.menu:IsShown(), 'the pick list stays open for more picks')
+    local marks = {}
+    for _, row in ipairs(pick.rows) do if row:IsShown() then marks[row.choice.id] = row.checkMark:IsShown() end end
+    assert(marks.bar3 and marks.bar5 and not marks.bar4 and not marks.bar1, 'picked bars show a check')
+    assert(pick.label.text == '2 bars selected', 'the field counts the picks')
+    pick.menu:Hide()
     assert(page.applyTargets.bar3 and page.applyTargets.bar5 and not page.applyTargets.bar1, 'the edited bar is skipped')
     page.applyButton.scripts.OnClick(page.applyButton)
     assert(M.db.bar3.borderSize == 3 and M.db.bar5.borderSize == 3 and M.db.bar4.borderSize == 2, 'applied to the ticked bars only')
     assert(M.db.bar5.orientation == 'vertical' and page.applyResult.text == 'Applied to 2 bars.', 'shape kept; result shown')
     assert(M.db.bar3.paging == false and M.db.bar3.pageConditions:find('mod:shift', 1, true), 'paging stays per bar')
-    cells[3].frame.scripts.OnClick(cells[3].frame); cells[5].frame.scripts.OnClick(cells[5].frame)
+    Pick('bar3'); assert(pick.label.text == 'Action Bar 5', 'one pick shows its name'); Pick('bar5'); pick.menu:Hide()
     page.applyButton.scripts.OnClick(page.applyButton)
     assert(page.applyResult.text == 'Choose bars first.', 'nothing ticked')
     page.applyAllButton.scripts.OnClick(page.applyAllButton)
     assert(M.db.bar4.borderSize == 3 and M.db.pet.borderSize == 3 and page.applyResult.text == 'Applied to 9 bars.', 'Apply to All Bars')
     for _, bar in ipairs(M.bars) do assert(M:SetOption(bar, 'borderSize', 2)) end
+
+    -- Opacity drags set alpha only: no rebuild of the bars or the page per step.
+    local applies, apply = 0, M.Apply
+    M.Apply = function(...) applies = applies + 1; return apply(...) end
+    assert(M:SetOption('bar1', 'opacity', 55) and M.db.bar1.opacity == 55 and applies == 0, 'opacity skips the rebuild')
+    assert(math.abs(M.headers.bar1:GetAlpha() - 0.55) < 0.001 and math.abs(M.previewView.bar:GetAlpha() - 0.55) < 0.001, 'bar and preview fade at once')
+    assert(not M:SetOption('bar1', 'opacity', 5) and not M:SetOption('bar1', 'opacity', 52.5) and not M:SetOption('bar1', 'fadeOpacity', 'x'), 'out-of-range opacity refused')
+    assert(M:SetOption('bar1', 'fadeOpacity', 20) and applies == 0 and M.db.bar1.fadeOpacity == 20)
+    M.Apply = apply
+    assert(M:SetOption('bar1', 'opacity', 100) and M:SetOption('bar1', 'fadeOpacity', 0))
+
+    -- On Cooldown sits on the Buttons tab: a line about cooldowns, then the choices.
+    local pills = page.cooldownColorPills
+    local cooldownRow
+    for _, row in ipairs(page.rows) do if row.settingsGroupTitle == 'On Cooldown' then cooldownRow = row end end
+    assert(cooldownRow and cooldownRow.section.title == 'Buttons', 'On Cooldown is on the Buttons tab')
+    pills[2].scripts.OnClick(pills[2])
+    assert(M.db.bar1.cooldownDesaturate == false, 'Full Color keeps the icon as it is')
+    pills[1].scripts.OnClick(pills[1])
+    assert(M.db.bar1.cooldownDesaturate == true, 'Desaturate turns it gray')
 
     -- Copy and reset.
     assert(M:SetOption('bar1', 'border', 'square') and M:CopyStyleToAll('bar1'))

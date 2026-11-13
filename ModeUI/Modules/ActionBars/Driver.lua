@@ -106,10 +106,25 @@ local function Commit(self, bar, style)
     return true
 end
 
+-- Opacity only changes alpha. A slider drag sets it straight on the bars and
+-- the preview: rebuilding every bar and the page on each step stuttered.
+M.alphaKeys = { opacity = true, fadeOpacity = true }
+local function SetAlpha(self, bar, key, value)
+    local r = self.ranges[key]
+    if not addon.IsPublic(value) or type(value) ~= "number" or value ~= math.floor(value) or value < r[1] or value > r[2] then
+        return false
+    end
+    self.db[bar][key] = value
+    if self.built then self:UpdateFade() end
+    self:PaintPreviewAlpha()
+    return true
+end
+
 -- Values are checked by Initialize on a copy before they're kept.
 function M:SetOption(bar, key, value)
     local defaults = self.styleDefaults[bar]
     if not self:CanConfigure() or not defaults or defaults[key] == nil then return false end
+    if self.alphaKeys[key] then return SetAlpha(self, bar, key, value) end
     local candidate = Copy(self.db)
     candidate[bar][key] = Copy(value)
     if not pcall(self.Initialize, candidate) then return false end
