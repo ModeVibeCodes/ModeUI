@@ -17,7 +17,7 @@ find the class and level lines.
 | Tooltips | `GameTooltip`, `ItemRefTooltip` (clicked item links), `ShoppingTooltip1/2` and `ItemRefShoppingTooltip1/2` (comparisons), `GameNoHeaderTooltip`, `GameSmallHeaderTooltip`, `FriendsTooltip`. |
 | Frame | Blizzard's NineSlice (border and background) is faded: `SharedTooltip_SetBackdropStyle` re-applies its atlases and colors, never its alpha, so it stays gone. Azerite and corrupted overlays are faded. **Rounded** (default): a rounded box (ModeRound, radius 5) in Background Color at Background Opacity (92%), with a hollow rounded rim Border Size thick (ModeRing1-4) above it, so the see-through fill never takes the rim's color. Rounded off: a flat fill and a crisp square border. **Mode Gradient**: a soft white wash over the top, as on every Mode bar. |
 | Fill color | The Unit Frames' default health color (Onyx #1C1E21), as the chat and the meters. |
-| Border color | **Quality Border**: an item's quality color. **Class Border**: a player's class color. Otherwise Border Color (2 px, the unit frames' rim color #40454C). A unit the game keeps secret keeps Border Color. |
+| Border color | **Quality Border** (on): an item's quality color. **Class Border** (off by default): a player's class color. Otherwise Border Color (1 px, the unit frames' rim color #40454C). A unit the game keeps secret keeps Border Color. |
 | Screen | The tooltip is kept on the screen, border and all, wherever its anchor sits. |
 | Size | **Minimum Width** (0–400 px), **Padding** (extra room around the text, 0–20 px), **Scale**. Blizzard resets width and padding as it restyles a tooltip, so ModeUI sets them each time it fills. |
 | Text | Every line in the Mode face (Expressway): the first at Header Size (14), the rest at Text Size (12). |
@@ -70,7 +70,7 @@ Defaults), **Text** (Font, Names, Class and Level, Quests) and **Position**
 tooltip Blizzard's way again at once and asks for a reload to bring back
 Blizzard's look.
 
-Saved under `modules.tooltip` (version 2): `backgroundColor`,
+Saved under `modules.tooltip` (version 3): `backgroundColor`,
 `backgroundOpacity`, `gradient`, `rounded`, `border`, `borderColor`,
 `borderSize`, `qualityBorder`, `classBorder`, `minWidth`, `padding`, `scale`,
 `font`, `fontMedia`, `headerSize`, `textSize`, `outline`, `shadow`,
@@ -81,7 +81,9 @@ Saved under `modules.tooltip` (version 2): `backgroundColor`,
 `shiftShows`. The anchor's position is saved with the other Edit Mode
 positions (`modeTooltip`). Version 2 (November 13, 2026, per the owner): a
 fill still at version 1's #0B0B0D takes the health color, and the health bar
-settings (`healthBar`, `healthHeight`, `healthColor`) are removed.
+settings (`healthBar`, `healthHeight`, `healthColor`) are removed. Version 3
+(same day): a 1px border and Class Border off by default; a border still at
+version 2's 2px, and Class Border still on, follow.
 
 ## Files
 
@@ -106,9 +108,9 @@ Tests: `tests/tooltip.lua`.
   **Hide in Combat**, attack a training dummy and hover it, then hold Shift.
 - **Required state:** out of combat to start; a training dummy or any enemy
   for the combat part.
-- **Confirmation:** tooltips are dark Onyx with rounded corners and a 2px
-  rounded border (an item's in its quality color, a player's in their class
-  color) and a soft top sheen; a player's name and class line are in their
+- **Confirmation:** tooltips are dark Onyx with rounded corners and a 1px
+  rounded border (an item's in its quality color; a player's plain, unless
+  Class Border is on) and a soft top sheen; a player's name and class line are in their
   class color, a hostile NPC's name red and a friendly one's green; only the
   level number is colored; quest objectives are orange-yellow; there is no
   health bar. In the corner the whole tooltip, border included, stays on the

@@ -32,6 +32,7 @@
 --   Mode/Close.tga       ModeClose: a thin cross for close buttons
 --   Chat/Menu.tga        ChatMenu: a speech bubble outline, the chat menu button's glyph
 --   Chat/Channels.tga    ChatChannels: a "#", the chat channels button's glyph
+--   Chat/Friends.tga     ChatFriends: a person's head and shoulders, the friends button's glyph
 --   Mode/Minimize.tga    ModeMinimize: an arrow into the bottom-left corner (shrink a window)
 --   Mode/Maximize.tga    ModeMaximize: an arrow out to the top-right corner (expand a window)
 --   Mode/Sheen.tga       ModeSheen: 64x16, a soft diagonal band of light, brighter at the top,
@@ -268,6 +269,7 @@ local TEXTURES = {
     { "DamageMeters/Lock.tga", 16, 16, Padlock(false), true },
     { "DamageMeters/Unlock.tga", 16, 16, Padlock(true), true },
     { "DamageMeters/Grip.tga", 16, 16, Grip(), true },
+    { "Chat/Friends.tga", 16, 16, Union(Stroke(Arc(8, 5.5, 2.75, 0, 360, 32), 1.1), Stroke(Arc(8, 15.5, 5.5, 200, 340, 20), 1.1)), true },
     { "Mode/Round.tga", 16, 16, RoundedRect(16, 16, 5), true },
     { "Mode/Ring1.tga", 16, 16, Ring(16, 5, 1), true },
     { "Mode/Ring2.tga", 16, 16, Ring(16, 5, 2), true },

@@ -762,3 +762,22 @@ the game type `camelot`). Code: `Shared/Settings/Launchers.lua`.
 - **Unverified natively:** the button's exact spot when other addons also add
   game menu buttons, and the compartment entry's sort position with a color
   code at the start of its text.
+
+### Friends button and anchoring — November 13, 2026
+
+- **Friends button.** `QuickJoinToastButton` (`Blizzard_QuickJoin`): a
+  `ContainedAlertFrame` with textures `FriendsButton`, `QueueButton`,
+  `FlashingLayer` (re-atlased and faded by its toast animations) and the font
+  strings `FriendCount`/`QueueCount`. `ChatAlertFrame` (an
+  `AlertContainerMixin`) re-anchors it in `UpdateAnchors`
+  (`AlertFrameAutoAnchoredMixin:AdjustAnchors`); ModeUI post-hooks that and
+  puts it back in the compartment. `TextToSpeechButton` shows itself through
+  `UpdateVisibleState` (`SetShown`) and joins the compartment the same way.
+- **Anchoring.** `PositionManager:AnchorNear` picks the side from the two
+  frames' centers (`Positioning:Geometry`, public numbers only). Before
+  anchoring, the target's anchor points are walked (`GetNumPoints`/`GetPoint`,
+  16 levels): a target that already hangs from the element would make a
+  native anchor loop, which the client refuses; that anchor is refused.
+- **Unverified natively:** what exactly sent the owner's meter window and
+  tooltip to the top left corner; the simulated client doesn't reproduce it.
+  The loop and off-screen checks above stop both causes that fit.

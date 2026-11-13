@@ -20,7 +20,7 @@ local M = { title = L["Tooltip"], category = "interface", defaultEnabled = false
 addon.Tooltip = M
 addon:RegisterModule("tooltip", M)
 
-M.VERSION = 2
+M.VERSION = 3
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 local Public, Number = addon.IsPublic, addon.IsNumber
 
@@ -46,8 +46,9 @@ M.defaults = {
     version = M.VERSION,
     -- Look: a rounded box in Mode Gradient (Rounded off: square corners).
     backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 92, gradient = true, rounded = true,
-    border = true, borderColor = Copy(Kit.onyx.frameRim), borderSize = 2,
-    qualityBorder = true, classBorder = true,
+    -- Version 3: a 1px border, no class color on it (owner, November 13, 2026).
+    border = true, borderColor = Copy(Kit.onyx.frameRim), borderSize = 1,
+    qualityBorder = true, classBorder = false,
     -- Size: the tooltip's least width, extra room around the text, scale.
     minWidth = 0, padding = 0, scale = 100,
     -- Text
@@ -104,6 +105,13 @@ function M.Initialize(db)
         if Same(db.backgroundColor, M.OLD_BACKGROUND_COLOR) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
         db.healthBar, db.healthHeight, db.healthColor = nil, nil, nil
         db.version = 2
+    end
+    -- Version 3: a border still at version 2's defaults (2px, class colored)
+    -- turns 1px and plain.
+    if db.version == 2 then
+        if db.borderSize == 2 then db.borderSize = 1 end
+        if db.classBorder == true then db.classBorder = false end
+        db.version = 3
     end
     assert(db.version == M.VERSION, "Invalid tooltip settings version")
     for key, default in pairs(M.defaults) do
