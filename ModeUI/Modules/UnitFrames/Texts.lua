@@ -98,7 +98,9 @@ function M:LayoutTexts(f, unit)
     local near = fdb.portraitSide == "right" and "RIGHT" or "LEFT"
     local sign = near == "LEFT" and 1 or -1
     local path = self:FontPath(fdb)
+    f.textUnitColored = f.textUnitColored or {}
     for _, list in pairs(f.textKinds) do for i = #list, 1, -1 do list[i] = nil end end
+    for i = #f.textUnitColored, 1, -1 do f.textUnitColored[i] = nil end
     for _, slot in ipairs(self.textSlots) do
         local text, place = f.texts[slot], self.slotPlaces[slot]
         local s, dx, align = self:SlotSettings(fdb, slot)
@@ -114,10 +116,14 @@ function M:LayoutTexts(f, unit)
                 text:SetWidth(self.contentKind[s.content] == "name" and s.content ~= "level" and fdb.barWidth * 0.6 or 0)
             end
             text:SetJustifyH(justify)
-            if s.colorMode == "custom" then text:SetTextColor(s.color[1], s.color[2], s.color[3], 1)
+            -- A unit color that doesn't suit this text (Level Difficulty on a name) shows the default.
+            local mode = self.TextColorModeFits(s.content, s.colorMode) and s.colorMode or "default"
+            if mode == "custom" then text:SetTextColor(s.color[1], s.color[2], s.color[3], 1)
             elseif s.content == "level" then text:SetTextColor(MUTED[1], MUTED[2], MUTED[3], 1) end
             local kind = f.textKinds[self.contentKind[s.content]]
-            kind[#kind + 1] = { text = text, content = s.content, custom = s.colorMode == "custom" }
+            local entry = { text = text, content = s.content, mode = mode, custom = mode ~= "default" }
+            kind[#kind + 1] = entry
+            if mode ~= "default" and mode ~= "custom" then f.textUnitColored[#f.textUnitColored + 1] = entry end
         else
             Write(text, "")
         end
@@ -142,7 +148,40 @@ function M:WriteNames(f, unit, name, level, identity)
     end
 end
 
+-- A unit color for a text: Reaction, Class Color or Level Difficulty, else
+-- nil (unknown). Stand-ins show the Player friendly (its class) and the other
+-- frames as an enemy at level 60.
+local P = M.palette
+function M:UnitTextColor(f, unit, mode)
+    local fdb = self:FrameDB(unit)
+    if f.ghost then
+        if mode == "difficulty" then return Level.DifficultyColor(60) or P.hostile end
+        if mode == "class" then return self:SampleIdentity(unit, fdb) end
+        return self:Soften(unit == "player" and P.green or P.hostile, fdb)
+    end
+    if mode == "reaction" then return self:IdentityColor(unit, true, fdb) end
+    if mode == "class" then return self:IdentityColor(unit, false, fdb) end
+    if mode == "difficulty" then
+        local level = Level.Number(unit)
+        if level == -1 then return P.hostile end -- a skull: far above you
+        return Level.DifficultyColor(level)
+    end
+end
+-- Paints the texts colored by the unit; an unknown color shows the default.
+function M:PaintUnitColoredTexts(f, unit)
+    for _, entry in ipairs(f.textUnitColored or {}) do
+        local color = self:UnitTextColor(f, unit, entry.mode)
+        if not color then
+            local fdb = self:FrameDB(unit)
+            color = entry.content == "level" and MUTED or self.contentKind[entry.content] == "name" and self:NameColor(unit)
+                or fdb.textColor
+        end
+        entry.text:SetTextColor(color[1], color[2], color[3], 1)
+    end
+end
+
 function M:UpdateNameTexts(f, unit)
+    self:PaintUnitColoredTexts(f, unit)
     if #f.textKinds.name == 0 then return end
     self:WriteNames(f, unit, Name.Get(unit), Level.Text(unit))
 end
@@ -181,6 +220,7 @@ function M:PaintTextSample(g, unit, identity)
     local L = addon.L
     local name = g.sample and L[self.titles[unit]] or unit == "player" and Name.Get("player") or L["Name"]
     self:WriteNames(g, unit, name, "60", identity)
+    self:PaintUnitColoredTexts(g, unit)
     for _, kind in ipairs({ "health", "power" }) do
         for _, entry in ipairs(g.textKinds[kind]) do Write(entry.text, SAMPLE[entry.content]) end
     end

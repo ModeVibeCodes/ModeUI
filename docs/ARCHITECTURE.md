@@ -37,7 +37,7 @@ ModeUI/
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
     Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors
     Skin/                     re-skinning Blizzard frames (Skin, Controls, Extras, Frame): Chat and Windows
-    Settings/                 settings window framework (window, pages, search, tabs)
+    Settings/                 settings window framework (window, pages, search, tabs) and its launchers (game menu, minimap addon compartment)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker)
     Templates/                XML virtual templates, added when a module needs one
   Modules/
@@ -62,7 +62,7 @@ Libs  →  Shared/Runtime  →  Shared/Forever  →  Shared/Domain, Kit, Border,
   thing, it moves into `Shared/`. Modules talk to each other only through
   `Callbacks` messages.
 - **Shared never names a module.** Runtime loops over the registry; it never
-  reaches for `addon.UnitFrames` or any other module directly.
+  reaches for `addon.UnitFrames` or any other module directly. `tests/structure.lua` fails any Shared file, or other module, that uses the table a module's `Init.lua` publishes (`addon.UnitFrames` and the like).
 
 ## Load order
 
@@ -105,7 +105,7 @@ local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
 local L = addon.L
-local M = { title = L["Unit Frames"], category = "interface", defaultEnabled = true,
+local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true,
     configDescription = L["Player and Target frames in the Onyx look. Configure outside combat."],
     -- The page keeps its own sections; the Mode layer restyles headings.
     modeLayout = { decorateOnly = true } }
@@ -127,11 +127,12 @@ Module fields Runtime reads:
 | Field | Meaning |
 |---|---|
 | `title` | sidebar and page title (through `L`) |
-| `category` | a registered category ID (`"interface"`, `"global"`) |
+| `category` | a registered category ID: `"global"`, `"interface"` (Blizzard's own UI restyled) or `"frames"` (unit frames, nameplates, party frames) |
 | `defaultEnabled` | `false` to start switched off on a fresh profile |
 | `alwaysOn` | `true` for a module that can't be switched off (Profiles) |
 | `configDescription` | the line under the page title |
 | `modeLayout` | the page's Mode presentation plan, such as `{ decorateOnly = true }` |
+| `ptgImport` | `{ positions = { ... } }` to copy this module's settings (same ID) and those position keys from the active Play The Game Tools profile once, on ModeUI's first start (Unit Frames) |
 | `Initialize(db)` | a plain function (not a method) that fills defaults, migrates and validates the module's settings, erroring on bad data. Profile validation calls it on detached copies, so it must not touch frames or other state |
 
 The module ID (`"unitFrames"`) is also its saved-variable key and must never
@@ -183,6 +184,15 @@ opens it:
 - Each module's page is built the first time it's selected, or the first time a
   settings search needs its entries.
 - `tests/smoke.lua` asserts that no window exists before `/modeui`.
+- `Shared/Settings/Launchers.lua` (installed by `Boot.lua`) adds the other ways
+  in: a **ModeUI** button in its own section of the game menu, between Shop and
+  AddOns (a post-hook on `GameMenuFrame:InitButtons`, skipped in combat), and an
+  entry in the minimap's addon compartment (`AddonCompartmentFrame:RegisterAddon`,
+  so no global function). They call `addon:OpenConfig()` and
+  `addon:ToggleConfig()` and build nothing until clicked.
+- The window opens on the first page in the sidebar. Categories are listed in
+  the order `Shared/Runtime/Lifecycle.lua` registers them (Global, Interface,
+  Frames); a category's modules in the order `ModeUI.toc` loads them.
 
 WoW still reads every Lua file listed in the TOC at login. That costs very little
 compared with building frames. Real `LoadOnDemand` would need a separate
@@ -317,7 +327,7 @@ post-hook (`hooksecurefunc`, `HookScript`).
   accent underline; sidebar captions are small uppercase `faint` text and the
   chosen module row has an accent bar on its left. The palette (Theme.lua) is
   near-black graphite with a cyan accent; the type scale is
-  `InterfaceTheme.fontSize` (page 20, section 14, body 13, small 12, group 11).
+  `InterfaceTheme.fontSize` (page 24, card 19, brand 21 for the ModeUI wordmark, section 14, body 13, small 12, group 12).
   The shape textures come from `tools/build_shape_textures.lua`. Rims are near-black (`Kit.onyx.border`). Anchoring settings
   use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface default to Expressway, falling back to
   the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
@@ -342,9 +352,9 @@ module is built.
 
 | # | Module | Category | Adds to Shared | Things to research first |
 |---|---|---|---|---|
-| 0 | Unit Frames | Interface | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
-| 1 | Nameplates | Interface | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
-| 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
+| 0 | Unit Frames | Frames | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
+| 1 | Nameplates | Frames | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
+| 2 | Party Frames | Frames | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
 | 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar), `Positioning:AddTarget` (bars anchor to bars), PositionGuides (alignment guides, snapping, `Nudge`). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
 | 4 | Chat | Interface | Skin: panel, suppress, alpha pin, fonts | done (native acceptance pending); tab alphas pinned, never Blizzard's constants |
 | 5 | Damage Meters | Interface | Domain: DamageMeter (the game's own meter through `C_DamageMeter`). Kit: Rim, PlaceRim | done (native acceptance pending); Forever loads Blizzard_DamageMeter |
@@ -388,7 +398,7 @@ change to behavior, looks or saved data.
 
 After phases 2–6, the in-game check is the same:
 
-- **Navigation:** type `/modeui`, then pick **Interface** › **Unit Frames** in the sidebar.
+- **Navigation:** type `/modeui`, then pick **Frames** › **Unit Frames** in the sidebar.
 - **Action:** switch the module off and on, open **Edit Mode**, move the Player
   frame, then `/reload`. **Edit Mode** is in the settings window header.
 - **Required state:** out of combat, with a target selected.

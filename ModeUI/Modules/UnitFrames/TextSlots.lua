@@ -39,7 +39,20 @@ M.choices.textContent = { { id = "none", label = "None" }, { id = "name", label 
 M.contentKind = { name = "name", level = "name", levelName = "name", healthPercent = "health", healthCurrent = "health",
     healthBoth = "health", healthDeficit = "health", powerPercent = "power", powerCurrent = "power", powerBoth = "power" }
 -- Default: names in the Name Color, the level muted, numbers in the Text Color.
-M.choices.textColorMode = { { id = "default", label = "Default" }, { id = "custom", label = "Custom" } }
+M.choices.textColorMode = { { id = "default", label = "Default" }, { id = "custom", label = "Custom" },
+    { id = "reaction", label = "Reaction" }, { id = "class", label = "Class Color" }, { id = "difficulty", label = "Level Difficulty" } }
+-- Colors that follow the unit (owner, November 13, 2026), and the texts each
+-- one suits: Reaction (hostile red, neutral yellow, friendly green, tapped
+-- gray) and Class Color (players' class, others' reaction) for any text;
+-- Level Difficulty (the game's color for a level against yours) for the level.
+M.unitColorModes = { "reaction", "class", "difficulty" }
+local ALL = { reaction = true, class = true }
+local LEVEL = { reaction = true, class = true, difficulty = true }
+function M.TextColorModeFits(content, mode)
+    if mode == "default" or mode == "custom" then return true end
+    if content == "none" then return false end
+    return (content == "level" and LEVEL or ALL)[mode] == true
+end
 M.choices.textAlign = M.choices.position
 M.textRanges = { size = { 6, 24, 1 }, x = { -100, 100, 1 }, y = { -100, 100, 1 } }
 function M.TextChoices(slot)

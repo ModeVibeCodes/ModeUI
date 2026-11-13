@@ -117,7 +117,7 @@ local world = H.Load({ before = STUBS })
 world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
-    assert(M and addon.modules.nameplates == M and M.category == 'interface' and not M.enabled, 'registered, off by default')
+    assert(M and addon.modules.nameplates == M and M.category == 'frames' and not M.enabled, 'registered under Frames, off by default')
     assert(M.db.version == 8 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')

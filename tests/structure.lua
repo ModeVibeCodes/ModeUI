@@ -122,6 +122,26 @@ for name, paths in pairs(modules) do
     if first and (not firstModuleFile or first < firstModuleFile) then firstModuleFile = first end
 end
 
+-- Shared never names a module: no Shared file reaches for the table a
+-- module's Init.lua publishes (addon.UnitFrames and the like), and no module
+-- reaches for another module's table.
+local moduleTables = {}
+for name in pairs(modules) do
+    local init = H.Read(H.addonDir .. "Modules/" .. name .. "/Init.lua")
+    for field in init:gmatch("\naddon%.([%w_]+)%s*=%s*M%f[^%w_]") do moduleTables[field] = name end
+end
+for _, path in ipairs(files) do
+    local owner = ModuleOf(path)
+    if TopDirectory(path) == "Shared" or owner then
+        local text = H.Read(H.addonDir .. path)
+        for field, name in pairs(moduleTables) do
+            if name ~= owner and text:find("addon%." .. field .. "%f[^%w_]") then
+                Fail(path .. " uses addon." .. field .. " from Modules/" .. name .. "/; talk through addon.Messages or move it to Shared/")
+            end
+        end
+    end
+end
+
 -- Layering: Libs first, then Shared, then module folders. Shared/Runtime/Boot.lua
 -- starts the addon on ADDON_LOADED, so it loads last.
 local lastLib, firstOther = 0, nil

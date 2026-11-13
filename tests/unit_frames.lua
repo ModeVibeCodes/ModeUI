@@ -10,7 +10,7 @@ local world = H.Load({ before = STUBS, saved = { modules = { unitFrames = { enab
 world.run([====[
     local M=addon.UnitFrames
     local P,O=M.palette,M.onyx
-    assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
+    assert(M and addon.modules.unitFrames==M and M.category=='frames' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
     assert(M.db.layoutVersion==19 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
@@ -358,6 +358,22 @@ world.run([====[
     assert(M.db.player.texts.right.content=='healthPercent' and M:SetTextOption('player','left','content','level') and M.db.player.texts.bottomLeft.content=='none')
     assert(M:SetTextOption('player','bottomLeft','content','level') and M.db.player.texts.left.content=='none','other texts stay put')
     assert(M:SetTextOptions('player','right',{colorMode='custom',color={0,1,0}}) and p.texts.right.color[2]==1 and M:SetTextOption('player','right','colorMode','default'),'several settings in one change')
+    -- Texts colored by the unit: Reaction, Class Color, and Level Difficulty for the level.
+    assert(M:SetFrameOption('target','matchPlayer',false))
+    local TL=t.texts.bottomRight
+    assert(M:SetTextOption('target','bottomRight','colorMode','reaction') and TL.color[1]==M:IdentityColor('target',true)[1] and TL.color[2]==M:IdentityColor('target',true)[2],'a hostile level in pastel red')
+    assert(M:SetTextOption('target','bottomRight','colorMode','difficulty') and TL.color[1]==P.hostile[1] and TL.color[2]==P.hostile[2],'a skull level: red')
+    assert(M:SetTextOption('target','right','colorMode','class') and t.texts.right.color[1]==M:IdentityColor('target')[1],'an NPC by reaction')
+    assert(M:SetTextOption('target','border','colorMode','difficulty') and t.texts.border.color[1]==M.ACCENT[1],'difficulty does not suit a name: its default color')
+    units.target.reaction=5;FireEvent('UNIT_FACTION','target');assert(TL.color[1]==P.hostile[1],'skull stays red')
+    assert(M:SetTextOption('target','bottomRight','colorMode','reaction') and TL.color[2]==M:IdentityColor('target',true)[2],'repainted when the reaction changes')
+    assert(math.abs(TL.color[2]-(P.green[2]+(1-P.green[2])*0.4))<1e-9,'friendly now')
+    units.target.reaction=2;FireEvent('UNIT_FACTION','target')
+    GetCreatureDifficultyColor=function() return {r=0.25,g=0.75,b=0.25} end
+    assert(M:SetTextOption('player','bottomLeft','colorMode','difficulty') and p.texts.bottomLeft.color[2]==0.75,'your own level by difficulty')
+    GetCreatureDifficultyColor=nil;M:UpdateAll();assert(p.texts.bottomLeft.color[1]==P.muted[1],'unknown difficulty: the default color')
+    assert(M:SetTextOption('player','bottomLeft','colorMode','default') and not M:SetTextOption('player','bottomLeft','colorMode','rainbow'))
+    assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))
     assert(M:SetTextOption('player','powerLeft','content','powerPercent'))
     -- The power line's nearest edge is 8px under the ring's centre, where the ring
     -- still reaches 31px out: 32 + 31 + 2 - 54, rounded out, is 11.
@@ -810,13 +826,24 @@ restored.run([====[
     assert(Cells('topLeft').settingsTitles[1]=='Top Left' and Cells('topLeft').settingsTitles[3]=='Top Right')
     local right,top=page.unitFrameTextSizes.right,page.unitFrameTextSizes.top
     assert(right.line:IsShown() and not top.line:IsShown(),'size and color only where a text is')
-    assert(page.unitFrameTextSwatches.right.sample.vertexColor[1]==M.db.player.textColor[1] and not right.reset:IsShown())
+    assert(page.unitFrameTextSwatches.right.sample.vertexColor[1]==M.db.player.textColor[1])
+    -- Quick unit color icons: Reaction and Class Color for any text, Level Difficulty for the level.
+    local lvl=page.unitFrameTextSizes.bottomLeft
+    assert(right.icons.reaction:IsShown() and right.icons.class:IsShown() and not right.icons.difficulty:IsShown(),'the icons that suit health text')
+    assert(lvl.icons.difficulty:IsShown() and lvl.icons.reaction:IsShown(),'the level can follow difficulty too')
+    assert(Point(right.icons.class)[1]=='RIGHT' and Point(right.icons.class)[2]==right.line and Point(right.icons.reaction)[2]==right.icons.class,'from the right edge')
+    assert(right.icons.class.classIcon.atlas=='classicon-rogue','your class icon')
+    right.icons.reaction.scripts.OnClick();assert(M.db.player.texts.right.colorMode=='reaction' and right.icons.reaction.selected and not right.icons.class.selected)
+    right.icons.reaction.scripts.OnClick();assert(M.db.player.texts.right.colorMode=='default' and not right.icons.reaction.selected,'click again: default')
+    lvl.icons.difficulty.scripts.OnClick();assert(M.db.player.texts.bottomLeft.colorMode=='difficulty' and M:SetTextOption('player','bottomLeft','colorMode','default'))
     right.larger.scripts.OnClick();assert(M.db.player.texts.right.size==12 and M.frames.player.texts.right.font[2]==12,'+ grows the text')
     right.smaller.scripts.OnClick();assert(M.db.player.texts.right.size==11)
     page.unitFrameTextSwatches.right.scripts.OnClick();assert(ColorPickerFrame:IsShown())
     ColorPickerFrame.r,ColorPickerFrame.g,ColorPickerFrame.b=1,0,0;ColorPickerFrame.swatchFunc()
-    assert(M.db.player.texts.right.colorMode=='custom' and M.db.player.texts.right.color[1]==1 and right.reset:IsShown(),'picked color is custom')
+    assert(M.db.player.texts.right.colorMode=='custom' and M.db.player.texts.right.color[1]==1,'picked color is custom')
     ColorPickerFrame.info.cancelFunc();assert(M.db.player.texts.right.colorMode=='default','cancel restores')
+    assert(M:SetTextOption('player','right','colorMode','custom'))
+    local sw=page.unitFrameTextSwatches.right;sw.scripts.OnClick(sw,'RightButton');assert(M.db.player.texts.right.colorMode=='default','right-click: default color')
     assert(page.unitFrameBorderAlign:IsShown() and M:SetTextOption('player','border','content','none') and not page.unitFrameBorderAlign:IsShown())
     assert(M:SetTextOption('player','border','content','name'))
     assert(M:SetFrameOption('player','showPower',false) and not Visible(Cells('powerLeft')) and M:SetFrameOption('player','showPower',true))

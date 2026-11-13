@@ -27,6 +27,7 @@ addon.Events:On(addon, "ADDON_LOADED", function(_, loadedName)
     addon:InitializeDisplayModes()
     addon.Media:Initialize()
     addon.ReloadManager:Start()
+    addon:InstallLaunchers()
     addon:PrintAction(addon:BuildIdentification(), "welcome")
 
     SLASH_MODEUI1 = "/modeui"

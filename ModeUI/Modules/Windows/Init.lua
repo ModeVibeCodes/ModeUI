@@ -12,8 +12,8 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Windows from load-on-demand Blizzard addons are skinned when they load.
 -- Nothing is moved, sized or hidden (Scale aside), so Blizzard keeps opening,
 -- closing and placing its windows. See docs/WINDOWS.md.
--- Files: Init (this), Migrations, Driver, Character, CharacterStats,
--- Settings, SettingsCharacter.
+-- Files: Init (this), Migrations, Driver, CharacterStats, Character,
+-- CharacterPanel, Settings, SettingsCharacter.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Windows"], category = "interface", defaultEnabled = false,
     configDescription = L["Blizzard's windows in the Mode look: dark fill, pixel rim, Expressway titles and Mode controls."],
