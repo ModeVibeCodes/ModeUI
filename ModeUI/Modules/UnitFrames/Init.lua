@@ -48,7 +48,8 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
     left = { point = "RIGHT", relative = "LEFT" }, topright = { point = "BOTTOMRIGHT", relative = "TOPRIGHT" } }
 -- Version 13: Target of Target, Focus and Target of Focus defaults (see Migrations.lua).
 -- Version 14: Mode Slate bar backgrounds at 70%.
-M.LAYOUT_VERSION = 14
+-- Version 15: the level in the health bar's bottom corner; a matched Target mirrors the Player.
+M.LAYOUT_VERSION = 15
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -76,6 +77,7 @@ M.choices = {
     nameColor = { { id = "sky", label = "Sky" }, { id = "champagne", label = "Champagne" }, { id = "lilac", label = "Lilac" },
         { id = "frost", label = "Frost" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     level = { { id = "badge", label = "Shown" }, { id = "none", label = "Hidden" } },
+    levelPosition = { { id = "corner", label = "Bottom Corner" }, { id = "health", label = "Beside Health Text" } },
     healthColor = { { id = "default", label = "Default" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     powerColor = { { id = "type", label = "Power Type" }, { id = "custom", label = "Custom" } },
     attachPoint = { { id = "bottomright", label = "Below, Right Edges" }, { id = "bottomleft", label = "Below, Left Edges" },
@@ -86,7 +88,8 @@ M.choices = {
 M.choiceKeys = { healthText = "healthText", powerText = "powerText", healthTextPosition = "position",
     powerTextPosition = "position", nameAlign = "position", portraitSide = "side", portraitStyle = "portraitStyle",
     portraitRing = "ring", namePosition = "namePosition", nameColorMode = "nameColor", levelStyle = "level",
-    healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint", fillDirection = "fill" }
+    healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint", fillDirection = "fill",
+    levelPosition = "levelPosition" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -116,6 +119,9 @@ local function Frame(side, extra)
         -- Class/reaction colors are blended this far toward white (pastel).
         classSoftness = 40,
         levelStyle = "badge", levelFontSize = 11, levelColor = Copy(M.palette.muted), levelOffsetX = 0, levelOffsetY = 0,
+        -- Where the level sits: the bottom corner of the health bar on the portrait
+        -- side, clear of the portrait (owner, November 13, 2026), or beside the health text.
+        levelPosition = "corner",
         healthColorMode = "default", healthColor = Copy(M.palette.green),
         healthText = "percent", healthTextPosition = "RIGHT", healthFontSize = 11, healthTextOffsetX = 0, healthTextOffsetY = 0,
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
@@ -140,7 +146,9 @@ local function Small(scale, attach)
     return { barWidth = 110, healthHeight = 16, powerHeight = 6, nameFontSize = 11, healthFontSize = 10, levelStyle = "none",
         scale = scale, showPortrait = false, namePosition = "bar", nameAlign = "LEFT", attach = attach }
 end
-M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true, fillDirection = "reverse" }),
+-- The Target mirrors the Player by default: health text on the left, level in
+-- its bottom right corner (owner, November 13, 2026).
+M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse" }),
     targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false)), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, nameFontSize = { 8, 24, 1 }, healthFontSize = { 8, 24, 1 }, powerFontSize = { 6, 20, 1 },

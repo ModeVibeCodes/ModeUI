@@ -13,7 +13,7 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==14 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.layoutVersion==15 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture==nil,'one bar texture: Mode Gradient')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
     assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='sky' and M.db.player.portraitRing=='class')
@@ -25,7 +25,11 @@ world.run([====[
     assert(Hex(M.ACCENT)=='91C6FF' and Hex(M.nameAccents.sky)=='91C6FF' and Hex(M.nameAccents.champagne)=='F2DFB8' and Hex(M.nameAccents.lilac)=='C9BBFF' and Hex(M.nameAccents.frost)=='EAF1F8')
     local ids={};for _,c in ipairs(M.choices.nameColor) do ids[#ids+1]=c.id end
     assert(table.concat(ids,',')=='sky,champagne,lilac,frost,class,custom')
-    assert(M.db.player.liftedShadow==true and M.db.target.mirrorText==false and M.identityKeys.mirrorText and M.db.player.nameLift==nil)
+    assert(M.db.player.liftedShadow==true and M.db.target.mirrorText==true and M.identityKeys.mirrorText and M.db.player.nameLift==nil)
+    assert(M.db.player.levelPosition=='corner','the level in the bottom corner by default')
+    -- Most layout checks below were written for the level beside the health text
+    -- and an unmirrored Target; the Bottom Corner default has its own checks.
+    assert(M:SetFrameOption('player','levelPosition','health') and M:SetFrameOption('target','mirrorText',false))
     assert(M.db.player.nameGlow==nil and M.db.player.nameGlowStrength==nil and M.frameRanges.nameGlowStrength==nil)
 
     -- Enabling in combat waits; nothing secure is created until combat ends.
@@ -97,6 +101,22 @@ world.run([====[
     resting=false;FireEvent('PLAYER_UPDATE_RESTING')
     assert(M:FrameDB('target').status==M.db.target.status,'a matched Target keeps its own status settings')
 
+    -- The default layout (owner): the Player's level in the health bar's bottom left,
+    -- clear of the portrait (12px across its line), 1px up; health text at the right.
+    -- A matched Target mirrors it: health text on the left, level bottom right.
+    assert(M:SetFrameOption('player','levelPosition','corner') and M:SetFrameOption('target','mirrorText',true))
+    local lv=Point(p.levelText);assert(lv[1]=='BOTTOMLEFT' and lv[2]==p.health and lv[3]=='BOTTOMLEFT' and lv[4]==12 and lv[5]==1 and p.levelText.justifyH=='LEFT')
+    local hv=Point(p.healthText);assert(hv[1]=='RIGHT' and hv[2]==p.health and hv[4]==-4,'health text alone at the right')
+    local tlv=Point(t.levelText);assert(tlv[1]=='BOTTOMRIGHT' and tlv[2]==t.health and tlv[4]==-12 and tlv[5]==1,'Target: level bottom right, clear of its portrait')
+    assert(Point(t.healthText)[1]=='LEFT' and Point(t.healthText)[2]==t.health and Point(t.healthText)[4]==4,'Target: health text on the left')
+    assert(M:SetFrameOption('player','levelOffsetX',-6) and Point(p.levelText)[4]==12 and M:SetFrameOption('player','levelOffsetX',0),'never into the portrait')
+    -- Changing the width moves nothing out of place: every text keeps its anchor on the health bar.
+    assert(M:SetFrameOption('player','barWidth',240) and p.width==60+240+4)
+    assert(Point(p.healthText)[2]==p.health and Point(p.healthText)[4]==-4 and Point(p.levelText)[2]==p.health and Point(p.levelText)[4]==12,'texts stay on their sides')
+    assert(Point(p.nameText)[2]==p.health and Point(p.nameText,2)[2]==p.health,'the name spans the wider bar')
+    assert(M:SetFrameOption('player','barWidth',180))
+    assert(M:SetFrameOption('player','levelPosition','health') and M:SetFrameOption('target','mirrorText',false))
+
     -- Cast bars: a block in the frame's own skin under the bar block, its far end
     -- lined up with the block's; the portrait end stops 2px short of the ring's
     -- circle (radius 35, crossing the box's top 26px under the centre: 23.4 + 2, rounded out).
@@ -134,6 +154,7 @@ world.run([====[
     assert(not M:SetCastOption('player','height',99) and not M:SetCastOption('player','icon','top') and not M:SetCastOption('player','bogus',1))
     assert(M:FrameDB('target').castBar==M.db.target.castBar and M.db.target.matchPlayer,'a matched Target keeps its own cast bar')
     assert(M:ResetFrame('player') and M.db.player.castBar.position=='below' and PlayerCastingBarFrame:GetAlpha()==0,'reset restores it')
+    assert(M:SetFrameOption('player','levelPosition','health'))
     assert(M:SetCastOption('target','enabled',false) and TargetFrameSpellBar:GetAlpha()==1 and M:SetCastOption('target','enabled',true))
     assert(M.db.targettarget.castBar.enabled==false and M.db.focus.castBar.enabled==true)
 
@@ -226,7 +247,7 @@ world.run([====[
     assert(p.width==244 and p.height==70)
     local pp=Point(p.panel);assert(pp[1]=='TOPLEFT' and pp[4]==35 and pp[5]==-12,'bar block starts under the portrait centre')
     local pb=Point(p.panel,2);assert(pb[1]=='BOTTOMRIGHT' and pb[5]==12)
-    -- Straight edges are hard flat strips on whole pixels; the far end is a half oval
+    -- Straight edges are hard flat strips on whole pixels; the far end is rounded,
     -- 12px deep (a quarter of the 46px block, rounded): a straight end with round corners,
     -- a cap hollowed into a ring by a hole mask; the rim is the lighter frame rim color.
     local tex=function(key) return (addon.Media:GetTexture(key)) end
@@ -561,7 +582,7 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==14 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
+    assert(v1.layoutVersion==15 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
     assert(v1.player.healthText=='both' and v1.player.nameFontSize==14 and v1.player.healthColorMode=='default')
     assert(v1.player.fontMedia=='Expressway' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
     assert(v1.target.enabled==false and v1.target.barWidth==180)
@@ -573,7 +594,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==14 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
+    assert(v5.layoutVersion==15 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
     assert(v5.player.levelFontSize==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -586,7 +607,7 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==14 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==15 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='sky' and v8.target.nameColorMode=='sky','names adopt the default color')
     assert(v8.player.portraitRing=='class' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'class gradient ring unless custom')
@@ -597,7 +618,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==14 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
+    assert(v9.layoutVersion==15 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -605,25 +626,29 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==14 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
+    assert(v10.layoutVersion==15 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==true and v10.player.nameLift==nil and v10.target.nameLift==nil,'lift choice carried over')
-    assert(v10.target.mirrorText==false,'matched Target now copies the Player text layout')
+    assert(v10.target.mirrorText==true,'matched Target copies the Player text layout, mirrored since version 15')
     local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
-    assert(v11.layoutVersion==14 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    assert(v11.layoutVersion==15 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
     -- Version 12 -> 13: new small-frame defaults, but a changed setting stays.
     local v12={layoutVersion=12,targettarget={scale=100,showPortrait=true,namePosition='above',nameAlign='CENTER',barWidth=110},
         focus={scale=120,showPortrait=true,barWidth=150,healthHeight=22,levelStyle='badge',nameFontSize=12}}
     M.Initialize(v12)
-    assert(v12.layoutVersion==14 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
+    assert(v12.layoutVersion==15 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
     assert(v12.targettarget.nameAlign=='CENTER' and v12.focus.scale==120,'user changes kept')
     assert(v12.focus.barWidth==110 and v12.focus.healthHeight==16 and v12.focus.levelStyle=='none' and v12.focus.nameFontSize==11)
     assert(v12.targettarget.attach==true and v12.focustarget.attach==true and v12.focus.attach==false,'new keys take defaults')
     -- Version 13 -> 14: Mode Slate at 70% for frames still on the old Flat / 25%.
     local v13={layoutVersion=13,player={backgroundTexture='flat',barBackgroundOpacity=25},target={backgroundTexture='media:Smooth',barBackgroundOpacity=40}}
     M.Initialize(v13)
-    assert(v13.layoutVersion==14 and v13.player.backgroundTexture=='slate' and v13.player.barBackgroundOpacity==70)
+    assert(v13.layoutVersion==15 and v13.player.backgroundTexture=='slate' and v13.player.barBackgroundOpacity==70)
     assert(v13.target.backgroundTexture=='media:Smooth' and v13.target.barBackgroundOpacity==40,'chosen backgrounds stay')
+    local v14={layoutVersion=14,player={levelStyle='badge'},target={matchPlayer=true,mirrorText=false}};M.Initialize(v14)
+    assert(v14.layoutVersion==15 and v14.target.mirrorText==true and v14.player.levelPosition=='corner','version 15: corner level, mirrored Target')
+    local v14b={layoutVersion=14,target={matchPlayer=false,mirrorText=false}};M.Initialize(v14b)
+    assert(v14b.target.mirrorText==false,'an unmatched Target is left alone')
     local w13={layoutVersion=13,player={barWidth=230},target={matchPlayer=true,barWidth=180}};M.Initialize(w13)
     assert(w13.target.barWidth==230,'a matched Target keeps the width it showed')
     local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}

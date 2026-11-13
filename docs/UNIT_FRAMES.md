@@ -5,6 +5,18 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Level in the corner, a mirrored Target (layout version 15)
+
+November 13, 2026, per the owner: **Level Position** (`levelPosition`, Name &
+Level tab) is **Bottom Corner** by default: the level sits at the bottom of the
+health bar on the portrait side, 1px up, clear of the portrait across its own
+line like every bar text, with the health text alone at the other side. The
+old layout is **Beside Health Text**. The Target mirrors the Player by default
+(`mirrorText`), so its health text is on the left and its level bottom right.
+Layout version 15 turns mirroring on for a Target that matches the Player.
+Every bar text is anchored to its side of the health bar, so changing Frame
+Width moves each with its side.
+
 ## Rounded-rectangle ends, a lighter rim, a softer fill line
 
 November 13, 2026, per the owner (with a rounded-rectangle reference): the
