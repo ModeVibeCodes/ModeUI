@@ -30,6 +30,27 @@ function Kit.AuraIconParts(icon)
     if icon.cooldown.SetDrawEdge then icon.cooldown:SetDrawEdge(false) end
     if icon.cooldown.SetReverse then icon.cooldown:SetReverse(true) end
     if icon.cooldown.SetHideCountdownNumbers then icon.cooldown:SetHideCountdownNumbers(true) end
+    -- The GCD glow: Blizzard's action button cooldown flash, looping, over the
+    -- icon's edge and under its text.
+    icon.flashLayer = CreateFrame("Frame", nil, icon)
+    icon.flashLayer:SetAllPoints()
+    icon.flash = icon.flashLayer:CreateTexture(nil, "ARTWORK")
+    icon.flash:SetAtlas(Kit.GCD_FLASH_ATLAS)
+    icon.flash:SetDesaturated(true)
+    icon.flash:Hide()
+    if icon.flashLayer.CreateAnimationGroup then
+        local ok, group = pcall(function()
+            local made = icon.flashLayer:CreateAnimationGroup()
+            local flip = made:CreateAnimation("FlipBook")
+            flip:SetTarget(icon.flash)
+            flip:SetFlipBookRows(11); flip:SetFlipBookColumns(2); flip:SetFlipBookFrames(22)
+            flip:SetFlipBookFrameWidth(0); flip:SetFlipBookFrameHeight(0)
+            flip:SetDuration(0.75)
+            made:SetLooping("REPEAT")
+            return made
+        end)
+        if ok then icon.flashAnim = group end
+    end
     icon.textLayer = CreateFrame("Frame", nil, icon)
     icon.textLayer:SetAllPoints()
     icon.count = Kit.Text(icon.textLayer)
@@ -40,12 +61,16 @@ function Kit.AuraIconParts(icon)
     return icon
 end
 
+-- Rounded rims are slices and must not snap one by one (Kit.Unsnap); sharp
+-- rims are single flat textures that snap to whole pixels, crisp at any spot.
 local function Skin(texture, key, rounded)
     if rounded and addon.Media:ApplyTexture(texture, key) then Kit.Unsnap(texture); return end
     if texture.ClearTextureSlice then texture:ClearTextureSlice() end
     texture:SetTexture(Kit.FLAT)
-    Kit.Unsnap(texture)
+    if texture.SetSnapToPixelGrid then texture:SetSnapToPixelGrid(true) end
 end
+-- Blizzard's GCD flash (ActionButtonCooldownFlashTemplate): 11 x 2 frames.
+Kit.GCD_FLASH_ATLAS = "UI-HUD-ActionBar-GCD-Flipbook"
 Kit.AURA_GLOW_OUTSET = 6 -- the aura glow texture's hollow core starts 6 texels in
 
 -- Size, rim, crop and text for one icon. width and height are whole pixels;
@@ -53,7 +78,7 @@ Kit.AURA_GLOW_OUTSET = 6 -- the aura glow texture's hollow core starts 6 texels 
 -- stretched: 8% off each side, and the height cut to the icon's shape.
 function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon:SetSize(width, height)
-    local rounded = width >= 8 and height >= 8
+    local rounded = style.auraCorners == "rounded" and width >= 8 and height >= 8
     -- The rim is style.auraBorderSize pixels (1 when unset), then a 1px black gap.
     local border = (style.auraBorderSize or 1) * px
     icon.rim:ClearAllPoints(); icon.rim:SetAllPoints(icon)
@@ -81,6 +106,8 @@ function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon.timer:SetPoint("CENTER", icon, "CENTER", 0, 0)
     icon.timer:SetJustifyH("CENTER")
     Kit.LayoutLift(icon.timer, style, timerSize, fontPath, px, style.auraTimerText ~= false, "CENTER")
+    local c = style.auraTimerColor or Kit.palette.cooldown
+    icon.timer:SetTextColor(c[1], c[2], c[3], 1)
     icon.timer:SetShown(style.auraTimerText ~= false)
 end
 
@@ -88,9 +115,16 @@ end
 function Kit.TintAuraRim(icon, color) Kit.Tint(icon.rim, color or Kit.onyx.border, 1) end
 
 -- The glow: shown in a color at a soft strength, or hidden (color nil).
-Kit.AURA_GLOW_ALPHA = 0.6
-function Kit.GlowAura(icon, color)
-    if not color then icon.glow:Hide(); return end
-    Kit.Tint(icon.glow, color, Kit.AURA_GLOW_ALPHA)
-    icon.glow:Show()
+-- `style` is "gcd" (Blizzard's GCD flash, looping) or "soft" (a soft halo).
+Kit.AURA_GLOW_ALPHA, Kit.AURA_FLASH_ALPHA = 0.4, 0.75
+function Kit.GlowAura(icon, color, style)
+    local soft, gcd = color ~= nil and style == "soft", color ~= nil and style ~= "soft"
+    icon.glow:SetShown(soft)
+    if soft then Kit.Tint(icon.glow, color, Kit.AURA_GLOW_ALPHA) end
+    icon.flash:SetShown(gcd)
+    if gcd then Kit.Tint(icon.flash, color, Kit.AURA_FLASH_ALPHA) end
+    local anim = icon.flashAnim
+    if anim then
+        if gcd and not anim:IsPlaying() then anim:Play() elseif not gcd and anim:IsPlaying() then anim:Stop() end
+    end
 end

@@ -33,7 +33,9 @@ end
 
 -- Everything buttons bake in when they are made.
 local function LookKey(style, path, px)
-    local parts = { style.auraShape, style.auraBorder, style.auraBorderSize, tostring(style.auraCCGlow), tostring(style.auraTimer), tostring(style.auraTimerText), tostring(style.auraCount), path, px,
+    local t = style.auraTimerColor
+    local parts = { style.auraShape, style.auraBorder, style.auraBorderSize, tostring(style.auraCCGlow), style.auraCorners,
+        style.auraGlowStyle, string.format("%.3f,%.3f,%.3f", t[1], t[2], t[3]), tostring(style.auraTimer), tostring(style.auraTimerText), tostring(style.auraCount), path, px,
         tostring(style.outline), tostring(style.shadow), tostring(style.liftedShadow), tostring(style.slug) }
     local colors = { "auraNoTypeColor", "auraCCNoTypeColor" }
     for _, name in ipairs(DISPELS) do colors[#colors + 1] = M.dispelColorKeys[name] end
@@ -114,15 +116,21 @@ local function Initializer(style, group, width, height, px, path)
             for key, value in pairs(colors) do options[key] = value end
             button:AddDispelTypeTexture(button.rim, options)
         end
-        -- Crowd control glows in its rim color, softly.
+        -- Crowd control glows in its rim color: the GCD flash (looping, started
+        -- here while the button is still ours to touch) or a soft halo.
         if group == "crowdControl" and style.auraCCGlow then
-            local glowColors = style.auraBorder == "type" and DispelColors(style, group, Kit.AURA_GLOW_ALPHA)
-                or { customDispelColorMap = { None = CreateColor(style.auraCCNoTypeColor[1], style.auraCCNoTypeColor[2], style.auraCCNoTypeColor[3], Kit.AURA_GLOW_ALPHA) } }
+            local gcd = style.auraGlowStyle ~= "soft"
+            local region = gcd and button.flash or button.glow
+            local alpha = gcd and Kit.AURA_FLASH_ALPHA or Kit.AURA_GLOW_ALPHA
+            local c = style.auraCCNoTypeColor
+            local glowColors = style.auraBorder == "type" and DispelColors(style, group, alpha)
+                or { customDispelColorMap = { None = CreateColor(c[1], c[2], c[3], alpha) } }
             local options = { style = Enum.CustomAuraButtonDispelTypeTextureStyle.PreserveAsset,
                 showWhenHarmful = true, showWhenHelpful = true, showWithoutDispelType = true }
             for key, value in pairs(glowColors) do options[key] = value end
-            button.glow:Show()
-            button:AddDispelTypeTexture(button.glow, options)
+            region:Show()
+            if gcd and button.flashAnim then button.flashAnim:Play() end
+            button:AddDispelTypeTexture(region, options)
         end
     end
 end

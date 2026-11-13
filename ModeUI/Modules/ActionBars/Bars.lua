@@ -57,7 +57,7 @@ function M:BuildBar(bar)
         self.slots[bar][i] = self:BuildSlot(header)
         local button = _G[spec.prefix .. i]
         if type(button) == "table" and button.SetParent then
-            buttons[i], self.barOf[button] = button, bar
+            buttons[i], self.barOf[button], self.indexOf[button] = button, bar, i
             -- The paging snippet reaches the buttons of bars that page.
             if self.pages[bar] and SecureHandlerSetFrameRef then SecureHandlerSetFrameRef(header, "button" .. i, button) end
         end

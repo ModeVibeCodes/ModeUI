@@ -89,6 +89,7 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
     function IsControlKeyDown() return false end
     function IsShiftKeyDown() return testShift == true end
 
+    hotkeyTexts = {}
     -- Blizzard's bars and buttons: each button sits on a container of its bar.
     local function Button(name, bar, index, spell)
         local container = CreateFrame('Frame', nil, bar)
@@ -106,7 +107,7 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         b.HotKey = b.TextOverlayContainer:CreateFontString(nil, 'OVERLAY')
         b.Count = b.TextOverlayContainer:CreateFontString(nil, 'OVERLAY')
         b.Name = b:CreateFontString(nil, 'OVERLAY')
-        function b:UpdateHotkeys() self.HotKey:SetSize(37, 10); self.HotKey:SetPoint('TOPRIGHT', self, 'TOPRIGHT', -4, -5); self.HotKey:SetText(tostring(index)) end
+        function b:UpdateHotkeys() self.HotKey:SetSize(37, 10); self.HotKey:SetPoint('TOPRIGHT', self, 'TOPRIGHT', -4, -5); self.HotKey:SetText(hotkeyTexts[name] or tostring(index)) end
         function b:UpdateButtonArt() self.NormalTexture:SetAtlas('UI-HUD-ActionBar-IconFrame'); self.NormalTexture:SetAlpha(1) end
         b:UpdateHotkeys()
         return b
@@ -189,7 +190,15 @@ world.run([==[
 
     -- Text: font, tucked into its corner, keybind color kept unless out of range.
     local hotkey = ActionButton1.HotKey
-    assert(hotkey.font[2] == 11 and hotkey.font[3] == 'OUTLINE', 'keybind 11 with outline')
+    assert(hotkey.font[2] == 9 and hotkey.font[3] == 'OUTLINE', 'keybind 9 with outline')
+    -- Short Keybinds: one-letter modifiers with no hyphen.
+    assert(M.ShortKey('s-E') == 'sE' and M.ShortKey('SHIFT-E') == 'sE' and M.ShortKey('s-c-1') == 'sc1', 'modifiers shortened')
+    assert(M.ShortKey('Mouse Button 4') == 'M4' and M.ShortKey('a-Mouse Button 4') == 'aM4' and M.ShortKey('BUTTON3') == 'M3')
+    assert(M.ShortKey('Q') == 'Q' and M.ShortKey('Num Pad 5') == 'N5' and M.ShortKey('Mouse Wheel Up') == 'WU')
+    hotkeyTexts.ActionButton5 = 's-E'; ActionButton5:UpdateHotkeys()
+    assert(ActionButton5.HotKey.text == 'sE', "Blizzard's keybind text shortened")
+    assert(M:SetOption('bar1', 'hotkeyShort', false) and ActionButton5.HotKey.text == 's-E', "off: Blizzard's own text")
+    assert(M:SetOption('bar1', 'hotkeyShort', true) and ActionButton5.HotKey.text == 'sE')
     local at = Point(hotkey)
     assert(at[1] == 'TOPRIGHT' and at[4] == -4 and at[5] == -4 and hotkey.justifyV == 'TOP', 'keybind right in the top-right corner')
     ActionButton1:UpdateHotkeys()
@@ -272,7 +281,7 @@ world.run([==[
     panel.scripts.OnKeyDown(panel, 'Q'); assert(next(bindings) == nil, 'keys away from a button are not bound')
     catcher.scripts.OnEnter(catcher)
     testShift = true; panel.scripts.OnKeyDown(panel, 'Q'); testShift = false
-    assert(bindings['SHIFT-Q'] == 'ACTIONBUTTON3' and catcher.key.text == 'SHIFT-Q', 'hover and press binds, with modifiers')
+    assert(bindings['SHIFT-Q'] == 'ACTIONBUTTON3' and catcher.key.text == 'sQ', 'hover and press binds, with modifiers (shown short)')
     assert(not panel.propagate, 'the key does not reach the game')
     panel.scripts.OnKeyDown(panel, 'LSHIFT'); assert(bindings['LSHIFT'] == nil, 'a modifier alone does nothing')
     catcher.scripts.OnMouseDown(catcher, 'MiddleButton'); assert(bindings['MiddleButton'] == 'ACTIONBUTTON3' and bindings['SHIFT-Q'] == nil, 'one key per button')
@@ -363,6 +372,61 @@ world.run([==[
     assert(first.cooldownText.text ~= '', 'a sample cooldown while editing the cooldown text')
     first.scripts.OnMouseUp(first, 'LeftButton')
     assert(page.selectedSection.title == 'Bar', 'button click opens Bar')
+    -- The glow menu opens to the left of the clicked button, which previews its glow.
+    local menu = ModeUIActionBarGlowMenu
+    assert(menu:IsShown() and menu.index == 1 and view.glowIndex == 1 and menu.title.text == 'Action Bar 1, button 1', 'glow menu for button 1')
+    local at = Point(menu)
+    assert(at[1] == 'RIGHT' and at[2] == first and at[3] == 'LEFT', 'left of the button')
+    local preview = M.glows[first]
+    -- One glow at a time: the proc glow wins over the ready glow of the same kind.
+    assert(preview and preview.proc:IsShown() and preview.ready.wanted and not preview.ready:IsShown(), 'one glow at a time')
+    assert(menu.procBox.selected and menu.readyBox.selected and menu.grayBox.selected)
+    menu.procBox.scripts.OnClick(menu.procBox)
+    assert(M.db.bar1.buttonGlows['1'].proc == false and not menu.procBox.selected and not preview.proc:IsShown(), 'switching the proc glow off here')
+    assert(preview.ready:IsShown(), 'the ready glow shows once the proc glow is off')
+    menu.procBox.scripts.OnClick(menu.procBox)
+    assert(M.db.bar1.buttonGlows['1'] == nil and preview.proc:IsShown() and not preview.ready:IsShown())
+    -- A glow wins over a border.
+    menu.procButtons[2].scripts.OnClick(menu.procButtons[2])
+    assert(M.db.bar1.procGlow == 'border' and preview.ready:IsShown() and not preview.proc:IsShown(), 'a ready glow overrides a proc border')
+    menu.readyButtons[2].scripts.OnClick(menu.readyButtons[2])
+    assert(M.db.bar1.readyStyle == 'border' and preview.proc:IsShown() and preview.proc.edges[1]:IsShown() and not preview.ready:IsShown(), 'two borders: the proc wins')
+    menu.readyButtons[1].scripts.OnClick(menu.readyButtons[1])
+    menu.procButtons[1].scripts.OnClick(menu.procButtons[1])
+    -- Desaturate on Cooldown for this button.
+    menu.grayBox.scripts.OnClick(menu.grayBox)
+    assert(M.db.bar1.buttonGlows['1'].gray == false and not menu.grayBox.selected, 'this button keeps its color')
+    ActionButton1.action = 1
+    cooldowns[1] = { isActive = true, isOnGCD = false }; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(ActionButton1.icon.desaturated ~= true, 'no gray on a button switched off')
+    cooldowns[1] = nil; FireEvent('SPELL_UPDATE_COOLDOWN')
+    -- Copy, Paste and Apply to Bar.
+    assert(not menu.paste:IsEnabled(), 'nothing to paste yet')
+    menu.copy.scripts.OnClick(menu.copy)
+    assert(menu.paste:IsEnabled())
+    view.buttons[4].scripts.OnMouseUp(view.buttons[4], 'LeftButton')
+    assert(menu:IsShown() and menu.index == 4 and menu.button == view.buttons[4], 'the menu follows the clicked button')
+    menu.paste.scripts.OnClick(menu.paste)
+    assert(M.db.bar1.buttonGlows['4'].gray == false and not menu.grayBox.selected, 'pasted onto button 4')
+    menu.apply.scripts.OnClick(menu.apply)
+    assert(M.db.bar1.buttonGlows['12'].gray == false and M.db.bar1.buttonGlows['1'].gray == false, 'applied to the whole bar')
+    menu.grayBox.scripts.OnClick(menu.grayBox); menu.apply.scripts.OnClick(menu.apply)
+    assert(next(M.db.bar1.buttonGlows) == nil, 'and back: nothing stored')
+    -- It stays open while the page scrolls; a click elsewhere or X closes it.
+    page.scrollbar.scripts.OnValueChanged(page.scrollbar, 40)
+    assert(menu:IsShown(), 'scrolling keeps it open')
+    menu.mouseOver = true; FireEvent('GLOBAL_MOUSE_DOWN', 'LeftButton')
+    assert(menu:IsShown(), 'clicks inside keep it open')
+    menu.mouseOver = false; FireEvent('GLOBAL_MOUSE_DOWN', 'LeftButton')
+    assert(not menu:IsShown() and view.glowIndex == nil, 'a click elsewhere closes it')
+    first.scripts.OnMouseUp(first, 'LeftButton')
+    menu.close.scripts.OnClick(menu.close)
+    assert(not menu:IsShown(), 'X closes it')
+    first.scripts.OnMouseUp(first, 'LeftButton')
+    menu.more.scripts.OnClick(menu.more)
+    assert(not menu:IsShown() and page.selectedSection.title == 'Glows' and not preview.proc:IsShown(), 'All Glow Settings opens Glows')
+    first.scripts.OnMouseUp(first, 'LeftButton'); page.SetEditing('bar2')
+    assert(not menu:IsShown(), 'switching bars closes the menu'); page.SetEditing('bar1')
     assert(M:SetOption('bar1', 'width', 30) and first.width == 30 and ActionButton1.width == 30, 'preview and bar follow the size')
     assert(page.keybindButton and page.keybindHeaderButton and page.keybindHeaderButton:GetParent() == page.previewArea, 'Keybind Mode on the Bar tab and in the preview header')
     page.keybindHeaderButton.scripts.OnClick(page.keybindHeaderButton)
@@ -406,6 +470,13 @@ world.run([==[
     assert(M:SetOption('bar1', 'procGlow', 'mode') and proc:IsShown())
     ActionButtonSpellAlertManager:HideAlert(ActionButton2)
     assert(not proc:IsShown(), 'the glow ends with the proc')
+    -- Per-button switches.
+    assert(M:SetButtonGlow('bar1', 2, 'proc', false) and M.db.bar1.buttonGlows['2'].proc == false)
+    ActionButtonSpellAlertManager:ShowAlert(ActionButton2)
+    assert(not proc:IsShown() and ActionButton2.SpellActivationAlert:GetAlpha() == 0, 'no proc glow on a button switched off')
+    ActionButtonSpellAlertManager:HideAlert(ActionButton2)
+    assert(M:SetButtonGlow('bar1', 2, 'proc', true) and M.db.bar1.buttonGlows['2'] == nil, 'on again: nothing stored')
+    assert(not M:SetOption('bar1', 'buttonGlows', { ['13'] = { proc = false } }), 'places stay on the bar')
 
     -- Cooldowns: a real cooldown ending lights the ready glow; the GCD doesn't.
     local timers = {}
@@ -426,6 +497,24 @@ world.run([==[
     assert(M:SetOption('bar1', 'readyGlow', false))
     cooldowns[3] = { isActive = true, isOnGCD = false }; FireEvent('SPELL_UPDATE_COOLDOWN'); cooldowns[3] = nil; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(not ready:IsShown(), 'Glow When Ready off')
+    assert(M:SetOption('bar1', 'readyGlow', true) and M:SetButtonGlow('bar1', 3, 'ready', false))
+    cooldowns[3] = { isActive = true, isOnGCD = false }; FireEvent('SPELL_UPDATE_COOLDOWN'); cooldowns[3] = nil; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(not ready:IsShown(), 'no ready glow on a button switched off')
+    assert(M:SetButtonGlow('bar1', 3, 'ready', true))
+    -- Desaturate Icon (on by default): gray while a real cooldown runs, even
+    -- if Blizzard clears it; full color when ready.
+    cooldowns[3] = { isActive = true, isOnGCD = false }; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(ActionButton3.icon.desaturated == true, 'gray on cooldown')
+    ActionButton3.icon:SetDesaturated(false)
+    assert(ActionButton3.icon.desaturated == true, 'kept gray when Blizzard clears it')
+    cooldowns[3] = nil; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(ActionButton3.icon.desaturated == false, 'full color when ready')
+    assert(M:SetOption('bar1', 'cooldownDesaturate', false))
+    cooldowns[3] = { isActive = true, isOnGCD = false }; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(ActionButton3.icon.desaturated == false, 'Desaturate Icon off keeps full color')
+    cooldowns[3] = nil; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(M:SetOption('bar1', 'cooldownDesaturate', true))
+    for _, fn in ipairs(timers) do fn() end
     C_Timer.After = after
     assert(M:SetOption('bar1', 'readyGlow', true) and M:SetOption('bar1', 'cooldownOpacity', 100))
 
@@ -461,7 +550,7 @@ local profile = v1.profiles.Default
 local old = profile.modules.actionBars
 old.version = 1
 for _, bar in ipairs({ "bar1", "bar2", "bar3", "bar4", "bar5", "bar6", "bar7", "bar8", "pet", "stance" }) do
-    old[bar].height, old[bar].cooldownColor, old[bar].backgroundOpacity = 38, { 1, 1, 1 }, nil
+    old[bar].height, old[bar].cooldownColor, old[bar].backgroundOpacity, old[bar].hotkeySize = 38, { 1, 1, 1 }, nil, 11
 end
 old.bar3.fade, old.bar3.visibility, old.bar4.fade, old.bar4.visibility, old.bar5.height = true, "always", true, "combat", 40
 -- Version 2's look: the Onyx rim color, muted macro names, 2px spacing.
@@ -475,8 +564,9 @@ H.Load({ before = STUBS, saved = v1 }).run([==[
     assert(M.db.bar1.borderColor[1] == M.BORDER_COLOR[1] and M.db.bar1.macroColor[3] == M.MACRO_COLOR[3] and M.db.bar1.spacing == 1, 'version 2 defaults move')
     assert(M.db.bar1.borderSize == 2 and M.db.bar1.backgroundColor[1] == M.BACKGROUND_COLOR[1], 'new settings take their defaults')
     assert(M.db.bar2.borderColor[1] == M.BORDER_COLOR[1] and M.db.bar2.spacing == 6, 'version 4 sets every border; chosen spacing stays')
-    assert(M.db.version == 4 and M.db.bar1.height == 36 and M.db.bar5.height == 40, 'default height moves; a chosen one stays')
+    assert(M.db.version == 5 and M.db.bar1.height == 36 and M.db.bar5.height == 40, 'default height moves; a chosen one stays')
     assert(M.db.bar1.cooldownColor[2] == M.COOLDOWN_COLOR[2] and M.db.bar1.backgroundOpacity == 75 and M.db.bar3.backgroundOpacity == 75, 'version 4 sets 75% on every bar')
+    assert(M.db.bar1.hotkeySize == 9 and M.db.bar1.cooldownDesaturate and M.db.bar1.hotkeyShort, 'version 5: keybinds 2px smaller')
     assert(M.db.bar3.visibility == 'mouseover' and M.db.bar3.fade == nil and M.db.bar4.visibility == 'combat', 'fading becomes Mouseover')
     assert(PM:GetPosition('actionBarsBar2').target == 'actionBarsBar1', 'a default place stacks on bar 1')
     assert(PM:GetPosition('actionBarsBar3').target == 'screen' and PM:GetPosition('actionBarsBar3').x == 30, 'a moved bar stays put')

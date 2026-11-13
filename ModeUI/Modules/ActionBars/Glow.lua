@@ -52,6 +52,7 @@ local function Paint(frame, button, style, color, pulse)
     local px = state and state.g.px or 1
     frame:SetFrameLevel(button:GetFrameLevel() + 6)
     local soft = style == "glow" or style == "mode"
+    frame.isSoft = soft
     frame.soft:SetShown(soft)
     if soft then
         frame.soft:ClearAllPoints()
@@ -73,20 +74,52 @@ local function Paint(frame, button, style, color, pulse)
     end
 end
 
+M.PaintGlow = Paint
+
+-- One glow at a time: when a button wants both its proc glow and its ready
+-- glow, a soft glow wins over a border one; two of a kind, the proc glow wins.
+-- Each glow keeps whether it's wanted, so the other comes back when one ends.
+function M:ResolveGlows(button)
+    local set = self.glows[button]
+    if not set then return end
+    local proc, ready = set.proc, set.ready
+    local p, r = proc ~= nil and proc.wanted == true, ready ~= nil and ready.wanted == true
+    -- Blizzard's own proc animation counts as a soft proc glow.
+    if set.blizzard then p = true end
+    local readyWins = p and r and ready.isSoft and not (set.blizzard or proc.isSoft)
+    if proc then proc:SetShown(proc.wanted == true and not readyWins) end
+    if ready then ready:SetShown(r and (not p or readyWins)) end
+end
+
+-- Whether a glow kind ("proc" or "ready") is on for the button at `index`
+-- (per-button switches, set from the preview's glow menu).
+function M.GlowOn(style, index, kind)
+    local glows = index and style.buttonGlows[tostring(index)]
+    return not (glows and glows[kind] == false)
+end
+
 -- Procs ------------------------------------------------------------------
 
 function M:ApplyProc(button)
     local bar = self.barOf[button]
     if not bar then return end
-    local style, on = self.db[bar], self.active == true and self.procs[button] == true
+    local style = self.db[bar]
+    local allowed = self.GlowOn(style, self.indexOf[button], "proc")
+    local on = self.active == true and self.procs[button] == true and allowed
     local alert = button.SpellActivationAlert
     -- Blizzard's alert shows for its own style, and whenever ModeUI is off.
-    if alert and alert.SetAlpha then alert:SetAlpha((not self.active or style.procGlow == "blizzard") and 1 or 0) end
+    if alert and alert.SetAlpha then alert:SetAlpha((not self.active or (style.procGlow == "blizzard" and allowed)) and 1 or 0) end
     local own = on and (style.procGlow == "mode" or style.procGlow == "border")
+    local blizzard = on and style.procGlow == "blizzard"
+    if blizzard or self.glows[button] then
+        self.glows[button] = self.glows[button] or {}
+        self.glows[button].blizzard = blizzard
+    end
     local glow = (own or (self.glows[button] and self.glows[button].proc)) and self:Glow(button, "proc")
-    if not glow then return end
+    if not glow then self:ResolveGlows(button); return end
     if own then Paint(glow, button, style.procGlow, style.procColor, style.procPulse) end
-    glow:SetShown(own)
+    glow.wanted = own
+    self:ResolveGlows(button)
 end
 
 function M:HookProcs()
@@ -115,25 +148,52 @@ function M:FlashReady(button, style)
     Paint(glow, button, style.readyStyle, style.readyColor, true)
     glow.token = (glow.token or 0) + 1
     local token = glow.token
-    glow:Show()
-    C_Timer.After(style.readyDuration, function() if glow.token == token then glow:Hide() end end)
+    glow.wanted = true
+    self:ResolveGlows(button)
+    C_Timer.After(style.readyDuration, function()
+        if glow.token == token then glow.wanted = false; M:ResolveGlows(button) end
+    end)
 end
 
+-- Desaturate Icon: the icon is gray while a real cooldown runs. Blizzard
+-- clears desaturation when a button's action changes; a hook puts it back
+-- while the cooldown still runs. Only ModeUI's own desaturation is undone,
+-- so Blizzard's (a level-locked action) stays.
+local guard = false
+local function KeepGray(icon, value)
+    if guard or value ~= false then return end
+    local state = M.cooling[M.iconOf[icon]]
+    if state and state.gray then guard = true; icon:SetDesaturated(true); guard = false end
+end
+local function Gray(button, state, on)
+    local icon = button.icon
+    if not icon or not icon.SetDesaturated or state.gray == on then return end
+    if not M.iconOf[icon] then
+        M.iconOf[icon] = button
+        if hooksecurefunc then hooksecurefunc(icon, "SetDesaturated", KeepGray) end
+    end
+    state.gray = on
+    guard = true; icon:SetDesaturated(on); guard = false
+end
+M.iconOf = setmetatable({}, { __mode = "k" })
+
 -- Checks every action button on bars 1-8: a real cooldown ending lights the
--- ready glow; Icon Opacity follows whether one runs.
+-- ready glow; Icon Opacity and Desaturate Icon follow whether one runs.
 function M:UpdateCooldowns()
     if not self.active then return end
     for bar in pairs(self.pages) do
         local style = self.db[bar]
-        for _, button in pairs(self.buttons[bar] or {}) do
+        for index, button in pairs(self.buttons[bar] or {}) do
             local action = button.action
             if Public(action) and type(action) == "number" then
                 local cooling, state = Cooling(action), self.cooling[button]
-                if state and state.action == action and state.on and not cooling and style.readyGlow then self:FlashReady(button, style) end
+                if state and state.action == action and state.on and not cooling and style.readyGlow
+                    and self.GlowOn(style, index, "ready") then self:FlashReady(button, style) end
                 state = state or {}
                 state.action, state.on = action, cooling
                 self.cooling[button] = state
                 if button.icon then button.icon:SetAlpha(cooling and style.cooldownOpacity / 100 or 1) end
+                Gray(button, state, cooling and style.cooldownDesaturate and self.GlowOn(style, index, "gray"))
             end
         end
     end
@@ -143,8 +203,13 @@ end
 function M:RefreshGlows()
     for button in pairs(self.barOf) do self:ApplyProc(button) end
     if self.active then self:UpdateCooldowns(); return end
-    -- Switched off: no ready glows, and full icons.
-    for _, set in pairs(self.glows) do if set.ready then set.ready:Hide() end end
-    for button in pairs(self.cooling) do if button.icon then button.icon:SetAlpha(1) end end
-    for button in pairs(self.cooling) do self.cooling[button] = nil end
+    -- Switched off: no ready glows, and full, colored icons.
+    for button, set in pairs(self.glows) do
+        if set.ready then set.ready.wanted = false; self:ResolveGlows(button) end
+    end
+    for button, state in pairs(self.cooling) do
+        if button.icon then button.icon:SetAlpha(1) end
+        Gray(button, state, false)
+        self.cooling[button] = nil
+    end
 end

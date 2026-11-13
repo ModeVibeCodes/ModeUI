@@ -29,6 +29,36 @@ function Kit.Circle(frame, layer, sublevel)
     return texture
 end
 
+-- A hollow pixel rim: four flat edges on `host`. Hollow, so a see-through
+-- fill inside never takes on the rim's color.
+function Kit.Rim(host, layer, sublevel)
+    local edges = {}
+    for i = 1, 4 do
+        edges[i] = host:CreateTexture(nil, layer or "BORDER", nil, sublevel or 0)
+        edges[i]:SetTexture(Kit.FLAT)
+    end
+    return edges
+end
+
+-- Lays the rim along host's edges, `thickness` units thick. `cut` leaves out
+-- each corner's outermost pixel so the edges meet in a soft corner (Rounded);
+-- 0 fills it (Square). A thickness of 0 hides the rim.
+function Kit.PlaceRim(edges, host, thickness, cut, color, alpha)
+    local t = thickness
+    local spots = {
+        { "TOPLEFT", cut, 0, "TOPRIGHT", -cut, -t }, { "BOTTOMLEFT", cut, t, "BOTTOMRIGHT", -cut, 0 },
+        { "TOPLEFT", 0, -cut, "BOTTOMLEFT", t, cut }, { "TOPRIGHT", -t, -cut, "BOTTOMRIGHT", 0, cut },
+    }
+    for i, edge in ipairs(edges) do
+        local s = spots[i]
+        edge:ClearAllPoints()
+        edge:SetPoint("TOPLEFT", host, s[1], s[2], s[3])
+        edge:SetPoint("BOTTOMRIGHT", host, s[4], s[5], s[6])
+        Kit.Tint(edge, color, alpha or 1)
+        edge:SetShown(t > 0)
+    end
+end
+
 -- Anchor a texture inside its host, `inset` units in on every side.
 function Kit.Inset(texture, host, inset)
     texture:ClearAllPoints(); texture:SetPoint("TOPLEFT", host, "TOPLEFT", inset, -inset)

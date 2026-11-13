@@ -145,6 +145,10 @@ local function Sample(view, index)
     if button then return button end
     button = M:BuildSampleButton(view.bar)
     button.hits = { button = Clickable(button, "buttons") }
+    -- A click on the button opens its settings and its glow menu (GlowMenu.lua).
+    button:SetScript("OnMouseUp", function(_, mouse)
+        if mouse == nil or mouse == "LeftButton" then M:JumpTo("buttons"); M:OpenGlowMenu(view, index, button) end
+    end)
     for _, part in ipairs(M.textParts) do button.hits[part] = Clickable(M.TextRegion(button, part), "text", part, button.textLayer) end
     view.buttons[index] = button
     return button
@@ -179,6 +183,7 @@ function M:RenderPreview(view)
         self.Place(button, view.bar, g, i)
         self:SkinButton(button, style, g, true)
         local filled = Fill(button, real)
+        self:PreviewGlows(view, button, i, style, real)
         local start, duration = Cooldown(real)
         if filled and not start and demo then
             -- The sample cooldown, on the first button with a spell.
@@ -206,6 +211,7 @@ function M:RenderPreview(view)
     local caption = style.show and L[spec.label] or L[spec.label .. " is hidden"]
     if filledCount == 0 then caption = caption .. " · " .. L["no spells on this bar yet"] end
     view.caption:SetText(caption)
+    self:RefreshGlowMenu()
 end
 
 function M:CreateConfigPreview(parent)

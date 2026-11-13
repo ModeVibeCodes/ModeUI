@@ -83,7 +83,7 @@ Four texts, each with **Show This Text**, **Anchor** (a compass with Center),
 
 | Text | Default |
 |---|---|
-| Keybind | shown, Top Right, 11 |
+| Keybind | shown, Top Right, 9, short |
 | Count (stacks and charges) | shown, Bottom Right, 12 |
 | Macro Name | hidden, Bottom, 10, #69A5B9 |
 | Cooldown (the countdown numbers) | shown, Center, 14, amber #FFB12F |
@@ -96,6 +96,12 @@ default, or Lifted).
 
 - Blizzard shows and hides these texts itself, so a hidden text is faded rather
   than hidden.
+- **Short Keybinds** (on by default; shown on the Text tab with Keybind
+  picked) writes modifiers as one letter with no hyphen: Shift-E is `sE`,
+  Ctrl-1 `c1`, Alt-Mouse Button 4 `aM4`; long key names get short forms (Mouse
+  Wheel Up `WU`, Num Pad 5 `N5`, Spacebar `Spc`). ModeUI rewrites Blizzard's
+  keybind text after Blizzard writes it; turned off, Blizzard writes it again.
+  Keybind Mode labels use the same short form.
 - The keybind keeps its color, except that Blizzard's out-of-range red still
   shows.
 - A lifted shadow copies its text as Blizzard writes it. The copy accepts secret
@@ -204,7 +210,7 @@ While the page is open, each bar on screen wears a small name tag in its middle
 ("Action Bar 1", "Pet Bar", …), so you can tell the bars apart without Edit
 Mode. The bar being edited has a cyan tag; clicking any tag edits that bar.
 
-Clicking a button opens the **Bar** tab; clicking a text opens the **Text** tab
+Clicking a button opens the **Bar** tab and its glow menu (see Glows); clicking a text opens the **Text** tab
 on that text. The tabs:
 
 - **Bar**: Show Bar, status, layout, size, copy and reset, Keybind Mode, paging
@@ -257,6 +263,31 @@ How buttons react, on the **Glows** tab (per bar):
   global cooldown.
 - **Icon Opacity** (on cooldown): fades an icon while its spell is on such a
   cooldown. 100% (the default) leaves icons alone.
+- **Desaturate Icon** (on by default): the icon turns gray while that cooldown
+  runs and gets its color back when it's ready. Off keeps full color. Blizzard
+  clears desaturation when a button's action changes; a hook puts it back while
+  the cooldown still runs, and ModeUI only undoes its own (a level-locked
+  action stays gray).
+- **One glow at a time**: when a button wants its proc glow and its ready glow
+  together, a soft glow wins over a border (Blizzard's own proc animation counts
+  as a glow); two of the same kind, the proc glow wins. The other comes back when
+  the winner ends.
+- **The glow menu**: click a button in the preview. It opens the Bar tab and a
+  menu to the left of the button, which stays open while the page scrolls and
+  closes on a click anywhere else, its **X**, switching bars, leaving the page
+  or combat. It has:
+  - **This Button**: **Proc Glow**, **Glow When Ready** and **Desaturate on
+    Cooldown**, switches for just this button (the last two gray out while the
+    bar's own switch is off).
+  - **Copy**, **Paste** and **Apply to Bar**: copy this button's switches, paste
+    them onto another button (any bar), or give every button on this bar the
+    same switches.
+  - **This Bar**: the bar's Proc Glow and Ready Glow styles.
+  - **All Glow Settings** opens the Glows tab.
+
+  While the menu is open its button previews its glow (Blizzard's own animation
+  for the Blizzard style). A proc lit on the real bar also shows on its preview
+  button. Switches are kept by place (`"1"` to `"12"`), only while off.
 - Glow When Ready and Icon Opacity apply to action bars 1-8.
 
 ## Switching it off
@@ -270,6 +301,12 @@ so ModeUI offers a reload. Turning the module back on needs no reload.
 `ModeUIDB.modules.actionBars` holds one table per bar: `bar1`-`bar8`, `pet`,
 `stance`. Positions are saved under `positions.actionBarsBar1` to
 `actionBarsBar8`, `actionBarsPet` and `actionBarsStance`.
+
+Version 5 changed these from version 4:
+
+- Every bar's keybind text is 2px smaller (11 becomes 9).
+- **Desaturate Icon**, **Short Keybinds** and the per-button glow switches take
+  their defaults (on, on, none switched off).
 
 Version 4 changed these from version 3 (the owner asked for them on every bar):
 
@@ -304,7 +341,8 @@ Version 2 changed these from version 1:
 | `Skin.lua` | rim, gap, background, icon crop, state overlays, empty slots |
 | `Text.lua` | the four texts, their hooks and lifted shadows |
 | `Visibility.lua` | show and page conditions, fading |
-| `Glow.lua` | proc glows, the ready glow and icon opacity on cooldown |
+| `Glow.lua` | proc glows, the ready glow, icon opacity and desaturation on cooldown |
+| `GlowMenu.lua` | the preview's glow menu, per-button switches with copy, paste and apply to bar, glow previews |
 | `Keybind.lua` | Keybind Mode |
 | `Preview.lua` | the Edit Mode highlight and the live settings preview |
 | `Settings.lua` | the settings page |

@@ -16,6 +16,7 @@ function M:OnInitialize()
     if self.db.movePlaces then self:MigratePositions(); self.db.movePlaces = nil end
     self.headers, self.slots, self.ghosts, self.buttons = {}, {}, {}, {}
     self.barOf = setmetatable({}, { __mode = "k" })
+    self.indexOf = setmetatable({}, { __mode = "k" })
     -- SharedMedia fonts can register after login; restyle the text with them.
     addon.Media:RegisterFontListener(self, function() if self.active then self:Refresh() end end)
     -- /kb opens Keybind Mode (Keybind.lua).

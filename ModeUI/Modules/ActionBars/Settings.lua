@@ -14,7 +14,11 @@ function M:CreateConfigPage(parent)
     local function Part() return textPart end
     local function db() return M.db[editing] end
     page.barEditing, page.textPart = Bar, Part
-    function page.SetEditing(bar) if M.barSpecs[bar] then editing = bar; page:Refresh(); page:Layout() end end
+    function page.SetEditing(bar)
+        if not M.barSpecs[bar] then return end
+        if bar ~= editing and M.glowMenu then M.glowMenu:Hide() end
+        editing = bar; page:Refresh(); page:Layout()
+    end
     function page.SetTextPart(part) if M.textPartLabels[part] then textPart = part; page:Refresh(); page:Layout() end end
     local owner = M:AppearanceOwner(Bar, Part)
     local function Refresh(fn) page.refreshers[#page.refreshers + 1] = fn end
@@ -170,6 +174,10 @@ function M:CreateConfigPage(parent)
         for _, part in ipairs(M.textParts) do parts[#parts + 1] = { id = part, label = M.textPartLabels[part] } end
         page.textPartButtons = Pills("Text", parts, Part, page.SetTextPart, 104); Mark("text")
         page.textToggles = Toggles({ { "Show This Text", "part", get = function() return db()[PartKey("Show")] end, set = SetPart("Show") } })
+        When(function() return textPart == "hotkey" end, function()
+            page.shortToggles = Toggles({ { "Short Keybinds", "hotkeyShort" } })
+            Note("Short Keybinds writes modifiers as one letter: Shift-E is sE, Ctrl-1 is c1, Alt-Mouse Button 4 is aM4.", 32)
+        end)
         local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })
         local anchorButtons, anchorRefresh = W.AnchorPicker(page:Row(L["Anchor"], W.ANCHOR_PICKER_HEIGHT + 16),
             function() return db()[PartKey("Anchor")] end, SetPart("Anchor"), labels, { center = true })
@@ -212,7 +220,8 @@ function M:CreateConfigPage(parent)
         page:Group(L["On Cooldown"])
         local dim = Columns({ "Icon Opacity" })
         page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
-        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. Icon Opacity fades the icon while that cooldown runs (100% keeps it as it is). Action bars 1-8 only.", 48)
+        page.desaturateToggles = Toggles({ { "Desaturate Icon", "cooldownDesaturate" } })
+        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. Icon Opacity fades the icon and Desaturate Icon turns it gray while that cooldown runs; with Desaturate Icon off it keeps its full color. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
     end)
 
     Tab("Visibility", function()
@@ -242,7 +251,7 @@ function M:CreateConfigPage(parent)
     -- While this page is open, each bar on screen wears a name tag (Preview.lua).
     Refresh(function() M:RenderBarTags() end)
     page:HookScript("OnShow", function() M:RenderBarTags() end)
-    page:HookScript("OnHide", function() M:RenderBarTags() end)
+    page:HookScript("OnHide", function() M:RenderBarTags(); if M.glowMenu then M.glowMenu:Hide() end end)
     if addon.configWindow then
         addon.configWindow:HookScript("OnShow", function() M:RenderBarTags() end)
         addon.configWindow:HookScript("OnHide", function() M:RenderBarTags() end)

@@ -27,7 +27,9 @@ addon:RegisterModule("nameplates", M)
 -- threat status has its own color.
 -- Version 7: the quest, classification and level indicators each have their
 -- own anchor, offset and size.
-M.VERSION = 7
+-- Version 8: the no-type crowd control rim's default moves from orange to
+-- #FF5948; profiles still on the old default follow it.
+M.VERSION = 8
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
 M.kinds = { "enemy", "friendly" }
@@ -91,12 +93,13 @@ local function Style(kind)
         focusFadeOthers = 100,
         -- Auras: settings for every group, then each group on its own.
         showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
-        auraBorderSize = 2, auraCCGlow = true,
+        auraBorderSize = 2, auraCorners = "sharp", auraCCGlow = true, auraGlowStyle = "gcd",
+        auraTimerColor = Copy(P.cooldown),
         auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
         auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85), auraBleedColor = RGB(200, 45, 45),
-        -- Auras without a dispel type (Cheap Shot, most crowd control): orange for
+        -- Auras without a dispel type (Cheap Shot, most crowd control): #FF5948 for
         -- crowd control, the Mode rim for the rest.
-        auraNoTypeColor = RGB(37, 40, 44), auraCCNoTypeColor = RGB(255, 140, 40),
+        auraNoTypeColor = RGB(37, 40, 44), auraCCNoTypeColor = RGB(255, 89, 72),
         crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),
@@ -110,7 +113,7 @@ M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendl
 M.identityKeys = { show = true }
 M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
     auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true,
-    auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true }
+    auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true, auraTimerColor = true }
 -- Aura border colors by the game's dispel type name.
 M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Disease = "auraDiseaseColor",
     Poison = "auraPoisonColor", Enrage = "auraEnrageColor", Bleed = "auraBleedColor" }
@@ -159,6 +162,8 @@ M.choices = {
         { id = "borderArrows", label = "Border and Arrows" }, { id = "none", label = "None" } },
     auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
     auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" } },
+    auraCorners = { { id = "sharp", label = "Sharp" }, { id = "rounded", label = "Rounded" } },
+    auraGlowStyle = { { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,
     questAnchor = M.elementAnchors, classificationAnchor = M.elementAnchors, levelAnchor = M.elementAnchors,
 }
@@ -266,6 +271,20 @@ local function MigrateV6(db)
     end
 end
 
+-- Version 7 -> 8: the old orange default (255, 140, 40) becomes #FF5948;
+-- a color the owner picked stays.
+local function MigrateV7(db)
+    local function Near(a, b) return math.abs(a - b) < 0.002 end
+    for _, kind in ipairs(M.kinds) do
+        local style = db[kind]
+        local c = type(style) == "table" and style.auraCCNoTypeColor
+        if type(c) == "table" and Number(c[1]) and Number(c[2]) and Number(c[3])
+            and Near(c[1], 1) and Near(c[2], 140 / 255) and Near(c[3], 40 / 255) then
+            style.auraCCNoTypeColor = RGB(255, 89, 72)
+        end
+    end
+end
+
 local function ValidateGroup(value, default, label)
     assert(Public(value) and type(value) == "table", "Invalid nameplate aura group: " .. label)
     for key, fallback in pairs(default) do
@@ -316,6 +335,7 @@ function M.Initialize(db)
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == 6 then MigrateV6(db); db.version = 7 end
+    if db.version == 7 then MigrateV7(db); db.version = 8 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do
