@@ -81,8 +81,18 @@ function M:CreateConfigPage(parent)
         for i, title in ipairs(titles) do localized[i] = L[title] end
         return page:Columns(localized, height)
     end
-    local barChoices = {}
-    for _, bar in ipairs(M.bars) do barChoices[#barChoices + 1] = { id = bar, label = L[M.barSpecs[bar].label] } end
+    -- The Editing list marks bars that are off or hidden.
+    local STATE = { off = "Off", hidden = "Hidden" }
+    local function BarLabel(bar)
+        local state = M:BarState(bar)
+        local label = L[M.barSpecs[bar].label]
+        return state and (label .. "  |cff8c8c8c" .. L[STATE[state]] .. "|r") or label
+    end
+    local function BarChoices()
+        local list = {}
+        for _, bar in ipairs(M.bars) do list[#list + 1] = { id = bar, label = BarLabel(bar) } end
+        return list
+    end
 
     page.configPreview = W.Preview(page, M, { contentHeight = 120 })
     -- The preview's header, seen from every tab: Keybind Mode after the
@@ -92,13 +102,20 @@ function M:CreateConfigPage(parent)
         keys:SetScript("OnClick", function() M:SetKeybindMode(true) end)
         page.keybindHeaderButton = keys
         page.previewHeaderButtons = { keys }
-        local editing = CreateFrame("Frame", nil, page.previewArea)
-        editing:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); editing:SetSize(264, 28)
-        page.editingLabel = W.Label(editing, L["Editing"], nil, 0, 0, 60, T.muted)
+        local corner = CreateFrame("Frame", nil, page.previewArea)
+        corner:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); corner:SetSize(352, 28)
+        page.editingLabel = W.Label(corner, L["Editing"], nil, 0, 0, 60, T.muted)
         page.editingLabel:ClearAllPoints(); page.editingLabel:SetPoint("LEFT", 0, 0)
-        page.barSelect = SelectIn(editing, 200, function() return barChoices end, Bar, page.SetEditing)
+        page.barSelect = SelectIn(corner, 200, BarChoices, Bar, page.SetEditing)
         page.barSelect:ClearAllPoints(); page.barSelect:SetPoint("RIGHT", 0, 0)
-        page.previewReserveRight = 276
+        page.editingLabel:ClearAllPoints(); page.editingLabel:SetPoint("RIGHT", page.barSelect, "LEFT", -8, 0)
+        page.editingLabel:SetWidth(52); page.editingLabel:SetJustifyH("RIGHT")
+        -- A bar that's off or hidden offers to turn it on, right there.
+        page.turnOnButton = W.Button(corner, L["Turn On"], 80, 24, "choice")
+        page.turnOnButton:SetPoint("RIGHT", page.editingLabel, "LEFT", -8, 0)
+        page.turnOnButton:SetScript("OnClick", function() M:TurnOnBar(editing); page:Refresh(); page:Layout() end)
+        Refresh(function() page.turnOnButton:SetShown(M:BarState(editing) ~= nil) end)
+        page.previewReserveRight = 364
         page:UpdatePreviewLayout()
     end
 
@@ -130,13 +147,40 @@ function M:CreateConfigPage(parent)
         page.widthSlider = Slider(size[1], "width", "px"); Mark("buttons")
         page.heightSlider = Slider(size[2], "height", "px")
         page.spacingSlider = Slider(size[3], "spacing", "px")
+        -- Apply Style: tick bars, then give them this bar's look.
+        page:Group(L["Apply Style"])
+        local targets, items = {}, {}
+        for _, bar in ipairs(M.bars) do
+            items[#items + 1] = { M.barSpecs[bar].label, "apply",
+                get = function() return bar ~= editing and targets[bar] == true end,
+                set = function(on) if bar ~= editing then targets[bar] = on or nil end end }
+        end
+        page.applyTargets = targets
+        page.applyToggles = Toggles(items)
+        local apply = page:Row(L["Apply"], 48)
+        page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
+        page.applyButton:SetPoint("LEFT")
+        page.applyAllButton = W.Button(apply, L["Apply to All Bars"], 150, 30, "secondary")
+        page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
+        local result = W.Label(apply, "", nil, 0, 0, 160, T.muted)
+        result:ClearAllPoints(); result:SetPoint("LEFT", page.applyAllButton, "RIGHT", 10, 0)
+        page.applyResult = result
+        local function Report(ok, count)
+            result:SetText(ok and string.format(L["Applied to %d bars."], count or 0) or L["Choose bars first."])
+        end
+        page.applyButton:SetScript("OnClick", function()
+            local chosen = false
+            for bar in pairs(targets) do if bar ~= editing then chosen = true end end
+            if not chosen then Report(false); return end
+            Report(M:CopyStyleTo(editing, targets))
+        end)
+        page.applyAllButton:SetScript("OnClick", function() Report(M:CopyStyleToAll(editing)) end)
+        Refresh(function() if editing ~= page.applyResultBar then result:SetText(""); page.applyResultBar = editing end end)
         page:Group(L["This Bar"])
-        local tools = page:Row(L["Style"], 48)
-        page.copyButton = W.Button(tools, L["Copy Style to All Bars"], 190, 30, "secondary")
-        page.copyButton:SetPoint("LEFT"); page.copyButton:SetScript("OnClick", function() M:CopyStyleToAll(editing) end)
-        page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
-        page.resetButton:SetPoint("LEFT", page.copyButton, "RIGHT", 8, 0); page.resetButton:SetScript("OnClick", function() M:ResetBar(editing) end)
-        Note("Copy Style copies size, borders, text and opacity; each bar keeps its own buttons, lines and show settings.", 32)
+        local reset = page:Row(L["Style"], 48)
+        page.resetButton = W.Button(reset, L["Reset to Defaults"], 150, 30, "secondary")
+        page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetBar(editing) end)
+        Note("Apply Style gives the ticked bars this bar's size, borders, background, text, glows and opacity; each keeps its own buttons, lines, paging and show settings. The bar being edited is skipped.", 48)
         page:Group(L["Keybinds"])
         local keys = page:Row(L["Keybind Mode"], 48)
         page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")

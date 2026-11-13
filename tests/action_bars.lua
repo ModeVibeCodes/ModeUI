@@ -524,6 +524,40 @@ world.run([==[
     C_Timer.After = after
     assert(M:SetOption('bar1', 'readyGlow', true) and M:SetOption('bar1', 'cooldownOpacity', 100))
 
+    -- The Editing list marks bars that are off or hidden, and offers Turn On.
+    page.barSelect.scripts.OnClick(page.barSelect)
+    local labels = {}
+    for _, row in ipairs(page.barSelect.rows) do if row:IsShown() then labels[row.choice.id] = row.label.text end end
+    page.barSelect.menu:Hide()
+    assert(labels.bar1 == 'Action Bar 1' and labels.bar6:find('Action Bar 6', 1, true) and labels.bar6:find('Off', 1, true), 'off bars are marked')
+    assert(not page.turnOnButton:IsShown(), 'no Turn On for a bar that shows')
+    page.SetEditing('bar6')
+    assert(page.turnOnButton:IsShown() and page.barSelect.label.text:find('Off', 1, true), 'Turn On for an off bar')
+    page.turnOnButton.scripts.OnClick(page.turnOnButton)
+    assert(M.db.bar6.show and not page.turnOnButton:IsShown() and page.barSelect.label.text == 'Action Bar 6', 'Turn On shows the bar')
+    assert(M:SetOption('bar6', 'visibility', 'hidden') and page.turnOnButton:IsShown() and page.barSelect.label.text:find('Hidden', 1, true), 'hidden bars are marked too')
+    page.turnOnButton.scripts.OnClick(page.turnOnButton)
+    assert(M.db.bar6.visibility == 'always', 'Turn On brings a hidden bar back to Always')
+    assert(M:SetOption('bar6', 'show', false))
+    page.SetEditing('bar1')
+
+    -- Apply Style: tick bars, then apply this bar's look to them.
+    assert(M:SetOption('bar1', 'borderSize', 3))
+    local cells = page.applyToggles
+    cells[3].frame.scripts.OnClick(cells[3].frame); cells[5].frame.scripts.OnClick(cells[5].frame)
+    cells[1].frame.scripts.OnClick(cells[1].frame)
+    assert(page.applyTargets.bar3 and page.applyTargets.bar5 and not page.applyTargets.bar1, 'the edited bar is skipped')
+    page.applyButton.scripts.OnClick(page.applyButton)
+    assert(M.db.bar3.borderSize == 3 and M.db.bar5.borderSize == 3 and M.db.bar4.borderSize == 2, 'applied to the ticked bars only')
+    assert(M.db.bar5.orientation == 'vertical' and page.applyResult.text == 'Applied to 2 bars.', 'shape kept; result shown')
+    assert(M.db.bar3.paging == false and M.db.bar3.pageConditions:find('mod:shift', 1, true), 'paging stays per bar')
+    cells[3].frame.scripts.OnClick(cells[3].frame); cells[5].frame.scripts.OnClick(cells[5].frame)
+    page.applyButton.scripts.OnClick(page.applyButton)
+    assert(page.applyResult.text == 'Choose bars first.', 'nothing ticked')
+    page.applyAllButton.scripts.OnClick(page.applyAllButton)
+    assert(M.db.bar4.borderSize == 3 and M.db.pet.borderSize == 3 and page.applyResult.text == 'Applied to 9 bars.', 'Apply to All Bars')
+    for _, bar in ipairs(M.bars) do assert(M:SetOption(bar, 'borderSize', 2)) end
+
     -- Copy and reset.
     assert(M:SetOption('bar1', 'border', 'square') and M:CopyStyleToAll('bar1'))
     assert(M.db.bar5.border == 'square' and M.db.bar5.width == 30 and M.db.bar5.orientation == 'vertical' and M.db.pet.buttons == 10, 'look copied, shape kept')

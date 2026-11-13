@@ -95,8 +95,11 @@ world.run([==[
     assert(M and not M.enabled and not M.built, 'Damage Meters start off and build nothing')
     assert(M.db.window1.show and not M.db.window2.show and not M.db.window3.show, 'one window on by default')
     assert(M.db.window1.meterType == 'damageDone' and M.db.window2.meterType == 'healingDone' and M.db.window3.meterType == 'damageTaken')
-    assert(M.db.window1.barTexture == 'mode' and M.db.window1.fontMedia == 'Expressway', 'Mode Gradient and Expressway')
-    assert(M.db.window1.decimals == 1 and not M.db.window1.locked and M.db.window1.group == 'none', 'one decimal, unlocked, on its own')
+    assert(M.db.window1.barTexture == 'mode' and M.db.window1.nameFontMedia == 'Expressway' and M.db.window1.titleFontMedia == 'Expressway', 'Mode Gradient and Expressway')
+    assert(M.db.window1.decimals == 0 and not M.db.window1.locked and M.db.window1.group == 'none', 'whole numbers, unlocked, on its own')
+    for _, part in ipairs(M.textParts) do assert(M.db.window1[part .. 'Outline'], part .. ' outlined') end
+    assert(M.db.window1.nameColor[1] == 1 and M.db.window1.nameColor[2] == 1 and M.db.window1.nameColor[3] == 1, 'pure white names')
+    assert(M.db.window1.headerTexture == 'mode' and M.db.window1.headerColor[1] == Kit.onyx.health[1], 'an Onyx header bar')
     assert(DM.Clock(65) == '1:05' and DM.Clock(Secret('t')) == '' and DM.Clock(nil) == '', 'clock text')
     assert(#DM.types == 10 and DM.typeById.dps.perSecond and DM.typeById.interrupts.count, 'the meters Blizzard offers')
     local ok, short = Kit.ShortNumber(165.71428571429, 1)
@@ -129,12 +132,18 @@ world.run([==[
     assert(b.lock.width == 16 and b.lock:IsShown() and Point(b.lock)[4] == -4 and Point(b.lock)[5] == -2, 'lock in the corner')
     assert(Point(b.reset)[4] == -22 and Point(b.session)[4] == -40, 'reset, then the fight')
     assert(Point(w1.header.info)[2] == b.session and b.session.text.text == 'C', 'C for Current Fight')
+    assert(b.session.rim == nil and b.session.text.color[2] == Kit.palette.accent[2] and b.session.text.color[1] == Kit.palette.accent[1], 'just the letter, in Mode cyan')
+    local hb = w1.header.bar
+    assert(hb.statusBarColor[1] == Kit.onyx.health[1] and hb.sheen:IsShown() and hb.value == 1, 'the header is a full Onyx bar in Mode Gradient')
+    assert(M:SetOption('window1', 'headerTexture', 'flat') and not hb.sheen:IsShown() and M:SetOption('window1', 'headerColor', { 0, 0, 1 })
+        and hb.statusBarColor[3] == 1, 'header texture and color')
+    assert(M:SetOption('window1', 'headerTexture', 'mode') and M:SetOption('window1', 'headerColor', Kit.onyx.health))
     assert(b.lock.icon.texture:find('DamageMeters/Unlock', 1, true) and b.reset.icon.texture:find('DamageMeters/Reset', 1, true))
     assert(w1.grip:IsShown() and Point(w1.grip)[1] == 'BOTTOMRIGHT' and w1.grip.width == 16, 'resize grip while unlocked')
 
     -- Out of combat: names, ranks, numbers and bars from the game.
     assert(w1.header.title.text == 'DAMAGE DONE' and w1.header.info.text == '1:15', 'header: meter and time')
-    assert(row1.name.text == '1. Valeria' and row1.value.text == '5.4K (179)', 'rank, name, one decimal, whole per second')
+    assert(row1.name.text == '1. Valeria' and row1.value.text == '5K (179)', 'rank, name, whole numbers')
     assert(row1.name.color[1] == 1 and row1.name.color[3] == 1 and row1.value.color[2] == 1, 'white text')
     assert(row1.name.font[3] == 'OUTLINE' and row1.value.font[3] == 'OUTLINE', 'outlined to stand out on any bar')
     assert(row1.bar.high == 5432 and row1.bar.value == 5432 and row2.bar.value == 3000, 'bars scale to the top amount')
@@ -144,18 +153,29 @@ world.run([==[
     assert(row3.name.text == '3. Wolf' and row3.bar.statusBarColor[1] == M.OTHER_COLOR[1] and not row3.icon:IsShown(), 'no class: Other Color, no icon')
     assert(not w1.rows[4]:IsShown() and not w1.empty:IsShown(), 'unused rows hide')
     assert(M:SetOption('window1', 'decimals', 2) and row1.value.text == '5.43K (179)', 'two decimals')
-    assert(M:SetOption('window1', 'decimals', 0) and row1.value.text == '5K (179)', 'none')
-    assert(not M:SetOption('window1', 'decimals', 3) and M:SetOption('window1', 'decimals', 1), 'up to two')
-    assert(M:SetOption('window1', 'showPercent', true) and row1.value.text == '5.4K (179) · 61%', 'percent of the total')
-    assert(M:SetOption('window1', 'numbers', 'primary') and row1.value.text == '5.4K · 61%')
-    assert(M:SetOption('window1', 'meterType', 'dps') and row1.value.text == '179 · 61%' and w1.header.title.text == 'DPS', 'DPS leads with per second')
-    assert(M:SetOption('window1', 'numbers', 'both') and row1.value.text == '179 (5.4K) · 61%')
-    assert(M:SetOption('window1', 'meterType', 'interrupts') and row1.value.text == '5K · 61%', 'counts are whole, with no per second')
+    assert(M:SetOption('window1', 'decimals', 3) and row1.value.text == '5.432K (179)', 'three decimals')
+    assert(not M:SetOption('window1', 'decimals', 4) and M:SetOption('window1', 'decimals', 1) and row1.value.text == '5.4K (179)', 'up to three')
+    assert(M:SetOption('window1', 'showPercent', true) and row1.value.text == '5.4K (179, 61%)', 'percent of the total')
+    assert(M:SetOption('window1', 'numbers', 'primary') and row1.value.text == '5.4K (61%)')
+    assert(M:SetOption('window1', 'meterType', 'dps') and row1.value.text == '179 (61%)' and w1.header.title.text == 'DPS', 'DPS leads with per second')
+    assert(M:SetOption('window1', 'numbers', 'both') and row1.value.text == '179 (5.4K, 61%)')
+    assert(M:SetOption('window1', 'separator', 'slash') and row1.value.text == '179 / 5.4K / 61%', 'slash separator')
+    assert(M:SetOption('window1', 'separator', 'bar') and row1.value.text == '179 || 5.4K || 61%', 'bar separator (one | on screen)')
+    assert(M:SetOption('window1', 'separator', 'dot') and M:SetOption('window1', 'showPercent', false) and row1.value.text == '179 · 5.4K', 'dot')
+    assert(not M:SetOption('window1', 'separator', 'tilde') and M:SetOption('window1', 'separator', 'paren') and M:SetOption('window1', 'showPercent', true))
+    assert(M:SetOption('window1', 'meterType', 'interrupts') and row1.value.text == '5K (61%)', 'counts are whole, with no per second')
     assert(M:SetOption('window1', 'showRank', false) and row1.name.text == 'Valeria')
-    assert(M:SetOption('window1', 'nameColorMode', 'class') and row1.name.color[1] == mage.r, 'class-colored names')
+    assert(M:SetOption('window1', 'nameColorMode', 'class') and row1.name.color[1] == mage.r and row1.value.color[1] == 1, 'class-colored names, white values')
+    assert(M:SetOption('window1', 'valueColorMode', 'class') and row1.value.color[1] == mage.r, 'values on their own')
+    assert(M:SetOption('window1', 'valueColor', { 1, 0, 0 }) and M:SetOption('window1', 'valueColorMode', 'custom') and row1.value.color[2] == 0 and row1.name.color[1] == mage.r, 'value color')
+    assert(M:SetOption('window1', 'valueSize', 15) and row1.value.font[2] == 15 and row1.name.font[2] == 12, 'value size on its own')
+    assert(M:SetOption('window1', 'nameOutline', false) and row1.name.font[3] == '' and row1.value.font[3] == 'OUTLINE', 'outline per text')
+    assert(M:SetOption('window1', 'titleColor', { 0, 1, 0 }) and w1.header.title.color[1] == 0 and w1.header.info.color[1] == Kit.palette.muted[1], 'header texts on their own')
+    assert(M:SetOption('window1', 'timerSize', 9) and w1.header.info.font[2] == 9 and w1.header.title.font[2] == 11)
     assert(M:SetOption('window1', 'barColorMode', 'custom') and row1.bar.statusBarColor[3] == M.db.window1.barColor[3], 'one custom color')
     assert(M:ResetWindow('window1') and M.db.window1.meterType == 'interrupts' and M.db.window1.showRank, 'reset keeps the meter')
-    assert(M:SetOption('window1', 'meterType', 'damageDone'))
+    assert(M.db.window1.valueColor[2] == 1 and M.db.window1.nameOutline and M.db.window1.decimals == 0, 'texts reset too')
+    assert(M:SetOption('window1', 'meterType', 'damageDone') and M:SetOption('window1', 'decimals', 1))
 
     -- Combat: amounts, names and GUIDs turn secret. They only reach the bar, AbbreviateNumbers and SetFormattedText.
     testCombat = true; FireEvent('PLAYER_REGEN_DISABLED')
@@ -249,6 +269,8 @@ world.run([==[
     cursorX, cursorY = 260, 262
     w1.grip.scripts.OnUpdate(w1.grip)
     assert(M.db.window1.width == 300 and M.db.window1.rows == 10 and w1.width == 300, '60 wider, two rows taller')
+    assert(M.db.window2.width == 300 and M.db.window3.width == 300 and w2.width == 300, 'windows anchored on it (2 on 1, 3 on 2) take its width')
+    assert(M.db.window2.rows == 8, 'but keep their rows')
     local pinned = PM:GetPosition('damageMetersWindow1')
     assert(pinned.point == 'TOPLEFT' and pinned.relativePoint == 'TOPLEFT', 'pinned by its top-left corner')
     -- The mock keeps a frame's center when it resizes; the client keeps its anchor point, here the top-left corner.
@@ -362,7 +384,9 @@ world.run([==[
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
     assert(table.concat(sections, ',') == 'Window,Bars,Text,Header,Frame', 'five tabs')
-    assert(page.groupSelect and page.decimalPills and page.mouseToggles, 'group, decimals and lock settings')
+    assert(page.groupSelect and page.decimalPills and page.mouseToggles and page.separatorPills, 'group, decimals, separator and lock settings')
+    assert(page.windowSelect:GetParent():GetParent() == page.previewArea and page.previewReserveRight, 'Editing sits at the top right of the preview')
+    assert(page.windowSelect.label.text == 'Window 1 - Damage Done', 'each window with its meter')
     local view = page.configPreview
     local shell = view.window
     assert(shell.width == 320 and shell.rows[1].name.text == '1. Valeria' and shell.rows[1].value.text == '1.2M (13.6K)', 'preview: the sample fight in the edited window')
@@ -375,7 +399,16 @@ world.run([==[
     shell.rows[2].scripts.OnMouseUp(shell.rows[2], 'LeftButton')
     assert(page.selectedSection.title == 'Bars', 'bar click opens Bars')
     shell.rows[2].textHit.scripts.OnMouseUp(shell.rows[2].textHit, 'LeftButton')
-    assert(page.selectedSection.title == 'Text', 'name click opens Text')
+    assert(page.selectedSection.title == 'Text' and page.textPart() == 'name', 'name click opens Text on Name')
+    shell.rows[2].valueHit.scripts.OnMouseUp(shell.rows[2].valueHit, 'LeftButton')
+    assert(page.textPart() == 'value' and page.selectedSection.title == 'Text', 'value click picks Value')
+    view.titleHit.scripts.OnMouseUp(view.titleHit, 'LeftButton')
+    assert(page.textPart() == 'title', 'title click picks Title')
+    -- The font and color widgets write the chosen text's own keys.
+    local owner = M:AppearanceOwner(page.windowEditing, page.textPart)
+    owner:SetAppearance('partColor', { 1, 0.5, 0 })
+    assert(M.db.window1.titleColor[2] == 0.5 and owner.db.appearance.fontMedia == M.db.window1.titleFontMedia, 'Title color and font')
+    page.SetTextPart('name')
     view.background.scripts.OnMouseUp(view.background, 'LeftButton')
     assert(page.selectedSection.title == 'Frame', 'frame click opens Frame')
     shell.buttons.reset.scripts.OnClick(shell.buttons.reset)
@@ -427,10 +460,38 @@ end
 old.window3.textColor = { 1, 0, 0 }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 2 and M.db.window1.textColor[2] == 1 and M.db.window1.outline and not M.db.window1.showSession, 'white, outlined, no fight name')
-    assert(M.db.window3.textColor[2] == 0 and not M.db.window3.outline, 'a chosen color stays as it was')
-    assert(M.db.window1.decimals == 1 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
+    assert(M.db.version == 3 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
+    assert(M.db.window3.valueColor[2] == 0 and M.db.window3.nameColor[2] == 1, 'a chosen value color stays; names are white')
+    assert(M.db.window1.nameOutline and M.db.window3.valueOutline and M.db.window1.textColor == nil and M.db.window1.outline == nil, 'outlined; old keys gone')
+    assert(M.db.window1.decimals == 0 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
 ]==], "migrate v1")
+
+-- Version 2: one font and color for every text, one decimal, the old header.
+local v2 = restored.saved()
+local mod = v2.profiles.Default.modules.damageMeters
+mod.version = 2
+for _, window in ipairs({ "window1", "window2", "window3" }) do
+    local style = mod[window]
+    for _, part in ipairs({ "name", "value", "title", "timer" }) do
+        for _, suffix in ipairs({ "Font", "FontMedia", "Outline", "Shadow", "Lifted", "Slug", "Color", "ColorMode" }) do style[part .. suffix] = nil end
+    end
+    style.font, style.fontMedia, style.outline, style.shadow, style.liftedShadow, style.slug = "game", "Friz", false, true, true, false
+    style.textColor, style.nameColorMode, style.decimals = { 0.5, 0.5, 0.5 }, "white", 1
+    style.titleColor, style.titleSize = { 1, 1, 0 }, 13
+    style.headerColor, style.headerTexture = { 20 / 255, 21 / 255, 24 / 255 }, nil
+end
+mod.window2.nameColorMode, mod.window2.decimals = "class", 2
+H.Load({ before = STUBS, saved = v2 }).run([==[
+    local M, Kit = addon.DamageMeters, addon.Kit
+    local s = M.db.window1
+    assert(M.db.version == 3 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
+    assert(s.nameOutline and s.titleOutline, 'outline on (the owner asked)')
+    assert(s.nameColor[1] == 1 and s.valueColor[1] == 0.5 and s.nameColorMode == 'custom', 'pure white names; values keep the text color')
+    assert(s.titleColor[3] == 0 and s.titleSize == 13, 'title kept')
+    assert(s.decimals == 0 and M.db.window2.decimals == 2 and M.db.window2.nameColorMode == 'class', 'one decimal becomes whole; a choice stays')
+    assert(s.headerColor[1] == Kit.onyx.health[1] and s.headerTexture == 'mode', 'the old header becomes Onyx')
+    assert(s.font == nil and s.textColor == nil and s.liftedShadow == nil, 'old keys gone')
+]==], "migrate v2")
 
 -- Bad saved data stops startup rather than being reset.
 local saved = restored.saved()

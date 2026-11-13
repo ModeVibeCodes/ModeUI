@@ -43,9 +43,27 @@ function M.BarColor(style, class)
     return style.otherColor
 end
 
--- Value text: the amount (per second first for DPS and HPS), the other in
--- parentheses with Amount and Per Second, and the share of the total while
--- public. Deaths show when the death happened, while known.
+-- Joins the amount, the other amount and the share with the Separator:
+-- "5K (179, 61%)" in parentheses, else "5K / 179 / 61%". The amounts may be
+-- secret strings; they only go to SetFormattedText.
+local function Join(text, style, main, hasExtra, extra, share)
+    local sep = M.separators[style.separator]
+    if sep == true then
+        if hasExtra and share then Kit.Formatted(text, "%s (%s, %d%%)", main, extra, share)
+        elseif hasExtra then Kit.Formatted(text, "%s (%s)", main, extra)
+        elseif share then Kit.Formatted(text, "%s (%d%%)", main, share)
+        else Kit.Write(text, main) end
+        return
+    end
+    if hasExtra and share then Kit.Formatted(text, "%s" .. sep .. "%s" .. sep .. "%d%%", main, extra, share)
+    elseif hasExtra then Kit.Formatted(text, "%s" .. sep .. "%s", main, extra)
+    elseif share then Kit.Formatted(text, "%s" .. sep .. "%d%%", main, share)
+    else Kit.Write(text, main) end
+end
+
+-- Value text: the amount (per second first for DPS and HPS), the other with
+-- Amount and Per Second, and the share of the total while public, joined by
+-- the Separator. Deaths show when the death happened, while known.
 function M.WriteValue(text, source, total, style, info)
     if info.deaths then Kit.Write(text, DM.Clock(source.deathTimeSeconds)); return end
     -- Swapped by the public type flag only: and/or would test a secret amount.
@@ -60,11 +78,15 @@ function M.WriteValue(text, source, total, style, info)
     if style.showPercent and Number(amount, 0) and Number(total) and total > 0 then
         share = math.floor(amount / total * 100 + 0.5)
     end
-    if not hasMain then Kit.Write(text, "")
-    elseif hasExtra and share then Kit.Formatted(text, "%s (%s) · %d%%", main, extra, share)
-    elseif hasExtra then Kit.Formatted(text, "%s (%s)", main, extra)
-    elseif share then Kit.Formatted(text, "%s · %d%%", main, share)
-    else Kit.Write(text, main) end
+    if not hasMain then Kit.Write(text, "") else Join(text, style, main, hasExtra, extra, share) end
+end
+
+-- A text's color: its class color with Class (names and values), else its own.
+function M.PaintColor(text, style, part, class)
+    local classColor = style[part .. "ColorMode"] == "class" and class ~= "" and UnitColor.Class(class)
+    if classColor then text:SetTextColor(classColor.r, classColor.g, classColor.b, 1); return end
+    local c = style[part .. "Color"]
+    text:SetTextColor(c[1], c[2], c[3], 1)
 end
 
 local function SetIcon(row, style, info, class)
@@ -87,10 +109,8 @@ function M:FillRow(row, source, rank, data, style, info)
     local name = source.name
     if Public(name) and type(name) ~= "string" then name = "" end
     if style.showRank then Kit.Formatted(row.name, "%d. %s", rank, name) else Kit.Write(row.name, name) end
-    local textColor = style.textColor
-    local classColor = style.nameColorMode == "class" and class ~= "" and UnitColor.Class(class)
-    if classColor then row.name:SetTextColor(classColor.r, classColor.g, classColor.b, 1)
-    else row.name:SetTextColor(textColor[1], textColor[2], textColor[3], 1) end
+    self.PaintColor(row.name, style, "name", class)
+    self.PaintColor(row.value, style, "value", class)
     self.WriteValue(row.value, source, data.total, style, info)
 end
 

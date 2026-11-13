@@ -76,9 +76,11 @@ ranking.
 
 **Header buttons** (Header › Header Buttons, on by default) sit at the
 header's right, right to left: the lock, Reset All Data, and the fight. The
-fight button shows where the window is without spelling it out: **C** for
-Current Fight, **O** for Overall, or an earlier fight's number in the menu's
-list. Clicking it switches Current and Overall; right-clicking opens the menu.
+fight button shows where the window is without spelling it out: just the
+character, in the Mode cyan (no box): **C** for Current Fight, **O** for
+Overall, or an earlier fight's number in the menu's list. It turns white under
+the mouse. Clicking it switches Current and Overall; right-clicking opens the
+menu.
 The glyphs (`Media/Textures/DamageMeters`, from `tools/build_shape_textures.lua`)
 are 16 physical pixels when the header has room, so they draw one to one at
 any UI scale. Each shows its name on hover.
@@ -96,7 +98,10 @@ outside combat and outside Edit Mode:
   that grows. Width follows the cursor and **Rows** change a whole row at a
   time. The first resize pins the window by its top-left corner to the screen,
   so that corner stays put. A window grouped above another has its grip at the
-  top right and grows upward.
+  top right and grows upward. Windows placed on the resized one through Edit
+  Mode anchoring (Window 2 above Window 1 by default, and Window 3 above 2)
+  take its width too, so a stack stays one width. They keep their own rows.
+  Grouped windows share the width anyway.
 
 Combat hides the grip and ignores drags. Click Through windows can't be moved
 or resized by hand.
@@ -134,33 +139,38 @@ the pixel grid. From the outside in:
 |---|---|---|
 | Rim | 1px, Rounded, #101010 | Frame › Border, Border Size (screen pixels), Border Color |
 | Background | #040404 at 75% | Frame › Background Color, Background Opacity |
-| Header | 20px, #141518 | Header › Height, Header Color, Header Opacity |
-| Title | 11, uppercase, Mode cyan | Header › Text Size, Title Color, Uppercase Title |
+| Header | 20px Onyx bar: Mode Gradient in the Unit Frames health color (#1C1E21) | Header › Texture, Height, Header Color, Header Opacity |
+| Title | 11, uppercase, Mode cyan, outlined | Text › Title; Header › Uppercase Title |
 | Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
-| Timer | left of the buttons | Header › Show Timer, Show Fight (adds the fight's name) |
+| Timer | 11, #B9B9B9, outlined, left of the buttons | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
 | Divider | 1px in the rim color | shown when there is a header and a rim |
 | Padding | 1px | Window › Padding |
 | Rows | 8 rows, 18 high, 1 apart, 240 wide | Window › Width, Rows, Row Height, Spacing |
 | Icon | square class icon, 1px gap | Bars › Icon |
 | Bar | Mode Gradient, class colored | Bars › Foreground, Bar Opacity, Bar Color (Class or Custom), Other Color |
 | Empty bar | Flat, Onyx track at 25% | Bars › Background, Background Opacity |
-| Text | Expressway 12, white, outlined, crisp shadow, 4px in | Text › Font, Outline, Slug Text, Text Shadow, Name Size, Value Size, Text Inset, Text Color |
+| Name, Value | Expressway 12, pure white, outlined, crisp shadow, 4px in | Text › Name or Value: Font, Size, Outline, Slug Text, Text Shadow, Color (Color or Class), Text Color; Text Inset |
 
-Text is white and outlined by default, so it reads on any bar color (the owner
-found gray text hard to read on a bright rogue-yellow bar). Rounded leaves out
-each corner's outermost pixel (`Kit.Rim`/`Kit.PlaceRim`,
-shared). **Other Color** (#78808C) is for anything without a class, like pets
-and creatures. **Name Color** is Text Color or Class (Class Colors' custom
-colors apply).
+Each text (Name, Value, Title, Timer) has its own font, size, outline, shadow,
+slug and color (`nameFont`, `valueOutline`, `timerColor`...). Names and values
+can take the class color instead (Class Colors' custom colors apply). Text is
+outlined and names are pure white by default, so they read on any bar color.
+The owner found gray text hard to read on a bright rogue-yellow bar. Rounded
+leaves out each corner's outermost pixel (`Kit.Rim`/`Kit.PlaceRim`, shared).
+**Other Color** (#78808C) is for anything without a class, like pets and
+creatures.
 
 Numbers: **Amount** shows one number. **Amount and Per Second** (the default)
-adds the other in parentheses. **Decimals** (0, 1 or 2; 1 by default) sets the
-places after K, M, B and T: "5.4K", "5.43K", "5K". Numbers under a thousand
-are whole ("179", never "179.87417218543"), and so are counts.
+adds the other. **Decimals** (None, 1, 2 or 3; None by default) sets the places
+after K, M, B and T: "5K", "5.4K", "5.43K", "5.432K". Numbers under a thousand
+are whole ("179", never "179.87417218543"), and so are counts. **Separator**
+joins the amount, the other amount and the percent: ( ) "5K (179, 61%)", /
+"5K / 179 / 61%", | (written "||" in text, since a lone "|" starts an escape
+code), ·, -, comma or two spaces.
 `Kit.ShortNumber` builds `AbbreviateNumbers` breakpoints for this, so it works
 on secret amounts too (see API_COMPATIBILITY.md). DPS and HPS lead with the per-second amount.
-Interrupts and Dispels have no per-second amount. **Show Percent** adds
-" · 59%" after the fight. **Show Rank** puts "1." before the name.
+Interrupts and Dispels have no per-second amount. **Show Percent** adds the
+share after the fight. **Show Rank** puts "1." before the name.
 
 **Always Show Me**: when you rank below the last row, your row takes the last
 row (or the first, if you've scrolled past it).
@@ -184,25 +194,29 @@ what it registers), and the window hangs from the stand-in's top-left corner.
 **Test on Screen** shows the sample fight on the real windows. The settings page
 preview is the window being edited, drawn by the same code, with the sample
 fight. **Animated** plays it out over 20 seconds. Clicking the preview's header,
-bars, text or frame opens the Header, Bars, Text or Frame tab.
+bars or frame opens the Header, Bars or Frame tab. Clicking a name, a value or
+the title opens the Text tab on that text.
 
 The sample group is Forever's nine classes plus a creature. One row is marked as
 you, for Always Show Me. Healing meters rank the healers first.
 
 ## Settings page
 
-Five tabs, each starting with **Editing** (which window):
+**Editing** sits at the top right of the preview, as on the Action Bars page,
+and names each window with its meter ("Window 1 - DPS"). Five tabs:
 
 - **Window:** Show Window, Status, Meter, Fight, Width, Rows, Row Height,
   Spacing, Padding, Show, Opacity, Lock Window, Click Through, Group With,
   Side, Gap, Copy Style to All Windows, Reset to Defaults, Reset All Data.
 - **Bars:** Foreground, Background, Bar Opacity, Background Opacity, Bar
   Color, Custom Color, Other Color, Icon, Always Show Me.
-- **Text:** Font, Outline, Slug Text, Text Shadow, Name Size, Text Inset, Name
-  Color, Text Color, Show Rank, Show (numbers), Decimals, Value Size, Show
+- **Text:** Text (Name, Value, Title, Timer), then that text's Font, Size,
+  Outline, Slug Text, Text Shadow, Color (names and values: Color or Class) and
+  Text Color; Text Inset, Show Rank; Show (numbers), Decimals, Separator, Show
   Percent.
-- **Header:** Show Header, Height, Text Size, Header Color, Header Opacity,
-  Title Color, Uppercase Title, Show Fight, Show Timer, Header Buttons.
+- **Header:** Show Header; Texture, Height, Header Color, Header Opacity;
+  Uppercase Title, Show Fight, Show Timer, Header Buttons, and buttons that open
+  the Title and Timer text settings.
 - **Frame:** Border, Border Size, Border Color, Background Color, Background
   Opacity.
 
@@ -213,7 +227,7 @@ group shares its settings with. Copy Style and Reset act on the group's head.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.damageMeters`, version 2: `window1`, `window2` and
+`ModeUIDB` profile `modules.damageMeters`, version 3: `window1`, `window2` and
 `window3`, each a full style table (`Init.lua`'s `Style`). Positions are under
 `positions.damageMetersWindow1` to `3`. `Initialize` fills defaults and
 validates every key, range, color, choice, texture and group (no window grouped
@@ -223,6 +237,13 @@ Version 1 → 2: text still at version 1's gray (#D4D4D4) turns white and
 outlined, and the header text drops the fight's name, which is now on its
 button. A chosen text color stays as it was. New settings take their defaults:
 Decimals 1, Lock Window off, Group With None (Below, 2px), Header Buttons on.
+
+Version 2 → 3: the shared Font, Text Shadow and Slug Text go to all four texts,
+and Text Color goes to values. The owner asked for outlined text and pure white
+names, so every text gets Outline and names get white. Name Color's "Text
+Color" becomes "Color". Decimals still at version 2's default (1) becomes None.
+A header still at version 2's #141518 takes the Onyx health color, and Texture
+takes Mode Gradient. The old shared keys are removed.
 
 ## Files
 
@@ -308,14 +329,15 @@ concatenation or measurement, and the stub refuses secret arguments.
    - **Navigation:** the window on screen, and **Interface** › **Damage Meters**
      › **Text** tab.
    - **Action:**
-     - Set **Decimals** to 0, 1 and 2.
+     - Set **Decimals** to None, 1, 2 and 3, and try each **Separator**.
      - Click the **C** button, then right-click it.
      - Click the lock.
      - Unlock, drag the header, then drag the grip in the bottom-right corner.
    - **Required state:** out of combat, after a fight.
    - **Confirmation:**
-     - Numbers read "5K", "5.4K" and "5.43K", and small per-second numbers are
-       whole.
+     - Numbers read "5K", "5.4K", "5.43K" and "5.432K", and small per-second
+       numbers are whole.
+     - The separators read "5K (179)", "5K / 179" and "5K | 179" (one bar).
      - **C** becomes **O** (Overall), and right-click lists the fights.
      - Locked, the grip disappears and the header no longer drags.
      - Unlocked, the window moves, and the grip changes width and whole rows

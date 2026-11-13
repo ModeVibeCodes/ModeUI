@@ -54,6 +54,37 @@ local function MigrateV1(db)
     end
 end
 
+-- Version 2 -> 3: the shared text settings become each text's own: the font,
+-- shadow and slug go to all four texts, Text Color to names and values, Name
+-- Color's "Text Color" becomes "Color". The owner asked for outlined text and
+-- pure white names, so those are set on every window. Decimals still at
+-- version 2's default (1) become whole numbers; a header still at version
+-- 2's #141518 takes the Onyx health color. Old keys are removed.
+local OLD_HEADER = { 20 / 255, 21 / 255, 24 / 255 }
+local SHARED_TEXT = { "font", "fontMedia", "outline", "shadow", "liftedShadow", "slug", "textColor", "nameColorMode" }
+local function MigrateV2(db)
+    for _, window in ipairs(M.windows) do
+        local style = db[window]
+        if type(style) == "table" then
+            for _, part in ipairs(M.textParts) do
+                local function From(key, fallback) if style[key] ~= nil then return Copy(style[key]) end return fallback end
+                style[part .. "Font"] = From("font", nil)
+                style[part .. "FontMedia"] = From("fontMedia", nil)
+                style[part .. "Shadow"] = From("shadow", nil)
+                style[part .. "Lifted"] = From("liftedShadow", nil)
+                style[part .. "Slug"] = From("slug", nil)
+                style[part .. "Outline"] = true
+            end
+            if type(style.textColor) == "table" then style.valueColor = Copy(style.textColor) end
+            style.nameColor = Copy(M.TEXT_COLOR)
+            style.nameColorMode = style.nameColorMode == "class" and "class" or "custom"
+            if style.decimals == 1 then style.decimals = 0 end
+            if SameColor(style.headerColor, OLD_HEADER) then style.headerColor = Copy(M.HEADER_COLOR) end
+            for _, key in ipairs(SHARED_TEXT) do if key ~= "nameColorMode" then style[key] = nil end end
+        end
+    end
+end
+
 -- A window can't group with itself, and groups never loop.
 local function ValidateGroups(db)
     for _, window in ipairs(M.windows) do
@@ -68,6 +99,7 @@ end
 
 function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
+    if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid damage meter settings version")
     for _, window in ipairs(M.windows) do

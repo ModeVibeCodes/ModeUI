@@ -224,13 +224,16 @@ function M:ResetData()
 end
 
 -- Owner for the shared font and color widgets: window() names the window
--- being edited.
-function M:AppearanceOwner(window)
-    local appearance = setmetatable({}, { __index = function(_, key) return M:Style(window())[key] end })
+-- being edited and part() the text. The font widget's "font" and
+-- "fontMedia", and "partColor", are that text's own keys.
+local PART_KEYS = { font = "Font", fontMedia = "FontMedia", partColor = "Color" }
+function M:AppearanceOwner(window, part)
+    local function Key(key) return PART_KEYS[key] and part and part() .. PART_KEYS[key] or key end
+    local appearance = setmetatable({}, { __index = function(_, key) return M:Style(window())[Key(key)] end })
     local owner = { db = { appearance = appearance } }
     function owner.CanConfigure() return true end
     function owner.GetFonts() return addon.Media:GetFonts() end
-    function owner.SetAppearance(_, key, value) return M:SetOption(window(), key, value) end
+    function owner.SetAppearance(_, key, value) return M:SetOption(window(), Key(key), value) end
     return owner
 end
 
