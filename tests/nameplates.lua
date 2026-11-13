@@ -530,8 +530,11 @@ world.run([==[
     assert(M:SetOption('enemy', 'raidSize', 24) and math.abs(sample.raidIcon.width - 24) < 1)
     assert(M:SetOption('enemy', 'raidAnchor', 'LEFT') and M:SetOption('enemy', 'raidSize', 16) and M:SetOption('enemy', 'healthTextAnchor', 'RIGHT'))
     assert(M:SetOption('enemy', 'castAnchor', 'TOP') and Point(sample.castBox)[1] == 'BOTTOMLEFT' and Point(sample.castBox)[3] == 'TOPLEFT', 'cast bar above')
-    assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2 + M:CastTargetHeight(sample), 'name moves above the cast bar and its target line')
-    assert(Point(sample.castTarget)[1] == 'BOTTOM' and Point(sample.castTarget)[3] == 'TOP', 'target line above an upper cast bar')
+    local near, far = M:CastTextRoom(sample)
+    assert(near > 0 and far == 0, 'the target line sits between the bars when the cast bar is above')
+    assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2 + near, 'name moves above the cast bar and its target line')
+    assert(Point(sample.castTarget)[1] == 'TOP' and Point(sample.castTarget)[3] == 'BOTTOM', 'target line under the upper cast bar')
+    assert(Point(sample.castBox)[5] == 2 + near, 'the cast bar moves up past the target line')
     assert(M:SetOption('enemy', 'castAnchor', 'BOTTOM') and M:SetOption('enemy', 'castY', -3) and Point(sample.castBox)[5] == -5)
     assert(M:SetOption('enemy', 'castY', 0))
     -- Cast bar content: icon side, spell name, target line and timer.
@@ -543,9 +546,22 @@ world.run([==[
     assert(M:SetOption('enemy', 'castIcon', 'RIGHT') and Point(sample.castIcon)[1] == 'TOPRIGHT' and sample.castIcon:IsShown(), 'icon on the right')
     assert(M:SetOption('enemy', 'castIcon', 'none') and not sample.castIcon:IsShown() and Point(sample.cast)[2] == sample.castBox, 'icon hidden')
     assert(M:SetOption('enemy', 'castShowTimer', false) and not sample.castTimer:IsShown(), 'timer off')
-    assert(M:SetOption('enemy', 'castShowTarget', false) and not sample.castTarget:IsShown() and M:CastTargetHeight(sample) == 0, 'target off')
+    assert(M:SetOption('enemy', 'castShowTarget', false) and not sample.castTarget:IsShown() and select(2, M:CastTextRoom(sample)) == 0, 'target off')
     assert(M:SetOption('enemy', 'castShowText', false) and not sample.castText:IsShown(), 'spell name off')
     assert(not M:SetOption('enemy', 'castIcon', 'TOP'), 'bad icon side refused')
+    -- Positions: icon outside the box, and each text by anchor and offset.
+    assert(M:SetOption('enemy', 'castIcon', 'OUTLEFT') and Point(sample.castIcon)[1] == 'RIGHT' and Point(sample.castIcon)[3] == 'LEFT', 'icon outside left')
+    assert(math.abs(sample.castIcon.width - sample.castBox:GetHeight()) < 1 and sample.castIcon:IsShown(), 'outside icon as tall as the box')
+    assert(M:SetOption('enemy', 'castIconY', 2) and Point(sample.castIcon)[5] == 2, 'icon offset')
+    assert(M:SetOption('enemy', 'castShowText', true) and M:SetOption('enemy', 'castTextAnchor', 'BOTTOMRIGHT'), 'spell name below')
+    assert(Point(sample.castText)[1] == 'TOPRIGHT' and Point(sample.castText)[2] == sample.castBox, 'spell name outside, under the bar')
+    assert(select(2, M:CastTextRoom(sample)) > 0, 'a far line is reserved')
+    assert(M:SetOption('enemy', 'castTimerAnchor', 'CENTER') and Point(sample.castTimer)[1] == 'CENTER', 'timer centered inside')
+    assert(M:SetOption('enemy', 'castTextX', 3) and Point(sample.castText)[4] == 3, 'text offset')
+    assert(not M:SetOption('enemy', 'castTimerAnchor', 'MIDDLE'), 'bad anchor refused')
+    for _, key in ipairs({ 'castIconY', 'castTextAnchor', 'castTimerAnchor', 'castTextX' }) do
+        assert(M:SetOption('enemy', key, M.styleDefaults.enemy[key]))
+    end
     assert(M:SetOption('enemy', 'castIcon', 'LEFT') and M:SetOption('enemy', 'castShowTimer', true)
         and M:SetOption('enemy', 'castShowTarget', true) and M:SetOption('enemy', 'castShowText', true))
     -- Animated loops the cast.

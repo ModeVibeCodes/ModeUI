@@ -27,10 +27,28 @@ function M:BuildCastTexts(plate, LiftedText)
     plate.castTimer, plate.castTarget = LiftedText(plate.textLayer), LiftedText(plate.textLayer)
 end
 
--- Height of the target line under (or over) the cast bar, 0 when it's off.
-function M:CastTargetHeight(plate)
+-- The cast texts: spell name, timer and target, each with its switch, anchor
+-- and offsets. Left, Center and Right sit inside the bar; Top and Bottom
+-- anchors sit outside it.
+M.castTexts = {
+    { key = "castText", show = "castShowText", region = "castText" },
+    { key = "castTimer", show = "castShowTimer", region = "castTimer" },
+    { key = "castTarget", show = "castShowTarget", region = "castTarget" },
+}
+
+-- Room the cast texts outside the bar take: on the side toward the health
+-- bar (near) and away from it (far), one text line each when used.
+function M:CastTextRoom(plate)
     local db, px = self:Style(plate), plate.px or 1
-    return db.castShowTarget and Snap(db.castFontSize + 2, px) or 0
+    local line, farSide = Snap(db.castFontSize + 2, px), db.castAnchor == "TOP" and "^TOP" or "^BOTTOM"
+    local near, far = 0, 0
+    for _, text in ipairs(M.castTexts) do
+        local anchor = db[text.key .. "Anchor"]
+        if db[text.show] and (anchor:find("^TOP") or anchor:find("^BOTTOM")) then
+            if anchor:find(farSide) then far = line else near = line end
+        end
+    end
+    return near, far
 end
 
 -- Icon, bar and texts inside the cast box; called from LayoutPlate.
@@ -38,16 +56,25 @@ function M:LayoutCast(plate)
     local db, px, path = self:Style(plate), plate.px or 1, plate.fontPath
     local icon, inner, inset = plate.castIcon, Snap(db.castHeight, px), 2 * px
     local side = db.castIcon
+    local ix, iy = math.floor(db.castIconX / px + 0.5) * px, math.floor(db.castIconY / px + 0.5) * px
     icon:ClearAllPoints(); icon:SetSize(inner, inner)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     plate.cast:ClearAllPoints()
-    if side == "RIGHT" then
-        icon:SetPoint("TOPRIGHT", plate.castBox, "TOPRIGHT", -inset, -inset)
+    if side == "OUTLEFT" or side == "OUTRIGHT" then
+        -- Outside the box, as tall as the box.
+        local full = plate.castBox:GetHeight()
+        icon:SetSize(full, full)
+        if side == "OUTLEFT" then icon:SetPoint("RIGHT", plate.castBox, "LEFT", -2 * px + ix, iy)
+        else icon:SetPoint("LEFT", plate.castBox, "RIGHT", 2 * px + ix, iy) end
         plate.cast:SetPoint("TOPLEFT", plate.castBox, "TOPLEFT", inset, -inset)
-        plate.cast:SetPoint("BOTTOMRIGHT", icon, "BOTTOMLEFT", -px, 0)
+        plate.cast:SetPoint("BOTTOMRIGHT", plate.castBox, "BOTTOMRIGHT", -inset, inset)
+    elseif side == "RIGHT" then
+        icon:SetPoint("TOPRIGHT", plate.castBox, "TOPRIGHT", -inset + ix, -inset + iy)
+        plate.cast:SetPoint("TOPLEFT", plate.castBox, "TOPLEFT", inset, -inset)
+        plate.cast:SetPoint("BOTTOMRIGHT", plate.castBox, "BOTTOMRIGHT", -inset - inner - px, inset)
     elseif side == "LEFT" then
-        icon:SetPoint("TOPLEFT", plate.castBox, "TOPLEFT", inset, -inset)
-        plate.cast:SetPoint("TOPLEFT", icon, "TOPRIGHT", px, 0)
+        icon:SetPoint("TOPLEFT", plate.castBox, "TOPLEFT", inset + ix, -inset + iy)
+        plate.cast:SetPoint("TOPLEFT", plate.castBox, "TOPLEFT", inset + inner + px, -inset)
         plate.cast:SetPoint("BOTTOMRIGHT", plate.castBox, "BOTTOMRIGHT", -inset, inset)
     else
         plate.cast:SetPoint("TOPLEFT", plate.castBox, "TOPLEFT", inset, -inset)
@@ -61,20 +88,31 @@ function M:LayoutCast(plate)
         Kit.LayoutLift(text, db, size, path, px, shown, justify)
         text:SetShown(shown)
     end
-    plate.castTimer:ClearAllPoints(); plate.castTimer:SetPoint("RIGHT", plate.cast, "RIGHT", -2 * px, 0)
-    Place(plate.castTimer, "RIGHT", db.castShowTimer)
-    plate.castText:ClearAllPoints(); plate.castText:SetPoint("LEFT", plate.cast, "LEFT", 2 * px, 0)
-    if db.castShowTimer then plate.castText:SetPoint("RIGHT", plate.castTimer, "LEFT", -2 * px, 0)
-    else plate.castText:SetPoint("RIGHT", plate.cast, "RIGHT", -2 * px, 0) end
-    Place(plate.castText, "LEFT", db.castShowText)
-    -- The target line sits past the cast bar, away from the health bar.
-    local target, above = plate.castTarget, db.castAnchor == "TOP"
-    target:ClearAllPoints()
-    if above then target:SetPoint("BOTTOM", plate.castBox, "TOP", 0, px)
-    else target:SetPoint("TOP", plate.castBox, "BOTTOM", 0, -px) end
-    target:SetWidth(plate.castBox:GetWidth())
-    target:SetHeight(self:CastTargetHeight(plate))
-    Place(target, "CENTER", db.castShowTarget)
+    local line, boxWidth = Snap(size + 2, px), plate.castBox:GetWidth()
+    local function Round(v) return math.floor(v / px + 0.5) * px end
+    for _, entry in ipairs(M.castTexts) do
+        local text, anchor = plate[entry.region], db[entry.key .. "Anchor"]
+        local h = anchor:find("LEFT") and "LEFT" or anchor:find("RIGHT") and "RIGHT" or ""
+        local dx, dy = Round(db[entry.key .. "X"]), Round(db[entry.key .. "Y"])
+        text:ClearAllPoints()
+        if anchor:find("^TOP") then
+            text:SetPoint("BOTTOM" .. h, plate.castBox, "TOP" .. h, dx, px + dy); text:SetWidth(boxWidth)
+        elseif anchor:find("^BOTTOM") then
+            text:SetPoint("TOP" .. h, plate.castBox, "BOTTOM" .. h, dx, -px + dy); text:SetWidth(boxWidth)
+        else
+            local point = h == "" and "CENTER" or h
+            local x = h == "LEFT" and 2 * px or h == "RIGHT" and -2 * px or 0
+            text:SetPoint(point, plate.cast, point, x + dx, dy)
+            text:SetWidth(math.max(px, plate.cast:GetWidth() - 4 * px))
+        end
+        text:SetHeight(line)
+        Place(text, h == "" and "CENTER" or h, db[entry.show])
+    end
+    -- A spell name on the left and a timer on the right, both inside, share the
+    -- line: the name stops where the timer starts.
+    if db.castShowTimer and db.castTextAnchor == "LEFT" and db.castTimerAnchor == "RIGHT" then
+        plate.castText:SetPoint("RIGHT", plate.castTimer, "LEFT", -2 * px, 0)
+    end
 end
 
 local function Tick(bar)

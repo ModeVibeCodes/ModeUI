@@ -33,10 +33,14 @@ frame and fades Blizzard's art. Each plate has:
 - **Textures**: **Foreground** (Mode Gradient by default, Flat, or any SharedMedia
   status bar) and **Background** (Flat or SharedMedia), for the health and cast bars.
 - **Cast bar**: amber when interruptible, gray when not; channels drain from right
-  to left. **Spell Icon** Left, Right or Hidden; **Spell Name**; **Cast Target**
+  to left. **Spell Icon** Left, Right, Outside Left, Outside Right or Hidden, with
+  **Icon Offset X/Y**; **Spell Name**; **Cast Target**
   (who the caster is targeting, in its class color, on a line past the bar; on by
   default for enemies); **Timer** (seconds left, from public cast times or the
-  cast's duration object; empty while the game hides both).
+  cast's duration object; empty while the game hides both). Pick a text with
+  **Position Of** to set its **Anchor** (Left, Center, Right inside the bar; Top
+  and Bottom anchors outside it) and **Offset X/Y**. Texts outside the bar take
+  a line on their side, and the cast bar and name move past it.
 - **Indicators**: a quest icon (quest bosses and creatures tied to your active
   quests), Blizzard's elite, rare elite, rare and boss icons, and the level in
   its difficulty color. Pick one with **Indicator** (Quest, Elite and Rare,
