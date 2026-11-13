@@ -106,3 +106,9 @@ function Kit.AddMasks(regions, masks)
         end
     end
 end
+
+-- Hides every part of a ring (a box drawn without it).
+function Kit.HideCapRing(ring)
+    ring.top:Hide(); ring.bottom:Hide()
+    for _, e in pairs(ring.ends) do e.strip:Hide(); e.cap:Hide() end
+end

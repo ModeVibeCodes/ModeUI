@@ -49,7 +49,8 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 13: Target of Target, Focus and Target of Focus defaults (see Migrations.lua).
 -- Version 14: Mode Slate bar backgrounds at 70%.
 -- Version 15: the level in the health bar's bottom corner; a matched Target mirrors the Player.
-M.LAYOUT_VERSION = 15
+-- Version 16: one border (no black gap); the name sits on the top border.
+M.LAYOUT_VERSION = 16
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -73,7 +74,7 @@ M.choices = {
     side = { { id = "left", label = "Left" }, { id = "right", label = "Right" } },
     portraitStyle = { { id = "portrait", label = "Character Portrait" }, { id = "class", label = "Class Icon" } },
     ring = { { id = "class", label = "Class Gradient" }, { id = "border", label = "Default" }, { id = "custom", label = "Custom" } },
-    namePosition = { { id = "above", label = "Above Frame" }, { id = "bar", label = "On Health Bar" } },
+    namePosition = { { id = "border", label = "On the Border" }, { id = "above", label = "Above Frame" }, { id = "bar", label = "On Health Bar" } },
     nameColor = { { id = "sky", label = "Sky" }, { id = "champagne", label = "Champagne" }, { id = "lilac", label = "Lilac" },
         { id = "frost", label = "Frost" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     level = { { id = "badge", label = "Shown" }, { id = "none", label = "Hidden" } },
@@ -114,7 +115,7 @@ local function Frame(side, extra)
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
         portraitScale = 150, -- portrait diameter as a % of the bar block
         portraitRing = "class", portraitRingColor = Copy(M.ACCENT),
-        showName = true, namePosition = "above", nameAlign = "RIGHT", nameFontSize = 12,
+        showName = true, namePosition = "border", nameAlign = "RIGHT", nameFontSize = 12,
         nameColorMode = "sky", nameColor = Copy(M.ACCENT), nameOffsetX = 0, nameOffsetY = 0,
         -- Class/reaction colors are blended this far toward white (pastel).
         classSoftness = 40,

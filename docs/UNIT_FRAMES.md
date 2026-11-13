@@ -5,6 +5,21 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## One border, the name on it (layout version 16)
+
+November 13, 2026, per the owner: the 2px rim plus the 2px black gap inside it
+read as two borders. The gap is gone (`M.GAP = 0`): one crisp 2px border runs
+round the block, with the bars right inside it, so the block is 4px shorter
+(42px by default) and the portrait 64px. The rim draws on its own layer
+(`panel.edge`) above the bars and below the portrait, and the bars' rounded end
+reaches 1px under it, so the rim covers their soft edge and no seam shows. The
+fill under the portrait's end of the block takes the rim color.
+
+Names default to **On the Border** (`namePosition = "border"`, `M:NameBottom`):
+the baseline on the middle of the top rim (a quarter of the font size taken as
+the descent), so the letters sit on the border, clear of the portrait ring at
+their own height. Layout version 16 moves names set Above Frame onto the border.
+
 ## Level in the corner, a mirrored Target (layout version 15)
 
 November 13, 2026, per the owner: **Level Position** (`levelPosition`, Name &

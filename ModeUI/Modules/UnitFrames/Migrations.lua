@@ -186,6 +186,15 @@ local function MigrateV14(db)
     if type(target) == "table" and target.matchPlayer == true then target.mirrorText = true end
 end
 
+-- Layout version 15 -> 16, per the owner: one border (the black gap inside the
+-- rim is gone, a geometry change) and names above the frame sit on the border.
+local function MigrateV15(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" and frame.namePosition == "above" then frame.namePosition = "border" end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -199,7 +208,8 @@ function M.Initialize(db)
         if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = 12 end
         if db.layoutVersion == 12 then MigrateV12(db); db.layoutVersion = 13 end
         if db.layoutVersion == 13 then MigrateV13(db); db.layoutVersion = 14 end
-        if db.layoutVersion == 14 then MigrateV14(db); db.layoutVersion = M.LAYOUT_VERSION end
+        if db.layoutVersion == 14 then MigrateV14(db); db.layoutVersion = 15 end
+        if db.layoutVersion == 15 then MigrateV15(db); db.layoutVersion = M.LAYOUT_VERSION end
     end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")

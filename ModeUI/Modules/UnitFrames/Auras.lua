@@ -69,8 +69,8 @@ function M:AuraOrigin(f, unit, adb)
     local gap = 2 * px
     if adb.anchor:find("^TOP") then
         local side = adb.anchor:find("RIGHT") and "RIGHT" or "LEFT"
-        local nameAbove = fdb.showName and fdb.namePosition == "above" and (fdb.nameAlign == side or fdb.nameAlign == "CENTER")
-        if nameAbove then return true, math.max(g.pad + gap, g.pad + 3 + Round(fdb.nameOffsetY) + Snap(fdb.nameFontSize + 2) + gap) end
+        local nameAbove = fdb.showName and fdb.namePosition ~= "bar" and (fdb.nameAlign == side or fdb.nameAlign == "CENTER")
+        if nameAbove then return true, math.max(g.pad + gap, Round(self:NameBottom(fdb, g)) + Snap(fdb.nameFontSize + 2) + gap) end
         return true, g.pad + gap
     end
     local cast = self.db[unit].castBar

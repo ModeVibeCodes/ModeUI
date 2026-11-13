@@ -71,7 +71,7 @@ function M:LayoutCast(f, unit)
     Kit.PlaceCapRing(box.rim, box, 0, g.border, M.RIM_COLOR, depth, { LEFT = true, RIGHT = true })
     Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
     for side, mask in pairs(box.gapMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.border, true) end
-    for side, mask in pairs(box.barMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.pad, true) end
+    for side, mask in pairs(box.barMasks) do Kit.PlaceEndMask(mask, box, side, depth, math.max(0, g.pad - px), true) end
     Kit.AddMasks({ box.gap }, { box.gapMasks.LEFT, box.gapMasks.RIGHT })
     box.depth = depth
     -- The bar runs end to end inside the gap, rounded with it; the icon, if
