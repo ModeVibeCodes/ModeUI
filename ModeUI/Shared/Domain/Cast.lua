@@ -25,5 +25,15 @@ function Cast.Read(unit)
     end
 end
 
+-- ok, seconds left, read from the cast's duration object (UnitCastingDuration,
+-- documented SecretReturns, or UnitChannelDuration). The object and its answer
+-- may be secret, so this is guarded and the result goes only to FontString
+-- SetFormattedText.
+function Cast.Remaining(unit, channel)
+    local ok, duration = Q.Call(channel and UnitChannelDuration or UnitCastingDuration, unit)
+    if not ok or (Public(duration) and duration == nil) then return false end
+    return pcall(function() return duration:GetRemainingDuration() end)
+end
+
 -- The bar's current value in the same unit as startMs/endMs.
 function Cast.Now() return GetTime() * 1000 end

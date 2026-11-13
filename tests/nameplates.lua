@@ -233,13 +233,21 @@ world.run([==[
     assert(plate.castBox:IsShown() and plate.casting == 'cast' and plate.cast.low == 100000 and plate.cast.high == 102000)
     assert(plate.cast.value == 100000 and plate.castText.text == 'Fireball' and plate.castIcon.texture == 135812)
     assert(plate.cast:GetStatusBarTexture().vertexColor[1] == enemy.castColor[1], 'interruptible color')
+    assert(plate.castTimer.text == '2.0', 'timer from public cast times: ' .. tostring(plate.castTimer.text))
     Advance(1)
     assert(plate.cast.value == 101000, 'the bar follows the clock')
+    assert(plate.castTimer.text == '1.0', 'timer counts down')
     units.nameplate1.cast = { name = Secret('n'), text = Secret('t'), icon = Secret('i'), start = Secret('s'), stop = Secret('e'), locked = Secret('l') }
     FireEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE', 'nameplate1')
     assert(issecretvalue(plate.cast.low) and issecretvalue(plate.castText.text) and issecretvalue(plate.castIcon.texture))
     local fromBool = plate.cast:GetStatusBarTexture().colorFromBoolean
     assert(fromBool and issecretvalue(fromBool[1]) and fromBool[2].r == enemy.castLockedColor[1], 'secret interruptibility')
+    assert(plate.castTimer.text == '', 'secret times and no duration object: empty timer')
+    local remaining = Secret('remaining')
+    function UnitCastingDuration() return { GetRemainingDuration = function() return remaining end } end
+    FireEvent('UNIT_SPELLCAST_DELAYED', 'nameplate1')
+    assert(type(plate.castTimer.text) == 'table' and plate.castTimer.text.secret, 'secret remaining time formatted natively')
+    UnitCastingDuration = nil
     units.nameplate1.cast = nil
     units.nameplate1.channel = { name = 'Drain', text = 'Drain', icon = 1, start = 101000, stop = 104000, locked = true }
     FireEvent('UNIT_SPELLCAST_CHANNEL_START', 'nameplate1')
@@ -300,9 +308,9 @@ world.run([==[
     assert(plate.auraExtent.LEFT == 47 and plate.auraExtent.RIGHT == 22, 'aura rows reach past the bar')
     -- Moving one group: anchor, offsets, size and count, all validated.
     assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
-    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -32, 'bottom right, under the cast bar: ' .. x .. ',' .. y)
+    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -42, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
     assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 165, 'offset X')
-    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -35, 'offset Y')
+    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -45, 'offset Y')
     assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
     assert(not M:SetOption('enemy', 'grow', 'sideways', 'debuffs'), 'unknown grow refused')
     assert(not M:SetOption('enemy', 'debuffs', {}) and not M:SetOption('enemy', 'filter', 'all', 'crowdControl'), 'one setting at a time')
@@ -480,9 +488,24 @@ world.run([==[
     assert(M:SetOption('enemy', 'raidSize', 24) and math.abs(sample.raidIcon.width - 24) < 1)
     assert(M:SetOption('enemy', 'raidAnchor', 'LEFT') and M:SetOption('enemy', 'raidSize', 16) and M:SetOption('enemy', 'healthTextAnchor', 'RIGHT'))
     assert(M:SetOption('enemy', 'castAnchor', 'TOP') and Point(sample.castBox)[1] == 'BOTTOMLEFT' and Point(sample.castBox)[3] == 'TOPLEFT', 'cast bar above')
-    assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2, 'name moves above the cast bar')
+    assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2 + M:CastTargetHeight(sample), 'name moves above the cast bar and its target line')
+    assert(Point(sample.castTarget)[1] == 'BOTTOM' and Point(sample.castTarget)[3] == 'TOP', 'target line above an upper cast bar')
     assert(M:SetOption('enemy', 'castAnchor', 'BOTTOM') and M:SetOption('enemy', 'castY', -3) and Point(sample.castBox)[5] == -5)
     assert(M:SetOption('enemy', 'castY', 0))
+    -- Cast bar content: icon side, spell name, target line and timer.
+    assert(sample.castTarget.text == 'Mode' and sample.castTarget:IsShown(), 'cast target in the sample')
+    local paladin = addon.Domain.UnitColor.Class('PALADIN')
+    assert(sample.castTarget.color[1] == paladin.r, 'target in its class color')
+    assert(sample.castTimer:IsShown() and sample.castTimer.text == '1.0', 'timer shows seconds left: ' .. tostring(sample.castTimer.text))
+    assert(Point(sample.castText)[1] == 'LEFT' and Point(sample.castIcon)[1] == 'TOPLEFT', 'icon on the left')
+    assert(M:SetOption('enemy', 'castIcon', 'RIGHT') and Point(sample.castIcon)[1] == 'TOPRIGHT' and sample.castIcon:IsShown(), 'icon on the right')
+    assert(M:SetOption('enemy', 'castIcon', 'none') and not sample.castIcon:IsShown() and Point(sample.cast)[2] == sample.castBox, 'icon hidden')
+    assert(M:SetOption('enemy', 'castShowTimer', false) and not sample.castTimer:IsShown(), 'timer off')
+    assert(M:SetOption('enemy', 'castShowTarget', false) and not sample.castTarget:IsShown() and M:CastTargetHeight(sample) == 0, 'target off')
+    assert(M:SetOption('enemy', 'castShowText', false) and not sample.castText:IsShown(), 'spell name off')
+    assert(not M:SetOption('enemy', 'castIcon', 'TOP'), 'bad icon side refused')
+    assert(M:SetOption('enemy', 'castIcon', 'LEFT') and M:SetOption('enemy', 'castShowTimer', true)
+        and M:SetOption('enemy', 'castShowTarget', true) and M:SetOption('enemy', 'castShowText', true))
     -- Animated loops the cast.
     assert(addon.PreviewStates:SetPreviewMode('nameplates', 'animated'))
     assert(sample.cast.value == 0, 'animation starts at the beginning of the cast')

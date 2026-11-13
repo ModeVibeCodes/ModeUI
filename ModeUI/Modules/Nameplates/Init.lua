@@ -69,6 +69,7 @@ local function Style(kind)
         showName = true, nameFontSize = 10, nameColorMode = "text", nameAnchor = "TOP", nameX = 0, nameY = 0,
         showCastBar = true, castFontSize = 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
         castAnchor = "BOTTOM", castX = 0, castY = 0,
+        castIcon = "LEFT", castShowText = true, castShowTarget = enemy, castShowTimer = true,
         showRaidIcon = true, raidAnchor = "LEFT", raidX = 0, raidY = 0, raidSize = 16,
         -- Indicator: quest icon, classification icon and level, by anchor.
         showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
@@ -121,6 +122,7 @@ M.choices = {
     display = { { id = "plate", label = "Plate" }, { id = "name", label = "Name Only" } },
     nameColorMode = { { id = "text", label = "Text Color" }, { id = "class", label = "Class or Reaction" } },
     castAnchor = { { id = "BOTTOM", label = "Below" }, { id = "TOP", label = "Above" } },
+    castIcon = { { id = "LEFT", label = "Left" }, { id = "RIGHT", label = "Right" }, { id = "none", label = "Hidden" } },
     targetStyle = { { id = "border", label = "Border" }, { id = "glow", label = "Glow" }, { id = "arrows", label = "Arrows" },
         { id = "borderArrows", label = "Border and Arrows" }, { id = "none", label = "None" } },
     auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },

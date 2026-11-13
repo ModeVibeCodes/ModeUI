@@ -97,6 +97,7 @@ function M:BuildPlate(parent)
     plate.auraIcons, plate.auraShown, plate.auraCount = { crowdControl = {}, debuffs = {}, buffs = {} }, {}, 0
     for _, region in ipairs({ plate.targetGlow, plate.arrows.left, plate.arrows.right }) do region:Hide() end
     self:BuildIndicator(plate)
+    self:BuildCastTexts(plate, LiftedText)
     plate.castBox:Hide()
     plate:Hide()
     return plate

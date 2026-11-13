@@ -18,7 +18,7 @@ local ICONS = "Interface\\Icons\\"
 M.previewSamples = {
     enemy = { name = "Enemy Nameplate", caption = "Enemy, shown as your target", health = 72, reaction = "hostile", raid = 8, targeted = true,
         level = 62, classification = "elite", quest = true,
-        cast = { text = "Shadow Bolt", icon = ICONS .. "Spell_Shadow_ShadowBolt" },
+        cast = { text = "Shadow Bolt", icon = ICONS .. "Spell_Shadow_ShadowBolt", target = "Mode", targetClass = "PALADIN" },
         auras = {
             { icon = ICONS .. "Spell_Nature_Polymorph", group = "crowdControl", dispel = "Magic", duration = 8, elapsed = 3 },
             { icon = ICONS .. "Spell_Shadow_ShadowWordPain", group = "debuffs", tags = { mine = true }, dispel = "Magic", duration = 18, elapsed = 6 },
@@ -26,7 +26,7 @@ M.previewSamples = {
             { icon = ICONS .. "Spell_Holy_PowerWordShield", group = "buffs", tags = { dispellable = true, important = true }, dispel = "Magic", duration = 15, elapsed = 5 },
         } },
     friendly = { name = "Friendly Nameplate", caption = "Friendly player (Mage)", health = 90, reaction = "friendly", class = "MAGE", level = 60,
-        cast = { text = "Flash Heal", icon = ICONS .. "Spell_Holy_FlashHeal" },
+        cast = { text = "Flash Heal", icon = ICONS .. "Spell_Holy_FlashHeal", target = "Tank", targetClass = "WARRIOR" },
         auras = {
             { icon = ICONS .. "Spell_Frost_ChainsOfIce", group = "crowdControl", dispel = "Magic", duration = 6, elapsed = 2 },
             { icon = ICONS .. "Spell_Shadow_AbominationExplosion", group = "debuffs", tags = { dispellable = true }, dispel = "Disease", duration = 12, elapsed = 4 },
@@ -137,6 +137,9 @@ function M:PaintSample(plate, style, sample, progress)
     if not style.showCastBar or plate.nameOnly then self:StopCast(plate); return end
     plate.cast:SetMinMaxValues(0, 1); plate.cast:SetValue(progress)
     self:PaintCast(plate, style, false, false, L[sample.cast.text], sample.cast.icon)
+    local targetClass = UnitColor.Class(sample.cast.targetClass)
+    self:PaintCastTarget(plate, sample.cast.target, targetClass and { targetClass.r, targetClass.g, targetClass.b })
+    Kit.Formatted(plate.castTimer, "%.1f", CAST_SECONDS * (1 - progress))
 end
 
 -- Room the sample needs above and below its health bar, and beside it.

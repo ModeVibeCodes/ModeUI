@@ -12,7 +12,7 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 local UNIT_EVENTS = {
     UNIT_HEALTH = "Health", UNIT_MAXHEALTH = "Health", UNIT_CONNECTION = "Health",
-    UNIT_AURA = "Auras", UNIT_NAME_UPDATE = "Name", UNIT_FACTION = "Faction", UNIT_CLASSIFICATION_CHANGED = "Classification", UNIT_LEVEL = "Indicator",
+    UNIT_AURA = "Auras", UNIT_NAME_UPDATE = "Name", UNIT_FACTION = "Faction", UNIT_CLASSIFICATION_CHANGED = "Classification", UNIT_LEVEL = "Indicator", UNIT_TARGET = "CastTarget",
     UNIT_THREAT_SITUATION_UPDATE = "Color", UNIT_THREAT_LIST_UPDATE = "Color",
     UNIT_SPELLCAST_START = "Cast", UNIT_SPELLCAST_STOP = "Cast", UNIT_SPELLCAST_FAILED = "Cast",
     UNIT_SPELLCAST_INTERRUPTED = "Cast", UNIT_SPELLCAST_DELAYED = "Cast", UNIT_SPELLCAST_CHANNEL_START = "Cast",
@@ -99,6 +99,7 @@ function M:OnUnitEvent(part, unit)
     elseif part == "Name" then self:UpdateName(plate)
     elseif part == "Color" then self:UpdateHealthColor(plate)
     elseif part == "Indicator" then self:UpdateIndicator(plate)
+    elseif part == "CastTarget" then self:UpdateCastTarget(plate)
     elseif part == "Classification" then self:UpdateHealthColor(plate); self:UpdateIndicator(plate)
     elseif part == "Auras" then self:UpdateAuras(plate)
     else self:UpdateCast(plate) end

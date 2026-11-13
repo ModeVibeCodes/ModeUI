@@ -32,13 +32,7 @@ function M:LayoutPlate(plate)
     plate.castBox:ClearAllPoints()
     if castAbove then plate.castBox:SetPoint("BOTTOMLEFT", plate.healthBox, "TOPLEFT", cx, gap + cy)
     else plate.castBox:SetPoint("TOPLEFT", plate.healthBox, "BOTTOMLEFT", cx, -gap + cy) end
-    local icon, inner, inset = plate.castIcon, Snap(db.castHeight), 2 * px
-    icon:ClearAllPoints(); icon:SetPoint("TOPLEFT", plate.castBox, "TOPLEFT", inset, -inset); icon:SetSize(inner, inner)
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    plate.cast:ClearAllPoints()
-    plate.cast:SetPoint("TOPLEFT", icon, "TOPRIGHT", px, 0)
-    plate.cast:SetPoint("BOTTOMRIGHT", plate.castBox, "BOTTOMRIGHT", -inset, inset)
-    local castRoom = (not nameOnly and db.showCastBar) and castHeight + gap or 0
+    local castRoom = (not nameOnly and db.showCastBar) and castHeight + gap + self:CastTargetHeight(plate) or 0
 
     local path = Kit.FontPath(db, self.id)
     plate.fontPath = path
@@ -89,11 +83,7 @@ function M:LayoutPlate(plate)
         PlaceText(plate.name, db.nameAnchor, db.nameFontSize, db.showName, db.nameX, db.nameY)
     end
     PlaceText(plate.healthText, db.healthTextAnchor, db.healthFontSize, not nameOnly and db.healthText ~= "none", db.healthTextX, db.healthTextY)
-    plate.castText:ClearAllPoints()
-    plate.castText:SetPoint("LEFT", plate.cast, "LEFT", 2 * px, 0); plate.castText:SetPoint("RIGHT", plate.cast, "RIGHT", -2 * px, 0)
-    Kit.Font(plate.castText, db, db.castFontSize, path, px)
-    plate.castText:SetJustifyH("LEFT")
-    Kit.LayoutLift(plate.castText, db, db.castFontSize, path, px, true, "LEFT")
+    self:LayoutCast(plate)
 
     -- The raid marker: around the bar, or in its middle.
     plate.markSize = Snap(db.raidSize)
