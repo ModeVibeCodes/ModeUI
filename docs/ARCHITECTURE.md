@@ -263,6 +263,7 @@ to widgets documented as accepting them.
 | `Palette.lua` | `Kit.palette` (Mode text and gameplay colors), `Kit.onyx` (the Onyx skin), `Kit.RGB(r, g, b)`, `Kit.ColorFromBoolean(region, value, ifTrue, ifFalse)` for possibly secret booleans |
 | `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)`, `.ModeGradient(bar, barHeight, px)` (the one bar texture), `.BarForeground(bar, choice, barHeight, px)`, `.BarBackground(bar, choice)`, `.BarTextureChoices(foreground)`, `.ValidBarTexture(value, foreground)`, `.Rim(host, layer, sublevel)`, `.PlaceRim(edges, host, thickness, cut, color, alpha)` (a hollow pixel rim; `cut` rounds the corners) |
 | `Cast.lua` | `Kit.PaintCastBar(bar, channel, notInterruptible, color, lockedColor)`, `.CastTimer(text, info, unit)`: secret-safe cast colors and seconds left |
+| `Capsule.lua` | `Kit.CapRing(parent, sublevel)`, `.PlaceCapRing(ring, host, inset, thickness, color, depth, rounded)`, `.CapDepth(height, px)`, `.EndMask(parent)`, `.PlaceEndMask(mask, host, side, depth, inset, on)`, `.AddMasks(regions, masks)`: boxes with half-oval ends |
 | `Bands.lua` | `Kit.Bands(parent)`, `.PlaceBands(bands, box, left, top, right, bottom, px, room)`: a rim drawn in four clipped bands around a see-through hole |
 | `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`, `.ShortNumber(value, decimals)` (abbreviated with 0-2 decimals, whole below a thousand, secret-safe); `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA`; `Kit.FontPath(style, scope)` |
 | `AuraIcon.lua` | `Kit.AuraIcon(parent)`, `Kit.LayoutAuraIcon(icon, size, px, style, fontPath)`: slate-rimmed icon with swipe and stacks |
@@ -283,8 +284,15 @@ to widgets documented as accepting them.
   texture setting. Settings pages group rows on cards (`page:Group`: ModeCard
   panels, 6 px corners, a one-pixel `cardBorder` rim, 16 px padding, 12 px
   apart, with a small uppercase accent title) and put related controls side by
-  side (`page:Columns`); standard rows put 28 px controls on a 36 px pitch with
-  the label centered on them. Controls are drawn by `Widgets/Shape.lua` as a
+  side (`page:Columns`). Since November 13, 2026 (the owner's Layout tab
+  design) a standard row stacks its label above its 28 px control (58 px
+  pitch); sliders show their value at the right of the label line and span the
+  full width; two pairable rows in a row (sliders and dropdowns,
+  `row.pairable`) share one line in a card, 24 px apart; rows with wider
+  controls, `page:ToggleGrid` and `page:Columns`
+  (`Shared/Settings/PageControls.lua`) keep the full width. Colors: cards
+  #121316 on a #1E2024 rim, fields #0E0F11 on #2A2D32, labels #C4C8CE, values
+  #8A8F96, a #22262B selected segment. Controls are drawn by `Widgets/Shape.lua` as a
   rounded fill inside a one-physical-pixel rim (`W.Box`, 4 px corners): buttons
   are fields with a `rim` that turns accent on hover (primary buttons are
   accent with ink text, quiet ones text only); toggles are 28x16 pill switches;

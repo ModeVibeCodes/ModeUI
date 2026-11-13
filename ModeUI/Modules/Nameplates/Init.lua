@@ -27,7 +27,9 @@ addon:RegisterModule("nameplates", M)
 -- threat status has its own color.
 -- Version 7: the quest, classification and level indicators each have their
 -- own anchor, offset and size.
-M.VERSION = 7
+-- Version 8: the no-type crowd control rim's default moves from orange to
+-- #FF5948; profiles still on the old default follow it.
+M.VERSION = 8
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
 M.kinds = { "enemy", "friendly" }
@@ -95,9 +97,9 @@ local function Style(kind)
         auraTimerColor = Copy(P.cooldown),
         auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
         auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85), auraBleedColor = RGB(200, 45, 45),
-        -- Auras without a dispel type (Cheap Shot, most crowd control): orange for
+        -- Auras without a dispel type (Cheap Shot, most crowd control): #FF5948 for
         -- crowd control, the Mode rim for the rest.
-        auraNoTypeColor = RGB(37, 40, 44), auraCCNoTypeColor = RGB(255, 140, 40),
+        auraNoTypeColor = RGB(37, 40, 44), auraCCNoTypeColor = RGB(255, 89, 72),
         crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),
@@ -269,6 +271,20 @@ local function MigrateV6(db)
     end
 end
 
+-- Version 7 -> 8: the old orange default (255, 140, 40) becomes #FF5948;
+-- a color the owner picked stays.
+local function MigrateV7(db)
+    local function Near(a, b) return math.abs(a - b) < 0.002 end
+    for _, kind in ipairs(M.kinds) do
+        local style = db[kind]
+        local c = type(style) == "table" and style.auraCCNoTypeColor
+        if type(c) == "table" and Number(c[1]) and Number(c[2]) and Number(c[3])
+            and Near(c[1], 1) and Near(c[2], 140 / 255) and Near(c[3], 40 / 255) then
+            style.auraCCNoTypeColor = RGB(255, 89, 72)
+        end
+    end
+end
+
 local function ValidateGroup(value, default, label)
     assert(Public(value) and type(value) == "table", "Invalid nameplate aura group: " .. label)
     for key, fallback in pairs(default) do
@@ -319,6 +335,7 @@ function M.Initialize(db)
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == 6 then MigrateV6(db); db.version = 7 end
+    if db.version == 7 then MigrateV7(db); db.version = 8 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

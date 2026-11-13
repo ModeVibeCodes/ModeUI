@@ -9,14 +9,18 @@ if not M then return end
 -- portrait instead of running under it. Cast values can be secret: see
 -- Shared/Kit/Cast.lua and Shared/Domain/Cast.lua.
 local Kit, Cast = addon.Kit, addon.Domain.Cast
-local ONYX, Tint, Rounded = M.onyx, Kit.Tint, Kit.Rounded
+local ONYX, Tint = M.onyx, Kit.Tint
 local TIMER_STEP = 0.1
 M.CAST_SAMPLE = { text = "Frostbolt", timer = "1.4", value = 0.6 }
 
 function M:BuildCast(f)
     local box = CreateFrame("Frame", nil, f)
-    box.rim = box:CreateTexture(nil, "BACKGROUND", nil, 0)
+    box.rim = Kit.CapRing(box, 0)
     box.gap = box:CreateTexture(nil, "BORDER")
+    box.gap:SetTexture(Kit.FLAT)
+    -- Masks rounding both ends: the black inside the rim, and the bar.
+    box.gapMasks = { LEFT = Kit.EndMask(box), RIGHT = Kit.EndMask(box) }
+    box.barMasks = { LEFT = Kit.EndMask(box), RIGHT = Kit.EndMask(box) }
     box.bar = Kit.Bar(box)
     box.icon = box:CreateTexture(nil, "ARTWORK")
     box.textLayer = CreateFrame("Frame", nil, box)
@@ -60,19 +64,25 @@ function M:LayoutCast(f, unit)
     box.clear = clear
     box:SetHeight(height + 2 * g.pad)
     box:SetFrameLevel(f.panel:GetFrameLevel())
-    box.rim:ClearAllPoints(); box.rim:SetAllPoints(box)
-    Rounded(box.rim, "UnitFrameFrame"); Tint(box.rim, ONYX.border, 1)
-    Rounded(box.gap, "UnitFrameFrameInner"); Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
-    -- The bar spans what the health bar spans; the icon, if any, takes a
-    -- square from one end, a hairline of the black gap between them.
-    local start = math.max(g.pad, g.inset - g.blockStart - clear)
-    local nearInset, farInset = start, g.pad
+    -- Like the bar block: straight edges on whole pixels and half-oval ends,
+    -- here at both ends. Inside the rim the box is black (the cast track is
+    -- opaque); the black and the bar are rounded by end masks.
+    local depth = Kit.CapDepth(height + 2 * g.pad, px)
+    Kit.PlaceCapRing(box.rim, box, 0, g.border, ONYX.border, depth, { LEFT = true, RIGHT = true })
+    Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
+    for side, mask in pairs(box.gapMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.border, true) end
+    for side, mask in pairs(box.barMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.pad, true) end
+    Kit.AddMasks({ box.gap }, { box.gapMasks.LEFT, box.gapMasks.RIGHT })
+    box.depth = depth
+    -- The bar runs end to end inside the gap, rounded with it; the icon, if
+    -- any, sits where the straight part starts, a hairline of black from the bar.
+    local nearInset, farInset = g.pad, g.pad
     local icon, bar = box.icon, box.bar
     icon:ClearAllPoints(); icon:SetSize(height, height); icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     if cdb.icon == "near" then
-        icon:SetPoint(near, box, near, sign * start, 0); nearInset = start + height + px
+        icon:SetPoint(near, box, near, sign * depth, 0); nearInset = depth + height + px
     elseif cdb.icon == "far" then
-        icon:SetPoint(far, box, far, -sign * g.pad, 0); farInset = g.pad + height + px
+        icon:SetPoint(far, box, far, -sign * depth, 0); farInset = depth + height + px
     end
     icon:SetShown(cdb.icon ~= "none")
     bar:ClearAllPoints()
@@ -81,6 +91,7 @@ function M:LayoutCast(f, unit)
     bar:SetFrameLevel(box:GetFrameLevel() + 1)
     Kit.BarForeground(bar, fdb.foregroundTexture, height, px)
     Kit.BarBackground(bar, fdb.backgroundTexture)
+    Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, { box.barMasks.LEFT, box.barMasks.RIGHT })
     box.textLayer:SetFrameLevel(bar:GetFrameLevel() + 2)
     -- Spell name from the left, seconds left on the right, in the frame's font.
     local path, size = self:FontPath(fdb), cdb.fontSize

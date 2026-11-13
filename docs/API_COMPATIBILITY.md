@@ -55,6 +55,17 @@ bars are named in the Forever source: `PlayerCastingBarFrame`
 hook, never hidden or reparented. The ModeUI cast bar is a plain child of the
 secure unit button, shown and hidden in combat. Unverified in game.
 
+## Unit frame status — November 13, 2026
+
+`UnitAffectingCombat` and `UnitCanAttack` carry no secret flags in Forever's
+UnitDocumentation; `IsResting` is the global Blizzard's PlayerFrame uses. The
+pull pulse reads only those (plus `UnitExists`), not `UnitThreatSituation`,
+which is `SecretWhenUnitThreatStateRestricted`: "your target is in combat"
+stands in for "it is fighting you". Events: `PLAYER_UPDATE_RESTING`,
+`PLAYER_REGEN_DISABLED`/`_ENABLED`, `PLAYER_TARGET_CHANGED` and unit-filtered
+`UNIT_FLAGS`. The pulse is an Alpha animation looping BOUNCE on a texture.
+Unverified in game.
+
 ## Interface nameplates — November 12, 2026
 
 Source: the user's local copy of Blizzard's interface code, `WoWUI-live`
@@ -322,6 +333,11 @@ guarded, and native behavior on Forever is unverified until checked in game.
   `UpdateHotkeys` (outside combat) to restore it. The preview's Blizzard proc
   style uses Blizzard's `ActionButtonSpellAlertTemplate` (`ActionButtonSpellAlerts.xml`)
   on a ModeUI frame.
+- **Glow menu closing.** The menu registers `GLOBAL_MOUSE_DOWN`
+  (`SystemDocumentation.lua`) while open and closes when the click is outside it
+  and its button (`IsMouseOver`). It is not in the settings popups list, so
+  scrolling the page leaves it open.
+
 
 ## Interface damage meters — November 13, 2026
 

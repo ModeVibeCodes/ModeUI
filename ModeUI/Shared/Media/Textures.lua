@@ -32,6 +32,9 @@ M.Textures = {
     UnitFrameFrameInner = { file = "UnitFrames/FrameInner.tga", slice = 4, rounded = true },
     UnitFrameCircle = { file = "UnitFrames/Circle.tga", rounded = true },
     UnitFrameBar = { file = "UnitFrames/BarSatin.tga" },
+    -- Status badge icons (tools/build_shape_textures.lua), white, tinted in game.
+    UnitFrameRested = { file = "UnitFrames/Rested.tga", transparent = true },
+    UnitFrameCombat = { file = "UnitFrames/Combat.tga", transparent = true },
     -- Procedural shapes from tools/build_shape_textures.lua. ModeFlat rounds
     -- settings controls (4 px corners) and ModeCard the cards (6 px); the
     -- switch track and slider track are stadiums sliced only left and right
@@ -43,6 +46,13 @@ M.Textures = {
     ModeSwitch = { file = "Mode/Switch.tga", slice = { 8, 0, 8, 0 }, rounded = true },
     ModeTrack = { file = "Mode/Track.tga", slice = { 2, 0, 2, 0 }, rounded = true },
     ModeChevron = { file = "Mode/Chevron.tga", transparent = true },
+    -- 4x4 tile for Mode Slate Hatch (Kit.BarBackground tiles it per pixel).
+    ModeSlateHatch = { file = "Mode/SlateHatch.tga" },
+    -- Half-oval box ends and their hole masks (Kit.CapRing, Kit.EndMask).
+    ModeCapRight = { file = "Mode/CapRight.tga", rounded = true },
+    ModeCapLeft = { file = "Mode/CapLeft.tga", rounded = true },
+    ModeCapHoleRight = { file = "Mode/CapHoleRight.tga", transparent = true },
+    ModeCapHoleLeft = { file = "Mode/CapHoleLeft.tga", transparent = true },
     NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
     NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
     NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },

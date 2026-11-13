@@ -45,7 +45,7 @@ local function Validate(style, bar)
         local index = type(place) == "string" and place:match("^%d+$") and tonumber(place)
         assert(index and index >= 1 and index <= M.barSpecs[bar].count and type(glows) == "table", "Invalid action bar button glow: " .. bar)
         for kind, on in pairs(glows) do
-            assert((kind == "proc" or kind == "ready") and on == false, "Invalid action bar button glow: " .. bar)
+            assert((kind == "proc" or kind == "ready" or kind == "gray") and on == false, "Invalid action bar button glow: " .. bar)
         end
     end
 end

@@ -139,7 +139,8 @@ function M.LayoutBox(box, width, barHeight, px, background, db)
     bar:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)
     bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -inset, inset)
     Kit.BarForeground(bar, db and db.foregroundTexture or "mode", barHeight, px)
-    Kit.BarBackground(bar, db and db.backgroundTexture or "flat")
-    Tint(bar.bg, ONYX.track, box.bands and background or 1)
+    local backgroundTexture = db and db.backgroundTexture or "flat"
+    Kit.BarBackground(bar, backgroundTexture, width - 2 * inset, barHeight, px)
+    Tint(bar.bg, Kit.BarBackgroundColor(backgroundTexture), box.bands and background or 1)
     return height
 end

@@ -6,6 +6,9 @@ local W=addon.ConfigWidgets
 function W.Select(parent,width,choices,getter,setter)
     local button=W.Button(parent,"",width or 260,28)
     button:SetPoint("LEFT");W.DropdownLabel(button)
+    -- In a stacked row (Pages.lua) the field spans the row and may share its line.
+    local row=parent.row
+    if row and row.stacked and parent.valueAnchor then button:SetPoint("RIGHT");row.pairable=true end
     local menu=W.Popup(button,width or 260,240)
     W.Texture(menu,"Window")
     local scroll=CreateFrame("ScrollFrame",nil,menu);scroll:SetPoint("TOPLEFT",6,-6);scroll:SetPoint("BOTTOMRIGHT",-6,6);scroll:EnableMouseWheel(true)

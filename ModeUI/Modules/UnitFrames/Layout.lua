@@ -8,7 +8,7 @@ local Kit = addon.Kit
 local FLAT = Kit.FLAT
 local CIRCLE_MASK = M.CIRCLE_MASK
 local Tint, Lighten = Kit.Tint, Kit.Lighten
-local Font, LayoutLift, Inset, Rounded = Kit.Font, Kit.LayoutLift, Kit.Inset, Kit.Rounded
+local Font, LayoutLift, Inset = Kit.Font, Kit.LayoutLift, Kit.Inset
 M.Lighten = Lighten
 
 -- Mirrored by portrait side: the portrait caps the outer end.
@@ -82,20 +82,25 @@ function M:ApplyLayout(f, unit)
     panel:ClearAllPoints()
     panel:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.blockStart, -g.blockY)
     panel:SetPoint("BOTTOM" .. far, f, "BOTTOM" .. far, 0, g.blockY)
-    -- Every band holds the whole rim fill and the black gap one rim in; each
-    -- clips its copy, so together they draw the block minus the bars.
-    for i, fill in ipairs(panel.fills) do
-        fill:ClearAllPoints(); fill:SetAllPoints(panel)
-        Rounded(fill, "UnitFrameFrame"); Tint(fill, ONYX.border, 1)
-        local inner = panel.inners[i]
-        Rounded(inner, "UnitFrameFrameInner"); Inset(inner, panel, g.border); Tint(inner, ONYX.inner, 1)
-    end
-    -- The hole is the bars' rectangle: from the bars' start on the portrait
-    -- side to one rim and gap in from the other edges.
+    -- The rim on the block's edge and the black gap one rim in, straight edges
+    -- on whole pixels and a half-oval far end (the near end too without a
+    -- portrait); end masks round the bars inside the gap to match.
+    local depth = Kit.CapDepth(g.blockHeight, g.px)
+    local rounded = { [far] = true, [near] = g.portrait == 0 }
+    Kit.PlaceCapRing(panel.rim, panel, 0, g.border, ONYX.border, depth, rounded)
+    Kit.PlaceCapRing(panel.gap, panel, g.border, g.line, ONYX.inner, depth, rounded)
+    Kit.PlaceEndMask(panel.farMask, panel, far, depth, g.pad, true)
+    Kit.PlaceEndMask(panel.nearMask, panel, near, depth, g.pad, rounded[near])
+    local masks = { panel.farMask, panel.nearMask }
+    panel.depth = depth
     local start = g.inset - g.blockStart
-    Kit.PlaceBands(panel.bands, panel, near == "LEFT" and start or g.pad, g.pad, near == "LEFT" and g.pad or start, g.pad, g.px)
+    local cap = panel.cap
+    cap:ClearAllPoints()
+    cap:SetPoint("TOP" .. near, panel, "TOP" .. near, sign * g.pad, -g.pad)
+    cap:SetPoint("BOTTOM" .. near, panel, "BOTTOM" .. near, sign * g.pad, g.pad)
+    cap:SetWidth(math.max(g.px, start - g.pad)); Tint(cap, ONYX.inner, 1)
+    cap:SetShown(start > g.pad)
     local level = panel:GetFrameLevel()
-    for _, band in ipairs(panel.bands) do band:SetFrameLevel(level); band.layer:SetFrameLevel(level) end
 
     local h, pw = f.health, f.power
     h:ClearAllPoints()
@@ -117,8 +122,14 @@ function M:ApplyLayout(f, unit)
         bar:SetFrameLevel(level + 1)
         if bar.SetReverseFill then bar:SetReverseFill(reverse) end
         Kit.BarForeground(bar, fdb.foregroundTexture, bar == h and g.healthHeight or g.powerHeight, g.px)
-        Kit.BarBackground(bar, fdb.backgroundTexture); Tint(bar.bg, ONYX.track, fdb.barBackgroundOpacity / 100)
+        local barHeight = bar == h and g.healthHeight or g.powerHeight
+        Kit.BarBackground(bar, fdb.backgroundTexture, g.width - g.inset - g.pad, barHeight, g.px)
+        Tint(bar.bg, Kit.BarBackgroundColor(fdb.backgroundTexture), fdb.barBackgroundOpacity / 100)
+        Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, masks)
     end
+    -- A 1px light line where the health fill ends (owner, November 13, 2026).
+    Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)
+    Kit.AddMasks({ h.fillEdge, line }, masks)
     f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
 
     -- Round portrait above the block: full ring, black gap, dark backing, image.
@@ -138,13 +149,30 @@ function M:ApplyLayout(f, unit)
     end
     f.textLayer:SetFrameLevel(math.max(h:GetFrameLevel(), p:GetFrameLevel()) + 2)
 
-    -- Bar text on the portrait side clears the portrait's curve; each text
-    -- then moves by its own X/Y offset.
-    local function SideText(text, bar, position, dx, dy)
+    -- Text never reaches the portrait (owner, November 13, 2026). A text on the
+    -- portrait side stops 2px before the ring's outer edge across its own line
+    -- (its font's band, at its Y offset), rounded out to whole pixels; its X
+    -- offset moves it away from the portrait freely but never past that line.
+    -- Returns how far in from the bars' portrait-side edge the text may start.
+    local R, px = g.portrait / 2, g.px
+    local function Clearance(mid, size, dy, minimum)
+        minimum = minimum or 4
+        if R <= 0 then return minimum end
+        local half = math.ceil((size + 2) / 2 / px) * px
+        local c = mid - dy - g.height / 2
+        local d = (c - half <= 0 and c + half >= 0) and 0 or math.min(math.abs(c - half), math.abs(c + half))
+        if d >= R then return minimum end
+        local edge = R + math.sqrt(R * R - d * d) + 2 * px - g.inset
+        return math.max(minimum, math.ceil(edge / px - 1e-6) * px)
+    end
+    local function Clamped(clear, dx) return sign * math.max(clear, clear + sign * dx) end
+    local healthMid = g.barsTop + g.healthHeight / 2
+    local powerMid = g.barsTop + g.healthHeight + g.gap + g.powerHeight / 2
+    local function SideText(text, bar, position, dx, dy, size, mid)
         text:ClearAllPoints()
-        local x = position == "LEFT" and 4 or position == "RIGHT" and -4 or 0
-        if position == near then x = x + sign * g.tuck end
-        text:SetPoint(position, bar, position, x + dx, dy); text:SetJustifyH(position)
+        local x = (position == "LEFT" and 4 or position == "RIGHT" and -4 or 0) + dx
+        if position == near then x = Clamped(Clearance(mid, size, dy), dx) end
+        text:SetPoint(position, bar, position, x, dy); text:SetJustifyH(position)
     end
     local path = self:FontPath(fdb)
     Font(f.nameText, fdb, fdb.nameFontSize, path, g.px); Font(f.levelText, fdb, fdb.levelFontSize, path, g.px)
@@ -164,7 +192,7 @@ function M:ApplyLayout(f, unit)
     f.levelText:ClearAllPoints(); f.nameText:ClearAllPoints()
     if grouped and (position == "LEFT") ~= healthFirst then
         -- The level is the outer text, at the bar's edge; the health text sits inside it.
-        SideText(f.levelText, h, position, hx + lx, hy + ly)
+        SideText(f.levelText, h, position, hx + lx, hy + ly, fdb.levelFontSize, healthMid)
         f.healthText:ClearAllPoints()
         if position == "LEFT" then
             f.healthText:SetPoint("LEFT", f.levelText, "RIGHT", 6 - lx, -ly); f.healthText:SetJustifyH("LEFT")
@@ -172,13 +200,13 @@ function M:ApplyLayout(f, unit)
             f.healthText:SetPoint("RIGHT", f.levelText, "LEFT", -6 - lx, -ly); f.healthText:SetJustifyH("RIGHT")
         end
     else
-        SideText(f.healthText, h, position, hx, hy)
+        SideText(f.healthText, h, position, hx, hy, fdb.healthFontSize, healthMid)
         if grouped and position == "RIGHT" then
             f.levelText:SetPoint("RIGHT", f.healthText, "LEFT", -6 + lx, ly); f.levelText:SetJustifyH("RIGHT")
         elseif grouped then
             f.levelText:SetPoint("LEFT", f.healthText, "RIGHT", 6 + lx, ly); f.levelText:SetJustifyH("LEFT")
         elseif level then
-            SideText(f.levelText, h, "RIGHT", lx, ly)
+            SideText(f.levelText, h, "RIGHT", lx, ly, fdb.levelFontSize, healthMid)
         end
     end
     if level then local c = fdb.levelColor; f.levelText:SetTextColor(c[1], c[2], c[3], 1) end
@@ -187,18 +215,23 @@ function M:ApplyLayout(f, unit)
     local nx, ny = fdb.nameOffsetX, fdb.nameOffsetY
     if fdb.namePosition == "bar" then
         local align = fdb.nameAlign
-        f.nameText:SetPoint(align, h, align, (align == "LEFT" and 4 or align == "RIGHT" and -4 or 0) + nx, ny)
+        local x = (align == "LEFT" and 4 or align == "RIGHT" and -4 or 0) + nx
+        if align == near then x = Clamped(Clearance(healthMid, fdb.nameFontSize, ny), nx) end
+        f.nameText:SetPoint(align, h, align, x, ny)
         f.nameText:SetJustifyH(align)
         f.nameText:SetWidth(fdb.barWidth * 0.6)
     else
-        -- Above the frame, aligned over the bars, kept clear of the portrait.
-        local clear = g.tuck > 0 and g.tuck + 4 or 0
-        f.nameText:SetPoint("BOTTOMLEFT", h, "TOPLEFT", (near == "LEFT" and clear or 0) + nx, g.pad + 3 + ny)
-        f.nameText:SetPoint("BOTTOMRIGHT", h, "TOPRIGHT", (near == "RIGHT" and -clear or 0) + nx, g.pad + 3 + ny)
+        -- Above the frame, over the bars, clear of the ring at the name's own
+        -- height (the ring curves away above the block, so it can sit closer).
+        local line = math.ceil((fdb.nameFontSize + 2) / px) * px
+        local clear = Clearance(g.barsTop - g.pad - 3 - ny - line / 2, fdb.nameFontSize, 0, 0)
+        local nearX = Clamped(clear, nx)
+        f.nameText:SetPoint("BOTTOMLEFT", h, "TOPLEFT", near == "LEFT" and nearX or nx, g.pad + 3 + ny)
+        f.nameText:SetPoint("BOTTOMRIGHT", h, "TOPRIGHT", near == "RIGHT" and nearX or nx, g.pad + 3 + ny)
         f.nameText:SetJustifyH(fdb.nameAlign)
     end
     f.nameText:SetShown(fdb.showName)
-    SideText(f.powerText, pw, fdb.powerTextPosition, fdb.powerTextOffsetX, fdb.powerTextOffsetY)
+    SideText(f.powerText, pw, fdb.powerTextPosition, fdb.powerTextOffsetX, fdb.powerTextOffsetY, fdb.powerFontSize, powerMid)
     f.powerText:SetShown(fdb.showPower and fdb.powerText ~= "none")
     LayoutLift(f.nameText, fdb, fdb.nameFontSize, path, g.px, fdb.showName, fdb.nameAlign)
     LayoutLift(f.levelText, fdb, fdb.levelFontSize, path, g.px, level, "CENTER")
@@ -208,4 +241,5 @@ function M:ApplyLayout(f, unit)
     if f.combo then self:ResetComboLayout(f) end
     self:LayoutCast(f, unit)
     self:LayoutAuras(f, unit)
+    self:LayoutStatus(f, unit)
 end

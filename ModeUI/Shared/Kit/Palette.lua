@@ -15,7 +15,11 @@ Kit.palette = {
 -- The Onyx skin: default health fill, empty bar, the rim and the black gap
 -- inside it. The rim was slate (#6A737D) until the owner asked for it closer
 -- to black (November 12, 2026).
-Kit.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(37, 40, 44), inner = RGB(0, 0, 0) }
+Kit.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(37, 40, 44), inner = RGB(0, 0, 0),
+    -- Mode Slate (November 13, 2026): bar backgrounds in a near-neutral gray,
+    -- clearly lighter than the Onyx fill, shown at a strong opacity.
+    -- A touch darker since (#44464A, owner, November 13, 2026).
+    slate = RGB(68, 70, 74), slateHatch = RGB(85, 88, 93) }
 
 -- Colors a region from a boolean that may be secret: a public value picks the
 -- color here; a secret one goes to SetVertexColorFromBoolean, which accepts

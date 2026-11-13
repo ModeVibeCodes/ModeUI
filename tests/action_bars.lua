@@ -354,7 +354,13 @@ world.run([==[
     local view = page.configPreview
     for i = 1, 12 do assert(view.buttons[i] and view.buttons[i]:IsShown(), 'every button drawn, secret texts and all') end
     assert(issecretvalue(view.buttons[3].Count.text) and issecretvalue(view.buttons[4].HotKey.text), 'secret texts shown as they are')
-    assert(page.barSelects[1].label.text == 'Action Bar 1', 'the bar being edited is named')
+    assert(page.barSelect.label.text == 'Action Bar 1' and page.barSelect:GetParent():GetParent() == page.previewArea, 'Editing sits in the preview header')
+    local corner = Point(page.barSelect:GetParent())
+    assert(corner[1] == 'TOPRIGHT' and corner[2] == page.previewArea, 'at its top right')
+    assert(page.previewHeaderButtons[1] == page.keybindHeaderButton and page.previewReserveRight > 0, 'header buttons keep clear of it')
+    local editRows = 0
+    for _, row in ipairs(page.rows) do if row.settingsTitle == 'Editing' then editRows = editRows + 1 end end
+    assert(editRows == 0, 'no Editing rows in the tabs')
     local first = view.buttons[1]
     assert(first:IsShown() and first.width == 42 and first.height == 36, 'preview of the edited bar')
     assert(first.icon.texture == 'Interface/Icons/Spell1' and first.HotKey.text == '1', 'your own spell and keybind')
@@ -372,19 +378,57 @@ world.run([==[
     assert(first.cooldownText.text ~= '', 'a sample cooldown while editing the cooldown text')
     first.scripts.OnMouseUp(first, 'LeftButton')
     assert(page.selectedSection.title == 'Bar', 'button click opens Bar')
-    -- The glow menu opens beside the clicked button, which previews its glows.
+    -- The glow menu opens to the left of the clicked button, which previews its glow.
     local menu = ModeUIActionBarGlowMenu
     assert(menu:IsShown() and menu.index == 1 and view.glowIndex == 1 and menu.title.text == 'Action Bar 1, button 1', 'glow menu for button 1')
+    local at = Point(menu)
+    assert(at[1] == 'RIGHT' and at[2] == first and at[3] == 'LEFT', 'left of the button')
     local preview = M.glows[first]
-    assert(preview and preview.proc:IsShown() and preview.ready:IsShown(), 'proc and ready glow previews on the button')
-    assert(menu.procBox.selected and menu.readyBox.selected)
+    -- One glow at a time: the proc glow wins over the ready glow of the same kind.
+    assert(preview and preview.proc:IsShown() and preview.ready.wanted and not preview.ready:IsShown(), 'one glow at a time')
+    assert(menu.procBox.selected and menu.readyBox.selected and menu.grayBox.selected)
     menu.procBox.scripts.OnClick(menu.procBox)
     assert(M.db.bar1.buttonGlows['1'].proc == false and not menu.procBox.selected and not preview.proc:IsShown(), 'switching the proc glow off here')
+    assert(preview.ready:IsShown(), 'the ready glow shows once the proc glow is off')
     menu.procBox.scripts.OnClick(menu.procBox)
-    assert(M.db.bar1.buttonGlows['1'] == nil and preview.proc:IsShown())
+    assert(M.db.bar1.buttonGlows['1'] == nil and preview.proc:IsShown() and not preview.ready:IsShown())
+    -- A glow wins over a border.
     menu.procButtons[2].scripts.OnClick(menu.procButtons[2])
-    assert(M.db.bar1.procGlow == 'border' and preview.proc.edges[1]:IsShown(), 'proc style from the menu')
+    assert(M.db.bar1.procGlow == 'border' and preview.ready:IsShown() and not preview.proc:IsShown(), 'a ready glow overrides a proc border')
+    menu.readyButtons[2].scripts.OnClick(menu.readyButtons[2])
+    assert(M.db.bar1.readyStyle == 'border' and preview.proc:IsShown() and preview.proc.edges[1]:IsShown() and not preview.ready:IsShown(), 'two borders: the proc wins')
+    menu.readyButtons[1].scripts.OnClick(menu.readyButtons[1])
     menu.procButtons[1].scripts.OnClick(menu.procButtons[1])
+    -- Desaturate on Cooldown for this button.
+    menu.grayBox.scripts.OnClick(menu.grayBox)
+    assert(M.db.bar1.buttonGlows['1'].gray == false and not menu.grayBox.selected, 'this button keeps its color')
+    ActionButton1.action = 1
+    cooldowns[1] = { isActive = true, isOnGCD = false }; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(ActionButton1.icon.desaturated ~= true, 'no gray on a button switched off')
+    cooldowns[1] = nil; FireEvent('SPELL_UPDATE_COOLDOWN')
+    -- Copy, Paste and Apply to Bar.
+    assert(not menu.paste:IsEnabled(), 'nothing to paste yet')
+    menu.copy.scripts.OnClick(menu.copy)
+    assert(menu.paste:IsEnabled())
+    view.buttons[4].scripts.OnMouseUp(view.buttons[4], 'LeftButton')
+    assert(menu:IsShown() and menu.index == 4 and menu.button == view.buttons[4], 'the menu follows the clicked button')
+    menu.paste.scripts.OnClick(menu.paste)
+    assert(M.db.bar1.buttonGlows['4'].gray == false and not menu.grayBox.selected, 'pasted onto button 4')
+    menu.apply.scripts.OnClick(menu.apply)
+    assert(M.db.bar1.buttonGlows['12'].gray == false and M.db.bar1.buttonGlows['1'].gray == false, 'applied to the whole bar')
+    menu.grayBox.scripts.OnClick(menu.grayBox); menu.apply.scripts.OnClick(menu.apply)
+    assert(next(M.db.bar1.buttonGlows) == nil, 'and back: nothing stored')
+    -- It stays open while the page scrolls; a click elsewhere or X closes it.
+    page.scrollbar.scripts.OnValueChanged(page.scrollbar, 40)
+    assert(menu:IsShown(), 'scrolling keeps it open')
+    menu.mouseOver = true; FireEvent('GLOBAL_MOUSE_DOWN', 'LeftButton')
+    assert(menu:IsShown(), 'clicks inside keep it open')
+    menu.mouseOver = false; FireEvent('GLOBAL_MOUSE_DOWN', 'LeftButton')
+    assert(not menu:IsShown() and view.glowIndex == nil, 'a click elsewhere closes it')
+    first.scripts.OnMouseUp(first, 'LeftButton')
+    menu.close.scripts.OnClick(menu.close)
+    assert(not menu:IsShown(), 'X closes it')
+    first.scripts.OnMouseUp(first, 'LeftButton')
     menu.more.scripts.OnClick(menu.more)
     assert(not menu:IsShown() and page.selectedSection.title == 'Glows' and not preview.proc:IsShown(), 'All Glow Settings opens Glows')
     first.scripts.OnMouseUp(first, 'LeftButton'); page.SetEditing('bar2')

@@ -48,6 +48,11 @@ function M:SetNestedOption(path, key, value)
     return true
 end
 function M:SetComboOption(key, value) return self:SetNestedOption({ "comboPoints" }, key, value) end
+function M:SetStatusOption(unit, key, value) return self.labels[unit] ~= nil and self:SetNestedOption({ unit, "status" }, key, value) end
+function M:UpdateAllStatus()
+    if not self.frames then return end
+    for _, unit in ipairs(self.units) do self:UpdateStatus(unit) end
+end
 function M:SetCastOption(unit, key, value) return self.labels[unit] ~= nil and self:SetNestedOption({ unit, "castBar" }, key, value) end
 function M:SetAuraOption(unit, group, key, value)
     return self.labels[unit] ~= nil and self.auraGroupLabels[group] ~= nil and self:SetNestedOption({ unit, group }, key, value)
@@ -159,7 +164,7 @@ local UNIT_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_POWER_FREQUENT", "U
     "UNIT_PORTRAIT_UPDATE", "UNIT_MODEL_CHANGED", "UNIT_TARGET",
     "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED",
     "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP",
-    "UNIT_SPELLCAST_INTERRUPTIBLE", "UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "UNIT_AURA" }
+    "UNIT_SPELLCAST_INTERRUPTIBLE", "UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "UNIT_AURA", "UNIT_FLAGS" }
 function M:SetEvents(on)
     if (self.eventsOn or false) == on then return end
     self.eventsOn = on
@@ -170,6 +175,10 @@ function M:SetEvents(on)
     end
     -- Scale/resolution changes re-snap the pixel-perfect borders (registered by
     -- Blizzard's own Forever UI in SharedUIPanelTemplates.lua).
+    -- Rest and combat for the status badges, red ring and pull pulse.
+    for _, event in ipairs({ "PLAYER_UPDATE_RESTING", "PLAYER_REGEN_DISABLED" }) do
+        if on then f:RegisterEvent(event) else f:UnregisterEvent(event) end
+    end
     for _, event in ipairs({ "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "PLAYER_ENTERING_WORLD", "PORTRAITS_UPDATED",
         "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         if on then f:RegisterEvent(event) else f:UnregisterEvent(event) end
@@ -212,7 +221,14 @@ end
 function M:OnEvent(event, unit)
     if event == "PLAYER_REGEN_ENABLED" then
         if self.pending then self:Refresh() end
-    elseif event == "PLAYER_TARGET_CHANGED" then self:Update("target"); self:Update("targettarget")
+        self:UpdateAllStatus()
+    elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_UPDATE_RESTING" then self:UpdateAllStatus()
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        self:Update("target"); self:Update("targettarget"); self:UpdateStatus("player")
+    elseif event == "UNIT_FLAGS" then
+        -- Combat state changed; your target's also decides the Player's pull pulse.
+        if unit == "player" or unit == "target" or unit == "focus" then self:UpdateStatus(unit) end
+        if unit == "target" then self:UpdateStatus("player") end
     elseif event == "PLAYER_FOCUS_CHANGED" then self:Update("focus"); self:Update("focustarget")
     elseif event == "PLAYER_ENTERING_WORLD" or event == "PORTRAITS_UPDATED" then self:UpdateAll()
     elseif event == "UI_SCALE_CHANGED" or event == "DISPLAY_SIZE_CHANGED" then self:Refresh()

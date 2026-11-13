@@ -5,6 +5,92 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Half-oval ends, a line that hides at full, darker Mode Slate
+
+November 13, 2026, after the hard-edged borders were tried in game, per the
+owner: keep rounded corners, with "almost a half oval" at the end. The bar
+block's rim and gap are now rings (`Kit.CapRing`, `Shared/Kit/Capsule.lua`):
+hard-edged flat strips along the straight edges, and a half ellipse at the end
+away from the portrait (both ends without a portrait), `0.4 ×` the block's
+height deep (a semicircle would be 0.5; `Kit.CAP_DEPTH`). Each rounded end is a
+cap texture (`Mode/CapRight.tga`, `CapLeft.tga`) hollowed into a ring by a hole
+mask (`CapHole*.tga`), so nothing opaque sits under the bars and the
+background keeps its opacity to the curve. End masks (`Kit.EndMask`, wrap
+`CLAMPTOWHITE`) round the health and power fills, backgrounds, sheen, fill
+line and hairline to the same shape. The cast bar is rounded at both ends,
+black inside its rim; its icon sits where the straight part starts.
+
+The fill end line now sits in a clipping frame that stops 1px short of the
+bar's end, so a full bar shows no line, without reading the (possibly secret)
+value. Mode Slate is a touch darker: #44464A (hatch tint #55585D).
+
+## Status on the portrait
+
+November 13, 2026, per the owner (the recommended Portrait Badge concept):
+round badges sit on the portrait ring's corners (`Status.lua`, **Status** on
+the Portrait tab): **Rested** (Player only, top left, Sky icon) and **Combat**
+(bottom left, red icon). Each has its own switch and corner; badges are an
+even pixel size centred on the ring and swap to the outer side on a right-hand
+portrait (**Mirror on a Right-Side Portrait**). **Combat Ring** turns the ring
+red while the unit is in combat. **Pulse When Pulled** (Player) pulses a red
+halo behind the ring while you are in combat and have no enemy targeted that is
+itself in combat (`Domain.Status.PulledUnawares`); targeting the attacker
+stops the pulse, and the ring holds red until combat ends. Settings are in
+`db[unit].status` (own keys). Defaults: the Player has everything on; the
+Target shows the combat badge; the small frames start off. Icons are
+`UnitFrames/Rested.tga` and `UnitFrames/Combat.tga` from
+`tools/build_shape_textures.lua`, tinted in game.
+
+## Text never reaches the portrait
+
+November 13, 2026, per the owner: every text stays over the bars. A text on
+the portrait side (health, level, power, a name on the bar, a name above the
+frame) measures the ring's **outer** edge across its own line, the band of
+its font at its Y offset, and stops 2px before it, rounded out to whole
+pixels: `clear = R + √(R² − d²) + 2px − inset`, where `R` is the portrait's
+outer radius, `d` the line's edge nearest the portrait's centre and `inset`
+where the bars start. A line past the circle gets no tuck. X offsets move a
+text away from the portrait freely; toward it they stop at that line. At
+default sizes bar texts keep their 12px inset; a name above the frame sits
+closer (1px in from the bars), since the ring curves away up there.
+
+## Mode Slate backgrounds (layout version 14)
+
+November 13, 2026, per the owner: no pattern lines in bar backgrounds, and a
+stronger, more solid feel. Two new background textures, shared with the
+nameplates (`Kit.BarBackground`, `Kit.BarBackgroundColor`):
+
+- **Mode Slate** (`slate`): flat, tinted `Kit.onyx.slate` #4C4E52, a
+  near-neutral gray clearly lighter than the Onyx fill. The unit frame
+  default, at 70% Background Opacity.
+- **Mode Slate Hatch** (`slateHatch`): `Mode/SlateHatch.tga`, a 4×4 tile (80%
+  gray with a full-white diagonal) tinted #5F6267, so its base matches Mode
+  Slate and the lines are a little lighter. It tiles one texel per screen
+  pixel (`SetTexCoord` from the bar's size over `4 × px`, nearest filtering).
+  Kept for overlays such as overshields; also offered as a background.
+
+Layout version 14 moves a frame still on the old defaults (Flat, 25%) to Mode
+Slate at 70%; chosen textures and opacities stay.
+
+**Frame Width.** The bar width setting is now **Frame Width**, one of each
+frame's own keys (`barWidth` in `M.ownKeys`), shown on the Layout tab under
+Editing even while the Target matches the Player, beside Fill Direction.
+Layout version 14 gives a matched Target the Player's width, so nothing moves.
+
+## Hard-edged borders and the fill end line
+
+November 13, 2026, per the owner: the rounded rim and gap textures were
+filtered when scaled, so the border looked inset and softly bled into the
+bars. The bar block and the cast box now draw a hard-edged border: four flat
+strips each for the 2px rim and the 2px black gap (`Kit.Edges`,
+`Kit.PlaceEdges`, square corners, whole pixels), plus a flat black cap under
+the portrait's end of the block up to the bars. Nothing sits under the bars,
+so their background still shows the world through it (the clipped bands are
+no longer needed here). The health fill also gets a 1px light line where it
+ends (`fillEdge`, on by default; **Fill End Line** on the Layout tab), placed
+on the fill texture's leading side (`Kit.FillEdge`), so it follows the fill
+direction and secret values alike.
+
 ## Fill direction, cast bar clearance, steady preview
 
 November 13, 2026, after the first look in game, per the owner:
