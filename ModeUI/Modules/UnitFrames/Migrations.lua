@@ -5,7 +5,7 @@ if not M then return end
 -- Settings validation and the one-time layout-version migrations. Profile
 -- validation runs Initialize on detached copies.
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
-local Public, Number = M.Public, M.Number
+local Public, Number, Kit = M.Public, M.Number, addon.Kit
 local ALLOWED = {}
 for key, list in pairs(M.choices) do
     ALLOWED[key] = {}
@@ -162,5 +162,7 @@ function M.Initialize(db)
         Fill(frame, M.frameDefaults[unit], unit .. ".")
         for key, r in pairs(M.frameRanges) do assert(Ranged(frame[key], r), "Invalid unit frame range: " .. unit .. "." .. key) end
         for key, list in pairs(M.choiceKeys) do assert(ALLOWED[list][frame[key]], "Invalid unit frame choice: " .. unit .. "." .. key) end
+        assert(Kit.ValidBarTexture(frame.foregroundTexture, true) and Kit.ValidBarTexture(frame.backgroundTexture, false),
+            "Invalid unit frame texture: " .. unit)
     end
 end

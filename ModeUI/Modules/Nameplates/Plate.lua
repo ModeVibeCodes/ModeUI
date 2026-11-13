@@ -30,18 +30,14 @@ local function Box(parent)
     return box
 end
 
--- Top, bottom, left and right bands; each clips a full copy of the rim, gap
--- and outline, so together they draw the box minus the bar's rectangle.
+-- Top, bottom, left and right bands (Shared/Kit/Bands.lua); each clips a full
+-- copy of the rim, gap and outline, so together they draw the box minus the
+-- bar's rectangle.
 local function BandedBox(parent)
     local box = CreateFrame("Frame", nil, parent)
-    box.bands, box.rims, box.gaps, box.outlines = {}, {}, {}, {}
+    box.bands, box.rims, box.gaps, box.outlines = Kit.Bands(box), {}, {}, {}
     for i = 1, 4 do
-        local band = CreateFrame("Frame", nil, box)
-        band:SetClipsChildren(true)
-        band.layer = CreateFrame("Frame", nil, band)
-        band.layer:SetAllPoints(band)
-        local layer = band.layer
-        box.bands[i] = band
+        local layer = box.bands[i].layer
         box.outlines[i] = layer:CreateTexture(nil, "BACKGROUND", nil, -1)
         box.rims[i] = layer:CreateTexture(nil, "BACKGROUND", nil, 0)
         box.gaps[i] = layer:CreateTexture(nil, "BACKGROUND", nil, 1)
@@ -53,22 +49,10 @@ local function BandedBox(parent)
     return box
 end
 
--- Plates move at sub-pixel positions while the camera turns, and each band's
--- clip rectangle rounds to the pixel grid on its own; abutting bands could open
--- a one-pixel seam in the rim for a frame. The side bands overlap the top and
--- bottom bands by one physical pixel so no seam can open.
+-- Plates move at sub-pixel positions while the camera turns; Kit.PlaceBands
+-- overlaps the bands by one physical pixel so no seam opens in the rim.
 local function PlaceBands(box, inset, px)
-    local top, bottom, left, right = box.bands[1], box.bands[2], box.bands[3], box.bands[4]
-    local seam = px or 1
-    for _, band in ipairs(box.bands) do band:ClearAllPoints() end
-    top:SetPoint("TOPLEFT", box, "TOPLEFT", -BAND_ROOM, BAND_ROOM)
-    top:SetPoint("BOTTOMRIGHT", box, "TOPRIGHT", BAND_ROOM, -inset)
-    bottom:SetPoint("TOPLEFT", box, "BOTTOMLEFT", -BAND_ROOM, inset)
-    bottom:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", BAND_ROOM, -BAND_ROOM)
-    left:SetPoint("TOPLEFT", box, "TOPLEFT", -BAND_ROOM, -inset + seam)
-    left:SetPoint("BOTTOMRIGHT", box, "BOTTOMLEFT", inset, inset - seam)
-    right:SetPoint("TOPLEFT", box, "TOPRIGHT", -inset, -inset + seam)
-    right:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", BAND_ROOM, inset - seam)
+    Kit.PlaceBands(box.bands, box, inset, inset, inset, inset, px, BAND_ROOM)
     -- Bands under the bar; the text and aura layers sit above both.
     local level = box:GetFrameLevel()
     for _, band in ipairs(box.bands) do band:SetFrameLevel(level); band.layer:SetFrameLevel(level) end

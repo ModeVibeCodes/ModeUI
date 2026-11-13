@@ -74,11 +74,12 @@ function M:PaintSample(g, unit)
     local fdb = self:FrameDB(unit)
     local identity = self:SampleIdentity(unit, fdb)
     local color = self:HealthColor(unit, identity)
-    g.health:SetStatusBarColor(color[1], color[2], color[3])
+    local alpha = fdb.barForegroundOpacity / 100
+    g.health:SetStatusBarColor(color[1], color[2], color[3], alpha)
     g.health:SetMinMaxValues(0, 100); g.health:SetValue(75)
     local power = fdb.powerColorMode == "custom" and fdb.powerColor or P.mana
-    g.power:SetMinMaxValues(0, 100); g.power:SetValue(60); g.power:SetStatusBarColor(power[1], power[2], power[3])
-    SetName(g, self.labels[unit] .. " Frame", self:NameColor(unit, identity))
+    g.power:SetMinMaxValues(0, 100); g.power:SetValue(60); g.power:SetStatusBarColor(power[1], power[2], power[3], alpha)
+    SetName(g, self.titles[unit], self:NameColor(unit, identity))
     Write(g.levelText, "60")
     local mode = fdb.healthText
     Write(g.healthText, mode == "current" and "3,450" or mode == "both" and "3,450 · 75%" or "75%")
@@ -98,7 +99,7 @@ function M:UpdateHealth(unit)
     if okMax then pcall(f.health.SetMinMaxValues, f.health, 0, max) end
     if okValue then pcall(f.health.SetValue, f.health, value) end
     local color = self:HealthColor(unit)
-    f.health:SetStatusBarColor(color[1], color[2], color[3])
+    f.health:SetStatusBarColor(color[1], color[2], color[3], self:FrameDB(unit).barForegroundOpacity / 100)
     local mode = self:FrameDB(unit).healthText
     if mode == "none" then return end
     -- Objects (pickups, interactables) have no health to show.
@@ -117,7 +118,7 @@ function M:UpdatePower(unit)
     if okValue then pcall(f.power.SetValue, f.power, value) end
     local color = fdb.powerColorMode == "custom" and fdb.powerColor
         or Power.Color(token)
-    f.power:SetStatusBarColor(color[1], color[2], color[3])
+    f.power:SetStatusBarColor(color[1], color[2], color[3], fdb.barForegroundOpacity / 100)
     Kit.ValueText(f.powerText, fdb.powerText, function(u, curve) return Power.Percent(u, powerType, curve) end,
         unit, okValue, value)
 end

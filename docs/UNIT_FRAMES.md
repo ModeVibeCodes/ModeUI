@@ -5,6 +5,43 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Target of Target, Focus and Target of Focus
+
+November 13, 2026, per the owner: three more secure frames in the same skin,
+`targettarget`, `focus` and `focustarget`, each saved under its unit token
+with the full per-frame settings set (the Target is still the only frame that
+can match the Player). Target of Target and Target of Focus default to a small
+frame (bar width 110, health 16, power 6, no level) with the portrait on the
+left; Focus is 150 wide with the portrait on the right. Each has its own Edit
+Mode element (`unitFramesTargetTarget`, `unitFramesFocus`,
+`unitFramesFocusTarget`) and Hide Blizzard option. Blizzard's Focus frame is
+built from the Target frame template, so it fades the same parts; Blizzard's
+Target of Target and Target of Focus fade whole, also while their Target or
+Focus frame is hidden. The Frames tab shows Show and Hide Blizzard side by
+side for each frame, and the element tabs pick the frame from an **Editing**
+dropdown. Existing profiles gain the three frames with their defaults on load.
+
+## See-through bar backgrounds, bar textures and opacity
+
+November 13, 2026, per the owner: the dark Onyx fill was hard to tell from the
+near-black empty bar. Each frame now has four bar settings, shared by its
+health and power bars and shown in the Layout tab's **Bar Textures** and
+**Bar Opacity** cards:
+
+- `foregroundTexture` (Mode Gradient) and `backgroundTexture` (Flat), or any
+  SharedMedia status bar (`Kit.BarTextureChoices`, shared with Nameplates).
+- `barForegroundOpacity` 100 (10–100%) fades the fills.
+- `barBackgroundOpacity` 25 (0–100%) fades the empty bar, so the world shows
+  through it. (`backgroundOpacity` is the panel opacity retired in layout
+  version 9, so the new keys carry a `bar` prefix.)
+
+New keys take their defaults on load, so existing frames get the see-through
+background without a layout-version change. For the background to be truly
+see-through, nothing opaque may sit under the bars: the rim and black gap are
+drawn as four clipped bands around the bars' rectangle (`Kit.Bands`,
+`Kit.PlaceBands`, moved from Nameplates into `Shared/Kit/Bands.lua`), and the
+1px hairline between health and power is its own solid texture.
+
 ## Near-black rim
 
 November 12, 2026, per the owner: the Onyx rim (`Kit.onyx.border`) is now
@@ -540,17 +577,26 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
   `positions` table.
 - **Native frames.** "Hide Blizzard … Frame" sets the alpha of the native
   Container and Content parts to 0 (re-applied if Blizzard restores it) and
-  disables the native frame's mouse input. Nothing is reparented and no events
-  are unregistered, so the pet frame, combo points/class resources, target auras,
-  target cast bar and target of target keep working. Turning the option or
-  module off restores the saved alpha and mouse input outside combat.
+  disables the native frame's mouse input. Blizzard's Target of Target
+  (`TargetFrameToT`) is a child of the Target frame
+  (`TargetFrameMixin:CreateTargetofTarget`), so it would float on its own: it
+  fades whole with the Target frame, and it and its debuff icons release the
+  mouse. Nothing is reparented and no events are unregistered, so the pet
+  frame, combo points/class resources, target auras and target cast bar keep
+  working. Turning the option or module off restores the saved alpha and mouse
+  input outside combat (`Native.lua`).
 - **Combat.** Show/hide, size, position, unit-watch and native-frame changes
   are protected. Requests made in combat are kept and applied on
   `PLAYER_REGEN_ENABLED`. Settings controls refuse changes in combat. Health,
   power, text and portrait updates continue in combat.
 - **Events.** One event frame with unit-filtered `RegisterUnitEvent` for
-  player/target, plus `PLAYER_TARGET_CHANGED`, `PLAYER_ENTERING_WORLD` and
-  `PORTRAITS_UPDATED`, registered only while a frame is shown. No polling.
+  player/target and a second one for focus (a frame filters to at most two
+  units), plus `UNIT_TARGET`, `PLAYER_TARGET_CHANGED`, `PLAYER_FOCUS_CHANGED`,
+  `PLAYER_ENTERING_WORLD` and `PORTRAITS_UPDATED`, registered only while a
+  frame is shown. The game sends no unit events for `targettarget` or
+  `focustarget`, so while either frame is on a hidden-when-unused timer
+  refreshes them every 0.1 s, as Blizzard's own Target of Target does with
+  `OnUpdate`.
 
 ## Settings (`modules.unitFrames`)
 
@@ -563,7 +609,8 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
 | --- | --- |
 | Visibility | `enabled` (true), `hideBlizzard` (true) |
 | Matching | `matchPlayer` (Target on): render with the Player's look and text layout; `mirrorText` (Target, off): mirror the Player's text alignment and horizontal offsets |
-| Layout | `scale` 100 (50–200%), `barWidth` 180 (100–400), `healthHeight` 26 (10–60), `showPower` (true), `powerHeight` 10 (2–30), `texture` satin / mode / flat / default / LibSharedMedia status bar |
+| Layout | `scale` 100 (50–200%), `barWidth` 180 (100–400), `healthHeight` 26 (10–60), `showPower` (true), `powerHeight` 10 (2–30) |
+| Bars | `foregroundTexture` mode / flat / `media:<name>`, `backgroundTexture` flat / `media:<name>`, `barForegroundOpacity` 100 (10–100%), `barBackgroundOpacity` 25 (0–100%) |
 | Portrait | `showPortrait` (true), `portraitStyle` portrait / class, `portraitSide` left (Target right), `portraitScale` 150 (100–200% of the bar block), `portraitRing` class / border / custom, `portraitRingColor` Mist |
 | Name | `showName` (true), `namePosition` above / bar, `nameAlign` RIGHT / LEFT / CENTER, `nameFontSize` 12 (8–24), `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `nameOffsetX`/`nameOffsetY` 0 (−100–100), `classSoftness` 40 (0–100%) |
 | Level | `levelStyle` badge (shown) / none, `levelFontSize` 11 (6–24), `levelColor` #B9B9B9, `levelOffsetX`/`levelOffsetY` 0 |
@@ -595,7 +642,12 @@ validation). Settings change only through `SetFrameOption`, `ResetFrame` and
   resources stay where Blizzard places them; move them with Blizzard's Edit
   Mode if needed.
 - No cast bar, auras, combat feedback, threat or raid icon on PTG frames yet.
-  Focus, target of target, pet, party and raid frames are later phases.
+  Pet, party and raid frames are later phases.
+- Whether Forever's rules let players set a focus is unverified. The Focus
+  frame only shows while a focus exists (unit watch), so it stays hidden if not.
+- Blizzard's combo points on Forever (`ComboFrame`, Camelot) are parented to
+  the Target frame and centred on its portrait; they keep working and stay
+  visible where that portrait was.
 
 ## Manual checks (native acceptance)
 

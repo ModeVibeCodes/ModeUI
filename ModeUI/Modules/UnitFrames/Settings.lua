@@ -3,7 +3,7 @@ local M, W, T = addon.UnitFrames, addon.ConfigWidgets, addon.InterfaceTheme
 if not M then return end
 
 -- One tab per frame element (Layout, Portrait, Name & Level, Health, Power,
--- Text); the Onyx rim, gap and background are locked, so there is no Border
+-- Text); the Onyx rim and gap are locked, so there is no Border
 -- tab. Each element tab edits the Player or the Target, picked by the Editing
 -- switch at its top; the choice is shared by every tab for this session.
 function M:CreateConfigPage(parent)
@@ -21,20 +21,25 @@ function M:CreateConfigPage(parent)
             row.visibleWhen = prior and function() return predicate() and prior() end or predicate
         end
     end
-    local function Select(label, choices, get, set)
-        local button = W.Select(page:Row(label, 48), 260, choices, function()
+    -- Controls take the host they fill: a labeled row, or one cell of Columns.
+    local function SelectIn(host, width, choices, get, set)
+        local button = W.Select(host, width, choices, function()
             local value = get()
             for _, choice in ipairs(choices()) do if choice.id == value then return value, choice.label end end
             return value, addon.Media:MediaLabel(tostring(value):gsub("^media:", ""))
         end, set)
         page.refreshers[#page.refreshers + 1] = function() button:Refresh() end
+        return button
     end
+    local function Select(label, choices, get, set) return SelectIn(page:Row(label, 48), 260, choices, get, set) end
     local function Set(key) return function(v) M:SetFrameOption(editing, key, v) end end
-    local function Slider(text, key, suffix)
+    local function SliderIn(host, key, suffix)
         local r = M.frameRanges[key]
-        page.refreshers[#page.refreshers + 1] = W.Slider(page:Row(text, 48), r[1], r[2], r[3],
-            function() return db()[key] end, Set(key), suffix, true)
+        page.refreshers[#page.refreshers + 1] = W.Slider(host, r[1], r[2], r[3],
+            function() return db()[key] end, function(v) M:SetFrameOption(editing, key, math.floor(v + 0.5)) end, suffix, true)
+        return host.slider
     end
+    local function Slider(text, key, suffix) return SliderIn(page:Row(text, 48), key, suffix) end
     local function Choice(text, key)
         local list = M.choices[M.choiceKeys[key]]
         Select(text, function() return list end, function() return db()[key] end, Set(key))
@@ -56,13 +61,13 @@ function M:CreateConfigPage(parent)
 
     -- Frames: visibility, matching, status and whole-frame tools.
     page:Section("Frames", nil, false)
+    -- One line per frame: show it, and hide Blizzard's own beside it.
     local cells = {}
     for _, unit in ipairs(M.units) do
-        cells[#cells + 1] = { label = "Show " .. M.labels[unit] .. " Frame", get = function() return M.db[unit].enabled end,
+        local title = M.titles[unit]
+        cells[#cells + 1] = { label = "Show " .. title, get = function() return M.db[unit].enabled end,
             set = function(v) M:SetFrameOption(unit, "enabled", v) end }
-    end
-    for _, unit in ipairs(M.units) do
-        cells[#cells + 1] = { label = "Hide Blizzard " .. M.labels[unit] .. " Frame", get = function() return M.db[unit].hideBlizzard end,
+        cells[#cells + 1] = { label = "Hide Blizzard " .. title, get = function() return M.db[unit].hideBlizzard end,
             set = function(v) M:SetFrameOption(unit, "hideBlizzard", v) end }
     end
     cells[#cells + 1] = { label = "Target Matches Player", get = function() return M.db.target.matchPlayer end,
@@ -72,27 +77,33 @@ function M:CreateConfigPage(parent)
     page.unitFrameStatus = status
     page.refreshers[#page.refreshers + 1] = function() status:SetText(M:Status()) end
     page:Group("Style Tools")
+    -- Player and Target copy their style to each other; the smaller frames
+    -- copy the Player's.
     for _, unit in ipairs(M.units) do
-        local label = M.labels[unit]
-        local other = unit == "player" and "target" or "player"
-        local row = page:Row(label .. " Frame Tools", 48)
-        local reset = W.Button(row, "Reset " .. label .. " Frame", 190, 28); reset:SetPoint("LEFT")
+        local title, name = M.titles[unit], M.frameNames[unit]
+        local from, to, text = unit, unit == "player" and "target" or "player", nil
+        if unit == "player" or unit == "target" then text = "Copy Style to " .. M.labels[to]
+        else from, to, text = "player", unit, "Copy Player Style" end
+        local row = page:Row(title .. " Tools", 48)
+        local reset = W.Button(row, "Reset " .. title, 190, 28); reset:SetPoint("LEFT")
         reset:SetScript("OnClick", function() M:ResetFrame(unit) end)
-        local copy = W.Button(row, "Copy Style to " .. M.labels[other], 190, 28); copy:SetPoint("LEFT", 198, 0)
-        copy:SetScript("OnClick", function() M:CopyStyle(unit, other) end)
-        page["unitFrameReset" .. label], page["unitFrameCopy" .. label] = reset, copy
+        local copy = W.Button(row, text, 190, 28); copy:SetPoint("LEFT", 198, 0)
+        copy:SetScript("OnClick", function() M:CopyStyle(from, to) end)
+        page["unitFrameReset" .. name], page["unitFrameCopy" .. name] = reset, copy
     end
 
-    -- Every element tab starts with the Editing switch; a matched or hidden
-    -- Target explains itself instead of showing controls that would not apply.
+    -- Every element tab starts with the Editing choice (one of the five
+    -- frames); a matched or hidden frame explains itself instead of showing
+    -- controls that would not apply.
+    local frameChoices = {}
+    for _, unit in ipairs(M.units) do frameChoices[#frameChoices + 1] = { id = unit, label = M.labels[unit] } end
+    function page.SetEditing(unit) if M.labels[unit] then editing = unit; page:Refresh(); page:Layout() end end
+    page.unitFrameEditSelects = {}
     local function Tab(title, build)
         page:Section(title, nil, false)
-        local buttons, refresh = W.Exclusive(page:Row("Editing", 48, { "player", "target", "frame" }),
-            { { label = "Player", value = "player", width = 110 }, { label = "Target", value = "target", width = 110 } },
-            Unit, function(value) editing = value; page:Refresh(); page:Layout() end)
-        page.refreshers[#page.refreshers + 1] = refresh
-        page.unitFrameEditButtons = page.unitFrameEditButtons or {}
-        page.unitFrameEditButtons[#page.unitFrameEditButtons + 1] = buttons
+        local row = page:Row("Editing", 48, { "player", "target", "focus", "frame" })
+        page.unitFrameEditSelects[#page.unitFrameEditSelects + 1] = SelectIn(row, 260, function() return frameChoices end,
+            Unit, page.SetEditing)
         When(function() return editing == "target" and db().enabled end, function()
             Toggles({ { "Match Player Frame", "matchPlayer" } })
         end)
@@ -109,6 +120,17 @@ function M:CreateConfigPage(parent)
     Tab("Layout", function()
         page:Group("Size")
         Slider("Scale", "scale", "%"); Slider("Bar Width", "barWidth")
+        -- Both bars: the fill (foreground) and the empty bar (background).
+        page:Group("Bar Textures")
+        local textures = page:Columns({ "Foreground", "Background" })
+        page.unitFrameForeground = SelectIn(textures[1], 200, function() return addon.Kit.BarTextureChoices(true) end,
+            function() return db().foregroundTexture end, Set("foregroundTexture"))
+        page.unitFrameBackground = SelectIn(textures[2], 200, function() return addon.Kit.BarTextureChoices(false) end,
+            function() return db().backgroundTexture end, Set("backgroundTexture"))
+        page:Group("Bar Opacity")
+        local fade = page:Columns({ "Foreground Opacity", "Background Opacity" })
+        page.unitFrameForegroundOpacity = SliderIn(fade[1], "barForegroundOpacity", "%")
+        page.unitFrameBackgroundOpacity = SliderIn(fade[2], "barBackgroundOpacity", "%")
     end)
 
     Tab("Portrait", function()
@@ -188,7 +210,7 @@ function M:CreateConfigPage(parent)
         Color("Text Color", "textColor")
     end)
 
-    local note = W.Label(page:Row("About Unit Frames", 130), "Each tab customizes one part of the frame; use Editing at the top of a tab to switch between the Player and Target. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside a pixel-perfect slate rim and black gap, with a hairline between health and power. The rim, gap, empty bar and background are fixed; health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text layout, optionally mirrored. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. Hiding a Blizzard frame only fades its main art and bars, so pet frames, combo points, target auras and cast bars keep working.", nil, 0, -4, 420, T.muted)
+    local note = W.Label(page:Row("About Unit Frames", 170), "Each tab customizes one part of the frame; use Editing at the top of a tab to pick the Player, Target, Target of Target, Focus or Target of Focus frame. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside a pixel-perfect slate rim and black gap, with a hairline between health and power. The rim and gap are fixed. Each bar has a foreground (fill) and background (empty bar) texture and opacity; the background is 25% by default, so the world shows through the empty part. Health is Onyx #1C1E21 by default, or the class color or a custom color. Names are plain Sky text by default (or Champagne, Lilac, Frost, the class color or a custom color). Every text has a crisp one-pixel shadow and a lifted shadow. Class Color Softness blends class and reaction colors toward white for a pastel look. A Target matching the Player copies its look and text layout, optionally mirrored. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. Hiding a Blizzard frame only fades its main art and bars, so pet frames, combo points, target auras and cast bars keep working; Blizzard's Target of Target and Target of Focus fade with the Target and Focus frames they sit on. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
     note:SetWordWrap(true); page:FooterNote(note)
     W.PinnedSectionTabs(page)
     page:Finish(); return page

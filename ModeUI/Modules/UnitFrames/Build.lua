@@ -10,11 +10,20 @@ local Bar, Text, Circle = Kit.Bar, Kit.Text, Kit.Circle
 -- One face for both the secure button and its Edit Mode/preview stand-in.
 -- Bar block: slate rim fill, black gap inset by the rim, then the bars. The
 -- portrait sits above the block, so its full ring is drawn over the bar's end.
+-- The bars' background can be see-through (Background Opacity), so the rim and
+-- gap are drawn in four clipped bands around the bars (Kit.Bands) rather than
+-- behind them, and the hairline between health and power is its own texture.
 function M:BuildFace(f)
-    f.panel = CreateFrame("Frame", nil, f)
-    f.panel.fill = f.panel:CreateTexture(nil, "BACKGROUND", nil, 0)
-    f.panel.border = f.panel:CreateTexture(nil, "BORDER")
-    f.health, f.power = Bar(f.panel), Bar(f.panel)
+    local panel = CreateFrame("Frame", nil, f)
+    f.panel = panel
+    panel.bands, panel.fills, panel.inners = Kit.Bands(panel), {}, {}
+    for i, band in ipairs(panel.bands) do
+        panel.fills[i] = band.layer:CreateTexture(nil, "BACKGROUND", nil, 0)
+        panel.inners[i] = band.layer:CreateTexture(nil, "BORDER")
+    end
+    panel.fill, panel.border = panel.fills[1], panel.inners[1]
+    panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)
+    f.health, f.power = Bar(panel), Bar(panel)
     local p = CreateFrame("Frame", nil, f)
     f.portrait = p
     p.ring = Circle(p, "BACKGROUND", 0)
@@ -36,7 +45,7 @@ function M:CreateDisplay()
     if self.displayCreated then return end
     self.displayCreated = true
     for _, unit in ipairs(self.units) do
-        local label = self.labels[unit]
+        local label = self.frameNames[unit]
         local b = CreateFrame("Button", "ModeUI" .. label .. "UnitFrame", UIParent, "SecureUnitButtonTemplate")
         b.unit = unit
         b:SetAttribute("unit", unit); b:SetAttribute("*type1", "target"); b:SetAttribute("*type2", "togglemenu")
@@ -56,7 +65,7 @@ end
 -- Position Manager refuses protected frames, so Edit Mode moves a plain stand-in
 -- and the secure button copies its anchor outside combat.
 function M:CreateGhost(unit)
-    local label = self.labels[unit]
+    local label = self.frameNames[unit]
     local g = CreateFrame("Frame", "ModeUI" .. label .. "UnitFramePreview", UIParent)
     g.unit, g.ghost = unit, true
     g:SetFrameStrata("HIGH")
