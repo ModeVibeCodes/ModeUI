@@ -141,3 +141,67 @@ Same source (`WoWUI-live` 12.1.5 mainline); unverified on Forever.
   for addons. It's a larger API (groups, slots, processing policies, its own
   buttons) and may not exist on Forever; it is the route to take if aura
   timers in restricted content turn out to matter.
+
+## Interface action bars — November 13, 2026
+
+Source: the user's local copy of Blizzard's interface code, `WoWUI-live`
+(build 12.1.5.70575, mainline), as for nameplates. It has no Forever/Camelot
+overrides, so this is the mainline baseline; every call that may be missing is
+guarded, and native behavior on Forever is unverified until checked in game.
+[Details](ACTION_BARS.md).
+
+- **Blizzard's buttons are reused, not recreated.** `ActionBarMixin:ActionBar_OnLoad`
+  (`Blizzard_ActionBar/Shared/ActionBar.lua`) creates the named buttons
+  (`ActionButton1-12`, `MultiBarBottomLeftButton1-12`, …, `MultiBar7Button1-12`,
+  `PetActionButton1-10`, `StanceButton1-10`) and sets `button.bar` to their bar.
+  `SecureButton_GetModifiedAttribute` (`Blizzard_FrameXML/SecureTemplates.lua`)
+  resolves `useparent-actionpage` through `frame.bar` before the parent, and
+  `ActionBarController_UpdateAll` sets `MainActionBar`'s `actionpage` for
+  vehicle, override, temporary-shapeshift and bonus bars. So a button moved to a
+  ModeUI bar still pages from Blizzard. Keybinds reach buttons by name
+  (`ActionButtonDown` → `GetActionButtonForID`, `MultiActionButtonDown` →
+  `_G[barName].actionButtons[id]`), not by parent.
+- **Protected calls.** `SetParent`, `SetPoint`, `Show` and `EnableMouse` are
+  `IsProtectedFunction` (`SimpleScriptRegion*APIDocumentation.lua`,
+  `SimpleFrameAPIDocumentation.lua`); ModeUI moves, sizes and reparents buttons and
+  bars only outside combat (`addon.Defer`). Frame `SetAlpha` is not protected and
+  is `AllowedWhenTainted`, so fading runs in combat. Blizzard's own redraws in
+  combat (`UpdateButtonArt`, `UpdateHotkeys`) only fade art there; re-placing
+  waits for the refresh after combat.
+- **Show grid.** `BaseActionButtonMixin:SetShowGrid` changes `showgrid` only when
+  `issecure()`, so addons can't force empty buttons to show. ModeUI draws its
+  own empty slots instead; Blizzard still shows every button while a spell is
+  dragged (`ACTIONBAR_SHOWGRID`).
+- **Blizzard's art.** `MainActionBar` (enableMouse, border art, end caps, page
+  arrows), `PetActionBar` and `StanceBar` move under a hidden ModeUI frame. They
+  are not managed frames (`Blizzard_ManagedFrameSystem` re-parents only frames
+  inheriting `ManagedFrameTemplate`), and Edit Mode re-parents only those, so
+  the parent holds. Multi bars have no art and no mouse (`MultiActionBars.xml`)
+  and are left alone; their empty containers are invisible. `MainMenuBar` is
+  tried as an older name. While hidden, `PetActionBar`'s OnUpdate (pet range
+  coloring) doesn't run.
+- **Show conditions.** `RegisterStateDriver(frame, state, values)` and
+  `UnregisterStateDriver` (`Blizzard_RestrictedAddOnEnvironment/SecureStateDriver.lua`,
+  loaded with the game, `AllowLoad: Game`) evaluate `SecureCmdOptionParse` and
+  set `state-<name>`; `SecureHandlerStateTemplate` runs `_onstate-<name>` in the
+  restricted environment, where a frame handle may `Show`, `Hide`, `SetAttribute`
+  and `GetAttribute` (`RestrictedFrames.lua`). Conditions used: `petbattle`,
+  `combat`, `@target,exists`, `pet`/`nopet`, `vehicleui`, `overridebar`,
+  `possessbar`. These are C-side macro conditions not listed in the generated
+  docs; custom text is checked with `SecureCmdOptionParse` under `pcall` and falls
+  back to "show".
+- **Vehicle bar.** `SecureHandlerWrapScript(OverrideActionBar, "OnShow"/"OnHide",
+  header, body)` (`SecureHandlers.lua`) needs an explicitly protected header
+  (the bar is) and runs only when `IsWrapEligible` (out of combat, or the wrapped
+  frame is protected). If the wrap is unavailable, Action Bar 1 simply stays shown.
+- **Skin.** `Texture:RemoveMaskTexture` and `SetTexCoord` (`AllowedWhenTainted`)
+  crop the icon. The highlight, pushed, checked and flash regions get a flat
+  texture. `Cooldown:GetCountdownFontString` (`FrameAPICooldownDocumentation.lua`)
+  styles the countdown numbers. `FontString:SetText` and `SetTextColor`
+  (`AllowedWhenTainted`) take the counts, including secret ones, for lifted
+  shadows. `ActionButton_UpdateRangeIndicator` tints the keybind with
+  `SetVertexColor` (`RED_FONT_COLOR` out of range); ModeUI's hook keeps its own
+  color otherwise.
+- **Hooks only.** Every hook is `hooksecurefunc` on an instance method;
+  ModeUI writes no fields to Blizzard tables. `GetNumShapeshiftForms` (used by
+  `StanceBar.lua`, not in the generated docs) sizes the stance bar.

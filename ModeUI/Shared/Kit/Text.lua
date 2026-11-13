@@ -79,8 +79,9 @@ function Kit.Font(text, style, size, path, px)
 end
 
 -- The lift covers its text's box moved 2px down-right; it needs the shadow on.
-function Kit.LayoutLift(text, style, size, path, px, shown, justify)
-    local lift = text.lift
+-- `lift` defaults to text.lift; pass it for text ModeUI doesn't own (Blizzard's).
+function Kit.LayoutLift(text, style, size, path, px, shown, justify, lift)
+    lift = lift or text.lift
     local on = shown and style.shadow and style.liftedShadow
     lift:SetShown(on)
     if not on then return end

@@ -52,6 +52,18 @@ function PM:FinishDrags()
     for _, id in ipairs(self.order) do self:StopDragging(id) end
 end
 
+-- Whether an element takes part in Edit Mode, for modules with several
+-- elements that are each switched on and off (one per action bar).
+function PM:SetEditable(id, editable)
+    local element = Lookup(self, id)
+    if not element then return false, "unknown-element" end
+    editable = editable == true
+    if element.editMode == editable then return true, "unchanged" end
+    element.editMode = editable
+    if not editable then self:StopDragging(id) end
+    return true
+end
+
 function PM:GetSelectedElement()
     local element = self.elements[self.selected]
     return element and element.editMode and element.module.enabled and element or nil
