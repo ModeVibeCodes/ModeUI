@@ -35,8 +35,8 @@ ModeUI/
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Border/                   pixel borders
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
-    Placement/                positions, Edit Mode (guides, nudging), Preview, frame anchors
-    Skin/                     re-skinning Blizzard frames (Skin, Controls, Frame): Chat and Windows
+    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors
+    Skin/                     re-skinning Blizzard frames (Skin, Controls, Extras, Frame): Chat and Windows
     Settings/                 settings window framework (window, pages, search, tabs)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker)
     Templates/                XML virtual templates, added when a module needs one
@@ -70,7 +70,7 @@ WoW's TOC can't use wildcards, so the order is explicit:
 
 1. `Libs/` files.
 2. `Shared/Runtime/Core.lua`, then the rest of `Runtime` (and `Shared/Forever/` once it exists).
-3. `Domain`, `Kit`, `Media`, `Placement`, `Border`, `Skin` (Skin, Controls, Frame), then the `Settings` framework.
+3. `Domain`, `Kit`, `Media`, `Placement`, `Border`, `Skin` (Skin, Controls, Extras, Frame), then the `Settings` framework.
 4. One `Modules\<Name>\<Name>.xml` line per module, in sidebar order.
 5. `Shared/Runtime/Boot.lua`, last.
 
@@ -278,9 +278,10 @@ post-hook (`hooksecurefunc`, `HookScript`).
 
 | File | API |
 |---|---|
-| `Skin.lua` | `Skin.colors` (the Mode skin palette), `Skin.Snap(value, px)`, `.Once(frame, key, fn)`, `.Fade(region)`, `.FadeTextures(frame, keep)`, `.Suppress(region)`/`.Release(region)` (hidden, and hidden again whenever Blizzard shows it), `.PinAlpha(frame, getter)`/`.Unpin(frame)` (ModeUI's alpha put back after each Blizzard `SetAlpha`), `.Panel(host, layer, sublevel)`, `.PaintPanel(parts, box, fill, alpha, rimColor, thickness)`, `.Font(region, path, size, outline, shadow, px)` |
-| `Controls.lua` | `Skin.Kind(frame)` → `"Button"`, `"Field"`, `"Tab"`, `"SideTab"`, `"ScrollBar"` or nil (by template keys); `.Button`, `.Field`, `.Tab`, `.SideTab`, `.Close`, `.ScrollBar`, `.Inset`, `.FadeNineSlice` |
-| `Frame.lua` | `Skin.Window(frame, style, options)` (art faded, fill, rim, title strip, close, inset, controls six levels deep), `.PaintWindow(frame, style)`, `.TitleOf(frame)`, `.CloseOf(frame)`, `.PlaceClose(frame, close)` (outside combat for protected windows) |
+| `Skin.lua` | `Skin.colors` (the Mode skin palette), `Skin.Snap(value, px)`, `.Once(frame, key, fn)`, `.Fade(region)`, `.FadeTextures(frame, keep)`, `.Suppress(region)`/`.Release(region)` (hidden, and hidden again whenever Blizzard shows it), `.PinAlpha(frame, getter)`/`.Unpin(frame)` (ModeUI's alpha put back after each Blizzard `SetAlpha`), `.Panel(host, layer, sublevel)`, `.PaintPanel(parts, box, fill, alpha, rimColor, thickness)`, `.Font(region, path, size, outline, shadow, px)`, `.Face(region, path)` (face only, size and flags kept), `.Edge(host, lift)`/`.PaintEdge(parts, thickness, color)` (a crisp square border on its own frame above the host's children) |
+| `Controls.lua` | `Skin.Kind(frame)` → `"Button"`, `"Field"`, `"Tab"`, `"SideTab"`, `"RightSideTab"`, `"Dropdown"`, `"ScrollBar"` or nil (by template keys); `.Button`, `.Field`, `.Tab`, `.SideTab`, `.GlyphButton(button, glyph)`, `.Close`, `.ScrollBar`, `.Inset` (field on the inset's parent, under the content), `.FadeNineSlice` |
+| `Extras.lua` | `Skin.Dropdown`, `.Menu(menu)`/`.MenuClosed(menu)`/`.WatchMenu(dropdown)` (a lent Mode panel under a WowStyle dropdown's open menu), `.RightSideTab`, `.MaxMinOf(frame)`/`.MaxMin(holder, close)`, `.Texts(frame, path, skip)` (every font string in the Mode face), `.IsScrollBox`/`.WatchList(box, onRow)`/`.Row(row, style, fadeRows)` |
+| `Frame.lua` | `Skin.Window(frame, style, options)` (art and decoration faded, fill, border on its own layer, title strip, window buttons, inset, list rows, window text, controls six levels deep), `.PaintWindow(frame, style)`, `.TitleOf(frame)`, `.CloseOf(frame)`, `.PlaceClose(frame, close, style)` (outside combat for protected windows) |
 
 ## Rules every module follows
 

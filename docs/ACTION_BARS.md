@@ -142,6 +142,24 @@ above it, in volt green (#CCFF00); the highlight itself carries no text.
   the other way round, so anchors never loop. A bar anchored to another moves
   with it. The secure bar itself is always pinned to the screen where its
   stand-in is, so it never hangs from another frame in combat.
+- **Anchor To** clicks: while **Anchor To...** waits for a click, every
+  stand-in (and its name handle) still takes the mouse without dragging, so the
+  click picks the bar and never reaches a button on it.
+- **Stacks stay on screen:** whenever an element moves (a preset side, a drag,
+  a nudge, a new anchor), each element anchored **Above**, **Below**, **Left** or
+  **Right** of another is checked. If its side would put it off the screen, or
+  back over the frame its parent hangs from, and the opposite side is clear, it
+  switches sides (its offset on that axis mirrored). This overrides the side it
+  had, and runs down the chain. Moving Action Bar 1 to the top edge turns bars 2,
+  3, pet and stance to stack downward under it; a side that still fits is kept.
+- **X and Y:** the selected element shows its center's X and Y from the
+  screen's center (whole UI units) left of its name, kept current while it's
+  dragged or nudged.
+- **Center Lines and Grid** (Edit Mode window): Center Lines (on by default)
+  draw a vertical and a horizontal line through the screen's center, where X
+  and Y are 0. **Grid** (off by default) adds faint lines every 32 units out
+  from the center. Both are click-through, sit behind the elements, and last
+  for the session, like Show Highlights.
 - **Alignment guides:** while you drag any ModeUI element, a cyan line shows
   when its center comes within 8 units of a guide. Guides are:
   - its X or Y offset being 0

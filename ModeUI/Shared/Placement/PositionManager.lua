@@ -241,6 +241,7 @@ function PM:SetPosition(id, position, allowUnavailable)
         end
     end
     self:NotifyPosition(id, true)
+    if self.FitAnchored then self:FitAnchored(id) end
     return true
 end
 

@@ -7,7 +7,9 @@ local PM, P, F = addon.PositionManager, addon.Positioning, addon.FrameAnchors
 -- Y at 0, and a small window then offers the other sides: a compass of
 -- Above, Below, Left, Right and Center, with the corners lining up edges
 -- (Above, left edges together...). Undo puts it back where it was.
--- While it waits for the click nothing can be dragged; Escape or a
+-- While it waits for the click nothing can be dragged, but every element
+-- (and its name handle) still takes the mouse, so the click picks it and
+-- never reaches what's under it, like a bar's buttons. Escape or a
 -- right-click cancels, and so does combat.
 local A = {}
 addon.EditAnchor = A
@@ -87,7 +89,11 @@ function A:Candidate(element)
     for _, item in ipairs(P.targets) do
         if item.id ~= "screen" and element.allowedTargets[item.id] then
             local target = P:Resolve(item.id)
-            local size = target and target ~= element.frame and Visible(target) and Under(target, cx, cy)
+            -- Another element's name handle picks it too (and first).
+            local owner = target and PM.frames[target]
+            local handle = owner and PM.elements[owner].decoration and PM.elements[owner].decoration.handle
+            local size = target and target ~= element.frame and Visible(target)
+                and (handle and Visible(handle) and Under(handle, cx, cy) and 0 or Under(target, cx, cy))
             if size and (not area or size < area) and not PM:WouldLoop(element.id, item.id) then
                 best, frame, area = item.id, target, size
             end

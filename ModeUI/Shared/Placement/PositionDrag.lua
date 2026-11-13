@@ -51,6 +51,7 @@ function PM:StopDragging(id)
         self:ApplyPosition(id, true)
     else self.pending = true; P.pending = true end
     self:NotifyPosition(id, changed)
+    if changed and self.FitAnchored then self:FitAnchored(id) end
     return true
 end
 
@@ -68,6 +69,13 @@ function PM:SetEditable(id, editable)
     element.editMode = editable
     if not editable then self:StopDragging(id) end
     return true
+end
+
+-- While Anchor To waits for a click, every shown element still takes the
+-- mouse (without dragging), so a click picks it and never reaches what's
+-- under it, like a full bar's buttons.
+function PM:Pickable(element)
+    return self.picking == true and addon.editMode and element.editMode and element.module.enabled and true or false
 end
 
 function PM:GetSelectedElement()
@@ -95,7 +103,7 @@ function PM:RefreshSelection()
     addon.EditMode.selected = self.selected -- compatibility view, not another selector
     for id, element in pairs(self.elements) do
         if not addon.editMode or not element.module.enabled then self:StopDragging(id) end
-        if element.draggable then element.frame:EnableMouse(self:CanDrag(element) == true) end
+        if element.draggable then element.frame:EnableMouse(self:CanDrag(element) == true or self:Pickable(element)) end
         local selected = id == self.selected
         local show = addon.editMode and element.editMode and element.module.enabled and addon.EditMode.highlights
         if self.UpdateEditDecoration then self:UpdateEditDecoration(element, selected, show) end
@@ -104,5 +112,6 @@ function PM:RefreshSelection()
             element.module:SetEditHighlight(selected, show)
         end
     end
+    if self.RenderGrid then self:RenderGrid() end
     self:NotifyPosition()
 end

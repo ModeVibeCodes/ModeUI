@@ -65,6 +65,10 @@ M.Textures = {
     -- top, and the close button's cross.
     ModeGlass = { file = "Mode/Glass.tga", slice = 6, rounded = true },
     ModeClose = { file = "Mode/Close.tga", transparent = true },
+    -- Window shrink and expand glyphs, and the glass tabs' diagonal glint.
+    ModeMinimize = { file = "Mode/Minimize.tga", transparent = true },
+    ModeMaximize = { file = "Mode/Maximize.tga", transparent = true },
+    ModeSheen = { file = "Mode/Sheen.tga", transparent = true },
     -- Chat compartment glyphs: the chat menu's speech bubble and Channels' "#".
     ChatMenu = { file = "Chat/Menu.tga", transparent = true },
     ChatChannels = { file = "Chat/Channels.tga", transparent = true },

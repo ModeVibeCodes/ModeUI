@@ -65,8 +65,10 @@ Shared\Media\MediaDiscovery.lua
 Shared\Placement\PreviewStates.lua
 Shared\Border\Border.lua
 Shared\Placement\PositionHighlights.lua
+Shared\Placement\PositionGrid.lua
 Shared\Skin\Skin.lua
 Shared\Skin\Controls.lua
+Shared\Skin\Extras.lua
 Shared\Skin\Frame.lua
 Shared\Settings\Theme.lua
 Shared\Settings\Widgets\Core.lua

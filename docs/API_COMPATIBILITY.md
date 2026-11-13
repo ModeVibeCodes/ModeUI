@@ -563,3 +563,74 @@ checked against the user's local mainline copy (build 12.1.5.70575).
   tainted (casting from the spellbook, using toys, the Game Menu buttons, which
   Blizzard rebuilds on every show); that `ChatAlertFrame` keeps its new anchor;
   and the World Map's look without a fill.
+
+### Chat and windows, second pass — November 13, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source and the local
+12.1.5 copy. [Chat details](CHAT.md), [Windows details](WINDOWS.md).
+
+- **Chat font.** `ChatFrameMixin:OnLoad` sets `ChatFontNormal` once; every
+  Blizzard size change reads `GetFont()` and keeps the file. A chat frame's
+  `SetFont` is `FontableFrameMixin:SetFont` (Lua), which returns nothing, so
+  `Skin.Font` only falls back on an explicit `false` (FontStrings answer true
+  or false). Each line's FontString takes the frame's font object on every
+  refresh, so the frame is the only place a face sticks.
+- **Chat scroll bar.** `ScrollBar` is a `MinimalScrollBar` (Track
+  Begin/Middle/End, Track.Thumb, Back/Forward `.Texture`).
+  `FloatingChatFrame_UpdateScroll` calls `SetShown` on every refresh and the
+  fades call `UIFrameFade` (which calls `Show`), so ModeUI pins its alpha
+  (`Skin.PinAlpha`) and re-places it after `FCF_UpdateScrollbarAnchors`
+  (post-hook). `ScrollToBottomButton.Flash` is shown by
+  `ChatFrameUtil.StartFlash`; `Skin.Suppress` hides it again.
+- **Chat tab width.** `PanelTemplates_TabResize` measures `tab.Text` in the
+  font it has. ModeUI post-hooks it and, for static docked or undocked tabs
+  only (never `WHISPER`/`BN_WHISPER`, which Blizzard gives a fixed width
+  "to avoid propagation of secret values"), measures again in the Mode face
+  with plain widget calls. It never calls `FCFDock_*` or writes `dock.isDirty`.
+- **Menus.** `DropdownButtonMixin.Event.OnMenuOpen`/`OnMenuClose` through the
+  dropdown's callback registry; `dropdown.menu` is the open menu frame. Menu
+  frames come from one pool for every menu, and while open their
+  `CreateTexture` errors, so ModeUI lends one frame of its own and takes it
+  back on close; the menu's background texture (`common-dropdown-bg`) is
+  re-made with its alpha on every `Generate`.
+- **Lists.** `ScrollUtil.AddInitializedFrameCallback(scrollBox, callback,
+  owner)` runs after Blizzard fills each row; ModeUI only sets fonts and
+  fades row textures there.
+- **Guild window.** `MemberList.InsetFrame` is raised to frame level 100,
+  over the roster rows (`CommunitiesMemberList.xml`), which is why a fill on
+  an inset now goes on its parent. Offline members are Blizzard's
+  `DISABLED_FONT_COLOR` (text color, not alpha). `PortraitOverlay` holds the
+  club avatar and tabard; `MaximizeMinimizeFrame` is a
+  `MaximizeMinimizeButtonFrameTemplate`; the right side tabs inherit
+  `RightSideTabTemplate` (an unnamed tab texture, `Icon`, a checked texture).
+- **Character window.** Forever's Camelot paper doll: slots
+  `Character<Name>Slot` (left: Head–Wrist, right: Hands–Trinket1, bottom:
+  MainHand, SecondaryHand, Ranged), each an ItemButton with `IconBorder` and
+  `BorderFrame`; `CharacterModelScene`; `PaperDollFrame`. Not protected.
+  - Stats: `UnitStat`, `UnitArmor`, `UnitAttackPower`,
+    `UnitRangedAttackPower`, `GetSpellBonusDamage`, `GetSpellBonusHealing`,
+    `GetCritChance`, `GetSpellCritChance`, `GetRangedCritChance`,
+    `GetHitModifier`, `GetSpellHitModifier`, `GetCombatRatingBonus`
+    (`CR_HIT_MELEE`, `CR_HIT_SPELL`, defined by Forever's paper doll),
+    `GetMeleeHaste`, `UnitSpellHaste`, `GetExpertise`, `GetDodgeChance`,
+    `GetParryChance`, `GetBlockChance`, `GetManaRegen` — all called by
+    Forever's own paper doll, all `SecretWhenUnitStatsRestricted`: a secret
+    value shows a dash. Main stat: `C_SpecializationInfo.GetSpecialization`
+    and the 6th return of `GetSpecializationInfo`.
+  - Quality: `GetInventoryItemQuality` and `C_Item.GetItemQualityColor`
+    (falling back to `ITEM_QUALITY_COLORS`).
+  - Enchants: no API names an enchant ID. ModeUI reads
+    `C_TooltipInfo.GetInventoryItem("player", slot)`: the line of type
+    `Enum.TooltipDataLineType.ItemEnchantmentPermanent` (15), stripped of
+    `ENCHANTED_TOOLTIP_LINE`'s "Enchanted: "; otherwise, for weapons, the
+    timed line ("Name (30 min)"), gated by Forever's
+    `C_Item.GetWeaponEnchantInfo(Enum.WeaponSlot)` `hasEnchant`.
+  - Events: `PLAYER_EQUIPMENT_CHANGED`, `UNIT_INVENTORY_CHANGED`,
+    `UNIT_STATS`, `UNIT_AURA`, `COMBAT_RATING_UPDATE`, `UNIT_ATTACK_POWER`,
+    `UNIT_RANGED_ATTACK_POWER`, `UNIT_DAMAGE`, `UNIT_SPELL_HASTE`,
+    `SPELL_POWER_CHANGED`, `WEAPON_ENCHANT_CHANGED`,
+    `PLAYER_SPECIALIZATION_CHANGED` (each registered under `pcall`).
+- **Unverified natively:** the timed tooltip line's exact text on Forever,
+  the proc-enchant table's names on Forever, whether `ColumnDisplay` and
+  list-row strips look right faded in every window, and how Window Text
+  reads in long windows (Achievements, Collections).

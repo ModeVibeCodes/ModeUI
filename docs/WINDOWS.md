@@ -9,17 +9,23 @@ Design canvas: https://claude.ai/artifact/E9m1Krqr6LXYaJJvjAUAPL (Windows artboa
 
 ## What it does
 
-ModeUI restyles Blizzard's windows in place. It never moves, sizes, shows or
-hides a window, so Blizzard keeps opening, closing and placing them. Blizzard's
-art is faded (alpha only); ModeUI's textures go on top.
+ModeUI restyles Blizzard's windows in place. It never moves, shows or hides a
+window (a window's own Scale aside), so Blizzard keeps opening, closing and
+placing them. Blizzard's art is faded (alpha only); ModeUI's textures go on
+top. **Window Style** swaps every window between ModeUI (the default) and
+Blizzard's own look; each window can also be kept Blizzard's on its own.
 
 | Part | Look |
 |---|---|
-| Frame | NineSlice pieces (one by one, so the Settings panel's title survives), parchment (`Bg`), `TopTileStreaks`, portrait, glow and the older corner and edge textures are faded. A fill (#0B0B0D at Background Opacity, 94%) inside a one-pixel rim (#25282C). |
-| Title | A 22 px strip (#121316) over a one-pixel divider (#1E2024). Portrait-window titles are centered on the strip, clear of the close button; the title is Expressway 13 in #F2F2F2. Header and dialog titles (Game Menu, Settings) keep their place. |
-| Close | An 18 px field with a thin cross, 3 px inside the top-right corner; the rim and cross turn cyan on hover. |
-| Insets | A darker field (#0E0F11) on a #1E2024 rim. |
-| Tabs | A 24 px field across each tab; the selected tab is the lighter segment (#22262B) with a 2 px cyan bar on its window side. Follows `PanelTemplates_SelectTab`/`DeselectTab` and TabSystem's `SetTabSelected`. Side tabs (Character, Collections, ...) get a field with a cyan rim when checked. |
+| Frame | NineSlice pieces (one by one, so the Settings panel's title survives), parchment (`Bg`), `TopTileStreaks`, portrait (`PortraitContainer`, and the Guild window's `PortraitOverlay`), glow and the older corner and edge textures are faded. A fill (#0B0B0D at Background Opacity, 94%) to the window's edge, and a crisp square border, Border Size thick (2 px, the unit frames' rim color #40454C), on its own frame above everything the window stacks (NineSlice at 500, buttons at 510). |
+| Title | A 22 px strip (#121316) over a one-pixel divider (#1E2024), inside the border. Portrait-window titles are centered on the strip, clear of the window buttons; the title is Expressway 13 in #F2F2F2. Header and dialog titles (Game Menu, Settings) keep their place. |
+| Window buttons | Close: an 18 px field with a thin cross, 2 px inside the border's top-right corner. Maximize/minimize (`MaximizeMinimizeButtonFrameTemplate`, the Guild window's): the same field with a corner arrow, just left of Close. Rims and glyphs turn cyan on hover. |
+| Window text | With **Window Text** on, every font string in the window (and in list rows Blizzard fills later) gets the Mode face at the game's own size and outline. Titles and tabs use Title Size and Tab Text Size. |
+| Decoration | Found anywhere inside a window: gold filigree (`FilligreeOverlay`, `TopFiligree`, `BottomFiligree`), inset border pieces, tiled list backgrounds (`Bg`), column header backgrounds, a scroll bar's marble `Background`. |
+| Insets | A darker field (#0E0F11) drawn on the inset's **parent**, under the content, with a thin #1E2024 rim on the inset. (The Guild roster's inset is raised over its rows at level 100; a fill on it tinted every name.) |
+| List rows | Rows in a ScrollBox get the Mode face when Blizzard fills them (`ScrollUtil.AddInitializedFrameCallback`); the Guild roster's row strips are faded so the window shows through. |
+| Tabs | A 24 px field across each tab; the selected tab is the lighter segment (#22262B) with a 2 px cyan bar on its window side. Follows `PanelTemplates_SelectTab`/`DeselectTab` and TabSystem's `SetTabSelected`. Side tabs (Character, Collections, ...) and right side tabs (the Guild window's Chat, Roster, Benefits and Info) get a field with a cyan rim when checked; the right side tabs' icons are cropped inside it. |
+| Dropdowns | `WowStyle1/2DropdownTemplate` (the Guild window's channel picker) and the legacy `UIDropDownMenuTemplate`: a field with a chevron, cyan while hovered or open. The menu a WowStyle dropdown opens gets a Mode panel under its entries (its own background faded), lent from ModeUI and taken back when it closes, since Blizzard reuses menu frames for every menu. |
 | Buttons | Fields whose rim turns cyan on hover. |
 | Fields | Edit boxes (`InputBoxTemplate`, search boxes): fields whose rim turns cyan with focus. |
 | Scroll bars | `MinimalScrollBar` and `WowTrimScrollBar`: a 4 px track (#16181B) and thumb (#4A4F56); the arrows stay clickable but invisible. |
@@ -27,57 +33,119 @@ art is faded (alpha only); ModeUI's textures go on top.
 Controls are recognised by the keys their templates give them
 (`Shared/Skin/Controls.lua`, `Skin.Kind`), six levels into each window, and
 again each time the window shows, so lists Blizzard fills later are caught.
-Text inside windows keeps the game's fonts: ModeUI never rewrites game-wide
-font objects.
 
 ## Windows
 
 Character, Spellbook and Talents, Professions, Social, Guild and Communities,
-Group Finder, Collections, Achievements, World Map (rim and strip only: the
+Group Finder, Collections, Achievements, World Map (border and strip only: the
 map draws under its border frame), Quests and Gossip, Merchant, Mail, Bank,
 Trade, Inspect, Trainer, Auction House, Dressing Room, Pet Stable, Raid,
-Macros, AddOn List, Game Menu and Game Settings. Each can be left out on the
-**Windows** tab. Windows from load-on-demand Blizzard addons are skinned when
-the addon loads (`ADDON_LOADED`).
+Macros, AddOn List, Game Menu and Game Settings. On the **Windows** tab each
+has a row: its switch (ModeUI look on or off) and a chevron that expands its
+own settings, all collapsed at first:
 
-Collections and Professions hold secure buttons. Windows like these are
-skinned (and their close button placed) only outside combat, through `Defer`;
-plain windows are skinned at once, in combat too.
+- **Scale** (50–150%, every window but the World Map), applied whichever look
+  it has; protected windows are scaled outside combat.
+- **Own Look**: its own Background Opacity, Border and Title Bar instead of
+  the Look tab's.
+
+Windows from load-on-demand Blizzard addons are skinned when the addon loads
+(`ADDON_LOADED`). Collections and Professions hold secure buttons; windows
+like these are skinned (and their buttons placed) only outside combat,
+through `Defer`; plain windows are skinned at once, in combat too.
+
+## Character window
+
+On the **Character** tab, working with either look:
+
+- **Style**: ModeUI or Blizzard for the Character window (its switch on the
+  Windows tab).
+- **Stats Display**: a small block over the character model, one line per
+  picked stat (Main Stat, Stamina, Armor, Crit, Hit and Haste by default;
+  also Strength, Agility, Intellect, Spirit, Attack Power, Ranged Attack
+  Power, Spell Power, Healing, Spell Crit, Ranged Crit, Spell Hit, Spell
+  Haste, Expertise, Dodge, Parry, Block and Mana Regen per 5 seconds while
+  casting). Main Stat is the specialization's primary stat, or the highest of
+  Strength, Agility and Intellect, and its label is cyan. **Stats Anchor**
+  (a compass of nine points on the model), **Offset X/Y** and **Nudge**
+  buttons (one pixel at a time), **Stats Text Size**, **Stats Background**.
+  Every value comes from the functions Forever's own paper doll calls; a
+  secret (stats restricted) or missing value shows a dash.
+- **Rarity Borders**: a crisp square border round each equipment slot,
+  Border Size thick, in the item's quality color from Uncommon up (lower and
+  empty slots take the window's border color). Blizzard's quality ring is
+  faded; with the ModeUI style, the gear slot frame too.
+- **Enchant Text**: beside each slot, over the model: right of the left
+  column, left of the right column, above the weapons. The enchant's name in
+  cyan; a weapon without one shows its temporary enhancement (a poison, oil
+  or stone) in green. Under it, the stat it gives: from the line itself
+  ("+15 Agility" is shortened to "+15 Agi", "(+8 Damage)" to "+8 Dmg"), or for
+  a few well-known proc enchants and poisons (Crusader, Fiery Weapon,
+  Lifestealing, Icy Chill, Unholy Weapon, Demonslaying, Instant, Deadly,
+  Crippling, Mind-numbing and Wound Poison) from a short English table.
+  There is no enchant name API: the text is the item tooltip's enchant line
+  (`C_TooltipInfo.GetInventoryItem`, the permanent enchant line type, or the
+  timed line of a temporary one).
 
 ## Settings
 
-Tabs: **Look** (Status, Frame, Text, Controls, Defaults) and **Windows** (one
-switch per window). Look changes repaint every skinned window right away.
-Turning a window, a control kind or the module off brings Blizzard's art back
-on the next reload; ModeUI asks for one.
+Tabs pinned above the scrolling cards: **Look** (Status, Window Style, Frame,
+Text, Controls, Defaults), **Windows** (a row per window) and **Character**
+(Character Window, Stats Display, Rarity Borders, Enchant Text). Changes
+repaint every skinned window right away. Turning a window, a control kind,
+Window Text or the module off, or picking Blizzard, brings Blizzard's look
+back on the next reload; ModeUI asks for one. Reset to Defaults resets the
+Look tab only.
 
-Saved under `modules.windows` (version 1): `windows` (window ID → on),
-`backgroundColor`, `backgroundOpacity`, `border`, `borderColor`, `titleBar`,
-`font`, `fontMedia`, `titleSize`, `tabSize`, `outline`, `shadow`, `tabs`,
-`buttons`, `fields`, `scrollBars`, `insets`.
+Saved under `modules.windows` (version 2): `style` (`modeui` or `blizzard`),
+`windows` (window ID → on), `looks` (window ID → `custom`,
+`backgroundOpacity`, `border`, `titleBar`, `scale`), `backgroundColor`,
+`backgroundOpacity`, `border`, `borderColor`, `borderSize`, `titleBar`,
+`font`, `fontMedia`, `titleSize`, `tabSize`, `outline`, `shadow`, `bodyFont`,
+`tabs`, `buttons`, `fields`, `dropdowns`, `scrollBars`, `insets`,
+`charStats`, `charStatsBackground`, `charStatsAnchor`, `charStatsX`,
+`charStatsY`, `charStatsSize`, `charStatList` (stat ID → on), `charBorders`,
+`charBorderSize`, `charEnchants`, `charEnchantSize`.
+
+Version 2 (November 13, 2026, per the owner): a border still at version 1's
+default color (#25282C) moves to the unit frames' rim color; everything new
+is filled in from the defaults.
 
 ## Files
 
 | File | Job |
 |---|---|
-| `Init.lua` | declaration, the window registry, defaults, ranges |
-| `Migrations.lua` | `Initialize(db)`: validation; fills in windows added later |
-| `Driver.lua` | lifecycle, load-on-demand, skinning on show, settings |
-| `Settings.lua` | the page |
+| `Init.lua` | declaration, the window registry, stats list, defaults, ranges |
+| `Migrations.lua` | `Initialize(db)`: version 1 → 2, validation; fills in windows added later |
+| `Driver.lua` | lifecycle, load-on-demand, skinning on show, style, looks, scale, settings |
+| `CharacterStats.lua` | the stats display |
+| `Character.lua` | rarity borders, enchant text, Character window events |
+| `Settings.lua` | the page: Look and Windows tabs |
+| `SettingsCharacter.lua` | the page's Character tab |
 
-The skinning itself is shared: `Shared/Skin/Frame.lua` (windows) and
-`Shared/Skin/Controls.lua` (controls). Tests: `tests/windows.lua`.
+The skinning itself is shared: `Shared/Skin/Frame.lua` (windows),
+`Shared/Skin/Controls.lua` (controls) and `Shared/Skin/Extras.lua`
+(dropdowns and menus, right side tabs, window buttons, lists, text). Tests:
+`tests/windows.lua`.
 
 ## In-game check
 
 - **Navigation:** type `/modeui`, then pick **Interface** › **Windows** in the sidebar.
-- **Action:** turn the module on with the switch in the page header, then open
-  the Social window, the Character window and Collections the way you
-  normally do, and switch tabs in each.
-- **Required state:** out of combat.
-- **Confirmation:** each window has a dark fill with a thin rim, a title strip
-  with a centered white title and a small square close button with a thin
-  cross, no portrait or gold border; tabs are dark fields and the selected one
-  is lighter with a cyan bar. Buttons light up cyan on hover. Closing and
-  reopening keeps the look. No Lua errors, and no "blocked" messages when
-  using toys or casting from the spellbook afterwards.
+- **Action:** turn the module on with the switch in the page header. Open the
+  Guild window (Guild & Communities), click the channel dropdown at its top,
+  hover the minimize button, and switch between its right-side tabs. Open the
+  Character window. Back on the settings page, open the **Windows** tab and
+  click the chevron on the Social row, then open the **Character** tab and
+  click **Up** under Nudge.
+- **Required state:** out of combat, in a guild, wearing some enchanted gear.
+- **Confirmation:** the Guild window has a dark fill with a crisp 2px border,
+  no round portrait, gold corners or blue filigree; the minimize button is a
+  small square with a thin arrow beside the close button; the dropdown is a
+  dark field with a chevron and its menu opens on a dark panel; roster names
+  are in full color (offline members in Blizzard's gray), without a gray
+  film over them; all text is Expressway. The Character window shows the
+  stats block on the model, colored borders round your gear and short enchant
+  names beside enchanted slots. Every window row starts collapsed and the
+  Social row opens to Scale and Own Look; the stats block moves up one pixel.
+  The settings tabs sit above the cards. No Lua errors, and no "blocked"
+  messages when using toys or casting from the spellbook afterwards.

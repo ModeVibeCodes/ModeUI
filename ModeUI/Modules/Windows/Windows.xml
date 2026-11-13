@@ -2,5 +2,8 @@
     <Script file="Init.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
+    <Script file="CharacterStats.lua"/>
+    <Script file="Character.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsCharacter.lua"/>
 </Ui>
