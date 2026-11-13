@@ -304,7 +304,10 @@ world.run([==[
     local element = PM.elements.actionBarsBar1
     assert(element and element.label == 'Action Bar 1' and PM.elements.actionBarsPet and PM.elements.actionBarsStance)
     assert(addon:SetEditMode(true))
-    assert(mover1:IsShown() and mover1.width == bar1.width and mover1.label.text == 'Action Bar 1' and Point(mover1.label)[1] == 'CENTER', 'named in the middle')
+    assert(mover1:IsShown() and mover1.width == bar1.width and not mover1.label, 'the box carries no name')
+    local handle = element.decoration and element.decoration.handle
+    assert(handle and Point(handle)[1] == 'BOTTOM' and Point(handle)[3] == 'TOP', 'the handle sits centered above the bar')
+    assert(element.decoration.label.text == 'Action Bar 1' and element.decoration.label.color[2] == 1, 'named in volt green')
     assert(mover1.fill.vertexColor[3] == Kit.palette.accent[3], 'highlighted')
     assert(not M.slots.bar1[1] or not ModeUIActionBar1Mover.slots[1]:IsShown(), 'the real bar shows under its highlight')
     assert(not ModeUIActionBar6Mover:IsShown() and not PM.elements.actionBarsBar6.editMode, 'hidden bars are not movable')
@@ -347,7 +350,7 @@ world.run([==[
     -- Settings page and preview: the player's own bar.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Bar,Buttons,Text,Glows,Visibility', 'five tabs')
+    assert(table.concat(sections, ',') == 'Bar,Buttons,Text,Glows,Visibility,Copy & Apply', 'six tabs')
     assert(page.buttonsSlider.high == 10, 'pet bar slider stops at ten')
     page.SetEditing('bar1')
     assert(page.buttonsSlider.high == 12)
@@ -541,9 +544,19 @@ world.run([==[
     assert(M:SetOption('bar6', 'show', false))
     page.SetEditing('bar1')
 
-    -- Apply Style: tick bars, then apply this bar's look to them.
-    assert(M:SetOption('bar1', 'borderSize', 3))
+    -- Copy & Apply, its own tab: tick bars, then apply this bar's look to them.
+    local copyTab
+    for _, section in ipairs(page.sections) do if section.title == 'Copy & Apply' then copyTab = section end end
+    assert(copyTab and page.sections[#page.sections] == copyTab, 'Copy & Apply is the last tab')
     local cells = page.applyToggles
+    for _, row in ipairs(page.rows) do
+        if row.settingsGroupTitle == 'Apply To' or row.settingsGroupTitle == 'Copy From' or row.settingsGroupTitle == 'Reset' then
+            assert(row.section == copyTab, 'copy, apply and reset sit on the Copy & Apply tab')
+        end
+        assert(row.settingsGroupTitle ~= 'Apply Style' and row.settingsGroupTitle ~= 'This Bar', 'the Bar tab no longer holds them')
+    end
+    assert(page.applySource.text == 'Action Bar 1', 'the source is the bar in Editing')
+    assert(M:SetOption('bar1', 'borderSize', 3))
     cells[3].frame.scripts.OnClick(cells[3].frame); cells[5].frame.scripts.OnClick(cells[5].frame)
     cells[1].frame.scripts.OnClick(cells[1].frame)
     assert(page.applyTargets.bar3 and page.applyTargets.bar5 and not page.applyTargets.bar1, 'the edited bar is skipped')

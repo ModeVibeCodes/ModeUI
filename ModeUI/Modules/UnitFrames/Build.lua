@@ -93,7 +93,7 @@ function M:RegisterPosition(unit)
     local shown = g:IsShown()
     g:Show()
     local ok, reason = addon.PositionManager:RegisterElement(self.elementIds[unit], g, { moduleId = self.id,
-        defaultPosition = self.defaultPositions[unit], allowedTargets = { "screen" },
+        defaultPosition = self.defaultPositions[unit], allowedTargets = { "screen" }, label = addon.L[self.titles[unit]],
         canDrag = function() return self:FrameOn(unit) end,
         onPositionChanged = function() self:SyncPosition(unit) end })
     assert(ok, "ModeUI: unit frame position registration failed: " .. tostring(reason))

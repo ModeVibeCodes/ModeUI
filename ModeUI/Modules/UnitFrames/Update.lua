@@ -84,7 +84,11 @@ function M:PaintSample(g, unit)
     g.health:SetMinMaxValues(0, 100); g.health:SetValue(75)
     local power = fdb.powerColorMode == "custom" and fdb.powerColor or P.mana
     g.power:SetMinMaxValues(0, 100); g.power:SetValue(60); g.power:SetStatusBarColor(power[1], power[2], power[3], alpha)
-    SetName(g, self.titles[unit], self:NameColor(unit, identity))
+    -- The settings sample names its frame; an Edit Mode stand-in, whose handle
+    -- already does, shows a name the way the frame would: your own on the
+    -- Player, "Name" on the others.
+    local name = g.sample and addon.L[self.titles[unit]] or unit == "player" and Domain.Name.Get("player") or addon.L["Name"]
+    SetName(g, name, self:NameColor(unit, identity))
     Write(g.levelText, "60")
     local mode = fdb.healthText
     Write(g.healthText, mode == "current" and "3,450" or mode == "both" and "3,450 · 75%" or "75%")

@@ -203,8 +203,6 @@ function M:CreateGhost(bar)
     ghost:SetFrameStrata("HIGH")
     ghost.slots = {}
     ghost.fill = ghost:CreateTexture(nil, "BACKGROUND", nil, -8)
-    ghost.label = addon.Kit.Text(ghost)
-    ghost.label:SetPoint("CENTER")
     ghost.bar = bar
     self.ghosts[bar] = ghost
     self:LayoutGhost(bar)
@@ -214,9 +212,8 @@ function M:CreateGhost(bar)
     local ok, element = addon.PositionManager:RegisterElement(id, ghost, { moduleId = self.id,
         defaultPosition = self.defaultPositions[bar], allowedTargets = self.allowedTargets[bar],
         canDrag = function() return self.active == true and self.db[bar].show end,
-        onPositionChanged = function() self:SyncAll() end })
+        label = L[self.barSpecs[bar].label], onPositionChanged = function() self:SyncAll() end })
     assert(ok, "ModeUI: action bar position registration failed: " .. tostring(element))
-    element.label = L[self.barSpecs[bar].label]
     ghost:Hide()
 end
 

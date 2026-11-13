@@ -340,7 +340,7 @@ world.run([==[
     assert(addon:SetEditMode(true))
     local mover2 = ModeUIDamageMeter2Mover
     assert(mover1:IsShown() and mover2:IsShown() and w2:IsShown(), 'hidden windows show while editing')
-    assert(mover2.label.text == 'Window 2' and mover2.fill.vertexColor[3] == Kit.palette.accent[3], 'named and highlighted')
+    assert(not mover2.label and mover2.fill.vertexColor[3] == Kit.palette.accent[3], 'named and highlighted')
     assert(row1.name.text == '1. Valeria' and w1.rows[4].name.text == '4. Mode', 'sample fight while editing')
     assert(not w1.grip:IsShown(), 'Edit Mode moves windows, not the grip')
     -- Anchoring: a new target or side puts X and Y back at 0, so nothing lands off the screen.

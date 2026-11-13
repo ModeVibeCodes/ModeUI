@@ -4,6 +4,8 @@ local Combat = addon.InCombat
 
 -- Decoration is attached to actual owned bounds, including module icon/layout bounds.
 -- Only the visible handle intercepts input; no invisible full-frame input overlay.
+-- The handle is centered above the frame and names it (its own label, else
+-- the module) in volt green; the frame itself shows only the outline.
 function PM:UpdateEditDecoration(element, selected, show)
     local active = show and element.draggable and not Combat()
     if not element.decoration and active then
@@ -18,13 +20,14 @@ function PM:UpdateEditDecoration(element, selected, show)
             edges[i]=texture
         end
         local handle=CreateFrame("Button",nil,frame)
-        handle:SetPoint("BOTTOMLEFT",frame,"TOPLEFT",0,3)
-        handle:SetSize(math.min(200,math.max(88,#(element.label or element.module.title)*6+18)),20)
+        local name=element.label or element.module.title
+        handle:SetPoint("BOTTOM",frame,"TOP",0,3)
+        handle:SetSize(math.min(200,math.max(88,#name*7+18)),20)
         handle:EnableMouse(true);handle:RegisterForClicks("LeftButtonUp");handle:RegisterForDrag("LeftButton")
         local background=handle:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();background:SetColorTexture(0.08,0.1,0.12,0.94)
         local label=handle:CreateFontString(nil,"OVERLAY","GameFontHighlight")
-        label:SetPoint("CENTER");label:SetText(element.label or element.module.title)
-        addon.Media:BindInterfaceFont(label,GameFontHighlight,10)
+        label:SetPoint("CENTER");label:SetText(name)
+        addon.Media:BindInterfaceFont(label,GameFontHighlight,11)
         handle:SetScript("OnMouseDown",function() if self:CanDrag(element) then self:SelectElement(element.id) end end)
         handle:SetScript("OnDragStart",function() self:StartDragging(element.id) end)
         handle:SetScript("OnDragStop",function() self:StopDragging(element.id) end)
@@ -34,7 +37,8 @@ function PM:UpdateEditDecoration(element, selected, show)
     if not d then return end
     local color=selected and addon.Theme.primary or addon.Theme.muted
     for _,edge in ipairs(d.edges) do edge:SetColorTexture(color[1],color[2],color[3],selected and 0.9 or 0.5) end
-    d.label:SetTextColor(color[1],color[2],color[3])
+    local volt=addon.Theme.volt
+    d.label:SetTextColor(volt[1],volt[2],volt[3])
     d.handle:EnableMouse(active and self:CanDrag(element) or false)
     local nudging=selected and active and self:CanDrag(element) or false
     for _,button in ipairs(d.nudges) do button:SetShown(nudging);button:EnableMouse(nudging) end
