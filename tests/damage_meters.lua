@@ -358,13 +358,24 @@ world.run([==[
     assert(not mover2.label and mover2.fill.vertexColor[3] == Kit.palette.accent[3], 'named and highlighted')
     assert(row1.name.text == '1. Valeria' and w1.rows[4].name.text == '4. Mode', 'sample fight while editing')
     assert(not w1.grip:IsShown(), 'Edit Mode moves windows, not the grip')
-    -- Anchoring: a new target or side puts X and Y back at 0, so nothing lands off the screen.
+    -- Anchoring: a new target keeps the side the window already sits on,
+    -- flush against it, without jumping; a new side puts X and Y back at 0.
     local E, A, id3 = addon.EditMode, addon.EditAnchor, 'damageMetersWindow3'
     assert(M:SetOption('window3', 'show', true))
+    local w1x, w1y = ModeUIDamageMeter1Mover:GetCenter()
+    local cx, cy = UIParent:GetCenter()
+    -- Window 1 sits near the screen's left edge here: Window 3, placed to its
+    -- right, goes on its Right side.
+    local beside = { target = 'screen', placement = 'center', x = w1x - cx + 400, y = w1y - cy + 10 }
     local away = { target = 'screen', placement = 'center', x = 900, y = 300 }
-    assert(PM:SetPosition(id3, away) and E:Select(id3) and E:SetTarget('damageMetersWindow1'))
+    assert(PM:SetPosition(id3, beside) and E:Select(id3) and E:SetTarget('damageMetersWindow1'))
     local p3 = PM:GetPosition(id3)
-    assert(p3.target == 'damageMetersWindow1' and p3.placement == 'above' and p3.x == 0 and p3.y == 0, 'a new target: on top of it at 0, 0')
+    assert(p3.target == 'damageMetersWindow1' and p3.placement == 'right' and p3.x == 0, 'a new target: on the side it was on, flush')
+    local _, y3 = ModeUIDamageMeter3Mover:GetCenter()
+    assert(math.abs(y3 - (w1y + 10)) < 1, 'it keeps its height beside the target: no jump')
+    -- A side that would put it off the screen flips to the other side (Left of
+    -- a window at the left edge goes Right).
+    assert(E:SetPlacement('left') and PM:GetPosition(id3).placement == 'right', 'never left off the screen')
     assert(PM:SetOffsets(id3, 30, 40) and E:SetPlacement('below'))
     p3 = PM:GetPosition(id3)
     assert(p3.placement == 'below' and p3.x == 0 and p3.y == 0, 'a new side: 0, 0 again')
@@ -380,9 +391,12 @@ world.run([==[
     A:Track(); assert(A.overlay.outline:IsShown() and A.overlay.text.text:find('to Window 2', 1, true), 'what a click would pick')
     A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'LeftButton')
     p3 = PM:GetPosition(id3)
-    assert(p3.target == 'damageMetersWindow2' and p3.placement == 'above' and p3.x == 0 and p3.y == 0, 'on top of what was clicked, at 0, 0')
+    -- Window 3 was far to the right: it goes beside what was clicked, flush,
+    -- on the side that keeps it on the screen.
+    assert(p3.target == 'damageMetersWindow2' and (p3.placement == 'left' or p3.placement == 'right') and p3.x == 0,
+        'beside what was clicked, flush')
     assert(not A:Active() and not PM.picking and A.sidesFrame:IsShown() and anchorTo.label.text == 'Anchor To...', 'then the sides window')
-    assert(A.sidesFrame.compass.TOP.selected, 'Above chosen')
+    assert(A.sidesFrame.compass[p3.placement == 'left' and 'LEFT' or 'RIGHT'].selected, 'that side chosen')
     A.sidesFrame.compass.BOTTOMLEFT.scripts.OnClick(A.sidesFrame.compass.BOTTOMLEFT)
     p3 = PM:GetPosition(id3)
     assert(p3.placement == 'below' and p3.point == 'TOPLEFT' and p3.relativePoint == 'BOTTOMLEFT' and p3.x == 0 and p3.y == 0, 'below, left edges together')
@@ -615,5 +629,37 @@ assert(not pcall(H.Load, { before = STUBS, saved = looped }), "a group loop is r
 local hiding = restored.saved()
 hiding.profiles.Default.modules.damageMeters.hideBlizzard = "yes"
 assert(not pcall(H.Load, { before = STUBS, saved = hiding }), "Hide Blizzard's Meter must be on or off")
+
+-- The owner anchored the tooltip to a meter window and both jumped to the
+-- top left corner (November 13, 2026). Anchor To now keeps the side the
+-- tooltip sits on, never moves the meter, and refuses a target whose
+-- position already hangs from the tooltip.
+H.Load({ before = STUBS }).run([==[
+    local PM, A = addon.PositionManager, addon.EditAnchor
+    addon:SetModuleEnabled('damageMeters', true)
+    addon:SetModuleEnabled('tooltip', true)
+    local meter, tip = ModeUIDamageMeter1Mover, ModeUITooltipMover
+    local mx, my = meter:GetCenter()
+    local cx, cy = UIParent:GetCenter()
+    -- The tooltip a little left of the meter, 20 units higher.
+    assert(PM:SetPosition('modeTooltip', { target = 'screen', placement = 'center', x = mx - cx - 300, y = my - cy + 20 }))
+    addon:SetEditMode(true)
+    assert(PM:SelectElement('modeTooltip') and A:Pick('modeTooltip', 'damageMetersWindow1'))
+    local p = PM:GetPosition('modeTooltip')
+    assert(p.target == 'damageMetersWindow1' and p.placement == 'left' and p.x == 0 and p.y == 20, 'left of the meter, flush, same height')
+    local nx, ny = meter:GetCenter()
+    assert(nx == mx and ny == my, 'the meter never moves')
+    local tx, ty = tip:GetCenter()
+    assert(ty == my + 20 and tx + tip:GetWidth() / 2 == mx - meter:GetWidth() / 2, 'the tooltip sits flush against its left side')
+    A:CloseSides()
+    -- A target that hangs from the tooltip (a native anchor loop) is refused.
+    assert(PM:SetPosition('modeTooltip', { target = 'screen', placement = 'center', x = 0, y = 0 }))
+    meter:ClearAllPoints(); meter:SetPoint('TOPLEFT', tip, 'BOTTOMLEFT', 0, 0)
+    local ok, reason = PM:AnchorNear('modeTooltip', 'damageMetersWindow1')
+    assert(not ok and reason == 'anchor-loop', 'never anchored into a loop')
+    assert(PM:GetPosition('modeTooltip').target == 'screen', 'left where it was')
+    PM:ApplyPosition('damageMetersWindow1', true)
+    addon:SetEditMode(false)
+]==], "anchor near")
 
 print("damage meters: all checks passed")

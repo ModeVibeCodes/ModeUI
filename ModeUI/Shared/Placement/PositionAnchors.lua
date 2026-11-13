@@ -87,6 +87,29 @@ function PM:WouldLoop(id, target)
     return true
 end
 
+-- Whether `frame`'s position hangs from `on` through its anchor points (a
+-- native anchor loop the client refuses, or resolves by dropping a frame's
+-- points). Bounded; unreadable anchors count as unsafe.
+local function DependsOn(frame, on, depth)
+    if frame == on then return true end
+    if not frame or depth > 16 or not frame.GetNumPoints then return false end
+    local ok, count = pcall(frame.GetNumPoints, frame)
+    if not ok or not addon.IsNumber(count, 0, 32) then return true end
+    for index = 1, count do
+        local got, _, relative = pcall(frame.GetPoint, frame, index)
+        if not got or not addon.IsPublic(relative) then return true end
+        if relative and DependsOn(relative, on, depth + 1) then return true end
+    end
+    return false
+end
+
+-- Whether an element's frame is on the screen (its center, at least).
+local function OnScreen(element)
+    local x, y = P:Geometry(element.frame)
+    if not x then return false end
+    return x >= 0 and y >= 0 and x <= UIParent:GetWidth() and y <= UIParent:GetHeight()
+end
+
 -- Anchoring to another element (Edit Mode's target list, Anchor To and its
 -- side choices): the element goes onto the chosen side of the target with
 -- X and Y back at 0, so it sits right there whatever its old offsets were.
@@ -103,12 +126,63 @@ function PM:AnchorTo(id, target, placement, point, relativePoint)
     if placement == nil then
         if target == position.target then return true, "unchanged" end
         if target == "screen" then return self:DetachAnchor(id) end
-        placement = "above"
+        -- A new target: the side it already sits on, without jumping.
+        return self:AnchorNear(id, target)
     end
     if target ~= "screen" and self:WouldLoop(id, target) then return false, "anchor-loop" end
+    local frame = target ~= "screen" and P:Resolve(target)
+    if frame and DependsOn(frame, element.frame, 0) then return false, "anchor-loop" end
+    local before = self:GetPosition(id)
     position.target, position.placement, position.point, position.relativePoint = target, placement, point, relativePoint
     position.x, position.y = 0, 0
-    return self:SetPosition(id, position, true)
+    local ok, reason = self:SetPosition(id, position, true)
+    -- A side that would leave it off the screen is undone.
+    if ok and target ~= "screen" and not OnScreen(element) and before then
+        self:SetPosition(id, before, true)
+        return false, "off-screen"
+    end
+    return ok, reason
+end
+
+-- Anchor To: the element goes onto the side of the target it already sits
+-- on (left of it: Left; above it: Above...), flush against that side, and
+-- keeps its offset along the side (clamped so it still faces the target).
+-- It doesn't move on the other axis, so it never jumps (owner, November 13,
+-- 2026). Refused when the target hangs from the element; undone when the
+-- result would leave it off the screen.
+function PM:AnchorNear(id, target)
+    local element = Lookup(self, id)
+    if not element then return false, "unknown-element" end
+    if Combat() then return false, "combat" end
+    if target ~= "screen" and self:WouldLoop(id, target) then return false, "anchor-loop" end
+    local frame = P:Resolve(target)
+    if not frame then return false, "target-unavailable" end
+    if DependsOn(frame, element.frame, 0) then return false, "anchor-loop" end
+    local ex, ey, ew, eh = P:Geometry(element.frame)
+    local tx, ty, tw, th = P:Geometry(frame)
+    if not ex or not tx then return self:AnchorTo(id, target, "above") end
+    local dx, dy = ex - tx, ey - ty
+    local placement, x, y
+    if math.abs(dx) / (tw + ew) >= math.abs(dy) / (th + eh) then
+        placement, x = dx < 0 and "left" or "right", 0
+        local reach = (th + eh) / 2
+        y = math.max(-reach, math.min(reach, dy))
+    else
+        placement, y = dy > 0 and "above" or "below", 0
+        local reach = (tw + ew) / 2
+        x = math.max(-reach, math.min(reach, dx))
+    end
+    local before = self:GetPosition(id)
+    local position = self:GetPosition(id)
+    position.target, position.placement, position.point, position.relativePoint = target, placement, nil, nil
+    local px = addon.Kit and addon.Kit.PixelSize(element.frame) or 1
+    position.x, position.y = math.floor(x / px + 0.5) * px, math.floor(y / px + 0.5) * px
+    local ok, reason = self:SetPosition(id, position, true)
+    if ok and not OnScreen(element) and before then
+        self:SetPosition(id, before, true)
+        return false, "off-screen"
+    end
+    return ok, reason
 end
 
 -- Match Width and Match Height in the Edit Mode window, for elements whose

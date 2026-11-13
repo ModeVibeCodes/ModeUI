@@ -3,27 +3,36 @@ local M = addon.Chat
 if not M then return end
 
 -- The button compartment: one capsule at the right end of the main window's
--- tab row, holding Blizzard's chat buttons as equal cells with one-pixel
--- dividers: Channels (cyan while a voice channel is active), Voice Deafen and
--- Voice Mute (only while voice chat shows them) and the Chat Menu. Each
--- button is Blizzard's own, moved into the compartment, so its clicks,
--- menus, tooltips and keybindings stay Blizzard's; its round art is faded and
--- a Mode glyph drawn instead. Blizzard's chat alerts (Social and Text to
--- Speech) stack just above the compartment. Buttons: Hidden hides it all.
+-- tab row, holding Blizzard's chat buttons as cells with one-pixel dividers:
+-- Friends (the online count beside its glyph), Text to Speech and Voice
+-- Deafen / Mute (only while the game shows them), Channels (cyan while a
+-- voice channel is active) and the Chat Menu. Each button is Blizzard's own,
+-- moved into the compartment, so its clicks, menus, tooltips, toasts and
+-- keybindings stay Blizzard's; its round art is hidden and a Mode glyph drawn
+-- instead (the voice and speech buttons keep their own state icons, shrunk).
+-- Friends is one of Blizzard's chat alerts: the alert column places it again
+-- whenever it updates, so ModeUI puts it back right after (post-hook). The
+-- other alerts (Battle.net toasts, voice notices) stack above the
+-- compartment. Buttons: Hidden hides it all.
 local Skin, Kit = addon.Skin, addon.Kit
 local C = Skin.colors
 local Snap = Skin.Snap
-local CELL_WIDTH = 22
--- Glyphs: ModeUI's for Channels and the menu; voice buttons keep their own
--- icons (their art shows the voice state), shrunk into the cell.
-local GLYPHS = { ChatFrameChannelButton = "ChatChannels", ChatFrameMenuButton = "ChatMenu" }
+local CELL_WIDTH, FRIENDS_WIDTH = 22, 34
+-- Glyphs: ModeUI's for Friends, Channels and the menu.
+local GLYPHS = { QuickJoinToastButton = "ChatFriends", ChatFrameChannelButton = "ChatChannels", ChatFrameMenuButton = "ChatMenu" }
+local ORDER = { "QuickJoinToastButton", "TextToSpeechButton", "ChatFrameToggleVoiceDeafenButton",
+    "ChatFrameToggleVoiceMuteButton", "ChatFrameChannelButton", "ChatFrameMenuButton" }
+-- The friends button's own art: hidden for good (its toast animations
+-- fade these in and out, so alpha alone wouldn't hold).
+local FRIENDS_ART = { "FriendsButton", "QueueButton", "FlashingLayer" }
 
 function M:CompartmentButtons()
     local list = {}
-    for _, name in ipairs({ "ChatFrameChannelButton", "ChatFrameToggleVoiceDeafenButton",
-        "ChatFrameToggleVoiceMuteButton", "ChatFrameMenuButton" }) do
+    for _, name in ipairs(ORDER) do
         local button = _G[name]
-        if button and button.GetObjectType then list[#list + 1] = { name = name, button = button } end
+        if button and button.GetObjectType then
+            list[#list + 1] = { name = name, button = button, width = name == "QuickJoinToastButton" and FRIENDS_WIDTH or CELL_WIDTH }
+        end
     end
     return list
 end
@@ -37,7 +46,7 @@ function M:BuildCompartment()
     self.compartment = box
     for _, entry in ipairs(self:CompartmentButtons()) do
         local button = entry.button
-        -- Shown or hidden by voice chat: the row closes up around it.
+        -- Shown or hidden by the game: the row closes up around it.
         if button.HookScript then
             button:HookScript("OnShow", function() if self.active then self:PaintCompartment() end end)
             button:HookScript("OnHide", function() if self.active then self:PaintCompartment() end end)
@@ -45,11 +54,17 @@ function M:BuildCompartment()
             button:HookScript("OnLeave", function() self:PaintCell(button, false) end)
         end
     end
+    -- The alert column places Friends again whenever it updates.
+    if ChatAlertFrame and ChatAlertFrame.UpdateAnchors and hooksecurefunc then
+        hooksecurefunc(ChatAlertFrame, "UpdateAnchors", function()
+            if self.active and not self.placingButtons then self:PaintCompartment() end
+        end)
+    end
     return box
 end
 
--- A cell: Blizzard's art faded (or, for voice buttons, kept as the icon),
--- a hover fill and the glyph.
+-- A cell: Blizzard's art hidden (or, for voice and speech, kept as the
+-- icon), a hover fill and the glyph.
 local function CellParts(button)
     local parts = Skin.parts[button]
     if parts and parts.hover then return parts end
@@ -72,9 +87,10 @@ function M:PaintCell(button, hovered)
     end
 end
 
-local function SkinCell(self, entry, px, size, width)
+local function SkinCell(self, entry, px, height)
     local button = entry.button
     local parts = CellParts(button)
+    local width = Snap(entry.width, px)
     parts.hover:ClearAllPoints(); parts.hover:SetAllPoints(button)
     Kit.Tint(parts.hover, C.hover, 1)
     parts.hover:Hide()
@@ -84,17 +100,31 @@ local function SkinCell(self, entry, px, size, width)
             if button[key] then Skin.Fade(button[key](button)) end
         end
         Skin.Fade(button.Icon)
+        for _, key in ipairs(FRIENDS_ART) do if button[key] then Skin.Suppress(button[key]) end end
         if not parts.glyph then
             parts.glyph = button:CreateTexture(nil, "OVERLAY")
             parts.regions[parts.glyph] = true
             addon.Media:ApplyTexture(parts.glyph, glyph)
         end
         local icon = Snap(16, px)
-        parts.glyph:ClearAllPoints(); parts.glyph:SetPoint("CENTER")
+        parts.glyph:ClearAllPoints()
+        if entry.name == "QuickJoinToastButton" then parts.glyph:SetPoint("LEFT", button, "LEFT", Snap(3, px), 0)
+        else parts.glyph:SetPoint("CENTER") end
         parts.glyph:SetSize(icon, icon)
     end
-    button:SetSize(width, size)
+    -- The friends count (and the quick join count it swaps with) beside the glyph.
+    for _, key in ipairs({ "FriendCount", "QueueCount" }) do
+        local count = button[key]
+        if count and count.SetPoint then
+            count:ClearAllPoints()
+            count:SetPoint("RIGHT", button, "RIGHT", -Snap(4, px), 0)
+            Skin.Font(count, self:FontPath(), 10, self.db.outline, true, px)
+            count:SetTextColor(C.label[1], C.label[2], C.label[3], 1)
+        end
+    end
+    button:SetSize(width, height)
     self:PaintCell(button, false)
+    return width
 end
 
 -- Lays the shown buttons out left to right with one-pixel dividers, right
@@ -107,15 +137,16 @@ function M:PaintCompartment()
     if not anchor then return end
     local box = self:BuildCompartment()
     if self.db.buttons == "hidden" then box:Hide(); return end
+    self.placingButtons = true
     local px = Kit.PixelSize(box)
-    local size, width = Snap(self.BUTTON_SIZE, px), Snap(CELL_WIDTH, px)
+    local size = Snap(self.BUTTON_SIZE, px)
     local x, shown = px, 0
     for _, divider in ipairs(box.dividers) do divider:Hide() end
     for _, entry in ipairs(self:CompartmentButtons()) do
         local button = entry.button
         if button:GetParent() ~= box then button:SetParent(box) end
         button:SetFrameStrata("MEDIUM")
-        SkinCell(self, entry, px, size - 2 * px, width)
+        local width = SkinCell(self, entry, px, size - 2 * px)
         local visible = button:IsShown()
         if addon.IsPublic(visible) and visible then
             if shown > 0 then
@@ -142,9 +173,10 @@ function M:PaintCompartment()
     box:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, px)
     Skin.PaintPanel(box.parts, box, C.field, 0.85, C.fieldRim, px)
     box:SetShown(shown > 0)
-    -- Social and Text to Speech: Blizzard's alert column, above the compartment.
+    -- The other chat alerts: Blizzard's alert column, above the compartment.
     if ChatAlertFrame and ChatAlertFrame.ClearAllPoints then
         ChatAlertFrame:ClearAllPoints()
         ChatAlertFrame:SetPoint("BOTTOMRIGHT", box, "TOPRIGHT", 0, Snap(2, px))
     end
+    self.placingButtons = false
 end

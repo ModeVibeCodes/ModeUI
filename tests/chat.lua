@@ -83,6 +83,13 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
     -- Voice chat hides its deafen button until a voice channel is active.
     CreateFrame('Button', 'ChatFrameToggleVoiceDeafenButton', UIParent):Hide()
     ChatAlertFrame = CreateFrame('Frame', 'ChatAlertFrame', UIParent)
+    -- The alert column places its alerts (Friends among them) again on updates.
+    function ChatAlertFrame:UpdateAnchors() QuickJoinToastButton:ClearAllPoints(); QuickJoinToastButton:SetPoint('BOTTOMLEFT', self, 'BOTTOMLEFT', 0, 0) end
+    -- The friends button (QuickJoinToastButton): its own art, the online count.
+    local friends = CreateFrame('Button', 'QuickJoinToastButton', UIParent)
+    for _, key in ipairs({ 'FriendsButton', 'QueueButton', 'FlashingLayer' }) do friends[key] = friends:CreateTexture(nil, 'BACKGROUND') end
+    friends.FriendCount = friends:CreateFontString(); friends.FriendCount:SetText('5')
+    friends.QueueCount = friends:CreateFontString()
     C_VoiceChat = { GetActiveChannelID = function() return voiceChannel end }
 ]==]
 
@@ -157,9 +164,17 @@ world.run([==[
     local box = ModeUIChatButtons
     assert(box and ChatFrameMenuButton:GetParent() == box and ChatFrameChannelButton:GetParent() == box)
     assert(ChatFrameMenuButton.normal.alpha == 0 and Skin.parts[ChatFrameMenuButton].glyph, 'glyph instead of Blizzard art')
-    assert(box:GetWidth() == 1 + 22 + 1 + 22 + 1 and box:GetHeight() == 20, 'two cells, a divider, a rim')
+    assert(box:GetWidth() == 1 + 34 + 1 + 22 + 1 + 22 + 1 and box:GetHeight() == 20, 'Friends, Channels and the menu, dividers, a rim')
+    -- Friends: in the compartment, first, its art hidden for good, a glyph and its count.
+    local friends = QuickJoinToastButton
+    assert(friends:GetParent() == box and Point(friends)[4] == 1, 'Friends grouped with the other buttons, first')
+    assert(not friends.FriendsButton:IsShown() and Skin.parts[friends].glyph.texture:find('Friends'), 'a Mode glyph instead of its art')
+    friends.FriendsButton:Show(); assert(not friends.FriendsButton:IsShown(), 'its toast animations can\'t bring the art back')
+    assert(Point(friends.FriendCount)[1] == 'RIGHT' and friends.FriendCount.color[1] == C.label[1], 'the online count beside the glyph')
+    ChatAlertFrame:UpdateAnchors()
+    assert(Point(friends)[2] == box, 'put back when Blizzard\'s alert column places it again')
     ChatFrameToggleVoiceDeafenButton:Show()
-    assert(box:GetWidth() == 1 + 22 + 1 + 22 + 1 + 22 + 1, 'voice button joins the row when shown')
+    assert(box:GetWidth() == 1 + 34 + 1 + 22 + 1 + 22 + 1 + 22 + 1, 'voice button joins the row when shown')
     ChatFrameToggleVoiceDeafenButton:Hide()
     assert(Point(ChatAlertFrame)[2] == box, 'Social and Text to Speech stack above the compartment')
 

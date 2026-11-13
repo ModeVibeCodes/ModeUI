@@ -211,16 +211,21 @@ Windows 2 and 3 stack above it by default, and a window can anchor to a window
 listed before it. Position Manager moves the stand-in (it drives the mouse on
 what it registers), and the window hangs from the stand-in's top-left corner.
 
-**Anchoring** (the Edit Mode window, for every module's elements): choosing a
-target under **Snap To UI Element**, a side, or **Reset Offset** puts X and Y
-back at 0, so the element sits right on that side of its target. Before, a new
-target kept the old offsets, which were measured from the old anchor: the
-owner's Window 2 went off the screen that way. Choosing Screen keeps an element
-where it is. **Anchor To...** (beside the target list) waits for a click on the
-element to hang from. What a click would pick is outlined and named at the top
-of the screen; Escape, a right-click or combat cancels, and nothing drags
-meanwhile. The element goes Above what was clicked at 0, 0, and a small window
-offers the sides: a compass of Above, Below, Left, Right and Center, its
+**Anchoring** (the Edit Mode window, for every module's elements): a new
+target (under **Snap To UI Element**, or clicked with **Anchor To...**) puts
+the element on the side of the target it already sits on (left of it: Left;
+above it: Above), flush against it, keeping its offset along that side
+(`PositionManager:AnchorNear`, owner, November 13, 2026: the tooltip anchored
+to a meter window used to go Above it at 0, 0 and jump). A side that would
+leave it off the screen flips to the other side; an anchor that would still
+leave it off the screen, or whose target already hangs from it through its
+anchor points (a loop the client refuses), is refused and the element stays
+put. A side, or **Reset Offset**, puts X and Y back at 0, so the element sits
+right on that side. Choosing Screen keeps an element where it is.
+**Anchor To...** (beside the target list) waits for a click on the element to
+hang from. What a click would pick is outlined and named at the top of the
+screen; Escape, a right-click or combat cancels, and nothing drags meanwhile.
+After the click a small window offers the sides: a compass of Above, Below, Left, Right and Center, its
 corners lining up edges (Above, left edges together...), with **Done** and
 **Undo**. Something that already hangs from the element is never offered, so
 anchors never loop (`PositionManager:WouldLoop`). Code:
@@ -466,8 +471,10 @@ concatenation or measurement, and the stub refuses secret arguments.
    - **Confirmation:**
      - While waiting, Window 1 is outlined when the mouse is over it and the
        top of the screen names it.
-     - The click puts Window 3 right on top of Window 1, and **X Position** and
-       **Y Position** read 0.
+     - The click puts Window 3 flush against the side of Window 1 it was
+       nearest (or the opposite side if that one would leave the screen),
+       without moving Window 1, and **X Position** reads 0 for Left and
+       Right (**Y Position** for Above and Below).
      - The compass moves it under Window 1 with the left edges together.
        **Undo** would have put it back.
      - Choosing Window 1 from the list also puts it on top at 0, 0, never off

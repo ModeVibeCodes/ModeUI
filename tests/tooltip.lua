@@ -58,7 +58,8 @@ local world = H.Load({ before = STUBS })
 world.run([==[
     local M, Skin, Kit = addon.Tooltip, addon.Skin, addon.Kit
     assert(M and addon.modules.tooltip == M and not M.enabled, 'registered, off by default')
-    assert(M.db.position == 'anchor' and M.db.borderSize == 2 and not M.db.hideInCombat and M.db.rounded and M.db.gradient)
+    assert(M.db.position == 'anchor' and M.db.borderSize == 1 and not M.db.hideInCombat and M.db.rounded and M.db.gradient)
+    assert(M.db.qualityBorder and not M.db.classBorder, 'quality borders on, class borders off')
     assert(M.db.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
     assert(Skin.parts[GameTooltip] == nil, 'nothing skinned while off')
 
@@ -68,7 +69,7 @@ world.run([==[
     assert(GameTooltip.NineSlice.alpha == 0 and GameTooltip.TopOverlay.alpha == 0, 'Blizzard\'s border and background faded')
     assert(parts.round.texture:find('Round') and parts.round:IsShown() and parts.round.vertexColor[4] == 0.92, 'rounded fill')
     assert(parts.round.vertexColor[1] == Kit.onyx.health[1])
-    assert(parts.ring.texture:find('Ring2') and parts.ring.vertexColor[1] == Kit.onyx.frameRim[1] and parts.edge:IsShown(), 'a 2px rounded rim above')
+    assert(parts.ring.texture:find('Ring1') and parts.ring.vertexColor[1] == Kit.onyx.frameRim[1] and parts.edge:IsShown(), 'a 1px rounded rim above')
     assert(parts.fill.vertexColor[4] == 0, 'no square fill while rounded')
     assert(parts.wash:IsShown() and parts.wash.gradient, 'Mode Gradient')
     assert(GameTooltip.clamped == true and GameTooltip.clampInsets[1] == 0, 'kept on the screen, border and all')
@@ -98,6 +99,8 @@ world.run([==[
     GameTooltip.item = 7; GameTooltip:Show()
     assert(parts.ring.vertexColor[1] == 0.64, 'Epic item: quality border')
     GameTooltip:Hide(); GameTooltip.item = nil; GameTooltip.unit = 'mouseover'; GameTooltip:Show()
+    assert(parts.ring.vertexColor[1] == Kit.onyx.frameRim[1], 'a player: the rim color while Class Border is off')
+    GameTooltip:Hide(); assert(M:SetOption('classBorder', true)); GameTooltip:Show()
     assert(parts.ring.vertexColor[1] == 0.25, 'a mage: class border')
     GameTooltip:Hide(); GameTooltip.unit = { secret = true }; GameTooltip:Show()
     assert(parts.ring.vertexColor[1] == Kit.onyx.frameRim[1], 'a secret unit keeps the rim color')
@@ -182,7 +185,10 @@ world.run([==[
     -- Version 1: a fill still at #0B0B0D takes the health color; the health bar settings go.
     local old = { version = 1, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, healthBar = true, healthHeight = 6, healthColor = { 0, 1, 0 } }
     M.Initialize(old)
-    assert(old.version == 2 and old.backgroundColor[1] == Kit.onyx.health[1] and old.healthBar == nil and old.healthColor == nil)
+    assert(old.version == 3 and old.backgroundColor[1] == Kit.onyx.health[1] and old.healthBar == nil and old.healthColor == nil)
+    assert(old.borderSize == 1 and old.classBorder == false, 'version 2 defaults: 1px, no class color')
+    local picked = { version = 2, borderSize = 3, classBorder = false }
+    M.Initialize(picked); assert(picked.borderSize == 3, 'a picked border size stays')
 ]==], "tooltip")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

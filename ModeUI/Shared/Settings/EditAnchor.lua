@@ -3,8 +3,9 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 local PM, P, F = addon.PositionManager, addon.Positioning, addon.FrameAnchors
 
 -- Edit Mode's Anchor To: click it, then click the element (or frame) the
--- selected element should hang from. It goes Above that element with X and
--- Y at 0, and a small window then offers the other sides: a compass of
+-- selected element should hang from. It goes onto the side of that element
+-- it already sits on, flush against it, without jumping (PM:AnchorNear), and
+-- a small window then offers the other sides: a compass of
 -- Above, Below, Left, Right and Center, with the corners lining up edges
 -- (Above, left edges together...). Undo puts it back where it was.
 -- While it waits for the click nothing can be dragged, but every element
@@ -194,10 +195,10 @@ function A:Stop()
     PM:RefreshSelection()
 end
 
--- Anchors the element Above the clicked target (X and Y 0), then offers the sides.
+-- Anchors the element to the side of the clicked target it sits on, then offers the sides.
 function A:Pick(id, target)
     local before = PM:GetPosition(id)
-    local ok, reason = PM:AnchorTo(id, target, "above")
+    local ok, reason = PM:AnchorNear(id, target)
     self:Stop()
     if not ok then
         print("ModeUI: that can't be anchored there (" .. tostring(reason) .. ").")
@@ -240,7 +241,7 @@ function A:OpenSides(id, target, before)
     local frame, element = self.sidesFrame, PM:Element(id)
     self.sideId, self.sideTarget, self.sideBefore = id, target, before
     frame.heading:SetText("Anchor " .. (element.label or element.module.title))
-    frame.note:SetText("To " .. self:TargetLabel(target) .. ". Pick a side; X and Y start at 0.")
+    frame.note:SetText("To " .. self:TargetLabel(target) .. ", on the side it was on. Pick another side; X and Y then start at 0.")
     frame:ClearAllPoints()
     local cx, cy = Cursor()
     if cx then frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", cx + 16, cy + 16)
