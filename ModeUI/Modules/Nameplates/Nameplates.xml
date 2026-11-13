@@ -9,6 +9,7 @@
     <Script file="Update.lua"/>
     <Script file="CastBar.lua"/>
     <Script file="Auras.lua"/>
+    <Script file="AuraContainers.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
 </Ui>
