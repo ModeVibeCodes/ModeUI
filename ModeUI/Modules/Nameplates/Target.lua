@@ -9,16 +9,18 @@ if not M then return end
 -- a secret unit comparison.
 local Kit, Domain = addon.Kit, addon.Domain
 local ONYX = Kit.onyx
-local GLOW_OUTSET = 12 -- the glow texture's solid core starts 12 texels in
+local GLOW_OUTSET = 12 -- the glow texture's hollow core starts 12 texels in
 
 function M:LayoutTarget(plate)
     local db, px = self:Style(plate), plate.px or 1
     local host = plate.nameOnly and plate.name or plate.healthBox
     local thickness = (db.targetThickness - 1) * px
-    plate.targetOutline:ClearAllPoints()
-    plate.targetOutline:SetPoint("TOPLEFT", plate.healthBox, "TOPLEFT", -thickness, thickness)
-    plate.targetOutline:SetPoint("BOTTOMRIGHT", plate.healthBox, "BOTTOMRIGHT", thickness, -thickness)
-    M.SkinRounded(plate.targetOutline, "NameplateRim", true)
+    for _, outline in ipairs(plate.targetOutlines) do
+        outline:ClearAllPoints()
+        outline:SetPoint("TOPLEFT", plate.healthBox, "TOPLEFT", -thickness, thickness)
+        outline:SetPoint("BOTTOMRIGHT", plate.healthBox, "BOTTOMRIGHT", thickness, -thickness)
+        M.SkinRounded(outline, "NameplateRim", true)
+    end
     plate.targetGlow:ClearAllPoints()
     plate.targetGlow:SetPoint("TOPLEFT", host, "TOPLEFT", -GLOW_OUTSET, GLOW_OUTSET)
     plate.targetGlow:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", GLOW_OUTSET, -GLOW_OUTSET)
@@ -59,10 +61,13 @@ function M:PaintTarget(plate, targeted)
     local glow = targeted and style == "glow"
     local arrows = targeted and (style == "arrows" or style == "borderArrows")
     local rim = (border and not plate.nameOnly) and color or ONYX.border
-    Kit.Tint(plate.healthBox.rim, rim, 1)
-    Kit.Tint(plate.castBox.rim, rim, 1)
-    plate.targetOutline:SetShown(border and not plate.nameOnly and db.targetThickness > 1)
-    Kit.Tint(plate.targetOutline, color, 1)
+    for _, texture in ipairs(plate.healthBox.rims) do Kit.Tint(texture, rim, 1) end
+    for _, texture in ipairs(plate.castBox.rims) do Kit.Tint(texture, rim, 1) end
+    local outlined = border and not plate.nameOnly and db.targetThickness > 1
+    for _, outline in ipairs(plate.targetOutlines) do
+        outline:SetShown(outlined)
+        Kit.Tint(outline, color, 1)
+    end
     plate.targetGlow:SetShown(glow and not plate.nameOnly)
     Kit.Tint(plate.targetGlow, color, 0.85)
     for _, arrow in pairs(plate.arrows) do

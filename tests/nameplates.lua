@@ -103,7 +103,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'interface' and not M.enabled, 'registered, off by default')
-    assert(M.db.version == 5 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 6 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
 
@@ -122,11 +122,41 @@ world.run([==[
     assert(type(plate.healthText.text) == 'table' and issecretvalue(plate.healthText.text.secret), 'secret percent formatted natively')
     assert(issecretvalue(plate.name.text) and issecretvalue(plate.name.lift.text), 'secret name on text and lift')
 
-    -- Colors: hostile reaction, softened; threat wins when known.
-    local hostile = Kit.Lighten(P.hostile, M.db.enemy.softness / 100)
-    assert(math.abs(plate.health.statusBarColor[1] - hostile[1]) < 1e-6, 'softened hostile color')
+    -- Colors: the true hostile reaction color; threat wins when known.
+    local hostile = P.hostile
+    assert(plate.health.statusBarColor[1] == hostile[1] and plate.health.statusBarColor[4] == 1, 'true hostile color, opaque bar')
+    assert(M.db.enemy.softness == nil and M.db.enemy.healthOpacity == 100 and M.db.enemy.backgroundOpacity == 55, 'opacity defaults')
+    assert(math.abs(plate.health.bg.vertexColor[4] - 0.55) < 1e-9, 'see-through background by default')
+    assert(M:SetOption('enemy', 'healthOpacity', 60) and math.abs(plate.health.statusBarColor[4] - 0.6) < 1e-9, 'Health Opacity fades the bar')
+    assert(plate.health.statusBarColor[1] == hostile[1], 'fading keeps the color')
+    assert(M:SetOption('enemy', 'backgroundOpacity', 20) and math.abs(plate.health.bg.vertexColor[4] - 0.2) < 1e-9, 'Background Opacity')
+    assert(not M:SetOption('enemy', 'healthOpacity', 5) and not M:SetOption('enemy', 'backgroundOpacity', 120), 'opacity ranges')
+    assert(not M:SetOption('enemy', 'softness', 30), 'Color Softness is gone')
+    assert(M:SetOption('enemy', 'healthOpacity', 100) and M:SetOption('enemy', 'backgroundOpacity', 55))
+    -- The rim and gap sit in four clipped bands around the bar, never behind it.
+    local box = plate.healthBox
+    assert(#box.bands == 4 and #box.rims == 4 and #box.gaps == 4 and #box.outlines == 4, 'four bands')
+    for i, band in ipairs(box.bands) do
+        assert(band.clipsChildren == true and box.rims[i]:GetParent() == band.layer, 'band ' .. i .. ' clips its copy')
+        assert(box.rims[i].vertexColor[4] == 1 and box.gaps[i].vertexColor[4] == 1, 'solid rim and gap')
+    end
+    assert(box.bar:GetFrameLevel() > box.bands[1]:GetFrameLevel(), 'bar above the bands')
+    assert(plate.castBox.bands == nil and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
     units.nameplate1.threat = 3; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'nameplate1')
     assert(plate.health.statusBarColor[1] == M.threatPalette.aggro[1], 'aggro is red')
+    -- Each threat status has its own color setting.
+    assert(M:SetOption('enemy', 'threatAggroColor', { 0.1, 0.9, 0.2 }) and plate.health.statusBarColor[2] == 0.9, 'custom aggro color')
+    assert(M:SetOption('enemy', 'threatLosingColor', { 0.9, 0.9, 0.1 }))
+    assert(M:SetOption('enemy', 'threatPullingColor', { 0.2, 0.3, 0.95 }))
+    units.nameplate1.threat = 2; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'nameplate1')
+    assert(plate.health.statusBarColor[3] == 0.1 and plate.health.statusBarColor[1] == 0.9, 'losing aggro color')
+    units.nameplate1.threat = 1; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'nameplate1')
+    assert(plate.health.statusBarColor[3] == 0.95, 'close to pulling color')
+    units.nameplate1.threat = 0; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'nameplate1')
+    assert(plate.health.statusBarColor[1] == hostile[1], 'no threat: reaction color')
+    assert(not M:SetOption('enemy', 'threatAggroColor', { 2, 0, 0 }), 'invalid threat color refused')
+    assert(M:SetOption('enemy', 'threatAggroColor', M.threatPalette.aggro) and M:SetOption('enemy', 'threatLosingColor', M.threatPalette.warning)
+        and M:SetOption('enemy', 'threatPullingColor', M.threatPalette.warning))
     units.nameplate1.threat = Secret('threat'); FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'nameplate1')
     assert(math.abs(plate.health.statusBarColor[1] - hostile[1]) < 1e-6, 'secret threat falls back to reaction')
 
@@ -136,9 +166,9 @@ world.run([==[
     assert(p2.kind == 'friendly' and math.abs(p2.width - 120) < 1, 'friendly plate, friendly width')
     assert(not p2.healthText:IsShown() and plate.healthText:IsShown(), 'health text per kind')
     local expected = addon.Domain.UnitColor.Class('MAGE')
-    assert(math.abs(p2.health.statusBarColor[1] - Kit.Lighten({ expected.r, expected.g, expected.b }, 0.3)[1]) < 1e-6, 'class color')
+    assert(p2.health.statusBarColor[1] == expected.r and p2.health.statusBarColor[3] == expected.b, 'true class color')
     assert(M:SetOption('friendly', 'healthColorMode', 'reactionOnly'))
-    assert(math.abs(p2.health.statusBarColor[2] - Kit.Lighten(P.green, 0.3)[2]) < 1e-6, 'reaction only: friendly green')
+    assert(p2.health.statusBarColor[2] == P.green[2], 'reaction only: friendly green')
     assert(M.db.enemy.healthColorMode == 'reaction', 'enemy settings untouched')
     assert(not M:SetOption('friendly', 'healthColorMode', 'rainbow') and not M:SetOption('neutral', 'width', 100), 'refused')
     assert(M:SetOption('enemy', 'width', 180) and math.abs(plate.width - 180) < 1 and math.abs(p2.width - 120) < 1)
@@ -386,7 +416,7 @@ world.run([==[
     assert(M:SetOption('friendly', 'display', 'name'))
     assert(not friend.healthBox:IsShown() and not friend.castBox:IsShown() and friend.name:IsShown() and not friend.healthText:IsShown(), 'name only')
     local mage = addon.Domain.UnitColor.Class('MAGE')
-    assert(math.abs(friend.name.color[1] - Kit.Lighten({ mage.r, mage.g, mage.b }, 0.3)[1]) < 1e-6, 'class-colored name')
+    assert(friend.name.color[1] == mage.r and friend.name.color[3] == mage.b, 'true class-colored name')
     assert(M:SetOption('friendly', 'display', 'plate') and friend.healthBox:IsShown())
     assert(M:SetOption('friendly', 'show', false) and not friend:IsShown() and view.captions.friendly.text:find("Blizzard", 1, true))
     assert(M:SetOption('friendly', 'show', true) and friend:IsShown())
@@ -480,7 +510,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 5 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 6 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -501,7 +531,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 5 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 6 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -516,7 +546,7 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 5 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 6 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
         assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
@@ -537,10 +567,24 @@ end
 np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 5 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.version == 6 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
     assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
     assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
 ]==], "nameplates_v4")
+
+-- Version 5: Color Softness is retired and the opacities take defaults.
+local v5 = world.saved()
+np = v5.profiles.Default.modules.nameplates
+np.version = 5
+np.enemy.softness, np.friendly.softness = 30, 0
+np.enemy.healthOpacity, np.enemy.backgroundOpacity = nil, nil
+np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
+H.Load({ before = STUBS, saved = v5 }).run([==[
+    local db = addon.Nameplates.db
+    assert(db.version == 6 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
+    assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 55 and db.friendly.backgroundOpacity == 55, 'opacity defaults')
+    assert(db.enemy.width == 180, 'other settings kept')
+]==], "nameplates_v5")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

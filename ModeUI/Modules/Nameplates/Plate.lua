@@ -8,17 +8,66 @@ if not M then return end
 -- Gradient texture. Health and cast boxes use the same rim textures, so they
 -- round alike at every size. Elements are placed in Layout.lua and the target
 -- indicator in Target.lua.
+--
+-- The health bar's background can be see-through (Background Opacity). The rim
+-- and gap are filled shapes, so the health box draws them in four clipped
+-- bands around the bar instead of behind it: nothing opaque sits under the
+-- bar's empty part, and the rim stays solid. The target outline lives in the
+-- same bands. The cast box keeps a solid background: a channel drains by
+-- covering the cast color with the track color.
 local Kit = addon.Kit
 local ONYX, FLAT = Kit.onyx, Kit.FLAT
 local Tint, Text, Bar = Kit.Tint, Kit.Text, Kit.Bar
+local BAND_ROOM = 16 -- room the bands keep outside the box, for the target outline
 
 local function Box(parent)
     local box = CreateFrame("Frame", nil, parent)
     box.rim = box:CreateTexture(nil, "BACKGROUND", nil, 0)
     box.gap = box:CreateTexture(nil, "BACKGROUND", nil, 1)
     box.rim:SetTexture(FLAT); box.gap:SetTexture(FLAT)
+    box.rims, box.gaps = { box.rim }, { box.gap }
     box.bar = Bar(box)
     return box
+end
+
+-- Top, bottom, left and right bands; each clips a full copy of the rim, gap
+-- and outline, so together they draw the box minus the bar's rectangle.
+local function BandedBox(parent)
+    local box = CreateFrame("Frame", nil, parent)
+    box.bands, box.rims, box.gaps, box.outlines = {}, {}, {}, {}
+    for i = 1, 4 do
+        local band = CreateFrame("Frame", nil, box)
+        band:SetClipsChildren(true)
+        band.layer = CreateFrame("Frame", nil, band)
+        band.layer:SetAllPoints(band)
+        local layer = band.layer
+        box.bands[i] = band
+        box.outlines[i] = layer:CreateTexture(nil, "BACKGROUND", nil, -1)
+        box.rims[i] = layer:CreateTexture(nil, "BACKGROUND", nil, 0)
+        box.gaps[i] = layer:CreateTexture(nil, "BACKGROUND", nil, 1)
+        box.rims[i]:SetTexture(FLAT); box.gaps[i]:SetTexture(FLAT)
+        box.outlines[i]:Hide()
+    end
+    box.rim, box.gap, box.outline = box.rims[1], box.gaps[1], box.outlines[1]
+    box.bar = Bar(box)
+    return box
+end
+
+local function PlaceBands(box, inset)
+    local top, bottom, left, right = box.bands[1], box.bands[2], box.bands[3], box.bands[4]
+    for _, band in ipairs(box.bands) do band:ClearAllPoints() end
+    top:SetPoint("TOPLEFT", box, "TOPLEFT", -BAND_ROOM, BAND_ROOM)
+    top:SetPoint("BOTTOMRIGHT", box, "TOPRIGHT", BAND_ROOM, -inset)
+    bottom:SetPoint("TOPLEFT", box, "BOTTOMLEFT", -BAND_ROOM, inset)
+    bottom:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", BAND_ROOM, -BAND_ROOM)
+    left:SetPoint("TOPLEFT", box, "TOPLEFT", -BAND_ROOM, -inset)
+    left:SetPoint("BOTTOMRIGHT", box, "BOTTOMLEFT", inset, inset)
+    right:SetPoint("TOPLEFT", box, "TOPRIGHT", -inset, -inset)
+    right:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", BAND_ROOM, inset)
+    -- Bands under the bar; the text and aura layers sit above both.
+    local level = box:GetFrameLevel()
+    for _, band in ipairs(box.bands) do band:SetFrameLevel(level); band.layer:SetFrameLevel(level) end
+    box.bar:SetFrameLevel(level + 1)
 end
 local function LiftedText(layer)
     local text = Text(layer)
@@ -29,13 +78,14 @@ end
 -- A plate's frames, on any parent: a game nameplate, or the settings preview.
 function M:BuildPlate(parent)
     local plate = CreateFrame("Frame", nil, parent)
-    plate.healthBox = Box(plate)
+    plate.healthBox = BandedBox(plate)
     plate.health = plate.healthBox.bar
     plate.castBox = Box(plate)
     plate.cast = plate.castBox.bar
     plate.castIcon = plate.castBox:CreateTexture(nil, "ARTWORK")
-    -- Target indicator: a thicker border under the rim, a soft glow, arrows.
-    plate.targetOutline = plate.healthBox:CreateTexture(nil, "BACKGROUND", nil, -1)
+    -- Target indicator: a thicker border under the rim (in the health box's
+    -- bands), a soft glow around it (hollow, so it never shows through), arrows.
+    plate.targetOutline, plate.targetOutlines = plate.healthBox.outline, plate.healthBox.outlines
     plate.targetGlow = plate:CreateTexture(nil, "BACKGROUND", nil, -8)
     plate.textLayer = CreateFrame("Frame", nil, plate)
     plate.textLayer:SetAllPoints()
@@ -45,7 +95,7 @@ function M:BuildPlate(parent)
     plate.auraLayer = CreateFrame("Frame", nil, plate)
     plate.auraLayer:SetAllPoints()
     plate.auraIcons, plate.auraShown, plate.auraCount = { crowdControl = {}, debuffs = {}, buffs = {} }, {}, 0
-    for _, region in ipairs({ plate.targetOutline, plate.targetGlow, plate.arrows.left, plate.arrows.right }) do region:Hide() end
+    for _, region in ipairs({ plate.targetGlow, plate.arrows.left, plate.arrows.right }) do region:Hide() end
     plate.castBox:Hide()
     plate:Hide()
     return plate
@@ -75,21 +125,27 @@ function M.SkinRounded(texture, key, rounded)
 end
 local Skin = M.SkinRounded
 
--- Lays out one box and returns its full height.
-function M.LayoutBox(box, width, barHeight, px)
+-- Lays out one box and returns its full height. `background` is the track's
+-- opacity (0-1); only a banded box can show the world through it.
+function M.LayoutBox(box, width, barHeight, px, background)
     local inset = 2 * px
     local height = barHeight + 2 * inset
     box:SetSize(width, height)
     local rounded = height >= ROUNDED_MINIMUM and width >= ROUNDED_MINIMUM
-    box.rim:ClearAllPoints(); box.rim:SetAllPoints(box)
-    Skin(box.rim, "NameplateRim", rounded); Tint(box.rim, ONYX.border, 1)
-    Kit.Inset(box.gap, box, px)
-    Skin(box.gap, "NameplateGap", rounded); Tint(box.gap, ONYX.inner, 1)
+    for _, rim in ipairs(box.rims) do
+        rim:ClearAllPoints(); rim:SetAllPoints(box)
+        Skin(rim, "NameplateRim", rounded); Tint(rim, ONYX.border, 1)
+    end
+    for _, gap in ipairs(box.gaps) do
+        Kit.Inset(gap, box, px)
+        Skin(gap, "NameplateGap", rounded); Tint(gap, ONYX.inner, 1)
+    end
+    if box.bands then PlaceBands(box, inset) end
     local bar = box.bar
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)
     bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -inset, inset)
     Kit.ModeGradient(bar, barHeight, px)
-    bar.bg:SetTexture(FLAT); Tint(bar.bg, ONYX.track, 1)
+    bar.bg:SetTexture(FLAT); Tint(bar.bg, ONYX.track, box.bands and background or 1)
     return height
 end

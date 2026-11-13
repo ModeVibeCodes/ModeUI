@@ -22,7 +22,10 @@ addon:RegisterModule("nameplates", M)
 -- with its own anchor, offset, size and count.
 -- Version 5: placement for every element, Name Only display, target styles,
 -- the aura skin (shape, border colors by type) and aura grow directions.
-M.VERSION = 5
+-- Version 6: Color Softness is gone (colors are used as they are); Health
+-- Opacity and Background Opacity fade the bar and its background; each
+-- threat status has its own color.
+M.VERSION = 6
 M.kinds = { "enemy", "friendly" }
 M.kindLabels = { enemy = "Enemy", friendly = "Friendly" }
 M.auraGroups = { "crowdControl", "debuffs", "buffs" }
@@ -30,8 +33,11 @@ M.auraGroupLabels = { crowdControl = "Crowd Control", debuffs = "Debuffs", buffs
 local P, RGB = Kit.palette, Kit.RGB
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
--- Enemies attacking you (red) and close to it (orange).
+-- Default threat colors: the enemy is attacking you (red), or you're losing
+-- it or close to pulling it (orange).
 M.threatPalette = { aggro = RGB(255, 72, 72), warning = RGB(255, 160, 64) }
+-- The setting holding each threat status's color (UnitThreatSituation 1-3).
+M.threatColorKeys = { [3] = "threatAggroColor", [2] = "threatLosingColor", [1] = "threatPullingColor" }
 
 -- The way icons line up from their anchor when a group doesn't say otherwise.
 M.defaultGrow = { TOPLEFT = "right", TOP = "center", TOPRIGHT = "left", LEFT = "left", RIGHT = "right",
@@ -51,7 +57,11 @@ local function Style(kind)
     return {
         show = true, display = "plate",
         width = enemy and 140 or 120, healthHeight = enemy and 12 or 8, castHeight = 8,
-        healthColorMode = "reaction", softness = 30, healthColor = Copy(P.green), threatColors = enemy,
+        healthColorMode = "reaction", healthColor = Copy(P.green), threatColors = enemy,
+        -- Colors are used as they are; the bar and its background each fade.
+        healthOpacity = 100, backgroundOpacity = 55,
+        threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
+        threatPullingColor = Copy(M.threatPalette.warning),
         healthText = enemy and "percent" or "none", healthFontSize = 9,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
         showName = true, nameFontSize = 10, nameColorMode = "text", nameAnchor = "TOP", nameX = 0, nameY = 0,
@@ -75,13 +85,14 @@ M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
 M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly) }
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
-M.colorKeys = { healthColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
+M.colorKeys = { healthColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
     auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true }
 -- Aura border colors by the game's dispel type name.
 M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Disease = "auraDiseaseColor",
     Poison = "auraPoisonColor", Enrage = "auraEnrageColor" }
 
-M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 }, softness = { 0, 100, 5 },
+M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 },
+    healthOpacity = { 10, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },
     castX = { -50, 50, 1 }, castY = { -50, 50, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
@@ -190,6 +201,13 @@ local function MigrateV4(db)
     end
 end
 
+-- Version 5 -> 6: Color Softness is retired; the opacities take defaults.
+local function MigrateV5(db)
+    for _, kind in ipairs(M.kinds) do
+        if type(db[kind]) == "table" then db[kind].softness = nil end
+    end
+end
+
 local function ValidateGroup(value, default, label)
     assert(Public(value) and type(value) == "table", "Invalid nameplate aura group: " .. label)
     for key, fallback in pairs(default) do
@@ -232,6 +250,7 @@ function M.Initialize(db)
     if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
+    if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

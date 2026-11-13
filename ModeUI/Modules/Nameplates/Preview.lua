@@ -113,10 +113,8 @@ end
 function M:PaintSample(plate, style, sample, progress)
     plate.health:SetMinMaxValues(0, 100); plate.health:SetValue(sample.health)
     local class = sample.class and UnitColor.Class(sample.class)
-    local color = self:ColorFor(style, class, sample.reaction, nil)
-    plate.health:SetStatusBarColor(color[1], color[2], color[3])
-    local identity = class and { class.r, class.g, class.b } or self.reactionColors[sample.reaction]
-    plate.sampleNameColor = style.softness > 0 and Kit.Lighten(identity, style.softness / 100) or identity
+    self:PaintHealthColor(plate, self:ColorFor(style, class, sample.reaction, nil))
+    plate.sampleNameColor = class and { class.r, class.g, class.b } or self.reactionColors[sample.reaction]
     Kit.Write(plate.name, L[sample.name])
     Kit.Write(plate.healthText, HealthText(style.healthText, sample.health))
     if style.showRaidIcon and sample.raid then RaidIcon.ApplyIndex(plate.raidIcon, sample.raid) else plate.raidIcon:Hide() end

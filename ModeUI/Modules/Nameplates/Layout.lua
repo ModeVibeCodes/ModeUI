@@ -18,7 +18,7 @@ function M:LayoutPlate(plate)
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local nameOnly = db.display == "name"
     local width, gap = Snap(db.width), 2 * px
-    local healthHeight = M.LayoutBox(plate.healthBox, width, Snap(db.healthHeight), px)
+    local healthHeight = M.LayoutBox(plate.healthBox, width, Snap(db.healthHeight), px, db.backgroundOpacity / 100)
     local castHeight = M.LayoutBox(plate.castBox, width, Snap(db.castHeight), px)
     plate.castBarHeight, plate.px, plate.nameOnly = castHeight, px, nameOnly
     plate:SetSize(width, healthHeight)

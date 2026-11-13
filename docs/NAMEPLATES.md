@@ -16,9 +16,20 @@ frame and fades Blizzard's art. Each plate has:
   alike at every size. Insets are whole physical pixels; boxes under 8 units stay square.
 - **Name** and **health text** (Percent, Current Health, Current and Percent, None).
   All text uses the suite's lifted shadow and Expressway by default.
-- **Health color**: Reaction and Class, Reaction, Onyx or Custom, softened toward
-  white by Color Softness. **Threat Colors** (enemies, on by default): red when
-  the enemy is attacking you, orange when you're close to pulling it.
+- **Health color**: Reaction and Class, Reaction, Onyx or Custom, used exactly
+  as they are (true colors). **Threat Colors** (enemies, on by default) gives
+  each threat status its own color: **Has Aggro** (the enemy is attacking you;
+  red), **Losing Aggro** (it's attacking you, but someone else is about to take
+  it; orange) and **Close to Pulling** (it's attacking someone else and you're
+  about to take it; orange). With no threat, or while the game hides threat, the
+  plate keeps its health color.
+- **Health Opacity** (100% by default) fades the health fill without changing
+  its color. **Background Opacity** (55% by default) fades only the empty part of
+  the health bar, so the world shows through it; the rim, the fill and the text
+  stay solid. To make that possible the health box draws its rim and gap in four
+  clipped bands around the bar rather than as filled shapes behind it, and the
+  target glow texture is hollow. The cast bar keeps a solid background: a
+  channel drains by covering the cast color with the track color.
 - **Cast bar** with icon and spell name: amber when interruptible, gray when not;
   channels drain from right to left.
 - **Auras** in three groups, the **raid marker**, and a **target indicator**.
@@ -107,10 +118,11 @@ frames, never secure, so they also work in combat. Settings change outside comba
 
 ## Settings versions
 
-Version 5. Version 1 (one shared set) copies into both kinds; version 2 drops the
+Version 6. Version 1 (one shared set) copies into both kinds; version 2 drops the
 retired texture choice; version 3's single aura row becomes the three groups;
 version 4's target highlight switch becomes a target style, and each aura group
-grows the way its anchor did. New settings take their defaults.
+grows the way its anchor did; version 5's Color Softness is removed. New
+settings take their defaults.
 
 ## Files
 
@@ -144,6 +156,8 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`;
 - **Action:**
   - Turn the module on. Switch **Editing** between **Enemy** and **Friendly** and
     watch the preview change.
+  - On the **Nameplates** tab, in **Health**, move **Health Opacity** and
+    **Background Opacity**.
   - Set Friendly **Style** to **Name Only**.
   - Move the name, health text, cast bar and raid marker with their anchors.
   - On **Auras**, pick each **Group** and set **Anchor** and **Grow**.
@@ -154,6 +168,10 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`;
 - **Required state:** out of combat to change settings; enemy nameplates shown.
 - **Confirmation:**
   - The preview matches the plates in the world.
+  - Hostile plates are the plain hostile red, not pink. With Background Opacity
+    low, the world shows through the empty part of the bar while the rim, the
+    health color and the text stay solid; the target border and glow don't tint
+    the empty part.
   - Friendly Name Only shows class-colored names.
   - Every element sits where its anchor says.
   - Auras are cropped with rims colored by type.

@@ -5,7 +5,7 @@
 --   Mode/Flat.tga        ModeFlat: soft rounded fill for settings elements (radius 4, sliced at 5)
 --   Nameplates/Rim.tga   plate and aura rims (radius 3, sliced at 4)
 --   Nameplates/Gap.tga   the black gap inside a rim (radius 2, sliced at 3)
---   Nameplates/Glow.tga  soft target glow around a plate (sliced at 12)
+--   Nameplates/Glow.tga  soft target glow around a plate, hollow inside (sliced at 12)
 --   Nameplates/Arrow.tga target arrow pointing right (mirrored for the left)
 local SAMPLES = 8
 local ROOT = "ModeUI/Media/Textures/"
@@ -20,10 +20,13 @@ local function RoundedRect(size, radius)
     end
 end
 
--- A rounded core with a soft falloff around it: alpha fades from 1 at the
--- core's edge to 0 over `blur` pixels (smoothstep).
+-- A soft falloff around a hollow core: alpha fades from 1 at the rounded
+-- core's edge to 0 over `blur` pixels (smoothstep). The core's whole square is
+-- empty (exactly the sliced center), so the glow never shows through a
+-- see-through plate background.
 local function Glow(size, inset, radius, blur)
     return function(x, y)
+        if x >= inset and x <= size - inset and y >= inset and y <= size - inset then return 0 end
         local low, high = inset + radius, size - inset - radius
         local cx, cy = math.max(low, math.min(high, x)), math.max(low, math.min(high, y))
         local distance = math.sqrt((x - cx) ^ 2 + (y - cy) ^ 2) - radius

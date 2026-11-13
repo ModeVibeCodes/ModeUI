@@ -78,6 +78,12 @@ behavior on Forever is unverified until checked in game.
   `SetReverseFill(true)` with the track color filling over the cast color.
   The name goes to `FontString:SetText` and the icon to `Texture:SetTexture`,
   both `AllowedWhenTainted`.
+- **Opacity.** Health Opacity is the alpha argument of
+  `StatusBar:SetStatusBarColor(r, g, b, a)`; Background Opacity is the track's
+  vertex alpha. Both values are public settings. The health box's rim and gap are
+  drawn in four bands with `Frame:SetClipsChildren(true)`
+  (`SimpleFrameAPIDocumentation.lua`; `AllowedWhenUntainted`, which a plain
+  boolean always satisfies) so that nothing opaque sits behind the bar.
 - **Not used.** `SetShown` and `SetTimerDuration` reject secret arguments from
   addon code (`AllowedWhenUntainted`). Blizzard notes that tainted callers must
   use `SetAlphaFromBoolean` instead (`Blizzard_UnitFrame/Shared/UnitFrameUtil.lua`).
