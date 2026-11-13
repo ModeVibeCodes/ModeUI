@@ -176,9 +176,15 @@ function M:CreateConfigPage(parent)
 
     Tab("Text", function()
         local _, refresh = W.FontDropdown(page:Row("Font", 42), owner); page.refreshers[#page.refreshers + 1] = refresh
-        Toggles({ { "Text Outline", "outline" }, { "Text Shadow", "shadow" } })
-        -- A second, lighter shadow under every text's crisp one; needs Text Shadow.
-        When(function() return db().shadow end, function() Toggles({ { "Lifted Shadow", "liftedShadow" } }) end)
+        Toggles({ { "Text Outline", "outline" } })
+        -- One choice for both shadows: None, Crisp (1px) or Lifted (1px plus a lighter one under it).
+        local choices = {}
+        for _, choice in ipairs(addon.Kit.SHADOW_CHOICES) do choices[#choices + 1] = { label = choice.label, value = choice.id, width = 96 } end
+        local _, refresh = W.Exclusive(page:Row("Text Shadow", 48), choices, function() return addon.Kit.ShadowMode(db()) end, function(mode)
+            local shadow, lifted = addon.Kit.ShadowKeys(mode)
+            M:SetFrameOption(editing, "shadow", shadow); M:SetFrameOption(editing, "liftedShadow", lifted)
+        end)
+        page.refreshers[#page.refreshers + 1] = refresh
         Color("Text Color", "textColor")
     end)
 

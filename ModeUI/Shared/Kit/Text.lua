@@ -8,6 +8,16 @@ local Kit = addon.Kit
 -- textColor ({ r, g, b }).
 Kit.LIFT_PIXELS, Kit.LIFT_ALPHA = 2, 0.45
 
+-- One Text Shadow choice for the two saved keys: None (no shadow), Crisp (the
+-- 1px shadow) or Lifted (the 1px shadow plus the lifted shadow).
+Kit.SHADOW_CHOICES = { { id = "none", label = "None" }, { id = "crisp", label = "Crisp" }, { id = "lifted", label = "Lifted" } }
+function Kit.ShadowMode(style)
+    if not style.shadow then return "none" end
+    return style.liftedShadow and "lifted" or "crisp"
+end
+-- The shadow and liftedShadow values for a choice.
+function Kit.ShadowKeys(mode) return mode ~= "none", mode == "lifted" end
+
 -- A single-line font string. Give it a `lift` (another Kit.Text on the
 -- ARTWORK layer) to use Write, Formatted and LayoutLift.
 function Kit.Text(layer, drawLayer)

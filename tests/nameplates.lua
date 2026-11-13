@@ -264,6 +264,11 @@ world.run([==[
     assert(plate.castBox.rim.texture == rim and plate.castBox.gap.texture == gapTexture, 'cast box rounded like the health box')
     assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and Kit.onyx.border[1] < 0.2, 'near-black rim')
     assert(not M:SetOption('enemy', 'texture', 'flat'), 'the old texture key is gone')
+    -- One Text Shadow choice drives both shadow keys.
+    assert(Kit.ShadowMode({ shadow = true, liftedShadow = true }) == 'lifted' and Kit.ShadowMode({ shadow = true }) == 'crisp'
+        and Kit.ShadowMode({ shadow = false, liftedShadow = true }) == 'none', 'shadow modes')
+    local s1, l1 = Kit.ShadowKeys('crisp'); local s2, l2 = Kit.ShadowKeys('none')
+    assert(s1 == true and l1 == false and s2 == false and l2 == false, 'shadow keys')
     -- Slug text: one font object per face, size and outline from the XML template.
     assert(M.db.enemy.slug == true, 'slug text on by default')
     assert(Kit.SlugFont('Fonts/Test.ttf', 10, '') == nil, 'no template, no slug font')
