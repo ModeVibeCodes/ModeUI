@@ -5,6 +5,30 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Fill direction, cast bar clearance, steady preview
+
+November 13, 2026, after the first look in game, per the owner:
+
+- **Fill direction** (`fillDirection`: standard, Left to Right / reverse,
+  Right to Left; Layout tab). The Target defaults to Right to Left, the other
+  way from the Player. It's an identity key, like the portrait side, so a
+  Target matching the Player keeps its own, and it shows on the Layout tab
+  even while matched.
+- **Cast bars stop short of the portrait.** The box's portrait end sits where
+  the ring's circle crosses the box's edge nearest the portrait's centre, plus
+  2px, rounded out to whole pixels; the bar starts one rim and gap in. A box
+  far enough away to clear the circle starts under the portrait's centre, and
+  without a portrait it spans the bar block.
+- **Steady preview.** The preview has one fixed size (`M.PREVIEW_WIDTH`,
+  `M.PREVIEW_HEIGHT`) and centres the sample frame on it, so moving or
+  resizing parts no longer resizes the preview or moves the sample.
+- **The open tab picks the sample** for parts only one frame has: on the
+  Combo Points tab the preview shows the Target whatever Editing says
+  (`M.previewSectionUnits`).
+- **Tab slider.** Settings pages whose tabs don't fit get a thin scroll slider
+  under the tab strip (Shared/Settings/SectionTabs.lua), shown only while they
+  overflow; dragging it or the mouse wheel scrolls the tabs.
+
 ## Settings preview
 
 November 13, 2026, per the owner: the Unit Frames page has a live preview like

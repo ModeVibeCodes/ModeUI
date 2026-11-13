@@ -112,8 +112,10 @@ function M:ApplyLayout(f, unit)
     line:SetShown(fdb.showPower)
     -- Foreground (Mode Gradient by default) over the background track, which
     -- shows the world through it at Background Opacity.
+    local reverse = fdb.fillDirection == "reverse"
     for _, bar in ipairs({ h, pw }) do
         bar:SetFrameLevel(level + 1)
+        if bar.SetReverseFill then bar:SetReverseFill(reverse) end
         Kit.BarForeground(bar, fdb.foregroundTexture, bar == h and g.healthHeight or g.powerHeight, g.px)
         Kit.BarBackground(bar, fdb.backgroundTexture); Tint(bar.bg, ONYX.track, fdb.barBackgroundOpacity / 100)
     end

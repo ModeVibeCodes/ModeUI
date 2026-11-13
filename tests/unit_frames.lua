@@ -66,15 +66,17 @@ world.run([====[
     assert(M:SetFrameOption('player','showPortrait',false) and Point(cb.points[1])[1]=='TOPLEFT' and Point(cb.points[1])[2]==t.power)
     assert(M:SetFrameOption('player','showPortrait',true) and Point(cb.points[1])[2]==t.portrait)
 
-    -- Cast bars: a block in the frame's own skin under the bar block, as wide as
-    -- it, its bar starting exactly where the health bar does.
+    -- Cast bars: a block in the frame's own skin under the bar block, its far end
+    -- lined up with the block's; the portrait end stops 2px short of the ring's
+    -- circle (radius 35, crossing the box's top 26px under the centre: 23.4 + 2, rounded out).
     local pc,tex=p.castBox,function(key) return (addon.Media:GetTexture(key)) end
     assert(pc and not pc:IsShown() and PlayerCastingBarFrame:GetAlpha()==0 and TargetFrameSpellBar:GetAlpha()==0 and FocusFrameSpellBar:GetAlpha()==0)
     local cp1,cp2=Point(pc),Point(pc,2)
-    assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT')
+    assert(cp1[1]=='TOPLEFT' and cp1[2]==p.panel and cp1[3]=='BOTTOMLEFT' and cp1[4]==26 and cp1[5]==-3 and cp2[1]=='TOPRIGHT' and cp2[3]=='BOTTOMRIGHT' and cp2[4]==0)
+    assert(pc.clear==26,'clear of the portrait')
     assert(pc.height==14+8 and pc.rim.texture==tex('UnitFrameFrame') and pc.gap.texture==tex('UnitFrameFrameInner'),'rim and gap like the frame')
     local cb1,cb2=Point(pc.bar),Point(pc.bar,2)
-    assert(cb1[1]=='TOPLEFT' and cb1[4]==60-35 and cb1[5]==-4,'bar starts where the health bar does')
+    assert(cb1[1]=='TOPLEFT' and cb1[4]==4 and cb1[5]==-4,'bar one rim and gap in from the box')
     assert(cb2[1]=='BOTTOMRIGHT' and cb2[4]==-(4+14+1) and cb2[5]==4,'the icon takes the far end, a hairline apart')
     local ic=Point(pc.icon);assert(ic[1]=='RIGHT' and ic[4]==-4 and pc.icon.width==14 and pc.icon.height==14)
     assert(pc:GetFrameLevel()<p.portrait:GetFrameLevel(),'the portrait ring caps it')
@@ -88,11 +90,14 @@ world.run([====[
     FireEvent('UNIT_SPELLCAST_CHANNEL_START','target');local tcb=t.castBox
     assert(tcb:IsShown() and tcb.bar.reverseFill==true and tcb.text.text.label=='ctext' and tcb.bar.low.label=='s')
     units.target.channel=nil;FireEvent('UNIT_SPELLCAST_CHANNEL_STOP','target');assert(not tcb:IsShown())
-    assert(Point(tcb.bar)[1]=='TOPRIGHT' and Point(tcb.bar)[4]==-25 and Point(tcb.icon)[1]=='LEFT','mirrored on the Target')
+    assert(Point(tcb.bar)[1]=='TOPRIGHT' and Point(tcb.bar)[4]==-4 and Point(tcb)[4]==-26 and Point(tcb.icon)[1]=='LEFT','mirrored on the Target')
     -- Settings: position, icon side, Blizzard's bar; validated; per frame even while matched.
     assert(M:SetCastOption('player','position','above') and Point(pc)[1]=='BOTTOMLEFT' and Point(pc)[3]=='TOPLEFT' and Point(pc)[5]==3)
-    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==25 and Point(pc.bar)[4]==25+14+1)
+    assert(M:SetCastOption('player','icon','near') and Point(pc.icon)[1]=='LEFT' and Point(pc.icon)[4]==4 and Point(pc.bar)[4]==4+14+1)
     assert(M:SetCastOption('player','icon','none') and not pc.icon:IsShown() and Point(pc.bar,2)[4]==-4)
+    assert(M:SetCastOption('player','gap',40) and Point(pc)[4]==0,'far enough down, it can start under the portrait centre')
+    assert(M:SetCastOption('player','gap',3) and M:SetFrameOption('player','showPortrait',false) and Point(pc)[4]==0 and Point(pc.bar)[4]==4)
+    assert(M:SetFrameOption('player','showPortrait',true))
     assert(M:SetCastOption('player','hideBlizzard',false) and PlayerCastingBarFrame:GetAlpha()==1)
     assert(not M:SetCastOption('player','height',99) and not M:SetCastOption('player','icon','top') and not M:SetCastOption('player','bogus',1))
     assert(M:FrameDB('target').castBar==M.db.target.castBar and M.db.target.matchPlayer,'a matched Target keeps its own cast bar')
@@ -211,6 +216,12 @@ world.run([====[
     local hl=p.panel.hairline;assert(hl:IsShown() and hl.vertexColor[1]==O.inner[1] and hl.vertexColor[4]==1 and Point(hl)[2]==p.health and Point(hl,2)[2]==p.power,'solid hairline')
     local mhp=Point(p.health);assert(mhp[1]=='TOPLEFT' and mhp[4]==60 and mhp[5]==-16 and p.health.height==27)
     local mht=Point(t.health);assert(mht[1]=='TOPRIGHT' and mht[4]==-60,'target mirrored: portrait on the right')
+    -- Fill direction: the Target fills and drains the other way from the Player, even while matched.
+    assert(M.db.player.fillDirection=='standard' and M.db.target.fillDirection=='reverse' and M.identityKeys.fillDirection)
+    assert(p.health.reverseFill==false and p.power.reverseFill==false and t.health.reverseFill==true and t.power.reverseFill==true)
+    assert(M:SetFrameOption('player','fillDirection','reverse') and p.health.reverseFill==true and t.health.reverseFill==true,'own setting, not copied from the Player')
+    assert(M:SetFrameOption('target','fillDirection','standard') and t.health.reverseFill==false and not M:SetFrameOption('target','fillDirection','up'))
+    assert(M:SetFrameOption('player','fillDirection','standard') and M:SetFrameOption('target','fillDirection','reverse'))
     assert(Point(p.power)[5]==-1 and p.power.height==10,'1px hairline between health and power')
     local cap=Point(p.portrait);assert(cap[1]=='TOPLEFT' and cap[4]==0 and cap[5]==0 and p.portrait.width==70)
     assert(Point(t.portrait)[1]=='TOPRIGHT')
@@ -614,8 +625,20 @@ restored.run([====[
     assert(face and face:IsShown() and face:GetParent()==view.frame and not (view.faces.player and view.faces.player:IsShown()))
     assert(face.auraShown.buffs==M.AURA_SAMPLE and face.castBox:IsShown() and face.combo:IsShown(),'buffs, cast bar and combo points')
     assert(face.nameText:GetText()=='Target Frame' and face.health.value==75)
-    local at=Point(face);assert(at[1]=='TOPLEFT' and at[2]==view.frame and at[3]=='TOP' and at[4]==math.floor(at[4]),'centred on whole pixels')
+    local at=Point(face);assert(at[1]=='TOPLEFT' and at[2]==view.frame and at[3]=='TOPLEFT' and at[4]==math.floor(at[4]) and at[5]==math.floor(at[5]),'centred on whole pixels')
+    assert(math.abs(at[4]+face.geometry.width/2-view.frame:GetWidth()/2)<=1,'the frame centre on the preview centre')
     assert(M:SetAuraOption('target','buffs','enabled',false) and face.auraShown.buffs==0 and M:SetAuraOption('target','buffs','enabled',true),'follows the settings')
+    -- One fixed size and spot: moving or resizing parts never moves the sample.
+    local w0,h0=M:GetPreviewSize(view)
+    assert(M:SetAuraOption('target','buffs','size',36) and M:SetCastOption('target','height',30) and M:SetAuraOption('target','buffs','perRow',1))
+    local w1,h1=M:GetPreviewSize(view);local moved=Point(face)
+    assert(w0==w1 and h0==h1 and moved[4]==at[4] and moved[5]==at[5],'no jumping around')
+    assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))
+    -- The Combo Points tab shows the Target whatever Editing says.
+    page.SetEditing('player');page:SelectSectionTab(page.sections[9]);assert(page.selectedSection.title=='Combo Points')
+    assert(M:PreviewUnit()=='target' and view.faces.target:IsShown() and not view.faces.player:IsShown(),'combo points: the Target')
+    page:SelectSectionTab(page.sections[2]);assert(M:PreviewUnit()=='player' and view.faces.player:IsShown())
+    page.SetEditing('target')
     face.castBox.scripts.OnMouseUp(face.castBox,'LeftButton');assert(page.selectedSection.title=='Cast Bar')
     face.auraIcons.buffs[1].scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Auras' and page.unitFrameAuraGroup()=='buffs')
     face.health.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Health')
@@ -623,7 +646,15 @@ restored.run([====[
     face.portrait.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Portrait')
     page.SetEditing('targettarget');local small=view.faces.targettarget
     assert(small:IsShown() and not face:IsShown() and small.scale==0.75 and not small.portrait:IsShown() and not small.castBox:IsShown())
-    local w,h=M:GetPreviewSize(view);assert(w>=320 and h>0)
+    local w,h=M:GetPreviewSize(view);assert(w==M.PREVIEW_WIDTH and h==M.PREVIEW_HEIGHT)
+    -- More tabs than fit: a thin slider under them shows the overflow and drags it.
+    local strip=page.sectionTabs
+    assert(strip.slider and not strip.slider:IsShown() and strip.maximum==0,'no slider while every tab fits')
+    local top=strip:GetHeight();strip.viewport.width=300;strip:Layout()
+    assert(strip.maximum>0 and strip.slider:IsShown() and strip:GetHeight()==top+8,'shown with room below the tabs')
+    strip.slider:SetValue(60);assert(strip.viewport:GetHorizontalScroll()==60,'dragging scrolls the tabs')
+    strip:Scroll(10);assert(strip.slider:GetValue()==10,'the wheel moves the slider')
+    strip.viewport.width=nil;strip:Layout();assert(not strip.slider:IsShown() and strip:GetHeight()==top)
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
@@ -636,6 +667,7 @@ restored.run([====[
     page.SetEditing('target');assert(page.unitFrameEditing()=='target' and page.unitFrameEditSelects[2].label:GetText()=='Target','switch to the Target')
     assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')
+    assert(Visible(Row('Layout','Fill Direction')),'a matched Target still picks its fill direction')
     assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Layout','Scale')))
     assert(M:SetFrameOption('target','barWidth',220) and M.db.player.barWidth==180)
     assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))

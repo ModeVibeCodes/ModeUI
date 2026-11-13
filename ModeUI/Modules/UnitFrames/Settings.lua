@@ -62,6 +62,8 @@ function M:CreateConfigPage(parent)
     -- The live sample of the frame being edited (Preview.lua); clicking a part
     -- of it reveals the row marked here for that part.
     page.configPreview = W.Preview(page, M, { contentHeight = 170 })
+    -- A tab about one frame's part (Combo Points) switches the sample to that frame.
+    function page:OnSectionTabChanged() if self.configPreview then self.configPreview:Refresh() end end
     page.jumpTargets = {}
     local function Mark(target) local row = page.rows[#page.rows]; page.jumpTargets[target] = { section = row.section, row = row } end
 
@@ -107,11 +109,14 @@ function M:CreateConfigPage(parent)
     page.unitFrameEditSelects = {}
     -- `own`: the tab edits settings every frame keeps for itself (cast bar,
     -- auras), so a matched Target edits them too.
-    local function Tab(title, build, own)
+    -- `always`: the frame's own placement settings, shown under the Editing
+    -- choice even on a matched Target (like Match Player Frame itself).
+    local function Tab(title, build, own, always)
         page:Section(title, nil, false)
         local row = page:Row("Editing", 48, { "player", "target", "focus", "frame" })
         page.unitFrameEditSelects[#page.unitFrameEditSelects + 1] = SelectIn(row, 260, function() return frameChoices end,
             Unit, page.SetEditing)
+        if always then When(function() return db().enabled end, always) end
         if not own then
             When(function() return editing == "target" and db().enabled end, function()
                 Toggles({ { "Match Player Frame", "matchPlayer" } })
@@ -161,6 +166,9 @@ function M:CreateConfigPage(parent)
         local fade = page:Columns({ "Foreground Opacity", "Background Opacity" })
         page.unitFrameForegroundOpacity = SliderIn(fade[1], "barForegroundOpacity", "%")
         page.unitFrameBackgroundOpacity = SliderIn(fade[2], "barBackgroundOpacity", "%")
+    end, false, function()
+        -- Each frame's own, so the Target can drain the other way while matched.
+        Choice("Fill Direction", "fillDirection")
     end)
 
     Tab("Portrait", function()
