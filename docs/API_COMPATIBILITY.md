@@ -739,6 +739,31 @@ Checked against the `forever` branch of Gethe/wow-ui-source and the local
   them by `Background`, `Arrow` and DropdownButtonMixin's methods. The Guild
   chat edit box's middle piece is `Mid`.
 
+### Tooltip, second pass — November 13, 2026
+
+- **Screen.** `SetClampedToScreen(true)` and `SetClampRectInsets(0, 0, 0, 0)`
+  on each skinned tooltip (plain widget calls; GameTooltip isn't protected).
+  ModeUI's border is inside the tooltip, so clamping keeps it on the screen.
+- **Size.** `SetMinimumWidth` and `SetPadding(right, bottom, left, top)`,
+  reset by Blizzard's style calls, so set in the post-call and on show.
+- **Text colors.** `FontString:SetTextColor` takes plain colors; a line's
+  `GetText` is only compared when `issecretvalue` says it's public, and the
+  level number is recolored with `SetText` on that public text only.
+  `UnitIsPlayer`, `UnitReaction(unit, "player")`, `UnitIsTapDenied` and
+  `UnitLevel` (no secret returns) are called only with a public token from
+  `tooltip:GetUnit()`; `UnitClass` likewise (it's
+  `SecretWhenUnitIdentityRestricted`: a secret class leaves Blizzard's
+  colors). Level colors come from `GetCreatureDifficultyColor` /
+  `GetQuestDifficultyColor` when present. Quest lines come from the post-call's
+  tooltip data line types (`QuestTitle` 17, `QuestObjective` 8,
+  `QuestPlayer` 18), matched to the shown line by position or public text.
+- **Edit Mode.** `PositionManager:RegisterElement(..., { anyTarget = true })`
+  allows every target registered so far (the game's frames and ModeUI's
+  bars and meter windows) plus picked frames.
+- **Unverified natively:** the line Blizzard puts the class name on for
+  every player, `GetCreatureDifficultyColor` on Forever, and padding and
+  minimum width surviving every tooltip refresh.
+
 ## Game menu button and addon compartment — November 13, 2026
 
 Checked against the `forever` branch of Gethe/wow-ui-source (Forever loads

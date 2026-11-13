@@ -36,6 +36,9 @@
 --   Mode/Maximize.tga    ModeMaximize: an arrow out to the top-right corner (expand a window)
 --   Mode/Sheen.tga       ModeSheen: 64x16, a soft diagonal band of light, brighter at the top,
 --                        laid over glass tabs (ADD) for a glassy glint
+--   Mode/Round.tga       ModeRound: a rounded box (radius 5, sliced at 6), the fill under a ring
+--   Mode/Ring1-4.tga     ModeRing1..4: its hollow rim, 1 to 4 px thick (sliced at 6), so a
+--                        see-through fill never takes the rim's color
 local SAMPLES = 8
 local ROOT = "ModeUI/Media/Textures/"
 
@@ -46,6 +49,20 @@ local function RoundedRect(width, height, radius)
         local cy = math.max(radius, math.min(height - radius, y))
         local dx, dy = x - cx, y - cy
         return dx * dx + dy * dy <= radius * radius and 1 or 0
+    end
+end
+
+-- A rounded box's rim, `thickness` px wide: inside the outer rounded box and
+-- outside the inner one (inset by the thickness, its radius smaller by it).
+local function Ring(size, radius, thickness)
+    local outer = RoundedRect(size, size, radius)
+    local innerRadius = math.max(0, radius - thickness)
+    local inner = RoundedRect(size - 2 * thickness, size - 2 * thickness, innerRadius)
+    return function(x, y)
+        if outer(x, y) == 0 then return 0 end
+        local ix, iy = x - thickness, y - thickness
+        if ix >= 0 and iy >= 0 and ix <= size - 2 * thickness and iy <= size - 2 * thickness and inner(ix, iy) == 1 then return 0 end
+        return 1
     end
 end
 
@@ -251,6 +268,11 @@ local TEXTURES = {
     { "DamageMeters/Lock.tga", 16, 16, Padlock(false), true },
     { "DamageMeters/Unlock.tga", 16, 16, Padlock(true), true },
     { "DamageMeters/Grip.tga", 16, 16, Grip(), true },
+    { "Mode/Round.tga", 16, 16, RoundedRect(16, 16, 5), true },
+    { "Mode/Ring1.tga", 16, 16, Ring(16, 5, 1), true },
+    { "Mode/Ring2.tga", 16, 16, Ring(16, 5, 2), true },
+    { "Mode/Ring3.tga", 16, 16, Ring(16, 5, 3), true },
+    { "Mode/Ring4.tga", 16, 16, Ring(16, 5, 4), true },
     { "Mode/Minimize.tga", 16, 16, Strokes({ { 11.5, 4.5, 5, 11 }, { 4.5, 6.5, 4.5, 11.5 }, { 4.5, 11.5, 9.5, 11.5 } }, 1.4), true },
     { "Mode/Maximize.tga", 16, 16, Strokes({ { 4.5, 11.5, 11, 5 }, { 6.5, 4.5, 11.5, 4.5 }, { 11.5, 4.5, 11.5, 9.5 } }, 1.4), true },
     { "Mode/Sheen.tga", 64, 16, function(x, y)

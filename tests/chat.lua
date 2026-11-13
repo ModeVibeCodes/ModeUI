@@ -91,7 +91,7 @@ world.run([==[
     local M, Skin, Kit, C = addon.Chat, addon.Skin, addon.Kit, addon.Skin.colors
     assert(M and addon.modules.chat == M and not M.enabled, 'registered, off by default')
     assert(M.db.fontMedia == 'Expressway' and M.db.idleOpacity == 40 and M.db.buttons == 'compartment')
-    assert(M.db.backgroundColor[1] == Kit.onyx.slate[1] and M.db.backgroundOpacity == 60 and M.db.borderSize == 2, 'Mode Slate, 60%, 2px')
+    assert(M.db.backgroundColor[1] == Kit.onyx.health[1] and M.db.backgroundOpacity == 60 and M.db.borderSize == 2, 'health color, 60%, 2px')
     assert(M.db.tabHeight == 24 and M.db.editPosition == 'bottom' and M.db.scrollBar)
     assert(ChatFrame1Background:IsShown() and Skin.parts[ChatFrame1] == nil, 'nothing changes while off')
 
@@ -100,7 +100,7 @@ world.run([==[
     assert(not ChatFrame1Background:IsShown() and not ChatFrame2TopTexture:IsShown())
     ChatFrame1TopTexture:Show(); assert(not ChatFrame1TopTexture:IsShown(), 'Blizzard showing its art is undone')
     local panel = Skin.parts[ChatFrame1]
-    assert(panel and panel.fill and panel.fill.vertexColor[4] == 0.6 and panel.fill.vertexColor[1] == Kit.onyx.slate[1], 'Mode Slate fill')
+    assert(panel and panel.fill and panel.fill.vertexColor[4] == 0.6 and panel.fill.vertexColor[1] == Kit.onyx.health[1], 'the health color fill')
     assert(panel.edge:IsShown() and panel.edgeRim[1].vertexColor[1] == Kit.onyx.frameRim[1], 'the unit frames\' border, on its own layer')
     assert(Point(panel.edge)[2] == ChatFrame1Background, 'border on the box')
     local p = Point(ChatFrame1Background)
@@ -244,10 +244,12 @@ world.run([==[
     local old = { version = 1, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 72,
         borderColor = { Kit.onyx.border[1], Kit.onyx.border[2], Kit.onyx.border[3] }, scrollBar = false, idleOpacity = 30 }
     M.Initialize(old)
-    assert(old.version == 2 and old.backgroundColor[1] == Kit.onyx.slate[1] and old.backgroundOpacity == 60 and old.scrollBar)
+    assert(old.version == 3 and old.backgroundColor[1] == Kit.onyx.health[1] and old.backgroundOpacity == 60 and old.scrollBar)
     assert(old.borderColor[1] == Kit.onyx.frameRim[1] and old.idleOpacity == 30 and old.tabHeight == 24)
     local picked = { version = 1, backgroundColor = { 1, 0, 0 }, backgroundOpacity = 80 }
     M.Initialize(picked); assert(picked.backgroundColor[1] == 1 and picked.backgroundOpacity == 80, 'picked values stay')
+    local two = { version = 2, backgroundColor = { Kit.onyx.slate[1], Kit.onyx.slate[2], Kit.onyx.slate[3] } }
+    M.Initialize(two); assert(two.version == 3 and two.backgroundColor[1] == Kit.onyx.health[1], 'version 2 Mode Slate follows')
 ]==], "chat")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

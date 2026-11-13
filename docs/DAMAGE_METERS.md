@@ -145,7 +145,7 @@ the pixel grid. From the outside in:
 | Part | Default | Setting |
 |---|---|---|
 | Rim | 1px, Rounded, #101010 | Frame › Border, Border Size (screen pixels), Border Color |
-| Background | #040404 at 75% | Frame › Background Color, Background Opacity |
+| Background | the Unit Frames' default health color (Onyx #1C1E21) at 75% (#040404 until settings version 5, which moves a background still at it) | Frame › Background Color, Background Opacity |
 | Header | 20px Onyx bar: Mode Gradient in the Unit Frames health color (#1C1E21) | Header › Texture, Height, Header Color, Header Opacity |
 | Title | 11, uppercase, Mode cyan, outlined | Text › Title; Header › Uppercase Title |
 | Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |

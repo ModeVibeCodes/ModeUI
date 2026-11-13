@@ -73,9 +73,11 @@ function PM:RegisterElement(id, frame, options)
     local defaults = options.defaultPosition or { target = "screen", placement = "center", x = 0, y = 0 }
     local valid, reason = self:ValidatePosition(defaults)
     if not valid then return false, reason end
-    local allowed = { selected = options.allowedTargets == nil }
+    local allowed = { selected = options.allowedTargets == nil or options.anyTarget == true } -- anyTarget: every target known now, and picked frames
     if options.allowedTargets ~= nil and type(options.allowedTargets) ~= "table" then return false, "invalid-targets" end
-    for _, target in ipairs(options.allowedTargets or { "screen", "player", "target", "focus", "minimap", "party" }) do
+    local list = options.anyTarget and {} or options.allowedTargets or { "screen", "player", "target", "focus", "minimap", "party" }
+    if options.anyTarget then for _, t in ipairs(P.targets) do if t.id ~= id then list[#list + 1] = t.id end end end
+    for _, target in ipairs(list) do
         if not Known(P.targets, target) then return false, "invalid-targets" end
         allowed[target] = true
     end

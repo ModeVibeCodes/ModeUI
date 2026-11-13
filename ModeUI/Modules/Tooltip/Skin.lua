@@ -5,97 +5,113 @@ if not M then return end
 -- One tooltip in the Mode look:
 --   Frame   Blizzard's NineSlice (border and background) faded: its style
 --           function re-applies atlases and colors, never alpha, so it stays
---           gone. Azerite/corrupted overlays faded. A fill (Background Color
---           at Background Opacity) and a crisp square border, Border Size
---           thick, on its own frame above the lines.
+--           gone. Azerite/corrupted overlays faded. Rounded (default): a
+--           rounded box (ModeRound) in Background Color at Background
+--           Opacity, and over it a hollow rounded rim Border Size thick
+--           (ModeRing1-4), so the see-through fill never takes the rim's
+--           color; the rim sits on its own frame above the lines. Square: a
+--           flat fill and a crisp square border. Mode Gradient lays a soft
+--           white wash over the top of the fill, as on every Mode bar.
 --   Border  the item's quality color (Quality Border), a player's class
---           color (Class Border), else Border Color. Unit names and tokens
---           can be secret: a secret unit simply keeps Border Color.
+--           color (Class Border), else Border Color (Colors.lua).
 --   Text    every line in the Mode face, the first at Header Size, the rest
---           at Text Size. Lines can hold secret text; only their font is set,
---           nothing is read or measured.
---   Health  Blizzard's bar under unit tooltips (its value is secret and
---           Blizzard's own): flat, Health Color, a soft sheen, a dark track
---           and the border, Health Height tall, hanging under the tooltip.
+--           at Text Size. Lines can hold secret text; only their font and
+--           color are set.
+--   Size    Minimum Width and Padding (Blizzard resets both as it restyles a
+--           tooltip, so they're set again each time it fills).
+--   Screen  kept on the screen, border and all (the border is inside it).
+--   Health  Blizzard's bar under unit tooltips is hidden for good.
 local Kit, Skin = addon.Kit, addon.Skin
-local Public, Number = addon.IsPublic, addon.IsNumber
 local MAX_LINES = 60
 
--- fn(...) under pcall, all its returns kept (nils between them too; Lua 5.1).
-local function Pack(...) return { n = select("#", ...), ... } end
-local function Call(fn, ...)
-    if type(fn) ~= "function" then return nil end
-    local results = Pack(pcall(fn, ...))
-    if not results[1] then return nil end
-    return unpack(results, 2, results.n)
+-- The tooltip's pieces: a fill and wash on the tooltip, the rim on a frame above.
+local function Parts(tooltip)
+    local parts = Skin.parts[tooltip]
+    if parts and parts.round then return parts end
+    parts = Skin.Panel(tooltip, "BACKGROUND", -8)
+    parts.round = tooltip:CreateTexture(nil, "BACKGROUND", nil, -8)
+    parts.wash = tooltip:CreateTexture(nil, "BACKGROUND", nil, -6)
+    parts.wash:SetTexture(Kit.FLAT)
+    parts.regions[parts.round], parts.regions[parts.wash] = true, true
+    Skin.Edge(tooltip, 2)
+    parts.ring = parts.edge:CreateTexture(nil, "OVERLAY", nil, 7)
+    return parts
 end
 
 function M:Skin(tooltip)
     if not tooltip or (tooltip.IsForbidden and tooltip:IsForbidden()) then return end
     if tooltip.NineSlice then tooltip.NineSlice:SetAlpha(0) end
     Skin.Fade(tooltip.TopOverlay); Skin.Fade(tooltip.BottomOverlay)
-    local parts = Skin.Panel(tooltip, "BACKGROUND", -8)
-    Skin.Edge(tooltip, 2)
+    local parts = Parts(tooltip)
     parts.px = Kit.PixelSize(tooltip)
+    if tooltip.SetClampedToScreen then
+        tooltip:SetClampedToScreen(true)
+        if tooltip.SetClampRectInsets then tooltip:SetClampRectInsets(0, 0, 0, 0) end
+    end
     self:Paint(tooltip)
-    self:SkinHealth(tooltip)
+    if tooltip.StatusBar then Skin.Suppress(tooltip.StatusBar) end
 end
 
--- Fill, border (with the color for what it shows) and scale.
+-- Fill, wash, rim (with the color for what it shows) and scale.
 function M:Paint(tooltip, borderColor)
     local parts = Skin.parts[tooltip]
-    if not parts or not parts.fill then return end
+    if not parts or not parts.round then return end
     local db, px = self.db, parts.px or 1
-    Skin.PaintPanel(parts, tooltip, db.backgroundColor, db.backgroundOpacity / 100, db.borderColor, 0)
-    Skin.PaintEdge(parts, db.border and Skin.Snap(db.borderSize, px) or 0, borderColor or db.borderColor, 1)
+    local alpha = db.backgroundOpacity / 100
+    local thickness = db.border and math.max(1, math.min(4, db.borderSize)) or 0
+    local rim = thickness > 0 and Skin.Snap(thickness, px) or 0
+    local color = borderColor or db.borderColor
+    if db.rounded then
+        -- The rounded box under, the hollow ring over.
+        Kit.Rounded(parts.round, "ModeRound")
+        parts.round:ClearAllPoints(); parts.round:SetAllPoints(tooltip)
+        Kit.Tint(parts.round, db.backgroundColor, alpha)
+        parts.round:Show()
+        Kit.Rounded(parts.ring, "ModeRing" .. math.max(1, thickness))
+        parts.ring:ClearAllPoints(); parts.ring:SetAllPoints(tooltip)
+        Kit.Tint(parts.ring, color, 1)
+        parts.ring:SetShown(thickness > 0)
+        Skin.PaintPanel(parts, tooltip, db.backgroundColor, 0, color, 0)
+        Skin.PaintEdge(parts, 0, color, 1)
+        parts.edge:Show()
+    else
+        parts.round:Hide(); parts.ring:Hide()
+        Skin.PaintPanel(parts, tooltip, db.backgroundColor, alpha, color, 0)
+        Skin.PaintEdge(parts, rim, color, 1)
+    end
+    -- Mode Gradient: a soft white wash over the top, inside the rim (and
+    -- clear of the rounded corners).
+    local wash = parts.wash
+    local side = rim + (db.rounded and Skin.Snap(2, px) or 0)
+    wash:ClearAllPoints()
+    wash:SetPoint("TOPLEFT", tooltip, "TOPLEFT", side, -rim)
+    wash:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -side, -rim)
+    wash:SetHeight(Skin.Snap(14, px))
+    Kit.Gradient(wash, { 1, 1, 1, 0.08 * alpha }, { 1, 1, 1, 0 }, 0.04 * alpha)
+    wash:SetShown(db.gradient)
     if tooltip.SetScale and tooltip == GameTooltip and (db.scale ~= 100 or self.scaled) then
         self.scaled = true
         tooltip:SetScale(db.scale / 100)
     end
 end
 
--- The border color for what the tooltip shows, or nil for Border Color.
-function M:ContentColor(tooltip)
+-- Minimum Width and Padding, set every time (Blizzard resets them).
+function M:ApplySize(tooltip)
     local db = self.db
-    if db.qualityBorder and tooltip.GetItem then
-        local _, link, id = Call(tooltip.GetItem, tooltip)
-        local quality
-        if Number(id) then quality = Call(C_Item and C_Item.GetItemQualityByID, id) end
-        if not Number(quality) and Public(link) and type(link) == "string" then
-            quality = select(3, Call(C_Item and C_Item.GetItemInfo or GetItemInfo, link))
-        end
-        if Number(quality, 1, 20) then
-            local r, g, b = Call(C_Item and C_Item.GetItemQualityColor, quality)
-            if Number(r) and Number(g) and Number(b) then return { r, g, b } end
-        end
-    end
-    if db.classBorder and tooltip.GetUnit then
-        local _, unit = Call(tooltip.GetUnit, tooltip)
-        if unit ~= nil and Public(unit) and type(unit) == "string" and Call(UnitIsPlayer, unit) == true then
-            local _, class = Call(UnitClass, unit)
-            if Public(class) and type(class) == "string" then
-                local color = (C_ClassColor and Call(C_ClassColor.GetClassColor, class)) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[class])
-                if color and Number(color.r) then return { color.r, color.g, color.b } end
-            end
-        end
-    end
-    return nil
+    if tooltip.SetMinimumWidth then tooltip:SetMinimumWidth(db.minWidth) end
+    if tooltip.SetPadding then tooltip:SetPadding(db.padding, db.padding, db.padding, db.padding) end
 end
 
 -- The lines in the Mode face. Answers whether any line changed (the tooltip
 -- is then sized again).
 function M:ApplyFonts(tooltip)
-    local name = tooltip.GetName and tooltip:GetName()
-    if not name then return false end
     local db, px = self.db, Kit.PixelSize(tooltip)
     local path = Kit.FontPath(db, self.id)
     local flags = db.outline and "OUTLINE" or ""
     local changed = false
-    for index = 1, MAX_LINES do
-        local left = _G[name .. "TextLeft" .. index]
-        if not left then break end
+    for index, pair in ipairs(self:Lines(tooltip)) do
         local size = index == 1 and db.headerSize or db.textSize
-        for _, line in ipairs({ left, _G[name .. "TextRight" .. index] }) do
+        for _, line in ipairs({ pair.left, pair.right }) do
             if line and line.GetFont then
                 local current, height, currentFlags = line:GetFont()
                 if current ~= path or height ~= size or currentFlags ~= flags then
@@ -108,47 +124,15 @@ function M:ApplyFonts(tooltip)
     return changed
 end
 
--- The health bar: Blizzard's StatusBar, restyled; Blizzard sets its value.
-function M:SkinHealth(tooltip)
-    local bar = tooltip.StatusBar
-    if not bar or not bar.SetStatusBarTexture then return end
-    local db = self.db
-    local parts = Skin.parts[bar] or { regions = {} }
-    Skin.parts[bar] = parts
-    if not parts.track then
-        parts.track = bar:CreateTexture(nil, "BACKGROUND", nil, -8)
-        parts.track:SetTexture(Kit.FLAT); parts.track:SetAllPoints(bar)
-        parts.sheen = bar:CreateTexture(nil, "OVERLAY", nil, 1)
-        parts.sheen:SetTexture(Kit.FLAT)
-        parts.regions[parts.track], parts.regions[parts.sheen] = true, true
-        -- Blizzard colors the bar green on every value change; ours follows.
-        bar:HookScript("OnValueChanged", function(self) if M.active then M:ColorHealth(self) end end)
+-- The tooltip's text lines, left and right, in order.
+function M:Lines(tooltip)
+    local name = tooltip.GetName and tooltip:GetName()
+    local list = {}
+    if not name then return list end
+    for index = 1, MAX_LINES do
+        local left = _G[name .. "TextLeft" .. index]
+        if not left then break end
+        list[#list + 1] = { left = left, right = _G[name .. "TextRight" .. index] }
     end
-    Skin.Edge(bar, 2)
-    local px = Kit.PixelSize(bar)
-    local rim = db.border and Skin.Snap(math.min(db.borderSize, 2), px) or 0
-    local height = Skin.Snap(db.healthHeight, px)
-    bar:SetStatusBarTexture(Kit.FLAT)
-    bar:ClearAllPoints()
-    -- Under the tooltip, sharing its border line.
-    bar:SetPoint("TOPLEFT", tooltip, "BOTTOMLEFT", rim, rim > 0 and 0 or -px)
-    bar:SetPoint("TOPRIGHT", tooltip, "BOTTOMRIGHT", -rim, rim > 0 and 0 or -px)
-    bar:SetHeight(height)
-    Kit.Tint(parts.track, Kit.onyx.track, 0.9)
-    parts.sheen:ClearAllPoints()
-    parts.sheen:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0); parts.sheen:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-    parts.sheen:SetHeight(math.max(px, Skin.Snap(height / 2, px)))
-    Kit.Gradient(parts.sheen, { 1, 1, 1, 0.12 }, { 1, 1, 1, 0 }, 0.06)
-    parts.edge:ClearAllPoints()
-    -- Its top edge lies on the tooltip's bottom border: one line, not two.
-    parts.edge:SetPoint("TOPLEFT", bar, "TOPLEFT", -rim, rim)
-    parts.edge:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", rim, -rim)
-    Skin.PaintEdge(parts, rim, db.borderColor, 1)
-    if db.healthBar then Skin.Release(bar) else Skin.Suppress(bar) end
-    self:ColorHealth(bar)
-end
-
-function M:ColorHealth(bar)
-    local c = self.db.healthColor
-    bar:SetStatusBarColor(c[1], c[2], c[3], 1)
+    return list
 end
