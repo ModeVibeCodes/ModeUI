@@ -66,6 +66,37 @@ world.run([====[
     assert(M:SetFrameOption('player','showPortrait',false) and Point(cb.points[1])[1]=='TOPLEFT' and Point(cb.points[1])[2]==t.power)
     assert(M:SetFrameOption('player','showPortrait',true) and Point(cb.points[1])[2]==t.portrait)
 
+    -- Status on the portrait: rested top left and combat bottom left on the ring
+    -- (35px out at 135° and 225°, snapped), mirrored to the outer side on the Target.
+    local sp,st=M.db.player.status,M.db.target.status
+    assert(sp.restIcon and sp.combatIcon and sp.combatRing and sp.pulse and st.combatIcon and not st.restIcon and not st.pulse and not M.db.focus.status.combatIcon)
+    resting=true;FireEvent('PLAYER_UPDATE_RESTING')
+    assert(p.restBadge:IsShown() and not p.combatBadge:IsShown() and not t.restBadge:IsShown(),'rested: Player only')
+    local rb=Point(p.restBadge);assert(rb[1]=='CENTER' and rb[2]==p.portrait and rb[4]==-25 and rb[5]==25 and p.restBadge.width==20,'top left, on the ring')
+    assert(p.restBadge.icon.vertexColor[1]==M.ACCENT[1] and p.restBadge.rim.vertexColor[1]==O.border[1])
+    -- Pulled while running: in combat, nothing targeted that is fighting you. Red ring, pulsing halo.
+    combat.player=true;FireEvent('PLAYER_REGEN_DISABLED')
+    local cb2=Point(p.combatBadge);assert(p.combatBadge:IsShown() and cb2[4]==-25 and cb2[5]==-25,'bottom left')
+    local red=M.db.player.status.ringColor
+    assert(p.redRing and math.abs(p.portrait.ring.gradient[3].r-(red[1]+(1-red[1])*0.35))<1e-9,'the ring turns red')
+    assert(p.portrait.halo:IsShown(),'pulled unawares: the ring pulses')
+    -- You target it and it fights you: the pulse stops; the ring holds red.
+    combat.target,attackable.target=true,true;FireEvent('UNIT_FLAGS','target')
+    assert(not p.portrait.halo:IsShown() and p.redRing,'targeted: steady red')
+    assert(t.combatBadge:IsShown() and Point(t.combatBadge)[4]==25 and Point(t.combatBadge)[5]==-25 and not t.redRing,'Target: its own badge, outer side; no red ring by default')
+    combat.target=false;FireEvent('UNIT_FLAGS','target');assert(p.portrait.halo:IsShown(),'a target that is not fighting you does not count')
+    combat.player,combat.target,attackable.target,resting=false,false,false,false;FireEvent('PLAYER_REGEN_ENABLED')
+    assert(not p.combatBadge:IsShown() and not p.restBadge:IsShown() and not p.redRing and not p.portrait.halo:IsShown() and not t.combatBadge:IsShown())
+    -- Settings: corners, size, mirror; validated.
+    resting=true;FireEvent('PLAYER_UPDATE_RESTING')
+    assert(M:SetStatusOption('player','restCorner','topRight') and Point(p.restBadge)[4]==25 and Point(p.restBadge)[5]==25)
+    assert(M:SetStatusOption('player','badgeSize',25) and p.restBadge.width==26,'even pixel sizes')
+    assert(not M:SetStatusOption('player','restCorner','middle') and not M:SetStatusOption('player','badgeSize',60))
+    assert(M:SetStatusOption('player','restIcon',false) and not p.restBadge:IsShown())
+    assert(M:SetStatusOption('player','restIcon',true) and M:SetStatusOption('player','restCorner','topLeft') and M:SetStatusOption('player','badgeSize',20))
+    resting=false;FireEvent('PLAYER_UPDATE_RESTING')
+    assert(M:FrameDB('target').status==M.db.target.status,'a matched Target keeps its own status settings')
+
     -- Cast bars: a block in the frame's own skin under the bar block, its far end
     -- lined up with the block's; the portrait end stops 2px short of the ring's
     -- circle (radius 35, crossing the box's top 26px under the centre: 23.4 + 2, rounded out).
@@ -697,6 +728,11 @@ restored.run([====[
     assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')
     assert(Visible(Row('Layout','Fill Direction')) and Visible(Row('Layout','Frame Width')),'a matched Target still picks its width and fill direction')
+    -- Status (Portrait tab): the frame's own, so a matched Target edits it; rested and pulse are the Player's.
+    assert(page.unitFrameRestCorner and Visible(page.unitFrameRestCorner:GetParent().row),'status on a matched Target')
+    page.SetEditing('player');assert(Visible(page.unitFrameCombatCorner:GetParent().row))
+    assert(M:SetFrameOption('player','showPortrait',false) and not Visible(page.unitFrameCombatCorner:GetParent().row),'no portrait, no status')
+    assert(M:SetFrameOption('player','showPortrait',true));page.SetEditing('target')
     assert(M:SetFrameOption('target','barWidth',150) and M.db.player.barWidth==180 and M.frames.target.geometry.width<M.frames.player.geometry.width,'its own width')
     assert(M:SetFrameOption('target','barWidth',180))
     assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Layout','Scale')))

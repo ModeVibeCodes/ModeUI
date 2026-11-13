@@ -27,6 +27,7 @@ Shared\Domain\Query.lua
 Shared\Domain\Health.lua
 Shared\Domain\Power.lua
 Shared\Domain\ComboPoints.lua
+Shared\Domain\Status.lua
 Shared\Domain\Name.lua
 Shared\Domain\Level.lua
 Shared\Domain\Quest.lua

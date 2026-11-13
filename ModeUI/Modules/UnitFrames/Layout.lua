@@ -232,4 +232,5 @@ function M:ApplyLayout(f, unit)
     if f.combo then self:ResetComboLayout(f) end
     self:LayoutCast(f, unit)
     self:LayoutAuras(f, unit)
+    self:LayoutStatus(f, unit)
 end

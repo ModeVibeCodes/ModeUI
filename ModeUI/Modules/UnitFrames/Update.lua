@@ -58,6 +58,11 @@ end
 function M:PaintRing(f, unit)
     local fdb = self:FrameDB(unit)
     local ring, mode = f.portrait.ring, fdb.portraitRing
+    -- In combat, with Combat Ring on, the ring turns red (Status.lua).
+    if f.redRing then
+        local c = self.db[unit].status.ringColor
+        Gradient(ring, Lighten(c, 0.35), Scale(c, 0.72)); return
+    end
     if mode == "custom" then Gradient(ring, fdb.portraitRingColor, fdb.portraitRingColor); return end
     local color = mode == "class" and (f.ghost and self:SampleIdentity(unit, fdb) or self:IdentityColor(unit))
     if not color then Gradient(ring, ONYX.border, ONYX.border); return end
@@ -91,6 +96,7 @@ function M:PaintSample(g, unit)
     self:PaintComboSample(g)
     self:PaintCastSample(g, unit)
     self:PaintAuraSample(g, unit)
+    self:PaintStatusSample(g, unit)
 end
 
 local Health, Power, Name, Level = Domain.Health, Domain.Power, Domain.Name, Domain.Level
@@ -147,6 +153,6 @@ function M:Update(unit)
     if not f or not self:FrameOn(unit) or not Portrait.Exists(unit) then return end
     self:UpdateText(unit); self:UpdateHealth(unit); self:UpdatePower(unit); self:UpdatePortrait(unit)
     if unit == "target" then self:UpdateCombo() end
-    self:UpdateCast(unit); self:UpdateAuras(unit)
+    self:UpdateCast(unit); self:UpdateAuras(unit); self:UpdateStatus(unit)
 end
 function M:UpdateAll() for _, unit in ipairs(self.units) do self:Update(unit) end end

@@ -9,6 +9,7 @@
     <Script file="Combo.lua"/>
     <Script file="CastBar.lua"/>
     <Script file="Auras.lua"/>
+    <Script file="Status.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
     <Script file="SettingsExtra.lua"/>

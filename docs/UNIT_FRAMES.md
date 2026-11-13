@@ -5,6 +5,23 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Status on the portrait
+
+November 13, 2026, per the owner (the recommended Portrait Badge concept):
+round badges sit on the portrait ring's corners (`Status.lua`, **Status** on
+the Portrait tab): **Rested** (Player only, top left, Sky icon) and **Combat**
+(bottom left, red icon). Each has its own switch and corner; badges are an
+even pixel size centred on the ring and swap to the outer side on a right-hand
+portrait (**Mirror on a Right-Side Portrait**). **Combat Ring** turns the ring
+red while the unit is in combat. **Pulse When Pulled** (Player) pulses a red
+halo behind the ring while you are in combat and have no enemy targeted that is
+itself in combat (`Domain.Status.PulledUnawares`); targeting the attacker
+stops the pulse, and the ring holds red until combat ends. Settings are in
+`db[unit].status` (own keys). Defaults: the Player has everything on; the
+Target shows the combat badge; the small frames start off. Icons are
+`UnitFrames/Rested.tga` and `UnitFrames/Combat.tga` from
+`tools/build_shape_textures.lua`, tinted in game.
+
 ## Text never reaches the portrait
 
 November 13, 2026, per the owner: every text stays over the bars. A text on

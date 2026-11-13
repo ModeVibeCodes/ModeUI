@@ -40,6 +40,7 @@ function M:BuildFace(f)
     if f.unit == "target" then self:BuildCombo(f) end
     self:BuildCast(f)
     self:BuildAuras(f)
+    self:BuildStatus(f)
 end
 
 function M:CreateDisplay()

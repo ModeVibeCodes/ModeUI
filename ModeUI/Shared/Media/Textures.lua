@@ -32,6 +32,9 @@ M.Textures = {
     UnitFrameFrameInner = { file = "UnitFrames/FrameInner.tga", slice = 4, rounded = true },
     UnitFrameCircle = { file = "UnitFrames/Circle.tga", rounded = true },
     UnitFrameBar = { file = "UnitFrames/BarSatin.tga" },
+    -- Status badge icons (tools/build_shape_textures.lua), white, tinted in game.
+    UnitFrameRested = { file = "UnitFrames/Rested.tga", transparent = true },
+    UnitFrameCombat = { file = "UnitFrames/Combat.tga", transparent = true },
     -- Procedural shapes from tools/build_shape_textures.lua. ModeFlat rounds
     -- settings controls (4 px corners) and ModeCard the cards (6 px); the
     -- switch track and slider track are stadiums sliced only left and right

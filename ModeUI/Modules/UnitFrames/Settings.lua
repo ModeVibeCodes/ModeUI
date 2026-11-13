@@ -182,7 +182,7 @@ function M:CreateConfigPage(parent)
             Choice("Portrait Ring", "portraitRing")
             When(function() return db().portraitRing == "custom" end, function() Color("Portrait Ring Color", "portraitRingColor") end)
         end)
-    end)
+    end, false, function() M:BuildStatusControls(ui) end)
 
     Tab("Name & Level", function()
         page:Group("Name")

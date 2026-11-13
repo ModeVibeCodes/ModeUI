@@ -208,7 +208,24 @@ end
 -- Settings every frame keeps for itself: a Target matching the Player still
 -- uses its own cast bar and auras (unlike identity keys, Copy Style and Reset
 -- include them).
+-- Status on the portrait (owner, November 13, 2026), in db[unit].status: a
+-- rested badge (Player only) and a combat badge on the ring's corners, a red
+-- ring in combat, and on the Player a pulse while something you haven't
+-- targeted has pulled you. Corners swap sides on a right-hand portrait.
+M.statusDefaults = { restIcon = true, restCorner = "topLeft", combatIcon = true, combatCorner = "bottomLeft", badgeSize = 20,
+    mirror = true, combatRing = true, ringColor = RGB(255, 107, 107), pulse = true }
+M.statusRanges = { badgeSize = { 12, 32, 1 } }
+M.choices.statusCorner = { { id = "topLeft", label = "Top Left" }, { id = "topRight", label = "Top Right" },
+    { id = "bottomLeft", label = "Bottom Left" }, { id = "bottomRight", label = "Bottom Right" } }
+M.statusChoices = { restCorner = "statusCorner", combatCorner = "statusCorner" }
+function M.StatusDefaults(unit)
+    local defaults = Copy(M.statusDefaults)
+    local player = unit == "player"
+    defaults.restIcon, defaults.combatRing, defaults.pulse = player, player, player
+    defaults.combatIcon = player or unit == "target"
+    return defaults
+end
 -- Frame Width (barWidth) too, so a matched Target can be wider or narrower.
-M.ownKeys = { castBar = true, buffs = true, debuffs = true, barWidth = true }
+M.ownKeys = { castBar = true, buffs = true, debuffs = true, barWidth = true, status = true }
 M.defaults = { layoutVersion = M.LAYOUT_VERSION, comboPoints = Copy(M.comboDefaults) }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end
