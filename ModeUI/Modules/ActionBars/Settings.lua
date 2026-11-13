@@ -130,13 +130,16 @@ function M:CreateConfigPage(parent)
     Tab("Buttons", function()
         page:Group(L["Border"])
         page.borderPills = Pills("Border", M.choices.border, function() return db().border end, Set("border"))
-        local color = Columns({ "Border Color" })
-        Color(color[1], "borderColor", function() return db().border ~= "none" end)
-        page:Group(L["Slots"])
+        local function Bordered() return db().border ~= "none" end
+        local border = Columns({ "Border Size", "Border Color" })
+        page.borderSizeSlider = Slider(border[1], "borderSize", "px")
+        Color(border[2], "borderColor", Bordered)
+        page:Group(L["Background"])
+        local background = Columns({ "Background Color", "Background Opacity" })
+        Color(background[1], "backgroundColor")
+        page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
         page.slotToggles = Toggles({ { "Show Empty Slots", "showEmpty" } })
-        local background = Columns({ "Background Opacity" })
-        page.backgroundSlider = Slider(background[1], "backgroundOpacity", "%")
-        Note("Empty slots mark where a button has no action; Background Opacity is how much of their textured background shows. Dragging a spell shows every button so it can be dropped.", 48)
+        Note("The background shows in empty slots at Background Opacity, with a textured slot finish, and as the thin line between border and icon. Dragging a spell shows every button so it can be dropped.", 48)
     end)
 
     -- Text: pick a text, then its place, size and color; the font is shared.
@@ -191,6 +194,14 @@ function M:CreateConfigPage(parent)
         Note("Mouseover keeps the bar at Faded Opacity until the mouse is over it. Hidden bars still show in Edit Mode and Keybind Mode. Every bar hides during pet battles. Action Bar 1 hides while the game shows its own vehicle bar, and the pet and stance bars while you control a vehicle.", 48)
     end)
 
+    -- While this page is open, each bar on screen wears a name tag (Preview.lua).
+    Refresh(function() M:RenderBarTags() end)
+    page:HookScript("OnShow", function() M:RenderBarTags() end)
+    page:HookScript("OnHide", function() M:RenderBarTags() end)
+    if addon.configWindow then
+        addon.configWindow:HookScript("OnShow", function() M:RenderBarTags() end)
+        addon.configWindow:HookScript("OnHide", function() M:RenderBarTags() end)
+    end
     W.SectionTabs(page)
     page:Finish(); return page
 end

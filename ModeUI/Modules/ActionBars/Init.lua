@@ -18,8 +18,11 @@ addon:RegisterModule("actionBars", M)
 -- Version 2: buttons 42 by 36; Background Opacity; Show gains Mouseover and
 -- Hidden (Mouseover replaces the Fade Until Mouseover switch); amber
 -- cooldown numbers; bars stack on each other by default.
-M.VERSION = 2
-local P, onyx = Kit.palette, Kit.onyx
+-- Version 3: the border is a hollow frame (it no longer tints a see-through
+-- background), 2px by default (Border Size) in #404542; Background Color
+-- (#040404); macro names #69A5B9; 1px spacing.
+M.VERSION = 3
+local P = Kit.palette
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The bars, in sidebar order. `prefix` names Blizzard's buttons (prefix..1
@@ -78,6 +81,8 @@ M.textPartLabels = { hotkey = "Keybind", count = "Count", macro = "Macro Name", 
 
 -- Cooldown numbers are amber (#FFB12F) by default.
 M.COOLDOWN_COLOR = Kit.RGB(255, 177, 47)
+-- The border (#404542), the background inside it (#040404) and macro names (#69A5B9).
+M.BORDER_COLOR, M.BACKGROUND_COLOR, M.MACRO_COLOR = Kit.RGB(64, 69, 66), Kit.RGB(4, 4, 4), Kit.RGB(105, 165, 185)
 local function Part(prefix, show, size, anchor, color)
     return { [prefix .. "Show"] = show, [prefix .. "Size"] = size, [prefix .. "Anchor"] = anchor,
         [prefix .. "X"] = 0, [prefix .. "Y"] = 0, [prefix .. "Color"] = Copy(color) }
@@ -91,14 +96,15 @@ local function Style(bar)
     local style = {
         show = bar ~= "bar6" and bar ~= "bar7" and bar ~= "bar8",
         buttons = spec.count, perLine = spec.count, orientation = upright and "vertical" or "horizontal", start = "TOPLEFT",
-        width = 42, height = 36, spacing = 2,
-        border = "rounded", borderColor = Copy(onyx.border), showEmpty = true, backgroundOpacity = 20,
+        width = 42, height = 36, spacing = 1,
+        border = "rounded", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
+        backgroundColor = Copy(M.BACKGROUND_COLOR), showEmpty = true, backgroundOpacity = 20,
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
         font = "game", fontMedia = "Expressway", outline = true, shadow = true, liftedShadow = false, slug = true,
     }
     for key, value in pairs(Part("hotkey", true, 11, "TOPRIGHT", P.text)) do style[key] = value end
     for key, value in pairs(Part("count", true, 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
-    for key, value in pairs(Part("macro", false, 10, "BOTTOM", P.muted)) do style[key] = value end
+    for key, value in pairs(Part("macro", false, 10, "BOTTOM", M.MACRO_COLOR)) do style[key] = value end
     for key, value in pairs(Part("cooldown", true, 14, "CENTER", M.COOLDOWN_COLOR)) do style[key] = value end
     return style
 end
@@ -111,11 +117,11 @@ for _, bar in ipairs(M.bars) do M.defaults[bar] = Copy(M.styleDefaults[bar]) end
 -- buttons it has in what shape.
 M.identityKeys = { show = true, buttons = true, perLine = true, orientation = true, start = true,
     visibility = true, customVisibility = true }
-M.colorKeys = { borderColor = true }
+M.colorKeys = { borderColor = true, backgroundColor = true }
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
 M.ranges = { buttons = { 1, 12, 1 }, perLine = { 1, 12, 1 }, width = { 16, 80, 1 }, height = { 16, 80, 1 },
-    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 } }
+    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 }, borderSize = { 1, 4, 1 } }
 for _, part in ipairs(M.textParts) do
     M.ranges[part .. "Size"] = { 6, 32, 1 }
     M.ranges[part .. "X"] = { -40, 40, 1 }

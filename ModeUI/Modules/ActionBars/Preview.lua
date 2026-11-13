@@ -227,3 +227,44 @@ function M:CreateConfigPreview(parent)
     end
     return view
 end
+
+-- Name tags: while the Action Bars page is open, a small tag sits in the
+-- middle of each bar on screen, so you can tell the bars apart without Edit Mode. The
+-- bar being edited has a cyan tag; clicking a tag edits that bar.
+local function Tag(self, bar)
+    local tag = CreateFrame("Button", self.frameNames[bar] .. "Tag", UIParent)
+    tag:SetFrameStrata("MEDIUM")
+    tag:RegisterForClicks("LeftButtonUp")
+    tag.fill = tag:CreateTexture(nil, "BACKGROUND")
+    tag.fill:SetAllPoints(); tag.fill:SetTexture(Kit.FLAT)
+    tag.text = Kit.Text(tag)
+    tag.text:SetPoint("CENTER")
+    tag:SetScript("OnClick", function() if self.page and self.page.SetEditing then self.page.SetEditing(bar) end end)
+    tag:Hide()
+    return tag
+end
+
+function M:RenderBarTags()
+    self.tags = self.tags or {}
+    local window, page = addon.configWindow, self.page
+    local open = self.active == true and window ~= nil and window:IsShown() and page ~= nil and page:IsShown()
+    local editing = open and self:PreviewBar()
+    for _, bar in ipairs(self.bars) do
+        local header = self.headers[bar]
+        local show = open and header ~= nil and header:IsShown() == true
+        local tag = self.tags[bar]
+        if show then
+            tag = tag or Tag(self, bar)
+            self.tags[bar] = tag
+            local chosen = bar == editing
+            Kit.Font(tag.text, { outline = false, shadow = true, textColor = chosen and Kit.palette.accent or Kit.palette.text },
+                11, Kit.FontPath(self.db[bar], self.id), 1)
+            tag.text:SetText(L[self.barSpecs[bar].label])
+            tag:SetSize(tag.text:GetStringWidth() + 14, 18)
+            Kit.Tint(tag.fill, chosen and { 0.02, 0.18, 0.2 } or { 0.05, 0.06, 0.07 }, 0.92)
+            tag:ClearAllPoints(); tag:SetPoint("CENTER", header, "CENTER", 0, 0)
+            tag:SetFrameLevel(header:GetFrameLevel() + 30)
+            tag:Show()
+        elseif tag then tag:Hide() end
+    end
+end

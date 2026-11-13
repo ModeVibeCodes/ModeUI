@@ -88,6 +88,7 @@ function M:Apply()
     if self.built then self:UpdateFade() end
     if addon.EditMode then addon.EditMode:RefreshElements() end
     if self.page then self.page:Refresh() end
+    self:RenderBarTags()
 end
 
 function M:CanConfigure() return not addon.InCombat() end

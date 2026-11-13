@@ -47,6 +47,8 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
     drivers, wraps = {}, {}
     function RegisterStateDriver(frame, state, values)
         assert(not InCombatLockdown(), 'state driver in combat'); drivers[frame] = drivers[frame] or {}; drivers[frame][state] = values
+        -- Out of combat with no pet battle, the last clause decides (enough for these bars).
+        if values:match("hide$") then frame:Hide() else frame:Show() end
     end
     function UnregisterStateDriver(frame, state) if drivers[frame] then drivers[frame][state] = nil end end
     function SecureHandlerWrapScript(frame, script, header, body) wraps[#wraps + 1] = { frame = frame, script = script, header = header, body = body } end
@@ -120,6 +122,9 @@ world.run([==[
         assert(style.width == 42 and style.height == 36 and style.backgroundOpacity == 20, bar .. ' buttons are 42 by 36 on a 20% background')
         assert(math.floor(style.cooldownColor[1] * 255 + 0.5) == 255 and math.floor(style.cooldownColor[2] * 255 + 0.5) == 177
             and math.floor(style.cooldownColor[3] * 255 + 0.5) == 47, 'cooldown numbers are #FFB12F')
+        local function Hex(c) return string.format('%02X%02X%02X', math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5), math.floor(c[3] * 255 + 0.5)) end
+        assert(Hex(style.borderColor) == '404542' and Hex(style.backgroundColor) == '040404' and Hex(style.macroColor) == '69A5B9', 'border, background and macro colors')
+        assert(style.borderSize == 2 and style.spacing == 1, '2px border, 1px apart')
     end
     assert(M.db.bar1.show and not M.db.bar6.show and M.db.bar4.orientation == 'vertical' and M.db.pet.buttons == 10)
 
@@ -130,10 +135,10 @@ world.run([==[
     assert(MultiBarBottomLeft:GetParent() == UIParent, 'art-less Blizzard bars are left alone')
     assert(ActionButton1:GetParent() == bar1 and ActionButton1.bar == MainActionBar, 'buttons move but keep their Blizzard bar for paging')
     assert(ActionButton1.width == 42 and ActionButton1.height == 36, 'buttons are 42 by 36')
-    assert(bar1.width == 526 and bar1.height == 36, '12 buttons, 2px apart')
+    assert(bar1.width == 516 and bar1.height == 36, '12 buttons, 1px apart, even width')
     local p = Point(ActionButton2)
-    assert(p[1] == 'TOPLEFT' and p[2] == bar1 and p[4] == 44 and p[5] == 0, 'second button one step right')
-    assert(ModeUIActionBar4.width == 42 and ModeUIActionBar4.height == 12 * 36 + 11 * 2, 'bar 4 stands upright')
+    assert(p[1] == 'TOPLEFT' and p[2] == bar1 and p[4] == 43 and p[5] == 0, 'second button one step right')
+    assert(ModeUIActionBar4.width == 42 and ModeUIActionBar4.height == 12 * 36 + 11 + 1, 'bar 4 stands upright')
     -- Bars stack on bar 1 by default; every secure bar is pinned to the screen.
     assert(PM:GetPosition('actionBarsBar2').target == 'actionBarsBar1' and PM:GetPosition('actionBarsStance').target == 'actionBarsPet')
     local mover1, mover2 = ModeUIActionBar1Mover, ModeUIActionBar2Mover
@@ -141,31 +146,40 @@ world.run([==[
     p = Point(ModeUIActionBar2)
     assert(p[1] == 'BOTTOMLEFT' and p[2] == UIParent and p[3] == 'BOTTOMLEFT', 'the secure bar hangs from the screen only')
 
-    -- Skin: rim and gap, icon inset 2px and cropped to 38x32, Blizzard's frame faded.
+    -- Skin: a hollow 2px border, the background inside, icon inset 3px and cropped to 36x30.
     local art = M.art[ActionButton1]
-    assert(art.rim:IsShown() and art.rim.vertexColor[1] == Kit.onyx.border[1] and art.gap.vertexColor[1] == 0, 'rim and black gap')
-    assert(art.well.texture:find('ActionBars/Slot', 1, true) and art.well.vertexColor[4] == 0.2, 'textured background at 20%')
+    local top, left = art.edges[1], art.edges[3]
+    assert(top:IsShown() and top.vertexColor[1] == M.BORDER_COLOR[1] and #art.edges == 4, 'border in its own color')
+    assert(top.points[1][4] == 1 and top.points[2][5] == -2 and left.points[2][4] == 2, '2px edges, corners left out (rounded)')
+    assert(art.fill.vertexColor[1] == M.BACKGROUND_COLOR[1] and art.fill.vertexColor[4] == 1 and art.fill.points[1][4] == 2, 'solid background behind the icon')
+    assert(art.grain.texture:find('ActionBars/Slot', 1, true) and art.grain.blendMode == 'ADD', 'slot texture lightens the background')
     local icon = ActionButton1.icon
     assert(icon.mask == nil, 'Blizzard icon mask removed')
-    assert(icon.points[1][4] == 2 and icon.points[2][4] == -2, 'icon inside the rim')
-    local span = 0.84 * 32 / 38
+    assert(icon.points[1][4] == 3 and icon.points[2][4] == -3, 'icon a pixel inside the border')
+    local span = 0.84 * 30 / 36
     assert(math.abs(icon.texCoord[3] - (0.5 - span / 2)) < 1e-9 and icon.texCoord[1] == 0.08, 'icon cropped, not stretched')
     assert(ActionButton1.NormalTexture.alpha == 0 and ActionButton1.SlotArt.alpha == 0, 'Blizzard frame art faded')
     ActionButton1:UpdateButtonArt()
     assert(ActionButton1.NormalTexture.alpha == 0, 'faded again after Blizzard redraws its art')
     assert(ActionButton1.HighlightTexture.texture == Kit.FLAT, 'flat Mode highlight')
     local slot = M.slots.bar1[12]
-    assert(slot:IsShown() and M.art[slot].gap.vertexColor[4] == 0.2 and M.art[slot].rim.vertexColor[4] == 1, 'empty slot: solid rim, see-through inside')
-    assert(M:SetOption('bar1', 'backgroundOpacity', 60) and M.art[slot].well.vertexColor[4] == 0.6, 'Background Opacity')
+    local slotArt = M.art[slot]
+    assert(slot:IsShown() and slotArt.fill.vertexColor[4] == 0.2 and slotArt.edges[1].vertexColor[4] == 1, 'empty slot: solid border, see-through inside')
+    assert(M:SetOption('bar1', 'backgroundOpacity', 60) and slotArt.fill.vertexColor[4] == 0.6 and slotArt.grain.vertexColor[4] == 0.6, 'Background Opacity')
+    -- The border color never colors the background, and each has its own setting.
+    assert(M:SetOption('bar1', 'borderColor', { 1, 0, 0 }) and slotArt.fill.vertexColor[1] == M.BACKGROUND_COLOR[1] and slotArt.edges[2].vertexColor[1] == 1)
+    assert(M:SetOption('bar1', 'backgroundColor', { 0, 0, 1 }) and slotArt.fill.vertexColor[3] == 1 and slotArt.edges[2].vertexColor[3] == 0)
+    assert(M:SetOption('bar1', 'borderSize', 1) and ActionButton1.icon.points[1][4] == 2, 'Border Size moves the icon in or out')
+    assert(M:ResetBar('bar1') and M.db.bar1.borderSize == 2 and M.db.bar1.backgroundOpacity == 20)
 
     -- Text: font, tucked into its corner, keybind color kept unless out of range.
     local hotkey = ActionButton1.HotKey
     assert(hotkey.font[2] == 11 and hotkey.font[3] == 'OUTLINE', 'keybind 11 with outline')
     local at = Point(hotkey)
-    assert(at[1] == 'TOPRIGHT' and at[4] == -3 and at[5] == -3 and hotkey.justifyV == 'TOP', 'keybind right in the top-right corner')
+    assert(at[1] == 'TOPRIGHT' and at[4] == -4 and at[5] == -4 and hotkey.justifyV == 'TOP', 'keybind right in the top-right corner')
     ActionButton1:UpdateHotkeys()
     at = Point(hotkey)
-    assert(#hotkey.points == 1 and at[4] == -3, 'Blizzard re-placing the keybind is undone')
+    assert(#hotkey.points == 1 and at[4] == -4, 'Blizzard re-placing the keybind is undone')
     hotkey:SetVertexColor(0.6, 0.6, 0.6)
     assert(hotkey.vertexColor[1] == M.db.bar1.hotkeyColor[1], 'keybind color kept')
     hotkey:SetVertexColor(1, 0.125, 0.125)
@@ -189,10 +203,10 @@ world.run([==[
     assert(M:SetOption('bar2', 'buttons', 6))
     assert(MultiBarBottomLeftButton6:GetParent() == ModeUIActionBar2 and MultiBarBottomLeftButton7:GetParent() == M.hider)
     assert(not M:SetOption('pet', 'buttons', 12) and M.db.pet.buttons == 10, 'pet bar holds ten')
-    assert(M:SetOption('bar2', 'perLine', 3) and ModeUIActionBar2.width == 3 * 42 + 4 and ModeUIActionBar2.height == 2 * 36 + 2, 'two rows of three')
+    assert(M:SetOption('bar2', 'perLine', 3) and ModeUIActionBar2.width == 3 * 42 + 2 and ModeUIActionBar2.height == 2 * 36 + 2, 'two rows of three (1px apart, even height)')
     assert(M:SetOption('bar2', 'start', 'BOTTOMRIGHT'))
     p = Point(MultiBarBottomLeftButton4)
-    assert(p[1] == 'BOTTOMRIGHT' and p[4] == 0 and p[5] == 38, 'fourth button starts the second row up from the corner')
+    assert(p[1] == 'BOTTOMRIGHT' and p[4] == 0 and p[5] == 37, 'fourth button starts the second row up from the corner')
 
     -- Show: Always, Mouseover, Hidden and the rest.
     assert(drivers[bar1].modevis == '[petbattle] hide; show', 'always, except pet battles')
@@ -200,7 +214,7 @@ world.run([==[
     assert(drivers[ModeUIPetBar].modevis:find('[nopet] hide; show', 1, true), 'pet bar needs a pet')
     assert(drivers[ModeUIStanceBar].modevis == 'hide', 'no stances, no stance bar')
     testForms = 3; FireEvent('UPDATE_SHAPESHIFT_FORMS')
-    assert(drivers[ModeUIStanceBar].modevis:find('show') and ModeUIStanceBar.width == 3 * 42 + 2 * 2, 'stance bar fits the stances')
+    assert(drivers[ModeUIStanceBar].modevis:find('show') and ModeUIStanceBar.width == 3 * 42 + 2, 'stance bar fits the stances')
     assert(StanceButton4:GetParent() == M.hider)
     assert(M:SetOption('bar1', 'visibility', 'hidden') and drivers[bar1].modevis == '[petbattle] hide; hide', 'Hidden')
     assert(M:SetOption('bar1', 'visibility', 'combat') and drivers[bar1].modevis == '[petbattle] hide; [combat] show; hide')
@@ -336,6 +350,17 @@ world.run([==[
     assert(page.selectedSection.title == 'Bar', 'button click opens Bar')
     assert(M:SetOption('bar1', 'width', 30) and first.width == 30 and ActionButton1.width == 30, 'preview and bar follow the size')
     assert(page.keybindButton, 'Keybind Mode on the page')
+    -- Name tags on the bars while this page is open; the edited bar's is cyan.
+    local tag1, tag2 = ModeUIActionBar1Tag, ModeUIActionBar2Tag
+    assert(tag1:IsShown() and tag2:IsShown() and tag1.text.text == 'Action Bar 1' and Point(tag1)[2] == bar1, 'each bar is named on screen')
+    assert(tag1.text.color[3] == Kit.palette.accent[3] and tag2.text.color[3] ~= Kit.palette.accent[3], 'the edited bar stands out')
+    assert(not (ModeUIActionBar6Tag and ModeUIActionBar6Tag:IsShown()), 'no tag for a bar that is off screen')
+    tag2.scripts.OnClick(tag2)
+    assert(page.barEditing() == 'bar2' and tag2.text.color[3] == Kit.palette.accent[3], 'clicking a tag edits that bar')
+    addon:SelectConfigPage('nameplates'); assert(not tag1:IsShown(), 'tags go when the page closes')
+    addon:SelectConfigPage('actionBars'); assert(tag1:IsShown(), 'and come back with it')
+    addon.configWindow:Hide(); assert(not tag1:IsShown(), 'and go with the window')
+    addon.configWindow:Show(); page.SetEditing('bar1')
 
     -- Copy and reset.
     assert(M:SetOption('bar1', 'border', 'square') and M:CopyStyleToAll('bar1'))
@@ -372,11 +397,18 @@ for _, bar in ipairs({ "bar1", "bar2", "bar3", "bar4", "bar5", "bar6", "bar7", "
     old[bar].height, old[bar].cooldownColor, old[bar].backgroundOpacity = 38, { 1, 1, 1 }, nil
 end
 old.bar3.fade, old.bar3.visibility, old.bar4.fade, old.bar4.visibility, old.bar5.height = true, "always", true, "combat", 40
+-- Version 2's look: the Onyx rim color, muted macro names, 2px spacing.
+local onyxRim, muted = { 37 / 255, 40 / 255, 44 / 255 }, { 185 / 255, 185 / 255, 185 / 255 }
+old.bar1.borderColor, old.bar1.macroColor, old.bar1.spacing, old.bar1.borderSize, old.bar1.backgroundColor = onyxRim, muted, 2, nil, nil
+old.bar2.borderColor, old.bar2.spacing = { 1, 0, 0 }, 6
 profile.positions.actionBarsBar2 = { target = "screen", placement = "center", point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 58 }
 profile.positions.actionBarsBar3 = { target = "screen", placement = "center", point = "BOTTOM", relativePoint = "BOTTOM", x = 30, y = 100 }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M, PM = addon.ActionBars, addon.PositionManager
-    assert(M.db.version == 2 and M.db.bar1.height == 36 and M.db.bar5.height == 40, 'default height moves; a chosen one stays')
+    assert(M.db.bar1.borderColor[1] == M.BORDER_COLOR[1] and M.db.bar1.macroColor[3] == M.MACRO_COLOR[3] and M.db.bar1.spacing == 1, 'version 2 defaults move')
+    assert(M.db.bar1.borderSize == 2 and M.db.bar1.backgroundColor[1] == M.BACKGROUND_COLOR[1], 'new settings take their defaults')
+    assert(M.db.bar2.borderColor[1] == 1 and M.db.bar2.spacing == 6, 'chosen colors and spacing stay')
+    assert(M.db.version == 3 and M.db.bar1.height == 36 and M.db.bar5.height == 40, 'default height moves; a chosen one stays')
     assert(M.db.bar1.cooldownColor[2] == M.COOLDOWN_COLOR[2] and M.db.bar1.backgroundOpacity == 20)
     assert(M.db.bar3.visibility == 'mouseover' and M.db.bar3.fade == nil and M.db.bar4.visibility == 'combat', 'fading becomes Mouseover')
     assert(PM:GetPosition('actionBarsBar2').target == 'actionBarsBar1', 'a default place stacks on bar 1')

@@ -54,16 +54,18 @@ weak tables keyed by the button. Its only hooks are `hooksecurefunc` on:
 - **Buttons are 42 by 36** by default (Width and Height on the **Bar** tab).
   Sizes are whole physical pixels, and each bar is an even number of pixels each
   way, so a centered bar stays on the pixel grid.
-- **Border:** Rounded (by default), Square or None. The rim is 1px in the
-  Border Color (the near-black Onyx rim, #25282C, by default), then a 1px black
-  gap. These are the nameplate and aura-icon rim textures.
-- **Background:** a ModeUI texture (`Media/Textures/ActionBars/Slot.tga`, made
-  by `tools/build_shape_textures.lua`). It's a dark slot, lighter in the middle,
-  with a soft highlight along the top, darker edges and fine grain, after
-  Blizzard's own recessed slots. It sits inside the rim at **Background Opacity**
-  (20% by default). In an empty slot the black gap fades with it, so only the
-  rim stays solid.
-- **Icon:** placed inside the rim. It's cropped, never stretched: 8% comes off
+- **Border:** Rounded (by default), Square or None, **Border Size** 1-4px (2px
+  by default), in the **Border Color** (#404542 by default). The border is a
+  hollow frame of four edges, so it never shows through a see-through
+  background. Rounded leaves out each corner's outermost pixel.
+- **Background:** inside the border, the **Background Color** (#040404 by
+  default) with a ModeUI texture laid over it to lighten it
+  (`Media/Textures/ActionBars/Slot.tga`, made by `tools/build_shape_textures.lua`):
+  a dark slot, lighter in the middle, with a soft highlight along the top,
+  darker edges and fine grain, after Blizzard's own recessed slots. Empty slots
+  show it at **Background Opacity** (20% by default). Behind an icon it's solid,
+  as the 1px line between border and icon.
+- **Icon:** placed 1px inside the border. It's cropped, never stretched: 8% comes off
   the edges, then the long side is cut to the button's shape. Blizzard's rounded
   icon mask is removed.
 - **States:** highlight, pushed, checked, attack flash, new-spell and
@@ -81,7 +83,7 @@ Four texts, each with **Show This Text**, **Anchor** (a compass with Center),
 |---|---|
 | Keybind | shown, Top Right, 11 |
 | Count (stacks and charges) | shown, Bottom Right, 12 |
-| Macro Name | hidden, Bottom, 10 |
+| Macro Name | hidden, Bottom, 10, #69A5B9 |
 | Cooldown (the countdown numbers) | shown, Center, 14, amber #FFB12F |
 
 Each text's box hugs its letters, 1 pixel inside the icon, and is justified to
@@ -104,7 +106,7 @@ default, or Lifted).
 - **Buttons**: how many show (1-12; the pet and stance bars hold 10).
 - **Buttons per Line**, **Lines** (**Rows** or **Columns**) and **First Button**
   (the corner the first button sits in) set the bar's shape.
-- **Spacing** sets the gap between buttons.
+- **Spacing** sets the gap between buttons (1px by default).
 - Buttons past the count wait on the hidden frame.
 - The stance bar shows no more buttons than you have stances, and hides when you
   have none.
@@ -195,11 +197,16 @@ right now. Empty places show as empty slots, and the preview redraws when your
 bars, bindings or cooldowns change. While you edit the **Cooldown** text, the
 first spell shows a sample cooldown if none is running; **Animated** runs it.
 
+While the page is open, each bar on screen wears a small name tag in its middle
+("Action Bar 1", "Pet Bar", …), so you can tell the bars apart without Edit
+Mode. The bar being edited has a cyan tag; clicking any tag edits that bar.
+
 Clicking a button opens the **Bar** tab; clicking a text opens the **Text** tab
 on that text. The tabs:
 
 - **Bar**: Show Bar, status, layout, size, copy and reset, Keybind Mode
-- **Buttons**: border, empty slots, Background Opacity
+- **Buttons**: border style, size and color; background color and opacity;
+  empty slots
 - **Text**: which text, then its place, size and color, and the font
 - **Visibility**: Show, custom conditions, opacity, Faded Opacity
 
@@ -219,6 +226,12 @@ so ModeUI offers a reload. Turning the module back on needs no reload.
 `ModeUIDB.modules.actionBars` holds one table per bar: `bar1`-`bar8`, `pet`,
 `stance`. Positions are saved under `positions.actionBarsBar1` to
 `actionBarsBar8`, `actionBarsPet` and `actionBarsStance`.
+
+Version 3 changed these from version 2:
+
+- A border color still #25282C becomes #404542, muted macro names become
+  #69A5B9, and 2px spacing becomes 1px.
+- **Border Size** (2px) and **Background Color** (#040404) take their defaults.
 
 Version 2 changed these from version 1:
 
