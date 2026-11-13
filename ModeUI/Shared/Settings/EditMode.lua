@@ -1,6 +1,6 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
-local HEIGHT = 434
+local HEIGHT = 472
 local ARROWS = { LEFT = { -1, 0 }, RIGHT = { 1, 0 }, UP = { 0, 1 }, DOWN = { 0, -1 } }
 
 -- Small owned dropdown; options are rebuilt on open, never polled.
@@ -154,11 +154,25 @@ function addon:CreateEditWindow()
     reset:SetPoint("TOPLEFT", 216, -266)
     reset:SetScript("OnClick", function() E:ResetOffset() end)
     local highlights = W.Button(window, "", 30, 30, "checkbox")
-    highlights:SetPoint("TOPLEFT", 20, -310)
+    -- Match Width / Match Height: offered by modules that can size an element
+    -- to what it's anchored on (PositionManager:SetSizeMatch).
+    local function Match(axis, x, text)
+        local box = W.Button(window, "", 30, 30, "checkbox")
+        box:SetPoint("TOPLEFT", x, -306)
+        box:SetScript("OnClick", function()
+            local element = E:Selected()
+            if element then self.PositionManager:SetSizeMatchValue(element.id, axis, not self.PositionManager:GetSizeMatch(element.id, axis)) end
+            self:RefreshEditWindow()
+        end)
+        box.text = W.Label(window, text, nil, x + 40, -313, 110)
+        return box
+    end
+    local matchWidth, matchHeight = Match("width", 20, "Match Width"), Match("height", 176, "Match Height")
+    highlights:SetPoint("TOPLEFT", 20, -348)
     highlights:SetScript("OnClick", function() E:SetHighlights(not E.highlights) end)
-    W.Label(window, "Show Highlights", nil, 60, -317, 220)
+    W.Label(window, "Show Highlights", nil, 60, -355, 220)
     local settings = W.Button(window, "Open Module Settings", 300, 30)
-    settings:SetPoint("TOPLEFT", 20, -348)
+    settings:SetPoint("TOPLEFT", 20, -386)
     settings:SetScript("OnClick", function()
         if InCombatLockdown() or UnitAffectingCombat("player") then
             print("ModeUI: open element settings outside combat.")
@@ -173,7 +187,7 @@ function addon:CreateEditWindow()
         if module.OpenElementSettings then module:OpenElementSettings(elementId) end
     end)
     local exit = W.Button(window, "Exit", 300, 32)
-    exit:SetPoint("TOPLEFT", 20, -386)
+    exit:SetPoint("TOPLEFT", 20, -424)
     exit:SetSelected(true)
     exit:SetScript("OnClick", function() self:SetEditMode(false) end)
     function self:RefreshEditWindow()
@@ -189,6 +203,11 @@ function addon:CreateEditWindow()
         xSlider:SetEnabled(available); ySlider:SetEnabled(available)
         refreshX(); refreshY()
         targets:SetEnabled(anchoring); placements:SetEnabled(anchoring and available); reset:SetEnabled(anchoring and available)
+        for axis, box in pairs({ width = matchWidth, height = matchHeight }) do
+            local can = element ~= nil and self.PositionManager:CanMatchSize(element.id, axis)
+            box:SetEnabled(can); box:SetSelected(can and self.PositionManager:GetSizeMatch(element.id, axis))
+            box.text:SetAlpha(can and 1 or 0.45)
+        end
         local picking = self.EditAnchor:Active()
         anchorTo:SetEnabled(picking or self.EditAnchor:CanPick(element))
         anchorTo:SetSelected(picking)
@@ -203,6 +222,7 @@ function addon:CreateEditWindow()
     window.xSlider, window.ySlider = xSlider, ySlider
     window.targetDropdown, window.placementDropdown, window.resetOffset = targets, placements, reset
     window.anchorToButton = anchorTo
+    window.matchWidthButton, window.matchHeightButton = matchWidth, matchHeight
     window.settingsButton, window.exitButton, window.highlightButton = settings, exit, highlights
     window.selectedLabel = selected
     window:EnableKeyboard(true)

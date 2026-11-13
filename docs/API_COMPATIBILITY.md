@@ -423,6 +423,14 @@ checked against the user's local mainline copy (`WoWUI-live`, build
   frames (as `FrameAnchors` did). ModeUI targets are matched by their rectangle
   under `GetCursorPosition()`, since stand-ins don't take the mouse while it
   waits. Clicks are seen through `GLOBAL_MOUSE_DOWN`.
+- **Match Width / Match Height.** For an anchor on another meter window the
+  size comes from that window's settings (`Geometry`), with no client call. For
+  any other frame it comes from `Positioning:Geometry` (forbidden, restricted
+  and secret-anchored frames refused), read only out of combat. Changes are
+  noticed by Position Manager's anchor size listener: an addon-owned hidden
+  frame pinned to the target's corners, whose `OnSizeChanged` fires natively.
+  The target is never hooked or resized. Unverified natively: that listener
+  firing for Blizzard frames that change size.
 
 ### Damage meters, second pass — November 13, 2026
 

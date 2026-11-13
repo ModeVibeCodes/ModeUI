@@ -103,10 +103,11 @@ outside combat and outside Edit Mode:
   that grows. Width follows the cursor and **Rows** change a whole row at a
   time. The first resize pins the window by its top-left corner to the screen,
   so that corner stays put. A window grouped above another has its grip at the
-  top right and grows upward. Windows placed on the resized one through Edit
-  Mode anchoring (Window 2 above Window 1 by default, and Window 3 above 2)
-  take its width too, so a stack stays one width. They keep their own rows.
-  Grouped windows share the width anyway.
+  top right and grows upward. Windows anchored on the resized one in Edit
+  Mode with **Match Width** (Window 2 above Window 1 by default, and Window 3
+  above 2) take its width too, so a stack stays one width. They keep their own
+  rows. Grouped windows share the width anyway. A matched window's grip
+  changes only its rows (and nothing, with Match Height on too).
 
 Combat hides the grip and ignores drags. Click Through windows can't be moved
 or resized by hand.
@@ -213,9 +214,24 @@ anchors never loop (`PositionManager:WouldLoop`). Code:
 `PositionManager:AnchorTo` (`Shared/Placement/PositionAnchors.lua`) and
 `Shared/Settings/EditAnchor.lua`.
 
+**Match Width** and **Match Height** (Edit Mode window, under the sides) size
+an anchored element to what it hangs from. A module offers them for its
+elements (`PositionManager:SetSizeMatch`); they're dimmed on the screen and
+for elements that don't. Damage meter windows have both. **Match Width** is on
+by default: the window takes its anchor's width whenever that changes (its
+grip, its Width setting, Copy & Apply, or a different frame changing size),
+and its Rows stay its own. Before, only the grip passed the width on, so the
+owner's Window 2 came apart from Window 1 when Window 1's size changed some
+other way. **Match Height** (off by default) gives the window as many rows as
+fit its anchor's height. On another meter window the match reads that
+window's settings, so it lands on the same refresh; on any other frame it
+reads its size on screen, watched by Position Manager's anchor size listener.
+The Window tab says when Width (or Rows) follow an anchor.
+
 **Test on Screen** shows the sample fight on the real windows. The settings page
 preview is the window being edited, drawn by the same code, with the sample
-fight. **Animated** plays it out over 20 seconds. Clicking the preview's header,
+fight: at most five rows, at 80% size at most, so it stays small whatever
+Rows is set to. **Animated** plays it out over 20 seconds. Clicking the preview's header,
 bars or frame opens the Header, Bars or Frame tab. Clicking a name, a value or
 the title opens the Text tab on that text.
 
@@ -225,12 +241,11 @@ you, for Always Show Me. Healing meters rank the healers first.
 ## Settings page
 
 **Editing** sits at the top right of the preview, as on the Action Bars page,
-and names each window with its meter ("Window 1 - DPS"). Five tabs:
+and names each window with its meter ("Window 1 - DPS"). Six tabs:
 
 - **Window:** Show Window, Status, Meter, Fight, Width, Rows, Row Height,
   Spacing, Padding, Show, Opacity, Lock Window, Click Through, Group With,
-  Side, Gap, Copy Style to All Windows, Reset to Defaults, Reset All Data,
-  Hide Blizzard's Meter.
+  Side, Gap, Reset All Data, Hide Blizzard's Meter.
 - **Bars:** Foreground, Background, Bar Opacity, Background Opacity, Bar
   Color, Custom Color, Other Color, Icon, Always Show Me.
 - **Text:** Text (Name, Value, Title, Timer), then that text's Font, Size,
@@ -242,17 +257,36 @@ and names each window with its meter ("Window 1 - DPS"). Five tabs:
   the Title and Timer text settings.
 - **Frame:** Border, Border Size, Border Color, Background Color, Background
   Opacity.
+- **Copy & Apply:** Copy From (the window in Editing), **Copy** (All, Window,
+  Bars, Text), Apply To (tick windows), **Apply to Selected**, **Apply to All
+  Windows**, Reset to Defaults.
 
-Copy Style copies everything except what each window shows and when, and its
-group: Show Window, Meter, Fight, Show, Group With, Side and Gap. Reset to
-Defaults keeps those too. On a grouped window, every tab says which window the
-group shares its settings with. Copy Style and Reset act on the group's head.
+Copy & Apply copies by part (`M.copyScopes`):
+- **All:** everything except what each window shows and when, its group and
+  matching (Show Window, Meter, Fight, Show, Group With, Side, Gap, Match Width
+  and Match Height).
+- **Window:** the window with its header and border: Width, Padding, Opacity,
+  Border, Border Size, Border Color, Background Color, Background Opacity, and
+  the header's Show Header, Texture, Height, Color, Opacity, Uppercase Title,
+  Show Fight, Show Timer and Header Buttons.
+- **Bars:** Row Height, Spacing, Foreground, Background, both opacities, Bar
+  Color, Custom Color, Other Color, Icon and Always Show Me.
+- **Text:** every text's Font, Size, Outline, Shadow, Slug and Color, Name and
+  Value color modes, Text Inset, Show Rank, Show (numbers), Decimals,
+  Separator and Show Percent.
+
+Every copy is checked before it's kept. A grouped window takes it on its
+group's head, so the whole group changes. Reset to Defaults keeps the same keys
+as All leaves alone. On a grouped window, every other tab says which window
+the group shares its settings with.
 
 ## Saved settings
 
 `ModeUIDB` profile `modules.damageMeters`, version 4: `window1`, `window2` and
 `window3`, each a full style table (`Init.lua`'s `Style`), and `hideBlizzard`
-(Hide Blizzard's Meter, for the whole module). Positions are under
+(Hide Blizzard's Meter, for the whole module). Each window also has
+`matchWidth` (on) and `matchHeight` (off), Edit Mode's Match Width and Match
+Height; older saves take those defaults. Positions are under
 `positions.damageMetersWindow1` to `3`. `Initialize` fills defaults and
 validates every key, range, color, choice, texture and group (no window grouped
 with itself, no loops). Bad data stops startup; it is never reset.
@@ -283,7 +317,7 @@ takes its default (on).
 | `Shared/Kit/Text.lua` | `Kit.ShortNumber(value, decimals)`: abbreviated numbers with set decimals, secret-safe |
 | `Init.lua` | declaration, windows, positions, colors, defaults, ranges, choices |
 | `Migrations.lua` | `Initialize(db)`: validation, the migrations, group loops |
-| `Group.lua` | groups: the head of a group, the settings a window draws with, where a grouped window hangs |
+| `Group.lua` | groups: the head of a group, the settings a window draws with, where a grouped window hangs; Match Width and Match Height |
 | `Driver.lua` | lifecycle, events, the render throttle (4 a second, timer every 0.5s in combat), show rules, settings changes |
 | `Layout.lua` | pixel geometry |
 | `Window.lua` | building and painting windows, rows and stand-ins |
@@ -429,3 +463,34 @@ concatenation or measurement, and the stub refuses secret arguments.
       - Off, Blizzard's windows come back where they were, with the same
         numbers. Turning the module off brings them back too.
       - No Lua errors, including in Blizzard's own Edit Mode.
+11. **Match Width and Match Height**
+    - **Navigation:** **Edit Mode** in the settings window header, then
+      **Interface** › **Damage Meters**.
+    - **Action:**
+      - With Window 2 shown and anchored on Window 1 (its default), select
+        Window 2's stand-in.
+      - In the ModeUI Edit Mode window, check that **Match Width** is ticked,
+        then leave Edit Mode.
+      - Change Window 1's **Width** on the Window tab, then drag its grip.
+      - Tick **Match Height** for Window 2 in Edit Mode.
+    - **Required state:** out of combat; Window 2 not grouped.
+    - **Confirmation:**
+      - Window 2 stays exactly as wide as Window 1 both ways, keeps its own
+        rows, and never comes apart from it.
+      - The Window tab, with Editing on Window 2, says its Width follows
+        Window 1.
+      - Match Height gives Window 2 Window 1's height in whole rows.
+      - On Window 1 itself (anchored on the screen) both are dimmed.
+12. **Copy & Apply and the preview**
+    - **Navigation:** **Interface** › **Damage Meters** › **Copy & Apply** tab.
+    - **Action:**
+      - With Editing on Window 1, set **Copy** to Text, tick Window 2 and click
+        **Apply to Selected**.
+      - Then try Window and Bars.
+      - Set Window 1's **Rows** to 20 and look at the preview.
+    - **Required state:** any.
+    - **Confirmation:**
+      - Text copies only fonts and numbers. Window brings the width, border and
+        header. Bars brings the bar look.
+      - The line beside the buttons says how many windows changed.
+      - The preview stays at five rows and a smaller size.
