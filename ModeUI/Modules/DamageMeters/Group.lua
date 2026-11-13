@@ -62,6 +62,21 @@ function M:GroupChoices(window)
     return list
 end
 
+-- Windows placed on `window` through Edit Mode anchoring (and windows placed on
+-- those), not grouped: resizing `window` by its grip gives them its width.
+function M:AnchoredTo(window, list, seen)
+    list, seen = list or {}, seen or { [window] = true }
+    for _, other in ipairs(self.windows) do
+        local position = not seen[other] and not self:IsGrouped(other) and addon.PositionManager:GetPosition(self.elementIds[other])
+        if position and position.target == self.elementIds[window] then
+            seen[other] = true
+            list[#list + 1] = other
+            self:AnchoredTo(other, list, seen)
+        end
+    end
+    return list
+end
+
 -- Hangs a window from its stand-in, or from the window it follows.
 function M:AnchorWindow(window, g)
     local frame, own = self.frames[window], self.db[window]

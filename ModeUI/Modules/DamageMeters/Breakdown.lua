@@ -132,8 +132,9 @@ function M:RenderBreakdown()
             local name, pet = DM.SpellName(spell.spellID), spell.creatureName
             if Public(pet) and type(pet) == "string" and pet ~= "" then Kit.Formatted(row.name, "%s (%s)", name, pet)
             else Kit.Write(row.name, name) end
-            local text = style.textColor
-            row.name:SetTextColor(text[1], text[2], text[3], 1)
+            -- Spell names in the Name color, values as on the window (the source's class).
+            self.PaintColor(row.name, style, "name", "")
+            self.PaintColor(row.value, style, "value", panel.class)
             self.WriteValue(row.value, spell, data.total, style, info)
             row:EnableMouse(false)
             row:Show()

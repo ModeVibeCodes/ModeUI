@@ -419,6 +419,9 @@ checked against the user's local mainline copy (`WoWUI-live`, build
   `GetCursorPosition()` over `UIParent:GetEffectiveScale()` and changes Width
   and Rows settings. Both run only out of combat, because Position Manager
   saves no places in combat.
+- **The | separator.** FontString text treats "|" as the start of an escape
+  code ("|cff..", "|r", "|T"), so the separator is written "||", which shows
+  one "|".
 - **Header glyphs.** Own textures (`Media/Textures/DamageMeters`), not
   Blizzard atlases, which may not exist on Forever. Tooltips show only public
   text.

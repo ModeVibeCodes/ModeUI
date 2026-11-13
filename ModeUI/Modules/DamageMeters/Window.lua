@@ -49,9 +49,13 @@ function M:BuildShell(parent, name)
     frame.rim = Kit.Rim(frame, "BORDER")
     local header = CreateFrame("Button", nil, frame)
     header:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    header.fill = header:CreateTexture(nil, "BACKGROUND")
-    header.fill:SetAllPoints(); header.fill:SetTexture(FLAT)
-    header.title, header.info = TextWithLift(header), TextWithLift(header)
+    -- The header strip is a full bar, so it takes the same textures as the rows.
+    header.bar = Kit.Bar(header)
+    header.bar:SetAllPoints(); header.bar:SetMinMaxValues(0, 1); header.bar:SetValue(1)
+    header.bar.bg:Hide()
+    header.text = CreateFrame("Frame", nil, header)
+    header.text:SetAllPoints(); header.text:SetFrameLevel(header.bar:GetFrameLevel() + 2)
+    header.title, header.info = TextWithLift(header.text), TextWithLift(header.text)
     frame.divider = frame:CreateTexture(nil, "BORDER")
     frame.divider:SetTexture(FLAT)
     frame.header = header
@@ -88,8 +92,23 @@ function M:Build()
     for _, window in ipairs(self.windows) do self:BindControls(window) end
 end
 
+-- One text's settings in the shape Kit.Font and Kit.LayoutLift read, and
+-- its font file.
+function M.PartStyle(style, part)
+    return { font = style[part .. "Font"], fontMedia = style[part .. "FontMedia"], outline = style[part .. "Outline"],
+        shadow = style[part .. "Shadow"], liftedShadow = style[part .. "Lifted"], slug = style[part .. "Slug"],
+        textColor = style[part .. "Color"] }
+end
+function M:PaintText(text, style, part, px, shown, justify)
+    local look = self.PartStyle(style, part)
+    local path, size = Kit.FontPath(look, self.id), style[part .. "Size"]
+    Kit.Font(text, look, size, path, px)
+    if text.lift then Kit.LayoutLift(text, look, size, path, px, shown, justify) end
+    return path
+end
+
 -- One row's place and look; its data is filled by Render.lua.
-function M:PaintRow(row, frame, style, g, index, path)
+function M:PaintRow(row, frame, style, g, index)
     row:ClearAllPoints()
     row:SetPoint("TOPLEFT", frame, "TOPLEFT", g.left, -self.RowTop(g, index))
     row:SetSize(g.rowW, g.rowH)
@@ -107,13 +126,11 @@ function M:PaintRow(row, frame, style, g, index, path)
     Kit.BarBackground(row.bar, style.barBackground)
     Kit.Tint(row.bar.bg, self.TRACK_COLOR, style.barBackgroundOpacity / 100)
     local name, value = row.name, row.value
-    Kit.Font(name, style, style.nameSize, path, g.px)
-    Kit.Font(value, style, style.valueSize, path, g.px)
     value:ClearAllPoints(); value:SetPoint("RIGHT", row.bar, "RIGHT", -g.inset, 0); value:SetJustifyH("RIGHT")
     name:ClearAllPoints(); name:SetPoint("LEFT", row.bar, "LEFT", g.inset, 0)
     name:SetPoint("RIGHT", value, "LEFT", -g.inset, 0); name:SetJustifyH("LEFT")
-    Kit.LayoutLift(name, style, style.nameSize, path, g.px, true, "LEFT")
-    Kit.LayoutLift(value, style, style.valueSize, path, g.px, true, "RIGHT")
+    self:PaintText(name, style, "name", g.px, true, "LEFT")
+    self:PaintText(value, style, "value", g.px, true, "RIGHT")
 end
 
 -- Paints a style onto a shell: size, rim, background, header and `rows` rows
@@ -121,8 +138,7 @@ end
 function M:PaintShell(frame, style, rows)
     local px = Kit.PixelSize(frame)
     local g = self.Geometry(style, px, rows)
-    local path = Kit.FontPath(style, self.id)
-    frame.g, frame.fontPath, frame.style = g, path, style
+    frame.g, frame.style = g, style
     frame:SetSize(g.width, g.height)
     Kit.Inset(frame.fill, frame, g.border)
     Kit.Tint(frame.fill, style.backgroundColor, style.backgroundOpacity / 100)
@@ -133,7 +149,10 @@ function M:PaintShell(frame, style, rows)
     header:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -g.border)
     header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -g.border)
     header:SetHeight(math.max(px, g.header))
-    Kit.Tint(header.fill, style.headerColor, style.headerOpacity / 100)
+    -- The header bar: Header Texture (Mode Gradient by default) in Header Color.
+    Kit.BarForeground(header.bar, style.headerTexture, math.max(px, g.header), px)
+    local c = style.headerColor
+    header.bar:SetStatusBarColor(c[1], c[2], c[3], style.headerOpacity / 100)
     local divider = frame.divider
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -(g.border + g.header))
@@ -142,22 +161,22 @@ function M:PaintShell(frame, style, rows)
     Kit.Tint(divider, style.borderColor, 1)
     divider:SetShown(g.divider > 0)
     local title, info = header.title, header.info
-    Kit.Font(title, style, style.titleSize, path, px); title:SetTextColor(style.titleColor[1], style.titleColor[2], style.titleColor[3], 1)
-    Kit.Font(info, style, style.titleSize, path, px); info:SetTextColor(style.textColor[1], style.textColor[2], style.textColor[3], 0.7)
     info:ClearAllPoints(); info:SetPoint("RIGHT", header, "RIGHT", -g.inset, 0); info:SetJustifyH("RIGHT")
     title:ClearAllPoints(); title:SetPoint("LEFT", header, "LEFT", g.inset, 0)
     title:SetPoint("RIGHT", info, "LEFT", -g.inset, 0); title:SetJustifyH("LEFT")
-    Kit.LayoutLift(title, style, style.titleSize, path, px, style.header, "LEFT")
-    Kit.LayoutLift(info, style, style.titleSize, path, px, style.header, "RIGHT")
+    frame.fontPath = self:PaintText(title, style, "title", px, style.header, "LEFT")
+    self:PaintText(info, style, "timer", px, style.header, "RIGHT")
     local empty = frame.empty
-    Kit.Font(empty, style, style.nameSize, path, px); empty:SetTextColor(style.textColor[1], style.textColor[2], style.textColor[3], 0.6)
+    self:PaintText(empty, style, "name", px)
+    local nc = style.nameColor
+    empty:SetTextColor(nc[1], nc[2], nc[3], 0.6)
     empty:ClearAllPoints()
     empty:SetPoint("TOPLEFT", frame, "TOPLEFT", g.left + g.inset, -(g.rowsTop + g.px))
     empty:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -(g.left + g.inset), g.pad + g.border)
     empty:SetJustifyH("CENTER"); empty:SetJustifyV("MIDDLE")
     for i = 1, g.rows do
         frame.rows[i] = frame.rows[i] or self:BuildRow(frame)
-        self:PaintRow(frame.rows[i], frame, style, g, i, path)
+        self:PaintRow(frame.rows[i], frame, style, g, i)
     end
     for i = g.rows + 1, #frame.rows do frame.rows[i]:Hide() end
     self:LayoutControls(frame, style, g, frame.window)
@@ -217,7 +236,7 @@ function M:LayoutMover(window)
     local mover = self.movers[window]
     Kit.Tint(mover.fill, Kit.palette.accent, 0.18)
     Kit.Font(mover.label, { outline = true, shadow = true, textColor = { 1, 1, 1 } }, 12,
-        Kit.FontPath(self:Style(window), self.id), Kit.PixelSize(mover))
+        Kit.FontPath(self.PartStyle(self:Style(window), "title"), self.id), Kit.PixelSize(mover))
     mover.label:SetText(L[self.windowLabels[window]])
 end
 

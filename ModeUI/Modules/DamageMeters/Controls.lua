@@ -3,7 +3,8 @@ local M = addon.DamageMeters
 if not M then return end
 
 -- The header buttons and arranging windows by hand.
---   Fight button: C (Current Fight), O (Overall) or an earlier fight's number.
+--   Fight button: C (Current Fight), O (Overall) or an earlier fight's number,
+--     just the character, in the Mode cyan.
 --     Click switches Current and Overall; right-click opens the menu.
 --   Reset: Reset All Data.   Lock: Lock Window on and off.
 -- Unlocked, dragging a header moves the window (a group moves together) and
@@ -43,7 +44,6 @@ function M:BuildControls(frame)
     local header = frame.header
     local session, reset, lock = IconButton(header), IconButton(header), IconButton(header)
     session.icon:Hide()
-    session.rim = Kit.Rim(session, "BORDER")
     session.text = Kit.Text(session)
     session.text:SetPoint("CENTER", session, "CENTER", 0, 0)
     addon.Media:ApplyTexture(reset.icon, "DamageMeterReset")
@@ -86,8 +86,9 @@ function M:LayoutControls(frame, style, g, window)
         button:EnableMouse(shown and not style.clickThrough)
         x = x - glyph - GAP * px
     end
-    Kit.PlaceRim(buttons.session.rim, buttons.session, px, px, style.textColor, 0.45)
-    Kit.Font(buttons.session.text, style, math.max(6, math.floor(glyph / px * 0.6 + 0.5)), frame.fontPath, px)
+    local letter = self.PartStyle(style, "title")
+    letter.outline = true
+    Kit.Font(buttons.session.text, letter, math.max(6, math.floor(glyph / px * 0.75 + 0.5)), frame.fontPath, px)
     local info = frame.header.info
     info:ClearAllPoints()
     if shown then info:SetPoint("RIGHT", buttons.session, "LEFT", -g.inset, 0)
@@ -106,7 +107,7 @@ function M:LayoutControls(frame, style, g, window)
     end
     grip.up = up
     grip:SetFrameLevel(frame:GetFrameLevel() + 20)
-    Kit.Tint(grip.icon, style.textColor, 1)
+    Kit.Tint(grip.icon, style.nameColor, 1)
     grip.icon:SetAlpha(0.45)
     grip:SetShown(window ~= nil and self:CanArrange(window))
     self:PaintButtons(frame)
@@ -117,15 +118,16 @@ function M:PaintButtons(frame)
     local buttons = frame and frame.buttons
     if not buttons or not frame.style then return end
     local style = frame.style
-    local function Color(button) return button.hovered and Kit.palette.accent or style.textColor end
+    local function Color(button) return button.hovered and Kit.palette.accent or style.timerColor end
     local lockKey = style.locked and "DamageMeterLock" or "DamageMeterUnlock"
     if buttons.lock.glyph ~= lockKey then addon.Media:ApplyTexture(buttons.lock.icon, lockKey); buttons.lock.glyph = lockKey end
     for _, key in ipairs({ "lock", "reset" }) do
         local button = buttons[key]
         Kit.Tint(button.icon, Color(button), button.hovered and 1 or 0.8)
     end
+    -- The fight letter is Mode cyan; white under the mouse.
     local session = buttons.session
-    local c = Color(session)
+    local c = session.hovered and { 1, 1, 1 } or Kit.palette.accent
     session.text:SetTextColor(c[1], c[2], c[3], 1)
 end
 
@@ -244,7 +246,11 @@ function M:UpdateResize()
     local width = Clamp(math.floor(r.width + (x - r.x) + 0.5), self.ranges.width)
     local down = r.up and (y - r.y) or (r.y - y)
     local rows = Clamp(r.rows + math.floor(down / (style.rowHeight + style.spacing) + 0.5), self.ranges.rows)
-    if width ~= style.width then self:SetOption(r.window, "width", width) end
+    if width ~= style.width then
+        self:SetOption(r.window, "width", width)
+        -- Grouped windows share it; windows anchored on this one match it.
+        for _, other in ipairs(self:AnchoredTo(self:Leader(r.window))) do self:SetOption(other, "width", width) end
+    end
     if rows ~= self.db[r.window].rows then self:SetOption(r.window, "rows", rows) end
 end
 
