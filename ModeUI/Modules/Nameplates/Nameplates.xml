@@ -4,6 +4,7 @@
     <Script file="Plate.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Target.lua"/>
+    <Script file="Indicator.lua"/>
     <Script file="Update.lua"/>
     <Script file="CastBar.lua"/>
     <Script file="Auras.lua"/>

@@ -12,7 +12,7 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 local UNIT_EVENTS = {
     UNIT_HEALTH = "Health", UNIT_MAXHEALTH = "Health", UNIT_CONNECTION = "Health",
-    UNIT_AURA = "Auras", UNIT_NAME_UPDATE = "Name", UNIT_FACTION = "Faction", UNIT_CLASSIFICATION_CHANGED = "Color",
+    UNIT_AURA = "Auras", UNIT_NAME_UPDATE = "Name", UNIT_FACTION = "Faction", UNIT_CLASSIFICATION_CHANGED = "Classification", UNIT_LEVEL = "Indicator",
     UNIT_THREAT_SITUATION_UPDATE = "Color", UNIT_THREAT_LIST_UPDATE = "Color",
     UNIT_SPELLCAST_START = "Cast", UNIT_SPELLCAST_STOP = "Cast", UNIT_SPELLCAST_FAILED = "Cast",
     UNIT_SPELLCAST_INTERRUPTED = "Cast", UNIT_SPELLCAST_DELAYED = "Cast", UNIT_SPELLCAST_CHANNEL_START = "Cast",
@@ -35,6 +35,7 @@ function M:OnEnable()
     Events:On(self, "NAME_PLATE_UNIT_REMOVED", function(_, unit) self:OnUnitRemoved(unit) end)
     Events:On(self, "PLAYER_TARGET_CHANGED", function() self:UpdateTargets() end)
     Events:On(self, "RAID_TARGET_UPDATE", function() self:ForEachPlate(self.UpdateRaidIcon) end)
+    Events:On(self, "QUEST_LOG_UPDATE", function() self:ForEachPlate(self.UpdateIndicator) end)
     for event in pairs({ UI_SCALE_CHANGED = true, DISPLAY_SIZE_CHANGED = true }) do
         Events:On(self, event, function() self:Refresh() end)
     end
@@ -95,6 +96,8 @@ function M:OnUnitEvent(part, unit)
     elseif part == "Health" then self:UpdateHealth(plate)
     elseif part == "Name" then self:UpdateName(plate)
     elseif part == "Color" then self:UpdateHealthColor(plate)
+    elseif part == "Indicator" then self:UpdateIndicator(plate)
+    elseif part == "Classification" then self:UpdateHealthColor(plate); self:UpdateIndicator(plate)
     elseif part == "Auras" then self:UpdateAuras(plate)
     else self:UpdateCast(plate) end
 end

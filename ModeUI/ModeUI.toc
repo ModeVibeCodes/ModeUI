@@ -28,6 +28,7 @@ Shared\Domain\Health.lua
 Shared\Domain\Power.lua
 Shared\Domain\Name.lua
 Shared\Domain\Level.lua
+Shared\Domain\Quest.lua
 Shared\Domain\UnitColor.lua
 Shared\Domain\Portrait.lua
 Shared\Domain\Cast.lua

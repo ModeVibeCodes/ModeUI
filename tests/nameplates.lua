@@ -142,6 +142,27 @@ world.run([==[
     end
     assert(box.bar:GetFrameLevel() > box.bands[1]:GetFrameLevel(), 'bar above the bands')
     assert(plate.castBox.bands == nil and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
+    -- The indicator reads level, classification and quest from the unit.
+    assert(not plate.indicator:IsShown() and plate.indicatorWidth == 0, 'nothing known, nothing shown')
+    local questUnits = {}
+    function UnitLevel(u) return units[u] and units[u].level end
+    function UnitClassification(u) return units[u] and units[u].classification end
+    function UnitIsQuestBoss() return false end
+    C_QuestLog = C_QuestLog or {}
+    function C_QuestLog.UnitIsRelatedToActiveQuest(u) return questUnits[u] == true end
+    units.nameplate1.level, units.nameplate1.classification = 61, 'rareelite'
+    FireEvent('UNIT_LEVEL', 'nameplate1')
+    assert(plate.indicator.level.text == '61' and plate.indicator.classification.atlas == 'nameplates-icon-elite-silver', 'level and rare elite')
+    assert(not plate.indicator.quest:IsShown(), 'not a quest unit')
+    questUnits.nameplate1 = true; FireEvent('QUEST_LOG_UPDATE')
+    assert(plate.indicator.quest:IsShown(), 'quest unit after the quest log updates')
+    units.nameplate1.level = Secret('level'); FireEvent('UNIT_LEVEL', 'nameplate1')
+    assert(plate.indicator.level.text == '' and not plate.indicator.level:IsShown(), 'secret level hidden')
+    units.nameplate1.level = -1; units.nameplate1.classification = 'worldboss'; FireEvent('UNIT_CLASSIFICATION_CHANGED', 'nameplate1')
+    assert(plate.indicator.level.text == '??' and plate.indicator.classification.atlas == 'nameplates-icon-elite-gold', 'boss')
+    questUnits.nameplate1, units.nameplate1.level, units.nameplate1.classification = nil, nil, nil
+    FireEvent('QUEST_LOG_UPDATE')
+    assert(not plate.indicator:IsShown(), 'cleared')
     units.nameplate1.threat = 3; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'nameplate1')
     assert(plate.health.statusBarColor[1] == M.threatPalette.aggro[1], 'aggro is red')
     -- Each threat status has its own color setting.
@@ -460,7 +481,7 @@ world.run([==[
     -- Tabs, cards and the Editing switch.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target', table.concat(sections, ','))
+    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target,Indicators', table.concat(sections, ','))
     assert(#page.cards > 5 and page.cards[1].frame:IsShown(), 'settings sit on cards')
     local switch = page.nameplateEditButtons[1]
     switch[2].scripts.OnClick(switch[2])
@@ -484,7 +505,24 @@ world.run([==[
     view.targets.enemy.health.scripts.OnMouseUp(view.targets.enemy.health, 'LeftButton')
     assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
     view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')
-    assert(page.selectedSection.title == 'Target', 'marker click opens Target')
+    assert(page.selectedSection.title == 'Indicators', 'marker click opens Indicators')
+    -- The indicator: quest icon, classification icon and level, side by side.
+    local ind = sample.indicator
+    assert(ind:IsShown() and ind.quest:IsShown() and ind.quest.atlas == M.QUEST_ATLAS, 'quest icon')
+    assert(ind.classification.atlas == 'nameplates-icon-elite-gold' and ind.level.text == '62', 'elite icon and level')
+    assert(Point(ind.classification)[4] == ind.quest.width + 2 and sample.indicatorWidth > 2 * M.db.enemy.indicatorSize, 'laid out left to right')
+    -- On the left it sits past the raid marker, and crowd control past both.
+    assert(Point(ind)[1] == 'RIGHT' and Point(ind)[4] == -3 - (sample.markSize + 3), 'indicator past the marker')
+    assert(M:SideRoom(sample, 'LEFT') == sample.markSize + 3 + sample.indicatorWidth + 3, 'side room counts the indicator')
+    assert(M:SetOption('enemy', 'indicatorQuest', false) and not ind.quest:IsShown() and Point(ind.classification)[4] == 0, 'quest off')
+    assert(M:SetOption('enemy', 'indicatorAnchor', 'TOPRIGHT') and Point(ind)[1] == 'BOTTOMRIGHT', 'indicator anchor')
+    assert(M:SideRoom(sample, 'LEFT') == sample.markSize + 3, 'no side room when moved')
+    assert(M:SetOption('enemy', 'showIndicator', false) and not ind:IsShown() and sample.indicatorWidth == 0, 'indicator off')
+    assert(not M:SetOption('enemy', 'indicatorSize', 99) and not M:SetOption('enemy', 'indicatorAnchor', 'MIDDLE'), 'refused')
+    assert(M:SetOption('enemy', 'showIndicator', true) and M:SetOption('enemy', 'indicatorQuest', true) and M:SetOption('enemy', 'indicatorAnchor', 'LEFT'))
+    assert(M.db.friendly.showIndicator == false, 'friendly plates start without the indicator')
+    view.targets.enemy.indicator.scripts.OnMouseUp(view.targets.enemy.indicator, 'LeftButton')
+    assert(page.selectedSection.title == 'Indicators', 'indicator click opens Indicators')
     local buffIcon = sample.auraIcons.buffs[1]
     buffIcon.scripts.OnMouseUp(buffIcon, 'LeftButton')
     assert(page.selectedSection.title == 'Auras' and page.nameplateAuraGroup() == 'buffs', 'aura click opens its group')

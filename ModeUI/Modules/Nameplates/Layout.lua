@@ -98,6 +98,7 @@ function M:LayoutPlate(plate)
     -- The raid marker: around the bar, or in its middle.
     plate.markSize = Snap(db.raidSize)
     self:PlaceIcon(plate, plate.raidIcon, db.raidAnchor, plate.markSize, plate.markSize, db.raidX, db.raidY)
+    self:LayoutIndicator(plate)
 
     self:LayoutTarget(plate)
     for group, pool in pairs(plate.auraIcons) do
@@ -106,12 +107,12 @@ function M:LayoutPlate(plate)
 end
 
 -- Room taken beside the bar on one side ("LEFT" or "RIGHT") by the raid
--- marker, with a 3px gap. Aura rows start past it and the target arrows past
--- the aura rows (Auras.lua, Target.lua).
+-- marker and the indicator, each with a 3px gap. Aura rows start past it and
+-- the target arrows past the aura rows (Auras.lua, Target.lua).
 function M:SideRoom(plate, side)
     local db, px = self:Style(plate), plate.px or 1
-    if db.showRaidIcon and db.raidAnchor == side then return (plate.markSize or 0) + 3 * px end
-    return 0
+    local room = (db.showRaidIcon and db.raidAnchor == side) and (plate.markSize or 0) + 3 * px or 0
+    return room + self:IndicatorRoom(plate, side)
 end
 
 -- Places an icon-like region (raid marker) by anchor: Top and Bottom anchors

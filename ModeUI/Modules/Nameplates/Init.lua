@@ -68,6 +68,9 @@ local function Style(kind)
         showCastBar = true, castFontSize = 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
         castAnchor = "BOTTOM", castX = 0, castY = 0,
         showRaidIcon = true, raidAnchor = "LEFT", raidX = 0, raidY = 0, raidSize = 16,
+        -- Indicator: quest icon, classification icon and level, by anchor.
+        showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
+        indicatorAnchor = "LEFT", indicatorX = 0, indicatorY = 0, indicatorSize = 14, indicatorFontSize = 9,
         -- Target indicator: border, glow, arrows, border and arrows, or none.
         targetStyle = "border", targetColor = Copy(P.accent), targetThickness = 1, targetArrowSize = 12, targetArrowGap = 4,
         -- Auras: settings for every group, then each group on its own.
@@ -95,7 +98,8 @@ M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = {
     healthOpacity = { 10, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },
-    castX = { -50, 50, 1 }, castY = { -50, 50, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
+    castX = { -50, 50, 1 }, castY = { -50, 50, 1 },
+    indicatorX = { -50, 50, 1 }, indicatorY = { -50, 50, 1 }, indicatorSize = { 8, 32, 1 }, indicatorFontSize = { 6, 20, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
     targetThickness = { 1, 3, 1 }, targetArrowSize = { 8, 48, 1 }, targetArrowGap = { 0, 60, 1 } }
 M.groupRanges = { size = { 10, 40, 1 }, max = { 1, 12, 1 }, x = { -50, 50, 1 }, y = { -50, 50, 1 } }
 -- Anchors around the plate, read like a compass: Top sits above the name,
@@ -120,6 +124,7 @@ M.choices = {
     auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
     auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" } },
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,
+    indicatorAnchor = M.elementAnchors,
 }
 M.growChoices = { { id = "right", label = "Right" }, { id = "left", label = "Left" }, { id = "up", label = "Up" },
     { id = "down", label = "Down" }, { id = "center", label = "Center" } }

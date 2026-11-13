@@ -9,7 +9,7 @@ if not M then return end
 -- the sample (health, name, health text, cast bar, an aura, the raid marker)
 -- jumps to its settings. Shown through the shared settings preview (W.Preview).
 local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
-local RaidIcon, UnitColor = addon.Domain.RaidIcon, addon.Domain.UnitColor
+local RaidIcon, UnitColor, Level = addon.Domain.RaidIcon, addon.Domain.UnitColor, addon.Domain.Level
 local CAST_SECONDS, STATIC_PROGRESS, HINT_HEIGHT = 2.5, 0.6, 18
 local ICONS = "Interface\\Icons\\"
 
@@ -17,6 +17,7 @@ local ICONS = "Interface\\Icons\\"
 -- matches, and dispel names a dispel type, as the game would report them.
 M.previewSamples = {
     enemy = { name = "Enemy Nameplate", caption = "Enemy, shown as your target", health = 72, reaction = "hostile", raid = 8, targeted = true,
+        level = 62, classification = "elite", quest = true,
         cast = { text = "Shadow Bolt", icon = ICONS .. "Spell_Shadow_ShadowBolt" },
         auras = {
             { icon = ICONS .. "Spell_Nature_Polymorph", group = "crowdControl", dispel = "Magic", duration = 8, elapsed = 3 },
@@ -24,7 +25,7 @@ M.previewSamples = {
             { icon = ICONS .. "Spell_Shadow_CurseOfTounges", group = "debuffs", tags = { dispellable = true }, dispel = "Curse", count = 3, duration = 30, elapsed = 10 },
             { icon = ICONS .. "Spell_Holy_PowerWordShield", group = "buffs", tags = { dispellable = true, important = true }, dispel = "Magic", duration = 15, elapsed = 5 },
         } },
-    friendly = { name = "Friendly Nameplate", caption = "Friendly player (Mage)", health = 90, reaction = "friendly", class = "MAGE",
+    friendly = { name = "Friendly Nameplate", caption = "Friendly player (Mage)", health = 90, reaction = "friendly", class = "MAGE", level = 60,
         cast = { text = "Flash Heal", icon = ICONS .. "Spell_Holy_FlashHeal" },
         auras = {
             { icon = ICONS .. "Spell_Frost_ChainsOfIce", group = "crowdControl", dispel = "Magic", duration = 6, elapsed = 2 },
@@ -130,6 +131,7 @@ function M:PaintSample(plate, style, sample, progress)
     Kit.Write(plate.name, L[sample.name])
     Kit.Write(plate.healthText, HealthText(style.healthText, sample.health))
     if style.showRaidIcon and sample.raid then RaidIcon.ApplyIndex(plate.raidIcon, sample.raid) else plate.raidIcon:Hide() end
+    self:PaintIndicator(plate, sample.quest, sample.classification, tostring(sample.level), Level.DifficultyColor(sample.level))
     self:PaintTarget(plate, style.targetStyle ~= "none" and sample.targeted == true)
     self:PaintSampleAuras(plate, style, sample)
     if not style.showCastBar or plate.nameOnly then self:StopCast(plate); return end
@@ -141,6 +143,10 @@ end
 local function Room(style)
     local top, bottom, side = (style.showName and style.nameFontSize + 6 or 4), style.castHeight + 8, 40
     if style.raidAnchor:find("^TOP") then top = top + style.raidSize + 2 end
+    if style.showIndicator then
+        if style.indicatorAnchor:find("^TOP") then top = top + style.indicatorSize + 2
+        elseif style.indicatorAnchor == "LEFT" or style.indicatorAnchor == "RIGHT" then side = side + 3 * style.indicatorSize end
+    end
     if style.showAuras then
         for _, group in ipairs(M.auraGroups) do
             local settings = style[group]
@@ -208,6 +214,7 @@ function M:CreateConfigPreview(parent)
             name = Clickable(plate.name, kind, "name", nil, plate.textLayer),
             healthText = Clickable(plate.healthText, kind, "healthText", nil, plate.textLayer),
             markers = Clickable(plate.raidIcon, kind, "markers", nil, plate.textLayer),
+            indicator = Clickable(plate.indicator, kind, "indicator"),
         }
         local caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
         caption:SetJustifyH("CENTER")
