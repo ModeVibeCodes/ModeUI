@@ -185,7 +185,7 @@ resize and update in combat. Settings also change in combat.
 ## Edit Mode, Test on Screen and the preview
 
 In **Edit Mode** every window that's on shows, Hidden ones too, with a cyan
-stand-in named after it ("Window 1"). The windows show a sample fight so they
+stand-in; its handle, centered above it, names it ("Window 1"). The windows show a sample fight so they
 can be laid out without one. Window 1 sits on the right edge below the middle.
 Windows 2 and 3 stack above it by default, and a window can anchor to a window
 listed before it. Position Manager moves the stand-in (it drives the mouse on

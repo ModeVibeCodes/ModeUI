@@ -4,6 +4,8 @@ local _, addon = ...
 -- widgets (carried over from Play The Game Tools unchanged).
 addon.Theme = {
     primary = { 128 / 255, 239 / 255, 128 / 255, 1 }, -- #80EF80
+    -- Edit Mode names each movable frame in volt green, readable on any scene.
+    volt = { 204 / 255, 1, 0, 1 },                    -- #CCFF00
     secondary = { 230 / 255, 184 / 255, 1, 1 },      -- #E6B8FF
     surface = { 104 / 255, 104 / 255, 104 / 255, 1 }, -- #686868
     background = { 0.075, 0.082, 0.09, 1 },
@@ -54,10 +56,10 @@ addon.InterfaceTheme = {
     id = "mode",
     blizzardArt = false,
     -- One spacing scale and one font scale for every settings surface: page
-    -- titles (page), section tabs and headings (section), card titles and
+    -- titles (page), section tabs and headings (section), card titles (card),
     -- sidebar captions, uppercase (group), setting labels (body), help (small).
     spacing = addon.Theme.spacing,
-    fontSize = { small = 12, body = 13, group = 12, section = 14, page = 24, display = 24 },
+    fontSize = { small = 12, body = 13, group = 12, card = 19, section = 14, page = 24, display = 24 },
 }
 for key, color in pairs(MODE) do addon.InterfaceTheme[key] = Copy(color) end
 

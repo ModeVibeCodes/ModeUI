@@ -5,6 +5,8 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- outside a titled group share an untitled card. Standard rows put 28 px
 -- controls on a 36 px pitch, labels centered on them.
 local CARD_PADDING, CARD_GAP = 16, 12
+-- A card title row fits the 19px title (T.fontSize.card) with room under it.
+local CARD_TITLE = 30
 local ROW_HEIGHT, ROW_INSET, LEGACY_ROW_HEIGHT = 36, 4, 48
 -- Standard rows stack their label above the control (owner's Layout tab
 -- design, November 13, 2026); a slider's value sits at the right of the label
@@ -321,19 +323,19 @@ function W.Page(parent, minimumWidth)
         return card
     end
     function page:ActiveCard() return self.activeCard or self:NewCard() end
-    -- Starts a card titled in small uppercase accent text.
+    -- Starts a card titled in large uppercase accent text (T.fontSize.card).
     function page:Group(title)
         local card = self:NewCard(title)
         local row = CreateFrame("Frame", nil, content)
-        row:SetSize(400, 24)
+        row:SetSize(400, CARD_TITLE)
         row:SetFrameLevel(content:GetFrameLevel() + 2)
         row.section, row.gapBefore, row.gapAfter, row.card, row.cardTitle = self.activeSection, 0, 0, card, true
-        row.subsectionHeading=W.Heading(row, title:upper(), T.fontSize.group, 0, 0, 360)
+        row.subsectionHeading=W.Heading(row, title:upper(), T.fontSize.card, 0, 0, 360)
         row.subsectionHeading:SetTextColor(unpack(T.primary))
         row.settingsGroupTitle=title;self.activeGroup=title
         row.modeFeature,row.modePanel=self.activeModeFeature,self.activeModePanel
         self.rows[#self.rows + 1] = row
-        self.cursor = self.cursor + 24
+        self.cursor = self.cursor + CARD_TITLE
     end
     W.PageControls(page, ROW_HEIGHT)
     function page:Finish()

@@ -41,8 +41,6 @@ function M:LayoutGhost(bar)
     for i = count + 1, #ghost.slots do ghost.slots[i]:Hide() end
     ghost.fill:SetAllPoints(ghost)
     ghost.fill:SetTexture(Kit.FLAT); Kit.Tint(ghost.fill, Kit.palette.accent, 0.18)
-    Kit.Font(ghost.label, { outline = true, shadow = true, textColor = { 1, 1, 1 } }, 12, Kit.FontPath(style, self.id), g.px)
-    ghost.label:SetText(L[self.barSpecs[bar].label])
 end
 
 -- A ModeUI-made button with the parts the skin and text code look for.
