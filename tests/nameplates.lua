@@ -506,7 +506,13 @@ world.run([==[
     local sample, friend = view.plates.enemy, view.plates.friendly
     assert(sample:IsShown() and not friend:IsShown() and sample:GetParent() == view.frame, 'only the enemy sample while editing Enemy')
     local at = Point(sample)
-    assert(at[1] == 'TOPLEFT' and at[2] == view.frame and at[3] == 'TOP' and at[4] == -90, 'centered on whole pixels')
+    -- The whole sample is centered: the bar shifts away from the side carrying more.
+    local top, bottom, left, right = M:PreviewBounds(sample, M.db.enemy, M.previewSamples.enemy)
+    assert(left ~= right and left > 0 and right > 0, 'both sides measured: ' .. left .. ' ' .. right)
+    assert(at[1] == 'TOPLEFT' and at[2] == view.frame and at[3] == 'TOP' and at[4] == math.floor(-90 + (left - right) / 2 + 0.5), 'whole sample centered on whole pixels')
+    assert(at[5] == -math.floor(top + 4 + 0.5), 'top padding only as tall as the top band')
+    local _, height = M:GetPreviewSize(view)
+    assert(height == 4 + top + sample:GetHeight() + bottom + 6 + 18, 'preview only as tall as the sample')
     assert(math.abs(sample.width - 180) < 1, 'sample size follows the kind')
     assert(sample.name.text == 'Enemy Nameplate' and sample.healthText.text == '72%' and sample.health.value == 72)
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
