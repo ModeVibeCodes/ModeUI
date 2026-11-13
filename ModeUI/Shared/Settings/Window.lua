@@ -281,7 +281,6 @@ function addon:CreateConfig()
         if self.CloseSettingsSearch then self:CloseSettingsSearch() end
         if selected ~= id and self.CloseTimerColorPicker then self:CloseTimerColorPicker() end
         if selected ~= id and self.CloseFontDropdown then self:CloseFontDropdown() end
-        if selected ~= id then self:CloseModulePreview() end
         for _, page in pairs(pages) do page:Hide() end
         selected = id
         self:UpdateConfigTitle(id)
@@ -323,7 +322,6 @@ function addon:CreateConfig()
     window:RegisterEvent("DISPLAY_SIZE_CHANGED")
     window:SetScript("OnEvent", function()
         self:FinishWindowInteraction(); self:UpdateWindowBounds(); W.RefreshPixelInsets()
-        self:UpdateModulePreviewBounds()
         if self.EditMode then self.EditMode:ViewportChanged() end
     end)
     window:SetScript("OnShow", function()
@@ -339,7 +337,6 @@ function addon:CreateConfig()
         self:FinishWindowInteraction()
         if self.CloseTimerColorPicker then self:CloseTimerColorPicker() end
         if self.CloseFontDropdown then self:CloseFontDropdown() end
-        self:CloseModulePreview()
         if self.CloseSettingsSearch then self:CloseSettingsSearch() end
         if window.editSuspended then return end
         self:ResetDisplayModes()

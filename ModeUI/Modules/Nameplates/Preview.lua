@@ -168,7 +168,7 @@ end
 function M:GetPreviewSize()
     local style = self.db[self:PreviewKind()]
     local top, bottom, side = Room(style)
-    return math.max(320, style.width + 2 * side), top + style.healthHeight + 4 + bottom + 24 + HINT_HEIGHT
+    return math.max(320, style.width + 2 * side), top + style.healthHeight + 4 + bottom + 6 + HINT_HEIGHT
 end
 
 function M:RenderPreview(view)
@@ -192,11 +192,14 @@ function M:RenderPreview(view)
                 self:PaintSample(plate, style, self.previewSamples[kind], progress)
                 FitText(view.targets[kind].name, plate.name)
                 FitText(view.targets[kind].healthText, plate.healthText)
-                caption:SetPoint("BOTTOM", view.frame, "BOTTOM", 0, HINT_HEIGHT + 2)
+                -- What the sample shows, bottom left; the click hint sits bottom right.
+                caption:SetPoint("BOTTOMLEFT", view.frame, "BOTTOMLEFT", 0, 2)
+                caption:SetJustifyH("LEFT")
                 caption:SetText(L[self.previewSamples[kind].caption])
             else
                 plate:Hide()
                 caption:SetPoint("CENTER", view.frame, "CENTER", 0, 0)
+                caption:SetJustifyH("CENTER")
                 caption:SetText(L[self.kindLabels[kind] .. " plates use Blizzard's look"])
             end
         end
@@ -223,8 +226,8 @@ function M:CreateConfigPreview(parent)
         caption:SetJustifyH("CENTER")
         view.captions[kind] = caption
     end
-    view.hint = W.Label(frame, L["Click any part of the sample to jump to its settings."], nil, 0, 0, 360, T.muted)
-    view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOM", frame, "BOTTOM", 0, 2); view.hint:SetJustifyH("CENTER")
+    view.hint = W.Label(frame, L["Click a part to open its settings"], nil, 0, 0, 200, T.faint or T.muted)
+    view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2); view.hint:SetJustifyH("RIGHT")
     function view.Refresh() M:RenderPreview(view) end
     view.RenderSimulation = view.Refresh
     return view

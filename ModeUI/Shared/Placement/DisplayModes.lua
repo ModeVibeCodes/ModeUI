@@ -77,7 +77,6 @@ function addon:InitializeDisplayModes()
         if self.FinishWindowInteraction then self:FinishWindowInteraction() end
         if self.CloseTimerColorPicker then self:CloseTimerColorPicker() end
         if self.CloseFontDropdown then self:CloseFontDropdown() end
-        if self.CloseModulePreview then self:CloseModulePreview() end
         self:BroadcastCombatState(true)
     end)
     self.Events:On(self, "PLAYER_REGEN_ENABLED", function()
