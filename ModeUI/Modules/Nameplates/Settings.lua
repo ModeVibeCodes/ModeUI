@@ -9,7 +9,7 @@ if not M then return end
 -- every tab, then cards of related settings, side by side where they fit.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
-    local editing, auraGroup = "enemy", "debuffs"
+    local editing, auraGroup, indicatorPart = "enemy", "debuffs", "level"
     local function Kind() return editing end
     local function db() return M.db[editing] end
     local function Group() return db()[auraGroup] end
@@ -18,6 +18,8 @@ function M:CreateConfigPage(parent)
     page.nameplateAuraGroup = function() return auraGroup end
     function page.SetEditing(kind) if M.styleDefaults[kind] then editing = kind; page:Refresh(); page:Layout() end end
     function page.SetAuraGroup(group) if M.auraGroupLabels[group] then auraGroup = group; page:Refresh(); page:Layout() end end
+    function page.SetIndicatorPart(part) if M.indicatorPartLabels[part] then indicatorPart = part; page:Refresh(); page:Layout() end end
+    page.nameplateIndicatorPart = function() return indicatorPart end
     local owner = M:AppearanceOwner(Kind)
     local function Refresh(fn) page.refreshers[#page.refreshers + 1] = fn end
     local function Set(key) return function(value) M:SetOption(editing, key, value) end end
@@ -248,15 +250,32 @@ function M:CreateConfigPage(parent)
     end)
 
     Tab("Indicators", function()
-        page:Group(L["Indicator"])
-        page.indicatorToggles = Toggles({ { "Show Indicator", "showIndicator" }, { "Level", "indicatorLevel" },
-            { "Elite and Rare", "indicatorClassification" }, { "Quest", "indicatorQuest" } }); Mark("indicator")
-        page.indicatorAnchorButtons = Anchor("Anchor", function() return db().indicatorAnchor end, Set("indicatorAnchor"), true)
-        local indicator = Columns({ "Icon Size", "Level Size" })
-        Slider(indicator[1], "indicatorSize", "px"); Slider(indicator[2], "indicatorFontSize")
-        local offset = Columns({ "Offset X", "Offset Y" })
-        Slider(offset[1], "indicatorX", "px"); Slider(offset[2], "indicatorY", "px")
-        Note("Quest shows on creatures that are part of one of your quests. Level uses the game's difficulty color.", 32)
+        page:Group(L["Indicators"])
+        page.indicatorToggles = Toggles({ { "Show Indicators", "showIndicator" } })
+        local parts = {}
+        for _, part in ipairs(M.indicatorParts) do parts[#parts + 1] = { id = part, label = M.indicatorPartLabels[part] } end
+        page.indicatorPartButtons = Pills("Indicator", parts, function() return indicatorPart end, page.SetIndicatorPart, 112)
+        Mark("indicator")
+        local function Key(suffix) return indicatorPart .. suffix end
+        local function SetPart(suffix) return function(value) M:SetOption(editing, Key(suffix), value) end end
+        page.indicatorPartToggles = Toggles({ { "Show This Indicator", "part",
+            get = function() return db()[M.indicatorShowKeys[indicatorPart]] end,
+            set = function(value) M:SetOption(editing, M.indicatorShowKeys[indicatorPart], value) end } })
+        page.indicatorAnchorButtons = Anchor("Anchor", function() return db()[Key("Anchor")] end, SetPart("Anchor"), true)
+        -- Icons and the level text have different size ranges.
+        When(function() return indicatorPart ~= "level" end, function()
+            local place = Columns({ "Icon Size", "Offset X", "Offset Y" })
+            SliderIn(place[1], M.ranges.questSize, function() return db()[Key("Size")] end, SetPart("Size"), "px")
+            SliderIn(place[2], M.ranges.questX, function() return db()[Key("X")] end, SetPart("X"), "px")
+            SliderIn(place[3], M.ranges.questY, function() return db()[Key("Y")] end, SetPart("Y"), "px")
+        end)
+        When(function() return indicatorPart == "level" end, function()
+            local place = Columns({ "Text Size", "Offset X", "Offset Y" })
+            SliderIn(place[1], M.ranges.levelSize, function() return db().levelSize end, Set("levelSize"))
+            SliderIn(place[2], M.ranges.levelX, function() return db().levelX end, Set("levelX"), "px")
+            SliderIn(place[3], M.ranges.levelY, function() return db().levelY end, Set("levelY"), "px")
+        end)
+        Note("Indicators on the same anchor line up in one row: quest, elite and rare, level. Quest shows on creatures that are part of one of your quests; level uses the game's difficulty color.", 48)
         page:Group(L["Raid Marker"])
         page.markerToggles = Toggles({ { "Show Raid Marker", "showRaidIcon" } }); Mark("markers")
         page.raidAnchorButtons = Anchor("Anchor", function() return db().raidAnchor end, Set("raidAnchor"), true)
@@ -273,7 +292,8 @@ function M:JumpTo(kind, target, group)
     local page = self.page
     if not page or not page.jumpTargets or not page.jumpTargets[target] then return false end
     page.SetEditing(kind)
-    if group then page.SetAuraGroup(group) end
+    if group and target == "indicator" then page.SetIndicatorPart(group)
+    elseif group then page.SetAuraGroup(group) end
     page:Reveal(page.jumpTargets[target])
     return true
 end

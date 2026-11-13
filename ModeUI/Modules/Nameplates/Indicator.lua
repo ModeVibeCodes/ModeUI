@@ -2,13 +2,14 @@ local _, addon = ...
 local M = addon.Nameplates
 if not M then return end
 
--- The indicator: a quest icon, a classification icon (elite, rare elite, rare,
--- boss) and the unit's level, side by side in one small frame placed by
--- anchor like the raid marker. On a side of the bar it sits past the marker,
--- and aura rows and target arrows sit past it. Level and classification come
--- from UnitLevel and UnitClassification, quest from UnitIsQuestBoss and
--- C_QuestLog.UnitIsRelatedToActiveQuest (Domain/Level, Domain/Quest); an
--- unknown or secret answer hides that part.
+-- Indicators: a quest icon, a classification icon (elite, rare elite, rare,
+-- boss) and the unit's level. Each has its own switch, anchor, offset and size.
+-- Indicators that share an anchor line up in one row (quest, classification,
+-- level), placed like the raid marker; on a side of the bar the row sits past
+-- the marker, and aura rows and target arrows sit past it. Level and
+-- classification come from UnitLevel and UnitClassification, quest from
+-- UnitIsQuestBoss and C_QuestLog.UnitIsRelatedToActiveQuest (Domain/Level,
+-- Domain/Quest); an unknown or secret answer hides that indicator.
 local Kit, Domain = addon.Kit, addon.Domain
 local Level, Quest = Domain.Level, Domain.Quest
 
@@ -17,82 +18,104 @@ local Level, Quest = Domain.Level, Domain.Quest
 M.classificationAtlas = { elite = "nameplates-icon-elite-gold", worldboss = "nameplates-icon-elite-gold",
     rareelite = "nameplates-icon-elite-silver", rare = "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Rare-Star" }
 M.QUEST_ATLAS = "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Quest"
+-- Each indicator's switch; its anchor, offsets and size are <part>Anchor,
+-- <part>X, <part>Y and <part>Size (the level's size is its text size).
+M.indicatorShowKeys = { quest = "indicatorQuest", classification = "indicatorClassification", level = "indicatorLevel" }
 
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
+local function Round(value, px) return math.floor(value / px + 0.5) * px end
 
 function M:BuildIndicator(plate)
-    local frame = CreateFrame("Frame", nil, plate.textLayer)
-    frame.quest = frame:CreateTexture(nil, "OVERLAY")
-    frame.classification = frame:CreateTexture(nil, "OVERLAY")
-    frame.level = Kit.Text(frame)
-    frame.level.lift = Kit.Text(frame, "ARTWORK")
-    frame:Hide()
-    plate.indicator, plate.indicatorWidth = frame, 0
+    local layer = plate.textLayer
+    local level = Kit.Text(layer)
+    level.lift = Kit.Text(layer, "ARTWORK")
+    plate.indicatorParts = { quest = layer:CreateTexture(nil, "OVERLAY"), classification = layer:CreateTexture(nil, "OVERLAY"), level = level }
+    for _, part in ipairs(M.indicatorParts) do plate.indicatorParts[part]:Hide() end
+    level.lift:Hide()
+    plate.indicatorRows, plate.indicatorRoom = {}, { LEFT = 0, RIGHT = 0 }
+end
+
+-- One row frame per anchor in use, made on demand.
+local function Row(plate, anchor)
+    local row = plate.indicatorRows[anchor]
+    if not row then
+        row = CreateFrame("Frame", nil, plate.textLayer)
+        row.width, row.height = 0, 0
+        plate.indicatorRows[anchor] = row
+    end
+    return row
 end
 
 -- Fonts follow the plate's text settings; called from LayoutPlate.
 function M:LayoutIndicator(plate)
     local db, px, path = self:Style(plate), plate.px or 1, plate.fontPath
-    local level = plate.indicator.level
-    Kit.Font(level, db, db.indicatorFontSize, path, px)
+    local level = plate.indicatorParts.level
+    Kit.Font(level, db, db.levelSize, path, px)
     level:SetJustifyH("LEFT")
-    Kit.LayoutLift(level, db, db.indicatorFontSize, path, px, true, "LEFT")
-    self:PlaceIndicator(plate)
+    Kit.LayoutLift(level, db, db.levelSize, path, px, level:IsShown(), "LEFT")
+    local state = plate.indicatorState or {}
+    self:PaintIndicator(plate, state.quest, state.classification, state.level, state.color)
 end
 
--- Shows the parts given, left to right: quest, classification, level.
--- quest is a boolean, classification a UnitClassification string, level the
--- text to show ("" for none) and color its { r, g, b } or nil for the text color.
+-- Shows the indicators given: quest is a boolean, classification a
+-- UnitClassification string, level the text to show ("" for none) and color
+-- its { r, g, b } or nil for the text color.
 function M:PaintIndicator(plate, quest, classification, level, color)
-    local db, frame, px = self:Style(plate), plate.indicator, plate.px or 1
-    local size, gap, x = Snap(db.indicatorSize, px), 2 * px, 0
-    local function Icon(texture, atlas)
-        if not atlas then texture:Hide(); return end
-        texture:SetAtlas(atlas)
-        texture:SetSize(size, size)
-        texture:ClearAllPoints(); texture:SetPoint("LEFT", frame, "LEFT", x, 0)
-        texture:Show()
-        x = x + size + gap
+    plate.indicatorState = { quest = quest, classification = classification, level = level, color = color }
+    local db, px, parts = self:Style(plate), plate.px or 1, plate.indicatorParts
+    local on, gap = db.showIndicator, 2 * px
+    local content = {
+        quest = on and db.indicatorQuest and quest and M.QUEST_ATLAS or nil,
+        classification = on and db.indicatorClassification and classification and M.classificationAtlas[classification] or nil,
+        level = on and db.indicatorLevel and level ~= nil and level ~= "" and level or nil,
+    }
+    for _, row in pairs(plate.indicatorRows) do row.width, row.height = 0, 0 end
+    for _, part in ipairs(M.indicatorParts) do
+        local region, value = parts[part], content[part]
+        if not value then
+            region:Hide()
+            if part == "level" then region.lift:Hide() end
+        else
+            local anchor = db[part .. "Anchor"]
+            local row = Row(plate, anchor)
+            local w, h
+            if part == "level" then
+                Kit.Write(region, value)
+                local c = color or db.textColor
+                region:SetTextColor(c[1], c[2], c[3], 1)
+                w, h = Snap(region:GetStringWidth(), px), Snap(db.levelSize + 2, px)
+                region.lift:SetShown(db.shadow and db.liftedShadow)
+            else
+                region:SetAtlas(value)
+                w = Snap(db[part .. "Size"], px); h = w
+                region:SetSize(w, h)
+            end
+            region:ClearAllPoints()
+            region:SetPoint("LEFT", row, "LEFT", row.width + Round(db[part .. "X"], px), Round(db[part .. "Y"], px))
+            region:Show()
+            row.width, row.height = row.width + w + gap, math.max(row.height, h)
+        end
     end
-    local on = db.showIndicator
-    Icon(frame.quest, on and db.indicatorQuest and quest and M.QUEST_ATLAS or nil)
-    Icon(frame.classification, on and db.indicatorClassification and classification and M.classificationAtlas[classification] or nil)
-    local text = (on and db.indicatorLevel and level) or ""
-    Kit.Write(frame.level, text)
-    if text ~= "" then
-        local c = color or db.textColor
-        frame.level:SetTextColor(c[1], c[2], c[3], 1)
-        frame.level:ClearAllPoints(); frame.level:SetPoint("LEFT", frame, "LEFT", x, 0)
-        x = x + Snap(frame.level:GetStringWidth(), px) + gap
+    local room = { LEFT = 0, RIGHT = 0 }
+    for anchor, row in pairs(plate.indicatorRows) do
+        local width = math.max(0, row.width - gap)
+        row:SetShown(width > 0)
+        if width > 0 then
+            local marker = (db.showRaidIcon and db.raidAnchor == anchor) and (plate.markSize or 0) + 3 * px or 0
+            local dx = anchor == "LEFT" and -marker or anchor == "RIGHT" and marker or 0
+            self:PlaceIcon(plate, row, anchor, width, math.max(px, row.height), dx, 0)
+            if room[anchor] then room[anchor] = width + 3 * px end
+        end
     end
-    frame.level:SetShown(text ~= ""); frame.level.lift:SetShown(text ~= "" and db.shadow and db.liftedShadow)
-    local width = math.max(0, x - gap)
-    frame:SetSize(math.max(px, width), size)
-    frame:SetShown(width > 0)
-    local changed = width ~= plate.indicatorWidth
-    plate.indicatorWidth = width
-    self:PlaceIndicator(plate)
-    -- A wider or narrower indicator beside the bar moves the aura rows and arrows.
-    if changed and (db.indicatorAnchor == "LEFT" or db.indicatorAnchor == "RIGHT") then self:LayoutAuras(plate) end
+    local changed = room.LEFT ~= plate.indicatorRoom.LEFT or room.RIGHT ~= plate.indicatorRoom.RIGHT
+    plate.indicatorRoom = room
+    -- Wider or narrower indicators beside the bar move the aura rows and arrows.
+    if changed and plate.auraIcons then self:LayoutAuras(plate) end
 end
 
--- Placed like the raid marker; on a side shared with the marker, past it.
-function M:PlaceIndicator(plate)
-    local db, px = self:Style(plate), plate.px or 1
-    local anchor, dx = db.indicatorAnchor, db.indicatorX
-    local marker = (db.showRaidIcon and db.raidAnchor == anchor) and (plate.markSize or 0) + 3 * px or 0
-    if anchor == "LEFT" then dx = dx - marker elseif anchor == "RIGHT" then dx = dx + marker end
-    local frame = plate.indicator
-    self:PlaceIcon(plate, frame, anchor, math.max(px, plate.indicatorWidth or 0), Snap(db.indicatorSize, px), dx, db.indicatorY)
-end
-
--- Room the indicator takes beside the bar on one side, with a 3px gap.
+-- Room the indicators take beside the bar on one side, with a 3px gap.
 function M:IndicatorRoom(plate, side)
-    local db, px = self:Style(plate), plate.px or 1
-    if db.showIndicator and db.indicatorAnchor == side and (plate.indicatorWidth or 0) > 0 then
-        return plate.indicatorWidth + 3 * px
-    end
-    return 0
+    return plate.indicatorRoom and plate.indicatorRoom[side] or 0
 end
 
 function M:UpdateIndicator(plate)

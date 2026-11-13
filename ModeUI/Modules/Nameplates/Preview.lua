@@ -147,8 +147,11 @@ local function Room(style)
     local top, bottom, side = (style.showName and style.nameFontSize + 6 or 4), style.castHeight + 8, 40
     if style.raidAnchor:find("^TOP") then top = top + style.raidSize + 2 end
     if style.showIndicator then
-        if style.indicatorAnchor:find("^TOP") then top = top + style.indicatorSize + 2
-        elseif style.indicatorAnchor == "LEFT" or style.indicatorAnchor == "RIGHT" then side = side + 3 * style.indicatorSize end
+        for _, part in ipairs(M.indicatorParts) do
+            local anchor, size = style[part .. "Anchor"], part == "level" and 16 or style[part .. "Size"]
+            if anchor:find("^TOP") then top = top + size + 2
+            elseif anchor == "LEFT" or anchor == "RIGHT" then side = side + size + 2 end
+        end
     end
     if style.showAuras then
         for _, group in ipairs(M.auraGroups) do
@@ -220,7 +223,9 @@ function M:CreateConfigPreview(parent)
             name = Clickable(plate.name, kind, "name", nil, plate.textLayer),
             healthText = Clickable(plate.healthText, kind, "healthText", nil, plate.textLayer),
             markers = Clickable(plate.raidIcon, kind, "markers", nil, plate.textLayer),
-            indicator = Clickable(plate.indicator, kind, "indicator"),
+            quest = Clickable(plate.indicatorParts.quest, kind, "indicator", "quest", plate.textLayer),
+            classification = Clickable(plate.indicatorParts.classification, kind, "indicator", "classification", plate.textLayer),
+            level = Clickable(plate.indicatorParts.level, kind, "indicator", "level", plate.textLayer),
         }
         local caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
         caption:SetJustifyH("CENTER")

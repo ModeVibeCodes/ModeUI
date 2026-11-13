@@ -25,7 +25,11 @@ addon:RegisterModule("nameplates", M)
 -- Version 6: Color Softness is gone (colors are used as they are); Health
 -- Opacity and Background Opacity fade the bar and its background; each
 -- threat status has its own color.
-M.VERSION = 6
+-- Version 7: the quest, classification and level indicators each have their
+-- own anchor, offset and size.
+M.VERSION = 7
+M.indicatorParts = { "quest", "classification", "level" }
+M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
 M.kinds = { "enemy", "friendly" }
 M.kindLabels = { enemy = "Enemy", friendly = "Friendly" }
 M.auraGroups = { "crowdControl", "debuffs", "buffs" }
@@ -74,7 +78,9 @@ local function Style(kind)
         showRaidIcon = true, raidAnchor = "LEFT", raidX = 0, raidY = 0, raidSize = 16,
         -- Indicator: quest icon, classification icon and level, by anchor.
         showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
-        indicatorAnchor = "LEFT", indicatorX = 0, indicatorY = 0, indicatorSize = 14, indicatorFontSize = 9,
+        questAnchor = "LEFT", questX = 0, questY = 0, questSize = 14,
+        classificationAnchor = "LEFT", classificationX = 0, classificationY = 0, classificationSize = 14,
+        levelAnchor = "LEFT", levelX = 0, levelY = 0, levelSize = 9,
         -- Target indicator: border, glow, arrows, border and arrows, or none.
         targetStyle = "border", targetColor = Copy(P.accent), targetThickness = 1, targetArrowSize = 12, targetArrowGap = 4,
         -- Auras: settings for every group, then each group on its own.
@@ -103,7 +109,9 @@ M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = {
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },
     castX = { -50, 50, 1 }, castY = { -50, 50, 1 },
-    indicatorX = { -50, 50, 1 }, indicatorY = { -50, 50, 1 }, indicatorSize = { 8, 32, 1 }, indicatorFontSize = { 6, 20, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
+    questX = { -50, 50, 1 }, questY = { -50, 50, 1 }, questSize = { 8, 32, 1 },
+    classificationX = { -50, 50, 1 }, classificationY = { -50, 50, 1 }, classificationSize = { 8, 32, 1 },
+    levelX = { -50, 50, 1 }, levelY = { -50, 50, 1 }, levelSize = { 6, 20, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
     targetThickness = { 1, 3, 1 }, targetArrowSize = { 8, 48, 1 }, targetArrowGap = { 0, 60, 1 } }
 M.groupRanges = { size = { 10, 40, 1 }, max = { 1, 12, 1 }, x = { -50, 50, 1 }, y = { -50, 50, 1 } }
 -- Anchors around the plate, read like a compass: Top sits above the name,
@@ -129,7 +137,7 @@ M.choices = {
     auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
     auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" } },
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,
-    indicatorAnchor = M.elementAnchors,
+    questAnchor = M.elementAnchors, classificationAnchor = M.elementAnchors, levelAnchor = M.elementAnchors,
 }
 M.growChoices = { { id = "right", label = "Right" }, { id = "left", label = "Left" }, { id = "up", label = "Up" },
     { id = "down", label = "Down" }, { id = "center", label = "Center" } }
@@ -218,6 +226,23 @@ local function MigrateV5(db)
     end
 end
 
+-- Version 6 -> 7: the one indicator's place and sizes go to each indicator.
+local RETIRED_V6 = { "indicatorAnchor", "indicatorX", "indicatorY", "indicatorSize", "indicatorFontSize" }
+local function MigrateV6(db)
+    for _, kind in ipairs(M.kinds) do
+        local style = db[kind]
+        if type(style) == "table" then
+            if type(style.indicatorAnchor) == "string" then
+                for _, part in ipairs(M.indicatorParts) do
+                    style[part .. "Anchor"], style[part .. "X"], style[part .. "Y"] = style.indicatorAnchor, style.indicatorX, style.indicatorY
+                end
+                style.questSize, style.classificationSize, style.levelSize = style.indicatorSize, style.indicatorSize, style.indicatorFontSize
+            end
+            for _, key in ipairs(RETIRED_V6) do style[key] = nil end
+        end
+    end
+end
+
 local function ValidateGroup(value, default, label)
     assert(Public(value) and type(value) == "table", "Invalid nameplate aura group: " .. label)
     for key, fallback in pairs(default) do
@@ -276,6 +301,7 @@ function M.Initialize(db)
     if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
+    if db.version == 6 then MigrateV6(db); db.version = 7 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

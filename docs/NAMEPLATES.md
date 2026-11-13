@@ -37,10 +37,13 @@ frame and fades Blizzard's art. Each plate has:
   (who the caster is targeting, in its class color, on a line past the bar; on by
   default for enemies); **Timer** (seconds left, from public cast times or the
   cast's duration object; empty while the game hides both).
-- **Indicator**: a quest icon (quest bosses and creatures tied to your active
+- **Indicators**: a quest icon (quest bosses and creatures tied to your active
   quests), Blizzard's elite, rare elite, rare and boss icons, and the level in
-  its difficulty color, placed by anchor. Beside the bar it sits past the raid
-  marker; aura rows and target arrows sit past it.
+  its difficulty color. Pick one with **Indicator** (Quest, Elite and Rare,
+  Level); each has **Show This Indicator**, an **Anchor**, **Offset X/Y** and a
+  size (icon size, or the level's text size). Indicators on the same anchor line
+  up in one row; beside the bar the row sits past the raid marker, and aura rows
+  and target arrows sit past it. Clicking one in the preview selects it.
 - **Slug Text** (on by default): text drawn from glyph outlines, sharp at any
   size. See [API_COMPATIBILITY.md](API_COMPATIBILITY.md) for how it is applied.
 - **Auras** in three groups, the **raid marker**, and a **target indicator**.
@@ -134,10 +137,11 @@ frames, never secure, so they also work in combat. Settings change outside comba
 
 ## Settings versions
 
-Version 6. Version 1 (one shared set) copies into both kinds; version 2 drops the
+Version 7. Version 1 (one shared set) copies into both kinds; version 2 drops the
 retired texture choice; version 3's single aura row becomes the three groups;
 version 4's target highlight switch becomes a target style, and each aura group
-grows the way its anchor did; version 5's Color Softness is removed. New
+grows the way its anchor did; version 5's Color Softness is removed; version 6's single indicator place and
+sizes go to each indicator. New
 settings take their defaults.
 
 ## Files

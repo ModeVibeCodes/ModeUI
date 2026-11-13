@@ -103,7 +103,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'interface' and not M.enabled, 'registered, off by default')
-    assert(M.db.version == 6 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 7 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
 
@@ -146,7 +146,8 @@ world.run([==[
     assert(leftTop[5] > topBottom[5], 'side bands overlap the top band so no seam opens')
     assert(plate.castBox.bands == nil and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
     -- The indicator reads level, classification and quest from the unit.
-    assert(not plate.indicator:IsShown() and plate.indicatorWidth == 0, 'nothing known, nothing shown')
+    local P1 = plate.indicatorParts
+    assert(not P1.level:IsShown() and not P1.quest:IsShown() and M:IndicatorRoom(plate, 'LEFT') == 0, 'nothing known, nothing shown')
     local questUnits = {}
     function UnitLevel(u) return units[u] and units[u].level end
     function UnitClassification(u) return units[u] and units[u].classification end
@@ -155,17 +156,17 @@ world.run([==[
     function C_QuestLog.UnitIsRelatedToActiveQuest(u) return questUnits[u] == true end
     units.nameplate1.level, units.nameplate1.classification = 61, 'rareelite'
     FireEvent('UNIT_LEVEL', 'nameplate1')
-    assert(plate.indicator.level.text == '61' and plate.indicator.classification.atlas == 'nameplates-icon-elite-silver', 'level and rare elite')
-    assert(not plate.indicator.quest:IsShown(), 'not a quest unit')
+    assert(P1.level.text == '61' and P1.classification.atlas == 'nameplates-icon-elite-silver', 'level and rare elite')
+    assert(not P1.quest:IsShown(), 'not a quest unit')
     questUnits.nameplate1 = true; FireEvent('QUEST_LOG_UPDATE')
-    assert(plate.indicator.quest:IsShown(), 'quest unit after the quest log updates')
+    assert(P1.quest:IsShown(), 'quest unit after the quest log updates')
     units.nameplate1.level = Secret('level'); FireEvent('UNIT_LEVEL', 'nameplate1')
-    assert(plate.indicator.level.text == '' and not plate.indicator.level:IsShown(), 'secret level hidden')
+    assert(not P1.level:IsShown(), 'secret level hidden')
     units.nameplate1.level = -1; units.nameplate1.classification = 'worldboss'; FireEvent('UNIT_CLASSIFICATION_CHANGED', 'nameplate1')
-    assert(plate.indicator.level.text == '??' and plate.indicator.classification.atlas == 'nameplates-icon-elite-gold', 'boss')
+    assert(P1.level.text == '??' and P1.classification.atlas == 'nameplates-icon-elite-gold', 'boss')
     questUnits.nameplate1, units.nameplate1.level, units.nameplate1.classification = nil, nil, nil
     FireEvent('QUEST_LOG_UPDATE')
-    assert(not plate.indicator:IsShown(), 'cleared')
+    assert(not P1.level:IsShown() and not P1.quest:IsShown() and not P1.classification:IsShown(), 'cleared')
     units.nameplate1.threat = 3; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'nameplate1')
     assert(plate.health.statusBarColor[1] == M.threatPalette.aggro[1], 'aggro is red')
     -- Each threat status has its own color setting.
@@ -581,23 +582,35 @@ world.run([==[
     assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
     view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')
     assert(page.selectedSection.title == 'Indicators', 'marker click opens Indicators')
-    -- The indicator: quest icon, classification icon and level, side by side.
-    local ind = sample.indicator
-    assert(ind:IsShown() and ind.quest:IsShown() and ind.quest.atlas == M.QUEST_ATLAS, 'quest icon')
-    assert(ind.classification.atlas == 'nameplates-icon-elite-gold' and ind.level.text == '62', 'elite icon and level')
-    assert(Point(ind.classification)[4] == ind.quest.width + 2 and sample.indicatorWidth > 2 * M.db.enemy.indicatorSize, 'laid out left to right')
-    -- On the left it sits past the raid marker, and crowd control past both.
-    assert(Point(ind)[1] == 'RIGHT' and Point(ind)[4] == -3 - (sample.markSize + 3), 'indicator past the marker')
-    assert(M:SideRoom(sample, 'LEFT') == sample.markSize + 3 + sample.indicatorWidth + 3, 'side room counts the indicator')
-    assert(M:SetOption('enemy', 'indicatorQuest', false) and not ind.quest:IsShown() and Point(ind.classification)[4] == 0, 'quest off')
-    assert(M:SetOption('enemy', 'indicatorAnchor', 'TOPRIGHT') and Point(ind)[1] == 'BOTTOMRIGHT', 'indicator anchor')
-    assert(M:SideRoom(sample, 'LEFT') == sample.markSize + 3, 'no side room when moved')
-    assert(M:SetOption('enemy', 'showIndicator', false) and not ind:IsShown() and sample.indicatorWidth == 0, 'indicator off')
-    assert(not M:SetOption('enemy', 'indicatorSize', 99) and not M:SetOption('enemy', 'indicatorAnchor', 'MIDDLE'), 'refused')
-    assert(M:SetOption('enemy', 'showIndicator', true) and M:SetOption('enemy', 'indicatorQuest', true) and M:SetOption('enemy', 'indicatorAnchor', 'LEFT'))
-    assert(M.db.friendly.showIndicator == false, 'friendly plates start without the indicator')
-    view.targets.enemy.indicator.scripts.OnMouseUp(view.targets.enemy.indicator, 'LeftButton')
-    assert(page.selectedSection.title == 'Indicators', 'indicator click opens Indicators')
+    -- Indicators: quest, classification and level, each placed on its own;
+    -- those sharing an anchor line up in one row.
+    local parts = sample.indicatorParts
+    assert(parts.quest:IsShown() and parts.quest.atlas == M.QUEST_ATLAS, 'quest icon')
+    assert(parts.classification.atlas == 'nameplates-icon-elite-gold' and parts.level.text == '62', 'elite icon and level')
+    local row = sample.indicatorRows.LEFT
+    assert(Point(parts.quest)[2] == row and Point(parts.classification)[4] == parts.quest.width + 2, 'one row on the left')
+    -- On the left the row sits past the raid marker, and crowd control past both.
+    assert(Point(row)[1] == 'RIGHT' and Point(row)[4] == -3 - (sample.markSize + 3), 'row past the marker')
+    assert(M:SideRoom(sample, 'LEFT') == sample.markSize + 3 + sample.indicatorRoom.LEFT, 'side room counts the indicators')
+    assert(M:SetOption('enemy', 'indicatorQuest', false) and not parts.quest:IsShown() and Point(parts.classification)[4] == 0, 'quest off')
+    -- Each indicator has its own anchor, size and offsets.
+    assert(M:SetOption('enemy', 'levelAnchor', 'TOPRIGHT') and Point(parts.level)[2] == sample.indicatorRows.TOPRIGHT, 'level on its own anchor')
+    assert(Point(sample.indicatorRows.TOPRIGHT)[1] == 'BOTTOMRIGHT' and Point(parts.classification)[2] == row, 'classification stays left')
+    assert(M:SetOption('enemy', 'classificationSize', 20) and math.abs(parts.classification.width - 20) < 1, 'classification size')
+    assert(M:SetOption('enemy', 'levelX', 4) and Point(parts.level)[4] == 4, 'level offset')
+    assert(M:SetOption('enemy', 'levelSize', 12), 'level text size')
+    assert(not M:SetOption('enemy', 'questSize', 99) and not M:SetOption('enemy', 'levelAnchor', 'MIDDLE'), 'refused')
+    assert(M:SetOption('enemy', 'showIndicator', false) and not parts.level:IsShown() and not parts.classification:IsShown(), 'all off')
+    assert(M:IndicatorRoom(sample, 'LEFT') == 0, 'no room when off')
+    for _, key in ipairs({ 'levelAnchor', 'classificationSize', 'levelX', 'levelSize' }) do
+        assert(M:SetOption('enemy', key, M.styleDefaults.enemy[key]))
+    end
+    assert(M:SetOption('enemy', 'showIndicator', true) and M:SetOption('enemy', 'indicatorQuest', true))
+    assert(M.db.friendly.showIndicator == false, 'friendly plates start without indicators')
+    view.targets.enemy.classification.scripts.OnMouseUp(view.targets.enemy.classification, 'LeftButton')
+    assert(page.selectedSection.title == 'Indicators' and page.nameplateIndicatorPart() == 'classification', 'click opens that indicator')
+    view.targets.enemy.level.scripts.OnMouseUp(view.targets.enemy.level, 'LeftButton')
+    assert(page.nameplateIndicatorPart() == 'level', 'level click selects Level')
     local buffIcon = sample.auraIcons.buffs[1]
     buffIcon.scripts.OnMouseUp(buffIcon, 'LeftButton')
     assert(page.selectedSection.title == 'Auras' and page.nameplateAuraGroup() == 'buffs', 'aura click opens its group')
@@ -634,7 +647,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 6 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 7 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -655,7 +668,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 6 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 7 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -670,7 +683,7 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 6 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 7 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
         assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
@@ -691,7 +704,7 @@ end
 np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 6 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.version == 7 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
     assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
     assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
 ]==], "nameplates_v4")
@@ -705,10 +718,25 @@ np.enemy.healthOpacity, np.enemy.backgroundOpacity = nil, nil
 np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 6 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
+    assert(db.version == 7 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
     assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 55 and db.friendly.backgroundOpacity == 55, 'opacity defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v5")
+
+-- Version 6: the one indicator's place and sizes go to every indicator.
+local v6 = world.saved()
+np = v6.profiles.Default.modules.nameplates
+np.version = 6
+for _, key in ipairs({ 'quest', 'classification', 'level' }) do
+    np.enemy[key .. 'Anchor'], np.enemy[key .. 'X'], np.enemy[key .. 'Y'], np.enemy[key .. 'Size'] = nil, nil, nil, nil
+end
+np.enemy.indicatorAnchor, np.enemy.indicatorX, np.enemy.indicatorY, np.enemy.indicatorSize, np.enemy.indicatorFontSize = 'TOPLEFT', 3, -2, 18, 11
+H.Load({ before = STUBS, saved = v6 }).run([==[
+    local e = addon.Nameplates.db.enemy
+    assert(addon.Nameplates.db.version == 7 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
+    assert(e.questAnchor == 'TOPLEFT' and e.levelAnchor == 'TOPLEFT' and e.classificationX == 3 and e.levelY == -2, 'place carried over')
+    assert(e.questSize == 18 and e.classificationSize == 18 and e.levelSize == 11, 'sizes carried over')
+]==], "nameplates_v6")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()
