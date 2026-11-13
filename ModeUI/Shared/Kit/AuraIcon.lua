@@ -19,8 +19,11 @@ function Kit.AuraIconParts(icon)
     icon.gap = icon:CreateTexture(nil, "BACKGROUND", nil, 1)
     icon.rim:SetTexture(Kit.FLAT); icon.gap:SetTexture(Kit.FLAT)
     icon.icon = icon:CreateTexture(nil, "ARTWORK")
-    icon.cooldown = CreateFrame("Cooldown", nil, icon)
+    -- CooldownFrameTemplate carries the swipe texture; a bare Cooldown draws nothing.
+    icon.cooldown = CreateFrame("Cooldown", nil, icon, "CooldownFrameTemplate")
     icon.cooldown:SetAllPoints(icon.icon)
+    if icon.cooldown.SetDrawSwipe then icon.cooldown:SetDrawSwipe(true) end
+    if icon.cooldown.SetDrawBling then icon.cooldown:SetDrawBling(false) end
     if icon.cooldown.SetDrawEdge then icon.cooldown:SetDrawEdge(false) end
     if icon.cooldown.SetReverse then icon.cooldown:SetReverse(true) end
     if icon.cooldown.SetHideCountdownNumbers then icon.cooldown:SetHideCountdownNumbers(true) end
@@ -28,6 +31,9 @@ function Kit.AuraIconParts(icon)
     icon.textLayer:SetAllPoints()
     icon.count = Kit.Text(icon.textLayer)
     icon.count.lift = Kit.Text(icon.textLayer, "ARTWORK")
+    -- Seconds left, in the middle of the icon.
+    icon.timer = Kit.Text(icon.textLayer)
+    icon.timer.lift = Kit.Text(icon.textLayer, "ARTWORK")
     return icon
 end
 
@@ -58,6 +64,13 @@ function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon.count:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -px, px)
     icon.count:SetJustifyH("RIGHT")
     Kit.LayoutLift(icon.count, style, countSize, fontPath, px, true, "RIGHT")
+    local timerSize = math.max(7, math.floor(height * 0.5 + 0.5))
+    Kit.Font(icon.timer, style, timerSize, fontPath, px)
+    icon.timer:ClearAllPoints()
+    icon.timer:SetPoint("CENTER", icon, "CENTER", 0, 0)
+    icon.timer:SetJustifyH("CENTER")
+    Kit.LayoutLift(icon.timer, style, timerSize, fontPath, px, style.auraTimerText ~= false, "CENTER")
+    icon.timer:SetShown(style.auraTimerText ~= false)
 end
 
 -- The rim color: a dispel type's color, or the Onyx rim.

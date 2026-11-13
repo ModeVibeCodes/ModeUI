@@ -373,9 +373,9 @@ world.run([==[
     assert(plate.auraExtent.LEFT == 47 and plate.auraExtent.RIGHT == 22, 'aura rows reach past the bar')
     -- Moving one group: anchor, offsets, size and count, all validated.
     assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
-    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -42, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
+    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -43, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
     assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 165, 'offset X')
-    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -45, 'offset Y')
+    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -46, 'offset Y')
     assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
     assert(not M:SetOption('enemy', 'grow', 'sideways', 'debuffs'), 'unknown grow refused')
     assert(not M:SetOption('enemy', 'debuffs', {}) and not M:SetOption('enemy', 'filter', 'all', 'crowdControl'), 'one setting at a time')
@@ -571,9 +571,9 @@ world.run([==[
     assert(near > 0 and far == 0, 'the target line sits between the bars when the cast bar is above')
     assert(Point(sample.name)[5] == 2 + sample.castBarHeight + 2 + near, 'name moves above the cast bar and its target line')
     assert(Point(sample.castTarget)[1] == 'TOP' and Point(sample.castTarget)[3] == 'BOTTOM', 'target line under the upper cast bar')
-    assert(Point(sample.castBox)[5] == 2 + near, 'the cast bar moves up past the target line')
+    assert(Point(sample.castBox)[5] == 2 + near + M.db.enemy.castY, 'the cast bar moves up past the target line')
     assert(M:SetOption('enemy', 'castAnchor', 'BOTTOM') and M:SetOption('enemy', 'castY', -3) and Point(sample.castBox)[5] == -5)
-    assert(M:SetOption('enemy', 'castY', 0))
+    assert(M:SetOption('enemy', 'castY', M.styleDefaults.enemy.castY))
     -- Cast bar content: icon side, spell name, target line and timer.
     assert(sample.castTarget.text == 'Mode' and sample.castTarget:IsShown(), 'cast target in the sample')
     local paladin = addon.Domain.UnitColor.Class('PALADIN')
@@ -804,6 +804,18 @@ local CONTAINERS = STUBS .. [==[
     C_XMLUtil = { GetTemplateInfo = function(name) if name == 'CustomAuraContainerTemplate' then return {} end end }
     Enum = Enum or {}
     Enum.CustomAuraButtonDispelTypeTextureStyle = { PreserveAsset = 3 }
+    Enum.LuaCurveType = { Linear = 0, Step = 1 }
+    C_CurveUtil = { CreateColorCurve = function()
+        local curve = { points = {} }
+        function curve:SetType(t) self.type = t end
+        function curve:AddPoint(x, color) self.points[x] = color end
+        return curve
+    end }
+    C_StringUtil = { CreateNumericRuleFormatter = function()
+        local f = { breakpoints = {} }
+        function f:AddBreakpoint(b) self.breakpoints[#self.breakpoints + 1] = b end
+        return f
+    end }
     containers = {}
     local createFrame = CreateFrame
     function CreateFrame(kind, name, parent, template)
@@ -819,6 +831,7 @@ local CONTAINERS = STUBS .. [==[
             function button:SetDurationCooldown(cd) self.cooldownRegion = cd end
             function button:SetApplicationCount(fs) self.countRegion = fs end
             function button:AddDispelTypeTexture(t, o) self.dispelTexture, self.dispelOptions = t, o end
+            function button:SetDurationText(fs, o) self.timerRegion, self.timerOptions = fs, o end
             options.initializeFrame(button)
             self.groups[key].button = button
         end
@@ -853,7 +866,19 @@ withContainers.run([==[
     -- Buttons are styled in the Mode look and registered for the game to fill.
     local button = C.TOP.groups.debuffs.button
     assert(button.iconRegion == button.icon and button.cooldownRegion == button.cooldown and button.countRegion == button.count, 'regions registered')
-    assert(button.dispelTexture == button.rim and button.dispelOptions.customDispelColorMap.Magic and button.dispelOptions.customDispelColorMap.None, 'rim by dispel type')
+    -- Rims by type through a step curve on the dispel type IDs, which also colors secret types.
+    local curve = button.dispelOptions.customDispelColorCurve
+    local e = M.db.enemy
+    assert(button.dispelTexture == button.rim and curve and curve.type == Enum.LuaCurveType.Step, 'rim by dispel type through a curve')
+    assert(curve.points[1].r == e.auraMagicColor[1] and curve.points[2].r == e.auraCurseColor[1] and curve.points[9].r == e.auraEnrageColor[1], 'type IDs')
+    assert(curve.points[11].r == e.auraBleedColor[1] and curve.points[0].r == e.auraNoTypeColor[1], 'bleed and no type')
+    assert(button.dispelOptions.showWithoutDispelType and button.dispelOptions.showWhenHelpful, 'every aura gets a rim')
+    -- Crowd control without a type is orange by default.
+    local cc = C.LEFT.groups.crowdControl.button.dispelOptions.customDispelColorCurve
+    assert(cc.points[0].r == e.auraCCNoTypeColor[1] and e.auraCCNoTypeColor[1] == 1, 'orange crowd control without a type')
+    -- Swipe and time text are registered for the game to drive.
+    assert(button.timerRegion == button.timer and button.timerOptions.textFormatter.breakpoints[1].format == '%d', 'time text')
+    assert(not button.timer.lift:IsShown(), 'no lifted copy on game-driven text')
     assert(math.abs(button.width - 20) < 1 and math.abs(button.height - 16) < 1, 'cropped 20 x 16')
     -- Placement: debuffs grow from the center above the name; crowd control grows left past the marker.
     assert(C.TOP.flowAnchor == 'BOTTOMLEFT' and Point(C.TOP)[3] == 'TOP', 'top row starts at the bar top')
@@ -864,6 +889,10 @@ withContainers.run([==[
     assert(M:SetOption('enemy', 'show', false, 'debuffs') and not top.enabled and not top:IsShown(), 'a hidden group stops its container')
     assert(M:SetOption('enemy', 'show', true, 'debuffs') and top.enabled)
     assert(M:SetOption('enemy', 'auraTimer', false) and plate.auraContainers.TOP ~= top and not top.enabled, 'look change: new container, old one stopped')
+    assert(M:SetOption('enemy', 'auraTimerText', false) and plate.auraContainers.TOP.groups.debuffs.button.timerRegion == nil, 'time text off')
+    local before = plate.auraContainers.LEFT
+    assert(M:SetOption('enemy', 'auraCCNoTypeColor', { 0.2, 0.4, 0.9 }) and plate.auraContainers.LEFT ~= before, 'color change rebuilds')
+    assert(plate.auraContainers.LEFT.groups.crowdControl.button.dispelOptions.customDispelColorCurve.points[0].b == 0.9, 'custom no-type color')
     -- Removing the unit stops every container.
     RemovePlate('nameplate1')
     for _, container in pairs(plate.auraContainers) do assert(not container.enabled, 'stopped on removal') end

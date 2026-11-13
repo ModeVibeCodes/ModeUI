@@ -112,7 +112,8 @@ function M:PaintSampleAuras(plate, style, sample)
             icon.jumpKind = plate.kind
             icon.icon:SetTexture(aura.icon)
             Kit.Write(icon.count, (style.auraCount and aura.count) and tostring(aura.count) or "")
-            Kit.TintAuraRim(icon, self:AuraRimColor(style, aura.dispel))
+            Kit.TintAuraRim(icon, self:AuraRimColor(style, aura.dispel, group))
+            Kit.Write(icon.timer, style.auraTimerText and tostring(math.max(0, aura.duration - aura.elapsed)) or "")
             if style.auraTimer then
                 icon.cooldown:SetCooldown(GetTime() - aura.elapsed, aura.duration); icon.cooldown:Show()
             else icon.cooldown:Hide() end
