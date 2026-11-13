@@ -640,7 +640,7 @@ world.run([==[
     switch[2].scripts.OnClick(switch[2])
     assert(page.nameplateEditing() == 'friendly' and page.nameplateEditButtons[3][2].selected, 'one switch across tabs')
     local editingRow = switch[1]:GetParent().row
-    assert(Point(editingRow.settingsLabel)[1] == 'LEFT', 'the Editing label is centered with its pills')
+    assert(Point(editingRow.settingsLabel)[1] == 'TOPLEFT' and editingRow.stacked and Point(switch[1]:GetParent())[1] == 'LEFT', 'the Editing label sits above its pills')
     -- Clicking a part of the sample jumps to its settings.
     local hits = view.targets.friendly
     hits.cast.scripts.OnEnter(hits.cast)

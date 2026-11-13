@@ -74,6 +74,7 @@ Shared\Settings\Widgets\Header.lua
 Shared\Settings\Widgets\Input.lua
 Shared\Settings\Widgets\AnchorPicker.lua
 Shared\Settings\Pages.lua
+Shared\Settings\PageControls.lua
 Shared\Settings\SectionTabs.lua
 Shared\Settings\ModeLayout.lua
 Shared\Settings\Previews.lua

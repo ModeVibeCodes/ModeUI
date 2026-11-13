@@ -169,8 +169,8 @@ function M:CreateConfigPage(parent)
         page.unitFrameBackgroundOpacity = SliderIn(fade[2], "barBackgroundOpacity", "%")
     end, false, function()
         -- Each frame's own, so a matched Target can differ from the Player.
-        Slider("Frame Width", "barWidth", "px")
         Choice("Fill Direction", "fillDirection")
+        Slider("Frame Width", "barWidth", "px")
     end)
 
     Tab("Portrait", function()

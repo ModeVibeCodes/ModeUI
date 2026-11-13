@@ -728,6 +728,16 @@ restored.run([====[
     assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')
     assert(Visible(Row('Layout','Fill Direction')) and Visible(Row('Layout','Frame Width')),'a matched Target still picks its width and fill direction')
+    -- The settings look (owner's Layout tab design): labels above controls, and two
+    -- dropdowns or sliders share a line in a card; the slider's value sits on its label line.
+    page:SelectSectionTab(page.sections[2]);page:Layout()
+    local editRow,fillRow,widthRow=Row('Layout','Editing'),Row('Layout','Fill Direction'),Row('Layout','Frame Width')
+    assert(editRow.stacked and editRow.pairable and fillRow.pairable and widthRow.pairable)
+    assert(editRow.offset==fillRow.offset and Point(fillRow)[4]>Point(editRow)[4],'Editing and Fill Direction share a line')
+    assert(widthRow.offset>fillRow.offset and Point(widthRow)[4]==Point(editRow)[4],'Frame Width on the next line, alone')
+    assert(math.abs(editRow.width-fillRow.width)<1 and widthRow.width>editRow.width,'halves, then the full width')
+    assert(Point(editRow.settingsLabel)[1]=='TOPLEFT' and Point(editRow.settingsHost)[5]==-22,'label above the control')
+    local input=widthRow.settingsHost.numericInput;assert(Point(input)[2]==widthRow.settingsHost.valueAnchor and Point(widthRow.settingsHost.slider,2)[4]==0,'value on the label line, slider full width')
     -- Status (Portrait tab): the frame's own, so a matched Target edits it; rested and pulse are the Player's.
     assert(page.unitFrameRestCorner and Visible(page.unitFrameRestCorner:GetParent().row),'status on a matched Target')
     page.SetEditing('player');assert(Visible(page.unitFrameCombatCorner:GetParent().row))

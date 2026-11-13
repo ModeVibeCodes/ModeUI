@@ -15,7 +15,7 @@ function W.NumericInput(parent, getter, setter, minimum, maximum, width, decimal
     input:SetJustifyH("CENTER")
     addon.Media:BindInterfaceFont(input, GameFontHighlight, T.fontSize.body)
     W.CrispText(input)
-    W.Texture(input, "InputField")
+    input.field = W.Texture(input, "InputField")
     local applying
     function input:Refresh(force)
         if force or not self:HasFocus() then
@@ -72,16 +72,23 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
         if settingsParent.row then settingsParent.row.settingsHasSlider=true;break end
         settingsParent=settingsParent:GetParent()
     end
+    -- Stacked rows and column cells give a slot at the right of the label line
+    -- (Pages.lua): the value sits there as plain text and the slider takes the
+    -- full width; such a row can share its line with another.
+    local slot = parent.valueAnchor
+    if slot and parent.row and parent.row.stacked then parent.row.pairable = true end
     local valueBox = CreateFrame("Frame", nil, parent)
-    valueBox:SetPoint("RIGHT", 0, 0); valueBox:SetSize(VALUE_WIDTH, VALUE_HEIGHT)
+    valueBox:SetSize(VALUE_WIDTH, VALUE_HEIGHT)
+    if slot then valueBox:SetPoint("RIGHT", slot, "RIGHT", 0, 0) else valueBox:SetPoint("RIGHT", 0, 0) end
     valueBox.box = W.Box(valueBox, "ModeFlat"); valueBox.box:SetColors(T.field, T.rim)
-    local label = W.Label(valueBox, "", nil, 0, 0, VALUE_WIDTH - 4, T.text)
+    valueBox.box:SetShown(not slot)
+    local label = W.Label(valueBox, "", nil, 0, 0, VALUE_WIDTH - 4, slot and T.muted or T.text)
     label:ClearAllPoints()
-    label:SetPoint("CENTER", 0, 0)
-    label:SetJustifyH("CENTER")
+    label:SetPoint(slot and "RIGHT" or "CENTER", 0, 0)
+    label:SetJustifyH(slot and "RIGHT" or "CENTER")
     local slider = CreateFrame("Slider", nil, parent)
     slider:SetPoint("LEFT", 0, 0)
-    slider:SetPoint("RIGHT", -(VALUE_WIDTH + VALUE_GAP), 0)
+    slider:SetPoint("RIGHT", slot and 0 or -(VALUE_WIDTH + VALUE_GAP), 0)
     slider:SetHeight(24)
     slider:SetOrientation("HORIZONTAL")
     slider:SetMinMaxValues(minimum, maximum)
@@ -141,7 +148,17 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
         valueBox:Hide()
         local options = type(numeric) == "table" and numeric or {}
         input = W.NumericInput(parent, getter, setter, options.minimum or minimum, options.maximum or maximum,nil,options.decimals)
-        input:SetPoint("RIGHT")
+        if slot then
+            -- Plain right-aligned text on the label line; its field shows while editing.
+            input:SetPoint("RIGHT", slot, "RIGHT", 0, 0)
+            input:SetJustifyH("RIGHT"); input:SetTextColor(unpack(T.muted))
+            local outline = input.field and input.field.outline
+            if outline then
+                outline:SetShown(false)
+                input:HookScript("OnEditFocusGained", function() outline:SetShown(true) end)
+                input:HookScript("OnEditFocusLost", function() outline:SetShown(false) end)
+            end
+        else input:SetPoint("RIGHT") end
         input.afterApply = Refresh
         parent.numericInput = input
     end
