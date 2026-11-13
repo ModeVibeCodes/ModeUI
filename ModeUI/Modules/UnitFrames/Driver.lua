@@ -164,7 +164,7 @@ function M:Refresh()
         if self.ghosts[unit] then self:ApplyLayout(self.ghosts[unit], unit) end
         if f then
             self:ApplyLayout(f, unit)
-            self:SyncPosition(unit)
+            self:SyncPlacement(unit); self:SyncPosition(unit)
             if on and not self.watched[unit] then RegisterUnitWatch(f); self.watched[unit] = true
             elseif not on and self.watched[unit] then UnregisterUnitWatch(f); self.watched[unit] = nil; f:Hide() end
         end

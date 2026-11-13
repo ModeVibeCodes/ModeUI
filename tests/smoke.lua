@@ -78,7 +78,7 @@ imported.run([[
     local M=addon.UnitFrames
     assert(ModeUIDB.importedFrom=='PlayTheGameTools:Mode','imported from the active PTG profile')
     assert(M.enabled and M.db.player.barWidth==260 and M.db.target.barWidth==210 and M.db.target.matchPlayer==false)
-    assert(M.db.layoutVersion==12 and M.db.player.nameColorMode=='sky','migrated to the current layout')
+    assert(M.db.layoutVersion==13 and M.db.player.nameColorMode=='sky','migrated to the current layout')
     local position=addon.PositionManager:GetPosition('unitFramesPlayer')
     assert(position.x==-300 and position.y==-150,'Player frame position imported')
     assert(PTGToolsDB.profiles.Mode.modules.unitFrames.layoutVersion==10,'PTG data left untouched')

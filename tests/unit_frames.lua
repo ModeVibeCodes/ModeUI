@@ -13,7 +13,7 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='interface' and M.defaultEnabled==true)
     assert(addon.categories.interface.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==12 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.layoutVersion==13 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture==nil,'one bar texture: Mode Gradient')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
     assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='sky' and M.db.player.portraitRing=='class')
@@ -50,10 +50,31 @@ world.run([====[
     assert(tt.attributes.unit=='targettarget' and fo.attributes.unit=='focus' and ft.attributes.unit=='focustarget')
     assert(FocusFrame.TargetFrameContainer:GetAlpha()==0 and FocusFrame.TargetFrameContent:GetAlpha()==0 and FocusFrame.mouse==false)
     assert(FocusFrameToT:GetAlpha()==0 and FocusFrameToTDebuff3.mouse==false,'Blizzard Target of Focus fades too')
-    for _,id in ipairs({'unitFramesTargetTarget','unitFramesFocus','unitFramesFocusTarget'}) do assert(addon.PositionManager.elements[id],id) end
-    assert(M.db.targettarget.barWidth==110 and M.db.targettarget.levelStyle=='none' and M.db.focustarget.healthHeight==16)
-    assert(M.db.focus.portraitSide=='right' and M.db.focus.barWidth==150 and not M.db.focus.matchPlayer and not M.db.targettarget.matchPlayer)
-    assert(tt.width<p.width and tt.height<p.height and not tt.levelText:IsShown(),'Target of Target is small, without a level')
+    -- Target of Target: small, no portrait or level, 75%, name in the bar on the left.
+    -- Focus is the same frame at 90%; Target of Focus matches the Target of Target.
+    local d=M.db.targettarget
+    assert(d.barWidth==110 and d.levelStyle=='none' and d.scale==75 and d.showPortrait==false and d.namePosition=='bar' and d.nameAlign=='LEFT')
+    assert(M.db.focustarget.scale==75 and M.db.focustarget.attach and M.db.focustarget.showPortrait==false)
+    assert(M.db.focus.scale==90 and M.db.focus.barWidth==110 and M.db.focus.showPortrait==false and M.db.focus.namePosition=='bar' and not M.db.focus.attach)
+    assert(not M.db.focus.matchPlayer and not d.matchPlayer)
+    assert(tt.scale==0.75 and fo.scale==0.9 and not tt.portrait:IsShown() and not tt.levelText:IsShown(),'small frames')
+    local tn=Point(tt.nameText);assert(tn[1]=='LEFT' and tn[2]==tt.health and tn[4]==4 and tt.nameText.justifyH=='LEFT','name in the bar, on the left')
+    -- Attached under the Target frame's bottom-right corner, button to button and
+    -- stand-in to stand-in; attached frames leave the Position Manager.
+    local ta=Point(tt);assert(ta[1]=='TOPRIGHT' and ta[2]==t and ta[3]=='BOTTOMRIGHT' and ta[4]==0 and ta[5]==-2,'attached under the Target')
+    local ga=Point(M.ghosts.targettarget);assert(ga[2]==M.ghosts.target and ga[1]=='TOPRIGHT')
+    assert(Point(ft)[2]==fo,'Target of Focus attaches to the Focus')
+    local PM=addon.PositionManager
+    assert(not PM.elements.unitFramesTargetTarget and not PM.elements.unitFramesFocusTarget and PM.elements.unitFramesFocus)
+    assert(M:SetFrameOption('targettarget','attachPoint','bottomleft') and Point(tt)[1]=='TOPLEFT' and Point(tt)[3]=='BOTTOMLEFT')
+    assert(M:SetFrameOption('targettarget','attachOffsetX',3) and Point(tt)[4]==3 and M:ResetFrame('targettarget'),'pixel offsets')
+    assert(M.db.targettarget.attachPoint=='bottomleft' and M.db.targettarget.attachOffsetX==3,'reset keeps placement')
+    assert(M:SetFrameOption('targettarget','attachPoint','bottomright') and M:SetFrameOption('targettarget','attachOffsetX',0))
+    -- Detached (or while the Target frame is off) it is placed and moved like any frame.
+    assert(M:SetFrameOption('targettarget','attach',false) and PM.elements.unitFramesTargetTarget and Point(tt)[2]~=t)
+    assert(M:SetFrameOption('targettarget','attach',true) and not PM.elements.unitFramesTargetTarget and Point(tt)[2]==t)
+    assert(M:SetFrameOption('target','enabled',false) and PM.elements.unitFramesTargetTarget,'free while the Target is off')
+    assert(M:SetFrameOption('target','enabled',true) and Point(tt)[2]==t)
     -- The game sends no unit events for targettarget/focustarget: a short timer refreshes them.
     assert(M.poller:IsShown());Advance(0.2)
     units.targettarget={exists=true,health=300,max=600,power=10,powerMax=100,token='RAGE',name='Totfix',level=12,reaction=2,connected=true}
@@ -368,7 +389,7 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==12 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
+    assert(v1.layoutVersion==13 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.levelStyle=='none')
     assert(v1.player.healthText=='both' and v1.player.nameFontSize==14 and v1.player.healthColorMode=='default')
     assert(v1.player.fontMedia=='Expressway' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
     assert(v1.target.enabled==false and v1.target.barWidth==180)
@@ -380,7 +401,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==12 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
+    assert(v5.layoutVersion==13 and v5.player.healthHeight==26 and v5.player.nameAlign=='RIGHT' and v5.player.fontMedia=='Expressway')
     assert(v5.player.levelFontSize==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -393,7 +414,7 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==12 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==13 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='sky' and v8.target.nameColorMode=='sky','names adopt the default color')
     assert(v8.player.portraitRing=='class' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'class gradient ring unless custom')
@@ -404,7 +425,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==12 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
+    assert(v9.layoutVersion==13 and v9.player.nameColorMode=='sky' and v9.player.liftedShadow==true and v9.player.nameLift==nil)
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -412,12 +433,20 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==12 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
+    assert(v10.layoutVersion==13 and v10.player.nameColorMode=='sky' and v10.target.nameColorMode=='class','presets move to Sky; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==true and v10.player.nameLift==nil and v10.target.nameLift==nil,'lift choice carried over')
     assert(v10.target.mirrorText==false,'matched Target now copies the Player text layout')
     local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
-    assert(v11.layoutVersion==12 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    assert(v11.layoutVersion==13 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    -- Version 12 -> 13: new small-frame defaults, but a changed setting stays.
+    local v12={layoutVersion=12,targettarget={scale=100,showPortrait=true,namePosition='above',nameAlign='CENTER',barWidth=110},
+        focus={scale=120,showPortrait=true,barWidth=150,healthHeight=22,levelStyle='badge',nameFontSize=12}}
+    M.Initialize(v12)
+    assert(v12.layoutVersion==13 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.namePosition=='bar')
+    assert(v12.targettarget.nameAlign=='CENTER' and v12.focus.scale==120,'user changes kept')
+    assert(v12.focus.barWidth==110 and v12.focus.healthHeight==16 and v12.focus.levelStyle=='none' and v12.focus.nameFontSize==11)
+    assert(v12.targettarget.attach==true and v12.focustarget.attach==true and v12.focus.attach==false,'new keys take defaults')
     local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     kept.player.nameColorMode='class';kept.player.portraitRing='border';M.Initialize(kept)
     assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='border','later choices are not migrated')
@@ -470,13 +499,17 @@ restored.run([====[
     assert(page.unitFrameCopyPlayer.label:GetText()=='Copy Style to Target' and page.unitFrameCopyFocus.label:GetText()=='Copy Player Style')
     assert(M:SetFrameOption('player','barWidth',200));page.unitFrameCopyFocus.scripts.OnClick()
     assert(M.db.focus.barWidth==200 and M.db.focus.portraitSide=='right','copies the Player look, keeps its side')
-    page.unitFrameResetFocus.scripts.OnClick();assert(M.db.focus.barWidth==150 and M:ResetFrame('player'))
+    page.unitFrameResetFocus.scripts.OnClick();assert(M.db.focus.barWidth==110 and M:ResetFrame('player'))
     -- Editing picks one of the five frames, shared by every tab.
     assert(#page.unitFrameEditSelects==6)
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelects[3].label:GetText()=='Focus')
     assert(Visible(Row('Layout','Scale')) and not Visible(Row('Layout','Target Matches Player')),'only the Target matches the Player')
     assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==25,'edits the Focus only')
     assert(M:ResetFrame('focus'))
+    -- Placement shows only for frames that attach; its offsets only while attached.
+    assert(not Visible(Row('Layout','Attach Point')),'Focus has no parent frame')
+    page.SetEditing('targettarget');assert(Visible(Row('Layout','Attach Point')) and page.unitFrameAttachY)
+    assert(M:SetFrameOption('targettarget','attach',false) and not Visible(Row('Layout','Attach Point')) and M:SetFrameOption('targettarget','attach',true))
     page.SetEditing('target');assert(page.unitFrameEditing()=='target' and page.unitFrameEditSelects[2].label:GetText()=='Target','switch to the Target')
     assert(page.unitFrameEditSelects[5].label:GetText()=='Target','one choice across tabs')
     assert(not Visible(Row('Layout','Scale')) and Visible(Row('Layout','Target Matches Player')),'matched Target explains itself')

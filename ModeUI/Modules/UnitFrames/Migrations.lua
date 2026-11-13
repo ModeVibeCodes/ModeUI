@@ -141,6 +141,25 @@ local function MigrateV11(db)
     end
 end
 
+-- Layout version 12 -> 13, per the owner: new Target of Target, Focus and
+-- Target of Focus defaults (no portrait, name in the bar, 75%/90% scale, the
+-- small Focus). A setting still at its version 12 default takes the new one;
+-- anything the user changed stays.
+local SMALL_V12 = { scale = 100, showPortrait = true, namePosition = "above", nameAlign = "RIGHT" }
+local V12 = { targettarget = SMALL_V12, focustarget = SMALL_V12,
+    focus = { scale = 100, showPortrait = true, namePosition = "above", nameAlign = "RIGHT", barWidth = 150, healthHeight = 22,
+        powerHeight = 8, nameFontSize = 12, healthFontSize = 11, levelStyle = "badge" } }
+local function MigrateV12(db)
+    for unit, old in pairs(V12) do
+        local frame = db[unit]
+        if type(frame) == "table" then
+            for key, value in pairs(old) do
+                if frame[key] == value then frame[key] = M.frameDefaults[unit][key] end
+            end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -151,7 +170,8 @@ function M.Initialize(db)
         if db.layoutVersion == 8 then MigrateV8(db); db.layoutVersion = 9 end
         if db.layoutVersion == 9 then MigrateV9(db); db.layoutVersion = 10 end
         if db.layoutVersion == 10 then MigrateV10(db); db.layoutVersion = 11 end
-        if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = M.LAYOUT_VERSION end
+        if db.layoutVersion == 11 then MigrateV11(db); db.layoutVersion = 12 end
+        if db.layoutVersion == 12 then MigrateV12(db); db.layoutVersion = M.LAYOUT_VERSION end
     end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")

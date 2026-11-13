@@ -5,6 +5,23 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Small-frame defaults and attachment (layout version 13)
+
+November 13, 2026, per the owner: Target of Target defaults to no portrait,
+75% scale and the name inside the health bar on the left, attached under the
+Target frame's bottom-right corner. Target of Focus is the same under the
+Focus frame, and Focus is the same frame at 90% scale on its own. Layout
+version 13 moves a saved setting to the new default only while it still equals
+the version 12 default.
+
+Attachment (`attach`, `attachPoint`, `attachOffsetX`/`attachOffsetY` in
+physical pixels; identity keys, so Copy Style and Reset keep them) is handled
+by the module: the Position Manager's frame anchors refuse ModeUI frames, so an
+attached frame is unregistered from it and its button is anchored to the
+parent's button (its Edit Mode stand-in to the parent's stand-in, so a secure
+frame is never anchored to a plain one). Detached, or while the parent frame
+is off, it registers again at its saved position and moves in Edit Mode.
+
 ## Target of Target, Focus and Target of Focus
 
 November 13, 2026, per the owner: three more secure frames in the same skin,

@@ -39,7 +39,15 @@ M.defaultPositions = {
 }
 -- The game sends no unit events for these; their frames refresh on a timer.
 M.polledUnits = { targettarget = true, focustarget = true }
-M.LAYOUT_VERSION = 12
+-- Frames that can attach to another ModeUI frame instead of a screen position
+-- (Attach to Target Frame / Attach to Focus Frame), and the corner they join:
+-- this frame's `point` to the parent's `relative`.
+M.attachParents = { targettarget = "target", focustarget = "focus" }
+M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" },
+    bottomleft = { point = "TOPLEFT", relative = "BOTTOMLEFT" }, right = { point = "LEFT", relative = "RIGHT" },
+    left = { point = "RIGHT", relative = "LEFT" }, topright = { point = "BOTTOMRIGHT", relative = "TOPRIGHT" } }
+-- Version 13: Target of Target, Focus and Target of Focus defaults (see Migrations.lua).
+M.LAYOUT_VERSION = 13
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -65,12 +73,14 @@ M.choices = {
     level = { { id = "badge", label = "Shown" }, { id = "none", label = "Hidden" } },
     healthColor = { { id = "default", label = "Default" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     powerColor = { { id = "type", label = "Power Type" }, { id = "custom", label = "Custom" } },
+    attachPoint = { { id = "bottomright", label = "Below, Right Edges" }, { id = "bottomleft", label = "Below, Left Edges" },
+        { id = "right", label = "Right Side" }, { id = "left", label = "Left Side" }, { id = "topright", label = "Above, Right Edges" } },
 }
 -- Setting key -> choice list.
 M.choiceKeys = { healthText = "healthText", powerText = "powerText", healthTextPosition = "position",
     powerTextPosition = "position", nameAlign = "position", portraitSide = "side", portraitStyle = "portraitStyle",
     portraitRing = "ring", namePosition = "namePosition", nameColorMode = "nameColor", levelStyle = "level",
-    healthColorMode = "healthColor", powerColorMode = "powerColor" }
+    healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -103,22 +113,32 @@ local function Frame(side, extra)
         font = "game", fontMedia = "Expressway", outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
         -- a lighter second shadow 2px out (owner, layout version 11).
-        liftedShadow = true, textColor = Copy(M.palette.text) }
+        liftedShadow = true, textColor = Copy(M.palette.text),
+        -- Target of Target and Target of Focus only: attached to their parent frame.
+        attach = false, attachPoint = "bottomright", attachOffsetX = 0, attachOffsetY = -2 }
     for key, value in pairs(extra or {}) do frame[key] = value end
     return frame
 end
--- Target of Target and Target of Focus are small, without a level.
-local SMALL = { barWidth = 110, healthHeight = 16, powerHeight = 6, nameFontSize = 11, healthFontSize = 10, levelStyle = "none" }
-M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true }), targettarget = Frame("left", SMALL),
-    focus = Frame("right", { barWidth = 150, healthHeight = 22, powerHeight = 8 }), focustarget = Frame("left", SMALL) }
+-- Target of Target (owner, November 13, 2026): small, no portrait or level,
+-- 75% scale, the name inside the health bar on the left, attached under the
+-- Target frame's bottom-right corner. Target of Focus is the same under the
+-- Focus frame, and Focus is the same frame at 90% scale, placed on its own.
+local function Small(scale, attach)
+    return { barWidth = 110, healthHeight = 16, powerHeight = 6, nameFontSize = 11, healthFontSize = 10, levelStyle = "none",
+        scale = scale, showPortrait = false, namePosition = "bar", nameAlign = "LEFT", attach = attach }
+end
+M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true }),
+    targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false)), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, nameFontSize = { 8, 24, 1 }, healthFontSize = { 8, 24, 1 }, powerFontSize = { 6, 20, 1 },
     portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 }, levelFontSize = { 6, 24, 1 },
     barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 },
     nameOffsetX = { -100, 100, 1 }, nameOffsetY = { -100, 100, 1 }, levelOffsetX = { -100, 100, 1 }, levelOffsetY = { -100, 100, 1 },
     healthTextOffsetX = { -100, 100, 1 }, healthTextOffsetY = { -100, 100, 1 },
-    powerTextOffsetX = { -100, 100, 1 }, powerTextOffsetY = { -100, 100, 1 } }
+    powerTextOffsetX = { -100, 100, 1 }, powerTextOffsetY = { -100, 100, 1 },
+    attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
 -- Keys that describe placement/identity rather than style; Copy Style skips them.
-M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true }
+M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true,
+    attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true }
 M.defaults = { layoutVersion = M.LAYOUT_VERSION }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end

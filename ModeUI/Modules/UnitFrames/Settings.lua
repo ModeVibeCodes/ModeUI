@@ -118,6 +118,23 @@ function M:CreateConfigPage(parent)
     end
 
     Tab("Layout", function()
+        -- Target of Target and Target of Focus can attach to their parent frame
+        -- (offsets in screen pixels); detached, they move in Edit Mode.
+        local function Attachable() return M.attachParents[editing] ~= nil end
+        When(Attachable, function()
+            page:Group("Placement")
+            for unit, parent in pairs(M.attachParents) do
+                When(function() return editing == unit end, function()
+                    Toggles({ { "Attach to " .. M.titles[parent], "attach" } })
+                end)
+            end
+            When(function() return db().attach end, function()
+                Choice("Attach Point", "attachPoint")
+                local offsets = page:Columns({ "Attach Offset X", "Attach Offset Y" })
+                page.unitFrameAttachX = SliderIn(offsets[1], "attachOffsetX", "px")
+                page.unitFrameAttachY = SliderIn(offsets[2], "attachOffsetY", "px")
+            end)
+        end)
         page:Group("Size")
         Slider("Scale", "scale", "%"); Slider("Bar Width", "barWidth")
         -- Both bars: the fill (foreground) and the empty bar (background).
