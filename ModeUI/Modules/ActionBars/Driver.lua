@@ -12,10 +12,31 @@ local REFRESH = "actionBars:refresh"
 
 function M:OnInitialize()
     self.Initialize(self.db)
+    -- Set by the version 2 migration, which can only see this module's table.
+    if self.db.movePlaces then self:MigratePositions(); self.db.movePlaces = nil end
     self.headers, self.slots, self.ghosts, self.buttons = {}, {}, {}, {}
     self.barOf = setmetatable({}, { __mode = "k" })
     -- SharedMedia fonts can register after login; restyle the text with them.
     addon.Media:RegisterFontListener(self, function() if self.active then self:Refresh() end end)
+    -- /kb opens Keybind Mode (Keybind.lua).
+    SLASH_MODEUIKEYBIND1 = "/kb"
+    SlashCmdList.MODEUIKEYBIND = function() self:ToggleKeybindMode() end
+end
+
+-- Version 2 stacks bars on each other by default; saved places still at
+-- version 1's defaults move to the new ones. Places live in the profile's
+-- positions, which this module owns for its bars.
+local function SamePlace(a, b)
+    return type(a) == "table" and a.target == b.target and a.point == b.point and a.relativePoint == b.relativePoint
+        and a.x == b.x and a.y == b.y
+end
+function M:MigratePositions()
+    local positions = addon.db and addon.db.positions
+    if type(positions) ~= "table" then return end
+    for bar, old in pairs(self.oldDefaultPositions) do
+        local id = self.elementIds[bar]
+        if SamePlace(positions[id], old) then positions[id] = Copy(self.defaultPositions[bar]) end
+    end
 end
 
 -- Runtime sets self.enabled after these return, so they keep their own state.
@@ -36,14 +57,16 @@ function M:OnDisable()
     self.active = false
     Events:OffAll(self)
     self.gridShown = false
+    if self.binding then self:SetKeybindMode(false) end
     self:Refresh()
 end
 
 function M:SetEditMode(enabled)
-    self.editing = enabled and self.active or false
-    if not self.built then return end
-    self:RenderGhosts()
-    self:UpdateFade()
+    local editing = enabled and self.active or false
+    if editing == (self.editing or false) then return end
+    self.editing = editing
+    -- Every bar and slot shows while editing; the bars re-lay out for it.
+    if self.built then self:Refresh() end
 end
 
 -- Runs now, or once combat ends: the buttons and bars are protected.

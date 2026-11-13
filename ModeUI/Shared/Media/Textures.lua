@@ -47,6 +47,8 @@ M.Textures = {
     NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
     NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },
     NameplateArrow = { file = "Nameplates/Arrow.tga", transparent = true },
+    -- The action slot background (in color, not tinted), stretched to the slot.
+    ActionBarSlot = { file = "ActionBars/Slot.tga" },
     NameplateStripes = { file = "Nameplates/Stripes.tga", transparent = true },
 }
 

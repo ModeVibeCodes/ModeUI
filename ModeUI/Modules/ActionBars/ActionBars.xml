@@ -7,6 +7,7 @@
     <Script file="Text.lua"/>
     <Script file="Bars.lua"/>
     <Script file="Visibility.lua"/>
+    <Script file="Keybind.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
 </Ui>

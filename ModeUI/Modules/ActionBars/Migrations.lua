@@ -41,7 +41,26 @@ local function Validate(style, bar)
     assert(ValidConditions(style.customVisibility), "Invalid action bar conditions: " .. bar)
 end
 
+-- Version 1 -> 2: settings still at version 1's defaults take the new ones
+-- (42 by 36 buttons, amber cooldown numbers); Fade Until Mouseover becomes
+-- the Mouseover show choice. Background Opacity takes its default.
+local function SameColor(a, b) return type(a) == "table" and a[1] == b[1] and a[2] == b[2] and a[3] == b[3] end
+local function MigrateV1(db)
+    for _, bar in ipairs(M.bars) do
+        local style = db[bar]
+        if type(style) == "table" then
+            if style.height == 38 then style.height = 36 end
+            if SameColor(style.cooldownColor, { 1, 1, 1 }) then style.cooldownColor = Copy(M.COOLDOWN_COLOR) end
+            if style.fade == true and style.visibility == "always" then style.visibility = "mouseover" end
+            style.fade = nil
+        end
+    end
+    -- The bars' places live outside this table; OnInitialize moves them (Driver.lua).
+    db.movePlaces = true
+end
+
 function M.Initialize(db)
+    if db.version == 1 then MigrateV1(db); db.version = 2 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid action bar settings version")
     for _, bar in ipairs(M.bars) do

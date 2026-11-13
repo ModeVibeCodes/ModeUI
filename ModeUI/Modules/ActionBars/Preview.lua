@@ -2,21 +2,19 @@ local _, addon = ...
 local M = addon.ActionBars
 if not M then return end
 
--- What stands in for the real bars: Edit Mode's movable stand-ins (empty
--- slots in the bar's shape, with its name) and the settings preview (the bar
--- being edited, with sample spells, keybinds, counts, a macro name and a
--- cooldown). Both are drawn by the same layout and skin code as the real
--- bars, so they match the settings. Clicking a part of the preview jumps to
--- its settings. Static shows the cooldown part-way; Animated runs it.
+-- What stands in for the real bars. In Edit Mode, a cyan highlight with the
+-- bar's name sits over each bar (with empty slots only when the bar has no
+-- buttons to show, like a stance bar without stances). On the settings page,
+-- the preview is your own bar: the spells, keybinds, counts, macro names and
+-- cooldowns on its buttons now, drawn by the same layout and skin code as the
+-- bar itself. While you edit the Cooldown text, a sample cooldown shows if
+-- none is running. Clicking a part of the preview jumps to its settings.
 local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
-local COOLDOWN, STATIC_ELAPSED, HINT_HEIGHT, MAX_WIDTH, MAX_HEIGHT = 8, 3, 18, 560, 200
-local ICONS = "Interface\\Icons\\"
-M.sampleIcons = { "Spell_Holy_HolyBolt", "Ability_Warrior_Charge", "Spell_Fire_Fireball02", "Spell_Frost_FrostBolt02",
-    "Spell_Nature_Lightning", "Spell_Shadow_ShadowWordPain", "Ability_Rogue_Sprint", "Spell_Holy_FlashHeal",
-    "INV_Potion_54", "Spell_Nature_Rejuvenation", "Ability_Hunter_SniperShot", "Spell_Arcane_Blink" }
-M.sampleKeys = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=" }
--- Which sample button shows a count, the macro name and the cooldown.
-local COUNTS, MACRO, COOLING = { [3] = "3", [7] = "12" }, 5, 2
+local Public, Number = addon.IsPublic, addon.IsNumber
+local SAMPLE_COOLDOWN, STATIC_ELAPSED, HINT_HEIGHT, MAX_WIDTH, MAX_HEIGHT = 8, 3, 18, 560, 200
+-- Events after which the bar's buttons may show something new.
+local UPDATES = { "ACTIONBAR_SLOT_CHANGED", "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "UPDATE_BINDINGS",
+    "PET_BAR_UPDATE", "UPDATE_SHAPESHIFT_FORMS", "ACTIONBAR_UPDATE_COOLDOWN", "SPELL_UPDATE_COOLDOWN" }
 
 addon.PreviewStates:Register(M.id, {
     states = { { id = "static", label = "Static" }, { id = "animated", label = "Animated" } },
@@ -24,24 +22,26 @@ addon.PreviewStates:Register(M.id, {
     sample = function(_, phase) return phase end,
 })
 
--- Edit Mode stand-in: the bar's empty slots, a faint accent fill and its name.
+-- Edit Mode stand-in: a cyan highlight, the bar's name, and empty slots only
+-- when the bar itself has nothing to show.
 function M:LayoutGhost(bar)
     local ghost = self.ghosts[bar]
     if not ghost then return end
     local style, count = self.db[bar], self:SampleCount(bar)
     local g = self.Geometry(style, count, self.PixelSize(ghost))
     ghost:SetSize(g.width, g.height)
+    local empty = self:ButtonCount(bar) < 1
     for i = 1, count do
         local slot = ghost.slots[i] or self:BuildSlot(ghost)
         ghost.slots[i] = slot
         self.Place(slot, ghost, g, i)
         self:PaintSlot(slot, style, g)
-        slot:Show()
+        slot:SetShown(empty)
     end
     for i = count + 1, #ghost.slots do ghost.slots[i]:Hide() end
     ghost.fill:SetAllPoints(ghost)
-    ghost.fill:SetTexture(Kit.FLAT); Kit.Tint(ghost.fill, Kit.palette.accent, 0.12)
-    Kit.Font(ghost.label, { outline = true, shadow = true, textColor = Kit.palette.accent }, 11, Kit.FontPath(style, self.id), g.px)
+    ghost.fill:SetTexture(Kit.FLAT); Kit.Tint(ghost.fill, Kit.palette.accent, 0.18)
+    Kit.Font(ghost.label, { outline = true, shadow = true, textColor = { 1, 1, 1 } }, 12, Kit.FontPath(style, self.id), g.px)
     ghost.label:SetText(L[self.barSpecs[bar].label])
 end
 
@@ -67,6 +67,30 @@ function M:PreviewBar()
     return page and page.barEditing and page.barEditing() or "bar1"
 end
 
+-- What one of Blizzard's buttons shows now. Values may be secret: they only
+-- go to SetTexture and SetText.
+local function Real(bar, index) local list = M.buttons[bar]; return list and list[index] or _G[M.barSpecs[bar].prefix .. index] end
+local function Shown(region) return region ~= nil and region.IsShown ~= nil and region:IsShown() == true end
+local function Icon(real)
+    if not real or not Shown(real.icon) then return nil end
+    return real.icon:GetTexture()
+end
+local function TextOf(region, hiddenToo)
+    if not region or (not hiddenToo and not Shown(region)) then return "" end
+    local text = region:GetText()
+    if Public(text) and (text == nil or text == RANGE_INDICATOR) then return "" end
+    return text
+end
+-- A running cooldown's start and duration in seconds, while they're public.
+local function Cooldown(real)
+    local cooldown = real and real.cooldown
+    if not cooldown or not cooldown.GetCooldownTimes then return end
+    local ok, start, duration = pcall(cooldown.GetCooldownTimes, cooldown)
+    if not ok or not Number(start) or not Number(duration) or duration <= 1500 then return end
+    start, duration = start / 1000, duration / 1000
+    if start + duration > GetTime() then return start, duration end
+end
+
 -- A sample part that jumps to its settings when clicked and lights up under
 -- the mouse; text gets a frame laid over the written text.
 local function Clickable(region, target, part, host)
@@ -87,14 +111,19 @@ local function Clickable(region, target, part, host)
     return hit
 end
 
-local function FitText(hit, text)
-    local width = math.max(8, math.min(text:GetWidth(), text:GetStringWidth() + 4))
+-- Covers the written text; a secret text can't be measured, so its click
+-- area is the whole text box.
+local function FitText(hit, text, written)
+    local width = text:GetWidth()
+    local measured = written and text:GetStringWidth()
+    if Number(measured) then width = math.min(width, measured + 4) end
     local justify = text:GetJustifyH()
     local point = justify == "LEFT" and "LEFT" or justify == "RIGHT" and "RIGHT" or "CENTER"
     hit:ClearAllPoints()
     hit:SetPoint(point, text, point, 0, 0)
-    hit:SetSize(width, math.max(8, text:GetStringHeight() + 2))
-    hit:SetShown(text:GetAlpha() > 0)
+    local _, size = text:GetFont()
+    hit:SetSize(math.max(8, width), math.max(8, (Number(size) and size or 10) + 2))
+    hit:SetShown(written == true and text:GetAlpha() > 0)
 end
 
 local function Scale(style, count)
@@ -118,6 +147,18 @@ local function Sample(view, index)
     return button
 end
 
+-- Fills one preview button from the real one; returns whether it has a spell.
+local function Fill(button, real)
+    local icon = Icon(real)
+    local filled = not Public(icon) or icon ~= nil
+    button.icon:SetTexture(icon)
+    button.icon:SetShown(filled)
+    Kit.Write(button.HotKey, filled and TextOf(real.HotKey) or "")
+    Kit.Write(button.Count, filled and TextOf(real.Count, true) or "")
+    Kit.Write(button.Name, filled and TextOf(real.Name, true) or "")
+    return filled
+end
+
 function M:RenderPreview(view)
     local bar = self:PreviewBar()
     local style, count = self.db[bar], self:SampleCount(bar)
@@ -128,27 +169,38 @@ function M:RenderPreview(view)
     view.bar:ClearAllPoints(); view.bar:SetPoint("TOP", view.frame, "TOP", 0, -2 / scale)
     view.bar:SetAlpha(style.show and style.opacity / 100 or 0.4)
     local phase = addon.PreviewStates:Sample(self.id)
-    local elapsed = phase and phase % COOLDOWN or STATIC_ELAPSED
+    local demo = self.page ~= nil and self.page.textPart ~= nil and self.page.textPart() == "cooldown"
+    local filledCount = 0
     for i = 1, count do
-        local button = Sample(view, i)
+        local button, real = Sample(view, i), Real(bar, i)
         self.Place(button, view.bar, g, i)
-        button.icon:SetTexture(ICONS .. self.sampleIcons[i])
         self:SkinButton(button, style, g, true)
-        local prefix = bar == "bar1" and "" or (bar == "pet" and "P" or bar == "stance" and "T" or "S")
-        Kit.Write(button.HotKey, prefix .. self.sampleKeys[i])
-        Kit.Write(button.Count, COUNTS[i] or "")
-        Kit.Write(button.Name, i == MACRO and L["Macro"] or "")
-        Kit.Write(button.cooldownText, i == COOLING and tostring(math.ceil(COOLDOWN - elapsed)) or "")
-        if i == COOLING then button.cooldown:SetCooldown(GetTime() - elapsed, COOLDOWN); button.cooldown:Show()
-        else button.cooldown:Hide() end
-        for part, hit in pairs(button.hits) do
-            if part ~= "button" then FitText(hit, self.TextRegion(button, part)) end
+        local filled = Fill(button, real)
+        local start, duration = Cooldown(real)
+        if filled and not start and demo then
+            -- The sample cooldown, on the first button with a spell.
+            demo = false
+            local elapsed = phase and phase % SAMPLE_COOLDOWN or STATIC_ELAPSED
+            start, duration = GetTime() - elapsed, SAMPLE_COOLDOWN
         end
-        button:Show()
+        local cooling = filled and start ~= nil
+        if cooling then
+            button.cooldown:SetCooldown(start, duration); button.cooldown:Show()
+            Kit.Write(button.cooldownText, tostring(math.ceil(start + duration - GetTime())))
+        else
+            button.cooldown:Hide(); Kit.Write(button.cooldownText, "")
+        end
+        for part, hit in pairs(button.hits) do
+            if part ~= "button" then FitText(hit, self.TextRegion(button, part), filled and (part ~= "cooldown" or cooling)) end
+        end
+        filledCount = filledCount + (filled and 1 or 0)
+        button:SetShown(filled or style.showEmpty)
     end
     for i = count + 1, #view.buttons do view.buttons[i]:Hide() end
     local spec = self.barSpecs[bar]
-    view.caption:SetText(style.show and L[spec.label] or L[spec.label .. " is hidden"])
+    local caption = style.show and L[spec.label] or L[spec.label .. " is hidden"]
+    if filledCount == 0 then caption = caption .. " · " .. L["no spells on this bar yet"] end
+    view.caption:SetText(caption)
 end
 
 function M:CreateConfigPreview(parent)
@@ -156,11 +208,17 @@ function M:CreateConfigPreview(parent)
     frame:SetAllPoints()
     local view = { frame = frame, buttons = {} }
     view.bar = CreateFrame("Frame", nil, frame)
-    view.caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
+    view.caption = W.Label(frame, "", nil, 0, 0, 300, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
     view.hint = W.Label(frame, L["Click a part to open its settings"], nil, 0, 0, 200, T.faint or T.muted)
     view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2); view.hint:SetJustifyH("RIGHT")
     function view.Refresh() M:RenderPreview(view) end
     view.RenderSimulation = view.Refresh
+    -- Blizzard updates its buttons on these events; redraw just after it.
+    for _, event in ipairs(UPDATES) do
+        addon.Events:On(view, event, function()
+            if M.page and M.page:IsShown() then C_Timer.After(0, view.Refresh) end
+        end)
+    end
     return view
 end

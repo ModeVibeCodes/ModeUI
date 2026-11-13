@@ -52,7 +52,7 @@ function PM:RegisterElement(id, frame, options)
     if not Plain(frame) or not frame or not frame.GetScript or not frame.SetScript or not P:Geometry(frame) then return false, "invalid-frame" end
     if self.frames[frame] then return false, "duplicate-frame" end
     for _, target in ipairs(P.targets) do
-        local external = _G[target.name]
+        local external = not target.owned and _G[target.name]
         if Plain(external) and frame == external then return false, "external-frame" end
     end
     if frame.IsProtected then
@@ -120,7 +120,7 @@ function PM:RegisterElement(id, frame, options)
         Bind("OnDragStop", function() self:StopDragging(id) end)
         Bind("OnMouseDown", function() if self:CanDrag(element) then self:SelectElement(id) end end)
         Bind("OnHide", function() self:StopDragging(id) end)
-        element.dragUpdate = function() self:NotifyPosition(id, false) end
+        element.dragUpdate = function() self:NotifyPosition(id, false); if self.ShowGuides then self:ShowGuides(element) end end
     end
     if not element.legacy then self:ApplyPosition(id) end
     return true, element

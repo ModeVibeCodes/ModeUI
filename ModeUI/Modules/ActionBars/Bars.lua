@@ -12,7 +12,7 @@ if not M then return end
 -- keeps Action Bar 1 hidden while the game shows its own vehicle bar, which
 -- covers the same keys.
 local L = addon.L
-local Number = addon.IsNumber
+local P = addon.Positioning
 
 M.STATE_SNIPPET = [[
     self:SetAttribute("modeshown", newstate)
@@ -24,12 +24,6 @@ M.OVERRIDE_HIDE = [[
     if owner:GetAttribute("modeshown") == "show" then owner:Show() end
 ]]
 
-local function FrameName(bar)
-    local spec = M.barSpecs[bar]
-    if spec.pet then return "ModeUIPetBar" elseif spec.stance then return "ModeUIStanceBar" end
-    return "ModeUIActionBar" .. bar:sub(4)
-end
-
 function M:Build()
     if self.built then return end
     self.built = true
@@ -40,11 +34,10 @@ end
 
 function M:BuildBar(bar)
     local spec = self.barSpecs[bar]
-    local header = CreateFrame("Frame", FrameName(bar), UIParent, "SecureHandlerStateTemplate")
+    local header = CreateFrame("Frame", self.frameNames[bar], UIParent, "SecureHandlerStateTemplate")
     header:SetFrameStrata("MEDIUM")
     header:SetAttribute("_onstate-modevis", self.STATE_SNIPPET)
-    local default = self.defaultPositions[bar]
-    header:SetSize(1, 1); header:SetPoint(default.point, UIParent, default.relativePoint, default.x, default.y)
+    header:SetSize(1, 1); header:SetPoint("CENTER")
     header:Hide()
     self.headers[bar] = header
     self.slots[bar] = {}
@@ -111,7 +104,8 @@ function M:ApplyBar(bar)
             slot:SetFrameLevel(level + 1)
             self:PaintSlot(slot, style, g)
         end
-        slot:SetShown(inside and style.showEmpty)
+        -- Edit Mode and Keybind Mode show every slot, so a bar keeps its shape.
+        slot:SetShown(inside and (style.showEmpty or self.editing == true or self.binding == true))
         if button then
             if inside then
                 Adopt(self, button, header)
@@ -153,23 +147,32 @@ function M:Restore()
 end
 
 -- Edit Mode moves a plain stand-in (Position Manager refuses protected
--- frames); the bar copies its anchor outside combat, on whole pixels.
+-- frames, and a stand-in can anchor to another bar's stand-in). Each bar is
+-- pinned to the screen where its stand-in is, on whole pixels, outside
+-- combat, so a secure bar never hangs from another frame.
 function M:SyncPosition(bar)
     local header, ghost = self.headers[bar], self.ghosts[bar]
     if not header or not ghost or addon.InCombat() then return end
-    local count = ghost:GetNumPoints()
-    if not Number(count, 1, 10) then return end
+    local x, y, width, height = P:Geometry(ghost)
     local px = self.PixelSize(header)
-    local function Snap(v) return Number(v, -100000, 100000) and math.floor(v / px + 0.5) * px or v end
+    local function Snap(v) return math.floor(v / px + 0.5) * px end
     header:ClearAllPoints()
-    for i = 1, count do
-        local point, relative, relativePoint, x, y = ghost:GetPoint(i)
-        header:SetPoint(point, relative or UIParent, relativePoint, Snap(x), Snap(y))
+    if not x then
+        -- Not measurable yet: hang from the stand-in until the next refresh.
+        header:SetAllPoints(ghost)
+        return
     end
+    header:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", Snap(x - width / 2 - (UIParent:GetLeft() or 0)),
+        Snap(y - height / 2 - (UIParent:GetBottom() or 0)))
+end
+
+-- Bars anchored to a moved bar move with it, so every bar follows.
+function M:SyncAll()
+    for _, bar in ipairs(self.bars) do self:SyncPosition(bar) end
 end
 
 function M:CreateGhost(bar)
-    local ghost = CreateFrame("Frame", FrameName(bar) .. "Mover", UIParent)
+    local ghost = CreateFrame("Frame", self.frameNames[bar] .. "Mover", UIParent)
     ghost:SetFrameStrata("HIGH")
     ghost.slots = {}
     ghost.fill = ghost:CreateTexture(nil, "BACKGROUND", nil, -8)
@@ -178,19 +181,28 @@ function M:CreateGhost(bar)
     ghost.bar = bar
     self.ghosts[bar] = ghost
     self:LayoutGhost(bar)
-    local default = self.defaultPositions[bar]
-    ghost:SetPoint(default.point, UIParent, default.relativePoint, default.x, default.y)
+    -- Measured before registering; the Position Manager then moves it.
+    ghost:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     local id = self.elementIds[bar]
     local ok, element = addon.PositionManager:RegisterElement(id, ghost, { moduleId = self.id,
-        defaultPosition = default, allowedTargets = { "screen" },
+        defaultPosition = self.defaultPositions[bar], allowedTargets = self.allowedTargets[bar],
         canDrag = function() return self.active == true and self.db[bar].show end,
-        onPositionChanged = function() self:SyncPosition(bar) end })
+        onPositionChanged = function() self:SyncAll() end })
     assert(ok, "ModeUI: action bar position registration failed: " .. tostring(element))
     element.label = L[self.barSpecs[bar].label]
     ghost:Hide()
 end
 
--- Stand-ins show in Edit Mode for every bar that's switched on.
+-- While a stand-in is dragged, the bars follow it frame by frame.
+local function Follow(self)
+    for _, bar in ipairs(self.bars) do
+        local element = addon.PositionManager:Element(self.elementIds[bar])
+        if element and element.dragging then self:SyncAll(); return end
+    end
+end
+
+-- In Edit Mode every bar that's switched on shows with its stand-in over it:
+-- a cyan highlight with the bar's name in the middle.
 function M:RenderGhosts()
     for _, bar in ipairs(self.bars) do
         local ghost = self.ghosts[bar]
@@ -201,4 +213,9 @@ function M:RenderGhosts()
             ghost:SetShown(show)
         end
     end
+    if self.editing and not self.follower then
+        self.follower = CreateFrame("Frame")
+        self.follower:SetScript("OnUpdate", function() Follow(self) end)
+    end
+    if self.follower then self.follower:SetShown(self.editing == true) end
 end

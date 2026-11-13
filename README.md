@@ -15,7 +15,7 @@ used to live in [Play The Game Tools](https://github.com/ModeVibeCodes/PlayTheGa
 |-----------|-------------|--------------|
 | Interface | Unit Frames | Secure Player and Target frames in the locked Onyx skin: a round portrait with a class-gradient ring, a rounded health/power block inside a pixel-perfect slate rim, Sky names, and a lifted shadow on all text. Each element (Layout, Portrait, Name & Level, Health, Power, Text) has its own tab, and the Target can match the Player. |
 | Interface | Nameplates  | Onyx plates with separate Enemy and Friendly settings and a live preview on the settings page: health with reaction, class or threat colors, name, health text, cast bars that turn gray when they can't be interrupted, auras (crowd control, debuffs, buffs; position and size per kind), raid markers and a cyan rim on your target. Rounded rims and the Mode Gradient bar texture. Off by default. Friendly plates in instances and your personal resource display stay Blizzard's. |
-| Interface | Action Bars | Blizzard's own action buttons (bars 1-8, pet and stance) on ModeUI bars in the Mode look, with a live preview: 42 by 38 buttons by default, rows or columns, size and spacing, rounded, square or no border, cropped icons, empty slots, keybind, count, macro name and cooldown text each with its own place, size and color, show conditions (combat, target or custom macro conditions), opacity and fade until mouseover. Move bars in Edit Mode. Actions, paging and keybinds stay Blizzard's. Off by default. |
+| Interface | Action Bars | Blizzard's own action buttons (bars 1-8, pet and stance) on ModeUI bars in the Mode look, with a live preview of your own bar: 42 by 36 buttons by default, rows or columns, size and spacing, rounded, square or no border, cropped icons, a textured slot background, keybind, count, macro name and cooldown text each with its own place, size and color, Show (Always, Mouseover, Hidden, combat, target or custom macro conditions) and opacity. Move, anchor and nudge bars in Edit Mode; bind keys with `/kb`. Actions, paging and keybinds stay Blizzard's. Off by default. |
 | Global    | Profiles    | Account-wide profiles of all ModeUI settings: create (from defaults), duplicate, rename, delete, switch (applies on reload) and import/export as a text string. Play The Game Tools keeps its own, separate profiles. |
 | Global    | Optimizations | Auto Loot, Fast Loot, Hide Error Text, Max Camera Distance and UI Scale (Pixel Perfect or custom). All off by default: ModeUI only changes a game setting while you have that optimization on, and turning it off puts back the game's previous value. |
 | Global    | Class Colors | Custom colors per class for ModeUI's class-colored elements (names, health bars, portrait rings). Changes apply right away; Reset returns a class to the game's color. |
@@ -28,7 +28,10 @@ theme ModeUI has.
 
 - `/modeui` opens or closes the settings window. `/modeui resetwindow` re-centers it.
 - **Edit Mode** in the window header lets you drag the Player and Target frames
-  and each action bar.
+  and each action bar. Cyan guides show when an element nears the center or an
+  offset of 0, and it snaps there. The arrows beside the selected element (or the
+  arrow keys) move it one pixel.
+- `/kb` opens Keybind Mode for the action bars: hover a button and press a key.
   **Preview** shows sample frames.
 - Size, visibility and position changes made in combat are applied once combat ends,
   because Blizzard protects clickable unit frames.

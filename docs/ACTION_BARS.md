@@ -51,21 +51,26 @@ weak tables keyed by the button. Its only hooks are `hooksecurefunc` on:
 
 ## The look
 
-- **Buttons are 42 by 38** by default (Width and Height on the **Bar** tab).
+- **Buttons are 42 by 36** by default (Width and Height on the **Bar** tab).
   Sizes are whole physical pixels, and each bar is an even number of pixels each
   way, so a centered bar stays on the pixel grid.
 - **Border:** Rounded (by default), Square or None. The rim is 1px in the
   Border Color (the near-black Onyx rim, #25282C, by default), then a 1px black
   gap. These are the nameplate and aura-icon rim textures.
+- **Background:** a ModeUI texture (`Media/Textures/ActionBars/Slot.tga`, made
+  by `tools/build_shape_textures.lua`). It's a dark slot, lighter in the middle,
+  with a soft highlight along the top, darker edges and fine grain, after
+  Blizzard's own recessed slots. It sits inside the rim at **Background Opacity**
+  (20% by default). In an empty slot the black gap fades with it, so only the
+  rim stays solid.
 - **Icon:** placed inside the rim. It's cropped, never stretched: 8% comes off
   the edges, then the long side is cut to the button's shape. Blizzard's rounded
   icon mask is removed.
 - **States:** highlight, pushed, checked, attack flash, new-spell and
   spell-highlight are flat overlays on the icon. Blizzard's slot art, frame and
   equipped-item border are faded.
-- **Empty slots:** with **Show Empty Slots** on, a dark slot inside the same rim
-  marks each place without an action. Dragging a spell shows every button so it
-  can be dropped.
+- **Empty slots:** with **Show Empty Slots** on, the background marks each place
+  without an action. Dragging a spell shows every button so it can be dropped.
 
 ## Text
 
@@ -77,11 +82,13 @@ Four texts, each with **Show This Text**, **Anchor** (a compass with Center),
 | Keybind | shown, Top Right, 11 |
 | Count (stacks and charges) | shown, Bottom Right, 12 |
 | Macro Name | hidden, Bottom, 10 |
-| Cooldown (the countdown numbers) | shown, Center, 14 |
+| Cooldown (the countdown numbers) | shown, Center, 14, amber #FFB12F |
 
-Anchors sit 2 pixels inside the icon. Every bar shares one font setup: **Font**
-(Expressway by default), **Outline** (on), **Slug Text** (on) and **Text
-Shadow** (None, Crisp by default, or Lifted).
+Each text's box hugs its letters, 1 pixel inside the icon, and is justified to
+its anchor's side, top or bottom. So the keybind sits right in the top-right
+corner. Every bar shares one font setup: **Font** (Expressway by default),
+**Outline** (on), **Slug Text** (on) and **Text Shadow** (None, Crisp by
+default, or Lifted).
 
 - Blizzard shows and hides these texts itself, so a hidden text is faded rather
   than hidden.
@@ -101,21 +108,67 @@ Shadow** (None, Crisp by default, or Lifted).
 - Buttons past the count wait on the hidden frame.
 - The stance bar shows no more buttons than you have stances, and hides when you
   have none.
-- **Edit Mode** shows a stand-in for each shown bar: its empty slots, a faint
-  cyan fill and its name. Drag it, or select it and use the Edit Mode window's X
-  and Y. The real bar copies the stand-in's place outside combat, on whole
-  pixels. **Open Module Settings** opens the page on the bar you selected.
-- Default places are pinned to a screen edge so they hold at any resolution:
-  - bars 1-3 stacked at the bottom center
-  - bars 4 and 5 upright at the right edge
-  - the pet and stance bars above bar 3
-  - bars 6-8 hidden, near the middle of the screen
+- Default places:
+  - Action Bar 1 is pinned to the bottom center of the screen.
+  - Bars 2 and 3, the pet bar and the stance bar each stack 4 pixels above the
+    one before.
+  - Bar 4 sits on the right edge, with bar 5 beside it.
+  - Bars 6-8 start hidden near the middle of the screen.
+
+  Version 1 placed each bar on its own. Bars still at version 1's places move to
+  the stacked ones; a bar you moved stays where it is.
+
+## Edit Mode
+
+**Edit Mode** shows every bar that's switched on, even ones set to Hidden or In
+Combat, with all its slots. A cyan highlight with the bar's name in the middle
+sits over each one; that's the stand-in you drag.
+
+- **The bar follows live** while you drag, frame by frame.
+- **Anchoring:** **Snap To UI Element** in the Edit Mode window anchors a bar to
+  the screen, the game's Player, Target, Focus or Party frames, the minimap, or
+  any bar listed before it. For example, bar 3 can anchor to bar 1 or 2, but not
+  the other way round, so anchors never loop. A bar anchored to another moves
+  with it. The secure bar itself is always pinned to the screen where its
+  stand-in is, so it never hangs from another frame in combat.
+- **Alignment guides:** while you drag any ModeUI element, a cyan line shows
+  when its center comes within 8 units of a guide. Guides are:
+  - its X or Y offset being 0
+  - the screen's center
+  - another movable element's center
+
+  Let go there and it snaps onto the line. An offset of 0 snaps to exactly 0.
+- **Nudging:** the selected element has four arrow buttons beside its name; each
+  click moves it one physical pixel. The arrow keys do the same while the Edit
+  Mode window is open, and Shift moves 10.
+- **Open Module Settings** opens the page on the bar you selected.
+
+## Keybind Mode
+
+Type **/kb**, or click **Keybind Mode** on the **Bar** tab.
+
+- Every bar that's switched on shows, with every slot, so empty places can be
+  bound too. Each place shows its current key.
+- Hover a place, then press a key (with Shift, Ctrl or Alt), a mouse button other
+  than left or right, or the mouse wheel. That key becomes the button's only
+  binding.
+- **Escape** while hovering clears the button's keys.
+- **Save** keeps the changes in your current binding set (character or account,
+  as the game has it). **Discard** puts back the bindings from before.
+- Escape away from a button, or entering combat, leaves Keybind Mode and saves.
+- It binds the game's own commands (`ACTIONBUTTON1`, `MULTIACTIONBAR1BUTTON1`,
+  `BONUSACTIONBUTTON1`, `SHAPESHIFTBUTTON1`, …), so the bindings also show in the
+  game's Key Bindings.
+- It needs the module on and works outside combat only.
 
 ## Visibility
 
 **Show** picks when a bar is on screen:
 
 - **Always**
+- **Mouseover**: shown, but kept at **Faded Opacity** (0% by default) until the
+  mouse is over the bar or a spell flyout from it, or you drag a spell
+- **Hidden**: off screen, but still in Edit Mode and Keybind Mode
 - **In Combat**
 - **Out of Combat**
 - **In Combat or With a Target**
@@ -126,34 +179,34 @@ Shadow** (None, Crisp by default, or Lifted).
 Every bar hides during pet battles. The pet bar also needs a pet. The pet and
 stance bars hide in vehicles and while possessing, as Blizzard's do. Action Bar
 1 hides while the game shows its own vehicle bar (`OverrideActionBar`), which
-then owns keys 1-12. **Show Bar** off hides a bar completely. Its keybinds still
-work, as they do for Blizzard's hidden bars.
+then owns keys 1-12. **Show Bar** (on the **Bar** tab) off turns a bar off
+completely, in Edit Mode too. Keybinds still work for hidden bars, as they do
+for Blizzard's.
 
-**Opacity** fades the whole bar. **Fade Until Mouseover** keeps the bar at
-**Faded Opacity** until one of these happens:
-
-- the mouse is over the bar or a spell flyout opened from it
-- you drag a spell
-- Edit Mode is on
-
-Opacity changes may happen in combat. Showing, hiding, moving and sizing don't:
-anything that needs them waits for the end of combat.
+**Opacity** fades the whole bar. Opacity changes may happen in combat. Showing,
+hiding, moving and sizing don't: anything that needs them waits for the end of
+combat.
 
 ## Settings page
 
-A preview of the bar being edited sits above four tabs:
+The preview above the four tabs is **your own bar**: the bar being edited, with
+the spells, keybinds, counts, macro names and running cooldowns on its buttons
+right now. Empty places show as empty slots, and the preview redraws when your
+bars, bindings or cooldowns change. While you edit the **Cooldown** text, the
+first spell shows a sample cooldown if none is running; **Animated** runs it.
 
-- **Bar**: Show Bar, status, layout, size, copy and reset
-- **Buttons**: border, empty slots
+Clicking a button opens the **Bar** tab; clicking a text opens the **Text** tab
+on that text. The tabs:
+
+- **Bar**: Show Bar, status, layout, size, copy and reset, Keybind Mode
+- **Buttons**: border, empty slots, Background Opacity
 - **Text**: which text, then its place, size and color, and the font
-- **Visibility**: when to show, opacity, fading
+- **Visibility**: Show, custom conditions, opacity, Faded Opacity
 
-The preview has sample spells, keybinds, counts, a macro name and a cooldown.
-**Animated** runs the cooldown. Clicking a button opens the **Bar** tab; clicking
-a text opens the **Text** tab on that text. Every tab starts with **Editing**,
-the bar being changed, shared by every tab. **Copy Style to All Bars** copies
-size, borders, text and opacity. Each bar keeps its own buttons, lines and show
-settings. **Reset to Defaults** resets one bar's look.
+Every tab starts with **Editing**, the bar being changed, shared by every tab.
+**Copy Style to All Bars** copies size, borders, background, text and opacity.
+Each bar keeps its own buttons, lines and show settings. **Reset to Defaults**
+resets one bar's look.
 
 ## Switching it off
 
@@ -163,29 +216,44 @@ so ModeUI offers a reload. Turning the module back on needs no reload.
 
 ## Settings versions
 
-Version 1 (`ModeUIDB.modules.actionBars`, one table per bar: `bar1`-`bar8`,
-`pet`, `stance`). Positions are saved under `positions.actionBarsBar1` to
+`ModeUIDB.modules.actionBars` holds one table per bar: `bar1`-`bar8`, `pet`,
+`stance`. Positions are saved under `positions.actionBarsBar1` to
 `actionBarsBar8`, `actionBarsPet` and `actionBarsStance`.
+
+Version 2 changed these from version 1:
+
+- Buttons still 38 tall become 36.
+- White cooldown numbers become amber.
+- Fade Until Mouseover with Show set to Always becomes **Mouseover**; the switch
+  is gone.
+- **Background Opacity** starts at 20%.
+- Places still at version 1's defaults move to the stacked defaults.
 
 ## Files
 
 | File | Job |
 |---|---|
-| `Init.lua` | declaration, the bars and their Blizzard buttons, defaults, ranges, choices |
-| `Migrations.lua` | `Initialize(db)`: defaults and validation |
-| `Driver.lua` | lifecycle, events, settings changes, copy and reset, the font and color owner |
-| `Bars.lua` | secure bars, moving Blizzard's buttons, hiding Blizzard's art, the vehicle-bar watch, Edit Mode stand-ins, switching off |
+| `Init.lua` | declaration, the bars and their Blizzard buttons, anchor targets, defaults, ranges, choices |
+| `Migrations.lua` | `Initialize(db)`: defaults, validation and the version 2 migration |
+| `Driver.lua` | lifecycle, events, `/kb`, settings changes, copy and reset, the font and color owner, moving version 1 places |
+| `Bars.lua` | secure bars, moving Blizzard's buttons, hiding Blizzard's art, the vehicle-bar watch, Edit Mode stand-ins and live follow, switching off |
 | `Layout.lua` | pixel-perfect geometry and button counts |
-| `Skin.lua` | rim, gap, icon crop, state overlays, empty slots |
+| `Skin.lua` | rim, gap, background, icon crop, state overlays, empty slots |
 | `Text.lua` | the four texts, their hooks and lifted shadows |
 | `Visibility.lua` | show conditions and fading |
-| `Preview.lua` | Edit Mode stand-ins and the settings preview |
+| `Keybind.lua` | Keybind Mode |
+| `Preview.lua` | the Edit Mode highlight and the live settings preview |
 | `Settings.lua` | the settings page |
 
 Shared additions:
 
 - `PositionManager:SetEditable(id, editable)`: an element takes part in Edit
   Mode or not.
+- `Positioning:AddTarget(id, label, name)`: a ModeUI frame other elements can
+  anchor to.
+- `Shared/Placement/PositionGuides.lua`: alignment guides, snapping on drop,
+  and `PositionManager:Nudge(id, dx, dy)`.
+- Nudge arrows on the selected element, and arrow keys in the Edit Mode window.
 - An optional module hook, `OpenElementSettings(elementId)`, used by Edit Mode's
   **Open Module Settings**.
 - `Kit.LayoutLift` takes the lift as an optional argument, for text ModeUI
@@ -200,29 +268,35 @@ Shared additions:
 - Range coloring on the pet bar: Blizzard updates it from the pet bar's own
   OnUpdate, which doesn't run while that bar is hidden.
 - Showing a bar hidden by its conditions while you drag a spell.
+- A second key per button in Keybind Mode. The game's Key Bindings still sets
+  two.
 
 ## Manual check
 
 - **Navigation:** `/modeui`, then **Interface** › **Action Bars**.
 - **Action:**
   - Turn the module on with the switch in the page header.
-  - Pick bars with **Editing** and watch the preview change.
-  - On the **Bar** tab, change **Buttons**, **Buttons per Line**, **Lines**,
-    **First Button**, **Width**, **Height** and **Spacing**.
-  - On **Buttons**, try each **Border** and turn **Show Empty Slots** off and on.
-  - On **Text**, pick each text and move it with **Anchor**.
-  - On **Visibility**, set Action Bar 2 to **In Combat**, then turn on **Fade
-    Until Mouseover** for Action Bar 3.
-  - Click **Edit Mode** in the window header and drag Action Bar 1.
-  - Out of combat, use spells by key and by click. Swap forms or stances, drag a
-    spell onto an empty slot, and enter and leave a vehicle if one is nearby.
-- **Required state:** out of combat to change settings; spells on your bars;
-  for the pet bar, a class with a pet.
+  - Pick bars with **Editing** and check that the preview shows that bar's
+    spells and keybinds.
+  - On the **Text** tab, pick **Cooldown** and watch the sample cooldown.
+  - On **Buttons**, move **Background Opacity**.
+  - On **Visibility**, set Action Bar 3's **Show** to **Mouseover**, then
+    Action Bar 2's to **Hidden**.
+  - Click **Edit Mode** in the window header, drag Action Bar 1 slowly across
+    the screen's center and let go near it.
+  - Click the arrow buttons beside a bar's name, and press the arrow keys.
+  - In the Edit Mode window, set Action Bar 3's **Snap To UI Element** to
+    **Action Bar 1**.
+  - Exit Edit Mode, type `/kb`, hover a button, press a key, then click **Save**.
+- **Required state:** out of combat; spells on your bars.
 - **Confirmation:**
-  - Buttons are 42 by 38 with a thin rounded rim, and icons aren't stretched.
-  - Keybinds, counts and cooldowns show where set, and keybinds turn red out of
-    range.
-  - Action Bar 2 appears only in combat. Action Bar 3 fades until you hover it.
-  - Bars stay where you dragged them after `/reload`.
-  - Stance and vehicle paging work.
+  - Buttons are 42 by 36, with a faint textured background in empty slots.
+  - Keybinds sit tight in the top-right corner. Cooldown numbers are amber.
+  - In Edit Mode, each bar is highlighted with its name centered, and moves with
+    the mouse without lag.
+  - A cyan line appears near the center, and the bar snaps onto it.
+  - Each arrow click moves the bar one pixel.
+  - Action Bar 3 shows only under the mouse. Action Bar 2 shows only in Edit
+    Mode and `/kb`.
+  - The new key works and is listed in the game's Key Bindings.
   - No Lua errors, and no "action blocked" message in combat.

@@ -4,11 +4,12 @@ if not M then return end
 
 -- When each bar shows, and how see-through it is. Showing and hiding is done
 -- by the game from macro conditions (a state driver), so it keeps working in
--- combat. Opacity is plain alpha, which may change in combat: a bar set to
--- Fade Until Mouseover sits at its faded opacity until the mouse is over it
--- (or a spell flyout from it), a spell is being dragged, or Edit Mode is on.
+-- combat. Opacity is plain alpha, which may change in combat: a bar shown on
+-- Mouseover sits at its faded opacity until the mouse is over it (or a spell
+-- flyout from it), a spell is being dragged, or Edit Mode or Keybind Mode is
+-- on. Hidden keeps a bar off screen except in those two modes.
 local Public = addon.IsPublic
-local PRESETS = { always = "show", combat = "[combat] show; hide", noCombat = "[combat] hide; show",
+local PRESETS = { always = "show", mouseover = "show", hidden = "hide", combat = "[combat] show; hide", noCombat = "[combat] hide; show",
     target = "[combat][@target,exists] show; hide" }
 -- Every bar steps aside for pet battles; the pet and stance bars also for
 -- vehicles and possession, as Blizzard's own do.
@@ -26,6 +27,8 @@ end
 function M:Conditions(bar, count)
     local style, spec = self.db[bar], self.barSpecs[bar]
     if not style.show or (count or 1) < 1 then return "hide" end
+    -- Edit Mode and Keybind Mode show every bar that's switched on.
+    if self.editing or self.binding then return "show" end
     local rule = PRESETS[style.visibility]
     if style.visibility == "custom" then
         rule = self.ParseConditions(style.customVisibility) and style.customVisibility or "show"
@@ -45,7 +48,7 @@ end
 function M:FadedAlpha(bar)
     local style, header = self.db[bar], self.headers[bar]
     local full = style.opacity / 100
-    if not style.fade or self.gridShown or self.editing then return full end
+    if style.visibility ~= "mouseover" or self.gridShown or self.editing or self.binding then return full end
     if Over(header) then return full end
     -- A spell flyout opened from this bar (or from a button ModeUI can't place).
     local flyout = _G.SpellFlyout
@@ -64,7 +67,7 @@ function M:UpdateFade()
         local header = self.headers[bar]
         if header then
             header:SetAlpha(self:FadedAlpha(bar))
-            fading = fading or (self.active and self.db[bar].show and self.db[bar].fade)
+            fading = fading or (self.active and self.db[bar].show and self.db[bar].visibility == "mouseover")
         end
     end
     if fading and not self.fader then
@@ -75,7 +78,7 @@ function M:UpdateFade()
             if elapsed < TICK then return end
             elapsed = 0
             for _, bar in ipairs(self.bars) do
-                if self.db[bar].fade then self.headers[bar]:SetAlpha(self:FadedAlpha(bar)) end
+                if self.db[bar].visibility == "mouseover" then self.headers[bar]:SetAlpha(self:FadedAlpha(bar)) end
             end
         end)
     end

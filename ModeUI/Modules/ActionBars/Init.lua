@@ -15,7 +15,10 @@ local M = { title = L["Action Bars"], category = "interface", defaultEnabled = f
 addon.ActionBars = M
 addon:RegisterModule("actionBars", M)
 
-M.VERSION = 1
+-- Version 2: buttons 42 by 36; Background Opacity; Show gains Mouseover and
+-- Hidden (Mouseover replaces the Fade Until Mouseover switch); amber
+-- cooldown numbers; bars stack on each other by default.
+M.VERSION = 2
 local P, onyx = Kit.palette, Kit.onyx
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -34,46 +37,69 @@ M.barSpecs = {
     pet = { label = "Pet Bar", prefix = "PetActionButton", count = 10, blizzard = { "PetActionBar" }, pet = true },
     stance = { label = "Stance Bar", prefix = "StanceButton", count = 10, blizzard = { "StanceBar" }, stance = true },
 }
--- Edit Mode element (and saved position key) per bar.
-M.elementIds = {}
-for _, bar in ipairs(M.bars) do M.elementIds[bar] = "actionBars" .. bar:sub(1, 1):upper() .. bar:sub(2) end
+-- Edit Mode element (and saved position key) per bar, and the frame names:
+-- the secure bar and its Edit Mode stand-in ("Mover").
+M.elementIds, M.frameNames = {}, {}
+for _, bar in ipairs(M.bars) do
+    M.elementIds[bar] = "actionBars" .. bar:sub(1, 1):upper() .. bar:sub(2)
+    local spec = M.barSpecs[bar]
+    M.frameNames[bar] = spec.pet and "ModeUIPetBar" or spec.stance and "ModeUIStanceBar" or "ModeUIActionBar" .. bar:sub(4)
+end
+-- Every bar can be anchored to a bar listed before it (never in a loop),
+-- through its stand-in, as well as to the screen and the game's frames.
+local BASE_TARGETS = { "screen", "player", "target", "focus", "minimap", "party" }
+M.allowedTargets = {}
+for index, bar in ipairs(M.bars) do
+    local allowed = Copy(BASE_TARGETS)
+    for earlier = 1, index - 1 do allowed[#allowed + 1] = M.elementIds[M.bars[earlier]] end
+    M.allowedTargets[bar] = allowed
+    addon.Positioning:AddTarget(M.elementIds[bar], L[M.barSpecs[bar].label], M.frameNames[bar] .. "Mover")
+end
 
--- Default places, pinned to a screen edge so they hold at any resolution.
+-- Default places: Action Bar 1 pinned to the bottom of the screen with 2, 3,
+-- the pet bar and the stance bar stacked on it; 4 on the right edge with 5
+-- beside it; 6 to 8 (hidden) near the middle.
 local function At(point, x, y) return { target = "screen", placement = "center", point = point, relativePoint = point, x = x, y = y } end
+local function On(bar, placement, x, y) return { target = M.elementIds[bar], placement = placement, x = x, y = y } end
 M.defaultPositions = {
-    bar1 = At("BOTTOM", 0, 16), bar2 = At("BOTTOM", 0, 58), bar3 = At("BOTTOM", 0, 100),
-    bar4 = At("RIGHT", -8, 0), bar5 = At("RIGHT", -52, 0),
+    bar1 = At("BOTTOM", 0, 16), bar2 = On("bar1", "above", 0, 4), bar3 = On("bar2", "above", 0, 4),
+    bar4 = At("RIGHT", -8, 0), bar5 = On("bar4", "left", -4, 0),
     bar6 = At("CENTER", 0, -120), bar7 = At("CENTER", 0, -162), bar8 = At("CENTER", 0, -204),
-    pet = At("BOTTOM", 0, 142), stance = At("BOTTOM", 0, 184),
+    pet = On("bar3", "above", 0, 4), stance = On("pet", "above", 0, 4),
 }
+-- Version 1's defaults; a saved place still equal to one moves to the new default.
+M.oldDefaultPositions = { bar2 = At("BOTTOM", 0, 58), bar3 = At("BOTTOM", 0, 100), bar5 = At("RIGHT", -52, 0),
+    pet = At("BOTTOM", 0, 142), stance = At("BOTTOM", 0, 184) }
 
 -- The texts on a button: the keybind, the stack or charge count, the macro
 -- name and the cooldown numbers. Each has its own size, place and color.
 M.textParts = { "hotkey", "count", "macro", "cooldown" }
 M.textPartLabels = { hotkey = "Keybind", count = "Count", macro = "Macro Name", cooldown = "Cooldown" }
 
+-- Cooldown numbers are amber (#FFB12F) by default.
+M.COOLDOWN_COLOR = Kit.RGB(255, 177, 47)
 local function Part(prefix, show, size, anchor, color)
     return { [prefix .. "Show"] = show, [prefix .. "Size"] = size, [prefix .. "Anchor"] = anchor,
         [prefix .. "X"] = 0, [prefix .. "Y"] = 0, [prefix .. "Color"] = Copy(color) }
 end
 
 -- One bar's settings. Bars 4 and 5 stand upright at the right edge; 6 to 8
--- start hidden. Every button is 42 by 38 by default.
+-- start hidden. Every button is 42 by 36 by default.
 local function Style(bar)
     local spec = M.barSpecs[bar]
     local upright = bar == "bar4" or bar == "bar5"
     local style = {
         show = bar ~= "bar6" and bar ~= "bar7" and bar ~= "bar8",
         buttons = spec.count, perLine = spec.count, orientation = upright and "vertical" or "horizontal", start = "TOPLEFT",
-        width = 42, height = 38, spacing = 2,
-        border = "rounded", borderColor = Copy(onyx.border), showEmpty = true,
-        visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fade = false, fadeOpacity = 0,
+        width = 42, height = 36, spacing = 2,
+        border = "rounded", borderColor = Copy(onyx.border), showEmpty = true, backgroundOpacity = 20,
+        visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
         font = "game", fontMedia = "Expressway", outline = true, shadow = true, liftedShadow = false, slug = true,
     }
     for key, value in pairs(Part("hotkey", true, 11, "TOPRIGHT", P.text)) do style[key] = value end
     for key, value in pairs(Part("count", true, 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
     for key, value in pairs(Part("macro", false, 10, "BOTTOM", P.muted)) do style[key] = value end
-    for key, value in pairs(Part("cooldown", true, 14, "CENTER", { 1, 1, 1 })) do style[key] = value end
+    for key, value in pairs(Part("cooldown", true, 14, "CENTER", M.COOLDOWN_COLOR)) do style[key] = value end
     return style
 end
 M.styleDefaults = {}
@@ -89,7 +115,7 @@ M.colorKeys = { borderColor = true }
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
 M.ranges = { buttons = { 1, 12, 1 }, perLine = { 1, 12, 1 }, width = { 16, 80, 1 }, height = { 16, 80, 1 },
-    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 } }
+    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 } }
 for _, part in ipairs(M.textParts) do
     M.ranges[part .. "Size"] = { 6, 32, 1 }
     M.ranges[part .. "X"] = { -40, 40, 1 }
@@ -106,8 +132,8 @@ M.choices = {
     start = { { id = "TOPLEFT", label = "Top Left" }, { id = "TOPRIGHT", label = "Top Right" },
         { id = "BOTTOMLEFT", label = "Bottom Left" }, { id = "BOTTOMRIGHT", label = "Bottom Right" } },
     border = { { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
-    visibility = { { id = "always", label = "Always" }, { id = "combat", label = "In Combat" },
-        { id = "noCombat", label = "Out of Combat" }, { id = "target", label = "In Combat or With a Target" },
-        { id = "custom", label = "Custom" } },
+    visibility = { { id = "always", label = "Always" }, { id = "mouseover", label = "Mouseover" }, { id = "hidden", label = "Hidden" },
+        { id = "combat", label = "In Combat" }, { id = "noCombat", label = "Out of Combat" },
+        { id = "target", label = "In Combat or With a Target" }, { id = "custom", label = "Custom" } },
 }
 for _, part in ipairs(M.textParts) do M.choices[part .. "Anchor"] = M.anchors end

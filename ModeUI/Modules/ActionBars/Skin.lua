@@ -22,17 +22,22 @@ local function Shape(texture, key, rounded)
     texture:SetTexture(FLAT)
 end
 
--- The rim and gap (and, for an empty slot, the dark well inside them).
-function M:Art(host, well)
+-- The rim, the gap and the background inside them: the ActionBarSlot
+-- texture (tools/build_shape_textures.lua), a dark slot with a soft inner
+-- bevel and grain in the spirit of Blizzard's own slots. It shows in empty
+-- slots and behind a button's icon (when it has none) at Background Opacity.
+function M:Art(host)
     local art = self.art[host]
     if art then return art end
-    art = { rim = host:CreateTexture(nil, "BACKGROUND", nil, -8), gap = host:CreateTexture(nil, "BACKGROUND", nil, -7) }
-    if well then art.well = host:CreateTexture(nil, "BACKGROUND", nil, -6) end
+    art = { rim = host:CreateTexture(nil, "BACKGROUND", nil, -8), gap = host:CreateTexture(nil, "BACKGROUND", nil, -7),
+        well = host:CreateTexture(nil, "BACKGROUND", nil, -6) }
     self.art[host] = art
     return art
 end
 
-function M.PaintArt(art, host, style, g)
+-- `slot` marks an empty slot: its black gap fades with the background, so
+-- only the rim stays solid.
+function M.PaintArt(art, host, style, g, slot)
     local on = style.border ~= "none"
     local rounded = on and style.border == "rounded" and g.w >= 8 and g.h >= 8
     art.rim:SetShown(on)
@@ -41,21 +46,21 @@ function M.PaintArt(art, host, style, g)
         Shape(art.rim, "NameplateRim", rounded); Kit.Tint(art.rim, style.borderColor, 1)
     end
     Kit.Inset(art.gap, host, on and g.px or 0)
-    Shape(art.gap, "NameplateGap", rounded); Kit.Tint(art.gap, ONYX.inner, 1)
-    if art.well then
-        Kit.Inset(art.well, host, g.inset)
-        Shape(art.well, "NameplateGap", rounded); Kit.Tint(art.well, ONYX.track, 1)
-    end
+    local background = style.backgroundOpacity / 100
+    Shape(art.gap, "NameplateGap", rounded); Kit.Tint(art.gap, ONYX.inner, slot and background or 1)
+    Kit.Inset(art.well, host, g.inset)
+    if not addon.Media:ApplyTexture(art.well, "ActionBarSlot") then art.well:SetTexture(FLAT) end
+    art.well:SetVertexColor(1, 1, 1, background)
 end
 
 -- An empty slot: what shows where a button has no action.
 function M:BuildSlot(parent)
     local slot = CreateFrame("Frame", nil, parent)
-    self:Art(slot, true)
+    self:Art(slot)
     slot:Hide()
     return slot
 end
-function M:PaintSlot(slot, style, g) M.PaintArt(self:Art(slot, true), slot, style, g) end
+function M:PaintSlot(slot, style, g) M.PaintArt(self:Art(slot), slot, style, g, true) end
 
 -- Crops the icon to the button's shape: 8% off its edges, then the long side
 -- cut to the inner aspect, so a 42 by 38 button shows the icon unstretched.

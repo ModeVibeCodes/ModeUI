@@ -14,7 +14,7 @@ if not M then return end
 -- written from Lua, so they get the crisp shadow only.
 local Kit, Public = addon.Kit, addon.IsPublic
 local KEYS = { hotkey = "HotKey", count = "Count", macro = "Name" }
-local PAD = 2 -- pixels between a text and the icon's edge
+local PAD = 1 -- pixels between a text and the icon's edge
 M.lifts = setmetatable({}, { __mode = "k" })
 M.textState = setmetatable({}, { __mode = "k" })
 
@@ -66,7 +66,8 @@ function M:Lift(text)
 end
 
 -- Places a text at its anchor on the button, PAD pixels in from the icon's
--- edge, then by its offset.
+-- edge, then by its offset. The text box hugs the letters (justified to the
+-- anchor's side, top or bottom), so a corner keybind sits right in the corner.
 local function Place(text, button, anchor, x, y, g, width, height)
     local h = anchor:find("LEFT") and "LEFT" or anchor:find("RIGHT") and "RIGHT" or "CENTER"
     local room = g.inset + PAD * g.px
@@ -76,6 +77,9 @@ local function Place(text, button, anchor, x, y, g, width, height)
     text:SetPoint(anchor, button, anchor, dx + math.floor(x / g.px + 0.5) * g.px, dy + math.floor(y / g.px + 0.5) * g.px)
     if width then text:SetSize(width, height) end
     text:SetJustifyH(h)
+    if text.SetJustifyV then
+        text:SetJustifyV(anchor:find("^TOP") and "TOP" or anchor:find("^BOTTOM") and "BOTTOM" or "MIDDLE")
+    end
     return h
 end
 
@@ -97,7 +101,7 @@ local function StylePart(self, button, part, style, g, sample)
         if not state.hooked and hooksecurefunc then state.hooked = true; hooksecurefunc(text, "SetVertexColor", KeepColor) end
     end
     local width = part ~= "cooldown" and math.max(g.px, g.w - 2 * g.inset) or nil
-    local justify = Place(text, button, style[part .. "Anchor"], style[part .. "X"], style[part .. "Y"], g, width, size + 4)
+    local justify = Place(text, button, style[part .. "Anchor"], style[part .. "X"], style[part .. "Y"], g, width, size + 1)
     if part ~= "macro" then text:SetWordWrap(false) end
     text:SetAlpha(shown and 1 or 0)
     -- Samples carry their own lift; Blizzard's texts get one on first use.

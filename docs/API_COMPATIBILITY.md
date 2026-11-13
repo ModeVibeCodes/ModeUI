@@ -205,3 +205,31 @@ guarded, and native behavior on Forever is unverified until checked in game.
 - **Hooks only.** Every hook is `hooksecurefunc` on an instance method;
   ModeUI writes no fields to Blizzard tables. `GetNumShapeshiftForms` (used by
   `StanceBar.lua`, not in the generated docs) sizes the stance bar.
+
+### Action bars, second pass — November 13, 2026
+
+- **Keybind Mode.** `SetBinding(key, command)` (returns false when a key can't be
+  bound), `GetBindingKey(command)`, `GetBindingText(key, true)`,
+  `SaveBindings(GetCurrentBindingSet())` and `LoadBindings(GetCurrentBindingSet())`,
+  as `Blizzard_QuickKeybind/QuickKeybind.lua`, `Blizzard_ClickBindingUI` and
+  `Blizzard_Settings_Shared/Blizzard_Keybindings.lua` use them. These are old
+  global functions without generated docs, and bindings change only outside
+  combat. The keys pressed go through `CreateKeyChordStringUsingMetaKeyState`,
+  `IsKeyPressIgnoredForBinding` and `GetConvertedKeyOrButton`
+  (`Blizzard_SharedXML/BindingUtil.lua`), with plain fallbacks. Commands are
+  Blizzard's `commandNamePrefix` .. `BUTTON` .. index (`MainActionBar.xml`
+  `ACTION`, `MultiActionBars.xml` `MULTIACTIONBAR1-7` with Right = 3 and Left = 4,
+  `PetActionBar.xml` `BONUSACTION`, `StanceBar.xml` `SHAPESHIFT`). Saving in
+  combat (if combat starts mid-mode) is pcall-guarded.
+- **Live preview.** It reads Blizzard's own buttons: `icon:GetTexture()` and
+  `IsShown()`, `HotKey`/`Count`/`Name:GetText()`, and
+  `Cooldown:GetCooldownTimes()` (milliseconds; used only while public). Anything
+  that may be secret only goes to `SetTexture` or `SetText` (`AllowedWhenTainted`);
+  a secret text's width is never measured. Reading fields on Blizzard's tables
+  doesn't taint them.
+- **Placement.** Bars may anchor to bars before them through their stand-ins
+  (plain frames). Each secure bar is pinned to `UIParent` at its stand-in's
+  measured place, from `Positioning:Geometry` (`GetCenter`, effective scale), so a
+  protected frame never anchors to another frame. The alignment guides are
+  textures on a plain full-screen frame (`SetColorTexture`). The nudge arrows use
+  `Texture:SetRotation` when present.
