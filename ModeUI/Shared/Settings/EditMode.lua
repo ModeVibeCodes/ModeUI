@@ -157,9 +157,11 @@ function addon:CreateEditWindow()
         end
         local element = E:Selected()
         if not element or not self.modules[element.module.id] then return end
-        local id = element.module.id
+        local id, module, elementId = element.module.id, element.module, element.id
         self:SetEditMode(false)
         self:SelectConfigPage(id)
+        -- A module with several elements can open its page on the chosen one.
+        if module.OpenElementSettings then module:OpenElementSettings(elementId) end
     end)
     local exit = W.Button(window, "Exit", 300, 32)
     exit:SetPoint("TOPLEFT", 20, -386)

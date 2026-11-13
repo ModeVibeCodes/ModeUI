@@ -350,6 +350,17 @@ world.run([==[
     local negated = false
     for _, query in ipairs(auraQueries) do if query == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' then negated = true end end
     assert(negated, 'debuffs leave crowd control to its own group')
+    -- In combat the game marks the list's contents secret (issecrettable is
+    -- true); its auras must still show, with secret icons passed straight on.
+    issecrettable = function(value) return type(value) == 'table' end
+    local CHEAP_SHOT = { auraInstanceID = 16, icon = Secret('cheap'), harmful = true, cc = true, duration = Secret('d'), expirationTime = Secret('e') }
+    units.nameplate1.auras = { SHIELD, DOT, CHEAP_SHOT }
+    FireEvent('UNIT_AURA', 'nameplate1')
+    assert(plate.auraShown.crowdControl == 1 and issecretvalue(A.crowdControl[1].icon.texture), 'crowd control with secret data shows')
+    assert(plate.auraShown.debuffs == 1 and plate.auraShown.buffs == 1, 'debuffs and buffs show while the list is secret')
+    issecrettable = nil
+    units.nameplate1.auras = { SHIELD, OTHER, DOT, SNARE }
+    FireEvent('UNIT_AURA', 'nameplate1')
     -- Default anchors: crowd control Left (past the raid marker), debuffs Top, buffs Right.
     -- Icons are cropped (4px wider than tall) and placed by their corner on
     -- whole pixels from the health bar's bottom left (180 x 16 here).

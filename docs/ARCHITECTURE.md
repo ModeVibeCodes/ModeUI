@@ -149,6 +149,7 @@ module's settings table and `self.enabled` its switch.
 | `OnCombatStateChanged(inCombat)` | entering and leaving combat, while enabled | |
 | `SetEditMode(on)` / `SetPreviewMode(on)` | Edit Mode or Preview changes | only outside combat |
 | `CreateConfigPage(parent)` | the settings page is opened for the first time | lives in `Settings.lua`; returns the page |
+| `OpenElementSettings(elementId)` | Edit Mode's **Open Module Settings**, after the page opens | for modules with several movable elements; shows that element's settings |
 
 A module talks to others only through `addon.Messages`. For example, Unit
 Frames redraws on `CLASS_COLORS_CHANGED` instead of Class Colors calling it.
@@ -316,7 +317,7 @@ module is built.
 | 0 | Unit Frames | Interface | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
 | 1 | Nameplates | Interface | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
 | 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
-| 3 | Action Bars | Interface | Kit: Button, Keybind text. Templates: secure action button. Placement: bar layouts | which action bar APIs and secure templates Forever ships |
+| 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
 | 4 | Chat Windows | Interface | Skin: chat frames, edit box, tabs. Kit: ScrollText | chat frame hooks that don't taint |
 | 5 | Damage Meters | Interface | Domain: combat data source | whether Forever has a built-in damage meter API and what it exposes |
 | 6 | Bags | Interface | Domain: Containers, Items. Kit: ItemButton. Templates: item slot | `C_Container` on Forever; secure use of items from addon buttons |

@@ -17,12 +17,32 @@ Auras.crowdControlFilter = "HARMFUL|CROWD_CONTROL|" .. NAMEPLATE
 -- Debuffs leave out crowd control when it has its own group.
 Auras.WITHOUT_CROWD_CONTROL = "|!CROWD_CONTROL"
 
+-- Whether a possibly secret value is there at all. Comparing a secret value
+-- can raise an error; a secret is never nil, so an error means present.
+local function Present(value)
+    local ok, present = pcall(function() return value ~= nil end)
+    return not ok or present
+end
+
 -- Up to `max` auras matching `filter`; an empty list when unavailable.
+-- While unit auras are restricted (in combat), GetUnitAuras still returns the
+-- list but marks its contents secret (ConditionalSecretContents), so
+-- issecrettable is true for it. Its auras still show: each field is read
+-- under pcall and only passed to widgets that accept secrets (an icon to
+-- SetTexture), as Blizzard's own nameplates do. Only an aura whose icon can't
+-- be read at all is left out.
 function Auras.List(unit, filter, max)
     if not (C_UnitAuras and type(C_UnitAuras.GetUnitAuras) == "function") then return {} end
     local ok, list = pcall(C_UnitAuras.GetUnitAuras, unit, filter, max)
-    if not ok or type(list) ~= "table" or (issecrettable and issecrettable(list)) then return {}, not ok end
-    return list
+    if not ok or type(list) ~= "table" then return {}, not ok end
+    local result = {}
+    pcall(function()
+        for _, aura in ipairs(list) do
+            local readable, icon = pcall(function() return aura.icon end)
+            if readable and Present(icon) then result[#result + 1] = aura end
+        end
+    end)
+    return result
 end
 
 -- Reads one aura field; nil when the aura table can't be read.
