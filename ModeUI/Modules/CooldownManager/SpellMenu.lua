@@ -9,9 +9,9 @@ if not M then return end
 -- opens its popout (GlowPopout.lua) to set that glow's look; Copy, Paste and
 -- Apply to Bar for the spell's settings; a > per text (Cooldown and Count
 -- on icons; Name, Duration and Count on bars) that opens its popout
--- (TextPopout.lua) for the spell's own text look; on a custom bar,
--- Essential and Utility, Earlier and Later (spells the bar took) and Remove
--- from Bar (a viewer's own spell hides there). It stays open while the page
+-- (TextPopout.lua) for the spell's own text look; Earlier and Later (or
+-- drag the icon); on a custom bar, Essential and Utility, Remove from Bar
+-- (a viewer's own spell hides there). It stays open while the page
 -- scrolls and closes on a click anywhere but it, its popouts and their
 -- menus, its icon, the close button, or combat. While it's open the spell
 -- previews its glow.
@@ -194,14 +194,14 @@ function M:RefreshSpellMenu()
         if shown then y = y - 34 end
     end
     Row({ menu.copy, menu.paste, menu.apply }, true)
-    -- Earlier and Later for spells in the bar's own list (all of a custom
-    -- bar's); Remove from Bar on every bar that takes spells.
-    local entries, listed = self:Entries(id), false
-    for _, key in ipairs(entries) do if key == menu.key then listed = true end end
-    menu.earlier:SetShown(false); menu.later:SetShown(false); menu.remove:SetShown(false)
-    if listed then Row({ menu.earlier, menu.later, menu.remove }, true)
-    else Row({ menu.remove }, self:TakesEntries(id)) end
-    if listed then menu.earlier:SetEnabled(entries[1] ~= menu.key); menu.later:SetEnabled(entries[#entries] ~= menu.key) end
+    -- Earlier and Later on every bar (like dragging the icon); Remove from
+    -- Bar on every bar that takes spells.
+    local order = self:SpellOrder(id)
+    menu.remove:SetShown(false)
+    if self:TakesEntries(id) then Row({ menu.earlier, menu.later, menu.remove }, true)
+    else Row({ menu.earlier, menu.later }, true) end
+    menu.earlier:SetEnabled(#order > 1 and order[1] ~= menu.key)
+    menu.later:SetEnabled(#order > 1 and order[#order] ~= menu.key)
     menu.paste:SetEnabled(self.spellClipboard ~= nil)
     local anyGlow = next(glows) ~= nil
     menu.more:SetShown(anyGlow)

@@ -188,6 +188,8 @@ function M:Placed(id)
     end
     table.sort(listed, function(a, b) return (order[self:SpellKey(a)] or 0) < (order[self:SpellKey(b)] or 0) end)
     for _, item in ipairs(listed) do placed[#placed + 1] = item end
+    -- A viewer's spells in the order you dragged them.
+    if not self:IsCustom(id) then self:Ordered(id, placed, function(item) return self:SpellKey(item) end) end
     return placed, parked
 end
 

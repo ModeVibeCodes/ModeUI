@@ -168,7 +168,9 @@ M.customDefaults = { cooldown = Style({ 42, 34 }, 8, "down"), buff = Style({ 36,
 -- Version 3's default sizes, which move to version 4's (sizes chosen by hand stay).
 M.oldSizes = { essential = { 42, 36 }, utility = { 35, 30 }, buffIcon = { 35, 30 }, cooldown = { 42, 36 }, buff = { 35, 30 } }
 -- extras: the spells Essential and Utility took themselves (Custom.lua).
-M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1, extras = { essential = {}, utility = {} } }
+-- order: a viewer's spell order once you move one (Custom.lua).
+M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1, extras = { essential = {}, utility = {} }, order = {} }
+M.MAX_ORDER = 200
 for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[viewer]) end
 
 -- Keys Copy Style leaves alone: whether and when a bar shows, its shape,

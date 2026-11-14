@@ -20,6 +20,7 @@
     <Script file="TextPopout.lua"/>
     <Script file="Picker.lua"/>
     <Script file="Preview.lua"/>
+    <Script file="PreviewDrag.lua"/>
     <Script file="ResourcePreview.lua"/>
     <Script file="Settings.lua"/>
     <Script file="SettingsTabs.lua"/>

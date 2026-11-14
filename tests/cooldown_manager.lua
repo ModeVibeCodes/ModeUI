@@ -377,7 +377,7 @@ world.run([==[
     -- A spell's own text look from its menu's Text row.
     view.icons[1].scripts.OnMouseUp(view.icons[1], 'LeftButton')
     assert(menu:IsShown() and menu.textRows.cooldown.more:IsShown() and menu.textRows.count.more:IsShown() and not menu.textRows.name.more:IsShown())
-    assert(menu.remove:IsShown() and not menu.earlier:IsShown(), "Remove from Bar on Essential; no order for Blizzard's own")
+    assert(menu.remove:IsShown() and menu.earlier:IsShown() and not menu.earlier.enabled and menu.later.enabled, "Remove from Bar and order on Essential")
     menu.textRows.count.more.scripts.OnClick(menu.textRows.count.more)
     local text = M.textPopout
     assert(text:IsShown() and text.part == 'count' and text.title.text == 'Count Text' and view.textPart == 'count' and not text.reset.enabled)
@@ -401,6 +401,30 @@ world.run([==[
     text.reset.scripts.OnClick(text.reset)
     assert(M.db.essential.spells['101'] == nil and live.font[2] == 12 and live.font[3] == 'OUTLINE' and live.alpha == 1, "Use Bar's Look")
     menu:Hide(); assert(not text:IsShown())
+    -- Dragging a spell in the preview moves it on the bar.
+    local function Live(id) for _, item in ipairs(ItemsOf(essential)) do if item.cooldownID == id then return item end end end
+    local thirdX = Point(Live(103))[4]
+    local s1, s3 = view.icons[1], view.icons[3]
+    assert(s1.key == '101' and s3.key == '103')
+    s1.scripts.OnMouseDown(s1, 'LeftButton'); s1.scripts.OnDragStart(s1)
+    assert(view.ghost:IsShown() and s1.alpha == 0.3 and view.frame.scripts.OnUpdate, 'a copy of the icon follows the cursor')
+    s3.mouseOver = true; view.frame.scripts.OnUpdate(view.frame)
+    assert(s3.highlight:IsShown() and not s1.highlight:IsShown(), 'the slot under the cursor lights up')
+    s1.scripts.OnDragStop(s1); s3.mouseOver = false
+    s1.scripts.OnMouseUp(s1, 'LeftButton')
+    assert(not menu:IsShown() and not view.ghost:IsShown() and not view.frame.scripts.OnUpdate, 'a drag is not a click; nothing left running')
+    assert(M.db.order.essential[1] == '102' and M.db.order.essential[3] == '101', 'the order is saved')
+    assert(view.icons[3].key == '101' and Point(Live(101))[4] == thirdX, 'the preview and the bar follow')
+    s1 = view.icons[1]; s1.scripts.OnMouseDown(s1, 'LeftButton'); s1.scripts.OnDragStart(s1); s1.scripts.OnDragStop(s1)
+    assert(M.db.order.essential[1] == '102', 'let go off any other slot: it stays')
+    essential:RefreshLayout()
+    assert(Point(Live(101))[4] == thirdX, "kept after Blizzard's own layout")
+    view.icons[3].scripts.OnMouseDown(view.icons[3], 'LeftButton'); view.icons[3].scripts.OnMouseUp(view.icons[3], 'LeftButton')
+    assert(menu:IsShown() and menu.key == '101', 'a click still opens the menu')
+    menu.later.scripts.OnClick(menu.later)
+    assert(M.db.order.essential[4] == '101', 'Later')
+    menu:Hide()
+    assert(M:MoveSpell('essential', '101', 1) and view.icons[1].key == '101' and not M:MoveSpell('essential', '101', 9), 'back first; no ninth place')
     M:SelectBar('buffIcon')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     assert(cdmToggles == 1, "Tracked Buffs' + opens Blizzard's Cooldown Manager")
@@ -513,6 +537,8 @@ Refused(function(db) db.customBars[2].entries = { "s9001" } end, "a spell by ID 
 Refused(function(db) db.customBars[1].entries = { "x9001" } end, "a bad spell key")
 Refused(function(db) db.customBars[2].entries = { "i5512" } end, "an item on a Buff Bar")
 Refused(function(db) db.extras.buffIcon = { "302" } end, "spells taken by Tracked Buffs")
+Refused(function(db) db.order = { essential = { "101", "101" } } end, "a spell twice in an order")
+Refused(function(db) db.order = { custom9 = { "101" } } end, "an order for no viewer")
 Refused(function(db) db.extras.essential = { "s9001", "s9001" } end, "Essential's spells twice")
 local function Text(look) return { ["101"] = { text = { count = look } } } end
 local function Copy(t) local c = {}; for k, v in pairs(t) do c[k] = type(v) == "table" and Copy(v) or v end; return c end
