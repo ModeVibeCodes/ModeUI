@@ -343,6 +343,7 @@ world.run([==[
     assert(plate.cast.bg.vertexColor[1] == enemy.castLockedColor[1], 'locked channel color behind the bar')
     units.nameplate1.channel = nil; FireEvent('UNIT_SPELLCAST_CHANNEL_STOP', 'nameplate1')
     assert(not plate.castBox:IsShown() and plate.casting == nil and plate.cast.scripts.OnUpdate == nil, 'cast bar stops')
+    assert(plate.castText.text == '' and plate.castTimer.text == '' and plate.castTarget.text == '', 'cast texts cleared when the cast ends')
 
     -- Every bar is Mode Gradient; health and cast boxes share the same rounded rims.
     local rim, gapTexture = addon.Media:GetTexture('NameplateRim'), addon.Media:GetTexture('NameplateGap')
