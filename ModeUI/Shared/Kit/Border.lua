@@ -66,8 +66,12 @@ local CAP = { LEFT = "ModeCapLeft", RIGHT = "ModeCapRight" }
 local HOLE = { LEFT = "ModeCapHoleLeft", RIGHT = "ModeCapHoleRight" }
 local function Path(key) return (addon.Media:GetTexture(key)) end
 
-function Kit.ModeBoxBorder(host)
-    local edge = CreateFrame("Frame", nil, host)
+-- `owner` (default `host`) is the frame the rim and the masks belong to, for
+-- a host that is a region rather than a frame (a chat window's box); the rim
+-- and the masks are still laid round `host`. Pass `level` to the layout then.
+function Kit.ModeBoxBorder(host, owner)
+    owner = owner or host
+    local edge = CreateFrame("Frame", nil, owner)
     edge:SetAllPoints(host)
     local border = { edge = edge, strips = {}, corners = {}, masks = {} }
     for _, side in ipairs({ "TOP", "BOTTOM", "LEFT", "RIGHT" }) do
@@ -79,10 +83,10 @@ function Kit.ModeBoxBorder(host)
         local cap, hole = edge:CreateTexture(nil, "BACKGROUND"), edge:CreateMaskTexture()
         cap:AddMaskTexture(hole)
         border.corners[corner] = { cap = cap, hole = hole }
-        border.masks[corner] = host:CreateMaskTexture()
+        border.masks[corner] = owner:CreateMaskTexture()
     end
     -- For content reaching all four corners: a rounded end down each side.
-    border.ends = { LEFT = Kit.EndMask(host), RIGHT = Kit.EndMask(host) }
+    border.ends = { LEFT = Kit.EndMask(owner), RIGHT = Kit.EndMask(owner) }
     return border
 end
 

@@ -131,7 +131,7 @@ function M:SetOption(key, value)
     if not pcall(self.Initialize, candidate) then return false end
     self.db[key] = candidate[key]
     self:Refresh()
-    -- Rows shown only with another setting (Border Color with Border) follow.
+    -- Rows shown only with another setting follow.
     if self.page then self.page:Layout() end
     return true
 end
