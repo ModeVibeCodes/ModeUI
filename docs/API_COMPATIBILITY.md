@@ -152,7 +152,9 @@ behavior on Forever is unverified until checked in game.
   `AddAuraGroup(key, filter, { maxFrameCount, layout, initializeFrame })` per
   group, then `SetAuraGroupFilterString`/`MaxFrameCount`/`Layout`/`Enabled`,
   `SetFlowLayoutAnchorPoint`/`Axis`/`GrowthDirection`, `SetUnit`, `SetEnabled`
-  and `UpdateAllAuras`. `initializeFrame` builds the Mode icon on each button and
+  and `UpdateAllAuras`. `SetUnit` and `SetEnabled` read the auras again only
+  when the value changes; `SetAuraGroupCandidateFilters` reads them again and
+  re-registers events on every call. `initializeFrame` builds the Mode icon on each button and
   registers it with `SetIcon`, `SetDurationCooldown`, `SetApplicationCount` and
   `AddDispelTypeTexture` (`PreserveAsset` with a `customDispelColorMap`, "None"
   for auras without a type). The container follows `UNIT_AURA` itself. Buttons
@@ -1153,8 +1155,10 @@ confirmation is pending for everything here.
   `min(unitsPerColumn × maxColumns, listed)` buttons, so `startingIndex = -4`
   makes all five up front. The header calls `SetPoint` on displayed buttons
   without `ClearAllPoints`, so ModeUI clears them before changing `point`. It
-  sizes itself from `child1`, and it updates on `GROUP_ROSTER_UPDATE` and on
-  attribute changes while it is visible. Visibility is
+  sizes itself from `child1`, and it updates on `GROUP_ROSTER_UPDATE`, on
+  `UNIT_NAME_UPDATE` for any unit and on attribute changes while it is
+  visible; each update calls `SetAttribute("unit", ...)` on every button, so
+  `OnAttributeChanged` fires with the same unit again and again. Visibility is
   `RegisterAttributeDriver(header, "state-visibility", ...)`. `SetRolesets`
   (`IsProtectedFunction`; `SimpleFrameAPIDocumentation`) gives the header the
   `unitFrames` roleset Blizzard's TargetFrame uses, in `pcall` and outside

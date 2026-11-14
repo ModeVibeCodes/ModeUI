@@ -483,11 +483,13 @@ local CONTAINERS = STUBS .. [==[
         function c:SetAuraGroupFilterString(key, f) self.groups[key].filter = f end
         function c:SetAuraGroupMaxFrameCount(key, n) self.groups[key].max = n end
         function c:SetAuraGroupLayout(key, l) self.groups[key].layout = l end
-        function c:SetAuraGroupCandidateFilters(key, f) self.groups[key].candidates = f end
-        function c:SetAuraGroupEnabled(key, on) self.groups[key].enabled = on end
-        function c:SetEnabled(on) self.enabled = on end
-        function c:SetUnit(unit) self.unit = unit end
+        -- As Blizzard_AuraContainer: candidate filters always read the auras
+        -- again; the enabled state and the unit do when they change.
         function c:UpdateAllAuras() self.updates = (self.updates or 0) + 1 end
+        function c:SetAuraGroupCandidateFilters(key, f) self.groups[key].candidates = f; self:UpdateAllAuras() end
+        function c:SetAuraGroupEnabled(key, on) self.groups[key].enabled = on end
+        function c:SetEnabled(on) if self.enabled ~= on then self.enabled = on; self:UpdateAllAuras() end end
+        function c:SetUnit(unit) if self.unit ~= unit then self.unit = unit; self:UpdateAllAuras() end end
         function c:SetFlowLayoutAnchorPoint(p) self.flowAnchor = p end
         function c:SetFlowLayoutAxis(a) self.axis = a end
         function c:SetFlowLayoutGrowthDirection(h, v) self.growth = { h, v } end
@@ -556,6 +558,30 @@ H.Load({ before = CONTAINERS }).run([==[
     assert(p1.auraContainers['BOTTOMRIGHT|inside'].groups.heals1.candidates.excludeSpellIDs[774], 'left out of Healing Buffs')
     roster = { 'party2' }; GroupChanged()
     assert(M.members[2].auraContainers['BOTTOMRIGHT|inside'].unit == 'party2', 'containers follow the unit')
+    -- Joining a group: the header hands every button its unit again on each
+    -- roster and name event. The same units read no auras again, and a burst
+    -- waits for one pass on the next frame.
+    local function Reads() local n = 0; for _, c in ipairs(containers) do n = n + (c.updates or 0) end; return n end
+    local reads = Reads()
+    for _ = 1, 20 do FireEvent('GROUP_ROSTER_UPDATE'); M.header.scripts.OnEvent(M.header, 'UNIT_NAME_UPDATE', 'nameplate1') end
+    assert(Reads() == reads, 'the same units: no aura work')
+    local pending, after, update, redraws = {}, C_Timer.After, M.UpdateMember, 0
+    C_Timer.After = function(_, fn) pending[#pending + 1] = fn end
+    M.UpdateMember = function(...) redraws = redraws + 1; return update(...) end
+    for _ = 1, 10 do FireEvent('GROUP_ROSTER_UPDATE') end
+    assert(#pending == 1 and redraws == 0, 'a burst waits for the next frame')
+    pending[1]()
+    assert(redraws == #M.members and Reads() == reads, 'each member redrawn once')
+    C_Timer.After, M.UpdateMember = after, update
+    -- Someone else behind the same unit: its auras are read again, once.
+    local guid = UnitGUID
+    UnitGUID = function(u) return u == 'party2' and 'Player-Other' or guid(u) end
+    FireEvent('GROUP_ROSTER_UPDATE')
+    local more = Reads()
+    assert(more > reads, 'a new person: auras read again')
+    FireEvent('GROUP_ROSTER_UPDATE')
+    assert(Reads() == more, 'then nothing more')
+    UnitGUID = guid
 ]==], "party_containers")
 
 -- Version 1 settings move to version 2: old default sizes take the new ones,
