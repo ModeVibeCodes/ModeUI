@@ -134,6 +134,16 @@ local function ValidOrder(db)
     end
 end
 
+-- The bar racials show on: "none", Essential, Utility or a custom Cooldown
+-- Bar (added without a version step: a profile saved before shows them on
+-- Utility).
+local function ValidRacials(db)
+    if db.racials == nil then db.racials = "utility" end
+    local ok = db.racials == "none" or M.entryViewers[db.racials] ~= nil
+    for _, bar in ipairs(db.customBars) do if bar.id == db.racials and bar.kind == "cooldown" then ok = true end end
+    assert(ok, "Invalid cooldown manager racials bar")
+end
+
 -- Custom bars: at most MAX_CUSTOM, each with a unique "customN" ID below
 -- nextCustom, a name, a kind and its spells (unique cooldown ID keys).
 local function ValidCustom(db)
@@ -238,6 +248,7 @@ function M.Initialize(db)
     ValidCustom(db)
     ValidExtras(db)
     ValidOrder(db)
+    ValidRacials(db)
     -- Resource Bars (ResourceInit.lua): added without a version step; a
     -- profile saved before them takes their defaults.
     M.ValidateResources(db)

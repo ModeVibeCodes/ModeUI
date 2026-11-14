@@ -167,7 +167,7 @@ world.run([==[
     for _, viewer in ipairs({ essential, utility, buffs }) do for _, item in ipairs(ItemsOf(viewer)) do byKey[item:GetCooldownID()] = item end end
     assert(M:AddEntry(c1, '102') and M:AddEntry(c1, '201'))
     assert(Point(byKey[102])[2] == M.holders.custom1 and Point(byKey[201])[2] == M.holders.custom1, 'icons move onto the custom bar')
-    assert(M.placedCount.essential == 4 and M.placedCount.utility == 1, 'their viewers close up')
+    assert(M.placedCount.essential == 4 and M.placedCount.utility == 2, 'their viewers close up (Utility keeps Berserking)')
     assert(Point(byKey[102])[4] == 132 and Point(byKey[201])[4] == 176, 'in the order added, centered')
     assert(M:MoveEntry(c1, '201', -1) and Point(byKey[201])[4] == 132, 'Earlier')
     assert(not M:AddEntry(c1, '301'), 'a Cooldown Bar takes no buffs')
@@ -312,11 +312,12 @@ world.run([==[
     assert(picker.buttons[7]:IsShown() and picker.buttons[7].key == '202', 'all seven tracked cooldowns from Essential and Utility')
     local unknown = picker.buttons[8]
     assert(unknown.key == 's5006' and unknown.icon.desaturated and unknown.where:find('not learned', 1, true), 'an unlearned class spell, grayed')
-    assert(picker.buttons[9].key == 'i5512' and picker.buttons[10].key == 'i191380' and not (picker.buttons[11] and picker.buttons[11]:IsShown()), 'usable items in your bags (no cloth)')
+    assert(picker.buttons[9].key == 's26297' and picker.buttons[9].where:find('Not in Blizzard CDM', 1, true) and picker.buttons[9].add ~= nil, 'your racial, for a bar that does not show it')
+    assert(picker.buttons[10].key == 'i5512' and picker.buttons[11].key == 'i191380' and not (picker.buttons[12] and picker.buttons[12]:IsShown()), 'usable items in your bags (no cloth)')
     assert(picker.headings[3]:IsShown() and picker.spellRow:IsShown() and picker.itemRow:IsShown(), 'Spell ID and Item ID on a Cooldown Bar')
     unknown.scripts.OnClick(unknown)
     assert(M:Custom(c1).entries[#M:Custom(c1).entries] == 's5006', 'added as a custom spell')
-    assert(picker.buttons[8].key == 'i5512', 'gone from the list')
+    assert(picker.buttons[8].key == 's26297', 'gone from the list')
     knownSpells[7676] = false
     picker.idInput:SetText('7676'); picker.idAdd.scripts.OnClick(picker.idAdd)
     assert(picker.idResult.text:find("know that spell", 1, true), 'a spell you do not know is refused, pointing at Item ID')
@@ -326,7 +327,7 @@ world.run([==[
     assert(picker.idResult.text == 'That item has no Use: effect.')
     picker.itemRow.input:SetText('999'); picker.itemRow.add.scripts.OnClick(picker.itemRow.add)
     assert(picker.idResult.text == 'No item has that ID.')
-    picker.buttons[8].scripts.OnClick(picker.buttons[8])
+    picker.buttons[9].scripts.OnClick(picker.buttons[9])
     assert(M:Custom(c1).entries[#M:Custom(c1).entries] == 'i5512', 'an item from your bags')
     -- An item's icon: picture, count, cooldown, gray with none left.
     local stone = M.spellIcons[c1].i5512
@@ -425,6 +426,22 @@ world.run([==[
     assert(M.db.order.essential[4] == '101', 'Later')
     menu:Hide()
     assert(M:MoveSpell('essential', '101', 1) and view.icons[1].key == '101' and not M:MoveSpell('essential', '101', 9), 'back first; no ninth place')
+    -- Racials show on their own, on Utility by default.
+    local berserk = M.spellIcons.utility.s26297
+    assert(M.db.racials == 'utility' and berserk and berserk:IsShown() and Point(berserk)[2] == M.holders.utility, 'Berserking on Utility')
+    assert(M:Entries('utility')[#M:Entries('utility')] == 's26297' and #M.db.extras.utility == 0, 'listed, not saved')
+    assert(not M.spellIcons.utility.s20594 and not M.spellIcons.utility.s28730, "other races' racials stay off")
+    M:SelectBar('utility')
+    assert(page.racialsSelect and view.icons[#M:SpellOrder('utility')].key == 's26297', 'Racial Abilities on the Bar tab; in the preview')
+    assert(M:RemoveEntry('utility', 's26297') and M:SpellSwitch('utility', 's26297', 'hide') and berserk.alpha == 0, 'Remove from Bar hides it')
+    assert(M:SetSpellSwitch('utility', 's26297', 'hide', false))
+    assert(M:SetRacials('essential') and M.spellIcons.essential.s26297:IsShown() and not M.spellIcons.utility.s26297, 'moved to Essential')
+    assert(not M:SetRacials('buffIcon') and M.db.racials == 'essential', 'not on Tracked Buffs')
+    local temp = M:AddCustomBar('cooldown')
+    assert(M:SetRacials(temp) and M.spellIcons[temp].s26297 and M:DeleteCustomBar(temp) and M.db.racials == 'utility', 'a deleted bar gives them back to Utility')
+    assert(M:SetRacials('none') and not M.spellIcons.utility.s26297 and not M.spellIcons.essential.s26297, 'Off')
+    assert(M:SetRacials('utility'))
+    M:SelectBar('essential')
     M:SelectBar('buffIcon')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     assert(cdmToggles == 1, "Tracked Buffs' + opens Blizzard's Cooldown Manager")
@@ -467,7 +484,7 @@ H.Load({ before = STUBS }).run([==[
 local restored = H.Load({ before = STUBS .. "\nMakeViewers()", saved = world.saved() })
 restored.run([==[
     local M = addon.CooldownManager
-    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 5, 'settings persist')
+    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 6 and M.db.racials == 'utility', 'settings persist')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
     assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
@@ -539,6 +556,7 @@ Refused(function(db) db.customBars[2].entries = { "i5512" } end, "an item on a B
 Refused(function(db) db.extras.buffIcon = { "302" } end, "spells taken by Tracked Buffs")
 Refused(function(db) db.order = { essential = { "101", "101" } } end, "a spell twice in an order")
 Refused(function(db) db.order = { custom9 = { "101" } } end, "an order for no viewer")
+Refused(function(db) db.racials = "buffIcon" end, "racials on Tracked Buffs")
 Refused(function(db) db.extras.essential = { "s9001", "s9001" } end, "Essential's spells twice")
 local function Text(look) return { ["101"] = { text = { count = look } } } end
 local function Copy(t) local c = {}; for k, v in pairs(t) do c[k] = type(v) == "table" and Copy(v) or v end; return c end

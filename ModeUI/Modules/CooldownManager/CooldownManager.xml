@@ -6,6 +6,7 @@
     <Script file="Custom.lua"/>
     <Script file="Spells.lua"/>
     <Script file="Items.lua"/>
+    <Script file="Racials.lua"/>
     <Script file="Blizzard.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Skin.lua"/>

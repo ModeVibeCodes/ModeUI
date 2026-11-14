@@ -96,6 +96,8 @@ end
 M.revision = 0
 function M:Refresh()
     self.revision = self.revision + 1
+    -- Spells changing refreshes: the racials you know are found again.
+    self:ForgetRacials()
     if self.active then
         self:LayoutAll()
         self:RenderMovers()

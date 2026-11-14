@@ -13,7 +13,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Resource Bars (your health, power, a Druid's mana in forms and combo
 -- points) live here too, in the same window: see ResourceInit.lua.
 -- Files: Init (this), ResourceInit, Migrations, Driver, Custom, Spells,
--- Items, Blizzard, Layout, Skin, Bars, Text, Glow, Visibility, Resources,
+-- Items, Racials, Blizzard, Layout, Skin, Bars, Text, Glow, Visibility, Resources,
 -- ResourceUpdate, SpellMenu, GlowPopout, TextPopout, Picker, Preview,
 -- ResourcePreview, Settings, SettingsTabs, ResourceSettings, Window.
 local L, Kit = addon.L, addon.Kit
@@ -169,7 +169,8 @@ M.customDefaults = { cooldown = Style({ 42, 34 }, 8, "down"), buff = Style({ 36,
 M.oldSizes = { essential = { 42, 36 }, utility = { 35, 30 }, buffIcon = { 35, 30 }, cooldown = { 42, 36 }, buff = { 35, 30 } }
 -- extras: the spells Essential and Utility took themselves (Custom.lua).
 -- order: a viewer's spell order once you move one (Custom.lua).
-M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1, extras = { essential = {}, utility = {} }, order = {} }
+-- racials: the bar your racial abilities show on (Racials.lua).
+M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1, extras = { essential = {}, utility = {} }, order = {}, racials = "utility" }
 M.MAX_ORDER = 200
 for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[viewer]) end
 

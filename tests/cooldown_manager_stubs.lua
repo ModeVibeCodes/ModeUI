@@ -71,6 +71,12 @@
     end
     C_Spell.IsSpellUsable = function(id) local u = spellUsable[id]; if u then return u[1], u[2] end return true, false end
     C_SpellBook = { IsSpellKnown = function(id) return knownSpells[id] ~= false end }
+    -- Racials: the character is a troll, so only Berserking is known.
+    for _, id in ipairs({ 20572, 33697, 33702, 7744, 20549, 50613, 202719, 80483, 28730, 129597, 155145, 232633, 25046, 69179,
+        69070, 59752, 20594, 58984, 20589, 59545, 59543, 59548, 121093, 59542, 59544, 370626, 59547, 416250, 28880, 68992,
+        107079, 368970, 357214, 260364, 255654, 274738, 291944, 312411, 256948, 255647, 265221, 287712, 312924, 436344, 1237885 }) do
+        knownSpells[id] = false
+    end
     function methods:SetCooldownFromDurationObject(duration) self.durationObject = duration end
     function GameTooltip:SetOwner(owner) self.owner = owner end
     function GameTooltip:SetSpellByID(id) self.spell = id end

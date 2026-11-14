@@ -160,6 +160,15 @@ function CD.Override(spellID)
     return spellID
 end
 
+-- Whether the game says you know this very spell: false when it can't say
+-- (for spells shown only when surely known, like racials).
+function CD.SurelyKnown(spellID)
+    local api = C_SpellBook and C_SpellBook.IsSpellKnown
+    if not Number(spellID, 1, 99999999) then return false end
+    local ok, known = Call(api, spellID)
+    return ok and Public(known) and known == true
+end
+
 -- Whether you know the spell (or what overrides it): true, false, or true
 -- when the client can't say.
 function CD.Known(spellID)
