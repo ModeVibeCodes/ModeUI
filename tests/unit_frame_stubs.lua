@@ -123,6 +123,14 @@
     function GetComboPoints(unit,target) assert(unit=='player' and target=='target');return comboPoints end
     -- Casts: Blizzard's player cast bar and the Target/Focus spell bars.
     function methods:SetReverseFill(value) self.reverseFill=value end
+    -- As in the client: three numbers, or one color object (with GetRGB).
+    local setBarColor=methods.SetStatusBarColor
+    function methods:SetStatusBarColor(r,g,b,a)
+        local numbers=(type(r)=='number' or issecretvalue(r)) and (type(g)=='number' or issecretvalue(g)) and (type(b)=='number' or issecretvalue(b))
+        local object=type(r)=='table' and not issecretvalue(r) and type(r.GetRGB)=='function'
+        assert(numbers or object,'bad argument #1 to SetStatusBarColor (Usage: self:SetStatusBarColor(color [, a]))')
+        return setBarColor(self,r,g,b,a)
+    end
     function UnitCastingInfo(u) local c=units[u] and units[u].cast;if c then return c.name,c.text,c.icon,c.start,c.stop,false,'id',c.locked end end
     function UnitChannelInfo(u) local c=units[u] and units[u].channel;if c then return c.name,c.text,c.icon,c.start,c.stop,false,c.locked end end
     CreateFrame('StatusBar','PlayerCastingBarFrame',UIParent);CreateFrame('StatusBar','TargetFrameSpellBar',TargetFrame)

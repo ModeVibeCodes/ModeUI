@@ -97,6 +97,11 @@ world.run([==[
     units.player.health = 900
     assert(M:SetResourceOption('health', 'colorMode', 'custom') and M:SetResourceOption('health', 'barColor', { 1, 0, 0 }))
     assert(health.boxes[1].bar.statusBarColor[1] == 1 and health.boxes[1].bar.statusBarColor[2] == 0, 'custom color')
+    -- Class: the class color comes keyed (.r, .g, .b) and is painted by index.
+    local rogue = addon.Domain.UnitColor.PlayerClass('player')
+    assert(M:SetResourceOption('health', 'colorMode', 'class'))
+    assert(health.boxes[1].bar.statusBarColor[1] == rogue.r and health.boxes[1].bar.statusBarColor[3] == rogue.b, 'class color')
+    assert(M:SetResourceOption('health', 'colorMode', 'custom'))
 
     -- Settings: own width without Match Width, checked values, border off, reverse fill.
     assert(M:SetResourceOption('power', 'matchWidth', false) and ModeUIResourcePower.width == 300, 'Width while Match Width is off')

@@ -45,11 +45,15 @@ function M.ResourceValueText(text, mode, percentFn, okValue, value, okMax, max)
 end
 
 -- Bar Color: the power's own color (Power Type), your class color, or the
--- bar's color.
+-- bar's color, always as { r, g, b } by index. Class colors come from
+-- Domain.UnitColor keyed (.r, .g, .b), the others indexed.
 function M:ResourceColor(id, token)
     local style = self.db.resources[id]
     if style.colorMode == "power" then return Power.Color(token) end
-    if style.colorMode == "class" then return UnitColor.PlayerClass("player") or style.barColor end
+    if style.colorMode == "class" then
+        local class = UnitColor.PlayerClass("player")
+        if class then return { class.r, class.g, class.b } end
+    end
     return style.barColor
 end
 function M.PaintResource(frame, color, opacity)
