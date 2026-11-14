@@ -16,29 +16,13 @@ if not M then return end
 -- real cooldown ends, Glow When Ready lights the button for Glow Time
 -- seconds; Icon Opacity fades the icon while the cooldown runs.
 local Kit, Public = addon.Kit, addon.IsPublic
-local OUTSET = 7 -- how far the soft glow reaches past the button
 M.glows = setmetatable({}, { __mode = "k" })
 M.procs = setmetatable({}, { __mode = "k" })
 M.cooling = setmetatable({}, { __mode = "k" })
 
 -- One glow (kind "proc" or "ready") on a button: a soft glow texture and a
--- border of four edges; the style picks which shows.
-local function Build(button)
-    local frame = CreateFrame("Frame", nil, button)
-    frame:SetAllPoints(button)
-    frame.soft = frame:CreateTexture(nil, "OVERLAY")
-    frame.edges = {}
-    for i = 1, 4 do frame.edges[i] = frame:CreateTexture(nil, "OVERLAY", nil, 1) end
-    if frame.CreateAnimationGroup then
-        local pulse = frame:CreateAnimationGroup()
-        local fade = pulse:CreateAnimation("Alpha")
-        fade:SetFromAlpha(1); fade:SetToAlpha(0.35); fade:SetDuration(0.6)
-        pulse:SetLooping("BOUNCE")
-        frame.pulse = pulse
-    end
-    frame:Hide()
-    return frame
-end
+-- border of four edges (Kit.SlotGlow); the style picks which shows.
+local Build = Kit.SlotGlow
 
 function M:Glow(button, kind)
     local set = self.glows[button] or {}
@@ -49,29 +33,7 @@ end
 
 local function Paint(frame, button, style, color, pulse)
     local state = M.skinState[button]
-    local px = state and state.g.px or 1
-    frame:SetFrameLevel(button:GetFrameLevel() + 6)
-    local soft = style == "glow" or style == "mode"
-    frame.isSoft = soft
-    frame.soft:SetShown(soft)
-    if soft then
-        frame.soft:ClearAllPoints()
-        frame.soft:SetPoint("TOPLEFT", button, "TOPLEFT", -OUTSET, OUTSET)
-        frame.soft:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", OUTSET, -OUTSET)
-        if not addon.Media:ApplyTexture(frame.soft, "NameplateGlow") then frame.soft:SetTexture(Kit.FLAT) end
-        Kit.Tint(frame.soft, color, 0.9)
-    end
-    local t = 2 * px
-    local top, bottom, left, right = frame.edges[1], frame.edges[2], frame.edges[3], frame.edges[4]
-    local function Edge(edge, a, x1, y1, b, x2, y2)
-        edge:ClearAllPoints(); edge:SetPoint("TOPLEFT", button, a, x1, y1); edge:SetPoint("BOTTOMRIGHT", button, b, x2, y2)
-        edge:SetTexture(Kit.FLAT); Kit.Tint(edge, color, 1); edge:SetShown(not soft)
-    end
-    Edge(top, "TOPLEFT", 0, 0, "TOPRIGHT", 0, -t); Edge(bottom, "BOTTOMLEFT", 0, t, "BOTTOMRIGHT", 0, 0)
-    Edge(left, "TOPLEFT", 0, -t, "BOTTOMLEFT", t, t); Edge(right, "TOPRIGHT", -t, -t, "BOTTOMRIGHT", 0, t)
-    if frame.pulse then
-        if pulse and not frame.pulse:IsPlaying() then frame.pulse:Play() elseif not pulse then frame.pulse:Stop(); frame:SetAlpha(1) end
-    end
+    Kit.PaintSlotGlow(frame, button, style, color, pulse, state and state.g.px or 1)
 end
 
 M.PaintGlow = Paint

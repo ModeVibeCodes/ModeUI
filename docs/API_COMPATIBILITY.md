@@ -878,3 +878,77 @@ icon). [Details](BAGS.md).
   buttons in combat (expected to work, as Blizzard's handler runs) and the
   bag bar's open highlights while Blizzard's frames are hidden. The junk
   coin uses the atlas Forever's own template names (`bags-junkcoin`).
+
+## Cooldown Manager — November 13, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source (head 1.60.1,
+70938) and the local mainline 12.1.5 copy. [Details](COOLDOWN_MANAGER.md).
+
+- **Forever has it.** `Blizzard_CooldownViewer.toc` adds `camelot` to
+  `AllowLoadGameType` (mainline: `standard` only); not load-on-demand,
+  depends on `Blizzard_EditMode`. Its files match mainline except: the
+  Essential, Utility and BuffIcon `layoutIndex` (13/14/12 instead of
+  10/11/9); category cooldowns (`GetSpellID(optDataSource)`,
+  `spellIDForCategory`); viewers listening to `EditMode.RefreshCooldownViewer`.
+  None of that touches the item structure ModeUI styles.
+- **Frames.** `EssentialCooldownViewer`, `UtilityCooldownViewer`,
+  `BuffIconCooldownViewer` (all `BottomManagedFrameTemplate`) and
+  `BuffBarCooldownViewer`, each `CooldownViewerTemplate`
+  (`EditModeCooldownViewerSystemTemplate, GridLayoutFrame`). No template is
+  protected or secure. Items come from `viewer.itemFramePool`
+  (`CreateFramePool`, the viewer as parent); `RefreshLayout` releases them
+  all, acquires `max(#ids, 2)`, sets `layoutIndex`, calls
+  `OnAcquireItemFrame` (scale = Edit Mode Icon Size, tooltips, timer), then
+  `RefreshData` and `Layout()`. `GridLayoutFrameMixin:Layout` anchors the
+  children, then `ResizeLayoutMixin.Layout` sizes the viewer from them, so a
+  post-hook that re-anchors them afterward leaves the viewer's size as
+  Blizzard computed it.
+- **Item keys.** Essential/Utility: `Icon` (masked by an unnamed
+  `MaskTexture`, atlas `UI-HUD-CoolDownManager-Mask`), an unnamed overlay
+  (`UI-HUD-CoolDownManager-IconOverlay`), `OutOfRange`, `Cooldown`,
+  `ChargeCount.Current`, `CooldownFlash`. BuffIcon: `Icon`, `Cooldown`,
+  `DebuffBorder`, `Applications.Applications`. BuffBar: `Icon` (a frame;
+  `Icon.Icon`, `Icon.Applications`), `DebuffBorder`, `Bar` (StatusBar with
+  `BarBG`, `Pip`, `Name`, `Duration`). `SetBarContent` re-anchors `Bar` to
+  `Icon` and shows or hides the icon with plain values.
+- **Secret values.** Blizzard's item code does arithmetic and comparisons on
+  aura and cooldown values (`expirationTime - GetTime()`), allowed only
+  while untainted, so a field written on an item from addon code would
+  break it. `hooksecurefunc` post-hooks keep Blizzard's call untainted.
+  `C_CooldownViewer.GetCooldownViewerCooldownInfo`, `GetCooldownViewerCategorySet`
+  and `SetLayoutData` are `SecretArguments = "AllowedWhenUntainted"` with no
+  secret returns; cooldown IDs are plain numbers. `IsShown` has
+  `SecretReturnsForAspect = Shown`: an item shown from secret aura data can
+  answer secret, which ModeUI treats as shown.
+- **Cooldown widget.** `SetSwipeColor`, `SetDrawEdge`, `SetDrawSwipe`,
+  `SetDrawBling` and `SetEdgeColor` are `AllowedWhenTainted`;
+  `SetSwipeTexture` is `AllowedWhenUntainted` (ModeUI passes a plain path).
+  Blizzard sets the swipe color, swipe and edge on every
+  `RefreshSpellCooldownInfo` (cooldown items) and `RefreshCooldownInfo`
+  (buff icons), so ModeUI sets its own after those. The aura swipe is
+  `CooldownViewerConstants.ITEM_AURA_COLOR`, compared by reference
+  (`rawequal`).
+- **Cooldown state.** `C_Spell.GetSpellCooldown` is
+  `SecretWhenCooldownsRestricted`, but `SpellCooldownInfo.isActive` and
+  `isOnGCD` are `NeverSecret`; Glow When Ready reads only those, on
+  `SPELL_UPDATE_COOLDOWN`. `C_Spell.GetSpellName` and `GetSpellTexture`
+  for the preview.
+- **Procs.** `CooldownViewerCooldownItemMixin:RefreshOverlayGlow` calls
+  `ActionButtonSpellAlertManager:ShowAlert(item)` / `HideAlert(item)`, which
+  create `item.SpellActivationAlert` (1.4 times the item's size).
+- **Visibility.** `CooldownViewerMixin:ShouldBeShown` hides the viewers when
+  the `cooldownViewerEnabled` CVar is off, when
+  `C_CooldownViewer.IsCooldownViewerAvailable()` says no, or by the Edit
+  Mode Visibility setting (Always, InCombat, Hidden). The checkbox is
+  `Settings.SetupCVarCheckbox(category, "cooldownViewerEnabled",
+  ENABLE_COOLDOWN_VIEWER)` in the `ADVANCED_OPTIONS_LABEL` category,
+  enabled on Forever by `Camelot\InterfaceOverrides.HasCooldownViewer()`
+  (`true`). ModeUI reads the CVar (`C_CVar.GetCVarBool`) and never sets it.
+  Item alpha is never set by Blizzard; the viewer's is (Edit Mode Opacity).
+- **Cooldown Settings.** `CooldownViewerSettings:TogglePanel()` (what the
+  slash command and Edit Mode call) opens Blizzard's spell lists through
+  `ShowUIPanel`; ModeUI's button calls it outside combat only.
+- **Unverified natively:** the whole module (no in-game run yet); whether the
+  `AdvancedOptions.lua` checkbox loads for `camelot` (its TOC entry is
+  `[AllowLoadGameType mainline]`); hooks and re-anchoring during Blizzard's
+  own Edit Mode.

@@ -419,11 +419,11 @@ Version 2 changed these from version 1:
 | `Driver.lua` | lifecycle, events, `/kb`, settings changes, copy and reset, the font and color owner, moving version 1 places |
 | `Bars.lua` | secure bars, moving Blizzard's buttons, hiding Blizzard's art, the vehicle-bar watch, the paging snippet, Edit Mode stand-ins and live follow, switching off |
 | `Layout.lua` | pixel-perfect geometry and button counts |
-| `Skin.lua` | rim, gap, background, icon crop, state overlays, empty slots |
+| `Skin.lua` | rim, gap, background, icon crop (drawn by `Kit.Slot`, shared with the Cooldown Manager), state overlays, empty slots |
 | `Text.lua` | the four texts, their hooks and lifted shadows |
 | `Utility.lua` | the micro menu and bag bar: their buttons, skin, hooks and Show |
 | `Visibility.lua` | show and page conditions, fading |
-| `Glow.lua` | proc glows, the ready glow, icon opacity and desaturation on cooldown |
+| `Glow.lua` | proc glows (drawn by `Kit.SlotGlow`), the ready glow, icon opacity and desaturation on cooldown |
 | `GlowMenu.lua` | the preview's glow menu, per-button switches with copy, paste and apply to bar, glow previews |
 | `Keybind.lua` | Keybind Mode |
 | `Preview.lua` | the Edit Mode highlight and the live settings preview |

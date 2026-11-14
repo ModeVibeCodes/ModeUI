@@ -9,12 +9,12 @@ assert(metadata["X-ModeUI-Edition"] == "Forever" and metadata.Interface == "1600
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,bags,unitFrames,nameplates')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,cooldownManager,tooltip,bags,unitFrames,nameplates')
     -- Sidebar order (owner, November 13, 2026): Global, Interface, Frames.
     assert(table.concat(addon.categoryOrder,',')=='global,interface,frames' and addon.categories.interface.title=='Interface'
         and addon.categories.global.title=='Global' and addon.categories.frames.title=='Frames')
     assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
-    assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,tooltip,bags')
+    assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,cooldownManager,tooltip,bags')
     assert(table.concat(addon.categories.frames.modules,',')=='unitFrames,nameplates')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
     assert(addon.InterfaceTheme.primary[2]==240/255,'Mode cyan accent')
@@ -23,6 +23,7 @@ world.run([[
     assert(not addon.modules.nameplates.enabled,'nameplates start off')
     assert(not addon.modules.actionBars.enabled,'action bars start off')
     assert(not addon.modules.damageMeters.enabled,'damage meters start off')
+    assert(not addon.modules.cooldownManager.enabled,'the cooldown manager starts off')
     assert(ModeUIDB.importedFrom=='none','nothing to import without Play The Game Tools')
     assert(ModeUIDB.schemaVersion==2 and ModeUIDB.activeProfile=='Default' and ModeUIDB.profiles.Default==addon.db,'Default profile')
     assert(messages[1]:find('ModeUI',1,true),'welcome line')
@@ -43,7 +44,7 @@ world.run([[
     local nested=window.sidebarModuleButtons.unitFrames
     assert(nested and nested:IsShown() and nested.label:GetText()=='· Unit Frames','Unit Frames nested under Frames')
     local count=0;for _ in pairs(window.sidebarModuleButtons) do count=count+1 end
-    assert(count==11,'eleven pages in the sidebar')
+    assert(count==12,'twelve pages in the sidebar')
     assert(window.sidebarModuleButtons.bags:IsShown(),'Bags nested under Interface')
     addon:SelectConfigPage('bags');assert(window.pages.bags:IsShown() and window.moduleHeader.title:GetText()=='Bags')
     assert(window.sidebarModuleButtons.nameplates:IsShown(),'Nameplates nested under Frames')
@@ -51,6 +52,8 @@ world.run([[
     addon:SelectConfigPage('nameplates');assert(window.pages.nameplates:IsShown() and window.moduleHeader.title:GetText()=='Nameplates')
     assert(window.sidebarModuleButtons.actionBars:IsShown(),'Action Bars nested under Interface')
     addon:SelectConfigPage('actionBars');assert(window.pages.actionBars:IsShown() and window.moduleHeader.title:GetText()=='Action Bars')
+    assert(window.sidebarModuleButtons.cooldownManager:IsShown(),'Cooldown Manager nested under Interface')
+    addon:SelectConfigPage('cooldownManager');assert(window.pages.cooldownManager:IsShown() and window.moduleHeader.title:GetText()=='Cooldown Manager')
     assert(window.sidebarModuleButtons.damageMeters:IsShown(),'Damage Meters nested under Interface')
     addon:SelectConfigPage('damageMeters');assert(window.pages.damageMeters:IsShown() and window.moduleHeader.title:GetText()=='Damage Meters')
     for _,id in ipairs({'profiles','optimizations','classColors'}) do
