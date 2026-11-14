@@ -25,6 +25,8 @@ M.RANGE_SECONDS = 0.5
 function M:OnInitialize()
     self.Initialize(self.db)
     self.members = {}
+    -- Bumped by each refresh: the aura containers configure again (AuraContainers.lua).
+    self.auraRevision = 0
     addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function() self:UpdateAll() end)
     addon.Media:RegisterStatusBarListener(self, function() if self.active then self:Refresh() end end)
     self.ticker = CreateFrame("Frame")
@@ -39,7 +41,8 @@ function M:OnInitialize()
 end
 
 local GLOBAL_EVENTS = {
-    GROUP_ROSTER_UPDATE = "UpdateAll", PLAYER_ROLES_ASSIGNED = "UpdateAll", PLAYER_ENTERING_WORLD = "OnWorld",
+    -- Roster events come in bursts: members redraw once, on the next frame.
+    GROUP_ROSTER_UPDATE = "QueueAll", PLAYER_ROLES_ASSIGNED = "QueueAll", PLAYER_ENTERING_WORLD = "OnWorld",
     PARTY_LEADER_CHANGED = "UpdateAllIcons", READY_CHECK = "UpdateAllIcons", READY_CHECK_CONFIRM = "UpdateAllIcons",
     READY_CHECK_FINISHED = "OnReadyCheckFinished", RAID_TARGET_UPDATE = "UpdateAllIcons",
     PLAYER_TARGET_CHANGED = "UpdateAllTargets", UI_SCALE_CHANGED = "Refresh", DISPLAY_SIZE_CHANGED = "Refresh",
@@ -54,13 +57,13 @@ end
 function M:OnDisable()
     self.active = false
     Events:OffAll(self)
-    for _, f in ipairs(self.members) do f.events:UnregisterAllEvents() end
+    for _, f in ipairs(self.members) do f.events:UnregisterAllEvents(); f.boundUnit = nil end
     self:Refresh()
 end
 
 function M:OnWorld()
     addon.Defer:Run("partyFrames:native", function() self:SyncNative() end)
-    self:UpdateAll()
+    self:QueueAll()
 end
 
 -- Blizzard leaves ready check marks up a few seconds after it ends.
@@ -92,13 +95,14 @@ end
 function M:Refresh()
     if not self.members then return end
     Defer:Run("partyFrames:refresh", function()
+        self.auraRevision = self.auraRevision + 1
         if self.active then self:CreateGhost(); self:CreateHeader() end
         self:RenderGhost()
         if self.header then self:ConfigureHeader(); self:SyncHeaderShown() end
         self:SyncNative()
         self.pending = false
         self.ticker:SetShown(self.active and self.db.rangeFade and self.header ~= nil)
-        for _, f in ipairs(self.members) do self:SetMemberUnit(f, f:GetAttribute("unit")) end
+        for _, f in ipairs(self.members) do f.unit = self.MemberUnit(f:GetAttribute("unit")); self:BindMember(f) end
         if addon.EditMode then addon.EditMode:RefreshElements() end
     end)
     if addon.InCombat() then self.pending = true; self:UpdateAll() end
