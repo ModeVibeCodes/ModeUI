@@ -19,10 +19,8 @@ function M:BuildSortMenu()
     menu:SetFrameStrata("DIALOG")
     menu:SetClampedToScreen(true)
     menu:EnableMouse(true)
-    menu.fill = menu:CreateTexture(nil, "BACKGROUND", nil, -8)
-    menu.fill:SetTexture(Kit.FLAT)
+    menu.fill = Kit.BoxFill(menu)
     menu.border = Kit.ModeBoxBorder(menu)
-    Kit.MaskToBoxBorder(menu.border, { menu.fill })
     menu.rows = {}
     -- A click outside the menu and its button closes it (a click on the
     -- button is its own toggle).
@@ -68,9 +66,10 @@ function M:PaintSortMenu(g, look, path, size)
     sort.text:ClearAllPoints(); sort.text:SetPoint("RIGHT", sort.chevron, "LEFT", -g.px, 0)
     local radius = Kit.LayoutModeBoxBorder(menu.border, menu, { px = g.px, radius = math.min(db.corner, 6) * g.px,
         color = db.borderColor, level = menu:GetFrameLevel() + 10 })
-    local pad = g.border + g.px
-    Kit.Inset(menu.fill, menu, math.max(0, g.border - g.px))
-    Kit.Tint(menu.fill, db.backgroundColor, 1)
+    Kit.LayoutBoxFill(menu.fill, menu.border, menu, math.max(0, g.border - g.px), db.backgroundColor, 1)
+    -- The rows sit clear of the round corners, so their hover wash never
+    -- shows past the rim (and needs no masks).
+    local pad, top = g.border + g.px, math.max(g.border + g.px, radius)
     local height = math.floor(math.max(18, size + 8) / g.px + 0.5) * g.px
     local widest = 0
     for i, item in ipairs(self.choices.sortMode) do
@@ -81,14 +80,14 @@ function M:PaintSortMenu(g, look, path, size)
         row.text:SetText(L[item.label])
         row.text:ClearAllPoints(); row.text:SetPoint("LEFT", row, "LEFT", g.inset, 0)
         row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", menu, "TOPLEFT", pad, -(pad + (i - 1) * height))
-        row:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -pad, -(pad + (i - 1) * height))
+        row:SetPoint("TOPLEFT", menu, "TOPLEFT", pad, -(top + (i - 1) * height))
+        row:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -pad, -(top + (i - 1) * height))
         row:SetHeight(height)
         row:Paint()
         widest = math.max(widest, #L[item.label])
     end
     local width = math.floor((widest * size * 0.55 + 2 * g.inset) / g.px + 0.5) * g.px + 2 * pad
-    menu:SetSize(math.max(width, sort:GetWidth(), 2 * radius), 2 * pad + #self.choices.sortMode * height)
+    menu:SetSize(math.max(width, sort:GetWidth(), 2 * radius), 2 * top + #self.choices.sortMode * height)
     menu:ClearAllPoints()
     menu:SetPoint("TOPRIGHT", sort, "BOTTOMRIGHT", 0, -g.px)
 end
