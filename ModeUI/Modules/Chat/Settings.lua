@@ -10,13 +10,6 @@ function M:CreateConfigPage(parent)
     local owner = M:AppearanceOwner()
     local function Refresh(fn) page.refreshers[#page.refreshers + 1] = fn end
     local function Set(key) return function(value) M:SetOption(key, value) end end
-    local function When(predicate, build)
-        local start = #page.rows; build()
-        for i = start + 1, #page.rows do
-            local row, prior = page.rows[i], page.rows[i].visibleWhen
-            row.visibleWhen = prior and function() return predicate() and prior() end or predicate
-        end
-    end
     local function Slider(host, key, suffix)
         local r = M.ranges[key]
         Refresh(W.Slider(host, r[1], r[2], r[3], function() return M.db[key] end,
@@ -69,12 +62,7 @@ function M:CreateConfigPage(parent)
     local background = Columns({ "Background Color", "Background Opacity" })
     Color(background[1], "backgroundColor")
     page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
-    page.borderToggles = Toggles({ { "Border", "border" } })
-    When(function() return M.db.border end, function()
-        local border = Columns({ "Border Color", "Border Size" })
-        Color(border[1], "borderColor")
-        page.borderSizeSlider = Slider(border[2], "borderSize", "px")
-    end)
+    Note("The border is ModeUI's standard border, as on the unit frames and damage meters: a crisp 2px Onyx rim with rounded corners, so it has no settings.", 48)
     page:Group(L["Edit Box"])
     page.editPills = Pills("Position", M.choices.editPosition, function() return M.db.editPosition end, Set("editPosition"))
     local edit = Columns({ "Edit Box Height", "Edit Gap" })

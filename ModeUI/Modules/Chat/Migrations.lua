@@ -42,6 +42,13 @@ function M.Initialize(db)
         if Same(db.backgroundColor, M.SLATE_COLOR) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
         db.version = 3
     end
+    -- Version 4 (November 13, 2026, per the owner): the window takes ModeUI's
+    -- standard border, which has no settings, so Border, Border Size and
+    -- Border Color go.
+    if db.version == 3 then
+        db.border, db.borderSize, db.borderColor = nil, nil, nil
+        db.version = 4
+    end
     assert(db.version == M.VERSION, "Invalid chat settings version")
     for key, default in pairs(M.defaults) do
         if db[key] == nil then db[key] = Copy(default) end

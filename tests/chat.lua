@@ -98,7 +98,8 @@ world.run([==[
     local M, Skin, Kit, C = addon.Chat, addon.Skin, addon.Kit, addon.Skin.colors
     assert(M and addon.modules.chat == M and not M.enabled, 'registered, off by default')
     assert(M.db.fontMedia == 'Expressway' and M.db.idleOpacity == 40 and M.db.buttons == 'compartment')
-    assert(M.db.backgroundColor[1] == Kit.onyx.health[1] and M.db.backgroundOpacity == 60 and M.db.borderSize == 2, 'health color, 60%, 2px')
+    assert(M.db.backgroundColor[1] == Kit.onyx.health[1] and M.db.backgroundOpacity == 60, 'health color, 60%')
+    assert(M.db.border == nil and M.db.borderSize == nil and M.db.borderColor == nil, 'the border has no settings')
     assert(M.db.tabHeight == 24 and M.db.editPosition == 'bottom' and M.db.scrollBar)
     assert(ChatFrame1Background:IsShown() and Skin.parts[ChatFrame1] == nil, 'nothing changes while off')
 
@@ -107,9 +108,27 @@ world.run([==[
     assert(not ChatFrame1Background:IsShown() and not ChatFrame2TopTexture:IsShown())
     ChatFrame1TopTexture:Show(); assert(not ChatFrame1TopTexture:IsShown(), 'Blizzard showing its art is undone')
     local panel = Skin.parts[ChatFrame1]
-    assert(panel and panel.fill and panel.fill.vertexColor[4] == 0.6 and panel.fill.vertexColor[1] == Kit.onyx.health[1], 'the health color fill')
-    assert(panel.edge:IsShown() and panel.edgeRim[1].vertexColor[1] == Kit.onyx.frameRim[1], 'the unit frames\' border, on its own layer')
-    assert(Point(panel.edge)[2] == ChatFrame1Background, 'border on the box')
+    local fill, border = panel and panel.fill, panel and panel.border
+    assert(fill and fill.middle.vertexColor[4] == 0.6 and fill.top.vertexColor[1] == Kit.onyx.health[1], 'the health color fill')
+    -- ModeUI's standard border, as on the damage meter windows: the 2px rim
+    -- with round corners as deep as a bar the edit band's height rounds (24 + 2 * 2).
+    assert(border.edge:IsShown() and border.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and border.strips.TOP.height == 2, 'the standard rim, 2px')
+    assert(border.radius == Kit.CapDepth(28, 1) and border.radius == 7 and border.corners.TOPLEFT.cap.width == 7, 'round corners')
+    assert(Point(border.strips.TOP)[2] == ChatFrame1Background and Point(border.strips.TOP)[4] == 7, 'border on the box')
+    assert(border.edge:GetParent() == ChatFrame1 and border.edge:GetFrameLevel() == ChatFrame1:GetFrameLevel() + 2 and not border.edge.mouse,
+        'on its own frame above the window, which the idle fade dims with it')
+    -- Content takes only the corners it reaches: a texture holds at most 3
+    -- masks (the stubs error on a 4th, as the client does).
+    local function Masks(region, ...)
+        local n = 0
+        for _ in pairs(region.capMasks or {}) do n = n + 1 end
+        if n ~= select('#', ...) then return false end
+        for i = 1, select('#', ...) do if not region.capMasks[select(i, ...)] then return false end end
+        return true
+    end
+    local m = border.masks
+    assert(Masks(fill.top, m.TOPLEFT, m.TOPRIGHT) and Masks(fill.middle) and Masks(fill.bottom, m.BOTTOMLEFT, m.BOTTOMRIGHT), 'background in three bands')
+    assert(Point(fill.top)[2] == ChatFrame1Background and Point(fill.top)[4] == 1 and fill.top.height == 6, 'background 1px under the rim')
     local p = Point(ChatFrame1Background)
     -- Text Inset 6 + the 2px border; the edit box (24) inside at the bottom;
     -- the scroll bar's 10px gutter at the right.
@@ -122,6 +141,7 @@ world.run([==[
     local band = Point(panel.band)
     assert(panel.band:IsShown() and band[1] == 'BOTTOMLEFT' and band[2] == ChatFrame1Background and band[4] == 2 and band[5] == 2)
     assert(panel.band:GetHeight() == 24 and Point(ChatFrame1EditBox)[2] == panel.band, 'edit box on the band')
+    assert(Masks(panel.band, m.BOTTOMLEFT, m.BOTTOMRIGHT) and Masks(panel.bandLine), 'the band rounds with the bottom corners')
     assert(ChatFrame1EditBoxLeft.alpha == 0 and ChatFrame1EditBox.focusMid.alpha == 0, 'edit box art faded')
     ChatFrame1EditBox:SetFocus(); ChatFrame1EditBox.scripts.OnEditFocusGained(ChatFrame1EditBox)
     assert(panel.bandLine.vertexColor[2] == 240 / 255, 'the divider turns cyan while typing')
@@ -133,7 +153,7 @@ world.run([==[
     -- Scroll bar: skinned and in the gutter; Scroll to Bottom's flash hidden.
     local bar = ChatFrame1.ScrollBar
     assert(bar.Track.Middle.alpha == 0 and bar.Back.Texture.alpha == 0 and Skin.parts[bar].thumb, 'slim Mode track and thumb')
-    assert(Point(bar)[1] == 'TOPRIGHT' and Point(bar)[2] == ChatFrame1Background and Point(bar)[4] == -3)
+    assert(Point(bar)[1] == 'TOPRIGHT' and Point(bar)[2] == ChatFrame1Background and Point(bar)[4] == -3 and Point(bar)[5] == -7, 'below the round corner')
     FCF_UpdateScrollbarAnchors(ChatFrame1); assert(Point(bar)[2] == ChatFrame1Background, 'Blizzard re-anchoring it is followed')
     local flash = ChatFrame1.ScrollToBottomButton.Flash
     flash:Show(); assert(not flash:IsShown(), 'no flashing arrow')
@@ -216,15 +236,28 @@ world.run([==[
     -- Settings: checked on a copy; live repaint.
     assert(not M:SetOption('idleOpacity', 140) and not M:SetOption('buttons', 'left') and not M:SetOption('nope', 1))
     assert(not M:SetOption('editPosition', 'left') and not M:SetOption('tabHeight', 60) and not M:SetOption('borderSize', 0))
-    assert(M:SetOption('backgroundOpacity', 50) and panel.fill.vertexColor[4] == 0.5)
-    assert(M:SetOption('borderSize', 1) and Point(ChatFrame1Background)[4] == -7, 'thinner border, box follows')
-    assert(M:SetOption('border', false) and not panel.edge:IsShown())
-    M:SetOption('border', true); M:SetOption('borderSize', 2)
+    assert(M:SetOption('backgroundOpacity', 50) and panel.fill.middle.vertexColor[4] == 0.5 and panel.fill.bottom.vertexColor[4] == 0.5)
+    assert(not M:SetOption('border', false) and not M:SetOption('borderColor', { 1, 0, 0 }) and border.edge:IsShown(), 'the border is locked')
     assert(M:SetOption('editPosition', 'top') and Point(ChatFrame1Background)[5] == 8 + 24 and Point(panel.band)[1] == 'TOPLEFT', 'edit box at the top')
+    assert(Masks(panel.band, m.TOPLEFT, m.TOPRIGHT) and Masks(fill.top, m.TOPLEFT, m.TOPRIGHT), 'the band rounds with the top corners')
+    assert(Point(bar)[5] == -(2 + 24 + 4), 'the scroll bar under the band')
     assert(M:SetOption('editPosition', 'below') and not panel.band:IsShown(), 'Below: its own field')
     local e = Point(ChatFrame1EditBox)
-    assert(e[1] == 'TOPLEFT' and e[2] == ChatFrame1Background and e[5] == -4 and Skin.parts[ChatFrame1EditBox].edge:IsShown())
+    local field = Skin.parts[ChatFrame1EditBox]
+    assert(e[1] == 'TOPLEFT' and e[2] == ChatFrame1Background and e[5] == -4 and field.border.edge:IsShown())
+    -- The field is a bar: the standard bar border, rounded ends, the field rounded under the rim.
+    assert(field.border.ring.top.vertexColor[1] == Kit.BORDER_COLOR[1] and field.border.depth == Kit.CapDepth(24, 1), 'a bar border')
+    assert(Masks(field.fill, field.border.masks.LEFT, field.border.masks.RIGHT), 'the field rounds with it')
+    ChatFrame1EditBox:SetFocus(); ChatFrame1EditBox.scripts.OnEditFocusGained(ChatFrame1EditBox)
+    assert(field.border.ring.top.vertexColor[2] == 240 / 255, 'cyan while typing')
+    ChatFrame1EditBox:ClearFocus(); ChatFrame1EditBox.scripts.OnEditFocusLost(ChatFrame1EditBox)
+    assert(field.border.ring.top.vertexColor[1] == Kit.BORDER_COLOR[1], 'the standard rim again')
+    local s = Point(ChatFrame1.ScrollToBottomButton)
+    assert(s[4] == -4 and s[5] == 5, 'Scroll to Bottom clear of the round corner')
+    assert(M:SetOption('editHeight', 18) and border.radius == Kit.CapDepth(22, 1), 'corners follow Edit Box Height')
+    M:SetOption('editHeight', 24)
     M:SetOption('editPosition', 'bottom')
+    assert(not field.border.edge:IsShown() and Masks(panel.band, m.BOTTOMLEFT, m.BOTTOMRIGHT), 'inside again: no field border')
     assert(M:SetOption('tabHeight', 28)); assert(t1.glass:GetHeight() == 28, 'h1 ' .. tostring(t1.glass:GetHeight()))
     assert(M:SetOption('tuckDepth', 0)); assert(t2.glass:GetHeight() == 28, 'h2 ' .. tostring(t2.glass:GetHeight()))
     assert(M:SetOption('buttons', 'hidden') and not box:IsShown())
@@ -259,12 +292,16 @@ world.run([==[
     local old = { version = 1, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 72,
         borderColor = { Kit.onyx.border[1], Kit.onyx.border[2], Kit.onyx.border[3] }, scrollBar = false, idleOpacity = 30 }
     M.Initialize(old)
-    assert(old.version == 3 and old.backgroundColor[1] == Kit.onyx.health[1] and old.backgroundOpacity == 60 and old.scrollBar)
-    assert(old.borderColor[1] == Kit.onyx.frameRim[1] and old.idleOpacity == 30 and old.tabHeight == 24)
+    assert(old.version == 4 and old.backgroundColor[1] == Kit.onyx.health[1] and old.backgroundOpacity == 60 and old.scrollBar)
+    assert(old.borderColor == nil and old.idleOpacity == 30 and old.tabHeight == 24)
     local picked = { version = 1, backgroundColor = { 1, 0, 0 }, backgroundOpacity = 80 }
     M.Initialize(picked); assert(picked.backgroundColor[1] == 1 and picked.backgroundOpacity == 80, 'picked values stay')
     local two = { version = 2, backgroundColor = { Kit.onyx.slate[1], Kit.onyx.slate[2], Kit.onyx.slate[3] } }
-    M.Initialize(two); assert(two.version == 3 and two.backgroundColor[1] == Kit.onyx.health[1], 'version 2 Mode Slate follows')
+    M.Initialize(two); assert(two.version == 4 and two.backgroundColor[1] == Kit.onyx.health[1], 'version 2 Mode Slate follows')
+    -- Version 3 -> 4: the standard border has no settings, so they go; the rest stays.
+    local three = { version = 3, border = false, borderSize = 3, borderColor = { 1, 0, 0 }, backgroundOpacity = 35 }
+    M.Initialize(three)
+    assert(three.version == 4 and three.border == nil and three.borderSize == nil and three.borderColor == nil and three.backgroundOpacity == 35)
 ]==], "chat")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })
