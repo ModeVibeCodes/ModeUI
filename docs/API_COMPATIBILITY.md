@@ -1089,3 +1089,83 @@ CDM and oUF draw resource bars (their approach, not their code).
   points secret in combat (both paths are handled), and whether
   `UPDATE_SHAPESHIFT_FORM` fires on Forever (`UNIT_DISPLAYPOWER` covers form
   changes either way).
+
+## Party frames — November 13, 2026
+
+Checked against the Forever branch of Gethe/wow-ui-source (1.60.1, build 70938,
+November 13, 2026) and the local mainline 12.1.5 copy; the secret flags below
+are identical on both. Design: [PARTY_FRAMES.md](PARTY_FRAMES.md). Native
+confirmation is pending for everything here.
+
+- **Secure group header.** `SecureGroupHeaderTemplate` ships in
+  `Blizzard_RestrictedAddOnEnvironment` (`AllowLoadGameType: classic, standard,
+  camelot`; `SecureGroupHeaders.lua` byte-identical to mainline). Attributes
+  used: `template` (`SecureUnitButtonTemplate`), `templateType`, `showParty`,
+  `showRaid` (off), `showPlayer`, `showSolo`, `point`, `xOffset`, `yOffset`,
+  `unitsPerColumn` (5), `maxColumns` (1), `sortMethod` (`INDEX`), `sortDir`,
+  `groupBy` (`ASSIGNEDROLE`) with `groupingOrder` (`TANK,HEALER,DAMAGER,NONE`),
+  `startingIndex` and `initialConfigFunction`. `configureChildren` creates
+  `min(unitsPerColumn × maxColumns, listed)` buttons, so `startingIndex = -4`
+  makes all five up front. The header calls `SetPoint` on displayed buttons
+  without `ClearAllPoints`, so ModeUI clears them before changing `point`. It
+  sizes itself from `child1`, and it updates on `GROUP_ROSTER_UPDATE` and on
+  attribute changes while it is visible. Visibility is
+  `RegisterAttributeDriver(header, "state-visibility", ...)`. `SetRolesets`
+  (`IsProtectedFunction`; `SimpleFrameAPIDocumentation`) gives the header the
+  `unitFrames` roleset Blizzard's TargetFrame uses, in `pcall` and outside
+  combat. `RegisterForClicks` and `SetParent` are protected; `SetAlpha`,
+  `SetAlphaFromBoolean`, `SetScript` and `HookScript` are not.
+- **Blizzard's party frames.** `PartyFrame` (`Shared/PartyFrame.lua`, an Edit
+  Mode system) holds pooled `PartyMemberFrameTemplate` buttons
+  (`SecureUnitButtonTemplate`), and `CompactPartyFrame` is created as its
+  child. Members re-register their events in `Setup()` on every show, so
+  unregistering doesn't hold, and faded members would still take clicks.
+  ModeUI moves `PartyFrame` under a hidden frame (`SetParent`, outside combat)
+  and puts it back when turned off. oUF (master, October 2026) uses
+  `SetRolesets("alwaysBlocked")`; that roleset name appears nowhere in the
+  Forever source, so ModeUI doesn't rely on it. How Blizzard's Edit Mode treats
+  the moved system needs an in-game check.
+- **Unit data** (`UnitDocumentation.lua`). `UnitInRange`: `SecretReturns`; the
+  result goes only to `Frame:SetAlphaFromBoolean(value, 1, outOfRangeAlpha)`
+  (`AllowedWhenTainted`; oUF's range element passes 0-1 alphas the same way).
+  `UnitGetIncomingHeals`, `UnitGetTotalAbsorbs`, `GetRaidTargetIndex`:
+  `SecretReturns`; the amounts go only to StatusBar `SetMinMaxValues`/`SetValue`
+  on bars anchored to the health fill's end, and the index to
+  `SetSpriteSheetCell` (Domain/RaidIcon.lua). `UnitGroupRolesAssigned`,
+  `UnitIsGroupLeader`, `UnitPhaseReason`: `SecretWhenUnitIdentityRestricted`;
+  read through `Query.Plain`, and a secret answer hides the icon.
+  `UnitIsConnected`, `UnitIsDeadOrGhost` and `C_IncomingSummon` document no
+  secret returns. `GetReadyCheckStatus` and `UnitHasIncomingResurrection` are
+  undocumented legacy globals that Blizzard still calls from
+  `CompactUnitFrame.lua`; they're `pcall`-guarded too. Atlases are Blizzard's own:
+  `roleicon-tiny-*` and `UI-HUD-UnitFrame-Player-Group-LeaderIcon`/`GuideIcon`
+  (PartyMemberFrame.lua), `UI-LFG-ReadyMark`/`DeclineMark`/`PendingMark`
+  (ReadyCheck.lua) and `RaidFrame-Icon-Rez`/`SummonPending`/`SummonAccepted`/
+  `SummonDeclined`/`Phasing` (CompactUnitFrame.lua).
+- **Events.** `GROUP_ROSTER_UPDATE`, `PLAYER_ROLES_ASSIGNED`,
+  `PARTY_LEADER_CHANGED`, `READY_CHECK`, `READY_CHECK_CONFIRM`,
+  `READY_CHECK_FINISHED`, `RAID_TARGET_UPDATE`, `PLAYER_TARGET_CHANGED`, and per
+  member (`RegisterUnitEvent`, each in `pcall`): `UNIT_HEALTH`,
+  `UNIT_MAXHEALTH`, `UNIT_CONNECTION`, `UNIT_FLAGS`, `UNIT_POWER_FREQUENT`,
+  `UNIT_MAXPOWER`, `UNIT_DISPLAYPOWER`, `UNIT_NAME_UPDATE`, `UNIT_AURA`,
+  `UNIT_HEAL_PREDICTION`, `UNIT_ABSORB_AMOUNT_CHANGED`, `UNIT_IN_RANGE_UPDATE`
+  (`SecretPayloads`; only re-queried), `UNIT_PHASE`, `UNIT_OTHER_PARTY_CHANGED`,
+  `INCOMING_RESURRECT_CHANGED` and `INCOMING_SUMMON_CHANGED`. All are in the
+  Forever docs.
+- **Auras.** `Blizzard_AuraContainer` loads on Forever (no game-type gate;
+  files identical to mainline). Shared helpers moved to
+  `Shared/Kit/AuraContainer.lua` (detection with `C_XMLUtil.GetTemplateInfo`,
+  the dispel color step curve, the time formatter); Nameplates uses them
+  unchanged. Party groups use `AddAuraGroup` per filter,
+  `SetFlowLayoutMaximumLineSize` for Per Row, and the dispel highlight
+  `AddAuraSlot` (one button, hidden by the game while no aura matches) with
+  `AddDispelTypeTexture` on textures created on that button in
+  `initializeFrame` (`ValidateInboundScriptObject` requires the button's own
+  regions). Every filter token used (`RAID_IN_COMBAT`, `RAID_PLAYER_DISPELLABLE`,
+  `EXTERNAL_DEFENSIVE`, `BIG_DEFENSIVE`, `IMPORTANT`, `DISPELLABLE`,
+  `CROWD_CONTROL`, `RAID`, `PLAYER`, and the `!` negation) is in Forever's
+  `AuraUtil.AuraFilters`. Containers are made in `pcall`, so a refused filter
+  leaves a group empty instead of stopping the module. Blizzard's aura buttons
+  have their own tooltips (`AuraButtonPrivateMixin:OnEnter_Intrinsic`); Tooltips
+  off disables the button's mouse. Private auras (`C_UnitAuras.AddPrivateAuraAnchor`,
+  `AllowedWhenUntainted`) are not used yet.

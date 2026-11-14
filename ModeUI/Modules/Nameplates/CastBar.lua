@@ -178,6 +178,9 @@ end
 function M:StopCast(plate)
     plate.casting, plate.castInfo, plate.timerOn = nil, nil, nil
     plate.cast:SetScript("OnUpdate", nil)
-    Kit.Write(plate.castTarget, ""); Kit.Write(plate.castTimer, "")
+    -- The cast texts sit on the plate's text layer, not in the cast box, so
+    -- hiding the box leaves them drawn: clear them, or the last spell name
+    -- stays under the plate (and follows it to the next unit it shows).
+    Kit.Write(plate.castText, ""); Kit.Write(plate.castTarget, ""); Kit.Write(plate.castTimer, "")
     plate.castBox:Hide()
 end

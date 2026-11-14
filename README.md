@@ -25,6 +25,7 @@ used to live in [Play The Game Tools](https://github.com/ModeVibeCodes/PlayTheGa
 | Interface | Bags | Every bag in one Mode window: the backpack, equipped bags, reagent bag and keyring on one grid of slots in the unit frames' health color inside ModeUI's 2px border, with a Mode Gradient header (Sort, Clean Up, close), a search box (the game's own bag search; other items fade), the free slots and your money. Slots look like action bar slots, with rims in the item's quality color (from a minimum quality), quest items in orange and new items in cyan, item levels on gear, stack counts, and gray junk faded with a coin. Sort shows items by Bag Order, Quality, Type or Name without moving them; Clean Up is the game's own sort. Separate Bags, Reagent and Keyring sections, columns, slot size, spacing, padding, scale, colors, fonts and the corner it grows from are adjustable; drag the header or use Edit Mode to move it. The window opens and closes with Blizzard's bags (B, the bag bar, vendors, mail, Esc), and each slot is Blizzard's own item button, so using, selling, dragging and splitting items work as usual, in combat too. Off by default. |
 | Frames    | Unit Frames | Secure Player, Target, Target of Target, Focus and Target of Focus frames in the locked Onyx skin, with Mode cast bars, buffs and debuffs, a class resource (combo points for Rogues and Cat Form Druids) around the Target portrait and a click-to-edit live preview: a round portrait with a class-gradient ring, a rounded health/power block inside a pixel-perfect slate rim, Sky names, and a lifted shadow on all text. Text slots (nine on the health bar, one on the border, three on the power bar) each show a name, level, health or power text you pick. Pick the frame to edit above the preview; Frame, Health Bar, Power Bar, Portrait, Cast Bar, Auras, Class Resource and Text tabs each hold their part's own settings, and the Target can match the Player. |
 | Frames    | Nameplates  | Onyx plates with separate Enemy and Friendly settings and a live preview on the settings page: health with reaction, class or threat colors, name, health text, cast bars that turn gray when they can't be interrupted, auras (crowd control, debuffs, buffs; position and size per kind), raid markers and a cyan rim on your target. Rounded rims and the Mode Gradient bar texture. Off by default. Friendly plates in instances and your personal resource display stay Blizzard's. |
+| Frames    | Party Frames | You and your party on one secure group header, so members join, leave and sort in combat: health and power (for everyone, healers or no one) inside the ModeUI border, class colors, incoming heals and absorb shields, and texts and icons (name, health text, dead and offline, role, leader, raid marker, ready check, summon and resurrect) each with its own switch, anchor, inside or outside place, offset and size. An aura manager places Buffs, Debuffs, Dispellable, Defensives and Crowd Control each where you want, with which auras it shows, growth, rows, size, shape, borders by type, timers and stacks; it keeps working in combat through Blizzard's aura containers. Target, mouse and dispel highlights, out-of-range and dead fading, Party Order or Role sorting, four growth directions, spacing, Show When Solo, Edit Mode placement with a sample party, Test on Screen and a click-to-edit preview. Blizzard's party frames are hidden while it's on (Hide Blizzard's Party Frames). Off by default. |
 
 The settings window uses the **Mode** theme from Play The Game Tools: graphite
 surfaces, a cyan accent, Lato type and the Mode control artwork. It's the only
@@ -38,8 +39,8 @@ theme ModeUI has.
   addon menu (the button that lists your addons by the minimap). The window opens
   on **Global** › **Profiles**; the sidebar lists **Global**, **Interface**
   (Windows, Chat, Damage Meters, Action Bars, Tooltip, Bags) and **Frames** (Unit Frames,
-  Nameplates, and later Party Frames). The Cooldown Manager has its own window: type `/mcdm`.
-- **Edit Mode** in the window header lets you drag every unit frame and each
+  Nameplates, Party Frames). The Cooldown Manager has its own window: type `/mcdm`.
+- **Edit Mode** in the window header lets you drag every unit frame, the party frames and each
   action bar and damage meter window. Cyan guides show when an element nears the center or an
   offset of 0, and it snaps there. The arrows beside the selected element (or the
   arrow keys) move it one pixel. **Anchor To...** in the Edit Mode window hangs the selected
@@ -75,10 +76,10 @@ ModeUI/            the addon folder (this is what goes in Interface/AddOns)
   Shared/          code shared by modules: Runtime (startup, settings, profiles, modules,
                    events, messages), Domain (unit data), Kit (frame pieces), Placement
                    (Edit Mode), Media, Border, Skin (Blizzard frames), Settings (window, widgets)
-  Modules/         one folder per module (UnitFrames, Nameplates, ActionBars, CooldownManager, DamageMeters, Chat, Windows, Tooltip, Bags, Profiles, Optimizations, ClassColors),
+  Modules/         one folder per module (UnitFrames, Nameplates, PartyFrames, ActionBars, CooldownManager, DamageMeters, Chat, Windows, Tooltip, Bags, Profiles, Optimizations, ClassColors),
                    each with its own XML, Init.lua, Driver.lua and Settings.lua
   Media/           Mode theme textures, unit frame textures, Lato fonts
-tests/             structure, runtime, smoke, Unit Frames, Nameplates, Action Bars, Cooldown Manager, Resource Bars, Damage Meters, Chat, Windows, Tooltip, Bags, Global and template tests
+tests/             structure, runtime, smoke, Unit Frames, Nameplates, Party Frames, Action Bars, Cooldown Manager, Resource Bars, Damage Meters, Chat, Windows, Tooltip, Bags, Global and template tests
                    (simulated client, not WoW)
 tools/             texture generators (Python + Pillow; ModeFlat and nameplate shapes in plain Lua)
 design/mode/       Mode theme source artwork and provenance
@@ -108,6 +109,7 @@ lua tests/unit_frames.lua
 lua tests/global.lua
 lua tests/template.lua
 lua tests/nameplates.lua
+lua tests/party_frames.lua
 lua tests/action_bars.lua
 lua tests/cooldown_manager.lua
 lua tests/resource_bars.lua

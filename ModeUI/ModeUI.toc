@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: |cff00f0ffModeUI|r
-## Notes: Custom Mode interface for WoW Forever: unit frames, nameplates, action bars, damage meters, chat, windows, bags, profiles, optimizations and class colors.
+## Notes: Custom Mode interface for WoW Forever: unit frames, nameplates, party frames, action bars, damage meters, chat, windows, bags, profiles, optimizations and class colors.
 ## Author: Mode
 ## Version: 0.1.0-beta.1
 ## IconTexture: Interface\AddOns\ModeUI\Media\Textures\Mode\Logo
@@ -28,6 +28,7 @@ Shared\Domain\Health.lua
 Shared\Domain\Power.lua
 Shared\Domain\ClassResource.lua
 Shared\Domain\Status.lua
+Shared\Domain\Group.lua
 Shared\Domain\Name.lua
 Shared\Domain\Level.lua
 Shared\Domain\Quest.lua
@@ -54,6 +55,7 @@ Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
 Shared\Kit\Cast.lua
 Shared\Kit\AuraIcon.lua
+Shared\Kit\AuraContainer.lua
 Shared\Placement\DisplayModes.lua
 Shared\Placement\EditMode.lua
 Shared\Placement\Positioning.lua
@@ -114,4 +116,5 @@ Modules\Tooltip\Tooltip.xml
 Modules\Bags\Bags.xml
 Modules\UnitFrames\UnitFrames.xml
 Modules\Nameplates\Nameplates.xml
+Modules\PartyFrames\PartyFrames.xml
 Shared\Runtime\Boot.lua
