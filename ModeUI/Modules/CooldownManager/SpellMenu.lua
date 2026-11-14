@@ -108,8 +108,9 @@ function M:OpenSpellMenu(view, key, anchor)
     view.Refresh()
 end
 
--- The spell's name, else its cooldown ID.
+-- The spell's (or item's) name, else its ID.
 function M:SpellLabel(key)
+    if self.IsItemEntry(key) then return self:ItemLabel(key) end
     local spell = self:SpellOf(key)
     return (spell and Cooldowns.SpellName(spell)) or string.format(L["Spell %s"], key)
 end
@@ -123,9 +124,11 @@ function M:RefreshSpellMenu()
     local style, glows = self.db[id], {}
     for _, kind in ipairs(self:Glows(id)) do glows[kind] = true end
     menu.title:SetText(self:SpellLabel(menu.key))
-    -- A custom spell names its ID; its icon is ModeUI's own.
-    local spellEntry = self.IsSpellEntry(menu.key)
-    menu.section:SetText(spellEntry and string.format(L["Custom spell · ID %s"], menu.key:sub(2)) or L["This Spell"])
+    -- A custom spell or item names its ID; its icon is ModeUI's own.
+    local section = L["This Spell"]
+    if self.IsItemEntry(menu.key) then section = string.format(L["Item · ID %s"], menu.key:sub(2))
+    elseif self.IsSpellEntry(menu.key) then section = string.format(L["Custom spell · ID %s"], menu.key:sub(2)) end
+    menu.section:SetText(section)
     local y = -58
     local function Line(box, shown)
         box:SetShown(shown); box.text:SetShown(shown)

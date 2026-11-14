@@ -58,6 +58,32 @@ function CD.Info(cooldownID)
     if ok and Public(info) and type(info) == "table" then return info end
 end
 
+-- Every cooldown the game has for your class and spec in some of its
+-- categories (Enum.CooldownViewerCategory names: "Essential", "Utility",
+-- "TrackedBuff", "TrackedBar"), learned or not, tracked or not:
+-- { cooldownID, spellID, known } in the game's order, each once.
+function CD.ClassCooldowns(categories)
+    local api = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet
+    local enum = type(Enum) == "table" and Enum.CooldownViewerCategory
+    local list, seen = {}, {}
+    if type(enum) ~= "table" then return list end
+    for _, name in ipairs(categories) do
+        local ok, ids = false, nil
+        if Number(enum[name]) then ok, ids = Call(api, enum[name], true) end
+        if ok and Public(ids) and type(ids) == "table" then
+            for _, id in ipairs(ids) do
+                local info = not seen[id] and CD.Info(id)
+                if info and Number(info.spellID) then
+                    seen[id] = true
+                    local known = info.isKnown
+                    list[#list + 1] = { cooldownID = id, spellID = info.spellID, known = not (Public(known) and known == false) }
+                end
+            end
+        end
+    end
+    return list
+end
+
 -- The spell an entry casts now: its override, else its own.
 function CD.SpellID(cooldownID)
     local info = CD.Info(cooldownID)

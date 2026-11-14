@@ -41,6 +41,7 @@ Shared\Domain\Nameplate.lua
 Shared\Domain\Auras.lua
 Shared\Domain\DamageMeter.lua
 Shared\Domain\Containers.lua
+Shared\Domain\Items.lua
 Shared\Domain\Cooldowns.lua
 Shared\Kit\Color.lua
 Shared\Kit\Palette.lua

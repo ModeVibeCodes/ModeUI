@@ -145,7 +145,7 @@ function M:UpdateCooldowns()
         local owner = self:Owner(item)
         local style = owner and self.db[owner]
         local id = style and self:SpellKey(item)
-        local cooling = id and Cooldowns.Cooling(self:CooldownSpell(id))
+        local cooling = id and self:EntryCooling(id)
         local state = self.cooling[item]
         local ended = state and state.id == id and state.on == true and cooling == false
         state = state or {}

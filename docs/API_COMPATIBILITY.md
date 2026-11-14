@@ -1044,6 +1044,51 @@ Cooldown Manager registers.
 - **Tooltip.** `GameTooltip:SetSpellByID`.
 - **Unverified natively:** all of it, in particular `SetCooldownFromDurationObject`
   from addon code on Forever.
+### Cooldown Manager, glows, class spells and items — November 13, 2026
+
+Checked against the `forever` branch's `CooldownViewerDocumentation.lua`,
+`ItemDocumentation.lua`, `ContainerDocumentation.lua`,
+`SpellBookDocumentation.lua` and `FrameAPICooldownDocumentation.lua` (same
+as local mainline 12.1.5 for these).
+
+- **Active swipe.** `Cooldown:SetUseAuraDisplayTime(bool)`
+  (`AllowedWhenUntainted`; ModeUI passes a plain boolean) and
+  `SetCooldownFromDurationObject` with the spell's own
+  `C_Spell.GetSpellCooldownDuration(spell, true)`, after Blizzard's
+  `RefreshSpellCooldownInfo`, while the item shows its aura (gold swipe
+  color, compared by reference). **Show Aura Time** leaves Blizzard's swipe.
+- **Glows.** Pixel glow: plain textures moved by one shared `OnUpdate`
+  ticker that runs only while a Pixel, Blizzard or GCD glow shows. Blizzard
+  and GCD glows: a FlipBook animation on ModeUI's own texture with the
+  atlases `UI-HUD-ActionBar-Proc-Loop-Flipbook` (6 by 5, 30 frames, 1 s) and
+  `RotationHelper_Ants_Flipbook`; an atlas the client lacks
+  (`C_Texture.GetAtlasInfo` returns nothing) falls back to the proc loop.
+- **Class spells.** `C_CooldownViewer.GetCooldownViewerCategorySet(category,
+  allowUnlearned)` with `Enum.CooldownViewerCategory` `Essential`, `Utility`,
+  `TrackedBuff`, `TrackedBar` and `true`: every cooldown ID for your class
+  and spec, learned or not. `GetCooldownViewerCooldownInfo` gives each one's
+  `spellID` and `isKnown` (plain fields of `CooldownViewerCooldown`). A spell
+  counts as "Not in Blizzard CDM" when no viewer shows an item for its
+  cooldown ID now.
+- **Spell ID.** Added only when `C_SpellBook.IsSpellKnown` says yes for the
+  spell or its override (unknown counts as yes), or when it comes from the
+  class list above.
+- **Items.** `C_Item.DoesItemExistByID`, `GetItemNameByID`,
+  `GetItemIconByID`, `GetItemSpell` (a Use: effect), `GetItemCount(item,
+  false, true)` (charges counted, no bank), `IsUsableItem`,
+  `RequestLoadItemDataByID`, and `C_Container.GetItemCooldown(itemID)`
+  (start, duration and enable as plain numbers; none of these are marked
+  secret). The cooldown goes to `Cooldown:SetCooldown` on ModeUI's own
+  icon. Bag contents through `Shared/Domain/Containers.lua`
+  (`GetContainerNumSlots`, `GetContainerItemInfo`).
+- **Events.** `BAG_UPDATE_COOLDOWN`, `BAG_UPDATE_DELAYED`
+  (`ContainerDocumentation`) and `ITEM_DATA_LOAD_RESULT`
+  (`ItemDocumentation`), all present on Forever.
+- **Tooltip.** `GameTooltip:SetItemByID`.
+- **Unverified natively:** all of it, in particular whether Forever's
+  category sets list every class spell, item cooldowns in combat, and the
+  flipbook atlases.
+
 ### Cooldown Manager, resource bars — November 13, 2026
 
 Sources: the local `WoWUI-live` 12.1.5 API documentation

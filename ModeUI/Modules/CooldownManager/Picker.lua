@@ -2,22 +2,52 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- The + slot's list: the spells you track in Blizzard's Cooldown Manager that
--- the custom bar can take (Essential and Utility cooldowns for a Cooldown
--- Bar, Tracked Buffs for a Buff Bar), as a grid of their icons. Pointing at
--- one names it and says where it shows now; clicking adds it to the bar (a
--- spell on another custom bar moves). On a Cooldown Bar, Spell ID adds any
--- spell by its ID instead, tracked or not (Spells.lua). It stays open to add
--- several, and closes on a click elsewhere, the close button, or combat.
--- With nothing to add it says so and offers Open CDM.
+-- The + slot's list, as grids of icons in up to three sections:
+--   Tracked in Blizzard CDM  what the custom bar can take from Blizzard's
+--       Cooldown Manager (Essential and Utility cooldowns for a Cooldown Bar,
+--       Tracked Buffs and Bars for a Buff Bar); clicking adds it (a spell on
+--       another custom bar moves).
+--   Not in Blizzard CDM  every other spell the game has for your class and
+--       spec there, learned or not, grayed. On a Cooldown Bar clicking one
+--       adds it as a custom spell (its own icon, shown while you know it); a
+--       buff can only show once Blizzard's Cooldown Manager tracks it.
+--   Items in Your Bags  (Cooldown Bars) what you carry with a Use: effect.
+-- Then, on Cooldown Bars, Spell ID (a spell you know) and Item ID fields.
+-- Pointing at an icon names it and says what a click does. It stays open to
+-- add several, and closes on a click elsewhere, the close button, or combat.
 local W, T, L, Kit = addon.ConfigWidgets, addon.InterfaceTheme, addon.L, addon.Kit
-local WIDTH, PAD, SIZE, GAP, COLUMNS = 320, 14, 36, 6, 7
-local INNER = WIDTH - 2 * PAD
+local Cooldowns = addon.Domain.Cooldowns
+local SIZE, GAP, COLUMNS, PAD = 36, 6, 8, 14
+local INNER = COLUMNS * SIZE + (COLUMNS - 1) * GAP
+local WIDTH = INNER + 2 * PAD
+local CATEGORIES = { cooldown = { "Essential", "Utility" }, buff = { "TrackedBuff", "TrackedBar" } }
+local HINT = "Point at an icon to see what it is"
 
 local function OnEvent(picker, event)
     if event == "PLAYER_REGEN_DISABLED" then picker:Hide(); return end
     local over = picker:IsMouseOver() or (picker.anchor and picker.anchor:IsMouseOver())
     if not (addon.IsPublic(over) and over) then picker:Hide() end
+end
+
+-- A labeled ID field with its Add button; add(text) returns ok and a message.
+local function IdRow(picker, label, add)
+    local row = CreateFrame("Frame", nil, picker)
+    row:SetSize(INNER, 48)
+    W.Label(row, label, nil, 0, 0, INNER, T.muted)
+    local field = CreateFrame("Frame", nil, row)
+    field:SetPoint("TOPLEFT", 0, -18); field:SetSize(140, 28)
+    row.input = W.TextInput(field, 140, L["e.g. 12345"], 9)
+    row.add = W.Button(row, L["Add"], 60, 28, "secondary")
+    row.add:SetPoint("TOPLEFT", 148, -18)
+    local function Add()
+        local ok, message = add(row.input:GetText())
+        if ok then row.input:SetText("") end
+        picker.idResult:SetText(message)
+        M:RefreshPicker(true)
+    end
+    row.input.onEnter = Add
+    row.add:SetScript("OnClick", Add)
+    return row
 end
 
 function M:Picker()
@@ -30,32 +60,28 @@ function M:Picker()
     picker.close = W.Button(picker, "X", 24, 24, "secondary")
     picker.close:SetPoint("TOPRIGHT", -10, -8)
     picker.close:SetScript("OnClick", function() picker:Hide() end)
-    picker.hover = W.Label(picker, "", nil, PAD, -38, INNER, T.muted)
-    picker.empty = W.Label(picker, L["Nothing to add: track spells in Blizzard's Cooldown Manager first."], nil, PAD, -62, INNER, T.muted)
+    picker.hover = W.Label(picker, "", nil, PAD, -36, INNER, T.text)
+    picker.headings = {}
+    for i, text in ipairs({ "Tracked in Blizzard CDM", "Not in Blizzard CDM", "Items in Your Bags" }) do
+        picker.headings[i] = W.Label(picker, L[text], nil, PAD, 0, INNER, T.muted)
+    end
+    picker.empty = W.Label(picker, L["Nothing tracked here yet: add spells in Blizzard's Cooldown Manager (Open CDM)."], nil, PAD, 0, INNER, T.muted)
     picker.empty:SetWordWrap(true)
     picker.cdm = W.Button(picker, L["Open CDM"], 120, 26, "secondary")
     picker.cdm:SetPoint("BOTTOMLEFT", PAD, 12)
     picker.cdm:SetScript("OnClick", function() picker:Hide(); M:OpenCooldownSettings() end)
-    -- Spell ID: a field, Add, and what happened.
-    picker.byId = CreateFrame("Frame", nil, picker)
-    picker.byId:SetSize(INNER, 48)
-    picker.idLabel = W.Label(picker.byId, L["Spell ID"], nil, 0, 0, INNER, T.muted)
-    local field = CreateFrame("Frame", nil, picker.byId)
-    field:SetPoint("TOPLEFT", 0, -18); field:SetSize(140, 28)
-    picker.idInput = W.TextInput(field, 140, L["e.g. 12345"], 9)
-    picker.idAdd = W.Button(picker.byId, L["Add"], 60, 28, "secondary")
-    picker.idAdd:SetPoint("TOPLEFT", 148, -18)
-    picker.idResult = W.Label(picker.byId, "", nil, 214, -24, INNER - 214, T.muted)
-    local function Add()
-        local ok, result = M:AddCustomSpell(picker.barId, picker.idInput:GetText())
-        if ok then
-            picker.idInput:SetText("")
-            picker.idResult:SetText(string.format(L["Added %s."], M:SpellLabel("s" .. result)))
-        else picker.idResult:SetText(result) end
-        M:RefreshPicker(true)
-    end
-    picker.idInput.onEnter = Add
-    picker.idAdd:SetScript("OnClick", Add)
+    picker.spellRow = IdRow(picker, L["Spell ID"], function(text)
+        local ok, result = M:AddCustomSpell(picker.barId, text)
+        return ok, ok and string.format(L["Added %s."], M:SpellLabel("s" .. result)) or result
+    end)
+    picker.itemRow = IdRow(picker, L["Item ID"], function(text)
+        local ok, result = M:AddCustomItem(picker.barId, text)
+        return ok, ok and string.format(L["Added %s."], M:SpellLabel("i" .. result)) or result
+    end)
+    -- Back-compat names for the Spell ID field.
+    picker.idInput, picker.idAdd = picker.spellRow.input, picker.spellRow.add
+    picker.idResult = W.Label(picker, "", nil, PAD, 0, INNER, T.muted)
+    picker.idResult:SetWordWrap(true)
     picker.buttons = {}
     picker:SetScript("OnEvent", OnEvent)
     picker:SetScript("OnShow", function()
@@ -81,12 +107,15 @@ local function Button(picker, index)
     button.highlight = W.Fill(button, T.primary, "OVERLAY", 0, 0.2)
     button.highlight:Hide()
     button:SetScript("OnEnter", function()
-        button.highlight:Show()
+        button.highlight:SetShown(button.add ~= nil)
         picker.hover:SetText(button.where)
     end)
-    button:SetScript("OnLeave", function() button.highlight:Hide(); picker.hover:SetText(L["Click a spell to add it"]) end)
+    button:SetScript("OnLeave", function() button.highlight:Hide(); picker.hover:SetText(L[HINT]) end)
     button:SetScript("OnClick", function()
-        if M:AddEntry(picker.barId, button.key) then M:RefreshPicker() end
+        if not button.add then return end
+        local ok, message = button.add()
+        if ok then picker.idResult:SetText("") elseif type(message) == "string" then picker.idResult:SetText(message) end
+        M:RefreshPicker(not ok)
     end)
     picker.buttons[index] = button
     return button
@@ -97,7 +126,9 @@ function M:OpenPicker(view, anchor)
     if not self:IsCustom(id) then return false end
     local picker = self:Picker()
     if self.spellMenu then self.spellMenu:Hide() end
-    if picker.barId ~= id then picker.idResult:SetText(""); picker.idInput:SetText("") end
+    if picker.barId ~= id then
+        picker.idResult:SetText(""); picker.spellRow.input:SetText(""); picker.itemRow.input:SetText("")
+    end
     picker.barId, picker.anchor, picker.view = id, anchor, view
     picker:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
     picker:ClearAllPoints(); picker:SetPoint("TOP", anchor, "BOTTOM", 0, -8)
@@ -106,40 +137,108 @@ function M:OpenPicker(view, anchor)
     return true
 end
 
--- Every candidate not already on this bar; spells elsewhere say where.
+-- Your class's spells for the bar that Blizzard's Cooldown Manager doesn't
+-- show in any of its viewers now, without those on the bar already:
+-- { key, spell, known }.
+function M:UntrackedCandidates(id)
+    local bar = self:Custom(id)
+    local list, here, tracked = {}, {}, {}
+    if not bar then return list end
+    for _, key in ipairs(bar.entries) do here[key] = true end
+    for viewer in pairs(Cooldowns.VIEWERS) do
+        for _, item in ipairs(self:Items(viewer)) do
+            local key = self:SpellKey(item)
+            if key then tracked[key] = true end
+        end
+    end
+    for _, entry in ipairs(Cooldowns.ClassCooldowns(CATEGORIES[bar.kind] or {})) do
+        local key = string.format("%d", entry.cooldownID)
+        if not tracked[key] and not here[key] and not here["s" .. entry.spellID] then
+            list[#list + 1] = { key = key, spell = entry.spellID, known = entry.known }
+        end
+    end
+    return list
+end
+
+-- The grids, top to bottom; returns the y below them.
+local function Section(picker, heading, list, y, used, Fill)
+    heading:SetShown(#list > 0)
+    if #list == 0 then return y end
+    heading:ClearAllPoints(); heading:SetPoint("TOPLEFT", PAD, y)
+    y = y - 18
+    for i, entry in ipairs(list) do
+        local button = Button(picker, used + i)
+        Fill(button, entry)
+        local column, row = (i - 1) % COLUMNS, math.floor((i - 1) / COLUMNS)
+        button:ClearAllPoints(); button:SetPoint("TOPLEFT", PAD + column * (SIZE + GAP), y - row * (SIZE + GAP))
+        button:Show()
+    end
+    return y - math.ceil(#list / COLUMNS) * (SIZE + GAP) - 6
+end
+
 function M:RefreshPicker(keepResult)
     local picker = self.picker
     if not picker or not picker:IsShown() or not self:HasBar(picker.barId) then return end
     local id = picker.barId
     local custom = self:Custom(id)
-    local here = {}
+    local cooldownBar = custom.kind == "cooldown"
+    local here, tracked = {}, {}
     for _, key in ipairs(custom.entries) do here[key] = true end
-    local list = {}
-    for _, candidate in ipairs(self:Candidates(id)) do if not here[candidate.key] then list[#list + 1] = candidate end end
+    for _, candidate in ipairs(self:Candidates(id)) do
+        if not here[candidate.key] then tracked[#tracked + 1] = candidate end
+    end
     picker.title:SetText(string.format(L["Add to %s"], custom.name))
-    picker.hover:SetText(L["Click a spell to add it"])
-    for index, candidate in ipairs(list) do
-        local button = Button(picker, index)
-        button.key = candidate.key
+    picker.hover:SetText(L[HINT])
+    local y, used = -58, 0
+    y = Section(picker, picker.headings[1], tracked, y, used, function(button, candidate)
         button.icon:SetTexture(candidate.icon or 134400)
         local other = self:IsCustom(candidate.owner)
-        button.icon:SetDesaturated(other)
+        button.icon:SetDesaturated(other); button.icon:SetAlpha(1)
         button.where = other and string.format(L["%s · on %s (moves here)"], candidate.name, self:Label(candidate.owner))
             or string.format(L["%s · in %s"], candidate.name, self:Label(candidate.owner))
-        local column, row = (index - 1) % COLUMNS, math.floor((index - 1) / COLUMNS)
-        button:ClearAllPoints(); button:SetPoint("TOPLEFT", PAD + column * (SIZE + GAP), -60 - row * (SIZE + GAP))
-        button:Show()
+        button.key, button.add = candidate.key, function() return M:AddEntry(id, candidate.key) end
+    end)
+    used = used + #tracked
+    picker.empty:SetShown(#tracked == 0)
+    if #tracked == 0 then
+        picker.empty:ClearAllPoints(); picker.empty:SetPoint("TOPLEFT", PAD, y)
+        y = y - 34
     end
-    for index = #list + 1, #picker.buttons do picker.buttons[index]:Hide() end
-    picker.empty:SetShown(#list == 0)
+    local untracked = self:UntrackedCandidates(id)
+    y = Section(picker, picker.headings[2], untracked, y, used, function(button, entry)
+        button.icon:SetTexture(Cooldowns.SpellIcon(entry.spell) or 134400)
+        button.icon:SetDesaturated(true); button.icon:SetAlpha(entry.known and 0.75 or 0.4)
+        button.key = cooldownBar and "s" .. entry.spell or entry.key
+        local name = Cooldowns.SpellName(entry.spell) or string.format(L["Spell %s"], entry.spell)
+        local state = entry.known and L["Not in Blizzard CDM"] or L["Not in Blizzard CDM · not learned"]
+        if cooldownBar then
+            button.where = string.format(L["%s · %s · adds as a custom spell"], name, state)
+            button.add = function() return M:AddCustomSpell(id, entry.spell, true) end
+        else
+            button.where = string.format(L["%s · %s · track it there to add it"], name, state)
+            button.add = nil
+        end
+    end)
+    used = used + #untracked
+    local items = cooldownBar and self:ItemCandidates(id) or {}
+    y = Section(picker, picker.headings[3], items, y, used, function(button, item)
+        button.icon:SetTexture(item.icon or 134400)
+        button.icon:SetDesaturated(false); button.icon:SetAlpha(1)
+        button.where = string.format(L["%s · item"], item.name)
+        button.key, button.add = item.key, function() return M:AddCustomItem(id, item.id) end
+    end)
+    used = used + #items
+    for index = used + 1, #picker.buttons do picker.buttons[index]:Hide(); picker.buttons[index].add = nil end
     picker.cdm:SetEnabled(self:CanOpenCooldownSettings())
     if not keepResult then picker.idResult:SetText("") end
-    local rows = math.max(1, math.ceil(#list / COLUMNS))
-    local top = 60 + rows * (SIZE + GAP) + (#list == 0 and 40 or 0)
-    -- Spells by ID: Cooldown Bars only.
-    local byId = custom.kind == "cooldown"
-    picker.byId:SetShown(byId)
-    picker.byId:ClearAllPoints(); picker.byId:SetPoint("TOPLEFT", PAD, -top)
-    picker:SetHeight(top + (byId and 56 or 0) + 46)
+    -- Spells and items by ID: Cooldown Bars only.
+    for _, row in ipairs({ picker.spellRow, picker.itemRow }) do
+        row:SetShown(cooldownBar)
+        if cooldownBar then row:ClearAllPoints(); row:SetPoint("TOPLEFT", PAD, y - 2); y = y - 54 end
+    end
+    picker.idResult:ClearAllPoints(); picker.idResult:SetPoint("TOPLEFT", PAD, y)
+    picker.idResult:SetShown(cooldownBar)
+    if cooldownBar then y = y - 30 end
+    picker:SetHeight(-y + 46)
     if picker.view then picker.view.Refresh() end
 end

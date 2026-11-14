@@ -48,7 +48,9 @@ function M:OnEnable()
     Events:On(self, "SPELL_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
     -- Custom spells' own icons: charges, picture and usability change with
     -- these; procs light them; learning or losing a spell shows or hides one.
-    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE" }) do
+    -- Items: their cooldowns, counts, and names and icons once loaded.
+    Events:On(self, "BAG_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
+    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE", "BAG_UPDATE_DELAYED", "ITEM_DATA_LOAD_RESULT" }) do
         Events:On(self, event, function() self:UpdateSpellIcons() end)
     end
     Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW", function(_, spellID) self:SpellProc(spellID, true) end)
