@@ -156,6 +156,24 @@ world.run([====[
     assert(M:SetCastOption('player','gap',3) and M:SetFrameOption('player','showPortrait',false) and Point(pc)[4]==0 and Point(pc.bar)[4]==2)
     assert(M:SetFrameOption('player','showPortrait',true))
     assert(M:SetCastOption('player','hideBlizzard',false) and PlayerCastingBarFrame:GetAlpha()==1)
+    -- Blizzard's interrupt hold is an Alpha animation on the bar itself, which
+    -- would override the fade: while faded it runs from 0 to 0. A child's stays.
+    local function Alpha(target,from,to)
+        local a={target=target,from=from,to=to}
+        function a:GetObjectType() return 'Alpha' end
+        function a:GetTarget() return self.target end
+        function a:GetFromAlpha() return self.from end
+        function a:GetToAlpha() return self.to end
+        function a:SetFromAlpha(v) self.from=v end
+        function a:SetToAlpha(v) self.to=v end
+        return a
+    end
+    local hold,fade,child=Alpha(PlayerCastingBarFrame,1,1),Alpha(PlayerCastingBarFrame,1,0),Alpha({},0,1)
+    local holdGroup={GetAnimations=function() return hold,fade,child end}
+    PlayerCastingBarFrame.GetAnimationGroups=function() return holdGroup end
+    assert(M:SetCastOption('player','hideBlizzard',true) and hold.from==0 and hold.to==0 and fade.from==0 and fade.to==0,'muted while faded')
+    assert(child.from==0 and child.to==1,'animations on children keep their alpha')
+    assert(M:SetCastOption('player','hideBlizzard',false) and hold.from==1 and hold.to==1 and fade.from==1 and fade.to==0,'restored when shown')
     assert(not M:SetCastOption('player','height',99) and not M:SetCastOption('player','icon','top') and not M:SetCastOption('player','bogus',1))
     assert(M:FrameDB('target').castBar==M.db.target.castBar and M.db.target.matchPlayer,'a matched Target keeps its own cast bar')
     assert(M:ResetFrame('player') and M.db.player.castBar.position=='below' and PlayerCastingBarFrame:GetAlpha()==0,'reset restores it')

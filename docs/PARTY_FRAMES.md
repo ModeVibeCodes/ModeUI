@@ -113,6 +113,14 @@ still show only in a party.
   Yourself) and party1-4, sorts them (Party Order or Role), reverses them, and
   shows, hides and places the buttons in combat too. ModeUI sets its
   attributes outside combat only; all five buttons are made up front.
+- **Unit changes**: the header sets every button's unit again on each
+  `GROUP_ROSTER_UPDATE` and on any unit's `UNIT_NAME_UPDATE`, which come in
+  bursts while a group forms. The same unit does nothing; a new one, and
+  roster events, redraw each member once on the next frame. A member's unit
+  events and aura containers follow its unit only when the unit changes, and
+  the containers read auras again by themselves then (`SetUnit`); with the
+  same unit they read again only when the person behind it changed
+  (`UnitGUID`, or always when that can't be read).
 - **Placement**: Edit Mode moves a plain stand-in the size of a full party.
   The header is anchored to UIParent by the corner the group grows from (top
   left for Down and Right, bottom left for Up, top right for Left), copied
@@ -126,7 +134,9 @@ still show only in a party.
   member and anchor, one container group per group and filter, kept to its
   dispel type by `candidateFilters` (`includeDispelTypes`, and
   `excludeDispelTypes` for Other Debuffs). Buttons are styled once: rims and
-  glows by type through `AddDispelTypeTexture`.
+  glows by type through `AddDispelTypeTexture`. Containers are configured
+  only after a settings change: the game's `SetAuraGroupCandidateFilters`
+  reads every aura again on each call.
 - **Debuff effects** are one aura slot per type on a container
   (`includeDispelTypes`), whose button covers the member and holds that type's
   border, health overlay and gradient in its color; the game shows the button

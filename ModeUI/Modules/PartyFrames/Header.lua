@@ -54,7 +54,7 @@ function M:SetupMember(f)
     f:HookScript("OnAttributeChanged", function(button, name, value)
         if name == "unit" then self:SetMemberUnit(button, value) end
     end)
-    f:HookScript("OnShow", function(button) self:UpdateMember(button) end)
+    f:HookScript("OnShow", function(button) self:QueueMember(button) end)
     self.members[#self.members + 1] = f
     if not addon.InCombat() then self:ApplyLayout(f) end
     self:SetMemberUnit(f, f:GetAttribute("unit"))

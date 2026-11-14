@@ -10,15 +10,65 @@ local Kit, Domain = addon.Kit, addon.Domain
 local Health, Power, Name, UnitColor, Group = Domain.Health, Domain.Power, Domain.Name, Domain.UnitColor, Domain.Group
 local Q = Domain.Query
 
--- A member's unit changed (the header sorts and hands out units, in combat
--- too): its unit events follow it, then everything is redrawn.
+-- The header hands out units (in combat too). It sets every button's unit
+-- again on each GROUP_ROSTER_UPDATE and on any unit's UNIT_NAME_UPDATE, which
+-- come in bursts while a group forms, and mostly hands back the same unit.
+-- So the same unit does nothing, and real changes wait for one pass on the
+-- next frame (FlushMembers), however many arrive.
+local function UnitOf(unit) return (addon.IsPublic(unit) and type(unit) == "string" and unit ~= "") and unit or nil end
+M.MemberUnit = UnitOf
 function M:SetMemberUnit(f, unit)
-    unit = (addon.IsPublic(unit) and type(unit) == "string" and unit ~= "") and unit or nil
+    unit = UnitOf(unit)
+    if unit == f.unit then return end
     f.unit = unit
-    f.events:UnregisterAllEvents()
-    if unit and self.active then
-        for event in pairs(self.UNIT_EVENTS) do pcall(f.events.RegisterUnitEvent, f.events, event, unit) end
+    self:QueueMember(f)
+end
+
+function M:QueueMember(f)
+    self.queued = self.queued or {}
+    self.queued[f] = true
+    if self.flushQueued then return end
+    self.flushQueued = true
+    if C_Timer and C_Timer.After then C_Timer.After(0, function() self:FlushMembers() end) else self:FlushMembers() end
+end
+function M:QueueAll() for _, f in ipairs(self.members or {}) do self:QueueMember(f) end end
+function M:FlushMembers()
+    local queued = self.queued or {}
+    self.queued, self.flushQueued = {}, false
+    for _, f in ipairs(self.members or {}) do if queued[f] then self:SyncMember(f) end end
+end
+
+-- Who a unit is: its GUID when readable (it can be secret), else nil.
+local function Identity(unit)
+    if not unit or not UnitGUID then return nil end
+    local ok, guid = pcall(UnitGUID, unit)
+    return (ok and addon.IsPublic(guid) and type(guid) == "string") and guid or nil
+end
+
+-- A new unit binds the member to it; the same unit (a roster change can put
+-- someone else behind it) is redrawn, and its auras read again only when the
+-- person changed or can't be told.
+function M:SyncMember(f)
+    if (self.active and f.unit or nil) ~= f.boundUnit then self:BindMember(f); return end
+    local guid = Identity(f.unit)
+    if f.unit and (guid == nil or guid ~= f.guid) then self:AttachAuras(f, true) end
+    f.guid = guid
+    self:UpdateMember(f)
+end
+
+-- Unit events follow the unit (re-registered only when it changes), the aura
+-- containers point at it, then everything is redrawn. Refresh runs this for
+-- every member after a settings change.
+function M:BindMember(f)
+    local unit = self.active and f.unit or nil
+    if unit ~= f.boundUnit then
+        f.events:UnregisterAllEvents()
+        if unit then
+            for event in pairs(self.UNIT_EVENTS) do pcall(f.events.RegisterUnitEvent, f.events, event, unit) end
+        end
+        f.boundUnit = unit
     end
+    f.guid = Identity(f.unit)
     self:AttachAuras(f)
     self:UpdateMember(f)
 end

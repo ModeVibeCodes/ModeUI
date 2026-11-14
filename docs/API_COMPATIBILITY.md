@@ -74,6 +74,28 @@ bars are named in the Forever source: `PlayerCastingBarFrame`
 hook, never hidden or reparented. The ModeUI cast bar is a plain child of the
 secure unit button, shown and hidden in combat. Unverified in game.
 
+## Interrupted cast bars — November 14, 2026
+
+Blizzard's cast bars inherit `CastingBarFrameAnimsTemplate`
+(`Blizzard_UIPanels_Game/Shared/CastingBarFrameTemplates.xml`, the same on the
+Forever branch). `CastingBarMixin:PlayInterruptAnims` plays `HoldFadeOutAnim`
+on every interrupt, without the `GetAlpha() > 0` check `PlayFadeAnim` makes:
+an Alpha animation on the bar itself (1 to 1 for 1s, then 1 to 0 over 0.3s)
+whose OnFinished hides the bar. An Alpha animation's from and to alpha replace
+the region's own while it plays, so a bar faded with `SetAlpha(0)` showed for
+1.3s. While Unit Frames fade a region, its Alpha animations that target the
+region itself (`GetAnimationGroups`, `GetAnimations`, `GetTarget`) are set to
+0 and 0 with `SetFromAlpha`/`SetToAlpha` (public numbers; documented
+`AllowedWhenUntainted` only for secret arguments) and restored when it shows
+again. Nameplate cast bars are unaffected: Blizzard's sits under the faded
+unit frame, and a child can't show through a parent at alpha 0.
+
+Nameplate cast events now read their payload: `interruptedBy` on
+`UNIT_SPELLCAST_CHANNEL_STOP` and `complete` on `UNIT_SPELLCAST_EMPOWER_STOP`,
+as Blizzard's bars do. Both are secret while casts are restricted; a secret
+`interruptedBy` still counts as an interrupt, a secret `complete` does not.
+Unverified in game.
+
 ## Unit frame status — November 13, 2026
 
 `UnitAffectingCombat` and `UnitCanAttack` carry no secret flags in Forever's
@@ -152,7 +174,9 @@ behavior on Forever is unverified until checked in game.
   `AddAuraGroup(key, filter, { maxFrameCount, layout, initializeFrame })` per
   group, then `SetAuraGroupFilterString`/`MaxFrameCount`/`Layout`/`Enabled`,
   `SetFlowLayoutAnchorPoint`/`Axis`/`GrowthDirection`, `SetUnit`, `SetEnabled`
-  and `UpdateAllAuras`. `initializeFrame` builds the Mode icon on each button and
+  and `UpdateAllAuras`. `SetUnit` and `SetEnabled` read the auras again only
+  when the value changes; `SetAuraGroupCandidateFilters` reads them again and
+  re-registers events on every call. `initializeFrame` builds the Mode icon on each button and
   registers it with `SetIcon`, `SetDurationCooldown`, `SetApplicationCount` and
   `AddDispelTypeTexture` (`PreserveAsset` with a `customDispelColorMap`, "None"
   for auras without a type). The container follows `UNIT_AURA` itself. Buttons
@@ -1153,8 +1177,10 @@ confirmation is pending for everything here.
   `min(unitsPerColumn × maxColumns, listed)` buttons, so `startingIndex = -4`
   makes all five up front. The header calls `SetPoint` on displayed buttons
   without `ClearAllPoints`, so ModeUI clears them before changing `point`. It
-  sizes itself from `child1`, and it updates on `GROUP_ROSTER_UPDATE` and on
-  attribute changes while it is visible. Visibility is
+  sizes itself from `child1`, and it updates on `GROUP_ROSTER_UPDATE`, on
+  `UNIT_NAME_UPDATE` for any unit and on attribute changes while it is
+  visible; each update calls `SetAttribute("unit", ...)` on every button, so
+  `OnAttributeChanged` fires with the same unit again and again. Visibility is
   `RegisterAttributeDriver(header, "state-visibility", ...)`. `SetRolesets`
   (`IsProtectedFunction`; `SimpleFrameAPIDocumentation`) gives the header the
   `unitFrames` roleset Blizzard's TargetFrame uses, in `pcall` and outside

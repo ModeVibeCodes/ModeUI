@@ -78,10 +78,13 @@ end
 local function AnyEffect(effects) return effects.border or effects.health or effects.gradient end
 
 -- Makes (or keeps) the member's slot container and points it at the unit.
-function M:AttachDispel(f, unit)
+-- `check`: settings may have changed, so the look is compared; `reread`: read
+-- the auras again (the same unit is someone else now).
+function M:AttachDispel(f, unit, check, reread)
     local current = f.dispelContainer
-    local key = SlotKey(self, f)
+    local key = (check or not current) and SlotKey(self, f) or current.lookKey
     if not (current and current.lookKey == key) then
+        reread = true
         if current then current:SetEnabled(false); current:Hide(); f.dispelContainer = nil end
         local filter = self:GroupFilters("dispel", self.db.dispelFilter)[1]
         local ok, container = pcall(function()
@@ -100,6 +103,8 @@ function M:AttachDispel(f, unit)
         f.dispelContainer = container
         current = container
     end
-    if unit then current:SetEnabled(true); current:SetUnit(unit); current:Show(); current:UpdateAllAuras()
+    if unit then
+        current:SetEnabled(true); current:SetUnit(unit); current:Show()
+        if reread then current:UpdateAllAuras() end
     else current:SetEnabled(false); current:Hide() end
 end

@@ -76,6 +76,7 @@ local function Style(kind)
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
         showName = true, nameFontSize = 10, nameColorMode = "text", nameAnchor = "TOP", nameX = 0, nameY = 0,
         showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
+        castInterruptedColor = Copy(P.hostile),
         castAnchor = "BOTTOM", castX = 0, castY = enemy and -2 or 0,
         castIcon = "LEFT", castShowText = true, castShowTarget = enemy, castShowTimer = true,
         -- Cast texts by anchor around the cast bar: Left, Center and Right sit inside it.
@@ -115,7 +116,7 @@ M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
 M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly) }
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
-M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
+M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, castInterruptedColor = true, textColor = true, targetColor = true,
     auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true,
     auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true, auraTimerColor = true,
     comboActiveColor = true, comboEmptyColor = true }

@@ -345,6 +345,38 @@ world.run([==[
     assert(not plate.castBox:IsShown() and plate.casting == nil and plate.cast.scripts.OnUpdate == nil, 'cast bar stops')
     assert(plate.castText.text == '' and plate.castTimer.text == '' and plate.castTarget.text == '', 'cast texts cleared when the cast ends')
 
+    -- An interrupt holds the bar (full, Interrupted color and text) through the
+    -- stop event that follows, then it fades out and clears, as Blizzard's does.
+    local now = GetTime() * 1000
+    units.nameplate1.cast = { name = 'Fireball', text = 'Fireball', icon = 135812, start = now, stop = now + 2000, locked = false }
+    FireEvent('UNIT_SPELLCAST_START', 'nameplate1')
+    FireEvent('UNIT_SPELLCAST_INTERRUPTED', 'nameplate1', 'cast-guid', 133, 'Player-1-0001')
+    units.nameplate1.cast = nil; FireEvent('UNIT_SPELLCAST_STOP', 'nameplate1', 'cast-guid', 133)
+    assert(plate.castBox:IsShown() and plate.casting == 'held' and plate.cast.low == 0 and plate.cast.high == 1 and plate.cast.value == 1, 'held full')
+    assert(plate.castText.text == 'Interrupted' and plate.castTimer.text == '' and plate.castTarget.text == '', 'Interrupted, no timer')
+    assert(plate.cast:GetStatusBarTexture().vertexColor[1] == enemy.castInterruptedColor[1] and plate.cast.reverseFill == false, 'Interrupted color')
+    FireEvent('UNIT_TARGET', 'nameplate1')
+    assert(plate.castTarget.text == '', 'no target line on a held bar')
+    Advance(1.15)
+    assert(plate.castBox:IsShown() and math.abs(plate.castBox:GetAlpha() - 0.5) < 1e-6 and math.abs(plate.castText:GetAlpha() - 0.5) < 1e-6, 'fades')
+    Advance(0.2)
+    assert(not plate.castBox:IsShown() and plate.casting == nil and plate.castBox:GetAlpha() == 1 and plate.castText.text == '', 'hold ends')
+    -- A channel's interrupt comes on its stop event; a new cast replaces a hold.
+    now = GetTime() * 1000
+    units.nameplate1.channel = { name = 'Drain', text = 'Drain', icon = 1, start = now, stop = now + 3000, locked = false }
+    FireEvent('UNIT_SPELLCAST_CHANNEL_START', 'nameplate1')
+    units.nameplate1.channel = nil; FireEvent('UNIT_SPELLCAST_CHANNEL_STOP', 'nameplate1', 'guid', 5, Secret('interrupter'))
+    assert(plate.casting == 'held' and plate.castBox:IsShown(), 'secret interruptedBy still holds')
+    units.nameplate1.cast = { name = 'Fireball', text = 'Fireball', icon = 135812, start = now, stop = now + 2000, locked = false }
+    FireEvent('UNIT_SPELLCAST_START', 'nameplate1')
+    assert(plate.casting == 'cast' and plate.castText.text == 'Fireball' and plate.castBox:GetAlpha() == 1, 'a new cast replaces the hold')
+    units.nameplate1.cast = nil; FireEvent('UNIT_SPELLCAST_STOP', 'nameplate1', 'guid', 133)
+    assert(not plate.castBox:IsShown() and plate.casting == nil, 'a cast that ends without an interrupt clears at once')
+    units.nameplate1.channel = { name = 'Drain', text = 'Drain', icon = 1, start = now, stop = now + 3000, locked = false }
+    FireEvent('UNIT_SPELLCAST_CHANNEL_START', 'nameplate1')
+    units.nameplate1.channel = nil; FireEvent('UNIT_SPELLCAST_CHANNEL_STOP', 'nameplate1', 'guid', 5, nil)
+    assert(not plate.castBox:IsShown(), 'a channel that runs out clears at once')
+
     -- Every bar is Mode Gradient; health and cast boxes share the same rounded rims.
     local rim, gapTexture = addon.Media:GetTexture('NameplateRim'), addon.Media:GetTexture('NameplateGap')
     assert(plate.health.statusBarTexture == Kit.FLAT and plate.health.sheen:IsShown() and plate.health.sheen.gradient, 'Mode Gradient health')

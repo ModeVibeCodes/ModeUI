@@ -27,7 +27,40 @@ M.nativeCast = { player = "PlayerCastingBarFrame", target = "TargetFrameSpellBar
 local DEBUFFS = 4
 local Number = M.Number
 
+-- An Alpha animation's from and to alpha replace a region's own alpha while it
+-- plays, so the SetAlpha(0) fade can't hide it. Blizzard's cast bars play one
+-- on every interrupt (CastingBarFrameAnimsTemplate HoldFadeOutAnim: alpha 1
+-- for 1s, then a fade), which showed a faded Target or Player cast bar. While
+-- a region is faded, the Alpha animations that act on the region itself run
+-- from 0 to 0; they still play and finish (the cast bar hides itself when its
+-- animation ends), unseen. Animations on its children need nothing: a child
+-- never shows through a parent at alpha 0.
+local function MuteAnimations(self, region, muted)
+    if not muted then
+        for _, entry in ipairs(self.nativeAnims[region] or {}) do
+            entry.anim:SetFromAlpha(entry.from); entry.anim:SetToAlpha(entry.to)
+        end
+        self.nativeAnims[region] = nil
+        return
+    end
+    if self.nativeAnims[region] or not region.GetAnimationGroups then return end
+    local entries = {}
+    for _, group in ipairs({ region:GetAnimationGroups() }) do
+        for _, anim in ipairs({ group:GetAnimations() }) do
+            if anim:GetObjectType() == "Alpha" and anim:GetTarget() == region then
+                local from, to = anim:GetFromAlpha(), anim:GetToAlpha()
+                if Number(from, 0, 1) and Number(to, 0, 1) then
+                    entries[#entries + 1] = { anim = anim, from = from, to = to }
+                    anim:SetFromAlpha(0); anim:SetToAlpha(0)
+                end
+            end
+        end
+    end
+    self.nativeAnims[region] = entries
+end
+
 local function Fade(self, region, hidden)
+    MuteAnimations(self, region, hidden)
     if hidden then
         local alpha = region:GetAlpha()
         if self.nativeAlpha[region] == nil then self.nativeAlpha[region] = Number(alpha, 0, 1) and alpha or 1 end

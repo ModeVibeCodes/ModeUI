@@ -144,11 +144,10 @@ local function Place(self, f, container, adb)
     if container.SetFlowLayoutMaximumLineSize then container:SetFlowLayoutMaximumLineSize(math.max(px, line)) end
 end
 
--- Builds, configures and places every container and points them at the
--- member's unit; called when the unit or the settings change.
-function M:AttachAuras(f)
-    if not self:UsesContainers(f) or not f.geometry then return end
-    local unit = self.active and f.unit or nil
+-- Builds, configures and places every container. Each of the game's group
+-- setters reads every aura again, so this runs once per settings change
+-- (Refresh bumps auraRevision), never for a unit change.
+local function Configure(self, f)
     local buckets, order, lead = self:AuraBuckets()
     local used = {}
     for _, key in ipairs(order) do
@@ -178,14 +177,29 @@ function M:AttachAuras(f)
                 end
             end
             Place(self, f, container, self.db.auras[lead[key]])
-            if unit and any then
-                container:SetEnabled(true); container:SetUnit(unit); container:Show(); container:UpdateAllAuras()
-            else container:SetEnabled(false); container:Hide() end
+            container.anyOn = any
         end
     end
     for key, container in pairs(f.auraContainers) do
-        if not used[key] then container:SetEnabled(false); container:Hide() end
+        if not used[key] then container.anyOn = false end
+    end
+end
+
+-- Points the containers at the member's unit (configuring them first after a
+-- settings change). The game reads a container's auras again by itself when
+-- its unit, enabled state or shown state changes; `reread` asks for it when
+-- the same unit is someone else now.
+function M:AttachAuras(f, reread)
+    if not self:UsesContainers(f) or not f.geometry then return end
+    local unit = self.active and f.unit or nil
+    local fresh = f.auraRevision ~= self.auraRevision
+    if fresh then Configure(self, f); f.auraRevision = self.auraRevision end
+    for _, container in pairs(f.auraContainers) do
+        if unit and container.anyOn then
+            container:SetEnabled(true); container:SetUnit(unit); container:Show()
+            if fresh or reread then container:UpdateAllAuras() end
+        else container:SetEnabled(false); container:Hide() end
     end
     self:PaintDispel(f, nil)
-    self:AttachDispel(f, unit)
+    self:AttachDispel(f, unit, fresh, fresh or reread)
 end
