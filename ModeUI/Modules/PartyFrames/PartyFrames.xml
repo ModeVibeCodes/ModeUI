@@ -1,5 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="Init.lua"/>
+    <Script file="AuraInit.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Native.lua"/>
@@ -11,9 +12,13 @@
     <Script file="Auras.lua"/>
     <Script file="AuraContainers.lua"/>
     <Script file="Dispel.lua"/>
+    <Script file="Samples.lua"/>
     <Script file="Ghost.lua"/>
+    <Script file="Picker.lua"/>
     <Script file="Preview.lua"/>
+    <Script file="PreviewTools.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsPower.lua"/>
     <Script file="SettingsElements.lua"/>
     <Script file="SettingsAuras.lua"/>
 </Ui>

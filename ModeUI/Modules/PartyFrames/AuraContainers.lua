@@ -84,13 +84,20 @@ local function Layout(adb, width, height, px)
     return { elementSpacing = spacing, lineSpacing = spacing, groupSpacing = spacing, elementWidth = width, elementHeight = height }
 end
 
--- The candidate filters that keep a group to its dispel type.
+-- The candidate filters that keep a group to its dispel type or spells:
+-- tracked groups take their spells (includeSpellIDs), the other buff groups
+-- leave every tracked spell out (excludeSpellIDs).
 local OTHER = {}
 for _, kind in ipairs(M.dispelTypes) do OTHER[kind] = true end
 function M:CandidateFilters(group)
     local kind = self.groupDispelType[group]
     if kind then return { includeDispelTypes = { [kind] = true } } end
     if group == "otherDebuffs" then return { excludeDispelTypes = OTHER } end
+    if self.TRACKED[group] then return { includeSpellIDs = (self:SpellSet(group)) } end
+    if self.HELPFUL[group] then
+        local tracked, any = self:TrackedSpells()
+        if any then return { excludeSpellIDs = tracked } end
+    end
 end
 
 -- Makes (or keeps) a member's container for one anchor and its groups.
@@ -154,12 +161,17 @@ function M:AttachAuras(f)
                 local adb = self.db.auras[group]
                 local width, height = self:AuraSize(adb, f.geometry.px)
                 local filters = self:GroupFilters(group, adb.filter)
+                -- A tracked group with no spells shows nothing.
+                local empty = self.TRACKED[group] and #adb.spells == 0
                 for i = 1, 2 do
-                    local on = adb.show and filters[i] ~= nil
+                    local on = adb.show and filters[i] ~= nil and not empty
                     if on then
                         container:SetAuraGroupFilterString(group .. i, filters[i])
                         container:SetAuraGroupMaxFrameCount(group .. i, adb.max)
                         container:SetAuraGroupLayout(group .. i, Layout(adb, width, height, f.geometry.px))
+                        if container.SetAuraGroupCandidateFilters then
+                            container:SetAuraGroupCandidateFilters(group .. i, self:CandidateFilters(group))
+                        end
                     end
                     container:SetAuraGroupEnabled(group .. i, on)
                     any = any or on

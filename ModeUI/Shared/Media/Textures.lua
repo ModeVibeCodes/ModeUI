@@ -52,6 +52,16 @@ M.Textures = {
     ModeCapLeft = { file = "Mode/CapLeft.tga", rounded = true },
     ModeCapHoleRight = { file = "Mode/CapHoleRight.tga", transparent = true },
     ModeCapHoleLeft = { file = "Mode/CapHoleLeft.tga", transparent = true },
+    -- One round corner of a box and its hole (Kit.ModeBoxBorder): whole
+    -- textures, so the corner masks need no texture coordinates.
+    ModeCornerTopLeft = { file = "Mode/CornerTopLeft.tga", rounded = true },
+    ModeCornerTopRight = { file = "Mode/CornerTopRight.tga", rounded = true },
+    ModeCornerBottomLeft = { file = "Mode/CornerBottomLeft.tga", rounded = true },
+    ModeCornerBottomRight = { file = "Mode/CornerBottomRight.tga", rounded = true },
+    ModeCornerHoleTopLeft = { file = "Mode/CornerHoleTopLeft.tga", transparent = true },
+    ModeCornerHoleTopRight = { file = "Mode/CornerHoleTopRight.tga", transparent = true },
+    ModeCornerHoleBottomLeft = { file = "Mode/CornerHoleBottomLeft.tga", transparent = true },
+    ModeCornerHoleBottomRight = { file = "Mode/CornerHoleBottomRight.tga", transparent = true },
     NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
     NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
     NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },

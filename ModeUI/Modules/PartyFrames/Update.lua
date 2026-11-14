@@ -120,11 +120,26 @@ function M:UpdatePower(f)
     if not self:Live(f) then return end
     self:UpdatePowerShown(f)
     if not f.hasPower then return end
-    local _, token, okMax, max, okValue, value = Power.Read(f.unit)
+    local powerType, token, okMax, max, okValue, value = Power.Read(f.unit)
     if okMax then pcall(f.power.SetMinMaxValues, f.power, 0, max) end
     if okValue then pcall(f.power.SetValue, f.power, value) end
     local color = self.db.powerColorMode == "custom" and self.db.powerColor or Power.Color(token)
-    f.power:SetStatusBarColor(color[1], color[2], color[3], self.db.healthOpacity / 100)
+    f.power:SetStatusBarColor(color[1], color[2], color[3], self.db.powerOpacity / 100)
+    self:UpdatePowerText(f, powerType, okValue, value)
+end
+
+-- The power text: percent (with or without the sign) or the current value,
+-- all possibly secret, so only SetFormattedText and SetText take them.
+function M:UpdatePowerText(f, powerType, okValue, value)
+    local db, text = self.db, f.powerText
+    if not db.powerTextShow then Kit.Write(text, ""); return end
+    local function Percent(unit, curve) return Power.Percent(unit, powerType, curve) end
+    if db.powerText == "percentPlain" then
+        local curve = CurveConstants and CurveConstants.ScaleTo100
+        local ok, percent = false, nil
+        if curve then ok, percent = Percent(f.unit, curve) end
+        if not (ok and pcall(Kit.Formatted, text, "%.0f", percent)) then Kit.Write(text, "") end
+    else Kit.ValueText(text, db.powerText, Percent, f.unit, okValue, value) end
 end
 
 -- Heals and shields ride on the health fill with the health range, so the

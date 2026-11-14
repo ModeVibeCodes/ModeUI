@@ -3,8 +3,9 @@ local M, W, L = addon.PartyFrames, addon.ConfigWidgets, addon.L
 if not M then return end
 
 -- The Text and Icons tab (pick an element, then its switch, place, offset,
--- nudge and size) and the Highlights tab (your target, the mouse, debuff
--- effects by type, fading).
+-- nudge and size) and the Highlights and Overlay tab (your target, the mouse,
+-- the dispel overlay by type, fading). The preview shows the element, or the
+-- picked dispel type, while the tab is open.
 
 function M:BuildElementsTab(page, c, Element)
     local function Key(suffix) return Element() .. suffix end
@@ -59,15 +60,17 @@ function M:BuildElementsTab(page, c, Element)
 end
 
 function M:BuildHighlightsTab(page, c, Kind)
-    page:Section(L["Highlights"], nil, false)
+    page:Section(L["Highlights and Overlay"], nil, false)
     page:Group(L["Your Target"])
     local target = c.Columns({ "Style", "Color" })
     page.targetSelect = c.Select(target[1], 200, M.choices.highlightStyle, "targetHighlight"); c.Mark("target")
     c.Color(target[2], "targetColor")
-    page.hoverToggles = c.Toggles({ { "Mouse Highlight", "hoverHighlight" } })
+    page.hoverToggles = c.Toggles({ { "Mouse Highlight", "hoverHighlight" },
+        { "Preview as Your Target", "previewTarget", get = function() return page.partyShowTarget == true end,
+            set = function(value) page.partyShowTarget = value or nil; page:Refresh() end } })
 
     -- Each dispel type can recolor the border, the health and lay a gradient.
-    page:Group(L["Debuff Effects"])
+    page:Group(L["Dispel Overlay"])
     local which = c.Columns({ "Which Debuffs", "Gradient Opacity" })
     page.dispelFilterSelect = c.SelectIn(which[1], 220, function() return M.auraFilters.dispel end,
         function() return M.db.dispelFilter end, c.Set("dispelFilter"))
@@ -89,7 +92,7 @@ function M:BuildHighlightsTab(page, c, Kind)
             c.Color(c.Columns({ "Type Color" })[1], M.dispelColorKeys[kind])
         end)
     end
-    c.Note("Border turns the member's border the type's color, Health Color fills the health bar with it, and Gradient fades it down over the bar. They show while the member has such a debuff (Which Debuffs), in combat too.", 48)
+    c.Note("Border turns the member's border the type's color, Health Color fills the health bar with it, and Gradient fades it down over the bar. They show while the member has such a debuff (Which Debuffs), in combat too. The preview shows the picked type while this tab is open.", 48)
 
     page:Group(L["Fading"])
     page.rangeToggles = c.Toggles({ { "Fade Out of Range", "rangeFade" } })

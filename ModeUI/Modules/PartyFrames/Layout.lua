@@ -57,13 +57,14 @@ function M:ApplyLayout(f)
     local level = panel:GetFrameLevel()
     Kit.LayoutModeBoxBorder(panel.border, panel, { px = g.px, radius = g.radius, thickness = g.thickness, level = level + 2 })
     local reverse = db.fillDirection == "reverse"
-    for _, look in ipairs({ { f.health, db.foregroundTexture, db.backgroundTexture, g.healthHeight },
-        { f.power, db.powerForegroundTexture, db.powerBackgroundTexture, g.powerHeight } }) do
+    for _, look in ipairs({ { f.health, db.foregroundTexture, db.backgroundTexture, g.healthHeight, db.backgroundOpacity, reverse },
+        { f.power, db.powerForegroundTexture, db.powerBackgroundTexture, g.powerHeight, db.powerBackgroundOpacity,
+            db.powerFillDirection == "reverse" } }) do
         local bar = look[1]
         bar:SetFrameLevel(level + 1)
-        if bar.SetReverseFill then bar:SetReverseFill(reverse) end
+        if bar.SetReverseFill then bar:SetReverseFill(look[6]) end
         Kit.BarBackground(bar, look[3], g.innerWidth, look[4], g.px)
-        Kit.Tint(bar.bg, Kit.BarBackgroundColor(look[3]), db.backgroundOpacity / 100)
+        Kit.Tint(bar.bg, Kit.BarBackgroundColor(look[3]), look[5] / 100)
         bar.foregroundChoice = look[2]
     end
     panel.hairline:SetTexture(Kit.FLAT); Kit.Tint(panel.hairline, Kit.onyx.inner, 1)
@@ -105,12 +106,14 @@ function M:LayoutBars(f)
         pw:SetPoint("BOTTOM" .. (align == "CENTER" and "" or align), f.panel, "BOTTOM" .. (align == "CENTER" and "" or align),
             x, b + math.floor(db.powerY + 0.5) * px)
         pw:SetSize(width, g.powerHeight)
+        f.powerWidth = width
         pw:SetFrameLevel(f.panel:GetFrameLevel() + 2)
         Kit.LayoutModeBoxBorder(f.powerBorder, pw, { px = px, radius = 2 * px, thickness = g.thickness, level = pw:GetFrameLevel() + 1 })
     else
         pw:SetPoint("BOTTOMLEFT", f.panel, "BOTTOMLEFT", b, b); pw:SetPoint("BOTTOMRIGHT", f.panel, "BOTTOMRIGHT", -b, b)
         pw:SetHeight(g.powerHeight)
         pw:SetFrameLevel(f.panel:GetFrameLevel() + 1)
+        f.powerWidth = g.innerWidth
     end
     self.ShowBorder(f.powerBorder, inset and power)
     pw:SetShown(power)
@@ -147,7 +150,28 @@ function M:LayoutBars(f)
     if inset then Kit.MaskToBoxBorder(f.powerBorder, powerRegions, { left = 0, top = 0, right = 0, bottom = 0 })
     else Kit.MaskToBoxBorder(f.panel.border, powerRegions, { left = b, top = b + healthHeight + g.line, right = b, bottom = b }) end
     Kit.MaskToBoxBorder(f.panel.border, { line }, { left = b, top = b + healthHeight, right = b, bottom = b + g.powerHeight })
+    self:LayoutPowerText(f)
     self:LayoutDispel(f)
+end
+
+-- The power text: on the power bar at Text Alignment and its offset.
+function M:LayoutPowerText(f)
+    local db, g, text = self.db, f.geometry, f.powerText
+    local px = g.px
+    local align = db.powerTextAlign
+    local inset = align == "LEFT" and 2 * px or align == "RIGHT" and -2 * px or 0
+    text:ClearAllPoints()
+    text:SetPoint(align, f.power, align, inset + math.floor(db.powerTextX + 0.5) * px, math.floor(db.powerTextY + 0.5) * px)
+    text:SetWidth(math.max(px, (f.powerWidth or g.innerWidth) - 4 * px))
+    f.powerTextLayer:SetFrameLevel(f.power:GetFrameLevel() + 3)
+    local path = Kit.FontPath(db, self.id)
+    Kit.Font(text, db, db.powerTextSize, path, px)
+    text:SetJustifyH(align)
+    local shown = db.powerTextShow and f.hasPower
+    Kit.LayoutLift(text, db, db.powerTextSize, path, px, shown, align)
+    text:SetShown(shown and true or false)
+    local c = db.textColor
+    text:SetTextColor(c[1], c[2], c[3], 1)
 end
 
 -- Target and mouse highlights: the border again in the highlight color

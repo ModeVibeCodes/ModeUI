@@ -136,7 +136,7 @@ world.run([==[
     local border = w1.border
     assert(M.BORDER_COLOR == Kit.BORDER_COLOR and border.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and border.strips.TOP.height == 2, 'the standard rim, 2px')
     assert(w1.g.corner == Kit.CapDepth(24, 1) and border.radius == 6 and Point(border.strips.TOP)[4] == 6 and border.corners.TOPLEFT.cap.width == 6, 'round corners')
-    assert(border.corners.BOTTOMRIGHT.cap.texCoord and border.corners.BOTTOMRIGHT.cap.texCoord[3] == 0.75, 'the cap art\'s own corner')
+    assert(border.corners.BOTTOMRIGHT.cap.texture:find('CornerBottomRight', 1, true) and border.corners.BOTTOMRIGHT.hole.texture:find('CornerHoleBottomRight', 1, true), 'a whole corner texture and its hole')
     -- Content rounds with it, taking only the corners it reaches: the client
     -- holds at most 3 masks on a texture (the stubs error on a 4th, as it does).
     local function Masks(region, ...)

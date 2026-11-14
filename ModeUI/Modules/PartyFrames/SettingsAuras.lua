@@ -18,14 +18,15 @@ local function GroupOwner(Group)
     return owner
 end
 
+local TRACKED_NOTE = "Buffs you pick: click + (here or in the preview's list) and click a buff on you or your party, or add one by its spell ID. They show here with this group's settings, and the other buff groups leave them out."
+local TYPE_NOTE = " debuffs that Dispellable by You doesn't show. Groups on the same anchor and place continue in one row."
 M.auraNotes = { heals = "Heals over time and other buffs Blizzard's raid frames show in combat.",
     buffs = "Long buffs such as Fortitude and Mark of the Wild: the ones raid frames leave out in combat.",
     defensives = "Big and External shows up to Most Shown of each kind.",
-    magic = "Magic debuffs only. Groups on the same anchor and place continue in one row.",
-    curse = "Curse debuffs only. Groups on the same anchor and place continue in one row.",
-    disease = "Disease debuffs only. Groups on the same anchor and place continue in one row.",
-    poison = "Poison debuffs only. Groups on the same anchor and place continue in one row.",
-    bleed = "Bleed debuffs only. Groups on the same anchor and place continue in one row.",
+    tracked1 = TRACKED_NOTE, tracked2 = TRACKED_NOTE, tracked3 = TRACKED_NOTE,
+    dispellable = "Debuffs you can dispel, of any type, first in the debuff row. By Type borders color them by type.",
+    magic = "Magic" .. TYPE_NOTE, curse = "Curse" .. TYPE_NOTE, disease = "Disease" .. TYPE_NOTE,
+    poison = "Poison" .. TYPE_NOTE, bleed = "Bleed" .. TYPE_NOTE,
     otherDebuffs = "Debuffs without a Magic, Curse, Disease, Poison or Bleed type.",
     crowdControl = "Stuns, fears, polymorphs and other loss of control on your party." }
 
@@ -39,11 +40,30 @@ function M:BuildAuraTab(page, c, Group)
     local function GroupColor(host, key, enabled) W.ColorRow(page, owner, host.rowLabel:GetText(), key, enabled, host) end
     page:Section(L["Auras"], nil, false)
     page:Group(L["Aura Groups"])
+    -- Buffs and debuffs are separate lists; the preview's quick list matches.
+    page.auraKindPills = c.Pills("Kind", { { id = "buffs", label = "Buffs" }, { id = "debuffs", label = "Debuffs" } },
+        page.partyAuraKind, page.SetAuraKind, 110)
     local groups = {}
     for _, id in ipairs(M.auraGroups) do groups[#groups + 1] = { id = id, label = M.auraGroupLabels[id] } end
-    page.auraGroupSelect = c.SelectIn(page:Row(L["Group"], 48), 220, function() return groups end, Group, page.SetAuraGroup)
+    page.auraGroupSelect = c.SelectIn(page:Row(L["Group"], 48), 220, function()
+        local list = {}
+        for _, id in ipairs(M:AuraKindGroups(page.partyAuraKind())) do list[#list + 1] = { id = id, label = M.auraGroupLabels[id] } end
+        return list
+    end, Group, page.SetAuraGroup)
     c.Mark("auras")
     page.auraShowToggles = c.Toggles({ Toggle("Show This Group", "show") })
+    -- Tracked Buffs: the + picker and how many buffs the group holds.
+    c.When(function() return M.TRACKED[Group()] == true end, function()
+        local row = page:Row(L["Tracked Buffs"], 48)
+        page.trackedAddButton = W.Button(row, L["+ Add or Remove Buffs"], 190, 30, "secondary")
+        page.trackedAddButton:SetPoint("LEFT")
+        page.trackedAddButton:SetScript("OnClick", function() M:OpenPicker(Group(), page.trackedAddButton) end)
+        page.trackedCount = W.Label(row, "", nil, 200, -8, 200, addon.InterfaceTheme.muted)
+        c.Refresh(function()
+            local n = #(db().spells or {})
+            page.trackedCount:SetText(n == 0 and L["No buffs yet"] or string.format(L["%d buffs"], n))
+        end)
+    end)
     page.auraFilterNote = c.Note("", 32)
     c.Refresh(function() page.auraFilterNote:SetText(L[M.auraNotes[Group()]]) end)
     c.When(function() return db().show end, function()

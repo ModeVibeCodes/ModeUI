@@ -60,17 +60,18 @@ function Kit.MaskToBorder(border, regions) Kit.AddMasks(regions, { border.masks.
 -- rounded rectangle, where the quarter-of-the-height ends above would bulge.
 -- Same rim (2 physical pixels, Kit.BORDER_COLOR, its own frame above the
 -- content), straight strips along each side, and a round corner `radius`
--- deep at each corner. The corners are the cap art's own corners: the top and
--- bottom quarters of Mode/CapLeft and CapRight are quarter circles, hollowed
--- by the same quarter of the cap's hole mask, so they match the bar ends.
+-- deep at each corner. Each corner is a whole quarter-circle texture
+-- (Mode/Corner*, the cap art's corner on its own) hollowed by its hole mask
+-- (Mode/CornerHole*), so they match the bar ends. Whole textures, not a
+-- quarter of the cap picked by texture coordinates: in game, masks cut that
+-- way left the corners solid (owner's report, November 13, 2026).
 -- `border.masks` (one per corner) round the content 1 pixel under the rim.
 -- The client holds at most 3 masks on a texture, so content only takes the
 -- corners it reaches (Kit.MaskToBoxBorder), and the background is three
 -- bands (Kit.BoxFill): top and bottom rounded, the middle plain.
 local CORNERS = { TOPLEFT = { "LEFT", 0, 0.25, 1, -1 }, TOPRIGHT = { "RIGHT", 0, 0.25, -1, -1 },
     BOTTOMLEFT = { "LEFT", 0.75, 1, 1, 1 }, BOTTOMRIGHT = { "RIGHT", 0.75, 1, -1, 1 } }
-local CAP = { LEFT = "ModeCapLeft", RIGHT = "ModeCapRight" }
-local HOLE = { LEFT = "ModeCapHoleLeft", RIGHT = "ModeCapHoleRight" }
+local CORNER_ART = { TOPLEFT = "TopLeft", TOPRIGHT = "TopRight", BOTTOMLEFT = "BottomLeft", BOTTOMRIGHT = "BottomRight" }
 local function Path(key) return (addon.Media:GetTexture(key)) end
 
 -- `owner` (default `host`) is the frame the rim and the masks belong to, for
@@ -113,17 +114,29 @@ function Kit.LayoutModeBoxBorder(border, host, options)
     s.LEFT:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -radius); s.LEFT:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 0, radius)
     s.RIGHT:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, -radius); s.RIGHT:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, radius)
     s.TOP:SetHeight(thickness); s.BOTTOM:SetHeight(thickness); s.LEFT:SetWidth(thickness); s.RIGHT:SetWidth(thickness)
-    local inset = math.max(0, thickness - px)
+    -- Content is rounded at the rim's outer curve, not its inner one: the rim
+    -- draws above it, so the extra is hidden, and every pixel inside the outer
+    -- curve is covered by content or rim. Rounding both at the inner curve
+    -- left the two soft (anti-aliased) edges meeting on the same pixels, which
+    -- let the background show through at the corners (owner's screenshots,
+    -- November 14, 2026).
+    local inset = 0
     for corner, spec in pairs(CORNERS) do
-        local side, top, bottom, x, y = spec[1], spec[2], spec[3], spec[4], spec[5]
+        local x, y = spec[4], spec[5]
         local c, mask = border.corners[corner], border.masks[corner]
-        c.cap:SetTexture(Path(CAP[side])); c.cap:SetTexCoord(0, 1, top, bottom); Kit.Tint(c.cap, color, 1)
+        local art, holeArt = "ModeCorner" .. CORNER_ART[corner], "ModeCornerHole" .. CORNER_ART[corner]
+        c.cap:SetTexture(Path(art)); c.cap:SetTexCoord(0, 1, 0, 1); Kit.Tint(c.cap, color, 1)
         c.cap:ClearAllPoints(); c.cap:SetPoint(corner, host, corner, 0, 0); c.cap:SetSize(radius, radius)
-        local hole = math.max(px, radius - thickness)
-        c.hole:SetTexture(Path(HOLE[side]), "CLAMPTOWHITE", "CLAMPTOWHITE"); c.hole:SetTexCoord(0, 1, top, bottom)
-        c.hole:ClearAllPoints(); c.hole:SetPoint(corner, host, corner, x * thickness, y * thickness); c.hole:SetSize(hole, hole)
+        -- The hole starts half a pixel further in than the straight edges, so the
+        -- curve keeps the rim's width along the diagonal (a 2px ring on a small
+        -- radius otherwise covers a single pixel at 45 degrees). The hole is a
+        -- mask, sampled per pixel, so the half-pixel offset stays crisp.
+        local edge = thickness + px / 2
+        local hole = math.max(px, radius - edge)
+        c.hole:SetTexture(Path(holeArt), "CLAMPTOWHITE", "CLAMPTOWHITE")
+        c.hole:ClearAllPoints(); c.hole:SetPoint(corner, host, corner, x * edge, y * edge); c.hole:SetSize(hole, hole)
         local reach = math.max(px, radius - inset)
-        mask:SetTexture(Path(CAP[side]), "CLAMPTOWHITE", "CLAMPTOWHITE"); mask:SetTexCoord(0, 1, top, bottom)
+        mask:SetTexture(Path(art), "CLAMPTOWHITE", "CLAMPTOWHITE")
         mask:ClearAllPoints(); mask:SetPoint(corner, host, corner, x * inset, y * inset); mask:SetSize(reach, reach)
     end
     for side, mask in pairs(border.ends) do Kit.PlaceEndMask(mask, host, side, radius, inset, true) end

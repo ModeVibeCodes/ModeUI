@@ -148,8 +148,11 @@ function M:ResetSettings(group)
     if group then
         if not self.auraDefaults[group] then return false end
         local live = self.db.auras[group]
+        -- A tracked group keeps its buffs.
+        local spells = live.spells
         for key in pairs(live) do live[key] = nil end
         for key, value in pairs(Copy(self.auraDefaults[group])) do live[key] = value end
+        if spells then live.spells = spells end
         return Changed(self)
     end
     local version = self.db.version
@@ -164,7 +167,8 @@ end
 function M:CopyAuraGroup(from, to)
     if not self:CanConfigure() or not self.auraDefaults[from] or not self.auraDefaults[to] or from == to then return false end
     local source, target = Copy(self.db.auras[from]), self.db.auras[to]
-    source.filter, source.show = target.filter, target.show
+    -- Which auras it shows, and a tracked group's buffs, stay its own.
+    source.filter, source.show, source.spells = target.filter, target.show, target.spells
     for key in pairs(target) do target[key] = nil end
     for key, value in pairs(source) do target[key] = value end
     return Changed(self)
