@@ -44,9 +44,9 @@ end
 function M:BuildShell(parent, name)
     local frame = CreateFrame("Frame", name, parent)
     frame:SetSize(240, 160)
-    frame.fill = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
-    frame.fill:SetTexture(FLAT)
-    -- ModeUI's border, as a rounded rectangle; it rounds what the window holds.
+    frame.fill = Kit.BoxFill(frame)
+    -- ModeUI's border, as a rounded rectangle; it rounds what the window holds
+    -- (each part takes the corners it reaches when painted).
     frame.border = Kit.ModeBoxBorder(frame)
     local header = CreateFrame("Button", nil, frame)
     header:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -60,7 +60,6 @@ function M:BuildShell(parent, name)
     frame.divider = frame:CreateTexture(nil, "BORDER")
     frame.divider:SetTexture(FLAT)
     frame.header = header
-    Kit.MaskToBoxBorder(frame.border, { frame.fill, header.bar:GetStatusBarTexture(), header.bar.sheen, frame.divider })
     frame.empty = Kit.Text(frame)
     frame.empty:SetWordWrap(true)
     frame.rows = {}
@@ -128,7 +127,12 @@ function M:PaintRow(row, frame, style, g, index)
     Kit.BarBackground(row.bar, style.barBackground)
     Kit.Tint(row.bar.bg, self.TRACK_COLOR, style.barBackgroundOpacity / 100)
     -- Rows near a corner round with the border.
-    Kit.MaskToBoxBorder(frame.border, { row.bar:GetStatusBarTexture(), row.bar.bg, row.bar.sheen, row.icon, row.iconBg })
+    local top = self.RowTop(g, index)
+    local bottom, right = g.height - top - g.rowH, g.width - g.left - g.rowW
+    Kit.MaskToBoxBorder(frame.border, { row.bar:GetStatusBarTexture(), row.bar.bg, row.bar.sheen },
+        { left = g.left + (iconed and g.icon + g.iconGap or 0), top = top, right = right, bottom = bottom })
+    Kit.MaskToBoxBorder(frame.border, { row.icon, row.iconBg },
+        { left = g.left, top = top, right = g.width - g.left - math.max(g.px, g.icon), bottom = bottom })
     local name, value = row.name, row.value
     value:ClearAllPoints(); value:SetPoint("RIGHT", row.bar, "RIGHT", -g.inset, 0); value:SetJustifyH("RIGHT")
     name:ClearAllPoints(); name:SetPoint("LEFT", row.bar, "LEFT", g.inset, 0)
@@ -144,10 +148,9 @@ function M:PaintShell(frame, style, rows)
     local g = self.Geometry(style, px, rows)
     frame.g, frame.style = g, style
     frame:SetSize(g.width, g.height)
-    -- The background reaches 1px under the rim, so no seam shows at its edge.
-    Kit.Inset(frame.fill, frame, math.max(0, g.border - px))
-    Kit.Tint(frame.fill, style.backgroundColor, style.backgroundOpacity / 100)
     Kit.LayoutModeBoxBorder(frame.border, frame, { px = px, radius = g.corner, level = frame:GetFrameLevel() + 8 })
+    -- The background reaches 1px under the rim, so no seam shows at its edge.
+    Kit.LayoutBoxFill(frame.fill, frame.border, frame, math.max(0, g.border - px), style.backgroundColor, style.backgroundOpacity / 100)
     local header = frame.header
     header:SetShown(style.header)
     header:ClearAllPoints()
@@ -158,6 +161,9 @@ function M:PaintShell(frame, style, rows)
     Kit.BarForeground(header.bar, style.headerTexture, math.max(px, g.header), px)
     local c = style.headerColor
     header.bar:SetStatusBarColor(c[1], c[2], c[3], style.headerOpacity / 100)
+    local below = g.height - g.border - g.header
+    Kit.MaskToBoxBorder(frame.border, { header.bar:GetStatusBarTexture(), header.bar.sheen },
+        { left = g.border, top = g.border, right = g.border, bottom = below })
     local divider = frame.divider
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -(g.border + g.header))
@@ -166,6 +172,7 @@ function M:PaintShell(frame, style, rows)
     -- A black hairline, like the one between a unit frame's health and power.
     Kit.Tint(divider, Kit.onyx.inner, 1)
     divider:SetShown(g.divider > 0)
+    Kit.MaskToBoxBorder(frame.border, { divider }, { left = g.border, top = g.border + g.header, right = g.border, bottom = below - px })
     local title, info = header.title, header.info
     info:ClearAllPoints(); info:SetPoint("RIGHT", header, "RIGHT", -g.inset, 0); info:SetJustifyH("RIGHT")
     title:ClearAllPoints(); title:SetPoint("LEFT", header, "LEFT", g.inset, 0)

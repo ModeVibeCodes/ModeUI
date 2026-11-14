@@ -137,9 +137,23 @@ world.run([==[
     assert(M.BORDER_COLOR == Kit.BORDER_COLOR and border.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and border.strips.TOP.height == 2, 'the standard rim, 2px')
     assert(w1.g.corner == Kit.CapDepth(24, 1) and border.radius == 6 and Point(border.strips.TOP)[4] == 6 and border.corners.TOPLEFT.cap.width == 6, 'round corners')
     assert(border.corners.BOTTOMRIGHT.cap.texCoord and border.corners.BOTTOMRIGHT.cap.texCoord[3] == 0.75, 'the cap art\'s own corner')
-    assert(row1.bar:GetStatusBarTexture().capMasks[border.masks.TOPLEFT] and w1.fill.capMasks[border.masks.BOTTOMRIGHT], 'content rounds with it')
+    -- Content rounds with it, taking only the corners it reaches: the client
+    -- holds at most 3 masks on a texture (the stubs error on a 4th, as it does).
+    local function Masks(region, ...)
+        local n = 0
+        for _ in pairs(region.capMasks or {}) do n = n + 1 end
+        if n ~= select('#', ...) then return false end
+        for i = 1, select('#', ...) do if not region.capMasks[select(i, ...)] then return false end end
+        return true
+    end
+    local m = border.masks
+    assert(Masks(w1.fill.top, m.TOPLEFT, m.TOPRIGHT) and Masks(w1.fill.middle) and Masks(w1.fill.bottom, m.BOTTOMLEFT, m.BOTTOMRIGHT), 'background in three bands')
+    assert(Point(w1.fill.top)[4] == 1 and w1.fill.top.height == 5 and Point(w1.fill.middle)[5] == -6 and w1.fill.bottom.height == 5, 'bands meet at the corner depth')
+    assert(Masks(w1.header.bar:GetStatusBarTexture(), m.TOPLEFT, m.TOPRIGHT) and Masks(w1.divider), 'the header rounds with the top corners')
+    local last = w1.rows[8]
+    assert(Masks(row1.bar:GetStatusBarTexture()) and Masks(last.bar:GetStatusBarTexture(), m.BOTTOMRIGHT) and Masks(last.icon, m.BOTTOMLEFT), 'the last row with the bottom corners')
     assert(border.edge:GetFrameLevel() > w1.header:GetFrameLevel(), 'drawn above what it holds')
-    assert(Point(w1.fill)[4] == 1 and w1.fill.vertexColor[4] == 0.75, 'background 1px under the rim; 75%')
+    assert(w1.fill.middle.vertexColor[4] == 0.75 and w1.fill.top.vertexColor[4] == 0.75, 'background 1px under the rim; 75%')
     assert(w1.divider:IsShown() and Point(w1.divider)[5] == -22 and w1.divider.vertexColor[1] == 0, 'a black hairline under the header')
 
     -- Header buttons: 16px glyphs, 2px apart, centered in the header; the timer left of them.
@@ -321,6 +335,13 @@ world.run([==[
     assert(M:SetOption('window1', 'barTexture', 'mode') and row1.bar.sheen:IsShown(), 'Mode Gradient')
     assert(M:SetOption('window1', 'header', false) and not w1.header:IsShown() and not w1.divider:IsShown() and Point(row1)[5] == -3, 'no header: rows start under the rim')
     assert(w1.g.corner == Kit.CapDepth(18 + 4, 1), 'a row stands in for the header')
+    assert(Masks(row1.icon, m.TOPLEFT) and Masks(row1.bar.bg, m.TOPRIGHT) and Masks(w1.rows[w1.g.rows].bar.bg, m.BOTTOMRIGHT), 'the first row takes the top corners')
+    -- One row, no padding and no icon: the bar reaches all four corners, so it
+    -- takes the rounded ends down each side instead.
+    assert(M:SetOption('window1', 'rows', 1) and M:SetOption('window1', 'padding', 0) and M:SetOption('window1', 'icon', 'none'))
+    assert(Masks(row1.bar:GetStatusBarTexture(), border.ends.LEFT, border.ends.RIGHT) and Masks(row1.bar.sheen, border.ends.LEFT, border.ends.RIGHT), 'a lone row rounds at both ends')
+    assert(M:SetOption('window1', 'rows', 10) and M:SetOption('window1', 'padding', 1) and M:SetOption('window1', 'icon', 'class'))
+    assert(Masks(row1.bar:GetStatusBarTexture(), m.TOPRIGHT), 'and back to its corners')
     assert(M:SetOption('window1', 'header', true) and M:SetOption('window1', 'icon', 'none') and not row1.icon:IsShown() and Point(row1.bar)[4] == 0, 'no icon: the bar fills the row')
     assert(M:SetOption('window1', 'clickThrough', true) and not row1.mouse and not w1.grip:IsShown(), 'Click Through')
     assert(M:SetOption('window1', 'clickThrough', false) and row1.mouse)

@@ -107,6 +107,22 @@ function Kit.AddMasks(regions, masks)
     end
 end
 
+-- Gives a region exactly these masks: adds the missing ones and removes the
+-- others it was given here. The client holds at most 3 masks on a texture.
+function Kit.SetMasks(region, masks)
+    if not (region and region.AddMaskTexture) then return end
+    assert(#masks <= 3, "ModeUI: a texture holds at most 3 masks.")
+    local wanted = {}
+    for _, mask in ipairs(masks) do wanted[mask] = true end
+    region.capMasks = region.capMasks or {}
+    for mask in pairs(region.capMasks) do
+        if not wanted[mask] then region.capMasks[mask] = nil; region:RemoveMaskTexture(mask) end
+    end
+    for _, mask in ipairs(masks) do
+        if not region.capMasks[mask] then region.capMasks[mask] = true; region:AddMaskTexture(mask) end
+    end
+end
+
 -- Hides every part of a ring (a box drawn without it).
 function Kit.HideCapRing(ring)
     ring.top:Hide(); ring.bottom:Hide()

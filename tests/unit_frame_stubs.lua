@@ -20,7 +20,17 @@
         self:SetText(string.format(pattern,...))
     end
     function methods:CreateMaskTexture() local m=self:CreateTexture(nil,'OVERLAY');m.kind='MaskTexture';return m end
-    function methods:AddMaskTexture(mask) self.mask=mask end
+    -- The client holds at most 3 masks on a texture and errors on a 4th.
+    function methods:AddMaskTexture(mask)
+        self.masks=self.masks or {}
+        assert(#self.masks<3,'Texture:AddMaskTexture(): Texture already has the maximum number of mask textures (3)')
+        self.masks[#self.masks+1]=mask;self.mask=mask
+    end
+    function methods:RemoveMaskTexture(mask)
+        local found
+        for i,held in ipairs(self.masks or {}) do if held==mask then found=i end end
+        assert(found,'removes its own mask');table.remove(self.masks,found);self.mask=self.masks[#self.masks]
+    end
     function methods:SetAtlas(atlas) self.atlas=atlas;self.texture=nil end
     local setTexture=methods.SetTexture
     function methods:SetTexture(path,...) self.atlas=nil;return setTexture(self,path,...) end

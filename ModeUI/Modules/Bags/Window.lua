@@ -57,8 +57,7 @@ function M:BuildWindow()
     frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:SetSize(400, 300)
-    frame.fill = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
-    frame.fill:SetTexture(FLAT)
+    frame.fill = Kit.BoxFill(frame)
     frame.border = Kit.ModeBoxBorder(frame)
     local header = CreateFrame("Button", nil, frame)
     header:RegisterForDrag("LeftButton")
@@ -72,7 +71,6 @@ function M:BuildWindow()
     frame.header = header
     frame.divider = frame:CreateTexture(nil, "BORDER")
     frame.divider:SetTexture(FLAT)
-    Kit.MaskToBoxBorder(frame.border, { frame.fill, header.bar:GetStatusBarTexture(), header.bar.sheen, frame.divider })
     self:BuildSearch(frame)
     frame.freeText, frame.moneyText = Kit.Text(frame), Kit.Text(frame)
     frame.labels = {}
@@ -147,10 +145,9 @@ function M:PaintWindow()
     local frame, db = self.frame, self.db
     frame:SetScale(db.scale / 100)
     local g = self:Geometry()
-    Kit.Inset(frame.fill, frame, math.max(0, g.border - g.px))
-    Kit.Tint(frame.fill, db.backgroundColor, db.backgroundOpacity / 100)
     Kit.LayoutModeBoxBorder(frame.border, frame, { px = g.px, radius = db.corner * g.px, color = db.borderColor,
         level = frame:GetFrameLevel() + 30 })
+    Kit.LayoutBoxFill(frame.fill, frame.border, frame, math.max(0, g.border - g.px), db.backgroundColor, db.backgroundOpacity / 100)
     local header, path = frame.header, Kit.FontPath(db, self.id)
     header:ClearAllPoints()
     header:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -g.border)
@@ -158,12 +155,17 @@ function M:PaintWindow()
     header:SetHeight(math.max(g.px, g.header))
     Kit.ModeGradient(header.bar, math.max(g.px, g.header), g.px)
     header.bar:SetStatusBarColor(db.headerColor[1], db.headerColor[2], db.headerColor[3], 1)
+    -- The header and divider round with the top corners; the bags always sit
+    -- below them, away from the bottom ones.
+    Kit.MaskToBoxBorder(frame.border, { header.bar:GetStatusBarTexture(), header.bar.sheen },
+        { left = g.border, top = g.border, right = g.border, bottom = math.huge })
     local divider = frame.divider
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -(g.border + g.header))
     divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -(g.border + g.header))
     divider:SetHeight(g.px)
     Kit.Tint(divider, Kit.onyx.inner, 1)
+    Kit.MaskToBoxBorder(frame.border, { divider }, { left = g.border, top = g.border + g.header, right = g.border, bottom = math.huge })
     local look = { font = db.font, fontMedia = db.fontMedia, outline = false, shadow = true, textColor = { 1, 1, 1 } }
     Kit.Font(header.title, look, db.titleSize, path, g.px)
     header.title:ClearAllPoints(); header.title:SetPoint("LEFT", header, "LEFT", g.inset, 0)

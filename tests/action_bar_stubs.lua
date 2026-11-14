@@ -7,7 +7,6 @@
     end
     function methods:IsMouseOver() return self.mouseOver == true end
     function methods:GetAttribute(key) return self.attributes and self.attributes[key] end
-    function methods:RemoveMaskTexture(mask) assert(self.mask == mask, 'removes its own mask'); self.mask = nil end
     function methods:GetTexture() return self.texture end
     function methods:GetCooldownTimes() return (self.realStart or 0) * 1000, (self.realDuration or 0) * 1000 end
     function methods:GetCountdownFontString()

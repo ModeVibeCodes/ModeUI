@@ -57,6 +57,9 @@ function Kit.MaskToBorder(border, regions) Kit.AddMasks(regions, { border.masks.
 -- bottom quarters of Mode/CapLeft and CapRight are quarter circles, hollowed
 -- by the same quarter of the cap's hole mask, so they match the bar ends.
 -- `border.masks` (one per corner) round the content 1 pixel under the rim.
+-- The client holds at most 3 masks on a texture, so content only takes the
+-- corners it reaches (Kit.MaskToBoxBorder), and the background is three
+-- bands (Kit.BoxFill): top and bottom rounded, the middle plain.
 local CORNERS = { TOPLEFT = { "LEFT", 0, 0.25, 1, -1 }, TOPRIGHT = { "RIGHT", 0, 0.25, -1, -1 },
     BOTTOMLEFT = { "LEFT", 0.75, 1, 1, 1 }, BOTTOMRIGHT = { "RIGHT", 0.75, 1, -1, 1 } }
 local CAP = { LEFT = "ModeCapLeft", RIGHT = "ModeCapRight" }
@@ -78,6 +81,8 @@ function Kit.ModeBoxBorder(host)
         border.corners[corner] = { cap = cap, hole = hole }
         border.masks[corner] = host:CreateMaskTexture()
     end
+    -- For content reaching all four corners: a rounded end down each side.
+    border.ends = { LEFT = Kit.EndMask(host), RIGHT = Kit.EndMask(host) }
     return border
 end
 
@@ -109,13 +114,55 @@ function Kit.LayoutModeBoxBorder(border, host, options)
         mask:SetTexture(Path(CAP[side]), "CLAMPTOWHITE", "CLAMPTOWHITE"); mask:SetTexCoord(0, 1, top, bottom)
         mask:ClearAllPoints(); mask:SetPoint(corner, host, corner, x * inset, y * inset); mask:SetSize(reach, reach)
     end
+    for side, mask in pairs(border.ends) do Kit.PlaceEndMask(mask, host, side, radius, inset, true) end
     border.edge:SetFrameLevel(options.level or host:GetFrameLevel() + 2)
-    border.radius, border.thickness = radius, thickness
+    border.radius, border.thickness, border.inset = radius, thickness, inset
     return radius, thickness
 end
 
--- Rounds content regions to a box border's corners.
-function Kit.MaskToBoxBorder(border, regions)
-    local m = border.masks
-    Kit.AddMasks(regions, { m.TOPLEFT, m.TOPRIGHT, m.BOTTOMLEFT, m.BOTTOMRIGHT })
+-- Rounds content regions to the corners they reach; call after the layout.
+-- `edges` = { left, top, right, bottom }: how far in from each of the host's
+-- edges the regions sit. Content reaching all four corners (a lone row as
+-- tall as the box) takes the two side ends instead: their corners are as
+-- wide as the radius and a quarter of the box's height tall, so on a box at
+-- least four corners tall they round at least as far as the rim.
+function Kit.MaskToBoxBorder(border, regions, edges)
+    local r, masks = border.radius, {}
+    for corner, spec in pairs(CORNERS) do
+        local h, v = spec[1] == "LEFT" and edges.left or edges.right, spec[2] == 0 and edges.top or edges.bottom
+        if h < r and v < r then masks[#masks + 1] = border.masks[corner] end
+    end
+    if #masks == 4 then masks = { border.ends.LEFT, border.ends.RIGHT } end
+    for _, region in ipairs(regions) do Kit.SetMasks(region, masks) end
+end
+
+-- A box's background: three flat bands on the host's BACKGROUND layer.
+function Kit.BoxFill(host, sublevel)
+    local fill = {}
+    for _, band in ipairs({ "top", "middle", "bottom" }) do
+        fill[band] = host:CreateTexture(nil, "BACKGROUND", nil, sublevel or -8)
+        fill[band]:SetTexture(Kit.FLAT)
+    end
+    return fill
+end
+
+-- Lays the background `inset` units inside the host (after the border's
+-- layout): the top and bottom bands are as deep as the corners and rounded
+-- by them, the middle fills between. The bands meet on whole pixels, so the
+-- background shows no seam at any opacity.
+function Kit.LayoutBoxFill(fill, border, host, inset, color, alpha)
+    local r, m = border.radius, border.masks
+    local band = math.max(0, r - inset)
+    for _, texture in pairs(fill) do texture:ClearAllPoints(); Kit.Tint(texture, color, alpha) end
+    fill.top:SetPoint("TOPLEFT", host, "TOPLEFT", inset, -inset)
+    fill.top:SetPoint("TOPRIGHT", host, "TOPRIGHT", -inset, -inset)
+    fill.top:SetHeight(band)
+    fill.middle:SetPoint("TOPLEFT", host, "TOPLEFT", inset, -r)
+    fill.middle:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -inset, r)
+    fill.bottom:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", inset, inset)
+    fill.bottom:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -inset, inset)
+    fill.bottom:SetHeight(band)
+    Kit.SetMasks(fill.top, { m.TOPLEFT, m.TOPRIGHT })
+    Kit.SetMasks(fill.middle, {})
+    Kit.SetMasks(fill.bottom, { m.BOTTOMLEFT, m.BOTTOMRIGHT })
 end
