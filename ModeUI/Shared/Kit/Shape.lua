@@ -156,3 +156,53 @@ function Kit.ModeGradient(bar, barHeight, px)
     Kit.Gradient(bar.sheen, { 1, 1, 1, 0.12 }, { 1, 1, 1, 0 }, 0.06)
     bar.sheen:Show()
 end
+
+-- A status bar's fill in any texture choice, Mode Slate Hatch included (for
+-- shields and overshields). The hatch has to tile one texel per screen pixel,
+-- which a status bar's own fill can't do (it stretches its texture to the
+-- value). So the bar's fill stays invisible and only drives a clipping frame
+-- that follows it, and a full-size hatch texture inside shows just where the
+-- bar is filled, with crisp lines at any value, secret ones included.
+-- `bar` comes from Kit.Bar; width, height and px are in the bar's units.
+-- Returns the region that shows the fill, for the caller's masks.
+function Kit.FillTexture(bar, choice, width, height, px, color, alpha)
+    if choice ~= "slateHatch" then
+        if bar.hatchClip then bar.hatchClip:Hide() end
+        if choice == "slate" then
+            bar:SetStatusBarTexture(Kit.FLAT)
+            if bar.sheen then bar.sheen:Hide() end
+        else Kit.BarForeground(bar, choice, height, px) end
+        bar:SetStatusBarColor(color[1], color[2], color[3], alpha)
+        return bar:GetStatusBarTexture()
+    end
+    bar:SetStatusBarTexture(Kit.FLAT)
+    bar:SetStatusBarColor(color[1], color[2], color[3], 0)
+    if bar.sheen then bar.sheen:Hide() end
+    local fill = bar:GetStatusBarTexture()
+    if not bar.hatchClip then
+        bar.hatchClip = CreateFrame("Frame", nil, bar)
+        bar.hatchClip:SetClipsChildren(true)
+        bar.hatch = bar.hatchClip:CreateTexture(nil, "ARTWORK")
+    end
+    local clip, hatch = bar.hatchClip, bar.hatch
+    clip:ClearAllPoints()
+    clip:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0); clip:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+    hatch:ClearAllPoints()
+    hatch:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0); hatch:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    local path = addon.Media:GetTexture("ModeSlateHatch")
+    if not path or hatch:SetTexture(path, "REPEAT", "REPEAT", "NEAREST") == false then hatch:SetTexture(Kit.FLAT) end
+    hatch:SetTexCoord(0, width / (4 * px), 0, height / (4 * px))
+    Kit.Tint(hatch, color, alpha)
+    clip:Show()
+    return hatch
+end
+-- Fill choices for such bars: every foreground and background texture.
+function Kit.ValidFillTexture(value) return Kit.ValidBarTexture(value, true) or Kit.ValidBarTexture(value, false) end
+function Kit.FillTextureChoices()
+    local list = { { id = "slateHatch", label = "Mode Slate Hatch" }, { id = "mode", label = "Mode Gradient" },
+        { id = "flat", label = "Flat" }, { id = "slate", label = "Mode Slate" } }
+    for _, choice in ipairs(addon.Media:GetStatusBars()) do
+        if choice.key ~= "default" then list[#list + 1] = { id = choice.key, label = choice.label } end
+    end
+    return list
+end

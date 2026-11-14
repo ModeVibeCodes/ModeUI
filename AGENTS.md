@@ -10,8 +10,9 @@
   Lato as fallback).
 - Every border is the ModeUI border (`Kit.ModeBorder`, `Shared/Kit/Border.lua`):
   one crisp 2px rim in `Kit.BORDER_COLOR`, rounded-rectangle ends, drawn above
-  the content it holds, with no glow or second line. Round elements use the
-  same color and thickness. Don't add other border styles.
+  the content it holds, with no glow or second line. Its Thin variant (1px,
+  `thickness` in the layouts, `Kit.BORDER_CHOICES`) is the only other width.
+  Round elements use the same color and thickness. Don't add other border styles.
 - Preserve functionality, appearance, settings and saved-variable keys unless
   the user asks for a specific change. Never reset `ModeUIDB`; migrate instead.
 - Read the relevant source before editing, and implement one focused feature at a time.

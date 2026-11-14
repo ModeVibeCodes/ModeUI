@@ -3,10 +3,11 @@ local M = addon.PartyFrames
 if not M then return end
 
 -- Pixel-perfect geometry and the placement of every region of a member.
--- Every size is whole physical pixels: the ModeUI border's 2px rim, the 1px
--- hairline between health and power, and an even frame size so its centre
--- stays on the grid. Elements sit at an anchor inside the bars, or outside
--- past the bars' edge on that side.
+-- Every size is whole physical pixels: the border's rim (2px Mode, 1px Thin),
+-- the 1px hairline between health and power, and an even frame size so its
+-- centre stays on the grid. The border is the box form of the ModeUI border
+-- (corners Corner Size pixels deep), and content is rounded by the corners it
+-- reaches (Kit.MaskToBoxBorder: never more than three masks on a texture).
 local Kit = addon.Kit
 
 local function Horizontal(anchor) return anchor:find("LEFT") and "LEFT" or anchor:find("RIGHT") and "RIGHT" or "" end
@@ -18,22 +19,28 @@ function M:Geometry(px)
     local db, p = self.db, px or 1
     local function Snap(v) return math.max(p, math.floor(v / p + 0.5) * p) end
     local function Even(v) return math.floor(v / (2 * p) + 0.5) * 2 * p end
-    local g = { px = p, border = Kit.BORDER_PIXELS * p, line = p }
+    local g = { px = p, border = Kit.BorderPixels(db.borderStyle) * p, line = p, thickness = Kit.BorderPixels(db.borderStyle) }
     g.healthHeight, g.powerHeight = Snap(db.healthHeight), Snap(db.powerHeight)
-    g.withPower = db.powerShown ~= "none"
-    local bars = g.healthHeight + (g.withPower and g.line + g.powerHeight or 0)
+    -- Below Health takes a row under the health bar; Inset sits on it.
+    g.powerRow = db.powerShown ~= "none" and db.powerStyle == "below"
+    local bars = g.healthHeight + (g.powerRow and g.line + g.powerHeight or 0)
     g.height = math.max(4 * p, Even(bars + 2 * g.border))
     g.width = math.max(4 * p, Even(db.width))
     g.innerWidth, g.innerHeight = g.width - 2 * g.border, g.height - 2 * g.border
     -- Any odd pixel left by Even goes to the health bar.
-    g.healthHeight = g.innerHeight - (g.withPower and g.line + g.powerHeight or 0)
+    g.healthHeight = g.innerHeight - (g.powerRow and g.line + g.powerHeight or 0)
+    g.radius = db.corner * p
     return g
 end
 
--- Whether a member shows its power bar: everyone, healers only, or no one.
+-- Whether a member shows its power bar: everyone, healers, mana users,
+-- healers with mana, or no one. Roles and power types come from the game
+-- (UnitPowerType documents no secret returns).
 function M:ShowsPower(f)
     local shown = self.db.powerShown
     if shown == "healers" then return f.role == "HEALER" end
+    if shown == "mana" then return f.powerToken == "MANA" end
+    if shown == "healerMana" then return f.role == "HEALER" and f.powerToken == "MANA" end
     return shown == "all"
 end
 
@@ -48,27 +55,20 @@ function M:ApplyLayout(f)
     if not f.secure then f:SetSize(g.width, g.height) end
     local panel = f.panel
     local level = panel:GetFrameLevel()
-    Kit.LayoutModeBorder(panel.border, panel, { px = g.px, height = g.height, level = level + 2 })
-    f.masks = { panel.border.masks.LEFT, panel.border.masks.RIGHT }
+    Kit.LayoutModeBoxBorder(panel.border, panel, { px = g.px, radius = g.radius, thickness = g.thickness, level = level + 2 })
     local reverse = db.fillDirection == "reverse"
-    for _, look in ipairs({ { f.health, db.foregroundTexture, db.backgroundTexture, db.backgroundOpacity },
-        { f.power, db.powerForegroundTexture, db.powerBackgroundTexture, db.backgroundOpacity } }) do
+    for _, look in ipairs({ { f.health, db.foregroundTexture, db.backgroundTexture, g.healthHeight },
+        { f.power, db.powerForegroundTexture, db.powerBackgroundTexture, g.powerHeight } }) do
         local bar = look[1]
         bar:SetFrameLevel(level + 1)
         if bar.SetReverseFill then bar:SetReverseFill(reverse) end
-        Kit.BarBackground(bar, look[3], g.innerWidth, g.healthHeight, g.px)
-        Kit.Tint(bar.bg, Kit.BarBackgroundColor(look[3]), look[4] / 100)
+        Kit.BarBackground(bar, look[3], g.innerWidth, look[4], g.px)
+        Kit.Tint(bar.bg, Kit.BarBackgroundColor(look[3]), db.backgroundOpacity / 100)
         bar.foregroundChoice = look[2]
     end
     panel.hairline:SetTexture(Kit.FLAT); Kit.Tint(panel.hairline, Kit.onyx.inner, 1)
-    -- Incoming heals and absorbs: fill textures colored by the settings.
-    for _, rider in ipairs({ { f.healPrediction, db.healPredictionColor, db.healPredictionOpacity },
-        { f.absorb, db.absorbColor, db.absorbOpacity } }) do
-        local bar = rider[1]
-        bar:SetStatusBarTexture(Kit.FLAT)
-        bar:SetStatusBarColor(rider[2][1], rider[2][2], rider[2][3], rider[3] / 100)
-        if bar.SetReverseFill then bar:SetReverseFill(reverse) end
-    end
+    -- Overshields fill back from full health: the other way from the health.
+    f.healPrediction:SetReverseFill(reverse); f.absorb:SetReverseFill(reverse); f.overshield:SetReverseFill(not reverse)
     if f.health.SetClipsChildren then f.health:SetClipsChildren(true) end
     f.glowLayer:SetFrameLevel(level + 3)
     f.textLayer:SetFrameLevel(level + 4)
@@ -79,57 +79,85 @@ function M:ApplyLayout(f)
     self:LayoutAuras(f)
 end
 
--- Health and power for this member: without a power bar (healers only, and
--- this member isn't one) the health bar takes the whole height. Plain child
--- frames, so this may run in combat when a member's role changes.
+-- Health and power for this member. Below Health: power in a row under the
+-- health (without one, the health takes the whole height). Inset: power sits
+-- on the health bar, Power Width wide, at Power Alignment and its offset, in a
+-- border of its own. Plain child frames, so this may run in combat when a
+-- member's role or power type changes.
 function M:LayoutBars(f)
     local g, db = f.geometry, self.db
     if not g then return end
-    local power = g.withPower and self:ShowsPower(f)
+    local px, b = g.px, g.border
+    local power = self:ShowsPower(f)
     f.hasPower = power
-    local healthHeight = power and g.healthHeight or g.innerHeight
+    local row = g.powerRow and power
+    local healthHeight = row and g.healthHeight or g.innerHeight
     local h, pw = f.health, f.power
     h:ClearAllPoints()
-    h:SetPoint("TOPLEFT", f.panel, "TOPLEFT", g.border, -g.border)
-    h:SetPoint("TOPRIGHT", f.panel, "TOPRIGHT", -g.border, -g.border)
+    h:SetPoint("TOPLEFT", f.panel, "TOPLEFT", b, -b); h:SetPoint("TOPRIGHT", f.panel, "TOPRIGHT", -b, -b)
     h:SetHeight(healthHeight)
     pw:ClearAllPoints()
-    pw:SetPoint("BOTTOMLEFT", f.panel, "BOTTOMLEFT", g.border, g.border)
-    pw:SetPoint("BOTTOMRIGHT", f.panel, "BOTTOMRIGHT", -g.border, g.border)
-    pw:SetHeight(g.powerHeight)
+    local inset = db.powerStyle == "inset"
+    if inset then
+        local width = math.max(4 * px, math.floor(g.innerWidth * db.powerWidth / 100 / px + 0.5) * px)
+        local align = db.powerAlign
+        local x = (align == "LEFT" and b or align == "RIGHT" and -b or 0) + math.floor(db.powerX + 0.5) * px
+        pw:SetPoint("BOTTOM" .. (align == "CENTER" and "" or align), f.panel, "BOTTOM" .. (align == "CENTER" and "" or align),
+            x, b + math.floor(db.powerY + 0.5) * px)
+        pw:SetSize(width, g.powerHeight)
+        pw:SetFrameLevel(f.panel:GetFrameLevel() + 2)
+        Kit.LayoutModeBoxBorder(f.powerBorder, pw, { px = px, radius = 2 * px, thickness = g.thickness, level = pw:GetFrameLevel() + 1 })
+    else
+        pw:SetPoint("BOTTOMLEFT", f.panel, "BOTTOMLEFT", b, b); pw:SetPoint("BOTTOMRIGHT", f.panel, "BOTTOMRIGHT", -b, b)
+        pw:SetHeight(g.powerHeight)
+        pw:SetFrameLevel(f.panel:GetFrameLevel() + 1)
+    end
+    self.ShowBorder(f.powerBorder, inset and power)
     pw:SetShown(power)
     local line = f.panel.hairline
     line:ClearAllPoints(); line:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, 0); line:SetPoint("BOTTOMRIGHT", pw, "TOPRIGHT", 0, 0)
-    line:SetShown(power)
-    Kit.BarForeground(h, h.foregroundChoice, healthHeight, g.px)
-    Kit.BarForeground(pw, pw.foregroundChoice, g.powerHeight, g.px)
+    line:SetShown(row and true or false)
+    Kit.BarForeground(h, h.foregroundChoice, healthHeight, px)
+    Kit.BarForeground(pw, pw.foregroundChoice, g.powerHeight, px)
     local reverse = db.fillDirection == "reverse"
-    Kit.FillEdge(h, db.fillEdge, reverse, g.px)
-    -- Heals ride on the health fill's end, absorbs on the heals' end; each
-    -- spans the whole bar, so its value draws at the right length.
+    Kit.FillEdge(h, db.fillEdge, reverse, px)
+    -- Heals ride on the health fill's end, shields on the heals' end; each
+    -- spans the whole bar, so its value draws at the right length. The
+    -- overshield spans the bar and fills from its far end.
     local near, far = reverse and "RIGHT" or "LEFT", reverse and "LEFT" or "RIGHT"
-    local hp, ab = f.healPrediction, f.absorb
-    hp:ClearAllPoints()
-    hp:SetPoint("TOP" .. near, h:GetStatusBarTexture(), "TOP" .. far, 0, 0); hp:SetPoint("BOTTOM" .. near, h:GetStatusBarTexture(), "BOTTOM" .. far, 0, 0)
-    hp:SetWidth(g.innerWidth)
-    ab:ClearAllPoints()
-    ab:SetPoint("TOP" .. near, hp:GetStatusBarTexture(), "TOP" .. far, 0, 0); ab:SetPoint("BOTTOM" .. near, hp:GetStatusBarTexture(), "BOTTOM" .. far, 0, 0)
-    ab:SetWidth(g.innerWidth)
-    Kit.AddMasks({ h:GetStatusBarTexture(), h.bg, h.sheen, h.fillEdge, pw:GetStatusBarTexture(), pw.bg, pw.sheen, line,
-        hp:GetStatusBarTexture(), ab:GetStatusBarTexture() }, f.masks)
+    local hp, ab, over = f.healPrediction, f.absorb, f.overshield
+    local function Ride(bar, on)
+        local fill = on:GetStatusBarTexture()
+        bar:ClearAllPoints()
+        bar:SetPoint("TOP" .. near, fill, "TOP" .. far, 0, 0); bar:SetPoint("BOTTOM" .. near, fill, "BOTTOM" .. far, 0, 0)
+        bar:SetWidth(g.innerWidth)
+    end
+    Ride(hp, h); Ride(ab, hp)
+    over:ClearAllPoints(); over:SetAllPoints(h)
+    local regions = { h:GetStatusBarTexture(), h.bg, h.sheen, h.fillEdge,
+        Kit.FillTexture(hp, db.healTexture, g.innerWidth, healthHeight, px, db.healPredictionColor, db.healPredictionOpacity / 100),
+        Kit.FillTexture(ab, db.shieldTexture, g.innerWidth, healthHeight, px, db.absorbColor, db.absorbOpacity / 100),
+        Kit.FillTexture(over, db.overshieldTexture, g.innerWidth, healthHeight, px, db.overshieldColor, db.overshieldOpacity / 100),
+        f.targetFill, f.hover, f.dispel.health, f.dispel.gradient }
+    f.healthRegions = regions
+    local bottom = row and (g.powerHeight + g.line + b) or b
+    f.healthEdges = { left = b, top = b, right = b, bottom = bottom }
+    Kit.MaskToBoxBorder(f.panel.border, regions, f.healthEdges)
+    local powerRegions = { pw:GetStatusBarTexture(), pw.bg, pw.sheen }
+    if inset then Kit.MaskToBoxBorder(f.powerBorder, powerRegions, { left = 0, top = 0, right = 0, bottom = 0 })
+    else Kit.MaskToBoxBorder(f.panel.border, powerRegions, { left = b, top = b + healthHeight + g.line, right = b, bottom = b }) end
+    Kit.MaskToBoxBorder(f.panel.border, { line }, { left = b, top = b + healthHeight, right = b, bottom = b + g.powerHeight })
+    self:LayoutDispel(f)
 end
 
--- Target, dispel and mouse highlights: the border shape again in their color
--- (Border), or a soft tint over the bars (Tint), rounded like the bars.
+-- Target and mouse highlights: the border again in the highlight color
+-- (Border), or a soft tint over the health bar (Tint).
 function M:LayoutHighlights(f)
     local g, db = f.geometry, self.db
-    local depth = Kit.CapDepth(g.height, g.px)
-    local both = { LEFT = true, RIGHT = true }
-    Kit.PlaceCapRing(f.targetRing, f.glowLayer, 0, g.border, db.targetColor, depth, both)
-    Kit.PlaceCapRing(f.dispelRing, f.glowLayer, 0, g.border, Kit.BORDER_COLOR, depth, both)
-    for _, fill in ipairs({ f.targetFill, f.dispelFill, f.hover }) do
-        Kit.Inset(fill, f.glowLayer, g.border)
-        Kit.AddMasks({ fill }, f.masks)
+    Kit.LayoutModeBoxBorder(f.targetRing, f.glowLayer, { px = g.px, radius = g.radius, thickness = g.thickness,
+        color = db.targetColor, level = f.glowLayer:GetFrameLevel() + 1 })
+    for _, fill in ipairs({ f.targetFill, f.hover }) do
+        fill:ClearAllPoints(); fill:SetAllPoints(f.health)
     end
     Kit.Tint(f.targetFill, db.targetColor, 0.18)
     Kit.Tint(f.hover, { 1, 1, 1 }, 0.08)
@@ -166,18 +194,17 @@ function M:LayoutElements(f)
     local path = Kit.FontPath(db, self.id)
     f.fontPath = path
     for element, text in pairs(f.texts) do
-        local key = element
-        local size, anchor = db[key .. "Size"], db[key .. "Anchor"]
+        local size, anchor = db[element .. "Size"], db[element .. "Anchor"]
         local h = Horizontal(anchor)
         local justify = h == "" and "CENTER" or h
-        self:PlaceAt(f, text, anchor, db[key .. "Place"], db[key .. "X"], db[key .. "Y"])
+        self:PlaceAt(f, text, anchor, db[element .. "Place"], db[element .. "X"], db[element .. "Y"])
         -- Widths come from settings, never from measuring (names can be secret).
         local share = element == "name" and db.nameWidth / 100 or 1
         text:SetWidth(math.max(px, math.floor(g.innerWidth * share / px) * px - 2 * px))
         Kit.Font(text, db, size, path, px)
         text:SetJustifyH(justify)
-        Kit.LayoutLift(text, db, size, path, px, db[key .. "Show"], justify)
-        text:SetShown(db[key .. "Show"] and true or false)
+        Kit.LayoutLift(text, db, size, path, px, db[element .. "Show"], justify)
+        text:SetShown(db[element .. "Show"] and true or false)
     end
     for element, icon in pairs(f.icons) do
         local size = math.max(px, math.floor(db[element .. "Size"] / px + 0.5) * px)

@@ -132,6 +132,15 @@ function M:SetElementOption(element, key, value)
     return self:SetOption(element .. key:sub(1, 1):upper() .. key:sub(2), value)
 end
 function M:SetAuraOption(group, key, value) return self.auraDefaults[group] ~= nil and self:SetOption(key, value, group) end
+-- One debuff effect of one dispel type: border, health or gradient on or off.
+function M:SetDispelEffect(kind, key, value)
+    if not self:CanConfigure() or not self.defaults.dispel[kind] or self.defaults.dispel[kind][key] == nil then return false end
+    local candidate = Copy(self.db)
+    candidate.dispel[kind][key] = value
+    if not pcall(self.Initialize, candidate) then return false end
+    self.db.dispel[kind][key] = value
+    return Changed(self)
+end
 
 -- Back to defaults: everything, or one aura group.
 function M:ResetSettings(group)

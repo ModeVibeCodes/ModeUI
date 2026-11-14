@@ -2,16 +2,16 @@ local _, addon = ...
 local M = addon.PartyFrames
 if not M then return end
 
--- The aura manager on each member. Each group (buffs, debuffs, dispellable,
--- defensives, crowd control) shows the auras of its filters, at its anchor:
--- inside the bars at that point, or outside past their edge, growing Right,
--- Left, Up or Down and wrapping after Per Row. In the world, Blizzard's aura
+-- The aura manager on each member. Each group (healing buffs, group buffs,
+-- defensives, one per debuff type, other debuffs, crowd control) shows the
+-- auras of its filters at its anchor: inside the bars at that point, or
+-- outside past their edge, growing Right, Left, Up or Down and wrapping after
+-- Per Row. Groups on the same anchor and place continue in one row, in group
+-- order, placed and grown by the first shown one. In the world, Blizzard's aura
 -- containers draw them (AuraContainers.lua), so they keep working while auras
 -- are secret; clients without containers and the settings preview use the
 -- reader here (Domain.Auras), which needs readable auras.
 local Kit, Auras = addon.Kit, addon.Domain.Auras
-M.CROP_PIXELS = 4 -- cropped icons are this many pixels wider than tall
-M.HELPFUL = { buffs = true, defensives = true }
 
 function M:GroupFilters(group, choice)
     for _, item in ipairs(self.auraFilters[group]) do if item.id == choice then return item.filters end end
@@ -20,11 +20,27 @@ end
 
 -- Icon width and height in whole pixels.
 function M:AuraSize(adb, px)
-    local width = math.max(px, math.floor(adb.size / px + 0.5) * px)
-    return width, adb.shape == "cropped" and math.max(px, width - self.CROP_PIXELS * px) or width
+    local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
+    return Snap(adb.width), Snap(adb.height)
 end
 
--- Where a group's first icon sits and which way the rest go. Returns the
+-- The groups sharing each anchor and place, in group order:
+-- buckets[key] = { group, ... }, order = { key, ... }; and each bucket's lead
+-- (the first shown group, which places and grows the row).
+function M:AuraBuckets()
+    local buckets, order, lead = {}, {}, {}
+    for _, group in ipairs(self.auraGroups) do
+        local adb = self.db.auras[group]
+        local key = adb.anchor .. "|" .. (adb.anchor == "CENTER" and "inside" or adb.place)
+        if not buckets[key] then buckets[key] = {}; order[#order + 1] = key end
+        table.insert(buckets[key], group)
+        if adb.show and not lead[key] then lead[key] = group end
+    end
+    for key, groups in pairs(buckets) do lead[key] = lead[key] or groups[1] end
+    return buckets, order, lead
+end
+
+-- Where a row's first icon sits and which way the rest go. Returns the
 -- icons' corner, the point on the bars it joins, the offset, whether rows
 -- run across, and the step directions along a row (dx) and between rows (dy).
 function M:AuraPlacement(f, adb, width, height)
@@ -64,19 +80,36 @@ function M:AuraPlacement(f, adb, width, height)
 end
 
 -- A per-group style for Kit.LayoutAuraIcon: the module's text settings plus
--- the group's own timer text.
+-- the group's own border size (0 without a border) and timer text.
 function M:AuraStyle(adb)
     local db = self.db
-    return setmetatable({ auraTimerText = adb.timerText, auraBorderSize = 1, auraCorners = "sharp",
-        auraTimerColor = db.auraTimerColor }, { __index = db })
+    return setmetatable({ auraTimerText = adb.timerText, auraBorderSize = adb.border == "none" and 0 or adb.borderSize,
+        auraCorners = "sharp", auraTimerColor = db.auraTimerColor }, { __index = db })
 end
 
--- The rim color: the dispel type's color with By Type borders, else the Mode rim.
-function M:AuraRimColor(adb, dispelType)
-    local db = self.db
-    if adb.border ~= "type" then return Kit.BORDER_COLOR end
+-- A dispel type's color (no type and Enrage take the No Type color).
+function M:TypeColor(dispelType)
     local key = dispelType and self.dispelColorKeys[dispelType]
-    return key and db[key] or db.auraNoTypeColor
+    return key and self.db[key] or self.db.auraNoTypeColor
+end
+-- The rim: by type, the Mode rim, the group's own color, or none (nil).
+function M:AuraRimColor(adb, dispelType)
+    if adb.border == "type" then return self:TypeColor(dispelType) end
+    if adb.border == "custom" then return adb.borderColor end
+    if adb.border == "mode" then return Kit.BORDER_COLOR end
+end
+-- The glow: off (nil), by type, or the group's own color.
+function M:AuraGlowColor(adb, dispelType)
+    if adb.glow == "none" then return nil end
+    return adb.glowColor == "custom" and adb.glowCustomColor or self:TypeColor(dispelType)
+end
+
+-- Paints an icon's rim and glow (reader path and samples).
+function M:PaintAuraLook(icon, adb, dispelType)
+    local rim = self:AuraRimColor(adb, dispelType)
+    icon.rim:SetShown(rim ~= nil)
+    if rim then Kit.TintAuraRim(icon, rim) end
+    Kit.GlowAura(icon, self:AuraGlowColor(adb, dispelType), adb.glow)
 end
 
 local TOOLTIP = { [true] = "SetUnitBuffByAuraInstanceID", [false] = "SetUnitDebuffByAuraInstanceID" }
@@ -102,25 +135,38 @@ function M:ReaderIcon(f, group, index)
     return pool[index]
 end
 
--- Sizes and places a group's reader icons.
-function M:LayoutReaderGroup(f, group)
-    local adb, g = self.db.auras[group], f.geometry
+-- Sizes and places every shown reader icon, row by row: the groups of one
+-- anchor continue where the previous one stopped.
+function M:LayoutReader(f)
+    local g = f.geometry
     if not g then return end
-    local width, height = self:AuraSize(adb, g.px)
-    local corner, point, x, y, across, dx, dy = self:AuraPlacement(f, adb, width, height)
-    local spacing, style = adb.spacing * g.px, self:AuraStyle(adb)
-    for index = 1, f.auraShown[group] do
-        local icon = f.auraIcons[group][index]
-        Kit.LayoutAuraIcon(icon, width, height, g.px, style, f.fontPath)
-        -- Icons take the mouse only for tooltips; clicks fall through to the member.
-        if icon.SetMouseMotionEnabled and icon.SetMouseClickEnabled then
-            icon:SetMouseMotionEnabled(adb.tooltip); icon:SetMouseClickEnabled(false)
-        else icon:EnableMouse(adb.tooltip) end
-        local step, line = (index - 1) % adb.perRow, math.floor((index - 1) / adb.perRow)
-        local ox = across and step * (width + spacing) or line * (width + spacing)
-        local oy = across and line * (height + spacing) or step * (height + spacing)
-        icon:ClearAllPoints()
-        icon:SetPoint(corner, f.panel, point, x + dx * ox, y + dy * oy)
+    local buckets, order, lead = self:AuraBuckets()
+    for _, key in ipairs(order) do
+        local first = self.db.auras[lead[key]]
+        local fw, fh = self:AuraSize(first, g.px)
+        local corner, point, x, y, across, dx, dy = self:AuraPlacement(f, first, fw, fh)
+        local spacing = first.spacing * g.px
+        local n, along, line = 0, 0, 0
+        for _, group in ipairs(buckets[key]) do
+            local adb = self.db.auras[group]
+            local width, height = self:AuraSize(adb, g.px)
+            local style = self:AuraStyle(adb)
+            for index = 1, f.auraShown[group] do
+                local icon = f.auraIcons[group][index]
+                Kit.LayoutAuraIcon(icon, width, height, g.px, style, f.fontPath)
+                -- Icons take the mouse only for tooltips; clicks fall through to the member.
+                if icon.SetMouseMotionEnabled and icon.SetMouseClickEnabled then
+                    icon:SetMouseMotionEnabled(adb.tooltip); icon:SetMouseClickEnabled(false)
+                else icon:EnableMouse(adb.tooltip) end
+                if n > 0 and n % first.perRow == 0 then along, line = 0, line + 1 end
+                local ox = across and along or line * (fw + spacing)
+                local oy = across and line * (fh + spacing) or along
+                icon:ClearAllPoints()
+                icon:SetPoint(corner, f.panel, point, x + dx * ox, y + dy * oy)
+                along = along + (across and width or height) + spacing
+                n = n + 1
+            end
+        end
     end
 end
 
@@ -132,64 +178,67 @@ end
 
 function M:LayoutAuras(f)
     if self:UsesContainers(f) then self:AttachAuras(f); return end
-    for _, group in ipairs(self.auraGroups) do self:LayoutReaderGroup(f, group) end
+    self:LayoutReader(f)
 end
 
--- Reader path: every group's auras, and the dispel highlight from the first
--- debuff you can dispel whose type the game shows.
+-- Whether a readable aura belongs to a group by its dispel type.
+local function TypeMatches(group, dispelType)
+    local wanted = M.groupDispelType[group]
+    if wanted then return dispelType == wanted end
+    if group == "otherDebuffs" then return not (dispelType and M.dispelColorKeys[dispelType]) end
+    return true
+end
+
+-- Reader path: every group's auras, and the debuff effects from the first
+-- debuff of the Which Debuffs filter whose type the game shows.
 function M:UpdateAuras(f)
     if self:UsesContainers(f) or not self:Live(f) then return end
     for _, group in ipairs(self.auraGroups) do
         local adb, count = self.db.auras[group], 0
         local filters = self:GroupFilters(group, adb.filter)
         if adb.show then
-            for index, aura in ipairs(Auras.Collect(f.unit, filters, adb.max)) do
-                local icon = self:ReaderIcon(f, group, index)
-                Auras.Apply(icon, f.unit, aura, adb.timer, adb.count)
-                icon.auraUnit, icon.auraID, icon.auraFilter = f.unit, Auras.Field(aura, "auraInstanceID"), filters[1]
-                Kit.TintAuraRim(icon, self:AuraRimColor(adb, icon.dispelType))
-                icon:Show()
-                count = index
+            for _, aura in ipairs(Auras.Collect(f.unit, filters, 40)) do
+                if count >= adb.max then break end
+                local name = Auras.Field(aura, "dispelName")
+                local dispel = (addon.IsPublic(name) and type(name) == "string") and name or nil
+                if TypeMatches(group, dispel) then
+                    count = count + 1
+                    local icon = self:ReaderIcon(f, group, count)
+                    Auras.Apply(icon, f.unit, aura, adb.timer, adb.count)
+                    icon.auraUnit, icon.auraID, icon.auraFilter = f.unit, Auras.Field(aura, "auraInstanceID"), filters[1]
+                    self:PaintAuraLook(icon, adb, dispel)
+                    icon:Show()
+                end
             end
         end
         HideFrom(f, group, count + 1)
-        self:LayoutReaderGroup(f, group)
     end
+    self:LayoutReader(f)
     local dispel
-    if self.db.dispelHighlight ~= "none" then
-        local first = Auras.Collect(f.unit, self:GroupFilters("dispellable", self.db.dispelFilter), 1)[1]
-        local name = first and Auras.Field(first, "dispelName")
-        dispel = addon.IsPublic(name) and type(name) == "string" and name or nil
+    for _, aura in ipairs(Auras.Collect(f.unit, self:GroupFilters("dispel", self.db.dispelFilter), 40)) do
+        local name = Auras.Field(aura, "dispelName")
+        if addon.IsPublic(name) and self.dispelColorKeys[name] then dispel = name; break end
     end
     self:PaintDispel(f, dispel)
 end
 
--- The dispel highlight from a public dispel type (reader path and samples).
-function M:PaintDispel(f, dispelType)
-    local style = self.db.dispelHighlight
-    local key = dispelType and self.dispelColorKeys[dispelType]
-    local color = key and self.db[key]
-    local ring = f.dispelRing
-    for _, region in ipairs({ ring.top, ring.bottom }) do
-        region:SetShown(color ~= nil and style == "border"); if color then Kit.Tint(region, color, 1) end
-    end
-    for _, e in pairs(ring.ends) do
-        e.strip:Hide(); e.cap:SetShown(color ~= nil and style == "border"); if color then Kit.Tint(e.cap, color, 1) end
-    end
-    f.dispelFill:SetShown(color ~= nil and style == "fill")
-    if color then Kit.Tint(f.dispelFill, color, 0.25) end
-end
-
--- Stand-ins and the preview: sample icons in every group that is on.
-M.SAMPLE_AURAS = { buffs = "Interface\\Icons\\Spell_Holy_Renew", debuffs = "Interface\\Icons\\Spell_Shadow_ShadowWordPain",
-    dispellable = "Interface\\Icons\\Spell_Frost_FrostNova", defensives = "Interface\\Icons\\Spell_Holy_PowerWordShield",
-    crowdControl = "Interface\\Icons\\Spell_Nature_Polymorph" }
-M.SAMPLE_TYPES = { debuffs = { "Magic", "Poison" }, dispellable = { "Magic", "Curse" }, crowdControl = { "Magic" } }
-function M:PaintAuraSample(f, index)
+-- Stand-ins and the preview: sample icons in every group that is on, or
+-- only in `only` (the group the Auras tab is editing).
+M.SAMPLE_AURAS = { heals = "Interface\\Icons\\Spell_Holy_Renew", buffs = "Interface\\Icons\\Spell_Holy_WordFortitude",
+    defensives = "Interface\\Icons\\Spell_Holy_PowerWordShield", magic = "Interface\\Icons\\Spell_Frost_FrostNova",
+    curse = "Interface\\Icons\\Spell_Shadow_CurseOfTounges", disease = "Interface\\Icons\\Spell_Shadow_AbominationExplosion",
+    poison = "Interface\\Icons\\Ability_Rogue_DualWeild", bleed = "Interface\\Icons\\Ability_Gouge",
+    otherDebuffs = "Interface\\Icons\\Spell_Shadow_ShadowWordPain", crowdControl = "Interface\\Icons\\Spell_Nature_Polymorph" }
+M.SAMPLE_COUNTS = { heals = 2, buffs = 2, defensives = 1, magic = 1, curse = 1, disease = 0, poison = 1, bleed = 0,
+    otherDebuffs = 1, crowdControl = 1 }
+function M:PaintAuraSample(f, index, only)
     for _, group in ipairs(self.auraGroups) do
         local adb = self.db.auras[group]
-        -- Every member shows buffs and debuffs; the rarer groups show on a few.
-        local count = adb.show and (group == "buffs" or group == "debuffs" or index % 2 == 1) and math.min(adb.max, 3) or 0
+        -- The edited group shows as many as it may; otherwise a few per group.
+        local count = 0
+        if only then count = group == only and adb.max or 0
+        elseif adb.show then count = math.min(adb.max, self.SAMPLE_COUNTS[group] or 1) end
+        local dispel = self.groupDispelType[group]
         for i = 1, count do
             local icon = self:ReaderIcon(f, group, i)
             icon.auraUnit, icon.auraID = nil, nil
@@ -197,11 +246,11 @@ function M:PaintAuraSample(f, index)
             Kit.Write(icon.count, adb.count and i == 1 and "2" or "")
             Kit.Write(icon.timer, adb.timerText and tostring(4 + 3 * i) or "")
             icon.cooldown:Hide()
-            Kit.TintAuraRim(icon, self:AuraRimColor(adb, (self.SAMPLE_TYPES[group] or {})[i]))
+            self:PaintAuraLook(icon, adb, dispel)
             icon:Show()
         end
         HideFrom(f, group, count + 1)
-        self:LayoutReaderGroup(f, group)
     end
-    self:PaintDispel(f, index == 2 and "Magic" or nil)
+    self:LayoutReader(f)
+    self:PaintDispel(f, not only and index == 2 and "Magic" or nil)
 end

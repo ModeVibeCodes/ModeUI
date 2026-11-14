@@ -42,9 +42,8 @@ function M:Live(f) return self.active and f.unit ~= nil and Q.Truthy(UnitExists,
 
 function M:UpdateMember(f)
     if not self:Live(f) or not f.geometry then return end
-    -- A role change can add or remove the power bar (Healers only).
-    local role = Group.Role(f.unit)
-    if role ~= f.role then f.role = role; self:LayoutBars(f) end
+    -- A role or power type change can add or remove the power bar.
+    self:UpdatePowerShown(f)
     self:UpdateName(f); self:UpdateHealth(f); self:UpdatePower(f); self:UpdatePrediction(f)
     self:UpdateStatus(f); self:UpdateIcons(f); self:UpdateTarget(f); self:UpdateAuras(f)
 end
@@ -97,13 +96,30 @@ function M:UpdateHealthText(f, okValue, value)
         if not (ok and pcall(Kit.Write, text, deficit)) then Kit.Write(text, "") end
         return
     end
-    Kit.ValueText(text, db.healthText, Health.Percent, f.unit, okValue, value)
+    if db.healthText == "percentPlain" then
+        local curve = CurveConstants and CurveConstants.ScaleTo100
+        local ok, percent = false, nil
+        if curve then ok, percent = Health.Percent(f.unit, curve) end
+        if not (ok and pcall(Kit.Formatted, text, "%.0f", percent)) then Kit.Write(text, "") end
+    else Kit.ValueText(text, db.healthText, Health.Percent, f.unit, okValue, value) end
     local c = db.textColor
     text:SetTextColor(c[1], c[2], c[3], 1)
 end
 
+-- Role and power type decide whether a member shows power (Power Bar For).
+function M:UpdatePowerShown(f)
+    local role, token = Group.Role(f.unit), select(2, Power.Read(f.unit))
+    if role ~= f.role or token ~= f.powerToken then
+        f.role, f.powerToken = role, token
+        local shown = self:ShowsPower(f)
+        if shown ~= f.hasPower then self:LayoutBars(f) end
+    end
+end
+
 function M:UpdatePower(f)
-    if not self:Live(f) or not f.hasPower then return end
+    if not self:Live(f) then return end
+    self:UpdatePowerShown(f)
+    if not f.hasPower then return end
     local _, token, okMax, max, okValue, value = Power.Read(f.unit)
     if okMax then pcall(f.power.SetMinMaxValues, f.power, 0, max) end
     if okValue then pcall(f.power.SetValue, f.power, value) end
@@ -111,21 +127,29 @@ function M:UpdatePower(f)
     f.power:SetStatusBarColor(color[1], color[2], color[3], self.db.healthOpacity / 100)
 end
 
--- Heals and absorbs ride on the health fill with the health range, so the
--- secret amounts draw at the right length straight from SetValue.
+-- Heals and shields ride on the health fill with the health range, so the
+-- secret amounts draw at the right length straight from SetValue. The
+-- overshield fills back from full health with the whole shield, shown only
+-- while the shield is bigger than the missing health (SetAlphaFromBoolean).
 function M:UpdatePrediction(f)
     if not self:Live(f) then return end
     local db = self.db
-    local okMax, max = Health.Read(f.unit)
-    for _, part in ipairs({ { f.healPrediction, db.showHealPrediction, Group.IncomingHeals },
-        { f.absorb, db.showAbsorbs, Group.Absorbs } }) do
-        local bar, shown = part[1], part[2]
-        local ok, amount = false, nil
-        if shown then ok, amount = part[3](f.unit) end
-        if okMax then pcall(bar.SetMinMaxValues, bar, 0, max) end
-        if not (ok and pcall(bar.SetValue, bar, amount)) then bar:SetValue(0) end
+    if f.calculator == nil then f.calculator = Group.NewCalculator() or false end
+    local p = Group.Prediction(f.unit, f.calculator or nil)
+    for _, part in ipairs({ { f.healPrediction, db.showHealPrediction, p.heals }, { f.absorb, db.showAbsorbs, p.shield },
+        { f.overshield, db.showOvershields, p.total } }) do
+        -- Amounts may be secret: never compared, only handed to the bar (a
+        -- missing one makes the call fail, and the bar empties).
+        local bar, shown, amount = part[1], part[2], part[3]
+        pcall(bar.SetMinMaxValues, bar, 0, p.max)
+        if not (shown and pcall(bar.SetValue, bar, amount)) then bar:SetValue(0) end
         bar:SetShown(shown and true or false)
     end
+    local over = f.overshield
+    if db.showOvershields and p.calculated then
+        if addon.IsPublic(p.overflow) then over:SetAlpha(p.overflow and 1 or 0)
+        elseif not pcall(over.SetAlphaFromBoolean, over, p.overflow, 1, 0) then over:SetAlpha(0) end
+    else over:SetAlpha(0) end
 end
 
 -- "Dead", "Ghost" and "Offline" in the status text, and those members fade.
@@ -163,7 +187,6 @@ end
 function M:PaintTarget(f)
     local style = self.db.targetHighlight
     local on = f.isTarget == true
-    for _, region in ipairs({ f.targetRing.top, f.targetRing.bottom }) do region:SetShown(on and style == "border") end
-    for _, e in pairs(f.targetRing.ends) do e.cap:SetShown(on and style == "border"); e.strip:Hide() end
+    self.ShowBorder(f.targetRing, on and style == "border")
     f.targetFill:SetShown(on and style == "fill")
 end

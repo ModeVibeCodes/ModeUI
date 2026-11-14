@@ -17,6 +17,12 @@ local Kit = addon.Kit
 -- thickness on a circle.
 Kit.BORDER_PIXELS = 2
 Kit.BORDER_COLOR = Kit.onyx.frameRim
+-- The thin variant (owner, November 13, 2026): the same border one physical
+-- pixel wide, for pixel-perfect rows with a 1 pixel gap. Layouts take
+-- options.thickness (in pixels); Kit.BorderPixels names the two choices.
+Kit.BORDER_THIN_PIXELS = 1
+Kit.BORDER_CHOICES = { { id = "mode", label = "Mode" }, { id = "thin", label = "Thin" } }
+function Kit.BorderPixels(choice) return choice == "thin" and Kit.BORDER_THIN_PIXELS or Kit.BORDER_PIXELS end
 local BOTH = { LEFT = true, RIGHT = true }
 
 -- A border for `host`: `border.edge` (the frame the rim draws on),
@@ -31,11 +37,12 @@ end
 -- host's units, Kit.PixelSize), height (the box's height, for the end depth),
 -- rounded ({ LEFT = bool, RIGHT = bool }; default both), color (default
 -- Kit.BORDER_COLOR), level (the rim's frame level; default two above the
--- host, so above content one level up). Returns the end depth and the rim's
--- thickness, where content starts.
+-- host, so above content one level up), thickness (pixels; default
+-- Kit.BORDER_PIXELS). Returns the end depth and the rim's thickness, where
+-- content starts.
 function Kit.LayoutModeBorder(border, host, options)
     local px = options.px or 1
-    local thickness = Kit.BORDER_PIXELS * px
+    local thickness = (options.thickness or Kit.BORDER_PIXELS) * px
     local depth = Kit.CapDepth(options.height, px)
     local rounded = options.rounded or BOTH
     Kit.PlaceCapRing(border.ring, host, 0, thickness, options.color or Kit.BORDER_COLOR, depth, rounded)
@@ -91,11 +98,12 @@ function Kit.ModeBoxBorder(host, owner)
 end
 
 -- options: px (Kit.PixelSize), radius (the corners' depth, whole pixels),
--- color (default Kit.BORDER_COLOR), level (default two above the host).
--- Returns the radius and the rim's thickness.
+-- color (default Kit.BORDER_COLOR), level (default two above the host),
+-- thickness (pixels; default Kit.BORDER_PIXELS). Returns the radius and the
+-- rim's thickness.
 function Kit.LayoutModeBoxBorder(border, host, options)
     local px = options.px or 1
-    local thickness = Kit.BORDER_PIXELS * px
+    local thickness = (options.thickness or Kit.BORDER_PIXELS) * px
     local radius = math.max(thickness, math.floor((options.radius or thickness) / px + 0.5) * px)
     local color = options.color or Kit.BORDER_COLOR
     local s = border.strips

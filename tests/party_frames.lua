@@ -158,8 +158,10 @@ world.run([==[
     local M = addon.PartyFrames
     assert(M and addon.modules.partyFrames == M and M.category == 'frames' and M.defaultEnabled == false)
     assert(not M.enabled and M.header == nil and M.ghost == nil, 'off by default; nothing built')
-    assert(M.db.version == 1 and M.db.fontMedia == 'Expressway' and M.db.foregroundTexture == 'mode' and M.db.backgroundTexture == 'slate')
-    assert(M.db.nameShow and M.db.nameAnchor == 'TOPLEFT' and M.db.leaderPlace == 'outside' and M.db.auras.buffs.filter == 'mine')
+    assert(M.db.version == 2 and M.db.fontMedia == 'Expressway' and M.db.foregroundTexture == 'mode' and M.db.backgroundTexture == 'slate')
+    assert(M.db.nameShow and M.db.nameAnchor == 'TOPLEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
+    assert(M.db.healthHeight == 44 and M.db.borderStyle == 'mode' and M.db.corner == 7 and M.db.shieldTexture == 'slateHatch' and M.db.overshieldTexture == 'slateHatch')
+    assert(M.db.auras.magic.glow == 'none' and M.db.dispel.Magic.border and not M.db.dispel.Magic.health, 'glows off, borders on by default')
     assert(PartyFrame.parent == UIParent, 'Blizzard untouched while off')
 
     -- Enabling in combat waits; nothing secure is made until combat ends.
@@ -188,6 +190,12 @@ world.run([==[
     assert(p1.texts.name.text.label == 'p1name', 'secret name straight to SetText')
     assert(p1.healPrediction.value.label == 'heals' and p1.absorb.value.label == 'absorbs', 'heals and absorbs ride on health')
     assert(Point(p1.healPrediction)[2] == p1.health:GetStatusBarTexture() and Point(p1.absorb)[2] == p1.healPrediction:GetStatusBarTexture())
+    assert(p1.overshield:GetAlpha() == 0, 'no calculator: no overshield')
+    -- Shields in Mode Slate Hatch: the bar's own fill is invisible and a tiled hatch follows it in a clip.
+    assert(p1.absorb.hatchClip and Point(p1.absorb.hatchClip)[2] == p1.absorb:GetStatusBarTexture() and p1.absorb.hatch.texture:find('SlateHatch'))
+    assert(p1.absorb.statusBarColor[4] == 0 and p1.overshield.reverseFill == true and p1.health.reverseFill == false, 'overshield fills back from full')
+    -- Box corners: the border's radius is Corner Size, content rounded by the corners it reaches.
+    assert(p1.panel.border.radius == 7 and p1.panel.border.thickness == 2 and #p1.health:GetStatusBarTexture().masks <= 3)
     assert(p1.alphaFromBoolean and p1.alphaFromBoolean[1].label == 'range' and p1.alphaFromBoolean[3] == 0.45, 'secret range via SetAlphaFromBoolean')
     assert(M.members[1]:GetAlpha() == 1 and M.members[3]:GetAlpha() == 1, 'you and members in range stay opaque')
     -- Class color by default.
@@ -211,13 +219,27 @@ world.run([==[
     units.party2.dead = false; FireEvent('UNIT_CONNECTION', 'party2'); assert(tank.texts.status.text == '' and tank:GetAlpha() == 1)
     -- Your target: the border in the highlight color.
     targetUnit = 'party2'; FireEvent('PLAYER_TARGET_CHANGED')
-    assert(tank.isTarget and tank.targetRing.top:IsShown() and not p1.targetRing.top:IsShown())
-    targetUnit = nil; FireEvent('PLAYER_TARGET_CHANGED'); assert(not tank.targetRing.top:IsShown())
+    assert(tank.isTarget and tank.targetRing.edge:IsShown() and not p1.targetRing.edge:IsShown())
+    targetUnit = nil; FireEvent('PLAYER_TARGET_CHANGED'); assert(not tank.targetRing.edge:IsShown())
 
     -- Healers-only power: the tank's health takes the whole height.
     assert(M:SetOption('powerShown', 'healers') and p1.power:IsShown() and not tank.power:IsShown())
     assert(tank.health.height == tank.geometry.innerHeight and p1.health.height < p1.geometry.innerHeight)
-    assert(M:SetOption('powerShown', 'all') and tank.power:IsShown())
+    -- Mana Users and Healer Mana: the Rogue (energy) and the Warrior (rage) show none.
+    local me = M.members[1]
+    assert(M:SetOption('powerShown', 'mana') and p1.power:IsShown() and not tank.power:IsShown() and not me.power:IsShown())
+    roles.party1 = 'DAMAGER'; FireEvent('PLAYER_ROLES_ASSIGNED')
+    assert(M:SetOption('powerShown', 'healerMana') and not p1.power:IsShown(), 'a damage dealer with mana: hidden')
+    roles.party1 = 'HEALER'; FireEvent('PLAYER_ROLES_ASSIGNED'); assert(p1.power:IsShown(), 'healer with mana')
+    -- Inset: on the health bar, Power Width wide, in its own border.
+    assert(M:SetOption('powerShown', 'all') and M:SetOption('powerStyle', 'inset') and M:SetOption('powerWidth', 50))
+    local g = p1.geometry
+    assert(p1.health.height == g.innerHeight and math.abs(p1.power.width - g.innerWidth / 2) < 1 and p1.powerBorder.edge:IsShown())
+    local pp = Point(p1.power); assert(pp[1] == 'BOTTOM' and pp[3] == 'BOTTOM' and pp[5] == g.border + 3, 'centered, 3px up')
+    assert(M:SetOption('powerStyle', 'below') and not p1.powerBorder.edge:IsShown() and M:SetOption('powerHeight', 10) and p1.power.height == 10)
+    -- The Thin border: one pixel.
+    assert(M:SetOption('borderStyle', 'thin') and p1.panel.border.thickness == 1 and p1.geometry.border == 1 and Point(p1.health)[4] == 1)
+    assert(M:SetOption('borderStyle', 'mode') and M:SetOption('powerHeight', 6))
 
     -- Layout: role sort, reverse, growth and spacing through header attributes.
     assert(M:SetOption('sortBy', 'role') and h.attributes.groupBy == 'ASSIGNEDROLE' and h.attributes.groupingOrder == 'TANK,HEALER,DAMAGER,NONE')
@@ -226,7 +248,7 @@ world.run([==[
     assert(M:SetOption('sortBy', 'group') and h.attributes.groupBy == nil)
     assert(M:SetOption('reverseOrder', true) and M.members[1].unit == 'party2' and M:SetOption('reverseOrder', false))
     assert(M:SetOption('growth', 'right') and h.attributes.point == 'LEFT' and h.attributes.xOffset > 0 and h.attributes.yOffset == 0)
-    assert(Point(h)[1] == 'LEFT', 'the header is anchored at the edge it grows from')
+    assert(Point(h)[1] == 'TOPLEFT', 'the header is anchored at the corner it grows from')
     assert(M:SetOption('spacing', 10) and h.attributes.xOffset == 10 and M:SetOption('growth', 'down'))
     assert(M:SetOption('showPlayer', false) and M.members[1].unit == 'party1' and M:SetOption('showPlayer', true))
     assert(not M:SetOption('growth', 'sideways') and not M:SetOption('width', 9000) and not M:SetOption('nope', 1), 'validated')
@@ -252,6 +274,7 @@ world.run([==[
     assert(M:SetElementOption('name', 'show', false) and not p1.texts.name:IsShown() and M:SetElementOption('name', 'show', true))
     assert(not M:SetElementOption('name', 'anchor', 'MIDDLE') and not M:SetElementOption('bogus', 'show', true))
     assert(M:SetElementOption('healthText', 'show', true) and p1.texts.healthText.text.secret, 'secret percent text')
+    assert(M:SetOption('healthText', 'percentPlain') and p1.texts.healthText.text.formatted == '%.0f', 'percent with no sign')
 
     -- Hide Blizzard off, and switching the module off, put PartyFrame back.
     assert(M:SetOption('hideBlizzard', false) and PartyFrame.parent == UIParent)
@@ -263,53 +286,93 @@ world.run([==[
     assert(h:IsShown() and PartyFrame.parent == M.hiddenParent and M.members[2].unit == 'party1')
 ]==], "party_header")
 
--- The aura manager without containers (reader path) and the samples.
+-- The aura manager without containers (reader path), samples and the page.
 world.run([==[
     local M = addon.PartyFrames
     local p1 = M.members[2]
     units.party1.helpful = { { icon = 'renew', auraInstanceID = 11, duration = 0, expirationTime = 0 },
-        { icon = 'fort', auraInstanceID = 12, duration = 0, expirationTime = 0 } }
-    units.party1.harmful = { { icon = 'pain', auraInstanceID = 21, dispelName = 'Magic', duration = 0, expirationTime = 0 } }
+        { icon = 'rejuv', auraInstanceID = 12, duration = 0, expirationTime = 0 } }
+    units.party1.harmful = { { icon = 'pain', auraInstanceID = 21, dispelName = 'Magic', duration = 0, expirationTime = 0 },
+        { icon = 'rend', auraInstanceID = 22, duration = 0, expirationTime = 0 } }
     auraFilters = {}
     FireEvent('UNIT_AURA', 'party1')
-    assert(p1.auraIcons.buffs[1]:IsShown() and p1.auraIcons.buffs[1].icon.texture == 'renew' and p1.auraIcons.buffs[2]:IsShown())
-    assert(p1.auraIcons.debuffs[1]:IsShown() and p1.auraIcons.debuffs[1].rim.vertexColor[3] == M.db.auraMagicColor[3], 'rim by type')
+    assert(p1.auraIcons.heals[1]:IsShown() and p1.auraIcons.heals[1].icon.texture == 'renew' and p1.auraIcons.heals[2]:IsShown())
+    -- Debuffs by type: Magic in its own group, the untyped one in Other Debuffs.
+    assert(p1.auraIcons.magic[1]:IsShown() and p1.auraIcons.magic[1].icon.texture == 'pain' and p1.auraIcons.magic[1].rim.vertexColor[3] == M.db.auraMagicColor[3])
+    assert(p1.auraIcons.otherDebuffs[1].icon.texture == 'rend' and not (p1.auraIcons.otherDebuffs[2] and p1.auraIcons.otherDebuffs[2]:IsShown()))
+    assert(not p1.auraIcons.curse[1] or not p1.auraIcons.curse[1]:IsShown(), 'no curse')
     local seen = table.concat(auraFilters, ',')
-    assert(seen:find('HELPFUL|PLAYER', 1, true) and seen:find('HARMFUL|RAID_IN_COMBAT', 1, true) and seen:find('HELPFUL|EXTERNAL_DEFENSIVE', 1, true), seen)
-    -- Placement: buffs at the bottom right inside, growing left.
-    local b = Point(p1.auraIcons.buffs[1]); assert(b[1] == 'BOTTOMRIGHT' and b[2] == p1.panel and b[3] == 'BOTTOMRIGHT' and b[4] < 0 and b[5] > 0)
-    local b2 = Point(p1.auraIcons.buffs[2]); assert(b2[4] < b[4] and b2[5] == b[5], 'second buff to the left')
-    assert(M:SetAuraOption('buffs', 'perRow', 1) and Point(p1.auraIcons.buffs[2])[5] > b[5], 'Per Row 1 wraps upward')
-    assert(M:SetAuraOption('buffs', 'place', 'outside') and M:SetAuraOption('buffs', 'anchor', 'RIGHT'))
-    b = Point(p1.auraIcons.buffs[1]); assert(b[1]:find('LEFT') and b[3] == 'RIGHT', 'outside right: starts past the right edge')
-    assert(M:SetAuraOption('buffs', 'show', false) and not p1.auraIcons.buffs[1]:IsShown())
-    assert(not M:SetAuraOption('buffs', 'filter', 'nonsense') and not M:SetAuraOption('buffs', 'size', 99), 'validated')
-    -- The dispel highlight from a public type.
-    assert(p1.dispelRing.top:IsShown() and p1.dispelRing.top.vertexColor[3] == M.db.auraMagicColor[3], 'dispel border in the type color')
-    assert(M:SetOption('dispelHighlight', 'fill') and p1.dispelFill:IsShown() and not p1.dispelRing.top:IsShown())
-    assert(M:CopyAuraGroup('debuffs', 'crowdControl') and M.db.auras.crowdControl.anchor == M.db.auras.debuffs.anchor and M.db.auras.crowdControl.filter == 'all')
-    assert(M:ResetSettings('buffs') and M.db.auras.buffs.show and M.db.auras.buffs.place == 'inside')
+    assert(seen:find('HELPFUL|RAID_IN_COMBAT', 1, true) and seen:find('HARMFUL|RAID_IN_COMBAT', 1, true) and seen:find('HELPFUL|EXTERNAL_DEFENSIVE', 1, true), seen)
+    -- One row per anchor: Other Debuffs continues after Magic.
+    local mg, od = Point(p1.auraIcons.magic[1]), Point(p1.auraIcons.otherDebuffs[1])
+    assert(mg[1] == 'BOTTOMLEFT' and od[1] == 'BOTTOMLEFT' and od[4] == mg[4] + 18 + 1 and od[5] == mg[5], 'continues in one row')
+    -- Each group its own width and height.
+    assert(p1.auraIcons.heals[1].width == 16 and p1.auraIcons.heals[1].height == 12)
+    assert(M:SetAuraOption('magic', 'width', 24) and M:SetAuraOption('magic', 'height', 20) and p1.auraIcons.magic[1].width == 24)
+    assert(Point(p1.auraIcons.otherDebuffs[1])[4] == mg[4] + 24 + 1, 'the next one moves along')
+    -- Placement: healing buffs at the bottom right inside, growing left; wrapping by Per Row.
+    local b = Point(p1.auraIcons.heals[1]); assert(b[1] == 'BOTTOMRIGHT' and b[2] == p1.panel and b[3] == 'BOTTOMRIGHT' and b[4] < 0 and b[5] > 0)
+    local b2 = Point(p1.auraIcons.heals[2]); assert(b2[4] < b[4] and b2[5] == b[5], 'second to the left')
+    assert(M:SetAuraOption('heals', 'perRow', 1) and Point(p1.auraIcons.heals[2])[5] > b[5], 'Per Row 1 wraps upward')
+    assert(M:SetAuraOption('heals', 'place', 'outside') and M:SetAuraOption('heals', 'anchor', 'RIGHT'))
+    b = Point(p1.auraIcons.heals[1]); assert(b[1]:find('LEFT') and b[3] == 'RIGHT', 'outside right: starts past the right edge')
+    -- Borders and glows per group: custom colors, none, a glow by type (off by default).
+    assert(M:SetAuraOption('magic', 'border', 'custom') and M:SetAuraOption('magic', 'borderColor', { 1, 0, 0 }) and p1.auraIcons.magic[1].rim.vertexColor[1] == 1)
+    assert(M:SetAuraOption('magic', 'border', 'none') and not p1.auraIcons.magic[1].rim:IsShown())
+    assert(not p1.auraIcons.magic[1].glow:IsShown() and not p1.auraIcons.magic[1].flash:IsShown(), 'no glow by default')
+    assert(M:SetAuraOption('magic', 'glow', 'soft') and p1.auraIcons.magic[1].glow:IsShown() and p1.auraIcons.magic[1].glow.vertexColor[3] == M.db.auraMagicColor[3])
+    assert(M:SetAuraOption('magic', 'borderSize', 3) and not M:SetAuraOption('magic', 'borderSize', 4), 'border size 1-3')
+    assert(M:SetAuraOption('heals', 'show', false) and not p1.auraIcons.heals[1]:IsShown())
+    assert(not M:SetAuraOption('heals', 'filter', 'nonsense') and not M:SetAuraOption('heals', 'width', 99) and not M:SetAuraOption('heals', 'glow', 'blink'), 'validated')
+    -- Debuff effects by type: border by default, health color and gradient when chosen.
+    assert(p1.dispel.ring.edge:IsShown() and p1.dispel.ring.strips.TOP.vertexColor[3] == M.db.auraMagicColor[3], 'Magic border')
+    assert(M:SetDispelEffect('Magic', 'health', true) and p1.dispel.health:IsShown() and p1.dispel.health.vertexColor[3] == M.db.auraMagicColor[3])
+    assert(M:SetDispelEffect('Magic', 'gradient', true) and p1.dispel.gradient:IsShown() and p1.dispel.gradient.gradient)
+    assert(M:SetDispelEffect('Magic', 'border', false) and not p1.dispel.ring.edge:IsShown())
+    assert(not M:SetDispelEffect('Magic', 'sparkle', true) and not M:SetDispelEffect('Arcane', 'border', true), 'validated')
+    assert(M:CopyAuraGroup('otherDebuffs', 'crowdControl') and M.db.auras.crowdControl.anchor == M.db.auras.otherDebuffs.anchor and M.db.auras.crowdControl.filter == 'all')
+    assert(M:ResetSettings('heals') and M.db.auras.heals.show and M.db.auras.heals.place == 'inside')
 
-    -- Edit Mode: the stand-in shows the sample party and moves the header.
+    -- Edit Mode: the stand-in shows the sample party; resizing keeps its top left in place.
     M:SetEditMode(true)
     local ghost = M.ghost
     assert(ghost:IsShown() and #ghost.faces == 5 and ghost.faces[5].texts.status.text == 'Dead', 'sample party')
-    assert(ghost.faces[1].icons.leader:IsShown() and ghost.faces[3].targetRing.top:IsShown(), 'sample icons and target')
-    assert(ghost.faces[1].auraIcons.buffs[1]:IsShown(), 'sample auras')
+    assert(ghost.faces[1].icons.leader:IsShown() and ghost.faces[3].targetRing.edge:IsShown(), 'sample icons and target')
+    assert(ghost.faces[1].auraIcons.heals[1]:IsShown() and ghost.faces[3].overshield:GetAlpha() == 1, 'sample auras and overshield')
     assert(math.abs(ghost.height - (5 * ghost.faces[1].geometry.height + 4 * M.db.spacing)) < 1, 'room for five')
+    local x1, y1 = M:GhostCorner()
+    assert(M:SetOption('width', 180) and M:SetOption('healthHeight', 60))
+    local x2, y2 = M:GhostCorner()
+    assert(math.abs(x1 - x2) < 1 and math.abs(y1 - y2) < 1, 'the top left stays put when the size changes')
     M:SetEditMode(false); assert(not ghost:IsShown())
     assert(M:CanTestDisplay() and M:SetTestDisplay(true) and ghost:IsShown() and M:SetTestDisplay(false) and not ghost:IsShown())
 
-    -- The settings page builds on demand, with every tab, and the preview jumps.
+    -- The settings page builds on demand; the preview shows one member, or a party or raid.
     SlashCmdList.MODEUI(); addon:SelectConfigPage('partyFrames')
     local page = M.page
-    assert(page and page:IsShown() and page.configPreview and page.elementSelect and page.auraGroupSelect, 'page built')
+    local view = page.configPreview
+    assert(page and page:IsShown() and view and page.elementSelect and page.auraGroupSelect and page.dispelToggles, 'page built')
+    local function Shown() local n = 0; for _, face in ipairs(view.faces) do if face:IsShown() then n = n + 1 end end; return n end
+    assert(M.previewSample == 'one' and Shown() == 1, 'one member by default')
+    assert(#page.previewHeaderButtons == 5 and M:SetPreviewSample('raid20') and Shown() == 20 and view.faces[1]:GetScale() == 0.5)
+    local corner = Point(view.faces[6])
+    assert(corner[1] == 'TOPLEFT' and corner[4] > 0, 'the second group beside the first')
+    local before = Point(view.group)
+    assert(M:SetOption('width', 140) and Point(view.group)[4] == before[4] and Point(view.group)[5] == before[5], 'groups stay put')
+    assert(M:SetPreviewSample('one') and not M:SetPreviewSample('raid99'))
+    -- Jumps, and the Auras tab's preview: one member with only the group being edited.
     assert(M:JumpTo('element:role') and page.partyElement() == 'role')
-    assert(M:JumpTo('auras:defensives') and page.partyAuraGroup() == 'defensives')
+    assert(M:JumpTo('auras:curse') and page.partyAuraGroup() == 'curse')
+    page:SelectSectionTab(page.jumpTargets.auras.section)
+    assert(M:PreviewAuraGroup() == 'curse' and Shown() == 1 and view.faces[1].auraIcons.curse[1]:IsShown(), 'the edited group')
+    assert(not view.faces[1].auraIcons.otherDebuffs[1]:IsShown(), 'other groups hidden')
+    -- Nudges: one pixel per click, within range.
+    local x = M.db.auras.curse.x
+    page.auraNudge[4]:GetScript('OnClick')(page.auraNudge[4]); assert(M.db.auras.curse.x == x + 1, 'right one pixel')
+    page.auraNudge[2]:GetScript('OnClick')(page.auraNudge[2]); assert(M.db.auras.curse.y == 1, 'up one pixel')
     assert(M:JumpTo('health'))
 ]==], "party_auras")
 
--- 12.1 aura containers: groups and the dispel highlight drawn by the game.
 local CONTAINERS = STUBS .. [==[
     C_XMLUtil = { GetTemplateInfo = function(name) if name == 'CustomAuraContainerTemplate' then return {} end end }
     Enum.CustomAuraButtonDispelTypeTextureStyle = { PreserveAsset = 3 }
@@ -345,7 +408,7 @@ local CONTAINERS = STUBS .. [==[
         function c:AddAuraSlot(key, filter, options)
             local button = Button(self)
             options.initializeFrame(button)
-            self.slots[key] = { filter = filter, button = button }
+            self.slots[key] = { filter = filter, button = button, options = options }
             return button
         end
         function c:SetAuraGroupFilterString(key, f) self.groups[key].filter = f end
@@ -368,38 +431,84 @@ H.Load({ before = CONTAINERS }).run([==[
     addon:SetModuleEnabled('partyFrames', true)
     local p1 = M.members[2]
     local C = p1.auraContainers
-    assert(C.buffs and C.debuffs and C.defensives and C.buffs.template == 'CustomAuraContainerTemplate', 'one container per group')
-    assert(C.buffs.enabled and C.buffs.unit == 'party1' and C.buffs.updates >= 1, 'pointed at the unit')
-    assert(C.buffs.groups.buffs1.filter == 'HELPFUL|PLAYER' and not C.buffs.groups.buffs2.enabled, 'one filter, second slot off')
-    assert(C.defensives.groups.defensives1.filter == 'HELPFUL|EXTERNAL_DEFENSIVE' and C.defensives.groups.defensives2.filter == 'HELPFUL|BIG_DEFENSIVE'
-        and C.defensives.groups.defensives2.enabled, 'Big and External continue in one row')
-    assert(not C.dispellable.enabled and not C.crowdControl.enabled, 'groups off by default stay off')
-    local button = C.debuffs.groups.debuffs1.button
-    assert(button.iconRegion == button.icon and button.cooldownRegion == button.cooldown and button.countRegion == button.count, 'regions registered')
-    assert(button.dispelTextures[1] == button.rim and button.dispelOptions.customDispelColorCurve.points[1].r == M.db.auraMagicColor[1], 'rim by type')
-    assert(button.clicks == false, 'clicks fall through to the member')
-    assert(C.buffs.flowAnchor == 'BOTTOMRIGHT' and Point(C.buffs)[2] == p1.panel and C.buffs.lineSize > 0, 'placed at the anchor, wraps per row')
-    -- The dispel highlight: a slot whose button holds the border, colored by type by the game.
-    local slot = p1.dispelContainer
-    assert(slot and slot.slots.dispel.filter == 'HARMFUL|RAID' and slot.unit == 'party1' and slot.enabled)
-    local sb = slot.slots.dispel.button
-    assert(#sb.dispelTextures == 4 and sb.dispelOptions.customDispelColorCurve.points[3].g == M.db.auraDiseaseColor[2], 'border pieces by type')
-    -- Look changes build new containers; counts change through setters.
-    local debuffs = C.debuffs
-    assert(M:SetAuraOption('debuffs', 'max', 5) and p1.auraContainers.debuffs == debuffs and debuffs.groups.debuffs1.max == 5)
-    assert(M:SetAuraOption('debuffs', 'shape', 'square') and p1.auraContainers.debuffs ~= debuffs and not debuffs.enabled, 'look change: new container')
-    assert(M:SetAuraOption('debuffs', 'filter', 'all') and p1.auraContainers.debuffs.groups.debuffs1.filter == 'HARMFUL')
-    assert(M:SetOption('dispelHighlight', 'none') and not slot.enabled)
-    -- Units follow the header.
+    -- One container per anchor and place; the debuff types and Other Debuffs share the bottom left.
+    local row = C['BOTTOMLEFT|inside']
+    assert(C['BOTTOMRIGHT|inside'] and row and C['CENTER|inside'] and row.template == 'CustomAuraContainerTemplate', 'one container per anchor')
+    assert(row.enabled and row.unit == 'party1' and row.updates >= 1, 'pointed at the unit')
+    assert(row.groups.magic1.options.candidateFilters.includeDispelTypes.Magic and row.groups.magic1.filter == 'HARMFUL', 'magic by type')
+    assert(row.groups.otherDebuffs1.options.candidateFilters.excludeDispelTypes.Curse and row.groups.otherDebuffs1.filter == 'HARMFUL|RAID_IN_COMBAT')
+    local heals = C['BOTTOMRIGHT|inside']
+    assert(heals.groups.heals1.filter == 'HELPFUL|RAID_IN_COMBAT' and not heals.groups.heals2.enabled)
+    assert(C['CENTER|inside'].groups.defensives2.filter == 'HELPFUL|BIG_DEFENSIVE' and C['CENTER|inside'].groups.defensives2.enabled)
+    assert(not C['TOPRIGHT|inside'].enabled and not C['LEFT|outside'].enabled, 'group buffs and crowd control start off')
+    local button = row.groups.magic1.button
+    assert(button.iconRegion == button.icon and button.countRegion == button.count and button.dispelTextures[1] == button.rim)
+    assert(button.dispelOptions.customDispelColorCurve.points[1].r == M.db.auraMagicColor[1] and button.clicks == false)
+    assert(row.flowAnchor == 'BOTTOMLEFT' and Point(row)[2] == p1.panel and row.lineSize > 0, 'placed by the first shown group')
+    -- A glow by type registers the glow with the game's dispel colors.
+    assert(M:SetAuraOption('magic', 'glow', 'gcd') and p1.auraContainers['BOTTOMLEFT|inside'] ~= row and not row.enabled, 'look change: new container')
+    local glowing = p1.auraContainers['BOTTOMLEFT|inside'].groups.magic1.button
+    assert(glowing.dispelTextures[2] == glowing.flash and glowing.flash:IsShown(), 'glow by type')
+    -- Moving one type gives it a container of its own.
+    assert(M:SetAuraOption('curse', 'anchor', 'TOPLEFT') and p1.auraContainers['TOPLEFT|inside'].groups.curse1)
+    assert(p1.auraContainers['BOTTOMLEFT|inside'].groups.curse1 == nil, 'out of the shared row')
+    -- Debuff effects: one aura slot per type, kept to it by the game.
+    local slots = p1.dispelContainer
+    assert(slots and slots.slots.Magic.filter == 'HARMFUL|RAID' and slots.slots.Magic.options.candidateFilters.includeDispelTypes.Magic)
+    assert(slots.unit == 'party1' and slots.enabled and slots.slots.Bleed)
+    local sb = slots.slots.Magic.button
+    assert(sb.dispelEffects.ring.edge:IsShown() and sb.dispelEffects.ring.strips.TOP.vertexColor[3] == M.db.auraMagicColor[3])
+    assert(not sb.dispelEffects.health:IsShown() and #(sb.dispelEffects.health.masks or {}) <= 3)
+    assert(M:SetDispelEffect('Curse', 'health', true) and p1.dispelContainer ~= slots and p1.dispelContainer.slots.Curse.button.dispelEffects.health:IsShown())
+    for _, kind in ipairs(M.dispelTypes) do assert(M:SetDispelEffect(kind, 'border', false) and M:SetDispelEffect(kind, 'health', false)) end
+    assert(next(p1.dispelContainer.slots) == nil, 'no effects: no slots')
+    -- Overshields through the heal prediction calculator: shown when the shield overflows.
+    function CreateUnitHealPredictionCalculator()
+        local c = {}
+        function c:GetMaximumHealth() return Secret('max') end
+        function c:GetIncomingHeals() return Secret('heal') end
+        function c:GetDamageAbsorbs() return Secret('shield'), Secret('over') end
+        function c:GetTotalDamageAbsorbs() return Secret('total') end
+        return c
+    end
+    function UnitGetDetailedHealPrediction(unit, healer, calc) assert(healer == 'player') end
+    for _, f in ipairs(M.members) do f.calculator = nil end
+    FireEvent('UNIT_ABSORB_AMOUNT_CHANGED', 'party1')
+    assert(p1.absorb.value.label == 'shield' and p1.overshield.value.label == 'total' and p1.healPrediction.value.label == 'heal')
+    assert(p1.overshield.alphaFromBoolean[1].label == 'over', 'overshield shown by the secret overflow flag')
     roster = { 'party2' }; GroupChanged()
-    assert(M.members[2].auraContainers.buffs.unit == 'party2', 'containers follow the unit')
+    assert(M.members[2].auraContainers['BOTTOMRIGHT|inside'].unit == 'party2', 'containers follow the unit')
 ]==], "party_containers")
+
+-- Version 1 settings move to version 2: old default sizes take the new ones,
+-- Buffs becomes Healing Buffs, Debuffs' place goes to every type, the dispel
+-- highlight style to the effects.
+local v1 = world.saved()
+local pf = v1.profiles.Default.modules.partyFrames
+for key in pairs(pf) do if key ~= 'enabled' then pf[key] = nil end end
+pf.version, pf.healthHeight, pf.powerHeight, pf.width, pf.dispelHighlight = 1, 34, 5, 150, 'fill'
+pf.auras = { buffs = { show = true, filter = 'mine', anchor = 'TOPLEFT', place = 'inside', grow = 'right', x = 2, y = 0, size = 20,
+    max = 4, perRow = 4, spacing = 1, shape = 'cropped', border = 'mode', timer = true, timerText = false, count = true, tooltip = true },
+    debuffs = { show = true, filter = 'all', anchor = 'BOTTOMRIGHT', place = 'outside', grow = 'down', x = 0, y = 0, size = 16,
+    max = 3, perRow = 3, spacing = 2, shape = 'square', border = 'type', timer = true, timerText = true, count = true, tooltip = true } }
+H.Load({ before = STUBS, saved = v1 }).run([==[
+    local db = addon.PartyFrames.db
+    assert(db.version == 2 and db.healthHeight == 44 and db.powerHeight == 6 and db.width == 150, 'old defaults move, picked values stay')
+    local heals = db.auras.heals
+    assert(heals.anchor == 'TOPLEFT' and heals.width == 20 and heals.height == 16 and heals.filter == 'mine' and heals.border == 'mode' and heals.size == nil)
+    for _, group in ipairs({ 'magic', 'curse', 'disease', 'poison', 'bleed', 'otherDebuffs' }) do
+        local g = db.auras[group]
+        assert(g.anchor == 'BOTTOMRIGHT' and g.place == 'outside' and g.grow == 'down' and g.width == 16 and g.height == 16, group)
+    end
+    assert(db.auras.otherDebuffs.filter == 'all' and db.auras.magic.filter == 'all' and db.auras.buffs.show == false)
+    assert(db.dispelHighlight == nil and db.dispel.Magic.gradient and not db.dispel.Magic.border, 'fill became the gradient')
+]==], "party_v1")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()
 broken.profiles.Default.modules.partyFrames.width = 'wide'
 assert(not pcall(H.Load, { before = STUBS, saved = broken }), 'invalid party settings are refused, not reset')
 local saved = world.saved()
-saved.profiles.Default.modules.partyFrames.auras.buffs.anchor = 'NOWHERE'
+saved.profiles.Default.modules.partyFrames.auras.heals.anchor = 'NOWHERE'
 assert(not pcall(H.Load, { before = STUBS, saved = saved }), 'invalid aura group refused')
 print("party frames: all checks passed")
