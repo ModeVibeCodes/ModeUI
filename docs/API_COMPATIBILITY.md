@@ -1321,3 +1321,57 @@ Same source. Native confirmation pending.
 - **Dispellable by You.** `HARMFUL|RAID` (debuffs the player can dispel) first
   in the debuff row; the type groups default to `HARMFUL|!RAID` so a debuff
   shows once. Both are documented `AuraUtil.AuraFilters` components.
+
+## Minimap — November 14, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source and the local
+12.1.5 mainline copy. Forever loads `Blizzard_Minimap` as the `camelot` game
+type: the mainline `Minimap.lua`/`Minimap.xml` plus Camelot overrides
+(`Camelot/Minimap.lua`, tracking, mail, calendar, addon compartment, and
+`Diel.lua`, the day and night ring). [Details](MINIMAP.md).
+
+- **Minimap widget.** `SetMaskTexture(asset)`, `SetZoom`/`GetZoom`,
+  `PingLocation(x, y)` and the `SetArchBlobRing*`, `SetQuestBlobRing*` and
+  `SetTaskBlobRing*` scalar/alpha setters are documented
+  (`MinimapFrameAPIDocumentation.lua`), all `SecretArguments =
+  "AllowedWhenUntainted"`; ModeUI passes plain values. `SetBlipTexture`,
+  `SetPlayerTexture` and the POI arrow setters aren't documented on Forever
+  and aren't used. No minimap frame is protected (no `protected="true"` and
+  no secure templates in `Blizzard_Minimap`); size and position changes
+  still go through `Defer`.
+- **Blizzard's round mask.** `MinimapClusterMixin:UpdateMinimapConfig`
+  (`Camelot/Minimap.lua`) calls `Minimap:SetMaskTexture("ui-hud-minimap-frame-generic-mask")`
+  at load and from the `rotateMinimap` CVar callback; ModeUI post-hooks it
+  (`hooksecurefunc(MinimapCluster, "UpdateMinimapConfig", ...)`) and sets its
+  mask again. ModeUI never writes the CVar.
+- **Square map, rectangular mask.** The engine draws the minimap square
+  (every rectangular-minimap addon keeps it square and crops with the mask
+  and `SetHitRectInsets`); whether a non-square `SetSize` stretches the map
+  isn't documented and isn't relied on.
+- **Hybrid minimap.** `Blizzard_HybridMinimap` (load on demand) masks its
+  `MapCanvas` with its own `CircleMask` (`TempPortraitAlphaMask`, inset 3
+  px); ModeUI swaps the texture with `SetUseMaskTexture(false)` /
+  `CircleMask:SetTexture` / `SetUseMaskTexture(true)` on `ADDON_LOADED`.
+- **Pings.** `MinimapMixin:OnClick` (`OnMouseUp`) pings only inside
+  `sqrt(x² + y²) < width / 2`; ModeUI's `HookScript("OnMouseUp")` pings
+  outside that circle.
+- **Frames moved.** `MinimapCluster.Tracking`, `MinimapCluster.IndicatorFrame`
+  (with `MailFrame`), `GameTimeFrame`, `ExpansionLandingPageMinimapButton`
+  (inside `MinimapBackdrop`), `AddonCompartmentFrame` and `QueueStatusButton`
+  (`EditModeGroupFinderSystemTemplate`, parented to UIParent; Camelot's
+  `QueueStatusButtonMixin:UpdateDefaultAnchor` anchors it to the minimap)
+  are reparented and re-placed after Blizzard's `SetPoint`, `SetParent` and
+  `SetScale` (post-hooks). `MinimapCluster` is hidden; `MinimapBackdrop`,
+  `Minimap.ZoomIn`, `ZoomOut` and `ZoomHitArea` wait under a hidden frame.
+  There is no instance-difficulty frame on Forever
+  (`Camelot/MinimapInstanceDifficulty.lua`) and no `MinimapCluster.BorderTop`.
+- **Zone and position.** `GetMinimapZoneText()` (to `SetText` only),
+  `C_PvP.GetZonePVPInfo()` (no global `GetZonePVPInfo` on Forever),
+  `C_Map.GetBestMapForUnit("player")` and `C_Map.GetPlayerMapPosition`
+  (both `AllowedWhenUntainted`; nil in many instances), in
+  `Domain.Location`. Events: `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`,
+  `ZONE_CHANGED_NEW_AREA`, `PLAYER_ENTERING_WORLD`.
+- **Mask files.** 32-bit run-length encoded TGAs (type 10), the format
+  BasicMinimap ships its `circle.tga` in; white with matching alpha, so the
+  mask works whichever channel the client reads. New files need a client
+  restart.

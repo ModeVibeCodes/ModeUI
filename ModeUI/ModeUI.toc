@@ -43,6 +43,7 @@ Shared\Domain\DamageMeter.lua
 Shared\Domain\Containers.lua
 Shared\Domain\Items.lua
 Shared\Domain\Cooldowns.lua
+Shared\Domain\Location.lua
 Shared\Kit\Color.lua
 Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua
@@ -118,6 +119,7 @@ Modules\ActionBars\ActionBars.xml
 Modules\CooldownManager\CooldownManager.xml
 Modules\Tooltip\Tooltip.xml
 Modules\Bags\Bags.xml
+Modules\Minimap\Minimap.xml
 Modules\UnitFrames\UnitFrames.xml
 Modules\Nameplates\Nameplates.xml
 Modules\PartyFrames\PartyFrames.xml
