@@ -89,6 +89,21 @@ world.run([==[
     assert(M:SetOption('essential', 'desaturate', false) and items[1].Icon.desaturated == false, 'off: full color')
     assert(M:SetOption('essential', 'desaturate', true) and items[1].Icon.desaturated == true)
     cooling[5001] = false; FireEvent('SPELL_UPDATE_COOLDOWN'); assert(items[1].Icon.desaturated == false, 'color back when ready')
+    -- A cooldown running out sends no event, and Blizzard's own refresh as
+    -- it ends can still find it cooling: the ticker asks again.
+    cooling[5001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
+    local ticker = M.coolingTicker
+    assert(items[1].Icon.desaturated == true and ticker:IsShown() and M.watching[items[1]], 'watched while cooling')
+    ticker.scripts.OnUpdate(ticker, 0.25)
+    assert(items[1].Icon.desaturated == true and ticker:IsShown(), 'still cooling: still gray')
+    items[1]:RefreshIconDesaturation()
+    cooling[5001] = false
+    ticker.scripts.OnUpdate(ticker, 0.1)
+    assert(items[1].Icon.desaturated == true, 'asks every 0.2 seconds, not every frame')
+    ticker.scripts.OnUpdate(ticker, 0.15)
+    assert(items[1].Icon.desaturated == false and not M.watching[items[1]], 'ended with no event: color back')
+    ticker.scripts.OnUpdate(ticker, 0.25)
+    assert(not ticker:IsShown(), 'nothing left to watch: the ticker stops')
 
     -- Active spells: no gold full-color swipe by default; the spell's own
     -- cooldown, gray, straight away.
@@ -218,7 +233,9 @@ world.run([==[
     cooling[9001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == true, 'gray while cooling')
     assert(M:SetSpellSwitch(c1, 's9001', 'ready', true) and M:SetSpellGlow(c1, 's9001', 'ready', 'mode', 'always') and not (M.glows[own] and M.glows[own].ready and M.glows[own].ready:IsShown()))
-    cooling[9001] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
+    cooling[9001] = false; M.coolingTicker.scripts.OnUpdate(M.coolingTicker, 0.25)
+    assert(own.Icon.desaturated == false, "a custom spell's icon gets its color back with no event too")
+    FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == false and M.glows[own].ready:IsShown(), 'ready: color and the While Ready glow')
     assert(M:SetSpellSwitch(c1, 's9001', 'proc', true))
     spellUsable[9001] = { false, true }; FireEvent('SPELL_UPDATE_USABLE')
