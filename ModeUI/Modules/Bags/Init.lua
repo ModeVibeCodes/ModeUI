@@ -21,7 +21,9 @@ addon.Bags = M
 -- change it once released.
 addon:RegisterModule("bags", M)
 
-M.VERSION = 1
+-- Version 2 (November 13, 2026): the health color moved to #131212; a window
+-- or title bar still at the old #1C1E21 follows.
+M.VERSION = 2
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 local Public, Number = addon.IsPublic, addon.IsNumber
 
@@ -76,12 +78,17 @@ for key, list in pairs(M.choices) do
     ALLOWED[key] = set
 end
 
--- Fills defaults and validates. Profile validation runs this on detached
--- copies, so it touches nothing but `db`. Errors on bad data; never resets
--- it. A later change to these settings adds a migration here, keyed by
--- `version`.
+-- Migrates, fills defaults and validates. Profile validation runs this on
+-- detached copies, so it touches nothing but `db`. Errors on bad data; never
+-- resets it.
 function M.Initialize(db)
     if db.version == nil then db.version = M.VERSION end
+    if db.version == 1 then
+        for _, key in ipairs({ "backgroundColor", "headerColor" }) do
+            if Kit.IsOldOnyxHealth(db[key]) then db[key] = Copy(Kit.onyx.health) end
+        end
+        db.version = 2
+    end
     assert(db.version == M.VERSION, "Invalid bags settings version")
     for key, default in pairs(M.defaults) do
         if db[key] == nil then db[key] = Copy(default) end

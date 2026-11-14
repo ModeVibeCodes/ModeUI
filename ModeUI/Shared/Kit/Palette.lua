@@ -14,8 +14,11 @@ Kit.palette = {
 }
 -- The Onyx skin: default health fill, empty bar, the rim and the black gap
 -- inside it. The rim was slate (#6A737D) until the owner asked for it closer
--- to black (November 12, 2026).
-Kit.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(37, 40, 44), inner = RGB(0, 0, 0),
+-- to black (November 12, 2026). The health fill was #1C1E21 until the owner
+-- asked for #131212 (November 13, 2026); modules that saved a copy of it
+-- move a value still at OLD_ONYX_HEALTH.
+Kit.OLD_ONYX_HEALTH = RGB(28, 30, 33)
+Kit.onyx = { health = RGB(19, 18, 18), track = RGB(10, 11, 12), border = RGB(37, 40, 44), inner = RGB(0, 0, 0),
     -- Mode Slate (November 13, 2026): bar backgrounds in a near-neutral gray,
     -- clearly lighter than the Onyx fill, shown at a strong opacity.
     -- A touch darker since (#44464A, owner, November 13, 2026).
@@ -23,6 +26,17 @@ Kit.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(37,
     -- Unit frame rims: a little lighter than `border`, to stand apart from
     -- the health bar (owner, November 13, 2026).
     frameRim = RGB(64, 69, 76) }
+
+-- True when a saved color is still the old Onyx health fill (#1C1E21), for
+-- the migrations that move it to the current one.
+function Kit.IsOldOnyxHealth(color)
+    if type(color) ~= "table" then return false end
+    for i = 1, 3 do
+        local value = color[i]
+        if not (addon.IsNumber(value) and math.abs(value - Kit.OLD_ONYX_HEALTH[i]) < 1e-6) then return false end
+    end
+    return true
+end
 
 -- Colors a region from a boolean that may be secret: a public value picks the
 -- color here; a secret one goes to SetVertexColorFromBoolean, which accepts

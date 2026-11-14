@@ -277,7 +277,16 @@ saved.profiles.Default.modules.bags.sortMode = 'name'
 local again = H.Load({ saved = saved, before = STUBS })
 again.run([==[
     local M = addon.Bags
-    assert(M.db.columns == 10 and M.db.sortMode == 'name' and M.db.version == 1, 'kept across reloads')
+    assert(M.db.columns == 10 and M.db.sortMode == 'name' and M.db.version == 2, 'kept across reloads')
+]==])
+-- Version 1 -> 2: a window or title bar still at the old health color (#1C1E21) takes #131212; a picked one stays.
+local v1 = world.saved()
+local one = v1.profiles.Default.modules.bags
+one.version, one.backgroundColor, one.headerColor = 1, { 28 / 255, 30 / 255, 33 / 255 }, { 1, 0, 0 }
+H.Load({ saved = v1, before = STUBS }).run([==[
+    local M, Kit = addon.Bags, addon.Kit
+    assert(M.db.version == 2 and M.db.backgroundColor[1] == Kit.onyx.health[1], 'the old health color follows')
+    assert(M.db.headerColor[1] == 1, 'a picked title bar color stays')
 ]==])
 local bad = world.saved()
 bad.profiles.Default.modules.bags.columns = 'many'

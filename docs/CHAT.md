@@ -14,7 +14,7 @@ measures messages, and it never writes Blizzard's globals or fields.
 
 | Part | Look |
 |---|---|
-| Window | Blizzard's background and border textures (`CHAT_FRAME_TEXTURES`) are hidden, so its own fades skip them. A fill (the unit frames' default health color, Onyx #1C1E21, at Background Opacity, 60%) inside ModeUI's standard border, as on the damage meter windows (see Border below). |
+| Window | Blizzard's background and border textures (`CHAT_FRAME_TEXTURES`) are hidden, so its own fades skip them. A fill (the unit frames' default health color, Onyx #131212, at Background Opacity, 60%) inside ModeUI's standard border, as on the damage meter windows (see Border below). |
 | Border | `Kit.ModeBoxBorder`, the standard border's rounded-rectangle form: one crisp 2px rim in Onyx #40454C (`Kit.BORDER_COLOR`), drawn on its own frame two levels above the window, with round corners as deep as `Kit.CapDepth` rounds a bar the edit band's height plus the rim (7 px by default; it follows Edit Box Height). The fill reaches 1px under the rim in three bands (`Kit.BoxFill`), so no seam shows; the corner masks round the fill and the edit band. A texture holds at most 3 masks, so each part takes only the corners it reaches (`Kit.MaskToBoxBorder`). The border has no settings (locked, like the unit frames' rim). The scroll bar starts below the top-right corner, and Scroll to Bottom sits clear of the bottom-right corner when no edit band fills it. |
 | Box | Blizzard's `Background` region stays as the window's box, moved to Text Inset (6 px) plus the border around the messages, plus the edit box when it sits inside and the scroll bar's 10 px gutter (more on top for the combat log's quick buttons). The tab dock, button frame and alerts that Blizzard anchors to it follow. |
 | Text | Expressway by default (the Font setting), with a crisp one-pixel shadow. Each window keeps its own Font Size from its tab's right-click menu; Blizzard re-applies the size but keeps the face. |
@@ -71,7 +71,7 @@ Version 2 (November 13, 2026, per the owner): values still at version 1's
 defaults move to the new ones (fill #0B0B0D → Mode Slate, 72% → 60%, border
 #25282C → #40454C) and the scroll bar is shown; values the user picked stay.
 Version 3 (same day, per the owner): the fill is the unit frames' default
-health color (Onyx #1C1E21), as the meters and tooltips; a fill still at
+health color (Onyx #131212), as the meters and tooltips; a fill still at
 version 2's Mode Slate follows.
 Version 4 (same day, per the owner): the window takes ModeUI's standard
 border, as the damage meter windows do; it has no settings, so `border`,

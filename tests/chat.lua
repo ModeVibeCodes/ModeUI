@@ -292,16 +292,21 @@ world.run([==[
     local old = { version = 1, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 72,
         borderColor = { Kit.onyx.border[1], Kit.onyx.border[2], Kit.onyx.border[3] }, scrollBar = false, idleOpacity = 30 }
     M.Initialize(old)
-    assert(old.version == 4 and old.backgroundColor[1] == Kit.onyx.health[1] and old.backgroundOpacity == 60 and old.scrollBar)
+    assert(old.version == 5 and old.backgroundColor[1] == Kit.onyx.health[1] and old.backgroundOpacity == 60 and old.scrollBar)
     assert(old.borderColor == nil and old.idleOpacity == 30 and old.tabHeight == 24)
     local picked = { version = 1, backgroundColor = { 1, 0, 0 }, backgroundOpacity = 80 }
     M.Initialize(picked); assert(picked.backgroundColor[1] == 1 and picked.backgroundOpacity == 80, 'picked values stay')
     local two = { version = 2, backgroundColor = { Kit.onyx.slate[1], Kit.onyx.slate[2], Kit.onyx.slate[3] } }
-    M.Initialize(two); assert(two.version == 4 and two.backgroundColor[1] == Kit.onyx.health[1], 'version 2 Mode Slate follows')
+    M.Initialize(two); assert(two.version == 5 and two.backgroundColor[1] == Kit.onyx.health[1], 'version 2 Mode Slate follows')
     -- Version 3 -> 4: the standard border has no settings, so they go; the rest stays.
     local three = { version = 3, border = false, borderSize = 3, borderColor = { 1, 0, 0 }, backgroundOpacity = 35 }
     M.Initialize(three)
-    assert(three.version == 4 and three.border == nil and three.borderSize == nil and three.borderColor == nil and three.backgroundOpacity == 35)
+    assert(three.version == 5 and three.border == nil and three.borderSize == nil and three.borderColor == nil and three.backgroundOpacity == 35)
+    -- Version 4 -> 5: a fill still at the old health color (#1C1E21) takes #131212.
+    local four = { version = 4, backgroundColor = { 28 / 255, 30 / 255, 33 / 255 } }
+    M.Initialize(four); assert(four.version == 5 and four.backgroundColor[1] == Kit.onyx.health[1], 'the old health color follows')
+    local mine = { version = 4, backgroundColor = { 0, 0, 1 } }
+    M.Initialize(mine); assert(mine.backgroundColor[3] == 1, 'a picked fill stays')
 ]==], "chat")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

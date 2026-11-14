@@ -20,7 +20,7 @@ local M = { title = L["Tooltip"], category = "interface", defaultEnabled = false
 addon.Tooltip = M
 addon:RegisterModule("tooltip", M)
 
-M.VERSION = 3
+M.VERSION = 4
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 local Public, Number = addon.IsPublic, addon.IsNumber
 
@@ -34,8 +34,9 @@ M.ELEMENT_ID = "modeTooltip"
 M.DEFAULT_POSITION = { target = "screen", placement = "center", point = "BOTTOMRIGHT", relativePoint = "BOTTOMRIGHT", x = -90, y = 110 }
 M.MOVER_WIDTH, M.MOVER_HEIGHT = 200, 64
 
--- The fill: the unit frames' default health color (Onyx #1C1E21), as the
--- chat and the meters (owner, November 13, 2026). Version 1 used #0B0B0D.
+-- The fill: the unit frames' default health color (Onyx #131212), as the
+-- chat and the meters (owner, November 13, 2026). Version 1 used #0B0B0D,
+-- version 3 the old health color #1C1E21.
 M.BACKGROUND_COLOR, M.OLD_BACKGROUND_COLOR = Copy(Kit.onyx.health), Kit.RGB(11, 11, 13)
 -- Text colors: reactions in the Mode palette, quest lines a vivid
 -- yellow-orange.
@@ -112,6 +113,11 @@ function M.Initialize(db)
         if db.borderSize == 2 then db.borderSize = 1 end
         if db.classBorder == true then db.classBorder = false end
         db.version = 3
+    end
+    -- Version 4: a fill still at the old health color (#1C1E21) takes #131212.
+    if db.version == 3 then
+        if Kit.IsOldOnyxHealth(db.backgroundColor) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        db.version = 4
     end
     assert(db.version == M.VERSION, "Invalid tooltip settings version")
     for key, default in pairs(M.defaults) do

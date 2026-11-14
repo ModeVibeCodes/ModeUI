@@ -20,11 +20,13 @@ addon:RegisterModule("chat", M)
 -- Version 4 (November 13, 2026): the window takes ModeUI's standard border,
 -- as the damage meter windows do (owner); Border, Border Size and Border
 -- Color are retired.
-M.VERSION = 4
+-- Version 5 (November 13, 2026): the health color moved to #131212; a fill
+-- still at the old #1C1E21 follows.
+M.VERSION = 5
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- Colors: the window fill (the unit frames' default health color, Onyx
--- #1C1E21, as the meters and tooltips), its border (ModeUI's standard border,
+-- #131212, as the meters and tooltips), its border (ModeUI's standard border,
 -- Kit.BORDER_COLOR: the unit frames' rim, #40454C, locked) and the edit box
 -- field (#0E0F11 on #2A2D32), as in the settings window. Version 1 used
 -- #0B0B0D and #25282C, version 2 Mode Slate (#44464A) (OLD_* and SLATE, for

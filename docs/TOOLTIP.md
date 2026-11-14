@@ -16,7 +16,7 @@ find the class and level lines.
 |---|---|
 | Tooltips | `GameTooltip`, `ItemRefTooltip` (clicked item links), `ShoppingTooltip1/2` and `ItemRefShoppingTooltip1/2` (comparisons), `GameNoHeaderTooltip`, `GameSmallHeaderTooltip`, `FriendsTooltip`. |
 | Frame | Blizzard's NineSlice (border and background) is faded: `SharedTooltip_SetBackdropStyle` re-applies its atlases and colors, never its alpha, so it stays gone. Azerite and corrupted overlays are faded. **Rounded** (default): a rounded box (ModeRound, radius 5) in Background Color at Background Opacity (92%), with a hollow rounded rim Border Size thick (ModeRing1-4) above it, so the see-through fill never takes the rim's color. Rounded off: a flat fill and a crisp square border. **Mode Gradient**: a soft white wash over the top, as on every Mode bar. |
-| Fill color | The Unit Frames' default health color (Onyx #1C1E21), as the chat and the meters. |
+| Fill color | The Unit Frames' default health color (Onyx #131212), as the chat and the meters. |
 | Border color | **Quality Border** (on): an item's quality color. **Class Border** (off by default): a player's class color. Otherwise Border Color (1 px, the unit frames' rim color #40454C). A unit the game keeps secret keeps Border Color. |
 | Screen | The tooltip is kept on the screen, border and all, wherever its anchor sits. |
 | Size | **Minimum Width** (0–400 px), **Padding** (extra room around the text, 0–20 px), **Scale**. Blizzard resets width and padding as it restyles a tooltip, so ModeUI sets them each time it fills. |

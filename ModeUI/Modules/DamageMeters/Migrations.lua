@@ -127,6 +127,19 @@ local function MigrateV6(db)
     end
 end
 
+-- Version 7 -> 8: the Unit Frames' health color moved from #1C1E21 to
+-- #131212 (owner, November 13, 2026); a background or header still at the
+-- old color follows.
+local function MigrateV7(db)
+    for _, window in ipairs(M.windows) do
+        local style = db[window]
+        if type(style) == "table" then
+            if Kit.IsOldOnyxHealth(style.backgroundColor) then style.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+            if Kit.IsOldOnyxHealth(style.headerColor) then style.headerColor = Copy(M.HEADER_COLOR) end
+        end
+    end
+end
+
 -- A window can't group with itself, and groups never loop.
 local function ValidateGroups(db)
     for _, window in ipairs(M.windows) do
@@ -146,6 +159,7 @@ function M.Initialize(db)
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == 6 then MigrateV6(db); db.version = 7 end
+    if db.version == 7 then MigrateV7(db); db.version = 8 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid damage meter settings version")
     if db.hideBlizzard == nil then db.hideBlizzard = true end
