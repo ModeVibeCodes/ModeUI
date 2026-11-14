@@ -49,6 +49,20 @@ power is restricted. ModeUI passes the count only to StatusBar `SetValue`
 Camelot's `TargetBoundComboPointBar`) through `pcall`. Fading `ComboFrame`
 uses the same alpha hook as the other native frames. Unverified in game.
 
+## Nameplate combo points — November 13, 2026
+
+The target's nameplate shows the same combo points (`Modules/Nameplates/Combo.lua`,
+same `Domain.ClassResource` reads and secret-safe sockets from
+`Shared/Kit/Points.lua`). Forever's
+[Blizzard_NamePlates.toc](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_NamePlates/Blizzard_NamePlates.toc)
+loads `Blizzard_ClassNameplateBar_Rogue` and `_Druid` with
+`[ExcludeLoadGameType camelot]`, so Blizzard draws no combo points on Forever
+nameplates and there is nothing to hide. The target plate is found by comparing
+`C_NamePlate.GetNamePlateForUnit("target")` with each plate's nameplate frame.
+The player's `UNIT_POWER_FREQUENT`, `UNIT_MAXPOWER` and `UNIT_DISPLAYPOWER` are
+registered with `RegisterUnitEvent(event, "player")` on the module's own frame,
+and `COMBO_TARGET_CHANGED` through `pcall`. Unverified in game.
+
 ## Unit frame cast bars — November 13, 2026
 
 Same cast API use as the nameplates (`UnitCastingInfo`, `UnitChannelInfo`,

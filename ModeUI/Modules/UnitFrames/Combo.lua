@@ -6,31 +6,19 @@ if not M then return end
 -- Druid's combo points) on the Target frame: one round socket per point (Onyx
 -- rim, dark socket) on an arc around the portrait, replacing Blizzard's
 -- ComboFrame, which Forever pins to the Target frame's portrait. A class
--- without a resource shows nothing. The count may be secret, so each point is
--- its own StatusBar spanning (i - 1, i): SetValue(count) fills it or leaves it
--- empty without the count ever being compared. Settings: db.comboPoints.
+-- without a resource shows nothing. The points are Shared/Kit/Points.lua's
+-- secret-safe sockets (one StatusBar per point). Settings: db.comboPoints.
 local Kit, Resource = addon.Kit, addon.Domain.ClassResource
-local ONYX, Tint = M.onyx, Kit.Tint
 -- Arc centres in degrees, measured from the portrait's outer side (away from
 -- the bars) toward the top.
 local CENTER = { outer = 0, topOuter = 45, bottomOuter = -45, top = 90, bottom = -90 }
 M.COMBO_SAMPLE = 3 -- points lit on the Edit Mode and preview stand-ins
 
-local function BuildPoint(parent, index)
-    local point = CreateFrame("Frame", nil, parent)
-    point.rim = Kit.Circle(point, "BACKGROUND", 0)
-    point.socket = Kit.Circle(point, "BACKGROUND", 1)
-    point.bar = CreateFrame("StatusBar", nil, point)
-    point.bar:SetMinMaxValues(index - 1, index)
-    point.bar:SetValue(index - 1)
-    return point
-end
-
 function M:BuildCombo(f)
     local combo = CreateFrame("Frame", nil, f)
     combo:SetAllPoints(f)
     combo.points = {}
-    for i = 1, Resource.MAX do combo.points[i] = BuildPoint(combo, i) end
+    for i = 1, Resource.MAX do combo.points[i] = Kit.ResourcePoint(combo, i) end
     combo:Hide()
     f.combo = combo
 end
@@ -42,10 +30,9 @@ function M:LayoutCombo(f, count)
     if not combo or not g then return end
     local cdb, fdb, px = self.db.comboPoints, self:FrameDB(f.unit), g.px
     local function Snap(v) return math.floor(v / px + 0.5) * px end
-    local size = math.max(2 * px, math.floor(cdb.size / (2 * px) + 0.5) * 2 * px)
+    local size = Kit.ResourcePointSize(cdb.size, px)
     local spacing, distance = Snap(cdb.spacing), Snap(cdb.distance)
     combo:SetFrameLevel(math.max(f.portrait:GetFrameLevel(), f.health:GetFrameLevel()) + 1)
-    local fill = addon.Media:GetTexture("UnitFrameCircle")
     local arc = fdb.showPortrait and g.portrait > 0
     -- On an arc: around the portrait's centre, the outer side mirrored by
     -- portrait side; the first point is the lower (or outer) end.
@@ -56,16 +43,7 @@ function M:LayoutCombo(f, count)
     for i, point in ipairs(combo.points) do
         point:SetShown(i <= count)
         if i <= count then
-            point:SetSize(size, size)
-            point.rim:ClearAllPoints(); point.rim:SetAllPoints(point); Tint(point.rim, M.RIM_COLOR, 1)
-            Kit.Inset(point.socket, point, px); Tint(point.socket, cdb.emptyColor, 1)
-            local bar = point.bar
-            bar:ClearAllPoints()
-            bar:SetPoint("TOPLEFT", point, "TOPLEFT", 2 * px, -2 * px)
-            bar:SetPoint("BOTTOMRIGHT", point, "BOTTOMRIGHT", -2 * px, 2 * px)
-            bar:SetStatusBarTexture(fill)
-            local c = cdb.activeColor
-            bar:SetStatusBarColor(c[1], c[2], c[3], 1)
+            Kit.LayoutResourcePoint(point, size, px, cdb.emptyColor, cdb.activeColor)
             point:ClearAllPoints()
             if arc then
                 local angle = center + (i - (count + 1) / 2) * step
@@ -88,11 +66,7 @@ function M:UpdateCombo()
     if count ~= f.combo.count then f.combo.count = count; self:LayoutCombo(f, count) end
     f.combo:SetShown(count > 0)
     if count == 0 then return end
-    local ok, points = Resource.Read()
-    for i = 1, count do
-        local bar = f.combo.points[i].bar
-        if ok then pcall(bar.SetValue, bar, points) else bar:SetValue(i - 1) end
-    end
+    Kit.FillResourcePoints(f.combo.points, count, Resource.Read())
 end
 
 -- Re-laid out from the settings: forget the count so the next update places them.

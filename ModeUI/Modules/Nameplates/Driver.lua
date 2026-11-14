@@ -45,12 +45,14 @@ function M:OnEnable()
     for event, part in pairs(UNIT_EVENTS) do
         Events:On(self, event, function(_, unit) self:OnUnitEvent(part, unit) end)
     end
+    self:SetComboEvents(true)
     for _, unit in ipairs(NP.ActiveUnits()) do self:OnUnitAdded(unit) end
 end
 
 function M:OnDisable()
     self.active = false
     Events:OffAll(self)
+    self:SetComboEvents(false)
     for unit in pairs(self.byUnit) do self:OnUnitRemoved(unit) end
 end
 
@@ -86,6 +88,7 @@ function M:OnUnitRemoved(unit)
     self:StopCast(plate)
     self:HideAuras(plate)
     self:DetachAuraContainers(plate)
+    self:ClearCombo(plate)
     plate.unit, plate.containerUnit = nil, nil
     plate:Hide()
     self:RestoreBlizzard(plate)

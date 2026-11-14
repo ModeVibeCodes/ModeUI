@@ -19,6 +19,7 @@ function M:UpdatePlate(plate)
     self:UpdateIndicator(plate)
     self:UpdateTarget(plate)
     self:UpdateFocus(plate)
+    self:UpdateCombo(plate)
     self:UpdateCast(plate)
     self:UpdateAuras(plate)
 end

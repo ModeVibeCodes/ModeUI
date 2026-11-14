@@ -95,6 +95,8 @@ function M:LayoutPlate(plate)
     self:PlaceIcon(plate, plate.raidIcon, db.raidAnchor, plate.markSize, plate.markSize, db.raidX, db.raidY)
     self:LayoutIndicator(plate)
 
+    -- Combo points: sized here, placed with the arrows (Combo.lua).
+    self:SizeCombo(plate)
     self:LayoutTarget(plate)
     self:LayoutFocus(plate)
     plate.containerDirty = true

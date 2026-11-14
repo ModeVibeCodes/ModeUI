@@ -113,8 +113,33 @@ aura filters decide what belongs to each, so secret aura data is never compared.
 3px), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
 **Arrow Gap**, up to 48 and 60), Border and Arrows, or None, in a **Color** of
 your choice (cyan by default). Arrows always sit outside the raid marker, the
-indicator and any aura row on their side. Name Only plates color the
+indicator, any aura row and the combo points on their side. Name Only plates color the
 name for Border and Glow. The target is found by comparing nameplate frames.
+
+## Combo points
+
+November 13, 2026, per the owner: combo points you can track on the plate of
+your target (`Combo.lua`, the **Combo Points** card on the **Target** tab). On
+WoW Forever combo points live on the target (`GetComboPoints("player",
+"target")`), and only Rogues, and Druids in Cat Form, have them
+(`Domain.ClassResource`, shared with the Target frame). Forever's own
+nameplates draw none: `Blizzard_NamePlates.toc` loads the Rogue and Druid class
+nameplate bars only outside `camelot`. So the points follow your target from
+plate to plate (`PLAYER_TARGET_CHANGED`, `COMBO_TARGET_CHANGED`) and refill on
+the player's power events (`UNIT_POWER_FREQUENT`, `UNIT_MAXPOWER`,
+`UNIT_DISPLAYPOWER`, unit-filtered to the player on the module's own frame).
+
+One round socket per point (the player's maximum, else five) in a row: a rim
+in the ModeUI border color, a dark socket and a fill (`Shared/Kit/Points.lua`,
+also used by the Target frame). The count may be secret, so each socket is its
+own StatusBar spanning `(i - 1, i)` and gets the count through `SetValue` only.
+Settings, per kind: **Show Combo Points** (on for enemies, off for friendly
+plates), **Anchor** (Bottom by default: below the cast bar; Top and Bottom sit
+past the name and cast bar, Left and Right beside the bar past the raid marker,
+indicators and aura rows, Center on the bar), **Point Size** (8px, snapped to
+even pixels), **Spacing** (2px), **Offset X/Y**, **Lit Point Color** (red) and
+**Empty Point Color** (Onyx track). Target arrows sit past points beside the
+bar. A class without combo points sees a note saying so and nothing shows.
 
 ## Focus
 
@@ -133,14 +158,14 @@ The top of the page shows one sample plate: the kind chosen with **Editing**,
 centered. It's built by the same code as the plates in the world, so it matches
 every setting, including Name Only, the target style and auras with their type
 colors. **Static** shows the cast 60% done; **Animated** loops it. **Click any
-part of the sample** (health bar, name, health text, cast bar, an aura or the raid
-marker) to jump to its settings; parts light up under the mouse.
+part of the sample** (health bar, name, health text, cast bar, an aura, the raid
+marker or the combo points) to jump to its settings; parts light up under the mouse.
 
 ## Settings page
 
 Tabs: **Nameplates** (style, size, textures, health), **Text** (name, health
 text, font), **Cast Bar** (layout, content, colors), **Auras**, **Target** (target
-indicator) and **Indicators** (the level, elite and quest indicator, and the raid
+indicator and combo points) and **Indicators** (the level, elite and quest indicator, and the raid
 marker). Clicking text in the preview opens its settings only where the text is
 written; the rest of the bar opens the health settings. Each tab starts
 with the Editing switch; settings are grouped on cards with accent titles, with
@@ -157,12 +182,12 @@ frames, never secure, so they also work in combat. Settings change outside comba
 
 ## Settings versions
 
-Version 7. Version 1 (one shared set) copies into both kinds; version 2 drops the
+Version 8. Version 1 (one shared set) copies into both kinds; version 2 drops the
 retired texture choice; version 3's single aura row becomes the three groups;
 version 4's target highlight switch becomes a target style, and each aura group
 grows the way its anchor did; version 5's Color Softness is removed; version 6's single indicator place and
-sizes go to each indicator. New
-settings take their defaults.
+sizes go to each indicator; version 7's old orange no-type crowd control rim moves
+to #FF5948. New settings (such as the combo points) take their defaults.
 
 ## Files
 
@@ -176,6 +201,7 @@ settings take their defaults.
 | `Target.lua` | target indicator styles, arrow placement and name colors |
 | `Indicator.lua` | the level, classification and quest indicators |
 | `Focus.lua` | the focus highlight, focus texture and fading other plates |
+| `Combo.lua` | combo points on the target's plate, following the target |
 | `Update.lua` | health, name, colors, threat, raid marker |
 | `CastBar.lua` | cast and channel bars, icon side, target line and timer |
 | `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |
@@ -183,14 +209,14 @@ settings take their defaults.
 | `Preview.lua` | the sample plate on the settings page and its click targets |
 | `Settings.lua` | the settings page |
 
-Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`;
-`Kit/Palette`, `AuraIcon`, `Kit.ModeGradient`, `Kit.FontPath`;
+Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`, `ClassResource`;
+`Kit/Palette`, `AuraIcon`, `Points`, `Kit.ModeGradient`, `Kit.FontPath`;
 `W.AnchorPicker`, `page:Columns` and the settings cards. Textures come from
 `tools/build_shape_textures.lua`.
 
 ## Not in this version
 
-- Class resource bars on enemy plates.
+- Class resources other than combo points (Forever has none for other classes).
 - Aura rim colors while the game hides aura details (it would need the
   dispel color curve on secret data).
 
@@ -206,9 +232,13 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`;
   - Move the name, health text, cast bar and raid marker with their anchors.
   - On **Auras**, pick each **Group** and set **Anchor** and **Grow**.
   - On **Target**, try each **Style**.
+  - As a Rogue (or a Druid in Cat Form), on **Target** in **Combo Points**, keep
+    **Show Combo Points** on and try each **Anchor**.
   - Click parts of the preview.
   - In the world, look at enemies and friendly players, target one, mark one,
     and put a debuff on an enemy.
+  - As a Rogue, target an enemy and use a combo point builder, then target
+    another enemy.
 - **Required state:** out of combat to change settings; enemy nameplates shown.
 - **Confirmation:**
   - The preview matches the plates in the world.
@@ -220,5 +250,7 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`;
   - Every element sits where its anchor says.
   - Auras are cropped with rims colored by type.
   - The target style shows on your target.
+  - Combo points show only on your target's plate, light up as you build them,
+    and move to the new target's plate when you change targets.
   - Settings sit on cards, the Editing pills line up with their label, and no
     Lua errors appear.

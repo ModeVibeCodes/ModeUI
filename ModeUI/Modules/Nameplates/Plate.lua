@@ -87,6 +87,7 @@ function M:BuildPlate(parent)
     for _, region in ipairs({ plate.targetGlow, plate.arrows.left, plate.arrows.right }) do region:Hide() end
     self:BuildIndicator(plate)
     self:BuildFocus(plate)
+    self:BuildCombo(plate)
     self:BuildCastTexts(plate, LiftedText)
     plate.castBox:Hide()
     plate:Hide()

@@ -239,6 +239,55 @@ world.run([==[
     nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
     assert(not p2.targeted and p2.healthBox.rim.vertexColor[1] == Kit.onyx.border[1])
 
+    -- Combo points (Rogue fixture) live on the target, so they follow its plate:
+    -- five sockets, the possibly secret count straight to each socket's SetValue.
+    local cp = plate.combo
+    assert(not cp:IsShown() and cp.count == 0 and M.comboPlate == nil, 'no target, no combo points')
+    assert(M.comboEvents.unitEvents.UNIT_POWER_FREQUENT[1] == 'player' and not addon.Events:IsOn(M, 'UNIT_POWER_FREQUENT'), 'player power, unit-filtered')
+    comboPoints = 2; nameplates.target = first; FireEvent('PLAYER_TARGET_CHANGED')
+    assert(cp:IsShown() and cp.count == 5 and cp.sockets[5]:IsShown() and not cp.sockets[6]:IsShown() and M.comboPlate == plate, 'five sockets on the target')
+    assert(cp.sockets[3].bar.low == 2 and cp.sockets[3].bar.high == 3 and cp.sockets[2].bar.value == 2, 'one bar per point')
+    assert(cp.sockets[1].bar.statusBarColor[1] == 240 / 255 and cp.sockets[1].rim.vertexColor[1] == Kit.BORDER_COLOR[1], 'lit color, ModeUI rim')
+    assert(not p2.combo:IsShown(), 'only on the target plate')
+    comboPoints = 4; FireEvent('UNIT_POWER_FREQUENT', 'player')
+    assert(cp.sockets[5].bar.value == 4, 'a power tick refills')
+    comboPoints = Secret('cp'); FireEvent('COMBO_TARGET_CHANGED')
+    assert(issecretvalue(cp.sockets[1].bar.value) and issecretvalue(cp.sockets[5].bar.value), 'secret count straight to SetValue')
+    comboPoints = 3; FireEvent('COMBO_TARGET_CHANGED')
+    -- Below the plate by default, past the cast bar.
+    local at = Point(cp)
+    assert(at[1] == 'TOP' and at[2] == plate.healthBox and at[3] == 'BOTTOM' and at[5] == -2 - plate.below, 'below, past the cast bar')
+    assert(math.abs(cp.width - (5 * 8 + 4 * 2)) < 1 and math.abs(cp.sockets[1].width - 8) < 1, 'row of 8px sockets, 2px apart')
+    -- Beside the bar: past the marker, indicators and aura rows; the arrows sit past the points.
+    assert(M:SetOption('enemy', 'comboAnchor', 'RIGHT') and M.byUnit.nameplate1 == plate and cp:IsShown())
+    at = Point(cp)
+    local clear = math.max(M:SideRoom(plate, 'RIGHT'), (plate.auraExtent or {}).RIGHT or 0)
+    assert(at[1] == 'LEFT' and at[3] == 'RIGHT' and at[4] == 3 + clear, 'beside the bar, past what sits there')
+    assert(M:SetOption('enemy', 'targetStyle', 'arrows') and M:ComboRoom(plate, 'RIGHT') == clear + 3 + cp.width)
+    assert(Point(plate.arrows.right)[4] >= M:ComboRoom(plate, 'RIGHT') + M.db.enemy.targetArrowGap, 'arrows outside the points')
+    assert(M:SetOption('enemy', 'targetStyle', 'border') and M:SetOption('enemy', 'comboAnchor', 'BOTTOM') and M:ComboRoom(plate, 'RIGHT') == 0)
+    -- Sizes snap to whole even pixels; settings are validated.
+    assert(M:SetOption('enemy', 'comboSize', 7) and math.abs(cp.sockets[1].width - 8) < 1, 'even sizes')
+    assert(M:SetOption('enemy', 'comboSize', 12) and math.abs(cp.sockets[1].width - 12) < 1 and M:SetOption('enemy', 'comboSize', 8))
+    assert(not M:SetOption('enemy', 'comboSize', 40) and not M:SetOption('enemy', 'comboAnchor', 'SIDEWAYS')
+        and not M:SetOption('enemy', 'comboActiveColor', { 2, 0, 0 }), 'validated')
+    assert(M:SetOption('enemy', 'showCombo', false) and not cp:IsShown() and M.comboPlate == nil, 'off')
+    assert(M:SetOption('enemy', 'showCombo', true) and cp:IsShown())
+    -- A Druid has them only in Cat Form (Energy); a class without them shows none.
+    units.player.class, units.player.token = 'DRUID', 'MANA'; FireEvent('UNIT_DISPLAYPOWER', 'player')
+    assert(not cp:IsShown(), 'Druid out of Cat Form')
+    units.player.token = 'ENERGY'; FireEvent('UNIT_DISPLAYPOWER', 'player')
+    assert(cp:IsShown(), 'Druid in Cat Form')
+    units.player.class = 'MAGE'; FireEvent('UNIT_MAXPOWER', 'player')
+    assert(not cp:IsShown() and M.comboPlate == nil, 'no combo points for a Mage')
+    units.player.class = 'ROGUE'; FireEvent('UNIT_MAXPOWER', 'player')
+    -- They follow the target; friendly plates show none by default.
+    nameplates.target = player; FireEvent('PLAYER_TARGET_CHANGED')
+    assert(not cp:IsShown() and not p2.combo:IsShown() and M.comboPlate == nil, 'friendly target: none by default')
+    nameplates.target = first; FireEvent('PLAYER_TARGET_CHANGED'); assert(cp:IsShown())
+    nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
+    assert(not cp:IsShown() and M.comboPlate == nil, 'cleared with the target')
+
     -- Focus: found like the target; a border, glow or stripes, its own texture, fading the others.
     local amber = M.db.enemy.focusColor
     nameplates.focus = first; FireEvent('PLAYER_FOCUS_CHANGED')
@@ -689,6 +738,12 @@ world.run([==[
     assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
     view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')
     assert(page.selectedSection.title == 'Indicators', 'marker click opens Indicators')
+    -- Combo points: the enemy sample shows every socket with a few lit; a click opens Target.
+    assert(sample.combo:IsShown() and sample.combo.count == 5 and sample.combo.sockets[5].bar.value == M.COMBO_SAMPLE, 'sample combo points')
+    assert(page.comboNote:GetText():find('Combo Points', 1, true), 'names your class\'s combo points')
+    view.targets.enemy.combo.scripts.OnMouseUp(view.targets.enemy.combo, 'LeftButton')
+    assert(page.selectedSection.title == 'Target', 'combo click opens Target')
+    assert(M:SetOption('enemy', 'showCombo', false) and not sample.combo:IsShown() and M:SetOption('enemy', 'showCombo', true))
     -- Indicators: quest, classification and level, each placed on its own;
     -- those sharing an anchor line up in one row.
     local parts = sample.indicatorParts
