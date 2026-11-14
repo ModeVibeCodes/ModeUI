@@ -19,6 +19,9 @@
   bypass restrictions, or assume Retail behavior applies to Forever. Unit values
   can be secret: pass them only to widgets documented as accepting them.
 - Secure frames are created, shown, moved and resized outside combat only.
+- A texture holds at most 3 masks; a 4th `AddMaskTexture` errors and stops
+  ModeUI loading. Round box content with `Kit.MaskToBoxBorder` (corners it
+  reaches) and `Kit.BoxFill`, never all four corner masks on one texture.
 - Follow `docs/ARCHITECTURE.md`. New code goes in `Libs/`, `Shared/` or
   `Modules/<Name>/`. Each module is a
   folder with `<Name>.xml` (listed in the TOC), `Init.lua` loaded first, and
