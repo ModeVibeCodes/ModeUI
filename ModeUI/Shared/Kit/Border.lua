@@ -114,16 +114,27 @@ function Kit.LayoutModeBoxBorder(border, host, options)
     s.LEFT:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -radius); s.LEFT:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 0, radius)
     s.RIGHT:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, -radius); s.RIGHT:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, radius)
     s.TOP:SetHeight(thickness); s.BOTTOM:SetHeight(thickness); s.LEFT:SetWidth(thickness); s.RIGHT:SetWidth(thickness)
-    local inset = math.max(0, thickness - px)
+    -- Content is rounded at the rim's outer curve, not its inner one: the rim
+    -- draws above it, so the extra is hidden, and every pixel inside the outer
+    -- curve is covered by content or rim. Rounding both at the inner curve
+    -- left the two soft (anti-aliased) edges meeting on the same pixels, which
+    -- let the background show through at the corners (owner's screenshots,
+    -- November 14, 2026).
+    local inset = 0
     for corner, spec in pairs(CORNERS) do
         local x, y = spec[4], spec[5]
         local c, mask = border.corners[corner], border.masks[corner]
         local art, holeArt = "ModeCorner" .. CORNER_ART[corner], "ModeCornerHole" .. CORNER_ART[corner]
         c.cap:SetTexture(Path(art)); c.cap:SetTexCoord(0, 1, 0, 1); Kit.Tint(c.cap, color, 1)
         c.cap:ClearAllPoints(); c.cap:SetPoint(corner, host, corner, 0, 0); c.cap:SetSize(radius, radius)
-        local hole = math.max(px, radius - thickness)
+        -- The hole starts half a pixel further in than the straight edges, so the
+        -- curve keeps the rim's width along the diagonal (a 2px ring on a small
+        -- radius otherwise covers a single pixel at 45 degrees). The hole is a
+        -- mask, sampled per pixel, so the half-pixel offset stays crisp.
+        local edge = thickness + px / 2
+        local hole = math.max(px, radius - edge)
         c.hole:SetTexture(Path(holeArt), "CLAMPTOWHITE", "CLAMPTOWHITE")
-        c.hole:ClearAllPoints(); c.hole:SetPoint(corner, host, corner, x * thickness, y * thickness); c.hole:SetSize(hole, hole)
+        c.hole:ClearAllPoints(); c.hole:SetPoint(corner, host, corner, x * edge, y * edge); c.hole:SetSize(hole, hole)
         local reach = math.max(px, radius - inset)
         mask:SetTexture(Path(art), "CLAMPTOWHITE", "CLAMPTOWHITE")
         mask:ClearAllPoints(); mask:SetPoint(corner, host, corner, x * inset, y * inset); mask:SetSize(reach, reach)
