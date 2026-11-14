@@ -43,7 +43,7 @@ function M:OnEnable()
         Events:On(self, event, function() self:Refresh() end)
     end
     for event, part in pairs(UNIT_EVENTS) do
-        Events:On(self, event, function(_, unit) self:OnUnitEvent(part, unit) end)
+        Events:On(self, event, function(name, unit, ...) self:OnUnitEvent(part, unit, name, ...) end)
     end
     self:SetComboEvents(true)
     for _, unit in ipairs(NP.ActiveUnits()) do self:OnUnitAdded(unit) end
@@ -94,7 +94,8 @@ function M:OnUnitRemoved(unit)
     self:RestoreBlizzard(plate)
 end
 
-function M:OnUnitEvent(part, unit)
+-- `event` and the rest are the game event's name and its payload after the unit.
+function M:OnUnitEvent(part, unit, event, ...)
     local plate = type(unit) == "string" and self.byUnit[unit]
     if not plate then return end
     if part == "Faction" then
@@ -107,7 +108,7 @@ function M:OnUnitEvent(part, unit)
     elseif part == "CastTarget" then self:UpdateCastTarget(plate)
     elseif part == "Classification" then self:UpdateHealthColor(plate); self:UpdateIndicator(plate)
     elseif part == "Auras" then self:UpdateAuras(plate)
-    else self:UpdateCast(plate) end
+    else self:OnCastEvent(plate, event, ...) end
 end
 
 -- Blizzard's own unit frame keeps running (it handles clicks and stacking);

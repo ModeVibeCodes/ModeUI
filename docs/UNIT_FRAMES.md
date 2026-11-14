@@ -361,7 +361,9 @@ are in `db[unit].castBar` (`enabled`, `hideBlizzard`, `position` below/above,
 `fontSize` 10, `color`, `lockedColor`), one of the frame's **own keys**: a
 Target matching the Player keeps its own, while Copy Style and Reset include
 it. Hide Blizzard Cast Bar fades `PlayerCastingBarFrame`, `TargetFrameSpellBar`
-or `FocusFrameSpellBar`. Cast painting and the timer are shared with
+or `FocusFrameSpellBar`. While faded, the Alpha animations on the bar itself
+run from 0 to 0: Blizzard's interrupt hold (`HoldFadeOutAnim`) sets the bar's
+alpha directly and would show it for a second. Cast painting and the timer are shared with
 Nameplates (`Kit.PaintCastBar`, `Kit.CastTimer` in `Shared/Kit/Cast.lua`).
 
 ## Combo points around the Target portrait

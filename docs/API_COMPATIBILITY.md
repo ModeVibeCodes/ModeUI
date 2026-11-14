@@ -74,6 +74,28 @@ bars are named in the Forever source: `PlayerCastingBarFrame`
 hook, never hidden or reparented. The ModeUI cast bar is a plain child of the
 secure unit button, shown and hidden in combat. Unverified in game.
 
+## Interrupted cast bars — November 14, 2026
+
+Blizzard's cast bars inherit `CastingBarFrameAnimsTemplate`
+(`Blizzard_UIPanels_Game/Shared/CastingBarFrameTemplates.xml`, the same on the
+Forever branch). `CastingBarMixin:PlayInterruptAnims` plays `HoldFadeOutAnim`
+on every interrupt, without the `GetAlpha() > 0` check `PlayFadeAnim` makes:
+an Alpha animation on the bar itself (1 to 1 for 1s, then 1 to 0 over 0.3s)
+whose OnFinished hides the bar. An Alpha animation's from and to alpha replace
+the region's own while it plays, so a bar faded with `SetAlpha(0)` showed for
+1.3s. While Unit Frames fade a region, its Alpha animations that target the
+region itself (`GetAnimationGroups`, `GetAnimations`, `GetTarget`) are set to
+0 and 0 with `SetFromAlpha`/`SetToAlpha` (public numbers; documented
+`AllowedWhenUntainted` only for secret arguments) and restored when it shows
+again. Nameplate cast bars are unaffected: Blizzard's sits under the faded
+unit frame, and a child can't show through a parent at alpha 0.
+
+Nameplate cast events now read their payload: `interruptedBy` on
+`UNIT_SPELLCAST_CHANNEL_STOP` and `complete` on `UNIT_SPELLCAST_EMPOWER_STOP`,
+as Blizzard's bars do. Both are secret while casts are restricted; a secret
+`interruptedBy` still counts as an interrupt, a secret `complete` does not.
+Unverified in game.
+
 ## Unit frame status — November 13, 2026
 
 `UnitAffectingCombat` and `UnitCanAttack` carry no secret flags in Forever's

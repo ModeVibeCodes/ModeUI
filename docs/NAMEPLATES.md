@@ -40,7 +40,9 @@ frame and fades Blizzard's art. Each plate has:
   cast's duration object; empty while the game hides both). Pick a text with
   **Position Of** to set its **Anchor** (Left, Center, Right inside the bar; Top
   and Bottom anchors outside it) and **Offset X/Y**. Texts outside the bar take
-  a line on their side, and the cast bar and name move past it.
+  a line on their side, and the cast bar and name move past it. An interrupted
+  cast stays a second, full, in the **Interrupted** color with "Interrupted" as
+  its spell name, then fades, as Blizzard's cast bars do.
 - **Indicators**: a quest icon (quest bosses and creatures tied to your active
   quests), Blizzard's elite, rare elite, rare and boss icons, and the level in
   its difficulty color. Pick one with **Indicator** (Quest, Elite and Rare,

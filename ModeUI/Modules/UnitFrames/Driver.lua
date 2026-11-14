@@ -111,7 +111,7 @@ end
 function M:OnInitialize()
     self.Initialize(self.db)
     self.frames, self.ghosts, self.watched = {}, {}, {}
-    self.nativeHidden, self.nativeAlpha, self.nativeHooks, self.nativeMouse = {}, {}, {}, {}
+    self.nativeHidden, self.nativeAlpha, self.nativeHooks, self.nativeMouse, self.nativeAnims = {}, {}, {}, {}, {}
     local function OnEvent(_, event, unit) self:OnEvent(event, unit) end
     self.events = CreateFrame("Frame")
     self.events:SetScript("OnEvent", OnEvent)
