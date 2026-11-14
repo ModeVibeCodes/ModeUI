@@ -74,3 +74,39 @@ function Group.Absorbs(unit)
     if not ok or (Public(amount) and amount == nil) then return false end
     return true, amount
 end
+
+-- A heal prediction calculator (CreateUnitHealPredictionCalculator), or nil.
+-- Its default clamp modes are MissingHealth: heals up to the missing health,
+-- and shields up to what's left after them, with a "clamped" flag when the
+-- shield is bigger (an overshield).
+function Group.NewCalculator()
+    local ok, calculator = Q.Call(CreateUnitHealPredictionCalculator)
+    if ok and calculator then return calculator end
+end
+
+-- Heals, shields and the overshield for a unit, every amount possibly secret
+-- (for StatusBar:SetValue) and `overflow` a possibly secret boolean (for
+-- SetAlphaFromBoolean). With a calculator (UnitGetDetailedHealPrediction):
+-- heals and the shield clamped to the missing health, the total shield for
+-- the overshield and whether it overflows. Without one: the plain amounts,
+-- and no overshield (overflow false).
+function Group.Prediction(unit, calculator)
+    local result = {}
+    if calculator and Q.Call(UnitGetDetailedHealPrediction, unit, "player", calculator) then
+        local ok, max = Q.Call(calculator.GetMaximumHealth, calculator)
+        local okHeals, heals = Q.Call(calculator.GetIncomingHeals, calculator)
+        local okShield, shield, clamped = Q.Call(calculator.GetDamageAbsorbs, calculator)
+        local okTotal, total = Q.Call(calculator.GetTotalDamageAbsorbs, calculator)
+        if ok and okHeals and okShield and okTotal then
+            result.max, result.heals, result.shield, result.total, result.overflow = max, heals, shield, total, clamped
+            result.calculated = true
+            return result
+        end
+    end
+    local okMax, max = Q.Call(UnitHealthMax, unit)
+    if okMax then result.max = max end
+    result.heals = select(2, Group.IncomingHeals(unit))
+    result.shield = select(2, Group.Absorbs(unit))
+    result.overflow = false
+    return result
+end

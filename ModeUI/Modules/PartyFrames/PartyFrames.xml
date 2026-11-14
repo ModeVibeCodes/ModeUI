@@ -10,8 +10,10 @@
     <Script file="Icons.lua"/>
     <Script file="Auras.lua"/>
     <Script file="AuraContainers.lua"/>
+    <Script file="Dispel.lua"/>
     <Script file="Ghost.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsElements.lua"/>
     <Script file="SettingsAuras.lua"/>
 </Ui>

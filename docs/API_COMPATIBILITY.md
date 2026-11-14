@@ -1214,3 +1214,43 @@ confirmation is pending for everything here.
   have their own tooltips (`AuraButtonPrivateMixin:OnEnter_Intrinsic`); Tooltips
   off disables the button's mouse. Private auras (`C_UnitAuras.AddPrivateAuraAnchor`,
   `AllowedWhenUntainted`) are not used yet.
+
+### Party frames, second pass — November 13, 2026
+
+Same source (Forever branch 1.60.1, build 70938). Native confirmation pending.
+
+- **Debuffs by type.** `CustomAuraContainerTemplate` options take
+  `candidateFilters` (`Blizzard_CustomAuraContainer.lua` `ValidateCandidateFilters`;
+  checked in `AuraContainerUtil.DoesAuraPassCandidateFilters` in the secure
+  environment): `includeDispelTypes` / `excludeDispelTypes` are maps of dispel
+  type names (`"Magic"` ...). Each debuff type group is one container group with
+  `includeDispelTypes = { [type] = true }`; Other Debuffs uses
+  `excludeDispelTypes` for all five. Aura slots take the same filters, so the
+  debuff effects are one `AddAuraSlot` per type. Regions given to
+  `AddDispelTypeTexture` only need to descend from the button
+  (`ValidateInboundScriptObject` uses `RegionUtil.IsDescendantOf`), so the
+  effect sets live on child frames of the slot button and are rounded by that
+  button's own border masks.
+- **Heal prediction.** `CreateUnitHealPredictionCalculator` (no flags) and
+  `UnitGetDetailedHealPrediction(unit, "player", calculator)`
+  (`AllowedWhenUntainted` arguments, which plain unit tokens satisfy). The
+  default clamp modes are `MissingHealth` (`UnitHealPredictionCalculatorSharedDocumentation.lua`):
+  heals clamp to the missing health, shields to the missing health after heals.
+  `GetIncomingHeals`, `GetDamageAbsorbs` (amount, clamped),
+  `GetTotalDamageAbsorbs` and `GetMaximumHealth` go to StatusBar
+  `SetMinMaxValues`/`SetValue`; the clamped flag goes to
+  `SetAlphaFromBoolean` on the overshield bar (as oUF's
+  `OverDamageAbsorbIndicator`). No amount is compared, not even with nil.
+- **Hatch on a status bar.** A status bar stretches its fill texture to the
+  value, so Mode Slate Hatch can't tile there. `Kit.FillTexture` keeps the
+  bar's fill invisible and anchors a clipping frame
+  (`Frame:SetClipsChildren`) to the fill texture; a full-size hatch texture
+  inside it (`SetTexture(path, "REPEAT", "REPEAT", "NEAREST")`, tex coords of
+  one texel per screen pixel) shows only where the bar is filled.
+- **Power type.** `UnitPowerType` documents no secret returns; Mana Users and
+  Healer Mana read its token through `Domain.Power.Read` and re-lay the bars on
+  `UNIT_DISPLAYPOWER` and role changes (child frames only, safe in combat).
+- **Keeping the group in place.** The stand-in's start corner is read with
+  `GetLeft`/`GetBottom`/`GetWidth`/`GetHeight` and effective scales before and
+  after a resize; the difference goes to `PositionManager:SetOffsets`, outside
+  combat. No client API beyond those.

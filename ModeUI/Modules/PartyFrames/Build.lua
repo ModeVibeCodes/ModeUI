@@ -3,42 +3,42 @@ local M = addon.PartyFrames
 if not M then return end
 
 -- One member's face, the same for a secure header button and its Edit Mode
--- or preview stand-in: health and power bars inside the ModeUI border
--- (Kit.ModeBorder), incoming heals and absorbs riding on the health fill,
--- texts and icons above, highlights for your target, the mouse and a debuff
--- you can dispel, and a layer for aura icons. Nothing here is protected:
--- these are children of the button, so they may change in combat.
+-- or preview stand-in: health and power bars inside the ModeUI border in its
+-- box form (Kit.ModeBoxBorder: corners as round as the chat windows'), heals
+-- and shields riding on the health fill, an overshield filling back from full
+-- health, texts and icons above, highlights for your target and the mouse,
+-- debuff effects by type, and a layer for aura icons. Nothing here is
+-- protected: these are children of the button, so they may change in combat.
 local Kit = addon.Kit
-
--- A bar that rides on the health fill: its left edge follows the end of the
--- health fill texture, its range is the health range, so a (possibly secret)
--- amount draws at the right length without arithmetic. As oUF's HealthPrediction.
-local function Rider(parent)
-    local bar = CreateFrame("StatusBar", nil, parent)
-    bar:SetStatusBarTexture(Kit.FLAT)
-    bar:SetMinMaxValues(0, 1); bar:SetValue(0)
-    return bar
-end
 
 function M:BuildFace(f)
     local panel = CreateFrame("Frame", nil, f)
     panel:SetAllPoints(f)
     f.panel = panel
-    panel.border = Kit.ModeBorder(panel)
+    panel.border = Kit.ModeBoxBorder(panel)
     panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)
     panel.hairline:SetTexture(Kit.FLAT)
     f.health, f.power = Kit.Bar(panel), Kit.Bar(panel)
-    f.healPrediction, f.absorb = Rider(f.health), Rider(f.health)
+    -- Inset power bars wear a border of their own.
+    f.powerBorder = Kit.ModeBoxBorder(f.power)
+    -- Riders: bars on the health bar that take its range, so a (possibly
+    -- secret) amount draws at the right length without arithmetic.
+    f.healPrediction, f.absorb, f.overshield = Kit.Bar(f.health), Kit.Bar(f.health), Kit.Bar(f.health)
+    for _, bar in ipairs({ f.healPrediction, f.absorb, f.overshield }) do
+        bar.bg:Hide(); bar:SetMinMaxValues(0, 1); bar:SetValue(0)
+    end
     -- Highlights sit over the bars and under the text.
     local glow = CreateFrame("Frame", nil, f)
     glow:SetAllPoints(panel)
     f.glowLayer = glow
-    -- Border highlights: the ModeUI border shape again, in the highlight color.
-    f.targetRing, f.dispelRing = Kit.CapRing(glow, 1), Kit.CapRing(glow, 2)
+    f.targetRing = Kit.ModeBoxBorder(glow)
     f.targetFill = glow:CreateTexture(nil, "ARTWORK", nil, 0)
-    f.dispelFill = glow:CreateTexture(nil, "ARTWORK", nil, 0)
     f.hover = glow:CreateTexture(nil, "ARTWORK", nil, -1)
-    for _, region in ipairs({ f.targetFill, f.dispelFill, f.hover }) do region:SetTexture(Kit.FLAT); region:Hide() end
+    -- Debuff effects for samples and clients without aura containers
+    -- (Dispel.lua; in the world the game shows them through aura slots).
+    f.dispel = { ring = Kit.ModeBoxBorder(glow), health = glow:CreateTexture(nil, "ARTWORK", nil, 1),
+        gradient = glow:CreateTexture(nil, "ARTWORK", nil, 2) }
+    for _, region in ipairs({ f.targetFill, f.hover, f.dispel.health, f.dispel.gradient }) do region:SetTexture(Kit.FLAT); region:Hide() end
     f.textLayer = CreateFrame("Frame", nil, f)
     f.textLayer:SetAllPoints(panel)
     f.texts = {}
@@ -68,3 +68,6 @@ function M:HookHover(f)
     f:HookScript("OnEnter", function() if self.db.hoverHighlight then f.hover:Show() end end)
     f:HookScript("OnLeave", function() f.hover:Hide() end)
 end
+
+-- Shows or hides every piece of a box border (its rim frame).
+function M.ShowBorder(border, shown) border.edge:SetShown(shown and true or false) end

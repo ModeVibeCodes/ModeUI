@@ -151,9 +151,11 @@ function M:SyncHeaderPosition()
     local right, top = left + width, bottom + height
     local px = Kit.PixelSize(header)
     local function Snap(v) return math.floor(v / px + 0.5) * px end
-    local point = self.growthPoints[self.db.growth][1]
-    local x = point == "LEFT" and left or point == "RIGHT" and right or (left + right) / 2
-    local y = point == "TOP" and top or point == "BOTTOM" and bottom or (top + bottom) / 2
+    -- By the corner the group grows from (the header is one member wide or
+    -- tall), so members joining or leaving never move the first one.
+    local corner = self.growthCorners[self.db.growth]
+    local x = corner:find("RIGHT") and right or left
+    local y = corner:find("TOP") and top or bottom
     header:ClearAllPoints()
-    header:SetPoint(point, UIParent, "BOTTOMLEFT", Snap(x), Snap(y))
+    header:SetPoint(corner, UIParent, "BOTTOMLEFT", Snap(x), Snap(y))
 end
