@@ -49,6 +49,7 @@ Shared\Kit\Edges.lua
 Shared\Kit\Capsule.lua
 Shared\Kit\Border.lua
 Shared\Kit\Slot.lua
+Shared\Kit\Points.lua
 Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
 Shared\Kit\Cast.lua

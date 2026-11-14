@@ -6,7 +6,8 @@ if not M then return end
 -- centered and built by the same code as the plates in the world, so it always
 -- matches the current settings (layout, auras, target style, Name Only).
 -- Static shows a cast part-way through; Animated loops it. Clicking a part of
--- the sample (health, name, health text, cast bar, an aura, the raid marker)
+-- the sample (health, name, health text, cast bar, an aura, the raid marker,
+-- the combo points)
 -- jumps to its settings. Shown through the shared settings preview (W.Preview).
 local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local RaidIcon, UnitColor, Level = addon.Domain.RaidIcon, addon.Domain.UnitColor, addon.Domain.Level
@@ -139,6 +140,7 @@ function M:PaintSample(plate, style, sample, progress)
     local focus = page and page.selectedSection and page.selectedSection.title == L["Focus"] or false
     self:PaintTarget(plate, style.targetStyle ~= "none" and sample.targeted == true and not focus)
     self:PaintFocus(plate, focus, focus)
+    self:PaintSampleCombo(plate, style)
     self:PaintSampleAuras(plate, style, sample)
     if not style.showCastBar or plate.nameOnly then self:StopCast(plate); return end
     plate.cast:SetMinMaxValues(0, 1); plate.cast:SetValue(progress)
@@ -178,6 +180,14 @@ function M:PreviewBounds(plate, style, sample)
                 end
             end
         end
+    end
+    -- Combo points: past everything else on a side, else in a band.
+    local combo = self:SampleComboCount(style)
+    if combo > 0 then
+        local size = Kit.ResourcePointSize(style.comboSize, px)
+        local width = combo * size + (combo - 1) * math.floor(style.comboSpacing / px + 0.5) * px
+        if side[style.comboAnchor] then side[style.comboAnchor] = side[style.comboAnchor] + 3 * px + width + math.abs(style.comboX)
+        else Band(style.comboAnchor, size + math.abs(style.comboY)) end
     end
     if style.targetStyle == "arrows" or style.targetStyle == "borderArrows" then
         for key in pairs(side) do side[key] = side[key] + style.targetArrowGap * px + style.targetArrowSize end
@@ -248,6 +258,7 @@ function M:CreateConfigPreview(parent)
             name = Clickable(plate.name, kind, "name", nil, plate.textLayer),
             healthText = Clickable(plate.healthText, kind, "healthText", nil, plate.textLayer),
             markers = Clickable(plate.raidIcon, kind, "markers", nil, plate.textLayer),
+            combo = Clickable(plate.combo, kind, "combo"),
             quest = Clickable(plate.indicatorParts.quest, kind, "indicator", "quest", plate.textLayer),
             classification = Clickable(plate.indicatorParts.classification, kind, "indicator", "classification", plate.textLayer),
             level = Clickable(plate.indicatorParts.level, kind, "indicator", "level", plate.textLayer),

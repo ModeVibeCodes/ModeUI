@@ -30,7 +30,7 @@ addon:RegisterModule("damageMeters", M)
 -- Border Size and Border Color are retired.
 -- Version 7: the title keeps the meter's own capitals (owner: not every
 -- letter capitalized) and takes Title Position, Title X and Title Y.
-M.VERSION = 7
+M.VERSION = 8
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows, in sidebar order, with their Edit Mode element (and saved
@@ -60,8 +60,8 @@ M.defaultPositions = {
 }
 
 -- Colors: the window rim (#101010), the background inside it (the Unit
--- Frames' default health color, Onyx #1C1E21, as the chat and tooltips;
--- #040404 until version 5), bars for anything without a class (#78808C). The
+-- Frames' default health color, Onyx #131212, as the chat and tooltips;
+-- #040404 until version 5, #1C1E21 until version 8), bars for anything without a class (#78808C). The
 -- header is an Onyx bar: the same health fill in Mode Gradient.
 -- The border is ModeUI's standard border (Kit.ModeBoxBorder): locked, like
 -- the unit frames' rim, so it has no settings.

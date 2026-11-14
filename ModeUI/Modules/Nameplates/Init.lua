@@ -8,7 +8,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- their own settings. Unit values can be secret and only reach widgets
 -- documented as accepting them. See docs/NAMEPLATES.md.
 -- Files: Init (this), Migrations, Driver, Plate, Layout, Target, Indicator, Focus,
--- Update, CastBar, Auras, AuraContainers, Preview, Settings.
+-- Combo, Update, CastBar, Auras, AuraContainers, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Nameplates"], category = "frames", defaultEnabled = false,
     configDescription = L["Onyx nameplates with health, names, cast bars, auras and raid markers."],
@@ -92,6 +92,9 @@ local function Style(kind)
         -- Focus: a highlight, its own health bar texture, and fading other plates.
         focusStyle = "border", focusColor = RGB(255, 181, 71), focusStripeOpacity = 40, focusTexture = "default",
         focusFadeOthers = 100,
+        -- Combo points on your target's plate (a Rogue's, or a Cat Form Druid's).
+        showCombo = enemy, comboAnchor = "BOTTOM", comboX = 0, comboY = 0, comboSize = 8, comboSpacing = 2,
+        comboActiveColor = RGB(240, 84, 84), comboEmptyColor = Copy(Kit.onyx.track),
         -- Auras: settings for every group, then each group on its own.
         showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
         auraBorderSize = 2, auraCorners = "sharp", auraCCGlow = true, auraGlowStyle = "gcd",
@@ -114,7 +117,8 @@ M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendl
 M.identityKeys = { show = true }
 M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, textColor = true, targetColor = true,
     auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true,
-    auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true, auraTimerColor = true }
+    auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true, auraTimerColor = true,
+    comboActiveColor = true, comboEmptyColor = true }
 -- Aura border colors by the game's dispel type name.
 M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Disease = "auraDiseaseColor",
     Poison = "auraPoisonColor", Enrage = "auraEnrageColor", Bleed = "auraBleedColor" }
@@ -135,7 +139,8 @@ M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = {
     questX = { -50, 50, 1 }, questY = { -50, 50, 1 }, questSize = { 8, 32, 1 },
     classificationX = { -50, 50, 1 }, classificationY = { -50, 50, 1 }, classificationSize = { 8, 32, 1 },
     levelX = { -50, 50, 1 }, levelY = { -50, 50, 1 }, levelSize = { 6, 20, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
-    targetThickness = { 1, 3, 1 }, targetArrowSize = { 8, 48, 1 }, targetArrowGap = { 0, 60, 1 } }
+    targetThickness = { 1, 3, 1 }, targetArrowSize = { 8, 48, 1 }, targetArrowGap = { 0, 60, 1 },
+    comboX = { -50, 50, 1 }, comboY = { -50, 50, 1 }, comboSize = { 4, 24, 1 }, comboSpacing = { 0, 12, 1 } }
 M.groupRanges = { size = { 10, 40, 1 }, max = { 1, 12, 1 }, x = { -50, 50, 1 }, y = { -50, 50, 1 } }
 -- Anchors around the plate, read like a compass: Top sits above the name,
 -- Bottom below the cast bar, Left and Right beside the health bar.
@@ -167,6 +172,7 @@ M.choices = {
     auraGlowStyle = { { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,
     questAnchor = M.elementAnchors, classificationAnchor = M.elementAnchors, levelAnchor = M.elementAnchors,
+    comboAnchor = M.elementAnchors,
 }
 M.growChoices = { { id = "right", label = "Right" }, { id = "left", label = "Left" }, { id = "up", label = "Up" },
     { id = "down", label = "Down" }, { id = "center", label = "Center" } }

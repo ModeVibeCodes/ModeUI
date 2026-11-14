@@ -185,10 +185,15 @@ world.run([==[
     -- Version 1: a fill still at #0B0B0D takes the health color; the health bar settings go.
     local old = { version = 1, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, healthBar = true, healthHeight = 6, healthColor = { 0, 1, 0 } }
     M.Initialize(old)
-    assert(old.version == 3 and old.backgroundColor[1] == Kit.onyx.health[1] and old.healthBar == nil and old.healthColor == nil)
+    assert(old.version == 4 and old.backgroundColor[1] == Kit.onyx.health[1] and old.healthBar == nil and old.healthColor == nil)
     assert(old.borderSize == 1 and old.classBorder == false, 'version 2 defaults: 1px, no class color')
     local picked = { version = 2, borderSize = 3, classBorder = false }
     M.Initialize(picked); assert(picked.borderSize == 3, 'a picked border size stays')
+    -- Version 3 -> 4: a fill still at the old health color (#1C1E21) takes #131212.
+    local three = { version = 3, backgroundColor = { 28 / 255, 30 / 255, 33 / 255 } }
+    M.Initialize(three); assert(three.version == 4 and three.backgroundColor[1] == Kit.onyx.health[1], 'the old health color follows')
+    local mine = { version = 3, backgroundColor = { 0, 0, 1 } }
+    M.Initialize(mine); assert(mine.backgroundColor[3] == 1, 'a picked fill stays')
 ]==], "tooltip")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

@@ -33,15 +33,17 @@ function M:LayoutTarget(plate)
 end
 
 -- Arrows always sit outside everything beside the bar on their side: the raid
--- marker, the indicator and any aura row anchored Left or Right. Called again
--- whenever the aura rows change.
+-- marker, the indicator, any aura row anchored Left or Right and the combo
+-- points, which are placed here first. Called again whenever the aura rows or
+-- the combo points change.
 function M:PlaceArrows(plate)
+    self:PlaceCombo(plate)
     local db, px = self:Style(plate), plate.px or 1
     local host = plate.nameOnly and plate.name or plate.healthBox
     local size = math.max(px, math.floor(db.targetArrowSize / px + 0.5) * px)
     local gapPixels = db.targetArrowGap * px
     local extent = plate.auraExtent or {}
-    local function Clear(side) return math.max(self:SideRoom(plate, side), extent[side] or 0) end
+    local function Clear(side) return math.max(self:SideRoom(plate, side), extent[side] or 0, self:ComboRoom(plate, side)) end
     for side, arrow in pairs(plate.arrows) do
         arrow:SetSize(size, size)
         arrow:ClearAllPoints()
@@ -95,4 +97,6 @@ end
 function M:UpdateTargets()
     local targetPlate = Domain.Nameplate.ForUnit("target") or false
     for _, plate in pairs(self.byUnit) do self:UpdateTarget(plate, targetPlate) end
+    -- Combo points live on the target, so they follow it to its plate.
+    self:UpdateCombos()
 end

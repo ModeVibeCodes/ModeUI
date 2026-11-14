@@ -150,8 +150,8 @@ the pixel grid. From the outside in:
 | Part | Default | Setting |
 |---|---|---|
 | Border | ModeUI's standard border, as on the unit frames' health bar: one crisp 2px rim in Onyx #40454C (`Kit.BORDER_COLOR`), round corners as deep as a bar the header's height would round (6px by default), above what the window holds | none: the border is locked, like the unit frames' rim |
-| Background | the Unit Frames' default health color (Onyx #1C1E21) at 75% (#040404 until settings version 5, which moves a background still at it) | Frame › Background Color, Background Opacity |
-| Header | 20px Onyx bar: Mode Gradient in the Unit Frames health color (#1C1E21) | Header › Texture, Height, Header Color, Header Opacity |
+| Background | the Unit Frames' default health color (Onyx #131212) at 75% (#040404 until settings version 5, which moves a background still at it) | Frame › Background Color, Background Opacity |
+| Header | 20px Onyx bar: Mode Gradient in the Unit Frames health color (#131212) | Header › Texture, Height, Header Color, Header Opacity |
 | Title | 11, the meter's own capitals ("Damage Done"), Mode cyan, outlined, left | Text › Title; Header › Uppercase Title, Title Position, Title X, Title Y |
 | Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
 | Timer | 11, #B9B9B9, outlined, at the right edge | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |

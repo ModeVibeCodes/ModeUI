@@ -13,7 +13,7 @@ bag and the keyring show together on one grid of slots.
 
 | Part | Look and behavior |
 |---|---|
-| Window | A fill in Background Color (the unit frames' health color, Onyx #1C1E21, at 95%) inside ModeUI's border in its rounded-rectangle form (`Kit.ModeBoxBorder`: 2px, `Kit.BORDER_COLOR`, Corner Radius 6). |
+| Window | A fill in Background Color (the unit frames' health color, Onyx #131212, at 95%) inside ModeUI's border in its rounded-rectangle form (`Kit.ModeBoxBorder`: 2px, `Kit.BORDER_COLOR`, Corner Radius 6). |
 | Header | A Mode Gradient bar in Header Color over a one-pixel black divider: the **Bags** title on the left; **Sort** (a dropdown that names the view order, with the Mode chevron), **Clean Up** and the close cross on the right, in the text color and the Mode cyan under the mouse. Unlocked, dragging the header moves the window (out of combat). |
 | Search | A Mode field under the header. It sets the game's own bag search (`C_Container.SetItemSearch`, the one Blizzard's bag search box uses), so names, types and tooltip text match; items that don't match fade to 25%. Escape clears it; closing the bags clears it. |
 | Slots | Columns wide (12), Slot Size (38 px) apart by Spacing (4 px), Padding (8 px) inside the border. Each slot looks like an action bar slot: a hollow rim Slot Border Size thick (2px, Onyx border color), a near-black fill with the ActionBarSlot grain at Slot Opacity (75%), the icon one pixel inside the rim cropped square. Pushed and highlight states are flat Mode overlays. |

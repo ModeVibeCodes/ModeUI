@@ -49,6 +49,11 @@ function M.Initialize(db)
         db.border, db.borderSize, db.borderColor = nil, nil, nil
         db.version = 4
     end
+    -- Version 5: the health color moved from #1C1E21 to #131212.
+    if db.version == 4 then
+        if addon.Kit.IsOldOnyxHealth(db.backgroundColor) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        db.version = 5
+    end
     assert(db.version == M.VERSION, "Invalid chat settings version")
     for key, default in pairs(M.defaults) do
         if db[key] == nil then db[key] = Copy(default) end

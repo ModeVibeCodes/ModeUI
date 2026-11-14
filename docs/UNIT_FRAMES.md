@@ -552,7 +552,7 @@ every frame.
     None border styles, with their bezels, trim, name plate and level badge.
     Their unused textures (Panel, PanelEdge, Well, WellBezel, Ring, Hairline,
     TileMask) were removed. These styles remain in Git history.
-- **Health Color** is Default (Onyx #1C1E21), Class Color (pastel class for
+- **Health Color** is Default (Onyx #131212), Class Color (pastel class for
   players, pastel reaction for NPCs) or Custom.
 - **Portrait ring.** The portrait frame now sits above the bar block, so its
   whole ring is drawn over the bar's end, followed by the black gap and the
@@ -1107,7 +1107,7 @@ O. Locked Onyx skin (layout version 9).
    - **Navigation:** game world, Unit Frames on, Target Matches Player on.
      **Action:** `/reload`, then target an NPC. **Required state:** OOC.
      **Confirmation:**
-     - Health fills are the very dark Onyx grey #1C1E21.
+     - Health fills are the very dark Onyx grey #131212.
      - Each portrait has a complete ring with no gap where the bar meets it,
        and the ring is a soft gradient of your class color (the NPC's reaction
        color on the Target).

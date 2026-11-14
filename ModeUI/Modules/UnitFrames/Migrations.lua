@@ -92,7 +92,7 @@ end
 
 -- Layout version 8 -> 9, per the owner: one locked Onyx skin. Palettes, border
 -- styles, background/border colors and thickness, and the name sheen are
--- retired; health uses Default (#1C1E21), Class Color or Custom; names use the
+-- retired; health uses Default (#131212), Class Color or Custom; names use the
 -- Mist accent; the portrait ring becomes the class gradient unless Custom.
 local RETIRED = { "palette", "paletteHealth", "paletteTrack", "paletteBorder", "paletteInner", "rimThickness",
     "gapThickness", "hairlineThickness", "nameSheen", "nameSheenStrength", "borderStyle", "borderColor", "borderOpacity",
