@@ -70,6 +70,7 @@ function M:Build()
     self.built = true
     self.movers, self.holders = {}, {}
     self:SyncBarFrames()
+    self:BuildResources()
 end
 
 function M:EnsureBarFrames(id)

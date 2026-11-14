@@ -1044,3 +1044,48 @@ Cooldown Manager registers.
 - **Tooltip.** `GameTooltip:SetSpellByID`.
 - **Unverified natively:** all of it, in particular `SetCooldownFromDurationObject`
   from addon code on Forever.
+### Cooldown Manager, resource bars — November 13, 2026
+
+Sources: the local `WoWUI-live` 12.1.5 API documentation
+(`UnitDocumentation.lua`, `SimpleStatusBarAPIDocumentation.lua`,
+`SimpleStatusBarConstantsDocumentation.lua`) and Forever's own
+`Blizzard_UnitFrame` on the `forever` branch of Gethe/wow-ui-source. Also
+compared with how Sensei Class Resource Bar, BetterCooldownManager, Ayije
+CDM and oUF draw resource bars (their approach, not their code).
+
+- **Values.** `UnitPower`, `UnitPowerPercent`, `UnitPartialPower` and
+  `GetComboPoints` are `SecretWhenUnitPowerRestricted`; `UnitPowerMax` is
+  `SecretWhenUnitPowerMaxRestricted`; `UnitHealth` is secret on Forever.
+  ModeUI passes them only to `StatusBar:SetMinMaxValues`/`SetValue`
+  (`AllowedWhenTainted`), `AbbreviateNumbers` and `FontString:SetText`/
+  `SetFormattedText`. Percent text comes from `UnitPowerPercent(unit,
+  powerType, false, CurveConstants.ScaleTo100)` and `UnitHealthPercent`.
+  Nothing compares or does arithmetic on a value; there is no Hide When Full
+  for that reason.
+- **Smooth.** `StatusBar:SetValue(value, interpolation)` takes
+  `Enum.StatusBarInterpolation.ExponentialEaseOut` (`NeverSecret`). A client
+  without the enum gets the plain `SetValue`.
+- **Combo points.** One `StatusBar` per point spanning `i - 1` to `i`, fed
+  `SetValue(count)` (`Kit.FillResourcePoints`), so a secret count lights the
+  right boxes without being compared. `Domain.ClassResource` reads
+  `GetComboPoints("player", "target")` as Forever's Camelot
+  `TargetBoundComboPointBar` does, and `COMBO_TARGET_CHANGED` (registered
+  through `pcall`) moves them to a new target.
+- **Alternate Mana.** Forever loads the mainline `AlternatePowerBar`, whose
+  `ALT_POWER_BAR_PAIR_DISPLAY_INFO` pairs a Druid's mana only with
+  `Enum.PowerType.LunarPower`. Camelot Druids show Rage in Bear Form and
+  Energy in Cat Form, so the game shows no mana bar then. ModeUI reads
+  `UnitPower("player", Enum.PowerType.Mana)` while the class is DRUID and
+  `UnitPowerType` isn't `MANA` (`Domain.Power.AlternateManaActive`).
+- **Events.** `UNIT_HEALTH`, `UNIT_MAXHEALTH`, `UNIT_POWER_FREQUENT`,
+  `UNIT_MAXPOWER`, `UNIT_DISPLAYPOWER` (unit-filtered to the player on the
+  module's own frame), `PLAYER_TARGET_CHANGED`, `PLAYER_ENTERING_WORLD`;
+  `UPDATE_SHAPESHIFT_FORM` and `COMBO_TARGET_CHANGED` through `pcall`.
+- **Frames.** Plain addon frames, never secure: they update, show, hide and
+  fade in combat. Placement goes through ModeUI's Position Manager (moves
+  only outside combat), and Match Width reads the anchor's width with
+  `PositionManager:GetAnchorWidth` outside combat.
+- **Unverified natively:** whether Forever marks player power or combo
+  points secret in combat (both paths are handled), and whether
+  `UPDATE_SHAPESHIFT_FORM` fires on Forever (`UNIT_DISPLAYPOWER` covers form
+  changes either way).

@@ -10,9 +10,12 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- its Edit Mode, lays the icons out, skins them, styles their text, draws
 -- the glows and decides when each bar shows. Custom bars house tracked
 -- spells taken out of Blizzard's viewers. See docs/COOLDOWN_MANAGER.md.
--- Files: Init (this), Migrations, Driver, Custom, Blizzard, Layout, Skin,
--- Bars, Text, Glow, Visibility, SpellMenu, Picker, Preview, Settings,
--- SettingsTabs, Window.
+-- Resource Bars (your health, power, a Druid's mana in forms and combo
+-- points) live here too, in the same window: see ResourceInit.lua.
+-- Files: Init (this), ResourceInit, Migrations, Driver, Custom, Blizzard,
+-- Layout, Skin, Bars, Text, Glow, Visibility, Resources, ResourceUpdate,
+-- SpellMenu, Picker, Preview, ResourcePreview, Settings, SettingsTabs,
+-- ResourceSettings, Window.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Cooldown Manager"], standalone = true, defaultEnabled = false,
     configDescription = L["Blizzard's Cooldown Manager in the Mode look, with custom bars of your own."],
@@ -55,6 +58,7 @@ function M.FrameName(id) return "ModeUICooldown" .. Capital(id) end
 -- Blizzard's viewers anchor to each other, the screen and the game's frames;
 -- custom bars to those and the viewers.
 local BASE_TARGETS = { "screen", "player", "target", "focus", "minimap", "party" }
+M.BASE_TARGETS = BASE_TARGETS
 M.allowedTargets = {}
 for index, viewer in ipairs(M.viewers) do
     local allowed = Copy(BASE_TARGETS)

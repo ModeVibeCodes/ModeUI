@@ -26,3 +26,31 @@ function Power.Percent(unit, powerType, curve) return Q.Call(UnitPowerPercent, u
 function Power.Color(token)
     return (type(token) == "string" and Power.colors[token]) or Power.defaultColor
 end
+
+-- The mana power type (Enum.PowerType.Mana; 0 on every client).
+function Power.ManaType() return Enum and Enum.PowerType and Enum.PowerType.Mana or 0 end
+
+-- One power type's okMax, max, okValue, value (each value may be secret).
+function Power.ReadType(unit, powerType)
+    local okMax, max = Q.Call(UnitPowerMax, unit, powerType)
+    local okValue, value = Q.Call(UnitPower, unit, powerType)
+    return okMax, max, okValue, value
+end
+
+-- Classes whose mana runs on under another power in some forms. On Forever
+-- that is the Druid in Bear Form (Rage) and Cat Form (Energy). Blizzard's
+-- AlternatePowerBar, which Forever loads, pairs a Druid's mana only with
+-- Lunar Power, which Camelot Druids never have, so the game shows no mana
+-- bar in those forms.
+Power.ALTERNATE_MANA = { DRUID = true }
+-- True for such a class.
+function Power.HasAlternateMana(unit)
+    local _, class = Q.Plain(UnitClass, unit)
+    return type(class) == "string" and Power.ALTERNATE_MANA[class] == true
+end
+-- True while the unit is such a class and its shown power isn't mana.
+function Power.AlternateManaActive(unit)
+    if not Power.HasAlternateMana(unit) then return false end
+    local _, token = Q.Plain(UnitPowerType, unit)
+    return type(token) == "string" and token ~= "MANA"
+end
