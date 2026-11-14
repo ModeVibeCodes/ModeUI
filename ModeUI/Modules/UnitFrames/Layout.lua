@@ -7,8 +7,8 @@ local ONYX = M.onyx
 local Kit = addon.Kit
 local FLAT = Kit.FLAT
 local CIRCLE_MASK = M.CIRCLE_MASK
-local Tint, Lighten, Gradient = Kit.Tint, Kit.Lighten, Kit.Gradient
-local Font, LayoutLift, Inset, Rounded = Kit.Font, Kit.LayoutLift, Kit.Inset, Kit.Rounded
+local Tint, Lighten = Kit.Tint, Kit.Lighten
+local Inset = Kit.Inset
 M.Lighten = Lighten
 
 -- Mirrored by portrait side: the portrait caps the outer end.
@@ -19,23 +19,20 @@ end
 
 -- Text font: Expressway (registered by Media from an installed AyijeUI or
 -- EllesmereUI copy) falls back to the bundled ModeUI Lato when unavailable.
-function M:FontPath(fdb)
-    local media = addon.Media
-    if fdb.fontMedia == "Expressway" and not media:GetFont("Expressway") then
-        return media:GetFont("ModeUI Lato") or media.gameFont
-    end
-    return media:GetDisplayFont({ font = fdb.font, fontMedia = fdb.fontMedia }, false, self.id)
-end
+function M:FontPath(fdb) return Kit.FontPath(fdb, self.id) end
 
 -- One physical pixel in this frame's units (Blizzard's PixelUtil factor over
 -- the frame's effective scale); 1 when the client cannot report it.
 function M:PixelSize(f) return Kit.PixelSize(f) end
 
 -- The Onyx frame: a round portrait caps the outer end of one rounded bar
--- block. Pixel perfect: every size is whole physical pixels (2px slate rim,
--- 2px black gap, 1px hairline between health and power) and the frame is an
--- even number of pixels each way, so its centre anchor stays on the grid.
-M.RIM, M.GAP, M.HAIRLINE = 2, 2, 1
+-- block. Pixel perfect: every size is whole physical pixels (the ModeUI
+-- border's 2px rim, 1px hairline between health and power) and the frame is
+-- an even number of pixels each way, so its centre anchor stays on the grid.
+-- One crisp border round the whole block (owner, November 13, 2026): no black
+-- gap inside the rim (GAP 0), so the bars meet the rim. This border became the
+-- standard for every border in ModeUI (Kit.ModeBorder, Shared/Kit/Border.lua).
+M.RIM, M.GAP, M.HAIRLINE = Kit.BORDER_PIXELS, 0, 1
 function M:Geometry(fdb, px)
     local g, p = {}, px or 1
     local function Snap(v) return math.max(p, math.floor(v / p + 0.5) * p) end
@@ -76,16 +73,10 @@ end
 -- The suite's text style (see Shared/Kit/Text.lua).
 M.LIFT_PIXELS, M.LIFT_ALPHA = Kit.LIFT_PIXELS, Kit.LIFT_ALPHA
 
-function M:BarTexture(fdb)
-    if fdb.texture == "satin" then return addon.Media:GetTexture("UnitFrameBar") or FLAT, false end
-    if fdb.texture == "mode" then return FLAT, true end
-    return addon.Media:GetStatusBar(fdb.texture, self.id) or FLAT, false
-end
-
 function M:ApplyLayout(f, unit)
     local fdb = self:FrameDB(unit)
     -- Scale first: the pixel size depends on the frame's effective scale.
-    f:SetScale(fdb.scale / 100)
+    f:SetScale(fdb.scale / 100 * (f.previewScale or 1))
     local g = self:Geometry(fdb, self:PixelSize(f))
     f.geometry = g
     local near, far, sign = Sides(fdb)
@@ -94,15 +85,24 @@ function M:ApplyLayout(f, unit)
     panel:ClearAllPoints()
     panel:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.blockStart, -g.blockY)
     panel:SetPoint("BOTTOM" .. far, f, "BOTTOM" .. far, 0, g.blockY)
-    panel.fill:ClearAllPoints(); panel.fill:SetAllPoints()
-    Rounded(panel.fill, "UnitFrameFrame"); Tint(panel.fill, ONYX.border, 1)
-    -- The black gap sits exactly one rim in; the bars sit inside it, so it
-    -- also shows as the hairline between health and power.
-    Rounded(panel.border, "UnitFrameFrameInner")
-    panel.border:ClearAllPoints()
-    panel.border:SetPoint("TOPLEFT", panel, "TOPLEFT", g.border, -g.border)
-    panel.border:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -g.border, g.border)
-    Tint(panel.border, ONYX.inner, 1)
+    -- The ModeUI border: straight edges on whole pixels and a rounded far end
+    -- (the near end too without a portrait). Its end masks round the bars,
+    -- reaching one pixel under the rim, so the rim covers their soft edge and
+    -- no faint seam shows between them.
+    local rounded = { [far] = true, [near] = g.portrait == 0 }
+    local depth = Kit.LayoutModeBorder(panel.border, panel, { px = g.px, height = g.blockHeight, rounded = rounded,
+        color = M.RIM_COLOR, level = panel:GetFrameLevel() + 2 })
+    panel.farMask, panel.nearMask = panel.border.masks[far], panel.border.masks[near]
+    local masks = { panel.farMask, panel.nearMask }
+    panel.depth = depth
+    local start = g.inset - g.blockStart
+    local cap = panel.cap
+    cap:ClearAllPoints()
+    cap:SetPoint("TOP" .. near, panel, "TOP" .. near, sign * g.pad, -g.pad)
+    cap:SetPoint("BOTTOM" .. near, panel, "BOTTOM" .. near, sign * g.pad, g.pad)
+    cap:SetWidth(math.max(g.px, start - g.pad)); Tint(cap, M.RIM_COLOR, 1)
+    cap:SetShown(start > g.pad)
+    local level = panel:GetFrameLevel()
 
     local h, pw = f.health, f.power
     h:ClearAllPoints()
@@ -112,18 +112,31 @@ function M:ApplyLayout(f, unit)
     pw:ClearAllPoints()
     pw:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -g.gap); pw:SetPoint("TOPRIGHT", h, "BOTTOMRIGHT", 0, -g.gap)
     pw:SetHeight(g.powerHeight); pw:SetShown(fdb.showPower)
-    local texture, sheen = self:BarTexture(fdb)
-    for _, bar in ipairs({ h, pw }) do
-        bar:SetStatusBarTexture(texture)
-        -- Keep the colored fill above the opaque track on every client.
-        local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
-        if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
-        bar.bg:SetTexture(FLAT); Tint(bar.bg, ONYX.track, 1)
-        bar.sheen:SetTexture(FLAT)
-        bar.sheen:SetHeight(math.max(g.px, math.floor((bar == h and g.healthHeight or g.powerHeight) / (2 * g.px)) * g.px))
-        Gradient(bar.sheen, { 1, 1, 1, 0.12 }, { 1, 1, 1, 0 }, 0.06)
-        bar.sheen:SetShown(sheen)
+    -- The 1px black hairline between health and power, solid like the rim.
+    local line = panel.hairline
+    line:SetTexture(FLAT); Tint(line, ONYX.inner, 1)
+    line:ClearAllPoints(); line:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, 0); line:SetPoint("BOTTOMRIGHT", pw, "TOPRIGHT", 0, 0)
+    line:SetShown(fdb.showPower)
+    -- Foreground (Mode Gradient by default) over the background track, which
+    -- shows the world through it at Background Opacity.
+    local reverse = fdb.fillDirection == "reverse"
+    -- Each bar has its own textures and background opacity.
+    local looks = { { h, g.healthHeight, fdb.foregroundTexture, fdb.backgroundTexture, fdb.barBackgroundOpacity },
+        { pw, g.powerHeight, fdb.powerForegroundTexture, fdb.powerBackgroundTexture, fdb.powerBackgroundOpacity } }
+    for _, look in ipairs(looks) do
+        local bar, barHeight, fill, back, opacity = look[1], look[2], look[3], look[4], look[5]
+        bar:SetFrameLevel(level + 1)
+        if bar.SetReverseFill then bar:SetReverseFill(reverse) end
+        Kit.BarForeground(bar, fill, barHeight, g.px)
+        Kit.BarBackground(bar, back, g.width - g.inset - g.pad, barHeight, g.px)
+        Tint(bar.bg, Kit.BarBackgroundColor(back), opacity / 100)
+        Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, masks)
     end
+    -- A 1px light line where the health fill ends (owner, November 13, 2026).
+    Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)
+    Kit.AddMasks({ h.fillEdge, line }, masks)
+    -- Rim over the bars, then the portrait, then text.
+    panel.edge:SetFrameLevel(h:GetFrameLevel() + 1)
     f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
 
     -- Round portrait above the block: full ring, black gap, dark backing, image.
@@ -131,7 +144,7 @@ function M:ApplyLayout(f, unit)
     p:SetShown(g.portrait > 0)
     if g.portrait > 0 then
         p:ClearAllPoints(); p:SetPoint("TOP" .. near, f, "TOP" .. near, 0, -g.portraitY); p:SetSize(g.portrait, g.portrait)
-        p:SetFrameLevel(h:GetFrameLevel() + 1)
+        p:SetFrameLevel(h:GetFrameLevel() + 2)
         p.ring:ClearAllPoints(); p.ring:SetAllPoints(p)
         Inset(p.innerEdge, p, g.border); Tint(p.innerEdge, ONYX.inner, 1)
         Inset(p.back, p, g.pad); Tint(p.back, ONYX.track, 1)
@@ -142,72 +155,10 @@ function M:ApplyLayout(f, unit)
         end
     end
     f.textLayer:SetFrameLevel(math.max(h:GetFrameLevel(), p:GetFrameLevel()) + 2)
-
-    -- Bar text on the portrait side clears the portrait's curve; each text
-    -- then moves by its own X/Y offset.
-    local function SideText(text, bar, position, dx, dy)
-        text:ClearAllPoints()
-        local x = position == "LEFT" and 4 or position == "RIGHT" and -4 or 0
-        if position == near then x = x + sign * g.tuck end
-        text:SetPoint(position, bar, position, x + dx, dy); text:SetJustifyH(position)
-    end
-    local path = self:FontPath(fdb)
-    Font(f.nameText, fdb, fdb.nameFontSize, path, g.px); Font(f.levelText, fdb, fdb.levelFontSize, path, g.px)
-    Font(f.healthText, fdb, fdb.healthFontSize, path, g.px); Font(f.powerText, fdb, fdb.powerFontSize, path, g.px)
-    local hx, hy = fdb.healthTextOffsetX, fdb.healthTextOffsetY
-    local lx, ly = fdb.levelOffsetX, fdb.levelOffsetY
-    f.healthText:SetShown(fdb.healthText ~= "none")
-    -- Level stays in the health bar beside the health text, read level first:
-    -- "31 54%" right-aligned, "33 76%" from the left. A Target mirroring the
-    -- Player reads health first ("54% 31"), the exact mirror image, so a level
-    -- moved by its offset never lands on the health text. Alone, or beside
-    -- centred text, the level sits at the bar's right.
-    local level = fdb.levelStyle ~= "none"
-    local position = fdb.healthTextPosition
-    local grouped = level and fdb.healthText ~= "none" and position ~= "CENTER"
-    local healthFirst = fdb.mirrored == true
-    f.levelText:ClearAllPoints(); f.nameText:ClearAllPoints()
-    if grouped and (position == "LEFT") ~= healthFirst then
-        -- The level is the outer text, at the bar's edge; the health text sits inside it.
-        SideText(f.levelText, h, position, hx + lx, hy + ly)
-        f.healthText:ClearAllPoints()
-        if position == "LEFT" then
-            f.healthText:SetPoint("LEFT", f.levelText, "RIGHT", 6 - lx, -ly); f.healthText:SetJustifyH("LEFT")
-        else
-            f.healthText:SetPoint("RIGHT", f.levelText, "LEFT", -6 - lx, -ly); f.healthText:SetJustifyH("RIGHT")
-        end
-    else
-        SideText(f.healthText, h, position, hx, hy)
-        if grouped and position == "RIGHT" then
-            f.levelText:SetPoint("RIGHT", f.healthText, "LEFT", -6 + lx, ly); f.levelText:SetJustifyH("RIGHT")
-        elseif grouped then
-            f.levelText:SetPoint("LEFT", f.healthText, "RIGHT", 6 + lx, ly); f.levelText:SetJustifyH("LEFT")
-        elseif level then
-            SideText(f.levelText, h, "RIGHT", lx, ly)
-        end
-    end
-    if level then local c = fdb.levelColor; f.levelText:SetTextColor(c[1], c[2], c[3], 1) end
-    f.levelText:SetShown(level)
-    -- Plain name (no sheen or texture) in the accent, class or custom color.
-    local nx, ny = fdb.nameOffsetX, fdb.nameOffsetY
-    if fdb.namePosition == "bar" then
-        local align = fdb.nameAlign
-        f.nameText:SetPoint(align, h, align, (align == "LEFT" and 4 or align == "RIGHT" and -4 or 0) + nx, ny)
-        f.nameText:SetJustifyH(align)
-        f.nameText:SetWidth(fdb.barWidth * 0.6)
-    else
-        -- Above the frame, aligned over the bars, kept clear of the portrait.
-        local clear = g.tuck > 0 and g.tuck + 4 or 0
-        f.nameText:SetPoint("BOTTOMLEFT", h, "TOPLEFT", (near == "LEFT" and clear or 0) + nx, g.pad + 3 + ny)
-        f.nameText:SetPoint("BOTTOMRIGHT", h, "TOPRIGHT", (near == "RIGHT" and -clear or 0) + nx, g.pad + 3 + ny)
-        f.nameText:SetJustifyH(fdb.nameAlign)
-    end
-    f.nameText:SetShown(fdb.showName)
-    SideText(f.powerText, pw, fdb.powerTextPosition, fdb.powerTextOffsetX, fdb.powerTextOffsetY)
-    f.powerText:SetShown(fdb.showPower and fdb.powerText ~= "none")
-    LayoutLift(f.nameText, fdb, fdb.nameFontSize, path, g.px, fdb.showName, fdb.nameAlign)
-    LayoutLift(f.levelText, fdb, fdb.levelFontSize, path, g.px, level, "CENTER")
-    LayoutLift(f.healthText, fdb, fdb.healthFontSize, path, g.px, fdb.healthText ~= "none", position)
-    LayoutLift(f.powerText, fdb, fdb.powerFontSize, path, g.px, fdb.showPower and fdb.powerText ~= "none", fdb.powerTextPosition)
+    self:LayoutTexts(f, unit)
     self:PaintRing(f, unit)
+    if f.combo then self:ResetComboLayout(f) end
+    self:LayoutCast(f, unit)
+    self:LayoutAuras(f, unit)
+    self:LayoutStatus(f, unit)
 end

@@ -4,6 +4,14 @@
   Edit the addon in `ModeUI/`. Play The Game Tools is a separate addon and repo.
 - The settings window uses the Mode theme only. Keep new pages on the shared
   widgets in `Shared/Settings/` so they inherit it.
+- Every skinned bar defaults to the Mode Gradient texture (`Kit.ModeGradient`).
+  Bars that offer texture choices use `Kit.BarForeground`/`Kit.BarBackground`
+  (Mode Gradient, Flat, or SharedMedia). Fonts default to Expressway (bundled
+  Lato as fallback).
+- Every border is the ModeUI border (`Kit.ModeBorder`, `Shared/Kit/Border.lua`):
+  one crisp 2px rim in `Kit.BORDER_COLOR`, rounded-rectangle ends, drawn above
+  the content it holds, with no glow or second line. Round elements use the
+  same color and thickness. Don't add other border styles.
 - Preserve functionality, appearance, settings and saved-variable keys unless
   the user asks for a specific change. Never reset `ModeUIDB`; migrate instead.
 - Read the relevant source before editing, and implement one focused feature at a time.
@@ -11,6 +19,9 @@
   bypass restrictions, or assume Retail behavior applies to Forever. Unit values
   can be secret: pass them only to widgets documented as accepting them.
 - Secure frames are created, shown, moved and resized outside combat only.
+- A texture holds at most 3 masks; a 4th `AddMaskTexture` errors and stops
+  ModeUI loading. Round box content with `Kit.MaskToBoxBorder` (corners it
+  reaches) and `Kit.BoxFill`, never all four corner masks on one texture.
 - Follow `docs/ARCHITECTURE.md`. New code goes in `Libs/`, `Shared/` or
   `Modules/<Name>/`. Each module is a
   folder with `<Name>.xml` (listed in the TOC), `Init.lua` loaded first, and
@@ -18,7 +29,8 @@
   other's files. Files stay under 400 lines. Settings pages are built only when opened.
 - Keep `ModeUI/ModeUI.toc` load order correct. No placeholder functionality.
 - Run `lua tests/structure.lua`, `lua tests/runtime.lua`, `lua tests/smoke.lua`,
-  `lua tests/unit_frames.lua`, `lua tests/global.lua` and `lua tests/template.lua`.
+  `lua tests/unit_frames.lua`, `lua tests/nameplates.lua`, `lua tests/global.lua` and
+  `lua tests/template.lua`.
   New modules start from `docs/module-template`. Do not claim native testing without
   the user's in-game confirmation.
 - Manual checks must state Navigation, Action, Required state and Confirmation,

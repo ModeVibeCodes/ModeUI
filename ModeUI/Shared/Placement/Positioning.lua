@@ -29,6 +29,16 @@ local function Number(value)
     return Plain(value) and type(value) == "number" and value == value and math.abs(value) < math.huge
 end
 
+-- A target ModeUI owns (another element's frame), added by a module before it
+-- registers elements. `name` is the frame's global name; `owned` lets that
+-- frame also be an element.
+function P:AddTarget(id, label, name)
+    assert(type(id) == "string" and type(label) == "string" and type(name) == "string" and name:find("^ModeUI"),
+        "ModeUI: AddTarget(id, label, ModeUI frame name).")
+    for _, item in ipairs(self.targets) do assert(item.id ~= id, "ModeUI: duplicate position target " .. id) end
+    self.targets[#self.targets + 1] = { id = id, label = label, name = name, owned = true }
+end
+
 function P:Placement(id)
     for _, item in ipairs(self.placements) do if item.id == id then return item end end
     return self.placements[5]

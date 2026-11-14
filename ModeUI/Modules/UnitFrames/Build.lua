@@ -5,16 +5,28 @@ if not M then return end
 -- Frame faces, the secure unit buttons and their Edit Mode stand-ins.
 local Number, Kit = M.Number, addon.Kit
 local CIRCLE_MASK = M.CIRCLE_MASK
-local Bar, Text, Circle = Kit.Bar, Kit.Text, Kit.Circle
+local Bar, Circle = Kit.Bar, Kit.Circle
 
 -- One face for both the secure button and its Edit Mode/preview stand-in.
--- Bar block: slate rim fill, black gap inset by the rim, then the bars. The
--- portrait sits above the block, so its full ring is drawn over the bar's end.
+-- Bar block: the ModeUI border (Kit.ModeBorder, Shared/Kit/Border.lua), then
+-- the bars right inside it. The portrait sits above the block, so its full
+-- ring is drawn over the bar's end. The rim is hard-edged flat strips along
+-- the straight edges and a rounded end away from the portrait (both ends
+-- without one), so nothing sits under the bars (their background can be
+-- see-through); its end masks round the bars the same way. A cap in the rim
+-- color fills the block under the portrait up to where the bars start, and the
+-- hairline between health and power is its own texture.
 function M:BuildFace(f)
-    f.panel = CreateFrame("Frame", nil, f)
-    f.panel.fill = f.panel:CreateTexture(nil, "BACKGROUND", nil, 0)
-    f.panel.border = f.panel:CreateTexture(nil, "BORDER")
-    f.health, f.power = Bar(f.panel), Bar(f.panel)
+    local panel = CreateFrame("Frame", nil, f)
+    f.panel = panel
+    -- The rim draws on its own layer above the bars (and below the portrait),
+    -- so it covers the bars' edge instead of sitting under it.
+    panel.border = Kit.ModeBorder(panel)
+    panel.edge, panel.rim = panel.border.edge, panel.border.ring
+    panel.cap = panel:CreateTexture(nil, "BACKGROUND", nil, 1)
+    panel.cap:SetTexture(Kit.FLAT)
+    panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)
+    f.health, f.power = Bar(panel), Bar(panel)
     local p = CreateFrame("Frame", nil, f)
     f.portrait = p
     p.ring = Circle(p, "BACKGROUND", 0)
@@ -28,15 +40,18 @@ function M:BuildFace(f)
     end
     f.textLayer = CreateFrame("Frame", nil, f)
     f.textLayer:SetAllPoints()
-    f.nameText, f.levelText, f.healthText, f.powerText = Text(f.textLayer), Text(f.textLayer), Text(f.textLayer), Text(f.textLayer)
-    for _, text in ipairs({ f.nameText, f.levelText, f.healthText, f.powerText }) do text.lift = Text(f.textLayer, "ARTWORK") end
+    self:BuildTexts(f)
+    if f.unit == "target" then self:BuildCombo(f) end
+    self:BuildCast(f)
+    self:BuildAuras(f)
+    self:BuildStatus(f)
 end
 
 function M:CreateDisplay()
     if self.displayCreated then return end
     self.displayCreated = true
     for _, unit in ipairs(self.units) do
-        local label = self.labels[unit]
+        local label = self.frameNames[unit]
         local b = CreateFrame("Button", "ModeUI" .. label .. "UnitFrame", UIParent, "SecureUnitButtonTemplate")
         b.unit = unit
         b:SetAttribute("unit", unit); b:SetAttribute("*type1", "target"); b:SetAttribute("*type2", "togglemenu")
@@ -56,7 +71,7 @@ end
 -- Position Manager refuses protected frames, so Edit Mode moves a plain stand-in
 -- and the secure button copies its anchor outside combat.
 function M:CreateGhost(unit)
-    local label = self.labels[unit]
+    local label = self.frameNames[unit]
     local g = CreateFrame("Frame", "ModeUI" .. label .. "UnitFramePreview", UIParent)
     g.unit, g.ghost = unit, true
     g:SetFrameStrata("HIGH")
@@ -66,20 +81,63 @@ function M:CreateGhost(unit)
     -- the Position Manager then moves it to the saved position.
     local default = self.defaultPositions[unit]
     g:SetPoint("CENTER", UIParent, "CENTER", default.x, default.y)
+    self.ghosts[unit] = g
+    self:RegisterPosition(unit)
+end
+
+function M:RegisterPosition(unit)
+    local g = self.ghosts[unit]
+    local shown = g:IsShown()
     g:Show()
     local ok, reason = addon.PositionManager:RegisterElement(self.elementIds[unit], g, { moduleId = self.id,
-        defaultPosition = self.defaultPositions[unit], allowedTargets = { "screen" },
+        defaultPosition = self.defaultPositions[unit], allowedTargets = { "screen" }, label = addon.L[self.titles[unit]],
         canDrag = function() return self:FrameOn(unit) end,
         onPositionChanged = function() self:SyncPosition(unit) end })
     assert(ok, "ModeUI: unit frame position registration failed: " .. tostring(reason))
-    g:Hide()
-    self.ghosts[unit] = g
+    g:SetShown(shown)
+end
+
+-- The parent a frame is attached to (Attach to Target/Focus Frame), while
+-- that parent is shown; otherwise the frame keeps its own screen position.
+function M:AttachedTo(unit)
+    local parent = self.attachParents[unit]
+    if parent and self.db[unit].attach and self:FrameOn(parent) then return parent end
+end
+
+-- An attached frame leaves the Position Manager (so Edit Mode can't move it,
+-- and nothing re-places it); detaching registers it again at its saved
+-- position, which the Position Manager kept. Outside combat only.
+function M:SyncPlacement(unit)
+    local id, PM = self.elementIds[unit], addon.PositionManager
+    local registered = PM:Element(id) ~= nil
+    if self:AttachedTo(unit) then
+        if registered then PM:UnregisterElement(id) end
+    elseif not registered then
+        self:RegisterPosition(unit)
+    end
+end
+
+-- Joins `frame` to `parent` at the chosen corner. Offsets are whole physical
+-- pixels in the frame's own scale, so both frames stay on the pixel grid.
+local function Attach(self, frame, parent, fdb)
+    local spec = self.attachPoints[fdb.attachPoint]
+    local px = self:PixelSize(frame)
+    frame:ClearAllPoints()
+    frame:SetPoint(spec.point, parent, spec.relative, fdb.attachOffsetX * px, fdb.attachOffsetY * px)
 end
 
 function M:SyncPosition(unit)
     local b, g = self.frames[unit], self.ghosts[unit]
     if not b or not g then return end
     if InCombatLockdown() then self.pending = true; return end
+    local parent = self:AttachedTo(unit)
+    if parent then
+        -- Button to button and stand-in to stand-in: a secure frame is never
+        -- anchored to a plain one.
+        local fdb = self:FrameDB(unit)
+        Attach(self, b, self.frames[parent], fdb); Attach(self, g, self.ghosts[parent], fdb)
+        return
+    end
     local count = g:GetNumPoints()
     if not Number(count, 1, 10) then return end
     local px = self:PixelSize(b)

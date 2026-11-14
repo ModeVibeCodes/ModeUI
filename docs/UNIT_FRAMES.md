@@ -5,7 +5,449 @@
 
 # Interface: Unit Frames (Player and Target)
 
-November 11, 2026. First module of the **Interface** category and the start of
+## Texts colored by the unit
+
+November 13, 2026, per the owner: a text spot's color (`texts.<slot>.colorMode`)
+can also be **Reaction** (hostile red, neutral yellow, friendly green, tapped
+gray, softened by Class Color Softness), **Class Color** (a player's class
+color, anyone else by reaction) or, for the level only, **Level Difficulty**
+(`GetCreatureDifficultyColor` for the unit's level against yours; a skull
+level is red). A mode that doesn't suit the text (Level Difficulty on a name)
+shows the default color; an unknown color does too. These colors are
+repainted whenever the frame's unit, faction or level updates
+(`M:PaintUnitColoredTexts`); stand-ins show the Player friendly and the other
+frames as a level 60 enemy. In the Health Bar and Power Bar tabs each spot with
+a text shows icons for the modes that suit it, at the right of its size
+controls: three stripes for Reaction, your class icon for Class Color and five
+stripes for Level Difficulty. Clicking the lit icon goes back to the default;
+right-clicking the swatch does too (the Default button is gone). No saved key
+changes: the new values are extra choices of `colorMode`.
+
+## Editing marks, cast bar width, Focus cast gap (layout version 19)
+
+November 13, 2026, per the owner:
+
+- **Editing** lists each frame with **On** (Mode green) or **Off** (muted)
+  beside its name, as Action Bars marks its bars; the dot and the separate
+  On / Off label beside the list are gone. **Turn On** still shows for a frame
+  that is off.
+- **Portrait** tab: **Show Portrait** comes first, then Status, then the
+  portrait's look. A matched Target takes it from the Player (as before).
+- **Mirror on a Right-Side Portrait** is now called **Keep Relative Text
+  Positions**, the name the owner asked for. It still does what it did: on a
+  right-hand portrait the Rested and Combat badges swap to the mirrored
+  corners, so they keep their place relative to the bars (`status.mirror`).
+- **Cast Bar**: **Bar Height** and **Gap** were already there, beside each
+  other under Placement. The owner found no size option besides them, so
+  **Full Width** (on: the bar block's width, short of the portrait, as
+  before) and **Bar Width** (off: that wide, centred under the same span)
+  join them (`castBar.fullWidth`, `castBar.width`, 40-400).
+- **Focus cast bar** sits 8px from the frame by default (`CastDefaults`).
+  Layout version 19 moves a Focus cast bar still at the old 3px to 8px; a gap
+  you chose stays.
+
+Manual check (layout version 19):
+- **Navigation:** **Frames** › **Unit Frames**, the **Editing** list at the
+  preview's top right; then the **Portrait** and **Cast Bar** tabs.
+- **Action:** open the Editing list; turn Focus off with **Show Frame** and
+  open the list again; Turn On. On the Portrait tab, look at the first
+  setting. On the Cast Bar tab (Editing: Focus), untick **Full Width** and
+  move **Bar Width**, then change **Bar Height**.
+- **Required state:** out of combat, Focus set.
+- **Confirmation:** every frame reads "On" in green or "Off" in gray beside
+  its name; Focus reads Off while off. Show Portrait is the Portrait tab's
+  first setting, and the badge switch reads Keep Relative Text Positions. The
+  Focus cast bar hangs 8px under the frame, narrows and stays centred under
+  the bars with Bar Width, and grows taller with Bar Height.
+
+## Settings by part, Class Resource (layout version 18)
+
+November 13, 2026, per the owner:
+
+- **Editing** (the frame every tab changes) sits at the preview's top right,
+  as on Action Bars, with a dot and On / Off for whether that frame is shown,
+  and **Turn On** beside a frame that is off. Tabs no longer start with their
+  own Editing row.
+- **Tabs**: Frame, Health Bar, Power Bar, Portrait, Cast Bar, Auras, Class
+  Resource, Text.
+  - **Frame**: Show Frame, Hide Blizzard's Frame; on the Target, Match Player
+    Frame and Mirror Player Text (the only place for them); Scale; Placement
+    (Target of Target, Target of Focus); Reset Frame and Copy Style; Status.
+  - **Health Bar** (Layout and Health together): Frame Width and Health Bar
+    Height side by side, Fill Direction, Fill End Line, Health Color, its
+    textures and opacity, and its text spots (nine plus the border). Width
+    and fill direction stay the frame's own, so a matched Target shows them.
+    The portrait is a share of the bar block's height (Portrait Size), so it
+    grows and shrinks with the bars.
+  - **Power Bar**: Show Power Bar, height, color, its own textures and
+    opacity, and its three text spots.
+  - **Cast Bar**: gains its own Foreground / Background textures.
+  - **Text**: name colors and the font.
+- **Own textures**: `powerForegroundTexture`, `powerBackgroundTexture`,
+  `powerForegroundOpacity`, `powerBackgroundOpacity` and
+  `castBar.foregroundTexture` / `castBar.backgroundTexture`. The old shared
+  keys (`foregroundTexture`, `backgroundTexture`, `barForegroundOpacity`,
+  `barBackgroundOpacity`) are now the health bar's. Layout version 18 copies
+  the shared values into the new keys, so nothing changes on screen.
+- **Class Resource** (was Combo Points; settings still in `db.comboPoints`):
+  `Shared/Domain/ClassResource.lua` lists each class's resource. Forever's
+  Camelot unit frames load only the Rogue and Druid combo point bars
+  (Blizzard_UnitFrame.toc excludes Holy Power, Soul Shards, Chi, Runes, Arcane
+  Charges and Essence for Camelot), so Rogues, and Druids in Cat Form, have
+  Combo Points; another class sees "has no class resource on WoW Forever" in
+  the tab, no controls, and nothing on the frame or in the stand-ins. A class
+  that gains one later is a new entry in `ClassResource.CLASSES`.
+
+## Text slots (layout version 17)
+
+November 13, 2026, per the owner (after EllesmereUI's text elements): every
+frame has fixed text spots, and each shows one text picked from a list, with
+its own font size, color and offsets. They replace the separate name, level,
+health and power text settings.
+
+- **Spots** (`M.textSlots`, `Modules/UnitFrames/TextSlots.lua`): nine on the
+  health bar (Top Left, Top, Top Right, Left, Center, Right, Bottom Left,
+  Bottom, Bottom Right), **On the Border** (the name sitting on the top rim,
+  with Border Alignment Left / Center / Right) and three on the power bar
+  (Power Left, Power Center, Power Right). Saved in `db[unit].texts[slot]` as
+  `content`, `size` (6–24), `x` / `y` (−100–100), `colorMode` (Default or
+  Custom), `color`, and `align` on the border spot.
+- **What a spot shows** (`M.choices.textContent`): None, Name, Level, Level and
+  Name, Health Percent, Health Current, Health Current and Percent, Health
+  Deficit, Power Percent, Power Current, Power Current and Percent.
+- **Default color**: names take the Name Color (Sky, the presets, class or
+  custom), the level stays muted (in Level and Name only the level is muted),
+  numbers use the Text Color. Custom colors the whole text.
+- **Placement** (`Modules/UnitFrames/Texts.lua`): a bar spot anchors to that
+  point of its bar, 4 units in from the side and 1px in from the top or bottom
+  edge. Spots on the portrait side keep the existing rule: they stop 2px before
+  the portrait ring across their own line, and an X offset toward the portrait
+  stops there. Names in a bar spot are at most 60% of the bar wide. Power spots
+  show only with the power bar; a power value in a health spot still updates.
+- **Health Deficit**: `UnitHealthMissing` is secret on Forever, so the text is
+  made by `C_StringUtil.TruncateWhenZero` (a whole number, empty at zero) and
+  `C_StringUtil.WrapString` (adds the "-" only to a non-empty text). Both
+  accept secret values; the result goes straight to `SetText`. It shows
+  "-1234" (not abbreviated) and nothing at full health.
+- **Matched Target**: a Target matching the Player uses the Player's spots;
+  with Mirror Player Text each Player spot shows on the other side (Left ↔
+  Right, Bottom Left ↔ Bottom Right…), its X offset and border alignment
+  flipped.
+- **Settings**: the Text tab lays the spots out like the frame, three equal
+  dropdowns to a line (Top Left, Top, Top Right; Left, Center, Right; Bottom
+  Left, Bottom, Bottom Right; then On the Border with Border Alignment, and
+  Power Left, Power Center, Power Right). A spot showing a text has a color
+  swatch (the game's color picker; Default returns to the default color) and
+  a font size (- / number / +) under its dropdown. Names (Name Color, Class
+  Color Softness) and Font follow. The Name & Level tab is gone; Health and
+  Power keep their bar settings. Clicking a text in the preview opens its
+  spot. Offsets stay saved (migrated ones still apply) but have no control.
+- **Each text once**: picking a text for a spot clears it from any other spot
+  on that frame (`M:SetTextOptions`), so moving the level from Left to Right
+  leaves Left empty.
+- **Preview and live controls** (owner, November 13, 2026): the preview draws
+  the sample at 80% (`M.PREVIEW_SCALE`) in a 150px area. Every settings slider
+  and the color picker apply the first change at once, then at most one
+  change every 0.12s while dragging (`W.Throttle`); letting go applies the
+  last value. Each change rebuilds the frames and the settings page, which
+  was what dropped frames when it ran on every slider step.
+- **Migration** (layout version 17): each frame's texts move to the matching
+  spots, so nothing moves: the name On the Border (Above Frame names go to the
+  border raised by the difference) or in the Left / Center / Right spot when it
+  was On Health Bar; health and power text in the spot of their side; the level
+  in the bottom corner on the portrait side (a level Beside Health Text goes
+  there too, since two texts can't share a spot). A text whose spot is taken
+  moves to that spot's top row. A level color other than the default becomes
+  that spot's Custom color. The old keys are removed.
+
+## One border, the name on it (layout version 16)
+
+November 13, 2026, per the owner: the 2px rim plus the 2px black gap inside it
+read as two borders. The gap is gone (`M.GAP = 0`): one crisp 2px border runs
+round the block, with the bars right inside it, so the block is 4px shorter
+(42px by default) and the portrait 64px. The rim draws on its own layer
+(`panel.edge`) above the bars and below the portrait, and the bars' rounded end
+reaches 1px under it, so the rim covers their soft edge and no seam shows. The
+fill under the portrait's end of the block takes the rim color.
+
+Names default to **On the Border** (`namePosition = "border"`, `M:NameBottom`):
+the baseline on the middle of the top rim (a quarter of the font size taken as
+the descent), so the letters sit on the border, clear of the portrait ring at
+their own height. Layout version 16 moves names set Above Frame onto the border.
+
+## Level in the corner, a mirrored Target (layout version 15)
+
+November 13, 2026, per the owner: **Level Position** (`levelPosition`, Name &
+Level tab) is **Bottom Corner** by default: the level sits at the bottom of the
+health bar on the portrait side, 1px up, clear of the portrait across its own
+line like every bar text, with the health text alone at the other side. The
+old layout is **Beside Health Text**. The Target mirrors the Player by default
+(`mirrorText`), so its health text is on the left and its level bottom right.
+Layout version 15 turns mirroring on for a Target that matches the Player.
+Every bar text is anchored to its side of the health bar, so changing Frame
+Width moves each with its side.
+
+## Rounded-rectangle ends, a lighter rim, a softer fill line
+
+November 13, 2026, per the owner (with a rounded-rectangle reference): the
+ends are a straight edge with circular corners rather than a half oval. The
+cap textures are 64x256, a straight end with 64px round corners, used at a
+depth of a quarter of the box's height (`Kit.CAP_DEPTH = 0.25`) so the corners
+stay circular: 12px on the 46px bar block, 6px on the 22px cast bar. Unit
+frame rims (bar block, cast bar, badges, combo points, the portrait ring's
+Default) use `Kit.onyx.frameRim` #40454C, a little lighter than the Onyx
+border, to stand apart from the health bar. The fill end line is white at 22%
+instead of 45%.
+
+## Half-oval ends, a line that hides at full, darker Mode Slate
+
+November 13, 2026, after the hard-edged borders were tried in game, per the
+owner: keep rounded corners, with "almost a half oval" at the end. The bar
+block's rim and gap are now rings (`Kit.CapRing`, `Shared/Kit/Capsule.lua`):
+hard-edged flat strips along the straight edges, and a half ellipse at the end
+away from the portrait (both ends without a portrait), `0.4 ×` the block's
+height deep (a semicircle would be 0.5; `Kit.CAP_DEPTH`). Each rounded end is a
+cap texture (`Mode/CapRight.tga`, `CapLeft.tga`) hollowed into a ring by a hole
+mask (`CapHole*.tga`), so nothing opaque sits under the bars and the
+background keeps its opacity to the curve. End masks (`Kit.EndMask`, wrap
+`CLAMPTOWHITE`) round the health and power fills, backgrounds, sheen, fill
+line and hairline to the same shape. The cast bar is rounded at both ends,
+black inside its rim; its icon sits where the straight part starts.
+
+The fill end line now sits in a clipping frame that stops 1px short of the
+bar's end, so a full bar shows no line, without reading the (possibly secret)
+value. Mode Slate is a touch darker: #44464A (hatch tint #55585D).
+
+## Status on the portrait
+
+November 13, 2026, per the owner (the recommended Portrait Badge concept):
+round badges sit on the portrait ring's corners (`Status.lua`, **Status** on
+the Portrait tab): **Rested** (Player only, top left, Sky icon) and **Combat**
+(bottom left, red icon). Each has its own switch and corner; badges are an
+even pixel size centred on the ring and swap to the outer side on a right-hand
+portrait (**Mirror on a Right-Side Portrait**, now **Keep Relative Text
+Positions**). **Combat Ring** turns the ring
+red while the unit is in combat. **Pulse When Pulled** (Player) pulses a red
+halo behind the ring while you are in combat and have no enemy targeted that is
+itself in combat (`Domain.Status.PulledUnawares`); targeting the attacker
+stops the pulse, and the ring holds red until combat ends. Settings are in
+`db[unit].status` (own keys). Defaults: the Player has everything on; the
+Target shows the combat badge; the small frames start off. Icons are
+`UnitFrames/Rested.tga` and `UnitFrames/Combat.tga` from
+`tools/build_shape_textures.lua`, tinted in game.
+
+## Text never reaches the portrait
+
+November 13, 2026, per the owner: every text stays over the bars. A text on
+the portrait side (health, level, power, a name on the bar, a name above the
+frame) measures the ring's **outer** edge across its own line, the band of
+its font at its Y offset, and stops 2px before it, rounded out to whole
+pixels: `clear = R + √(R² − d²) + 2px − inset`, where `R` is the portrait's
+outer radius, `d` the line's edge nearest the portrait's centre and `inset`
+where the bars start. A line past the circle gets no tuck. X offsets move a
+text away from the portrait freely; toward it they stop at that line. At
+default sizes bar texts keep their 12px inset; a name above the frame sits
+closer (1px in from the bars), since the ring curves away up there.
+
+## Mode Slate backgrounds (layout version 14)
+
+November 13, 2026, per the owner: no pattern lines in bar backgrounds, and a
+stronger, more solid feel. Two new background textures, shared with the
+nameplates (`Kit.BarBackground`, `Kit.BarBackgroundColor`):
+
+- **Mode Slate** (`slate`): flat, tinted `Kit.onyx.slate` #4C4E52, a
+  near-neutral gray clearly lighter than the Onyx fill. The unit frame
+  default, at 70% Background Opacity.
+- **Mode Slate Hatch** (`slateHatch`): `Mode/SlateHatch.tga`, a 4×4 tile (80%
+  gray with a full-white diagonal) tinted #5F6267, so its base matches Mode
+  Slate and the lines are a little lighter. It tiles one texel per screen
+  pixel (`SetTexCoord` from the bar's size over `4 × px`, nearest filtering).
+  Kept for overlays such as overshields; also offered as a background.
+
+Layout version 14 moves a frame still on the old defaults (Flat, 25%) to Mode
+Slate at 70%; chosen textures and opacities stay.
+
+**Frame Width.** The bar width setting is now **Frame Width**, one of each
+frame's own keys (`barWidth` in `M.ownKeys`), shown on the Layout tab under
+Editing even while the Target matches the Player, beside Fill Direction.
+Layout version 14 gives a matched Target the Player's width, so nothing moves.
+
+## Hard-edged borders and the fill end line
+
+November 13, 2026, per the owner: the rounded rim and gap textures were
+filtered when scaled, so the border looked inset and softly bled into the
+bars. The bar block and the cast box now draw a hard-edged border: four flat
+strips each for the 2px rim and the 2px black gap (`Kit.Edges`,
+`Kit.PlaceEdges`, square corners, whole pixels), plus a flat black cap under
+the portrait's end of the block up to the bars. Nothing sits under the bars,
+so their background still shows the world through it (the clipped bands are
+no longer needed here). The health fill also gets a 1px light line where it
+ends (`fillEdge`, on by default; **Fill End Line** on the Layout tab), placed
+on the fill texture's leading side (`Kit.FillEdge`), so it follows the fill
+direction and secret values alike.
+
+## Fill direction, cast bar clearance, steady preview
+
+November 13, 2026, after the first look in game, per the owner:
+
+- **Fill direction** (`fillDirection`: standard, Left to Right / reverse,
+  Right to Left; Layout tab). The Target defaults to Right to Left, the other
+  way from the Player. It's an identity key, like the portrait side, so a
+  Target matching the Player keeps its own, and it shows on the Layout tab
+  even while matched.
+- **Cast bars stop short of the portrait.** The box's portrait end sits where
+  the ring's circle crosses the box's edge nearest the portrait's centre, plus
+  2px, rounded out to whole pixels; the bar starts one rim and gap in. A box
+  far enough away to clear the circle starts under the portrait's centre, and
+  without a portrait it spans the bar block.
+- **Steady preview.** The preview has one fixed size (`M.PREVIEW_WIDTH`,
+  `M.PREVIEW_HEIGHT`) and centres the sample frame on it, so moving or
+  resizing parts no longer resizes the preview or moves the sample.
+- **The open tab picks the sample** for parts only one frame has: on the
+  Combo Points tab the preview shows the Target whatever Editing says
+  (`M.previewSectionUnits`).
+- **Tab slider.** Settings pages whose tabs don't fit get a thin scroll slider
+  under the tab strip (Shared/Settings/SectionTabs.lua), shown only while they
+  overflow; dragging it or the mouse wheel scrolls the tabs.
+
+## Settings preview
+
+November 13, 2026, per the owner: the Unit Frames page has a live preview like
+the Nameplates page (`Preview.lua`, through `W.Preview`). It shows one sample of
+the frame chosen with **Editing**, built and painted by the same code as the
+frames in the world (`BuildFace`, `ApplyLayout`, `PaintSample`), so it shows the
+portrait, bars, texts, cast bar, sample buffs and debuffs and, on the Target,
+combo points exactly as set. Static shows the cast part-way through; Animated
+loops it. Clicking the health bar, power bar, portrait, name, cast bar, an aura
+(its group) or the combo points opens that part's tab at its first setting
+(`M:JumpTo`, `page.jumpTargets`).
+
+## Buffs and debuffs
+
+November 13, 2026, per the owner: each frame shows buffs and debuffs
+(`Auras.lua`, the **Auras** tab with a Buffs/Debuffs switch), each group with
+the same options in `db[unit].buffs` / `db[unit].debuffs` (own keys):
+`enabled` (buffs on for the Target only; debuffs off), `filter` all / mine /
+dispellable, `anchor` (a corner: Top Right, Top Left, Bottom Right, Bottom
+Left), `grow` left/right, `max` 8, `perRow` 8, `x`/`y`, `size` 20, `spacing` 2,
+`shape` cropped (4px wider than tall, like the nameplates) / square, `border`
+by dispel type / Mode, `timer` and `count`.
+
+A group's rows start at a corner of the health bar's span: Top Right puts the
+first icon's right edge on the health bar's right edge, so the row lines up
+with the bars and never reaches over the portrait. Top rows sit 2px over the
+bar block; when the name is above the frame on the same side (or centred) the
+row sits over the name instead, so they never overlap. Bottom rows sit under
+the bars, past a cast bar below them. Rows stack away from the frame. Filters
+are game filter strings (`Domain.Auras.frameFilters`, without the nameplate
+filter) and aura fields go only to widgets that accept secrets, as on the
+nameplates. Hovering an icon shows the game's aura tooltip
+(`GameTooltip:SetUnitBuffByAuraInstanceID` / `SetUnitDebuffByAuraInstanceID`,
+from Forever's `TooltipDataHandler`); the ID may be secret only for
+Blizzard's own code, so while it is hidden the call fails under `pcall` and no
+tooltip shows. Icons take mouse motion only, where the client allows it.
+
+## Cast bars
+
+November 13, 2026, per the owner: each frame has a cast bar in the Mode skin
+(`CastBar.lua`, the **Cast Bar** tab), on for the Player, Target and Focus. It
+is a second block with the frame's rounded rim, black gap and bar texture,
+exactly as wide as the bar block, `gap` pixels under it (or over it); its bar
+starts and ends where the health bar does, and the portrait ring caps its near
+end like the bar block's. The spell icon takes a square from the far end, the
+portrait end, or is hidden; the spell name and a timer sit inside. Settings
+are in `db[unit].castBar` (`enabled`, `hideBlizzard`, `position` below/above,
+`height` 14, `gap` 3, `icon` far/near/none, `showText`, `showTimer`,
+`fontSize` 10, `color`, `lockedColor`), one of the frame's **own keys**: a
+Target matching the Player keeps its own, while Copy Style and Reset include
+it. Hide Blizzard Cast Bar fades `PlayerCastingBarFrame`, `TargetFrameSpellBar`
+or `FocusFrameSpellBar`. Cast painting and the timer are shared with
+Nameplates (`Kit.PaintCastBar`, `Kit.CastTimer` in `Shared/Kit/Cast.lua`).
+
+## Combo points around the Target portrait
+
+November 13, 2026, per the owner: Blizzard's combo points stayed pinned to the
+faded Blizzard Target frame. The Target frame now draws its own (`Combo.lua`,
+the **Combo Points** tab): one round socket per point (Onyx rim, dark socket,
+lit fill) on an arc around the portrait's outer side, or in a row under the
+bars when the portrait is off. Settings live in `modules.unitFrames.comboPoints`
+(not per frame, so they stay editable while the Target matches the Player):
+`enabled`, `hideBlizzard` (fades Blizzard's `ComboFrame`), `arc` (Upper Outer,
+Outer Side, Lower Outer, Top, Bottom), `size` 10, `spacing` 3, `distance` 3,
+`activeColor`, `emptyColor`. Sizes are even pixel counts and centres are
+snapped, so the sockets sit on the pixel grid. Points show while the player is
+a Rogue or a Druid in Cat Form; the count may be secret and only reaches
+StatusBar `SetValue`.
+
+## Small-frame defaults and attachment (layout version 13)
+
+November 13, 2026, per the owner: Target of Target defaults to no portrait,
+75% scale and the name inside the health bar on the left, attached under the
+Target frame's bottom-right corner. Target of Focus is the same under the
+Focus frame, and Focus is the same frame at 90% scale on its own. Layout
+version 13 moves a saved setting to the new default only while it still equals
+the version 12 default.
+
+Attachment (`attach`, `attachPoint`, `attachOffsetX`/`attachOffsetY` in
+physical pixels; identity keys, so Copy Style and Reset keep them) is handled
+by the module: the Position Manager's frame anchors refuse ModeUI frames, so an
+attached frame is unregistered from it and its button is anchored to the
+parent's button (its Edit Mode stand-in to the parent's stand-in, so a secure
+frame is never anchored to a plain one). Detached, or while the parent frame
+is off, it registers again at its saved position and moves in Edit Mode.
+
+## Target of Target, Focus and Target of Focus
+
+November 13, 2026, per the owner: three more secure frames in the same skin,
+`targettarget`, `focus` and `focustarget`, each saved under its unit token
+with the full per-frame settings set (the Target is still the only frame that
+can match the Player). Target of Target and Target of Focus default to a small
+frame (bar width 110, health 16, power 6, no level) with the portrait on the
+left; Focus is 150 wide with the portrait on the right. Each has its own Edit
+Mode element (`unitFramesTargetTarget`, `unitFramesFocus`,
+`unitFramesFocusTarget`) and Hide Blizzard option. Blizzard's Focus frame is
+built from the Target frame template, so it fades the same parts; Blizzard's
+Target of Target and Target of Focus fade whole, also while their Target or
+Focus frame is hidden. The Frames tab shows Show and Hide Blizzard side by
+side for each frame, and the element tabs pick the frame from an **Editing**
+dropdown. Existing profiles gain the three frames with their defaults on load.
+
+## See-through bar backgrounds, bar textures and opacity
+
+November 13, 2026, per the owner: the dark Onyx fill was hard to tell from the
+near-black empty bar. Each frame now has four bar settings, shared by its
+health and power bars and shown in the Layout tab's **Bar Textures** and
+**Bar Opacity** cards:
+
+- `foregroundTexture` (Mode Gradient) and `backgroundTexture` (Flat), or any
+  SharedMedia status bar (`Kit.BarTextureChoices`, shared with Nameplates).
+- `barForegroundOpacity` 100 (10–100%) fades the fills.
+- `barBackgroundOpacity` 25 (0–100%) fades the empty bar, so the world shows
+  through it. (`backgroundOpacity` is the panel opacity retired in layout
+  version 9, so the new keys carry a `bar` prefix.)
+
+New keys take their defaults on load, so existing frames get the see-through
+background without a layout-version change. For the background to be truly
+see-through, nothing opaque may sit under the bars: the rim and black gap are
+drawn as four clipped bands around the bars' rectangle (`Kit.Bands`,
+`Kit.PlaceBands`, moved from Nameplates into `Shared/Kit/Bands.lua`), and the
+1px hairline between health and power is its own solid texture.
+
+## Near-black rim
+
+November 12, 2026, per the owner: the Onyx rim (`Kit.onyx.border`) is now
+#25282C instead of slate #6A737D, so frame borders read close to black. The
+portrait ring's Default color follows it.
+
+## Mode Gradient on every bar (layout version 12)
+
+November 12, 2026, per the owner: every ModeUI bar uses one texture, **Mode
+Gradient** (`Kit.ModeGradient`: a flat fill with a soft white gradient over its
+top half, the look the old "Mode" choice gave). The Bar Texture setting is gone,
+and layout version 12 removes the saved `texture` key from both frames. ModeUI's
+text and interface default to Expressway, with the bundled Lato as the fallback.
+
+November 11, 2026. First module (in the **Frames** category since November 13) and the start of
 the Play The Game Tools UI suite. Opt-in (default off), Forever only, built into
 PTG with no dependency on ModeTools or any other addon. Static/mock validated
 only; **native acceptance is pending**.
@@ -521,35 +963,56 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
 - **Edit Mode.** PTG's Position Manager refuses protected frames, so each
   frame has a plain stand-in, `PlayTheGameTools<Unit>UnitFramePreview`,
   registered as `unitFramesPlayer`/`unitFramesTarget` (screen anchoring only).
-  The stand-in uses the same Mode face with sample values. The secure button
+  The stand-in uses the same Mode face with sample values; its name is yours
+  on the Player and "Name" on the others, since the handle centered above it
+  names the frame ("Player Frame") in volt green. The secure button
   copies its anchor and scale outside combat. Saved positions live in the shared
   `positions` table.
 - **Native frames.** "Hide Blizzard … Frame" sets the alpha of the native
   Container and Content parts to 0 (re-applied if Blizzard restores it) and
-  disables the native frame's mouse input. Nothing is reparented and no events
-  are unregistered, so the pet frame, combo points/class resources, target auras,
-  target cast bar and target of target keep working. Turning the option or
-  module off restores the saved alpha and mouse input outside combat.
+  disables the native frame's mouse input. Blizzard's Target of Target
+  (`TargetFrameToT`) is a child of the Target frame
+  (`TargetFrameMixin:CreateTargetofTarget`), so it would float on its own: it
+  fades whole with the Target frame, and it and its debuff icons release the
+  mouse. Nothing is reparented and no events are unregistered, so the pet
+  frame, combo points/class resources, target auras and target cast bar keep
+  working. Turning the option or module off restores the saved alpha and mouse
+  input outside combat (`Native.lua`).
 - **Combat.** Show/hide, size, position, unit-watch and native-frame changes
   are protected. Requests made in combat are kept and applied on
   `PLAYER_REGEN_ENABLED`. Settings controls refuse changes in combat. Health,
   power, text and portrait updates continue in combat.
 - **Events.** One event frame with unit-filtered `RegisterUnitEvent` for
-  player/target, plus `PLAYER_TARGET_CHANGED`, `PLAYER_ENTERING_WORLD` and
-  `PORTRAITS_UPDATED`, registered only while a frame is shown. No polling.
+  player/target and a second one for focus (a frame filters to at most two
+  units), plus `UNIT_TARGET`, `PLAYER_TARGET_CHANGED`, `PLAYER_FOCUS_CHANGED`,
+  `PLAYER_ENTERING_WORLD` and `PORTRAITS_UPDATED`, registered only while a
+  frame is shown. The game sends no unit events for `targettarget` or
+  `focustarget`, so while either frame is on a hidden-when-unused timer
+  refreshes them every 0.1 s, as Blizzard's own Target of Target does with
+  `OnUpdate`.
 
 ## Settings (`modules.unitFrames`)
 
-`layoutVersion` is 11. `player` and `target` each hold the full set below
-(defaults shown). The Target differs only in portrait side (right) and
-`matchPlayer` (on). The Onyx rim, gap, empty bar and background are constants
-(`M.onyx`), not settings.
+`layoutVersion` is 17. Each frame (`player`, `target`, `targettarget`,
+`focus`, `focustarget`) holds the set below (defaults shown). The Onyx rim,
+empty bar and background are constants (`M.onyx`), not settings. Since layout
+version 17 the Name, Level, Health text and Power text keys below are replaced
+by text slots (`texts`, see "Text slots" at the top); the rows are kept as the
+history of what was migrated.
+
+| Group | Keys (default; range or choices) |
+| --- | --- |
+| Text slots | `texts.<slot>`: `content` (see "Text slots"), `size` 6–24, `x`/`y` −100–100, `colorMode` default / custom, `color`; `texts.border.align` LEFT / CENTER / RIGHT. Player: `border` Name (12, RIGHT), `bottomLeft` Level (11), `right` Health Percent (11). Small frames: `left` Name (11), `right` Health Percent (10). |
+| Names | `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `classSoftness` 40 (0–100%) |
+
+History (layout version 11):
 
 | Group | Keys (default; range or choices) |
 | --- | --- |
 | Visibility | `enabled` (true), `hideBlizzard` (true) |
 | Matching | `matchPlayer` (Target on): render with the Player's look and text layout; `mirrorText` (Target, off): mirror the Player's text alignment and horizontal offsets |
-| Layout | `scale` 100 (50–200%), `barWidth` 180 (100–400), `healthHeight` 26 (10–60), `showPower` (true), `powerHeight` 10 (2–30), `texture` satin / mode / flat / default / LibSharedMedia status bar |
+| Layout | `scale` 100 (50–200%), `barWidth` 180 (100–400), `healthHeight` 26 (10–60), `showPower` (true), `powerHeight` 10 (2–30) |
+| Bars | `foregroundTexture` mode / flat / `media:<name>`, `backgroundTexture` flat / `media:<name>`, `barForegroundOpacity` 100 (10–100%), `barBackgroundOpacity` 25 (0–100%) |
 | Portrait | `showPortrait` (true), `portraitStyle` portrait / class, `portraitSide` left (Target right), `portraitScale` 150 (100–200% of the bar block), `portraitRing` class / border / custom, `portraitRingColor` Mist |
 | Name | `showName` (true), `namePosition` above / bar, `nameAlign` RIGHT / LEFT / CENTER, `nameFontSize` 12 (8–24), `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `nameOffsetX`/`nameOffsetY` 0 (−100–100), `classSoftness` 40 (0–100%) |
 | Level | `levelStyle` badge (shown) / none, `levelFontSize` 11 (6–24), `levelColor` #B9B9B9, `levelOffsetX`/`levelOffsetY` 0 |
@@ -581,7 +1044,12 @@ validation). Settings change only through `SetFrameOption`, `ResetFrame` and
   resources stay where Blizzard places them; move them with Blizzard's Edit
   Mode if needed.
 - No cast bar, auras, combat feedback, threat or raid icon on PTG frames yet.
-  Focus, target of target, pet, party and raid frames are later phases.
+  Pet, party and raid frames are later phases.
+- Whether Forever's rules let players set a focus is unverified. The Focus
+  frame only shows while a focus exists (unit watch), so it stays hidden if not.
+- Blizzard's combo points on Forever (`ComboFrame`, Camelot) are parented to
+  the Target frame and centred on its portrait; they keep working and stay
+  visible where that portrait was.
 
 ## Manual checks (native acceptance)
 

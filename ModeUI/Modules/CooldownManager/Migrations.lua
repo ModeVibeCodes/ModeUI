@@ -1,0 +1,117 @@
+local _, addon = ...
+local M = addon.CooldownManager
+if not M then return end
+
+-- Initialize(db): migrates, fills defaults and validates every bar's
+-- settings. Profile validation runs it on detached copies, so it touches no
+-- frames. Bad data stops with an error; settings are never reset.
+local Public, Number = addon.IsPublic, addon.IsNumber
+local Kit = addon.Kit
+local function Copy(value) return addon.ProfileCodec.Copy(value) end
+
+local ALLOWED = {}
+for key, list in pairs(M.choices) do
+    local set = {}
+    for _, item in ipairs(list) do set[type(item) == "table" and item.id or item] = true end
+    ALLOWED[key] = set
+end
+local MAX_SPELLS = 200
+
+local function Whole(value, range) return Number(value, range[1], range[2]) and value == math.floor(value) end
+local function Key(value) return type(value) == "string" and value:match("^%d+$") ~= nil and #value <= 12 end
+
+-- Per-spell switches: a cooldown ID ("1234") to { hide = true, proc = false, ... },
+-- each kept only while it differs from the bar.
+local function ValidSpells(spells, id)
+    local count = 0
+    for key, entry in pairs(spells) do
+        count = count + 1
+        assert(Key(key) and type(entry) == "table" and next(entry) ~= nil, "Invalid cooldown manager spell: " .. id)
+        for kind, value in pairs(entry) do
+            assert(M.spellKinds[kind] ~= nil and value == M.spellKinds[kind], "Invalid cooldown manager spell switch: " .. id)
+        end
+    end
+    assert(count <= MAX_SPELLS, "Too many cooldown manager spells: " .. id)
+end
+
+local function Validate(style, id, defaults, bar)
+    assert(Public(style) and type(style) == "table", "Invalid cooldown manager settings: " .. id)
+    for key, default in pairs(defaults) do
+        if style[key] == nil then style[key] = Copy(default) end
+        local value = style[key]
+        assert(Public(value) and type(value) == type(default), "Invalid cooldown manager setting: " .. id .. "." .. key)
+        if M.colorKeys[key] then
+            for i = 1, 3 do assert(Number(value[i], 0, 1), "Invalid cooldown manager color: " .. id .. "." .. key) end
+        end
+    end
+    for key, r in pairs(M.ranges) do assert(Whole(style[key], r), "Invalid cooldown manager range: " .. id .. "." .. key) end
+    local sizes = M.sizeRanges[bar and "bar" or "icon"]
+    for _, key in ipairs({ "width", "height" }) do assert(Whole(style[key], sizes[key]), "Invalid cooldown manager size: " .. id .. "." .. key) end
+    for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid cooldown manager choice: " .. id .. "." .. key) end
+    local lines = M.LinesFor(style.grow)
+    assert(style.lineGrowth == lines[1] or style.lineGrowth == lines[2], "Invalid cooldown manager line growth: " .. id)
+    assert(Kit.ValidBarTexture(style.barTexture, true), "Invalid cooldown manager bar texture: " .. id)
+    assert(Kit.ValidBarTexture(style.barBackground, false), "Invalid cooldown manager bar background: " .. id)
+    ValidSpells(style.spells, id)
+end
+
+-- Custom bars: at most MAX_CUSTOM, each with a unique "customN" ID below
+-- nextCustom, a name, a kind and its spells (unique cooldown ID keys).
+local function ValidCustom(db)
+    assert(type(db.customBars) == "table" and #db.customBars <= M.MAX_CUSTOM, "Invalid cooldown manager custom bars")
+    assert(Whole(db.nextCustom, { 1, 100000 }), "Invalid cooldown manager custom bar counter")
+    local ids = {}
+    for index, bar in pairs(db.customBars) do
+        assert(type(index) == "number" and index >= 1 and index <= #db.customBars and type(bar) == "table", "Invalid cooldown manager custom bar")
+        local number = type(bar.id) == "string" and tonumber(bar.id:match("^custom(%d+)$"))
+        assert(number and number < db.nextCustom and not ids[bar.id], "Invalid cooldown manager custom bar ID")
+        ids[bar.id] = true
+        assert(M.customKinds[bar.kind], "Invalid cooldown manager custom bar kind: " .. bar.id)
+        assert(type(bar.name) == "string" and bar.name ~= "" and #bar.name <= M.MAX_NAME and not bar.name:find("[\r\n|]"),
+            "Invalid cooldown manager custom bar name: " .. bar.id)
+        assert(type(bar.entries) == "table" and #bar.entries <= M.MAX_ENTRIES, "Invalid cooldown manager custom bar spells: " .. bar.id)
+        local seen = {}
+        for i, key in pairs(bar.entries) do
+            assert(type(i) == "number" and i >= 1 and i <= #bar.entries and Key(key) and not seen[key], "Invalid cooldown manager custom bar spell: " .. bar.id)
+            seen[key] = true
+        end
+        if db[bar.id] == nil then db[bar.id] = Copy(M.customDefaults[bar.kind]) end
+        Validate(db[bar.id], bar.id, M.customDefaults[bar.kind], false)
+    end
+end
+
+-- Version 1 -> 2: Lines, First Icon and Center Lines become one Growth and
+-- the way new lines go; the ready glow switch and its style become the Off
+-- Cooldown glow's style (a flash, as before).
+local function GrowthFromV1(style)
+    local start = type(style.start) == "string" and style.start or "TOPLEFT"
+    if style.orientation == "vertical" then
+        style.grow = style.center ~= false and "centerV" or (start:find("BOTTOM") and "up" or "down")
+        style.lineGrowth = start:find("RIGHT") and "left" or "right"
+    else
+        style.grow = style.center ~= false and "centerH" or (start:find("RIGHT") and "left" or "right")
+        style.lineGrowth = start:find("BOTTOM") and "up" or "down"
+    end
+    style.orientation, style.start, style.center = nil, nil, nil
+    if type(style.readyGlow) == "boolean" then
+        style.readyGlow = style.readyGlow and (style.readyStyle == "border" and "border" or "mode") or "none"
+        style.readyMode = "flash"
+    end
+    style.readyStyle = nil
+end
+
+function M.Initialize(db)
+    if db.version == nil then db.version = M.VERSION end
+    if db.version == 1 then
+        for _, viewer in ipairs(M.viewers) do if type(db[viewer]) == "table" then GrowthFromV1(db[viewer]) end end
+        db.version = 2
+    end
+    assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
+    if db.customBars == nil then db.customBars = {} end
+    if db.nextCustom == nil then db.nextCustom = 1 end
+    for _, viewer in ipairs(M.viewers) do
+        if db[viewer] == nil then db[viewer] = Copy(M.styleDefaults[viewer]) end
+        Validate(db[viewer], viewer, M.styleDefaults[viewer], M.viewerSpecs[viewer].bar)
+    end
+    ValidCustom(db)
+end

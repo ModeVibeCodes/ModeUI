@@ -25,7 +25,10 @@ function addon:SearchSettings(query)
     else
         addon.Defer:Cancel("settings:search")
     end
-    for _, id in ipairs(self.moduleOrder) do
+    -- Standalone modules have their own window, not a page here.
+    local searchable = {}
+    for _, id in ipairs(self.moduleOrder) do if not self.modules[id].standalone then searchable[#searchable + 1] = id end end
+    for _, id in ipairs(searchable) do
         local module = self.modules[id]
         local page = self.configWindow.pages[id]
         if not page and not combat then page = self:EnsureConfigPage(id) end
@@ -67,7 +70,7 @@ function addon:CreateSettingsSearch(sidebar)
     local mode=T.id=="mode"
     local input = CreateFrame("EditBox", nil, mode and self.configWindow.headerBar or sidebar)
     if mode then
-        input:SetPoint("TOPLEFT",self.configWindow,"TOPLEFT",self.configWindow.contentLeft,-13)
+        input:SetPoint("TOPLEFT",self.configWindow,"TOPLEFT",self.configWindow.contentLeft,-14)
         input:SetWidth(200)
         -- The drag strip ends before this left-aligned input. Keep a visible
         -- fragment of that strip when recovering an off-screen window.
@@ -79,7 +82,7 @@ function addon:CreateSettingsSearch(sidebar)
         input:SetPoint("TOPLEFT", 0, 0)
         input:SetPoint("TOPRIGHT", 0, 0)
     end
-    input:SetHeight(30)
+    input:SetHeight(28)
     input:SetAutoFocus(false)
     input:SetMaxLetters(80)
     input:SetFontObject(GameFontHighlight)

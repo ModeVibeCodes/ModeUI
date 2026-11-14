@@ -147,15 +147,12 @@ function addon:CreateConfig()
     window.headerArt:SetPoint("BOTTOMLEFT", sidebarWidth + 2, 0); window.headerArt:SetPoint("BOTTOMRIGHT", -1, 0)
     window.headerArt:SetHeight(1)
     if mode then window.headerArt:Hide() end
-    window.title = W.Heading(header, "ModeUI", T.fontSize.section, 20 + edge, -21, sidebarWidth - 24 - edge, mode and T.heading or T.text)
+    -- The brand is the ModeUI wordmark alone, no logo (owner, November 13, 2026).
+    window.title = W.Heading(header, "ModeUI", T.fontSize.brand, 20 + edge, -21, sidebarWidth - 24 - edge, mode and T.heading or T.text)
     if mode then
         window.title:SetTextColor(unpack(T.primary))
-        local logo=header:CreateTexture(nil,"ARTWORK")
-        logo:SetPoint("LEFT",14,0);logo:SetSize(38,38)
-        addon.Media:ApplyTexture(logo,"ModeLogo")
-        window.brandLogo=logo
-        window.title:ClearAllPoints();window.title:SetPoint("LEFT",logo,"RIGHT",8,0)
-        window.title:SetWidth(sidebarWidth-72)
+        window.title:ClearAllPoints();window.title:SetPoint("LEFT",header,"LEFT",22,0)
+        window.title:SetWidth(sidebarWidth-30)
     end
     window.title:SetWordWrap(false)
     local controls = CreateFrame("Frame", nil, header)
@@ -181,14 +178,14 @@ function addon:CreateConfig()
     end)
     drag:SetScript("OnDragStop", function() self:FinishWindowInteraction() end)
     window.header, window.headerBar, window.headerControls = drag, header, controls
-    local function HeaderButton(label, width)
-        local button = W.Button(controls, label, width, 28, "secondary")
+    local function HeaderButton(label, width, style)
+        local button = W.Button(controls, label, width, 28, style or "secondary")
         button:SetFrameLevel(controls:GetFrameLevel() + 1)
         button:EnableMouse(true)
         button:RegisterForClicks("LeftButtonUp")
         return button
     end
-    local close = HeaderButton("X", 28)
+    local close = HeaderButton("X", 28, "quiet")
     close:SetPoint("RIGHT")
     close:SetScript("OnClick", function() window:Hide() end)
     local edit = HeaderButton("Edit Mode", 92)
@@ -233,8 +230,12 @@ function addon:CreateConfig()
     local pages, navigationButtons = {}, {}
     local categoryNavigation = self:CreateCategoryNavigation(body, navigationButtons)
     window.categoryNavigation = categoryNavigation
-    -- ModeUI opens on its first module (Interface > Unit Frames).
+    -- ModeUI opens on the first page in the sidebar (Global > Profiles).
     local selected = self.moduleOrder[1]
+    for _, id in ipairs(self.categoryOrder) do
+        local first = self.categories[id].modules[1]
+        if first then selected = first; break end
+    end
     local RefreshSidebar
     -- Session-local disclosure state: mode categories start expanded on reload.
     local collapsed = {}
@@ -281,7 +282,6 @@ function addon:CreateConfig()
         if self.CloseSettingsSearch then self:CloseSettingsSearch() end
         if selected ~= id and self.CloseTimerColorPicker then self:CloseTimerColorPicker() end
         if selected ~= id and self.CloseFontDropdown then self:CloseFontDropdown() end
-        if selected ~= id then self:CloseModulePreview() end
         for _, page in pairs(pages) do page:Hide() end
         selected = id
         self:UpdateConfigTitle(id)
@@ -322,13 +322,13 @@ function addon:CreateConfig()
     window:RegisterEvent("UI_SCALE_CHANGED")
     window:RegisterEvent("DISPLAY_SIZE_CHANGED")
     window:SetScript("OnEvent", function()
-        self:FinishWindowInteraction(); self:UpdateWindowBounds()
-        self:UpdateModulePreviewBounds()
+        self:FinishWindowInteraction(); self:UpdateWindowBounds(); W.RefreshPixelInsets()
         if self.EditMode then self.EditMode:ViewportChanged() end
     end)
     window:SetScript("OnShow", function()
         if self.ReloadManager.prompt then self.ReloadManager.prompt:Hide() end
-        self:UpdateWindowBounds(); Select(selected, true)
+        -- One-pixel rims follow the window's scale, which is set here.
+        self:UpdateWindowBounds(); W.RefreshPixelInsets(); Select(selected, true)
         -- Fills in labels left blank by a font still loading on a fresh launch.
         addon.Media:ScheduleTextRedraw()
     end)
@@ -338,7 +338,6 @@ function addon:CreateConfig()
         self:FinishWindowInteraction()
         if self.CloseTimerColorPicker then self:CloseTimerColorPicker() end
         if self.CloseFontDropdown then self:CloseFontDropdown() end
-        self:CloseModulePreview()
         if self.CloseSettingsSearch then self:CloseSettingsSearch() end
         if window.editSuspended then return end
         self:ResetDisplayModes()
@@ -358,4 +357,14 @@ function addon:ToggleConfig()
     if self.editMode then self:SetEditMode(false); return end
     if not self.configWindow then self:CreateConfig() end
     self.configWindow:SetShown(not self.configWindow:IsShown())
+end
+
+-- Shows the settings window (leaving Edit Mode first) without ever closing it:
+-- the game menu button and the minimap's addon compartment use this.
+function addon:OpenConfig()
+    if not self.initialized then return false end
+    if self.editMode then self:SetEditMode(false) end
+    if not self.configWindow then self:CreateConfig() end
+    self.configWindow:Show()
+    return true
 end

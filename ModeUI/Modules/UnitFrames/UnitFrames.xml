@@ -1,9 +1,19 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="Init.lua"/>
+    <Script file="TextSlots.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
+    <Script file="Native.lua"/>
     <Script file="Layout.lua"/>
+    <Script file="Texts.lua"/>
     <Script file="Build.lua"/>
     <Script file="Update.lua"/>
+    <Script file="Combo.lua"/>
+    <Script file="CastBar.lua"/>
+    <Script file="Auras.lua"/>
+    <Script file="Status.lua"/>
+    <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsExtra.lua"/>
+    <Script file="SettingsText.lua"/>
 </Ui>

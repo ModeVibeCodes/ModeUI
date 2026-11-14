@@ -4,6 +4,8 @@ local Combat = addon.InCombat
 
 -- Decoration is attached to actual owned bounds, including module icon/layout bounds.
 -- Only the visible handle intercepts input; no invisible full-frame input overlay.
+-- The handle is centered above the frame and names it (its own label, else
+-- the module) in volt green; the frame itself shows only the outline.
 function PM:UpdateEditDecoration(element, selected, show)
     local active = show and element.draggable and not Combat()
     if not element.decoration and active then
@@ -18,25 +20,93 @@ function PM:UpdateEditDecoration(element, selected, show)
             edges[i]=texture
         end
         local handle=CreateFrame("Button",nil,frame)
-        handle:SetPoint("BOTTOMLEFT",frame,"TOPLEFT",0,3)
-        handle:SetSize(math.min(200,math.max(88,#(element.label or element.module.title)*6+18)),20)
+        local name=element.label or element.module.title
+        handle:SetPoint("BOTTOM",frame,"TOP",0,3)
+        handle:SetSize(math.min(200,math.max(88,#name*7+18)),20)
         handle:EnableMouse(true);handle:RegisterForClicks("LeftButtonUp");handle:RegisterForDrag("LeftButton")
         local background=handle:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();background:SetColorTexture(0.08,0.1,0.12,0.94)
         local label=handle:CreateFontString(nil,"OVERLAY","GameFontHighlight")
-        label:SetPoint("CENTER");label:SetText(element.label or element.module.title)
-        addon.Media:BindInterfaceFont(label,GameFontHighlight,10)
+        label:SetPoint("CENTER");label:SetText(name)
+        addon.Media:BindInterfaceFont(label,GameFontHighlight,11)
         handle:SetScript("OnMouseDown",function() if self:CanDrag(element) then self:SelectElement(element.id) end end)
         handle:SetScript("OnDragStart",function() self:StartDragging(element.id) end)
         handle:SetScript("OnDragStop",function() self:StopDragging(element.id) end)
-        element.decoration={frame=frame,handle=handle,label=label,edges=edges}
+        element.decoration={frame=frame,handle=handle,label=label,edges=edges,nudges=self:NudgeButtons(frame,handle,element),coords=self:Coordinates(frame,handle,element)}
     end
     local d=element.decoration
     if not d then return end
     local color=selected and addon.Theme.primary or addon.Theme.muted
     for _,edge in ipairs(d.edges) do edge:SetColorTexture(color[1],color[2],color[3],selected and 0.9 or 0.5) end
-    d.label:SetTextColor(color[1],color[2],color[3])
-    d.handle:EnableMouse(active and self:CanDrag(element) or false)
+    local volt=addon.Theme.volt
+    d.label:SetTextColor(volt[1],volt[2],volt[3])
+    -- Anchor To: the handle still takes the click (it picks), but never drags.
+    d.handle:EnableMouse(active and (self:CanDrag(element) or self:Pickable(element)) or false)
+    d.coords:SetShown(selected and active or false)
+    local nudging=selected and active and self:CanDrag(element) or false
+    for _,button in ipairs(d.nudges) do button:SetShown(nudging);button:EnableMouse(nudging) end
     d.frame:SetShown(active and true or false)
+end
+
+-- Renames an element's Edit Mode handle (a custom bar renamed, say).
+function PM:SetLabel(id, label)
+    local element = self.elements[id]
+    if not element or type(label) ~= "string" or label == "" then return false end
+    element.label = label
+    if element.decoration then element.decoration.label:SetText(label) end
+    return true
+end
+
+-- The selected element's place on the screen, left of its name: its
+-- center's X and Y from the screen's center (where the center lines cross),
+-- in whole UI units, kept current while it's dragged or nudged.
+local COORDS_TICK=0.05
+function PM:ScreenOffset(element)
+    local x,y=addon.Positioning:Geometry(element.frame)
+    local sx,sy=UIParent:GetCenter()
+    if not x or not sx then return end
+    return math.floor(x-sx+0.5),math.floor(y-sy+0.5)
+end
+function PM:Coordinates(frame,handle,element)
+    local box=CreateFrame("Frame",nil,frame)
+    box:SetSize(112,20);box:SetPoint("RIGHT",handle,"LEFT",-4,0);box:EnableMouse(false);box:Hide()
+    local background=box:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();background:SetColorTexture(0.08,0.1,0.12,0.94)
+    local text=box:CreateFontString(nil,"OVERLAY","GameFontHighlight")
+    text:SetPoint("CENTER");addon.Media:BindInterfaceFont(text,GameFontHighlight,11)
+    text:SetTextColor(unpack(addon.Theme.text))
+    box.text=text
+    local elapsed=COORDS_TICK
+    local function Update()
+        local x,y=self:ScreenOffset(element)
+        text:SetText(x and ("X "..x.."   Y "..y) or "")
+    end
+    box:SetScript("OnShow",Update)
+    box:SetScript("OnUpdate",function(_,delta)
+        elapsed=elapsed+delta
+        if elapsed<COORDS_TICK then return end
+        elapsed=0;Update()
+    end)
+    return box
+end
+
+-- Four arrow buttons beside the selected element's name: each click moves it
+-- one physical pixel. The arrows are the dropdown chevron, turned.
+local NUDGES={{-1,0,-math.pi/2},{0,1,math.pi},{0,-1,0},{1,0,math.pi/2}}
+function PM:NudgeButtons(frame,handle,element)
+    local buttons={}
+    for i,nudge in ipairs(NUDGES) do
+        local button=CreateFrame("Button",nil,frame)
+        button:SetSize(20,20);button:SetPoint("LEFT",handle,"RIGHT",4+(i-1)*22,0)
+        button:RegisterForClicks("LeftButtonUp")
+        local background=button:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();background:SetColorTexture(0.08,0.1,0.12,0.94)
+        local arrow=button:CreateTexture(nil,"ARTWORK");arrow:SetPoint("CENTER");arrow:SetSize(16,16)
+        addon.Media:ApplyTexture(arrow,"ModeChevron");arrow:SetVertexColor(unpack(addon.Theme.text))
+        if arrow.SetRotation then arrow:SetRotation(nudge[3]) end
+        local hover=button:CreateTexture(nil,"HIGHLIGHT");hover:SetAllPoints();hover:SetColorTexture(1,1,1,0.12)
+        button:SetScript("OnClick",function() self:Nudge(element.id,nudge[1],nudge[2]) end)
+        button.nudge=nudge
+        buttons[i]=button
+    end
+    return buttons
 end
 
 function PM:ReleaseEditDecoration(element)
@@ -44,6 +114,8 @@ function PM:ReleaseEditDecoration(element)
     if not d then return end
     d.frame:Hide();d.frame:ClearAllPoints();d.handle:EnableMouse(false)
     for _,name in ipairs({"OnMouseDown","OnDragStart","OnDragStop"}) do d.handle:SetScript(name,nil) end
+    for _,button in ipairs(d.nudges or {}) do button:Hide();button:SetScript("OnClick",nil) end
+    if d.coords then d.coords:Hide();d.coords:SetScript("OnUpdate",nil);addon.Media:UnbindInterfaceFont(d.coords.text) end
     addon.Media:UnbindInterfaceFont(d.label)
     element.decoration=nil
 end

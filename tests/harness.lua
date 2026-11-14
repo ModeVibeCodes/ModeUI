@@ -63,7 +63,8 @@ function H.Files()
                 local file = attributes:match('file%s*=%s*"([^"]+)"')
                 assert(file, path .. ": <" .. tag .. "> needs a file attribute")
                 Add(Normalize(base .. file), path)
-            elseif tag ~= "Ui" then
+            elseif tag ~= "Ui" and tag ~= "Font" then
+                -- <Font> declares a font object (Kit/Fonts.xml) and runs no code.
                 error(path .. ": harness does not support <" .. tag .. ">")
             end
         end
@@ -124,7 +125,18 @@ function H.Load(options)
     Compile("FireEvent('ADDON_LOADED','ModeUI'); FireEvent('PLAYER_LOGIN')", "events", env)()
     local world = { env = env, addon = addon }
     function world.run(source, name) return Compile(source, name or "test", env)() end
-    function world.saved() return addon.ProfileCodec.Copy(env.ModeUIDB) end
+    -- What the client would write to SavedVariables: a plain deep copy of the
+    -- whole database. Not ProfileCodec.Copy, whose size cap is for one profile
+    -- (import/export); the database holds every profile.
+    function world.saved()
+        local function Copy(value)
+            if type(value) ~= "table" then return value end
+            local result = {}
+            for k, v in pairs(value) do result[k] = Copy(v) end
+            return result
+        end
+        return Copy(env.ModeUIDB)
+    end
     return world
 end
 

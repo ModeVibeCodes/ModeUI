@@ -133,6 +133,7 @@ function methods:GetCenter()
     return self.centerX or 500, self.centerY or 400
 end
 function methods:EnableMouse(enabled) self.mouse = enabled end
+function methods:IsMouseEnabled() return self.mouse == true end
 function methods:EnableKeyboard(enabled) self.keyboard = enabled end
 function methods:SetPropagateKeyboardInput(value) self.propagate = value end
 function methods:SetEnabled(value) self.enabled = value end
@@ -217,9 +218,13 @@ function methods:SetVerticalScroll(value) self.verticalScroll = value end
 function methods:GetVerticalScroll() return self.verticalScroll or 0 end
 function methods:EnableMouseWheel() end
 function methods:SetJustifyH(value) self.justifyH = value end
+function methods:GetJustifyH() return self.justifyH or "CENTER" end
 function methods:SetJustifyV(value) self.justifyV = value end
 function methods:SetFrameStrata(value) self.strata = value end
 function methods:SetFrameLevel(value) self.frameLevel = value end
+function methods:SetClipsChildren(value) self.clipsChildren = value end
+function methods:SetSnapToPixelGrid(value) self.snapToPixelGrid = value end
+function methods:SetTexelSnappingBias(value) self.texelSnappingBias = value end
 function methods:GetFrameLevel() return self.frameLevel or (self.parent and self.parent:GetFrameLevel() + 1 or 0) end
 function methods:SetMovable() end
 function methods:SetClampedToScreen(value) self.clamped=value end

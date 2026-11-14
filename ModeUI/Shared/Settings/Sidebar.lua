@@ -2,7 +2,9 @@ local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 
 -- The settings sidebar: category headings, the modules nested under them and,
--- in the Mode theme, collapsing a category. Built once by addon:CreateConfig.
+-- in the Mode theme, collapsing a category. Captions are small uppercase
+-- faint text; module rows are 30 px, the chosen one filled with an accent bar
+-- on its left edge. Built once by addon:CreateConfig.
 -- ctx: window, sidebar, navigation, navigationButtons, collapsed, mode, edge,
 -- sidebarWidth, Select(id) and Selected() from the window.
 -- Returns RefreshSidebar(category, id).
@@ -13,7 +15,8 @@ function addon:BuildConfigSidebar(ctx)
     local RefreshSidebar
     local function AddNavigation(id, label, developer)
         local isHeading = mode and self.categories[id] ~= nil
-        local button = W.Button(developer and sidebar or navigation.content, label, developer and sidebarWidth - 22 - edge or 184, 34, isHeading and "categoryHeading" or "tab")
+        local button = W.Button(developer and sidebar or navigation.content, isHeading and label:upper() or label,
+            developer and sidebarWidth - 22 - edge or 184, isHeading and 28 or 30, isHeading and "categoryHeading" or "tab")
         button.categoryID = isHeading and id or nil
         if developer then button:SetPoint("BOTTOMLEFT", sidebar, "BOTTOMLEFT", 0, 0)
         else button:SetPoint("TOPLEFT", 0, -navigation.cursor) end
@@ -28,10 +31,7 @@ function addon:BuildConfigSidebar(ctx)
             button.label:SetPoint("RIGHT", -10, 0)
             button.label:SetWordWrap(false)
             addon.Media:BindInterfaceFont(button.label, GameFontHighlight, isHeading and T.fontSize.group or T.fontSize.body, nil, isHeading and "heading" or nil)
-            if isHeading then
-                button:SetLabelColor(T.heading)
-                button.gapBefore = 10
-            end
+            if isHeading then button.gapBefore, button.gapAfter = 12, 2 end
         end
         button:SetScript("OnClick", function()
             if isHeading then
@@ -61,7 +61,9 @@ function addon:BuildConfigSidebar(ctx)
         if #self.categories[id].modules > 0 then AddNavigation(id, self.categories[id].title) end
     end
     for _, id in ipairs(self.moduleOrder) do
-        if not self.modules[id].developer and not self.modules[id].category then AddNavigation(id, self.modules[id].title) end
+        -- Standalone modules open their own window and have no page here.
+        local module = self.modules[id]
+        if not module.developer and not module.category and not module.standalone then AddNavigation(id, module.title) end
     end
     for _, id in ipairs(self.moduleOrder) do
         if self.modules[id].developer then AddNavigation(id, self.modules[id].title, true) end
@@ -73,7 +75,8 @@ function addon:BuildConfigSidebar(ctx)
         if nested[id] then return nested[id] end
         local module=addon.modules[id]
         local title = module.tabTitle or module.title
-        local button=W.Button(navigation.content,mode and ("· " .. title) or title,184,mode and 32 or 28,"tab")
+        local button=W.Button(navigation.content,mode and ("· " .. title) or title,184,mode and 30 or 28,"tab")
+        button.gapAfter=2
         button.modeLeftAligned=mode
         button.atelierNested=true
         button.label:ClearAllPoints()

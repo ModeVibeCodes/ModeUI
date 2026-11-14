@@ -1,19 +1,21 @@
 local _, addon = ...
 local T, W = addon.InterfaceTheme, addon.ConfigWidgets
-local Paint, ART = W.Paint, W.BlizzardArt
+local Paint = W.Paint
+-- The value box beside a slider, and the gap between them.
+local VALUE_WIDTH, VALUE_HEIGHT, VALUE_GAP = 48, 24, 10
 
 -- Integer by default; optional decimal precision for presentation parameters.
 function W.NumericInput(parent, getter, setter, minimum, maximum, width, decimals)
     local input = CreateFrame("EditBox", nil, parent)
-    input:SetSize(width or 52, 28)
+    input:SetSize(width or VALUE_WIDTH, VALUE_HEIGHT)
     input:SetAutoFocus(false)
     input:SetMaxLetters(9)
     input:SetFontObject(GameFontHighlight)
-    input:SetTextInsets(T.id=="mode" and 4 or 8,T.id=="mode" and 4 or 8,0,0)
-    if T.id=="mode" then input:SetJustifyH("CENTER") end
-    addon.Media:BindInterfaceFont(input, GameFontHighlight)
+    input:SetTextInsets(4,4,0,0)
+    input:SetJustifyH("CENTER")
+    addon.Media:BindInterfaceFont(input, GameFontHighlight, T.fontSize.body)
     W.CrispText(input)
-    W.Texture(input, "InputField")
+    input.field = W.Texture(input, "InputField")
     local applying
     function input:Refresh(force)
         if force or not self:HasFocus() then
@@ -49,6 +51,30 @@ function W.NumericInput(parent, getter, setter, minimum, maximum, width, decimal
     return input
 end
 
+-- Live controls (slider drags, the color picker) fire many changes a second,
+-- and each change can rebuild frames and the settings page. Throttle(apply)
+-- applies the first value at once, then at most one every `seconds` while
+-- values keep coming; the last value is always applied.
+W.LIVE_SECONDS = 0.12
+function W.Throttle(apply, seconds)
+    seconds = seconds or W.LIVE_SECONDS
+    local driver = CreateFrame("Frame")
+    driver:Hide()
+    local pending, waiting, last = nil, false, nil
+    local function Flush()
+        driver:Hide()
+        if not waiting then return end
+        waiting = false
+        last = GetTime()
+        apply(pending)
+    end
+    driver:SetScript("OnUpdate", function() if not last or GetTime() - last >= seconds then Flush() end end)
+    return function(value)
+        pending, waiting = value, true
+        if not last or GetTime() - last >= seconds then Flush() else driver:Show() end
+    end, Flush
+end
+
 function W.ScrollThumb(bar, height)
     local thumb = W.Texture(bar, "ScrollThumb", "OVERLAY")
     thumb:ClearAllPoints()
@@ -61,48 +87,53 @@ function W.ScrollThumb(bar, height)
     return thumb
 end
 
--- Hairline track with an accent fill up to the current value and a flat
--- rectangular thumb.
+-- A 4 px rounded track with the accent filled up to the value, a light round
+-- thumb in a dark ring, and the value in a small field at the right (an
+-- editable number when numeric is set).
 function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeric)
     local settingsParent=parent
     while settingsParent do
         if settingsParent.row then settingsParent.row.settingsHasSlider=true;break end
         settingsParent=settingsParent:GetParent()
     end
-    local label = W.Label(parent, "", nil, 0, -8, 52, T.secondary)
+    -- Stacked rows and column cells give a slot at the right of the label line
+    -- (Pages.lua): the value sits there as plain text and the slider takes the
+    -- full width; such a row can share its line with another.
+    local slot = parent.valueAnchor
+    if slot and parent.row and parent.row.stacked then parent.row.pairable = true end
+    local valueBox = CreateFrame("Frame", nil, parent)
+    valueBox:SetSize(VALUE_WIDTH, VALUE_HEIGHT)
+    if slot then valueBox:SetPoint("RIGHT", slot, "RIGHT", 0, 0) else valueBox:SetPoint("RIGHT", 0, 0) end
+    valueBox.box = W.Box(valueBox, "ModeFlat"); valueBox.box:SetColors(T.field, T.rim)
+    valueBox.box:SetShown(not slot)
+    local label = W.Label(valueBox, "", nil, 0, 0, VALUE_WIDTH - 4, slot and T.muted or T.text)
     label:ClearAllPoints()
-    label:SetPoint("RIGHT", 0, 0)
-    label:SetJustifyH(T.id=="mode" and "CENTER" or "RIGHT")
+    label:SetPoint(slot and "RIGHT" or "CENTER", 0, 0)
+    label:SetJustifyH(slot and "RIGHT" or "CENTER")
     local slider = CreateFrame("Slider", nil, parent)
     slider:SetPoint("LEFT", 0, 0)
-    slider:SetPoint("RIGHT", -62, 0)
+    slider:SetPoint("RIGHT", slot and 0 or -(VALUE_WIDTH + VALUE_GAP), 0)
     slider:SetHeight(24)
     slider:SetOrientation("HORIZONTAL")
     slider:SetMinMaxValues(minimum, maximum)
     slider:SetValueStep(step)
     slider:SetObeyStepOnDrag(true)
-    -- Modern draws a thicker track at control-edge contrast and a larger thumb
-    -- so the slider reads as draggable; Blizzard keeps its hairline.
-    local modern = not T.blizzardArt
-    local trackHeight = modern and 4 or 2
-    local track = W.Texture(slider, "SliderTrack")
-    track:ClearAllPoints()
-    track:SetPoint("LEFT", 0, 0); track:SetPoint("RIGHT", 0, 0); track:SetHeight(trackHeight)
-    if modern then Paint(track, T.lineStrong) end
-    local progress = W.Fill(slider, T.primary, "BORDER")
-    progress:ClearAllPoints()
-    progress:SetPoint("LEFT", 0, 0); progress:SetHeight(trackHeight); progress:SetWidth(1)
-    local thumb = W.Texture(slider, "SliderThumb", "OVERLAY")
-    thumb:ClearAllPoints()
-    thumb:SetSize(modern and 10 or 8, modern and 20 or 16)
-    if T.id=="mode" then thumb.modeAsset="ModeSliderThumb";Paint(thumb,T.text) end
-    thumb:SetVertexColor(unpack(T.text))
-    -- Blizzard: the stock slider knob, untinted.
-    local stockThumb = T.blizzardArt and thumb:SetTexture(ART.sliderThumb) ~= false
-    if stockThumb then thumb:SetSize(32, 32); thumb:SetVertexColor(1, 1, 1, 1) end
+    local track = W.Shape(slider, "ModeTrack", "BACKGROUND")
+    track:SetPoint("LEFT", 0, 0); track:SetPoint("RIGHT", 0, 0); track:SetHeight(4)
+    track:SetVertexColor(unpack(T.track))
+    local progress = W.Shape(slider, "ModeTrack", "BORDER")
+    progress:SetPoint("LEFT", 0, 0); progress:SetHeight(4); progress:SetWidth(4)
+    progress:SetVertexColor(unpack(T.primary))
+    -- The thumb texture is the dark ring; the light dot is centered on it.
+    local thumb = W.Shape(slider, "ModeCircle", "OVERLAY")
+    thumb:SetSize(16, 16)
+    thumb:SetVertexColor(unpack(T.ink))
     slider:SetThumbTexture(thumb)
+    local dot = W.Shape(slider, "ModeCircle", "OVERLAY", 1)
+    dot:SetSize(12, 12); dot:SetPoint("CENTER", thumb, "CENTER", 0, 0)
     local hovered
-    local function Tint(color) if not stockThumb then thumb:SetVertexColor(unpack(color)) end end
+    local function Tint(color) dot:SetVertexColor(unpack(color)) end
+    Tint(T.text)
     local function Progress()
         local low, high = slider:GetMinMaxValues()
         local width = slider:GetWidth()
@@ -110,7 +141,7 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
             or type(low) ~= "number" or type(high) ~= "number" or type(width) ~= "number" then return end
         local span = high - low
         local ratio = span > 0 and (slider:GetValue() - low) / span or 0
-        progress:SetWidth(math.max(1, math.min(1, math.max(0, ratio)) * width))
+        progress:SetWidth(math.max(4, math.min(1, math.max(0, ratio)) * width))
         progress:SetShown(ratio > 0)
     end
     slider:SetScript("OnEnter", function() hovered = true; Tint(T.primary) end)
@@ -131,17 +162,36 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
         if input then input:Refresh() end
         updating = false
     end
-    slider:SetScript("OnValueChanged", function(_, value)
-        if updating then return end
+    -- Dragging shows each value at once but applies them throttled (W.Throttle),
+    -- so a drag never rebuilds everything on every step; letting go applies the last.
+    local Apply, Flush = W.Throttle(function(value)
         setter(value)
         Refresh()
         if input then input:Refresh(true) end
     end)
+    slider:SetScript("OnValueChanged", function(_, value)
+        if updating then return end
+        label:SetText(string.format("%g", value) .. (suffix or ""))
+        Progress()
+        Apply(value)
+    end)
+    slider:HookScript("OnMouseUp", Flush)
+    slider:HookScript("OnHide", Flush)
     if numeric then
-        label:Hide()
+        valueBox:Hide()
         local options = type(numeric) == "table" and numeric or {}
         input = W.NumericInput(parent, getter, setter, options.minimum or minimum, options.maximum or maximum,nil,options.decimals)
-        input:SetPoint("RIGHT")
+        if slot then
+            -- Plain right-aligned text on the label line; its field shows while editing.
+            input:SetPoint("RIGHT", slot, "RIGHT", 0, 0)
+            input:SetJustifyH("RIGHT"); input:SetTextColor(unpack(T.muted))
+            local outline = input.field and input.field.outline
+            if outline then
+                outline:SetShown(false)
+                input:HookScript("OnEditFocusGained", function() outline:SetShown(true) end)
+                input:HookScript("OnEditFocusLost", function() outline:SetShown(false) end)
+            end
+        else input:SetPoint("RIGHT") end
         input.afterApply = Refresh
         parent.numericInput = input
     end

@@ -22,7 +22,7 @@ end
 function widgets.ColorRow(page, timer, title, key, enabledGetter, host, options)
     local function Enabled() return not enabledGetter or enabledGetter() end
     local function Action(parent, text, width, callback)
-        local button = widgets.Button(parent, text, width, 30)
+        local button = widgets.Button(parent, text, width, 28)
         button:SetPoint("LEFT")
         button:SetScript("OnClick", function() callback(); page:Refresh() end)
         return button
@@ -39,11 +39,12 @@ function widgets.ColorRow(page, timer, title, key, enabledGetter, host, options)
         addon:CloseTimerColorPicker()
         local oldColor = timer.db.appearance[key]
         local previous = { oldColor[1], oldColor[2], oldColor[3] }
+        -- The picker reports every color under the cursor; apply them throttled.
+        local apply = widgets.Throttle(function(rgb) timer:SetAppearance(key, rgb); page:Refresh() end)
         local swatch = function()
             if not Enabled() then return end
             local r, g, b = ColorPickerFrame:GetColorRGB()
-            timer:SetAppearance(key, { r, g, b })
-            page:Refresh()
+            apply({ r, g, b })
         end
         addon.timerPickerCallback = swatch
         addon.timerPickerOwner = pick
@@ -53,12 +54,15 @@ function widgets.ColorRow(page, timer, title, key, enabledGetter, host, options)
             cancelFunc = function() timer:SetAppearance(key, previous); page:Refresh() end,
         })
     end)
-    local sample = (options and options.separateSwatch and row or pick):CreateTexture(nil, "OVERLAY")
-    sample:SetPoint("LEFT", 6, 0)
-    sample:SetSize(12, 16)
+    -- A rounded 20x20 swatch inside the Pick field, its label beside it. In
+    -- the compact Mode layout the label shows the hex value (W.CompactColor).
+    local sample = widgets.Shape(options and options.separateSwatch and row or pick, "ModeFlat", "OVERLAY")
+    sample:SetPoint("LEFT", pick, "LEFT", 4, 0)
+    sample:SetSize(20, 20)
+    pick.label:ClearAllPoints(); pick.label:SetPoint("LEFT", sample, "RIGHT", 8, 0)
     local hex = CreateFrame("EditBox", nil, row)
     hex:SetPoint("LEFT", 80, 0)
-    hex:SetSize(96, 30)
+    hex:SetSize(96, 28)
     hex:SetAutoFocus(false)
     hex:SetMaxLetters(7)
     hex:SetFontObject(GameFontHighlight)
@@ -85,7 +89,8 @@ function widgets.ColorRow(page, timer, title, key, enabledGetter, host, options)
     page.refreshers[#page.refreshers + 1] = function()
         local color = timer.db.appearance[key]
         if not (options and options.immediateHex) or not hex:HasFocus() then hex:SetText(Hex(color)) end
-        sample:SetColorTexture(color[1], color[2], color[3], 1)
+        if pick.compactHex then pick.label:SetText(Hex(color)) end
+        sample:SetVertexColor(color[1], color[2], color[3], 1)
         local enabled = Enabled()
         pick:SetEnabled(enabled);if apply then apply:SetEnabled(enabled) end;hex:SetEnabled(enabled)
         sample:SetAlpha(enabled and 1 or 0.4)

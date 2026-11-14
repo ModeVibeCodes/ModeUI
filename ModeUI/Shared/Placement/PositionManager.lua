@@ -52,7 +52,7 @@ function PM:RegisterElement(id, frame, options)
     if not Plain(frame) or not frame or not frame.GetScript or not frame.SetScript or not P:Geometry(frame) then return false, "invalid-frame" end
     if self.frames[frame] then return false, "duplicate-frame" end
     for _, target in ipairs(P.targets) do
-        local external = _G[target.name]
+        local external = not target.owned and _G[target.name]
         if Plain(external) and frame == external then return false, "external-frame" end
     end
     if frame.IsProtected then
@@ -66,15 +66,18 @@ function PM:RegisterElement(id, frame, options)
     for _, key in ipairs({ "draggable", "editMode", "anchoring", "legacyPosition" }) do
         if options[key] ~= nil and type(options[key]) ~= "boolean" then return false, "invalid-options" end
     end
+    if options.label ~= nil and (not Plain(options.label) or type(options.label) ~= "string") then return false, "invalid-options" end
     for _, key in ipairs({ "canDrag", "onPositionChanged", "onHighlight" }) do
         if options[key] ~= nil and type(options[key]) ~= "function" then return false, "invalid-options" end
     end
     local defaults = options.defaultPosition or { target = "screen", placement = "center", x = 0, y = 0 }
     local valid, reason = self:ValidatePosition(defaults)
     if not valid then return false, reason end
-    local allowed = { selected = options.allowedTargets == nil }
+    local allowed = { selected = options.allowedTargets == nil or options.anyTarget == true } -- anyTarget: every target known now, and picked frames
     if options.allowedTargets ~= nil and type(options.allowedTargets) ~= "table" then return false, "invalid-targets" end
-    for _, target in ipairs(options.allowedTargets or { "screen", "player", "target", "focus", "minimap", "party" }) do
+    local list = options.anyTarget and {} or options.allowedTargets or { "screen", "player", "target", "focus", "minimap", "party" }
+    if options.anyTarget then for _, t in ipairs(P.targets) do if t.id ~= id then list[#list + 1] = t.id end end end
+    for _, target in ipairs(list) do
         if not Known(P.targets, target) then return false, "invalid-targets" end
         allowed[target] = true
     end
@@ -94,7 +97,7 @@ function PM:RegisterElement(id, frame, options)
     position.target, position.placement = position.target or "screen", position.placement or "center"
     if options.legacyPosition then module.db.position = position
     else addon.db.positions = addon.db.positions or {}; addon.db.positions[id] = position end
-    local element = { id = id, module = module, frame = frame, position = position, defaults = Copy(defaults),
+    local element = { id = id, label = options.label, module = module, frame = frame, position = position, defaults = Copy(defaults),
         allowedTargets = allowed, draggable = draggable, editMode = options.editMode ~= false,
         supportsAnchoring = options.anchoring ~= false, legacy = options.legacy,
         canDrag = options.canDrag, onPositionChanged = options.onPositionChanged, onHighlight = options.onHighlight,
@@ -120,7 +123,7 @@ function PM:RegisterElement(id, frame, options)
         Bind("OnDragStop", function() self:StopDragging(id) end)
         Bind("OnMouseDown", function() if self:CanDrag(element) then self:SelectElement(id) end end)
         Bind("OnHide", function() self:StopDragging(id) end)
-        element.dragUpdate = function() self:NotifyPosition(id, false) end
+        element.dragUpdate = function() self:NotifyPosition(id, false); if self.ShowGuides then self:ShowGuides(element) end end
     end
     if not element.legacy then self:ApplyPosition(id) end
     return true, element
@@ -223,6 +226,7 @@ function PM:SetPosition(id, position, allowUnavailable)
         if Plain(frame) and frame and not addon.FrameAnchors:SafeFrame(frame) then return false,"unsafe-frame" end
     end
     if not P:Resolve(nextPosition.target) and not allowUnavailable then return false, "target-unavailable" end
+    if nextPosition.target ~= "screen" and self.WouldLoop and self:WouldLoop(id, nextPosition.target) then return false, "anchor-loop" end
     self:StopDragging(id)
     local previous = Copy(element.position)
     if previous.x == nextPosition.x and previous.y == nextPosition.y and previous.target == nextPosition.target
@@ -240,6 +244,7 @@ function PM:SetPosition(id, position, allowUnavailable)
         end
     end
     self:NotifyPosition(id, true)
+    if self.FitAnchored then self:FitAnchored(id) end
     return true
 end
 
@@ -371,7 +376,8 @@ function PM:GetAllowedTargets(id)
     if not element then return {} end
     local targets = {}
     for _, target in ipairs(P:AvailableTargets()) do
-        if element.allowedTargets[target.id] and (element.supportsAnchoring or target.id == "screen") then targets[#targets + 1] = target end
+        if element.allowedTargets[target.id] and (element.supportsAnchoring or target.id == "screen")
+            and not (self.WouldLoop and self:WouldLoop(id, target.id)) then targets[#targets + 1] = target end
     end
     if element.allowedTargets.selected and addon.FrameAnchors and addon.FrameAnchors:ValidID(element.position.target) then
         targets[#targets+1]={id=element.position.target,label=element.position.target:sub(7)}

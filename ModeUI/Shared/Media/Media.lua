@@ -16,6 +16,7 @@ function M:MediaLabel(name)
     local label=(name or ""):gsub("%s*%b()",""):gsub("%s+$","")
     return label~="" and label or (name or ""):gsub("[()]","")
 end
+M.latoPath = "Interface\\AddOns\\ModeUI\\Media\\Fonts\\Lato-"
 M.defaultStatusBar = "Interface\\Buttons\\WHITE8X8"
 function M:RegisterStatusBarListener(owner,callback) self.statusbarListeners[owner]=callback end
 function M:UnregisterStatusBarListener(owner) self.statusbarListeners[owner]=nil end
@@ -97,11 +98,14 @@ function M:RefreshBorders()
     for owner, callback in pairs(self.borderListeners) do callback(owner) end
 end
 
+-- ModeUI's interface font is Expressway by default (registered by Media from an
+-- installed AyijeUI or EllesmereUI copy), falling back to the bundled Lato.
 function M:GetInterfaceFont(fallbackPath, scope, weight)
     local theme = addon.InterfaceTheme
     local selection = self:GlobalStyle("font", scope)
     if theme and theme.id == "mode" and (selection == nil or selection == "game" or selection == "media:ModeUI Lato") then
-        return "Interface\\AddOns\\ModeUI\\Media\\Fonts\\Lato-" .. (weight == "heading" and "Bold" or "Regular") .. ".ttf"
+        local expressway = selection ~= "media:ModeUI Lato" and self:GetFont("Expressway")
+        return expressway or self.latoPath .. (weight == "heading" and "Bold" or "Regular") .. ".ttf"
     end
     local inherited=self:ResolveFont(self:GlobalStyle("font",scope))
     if inherited then return inherited end

@@ -35,10 +35,10 @@ ModeUI/
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Border/                   pixel borders
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
-    Placement/                positions, Edit Mode, Preview, frame anchors
-    Skin/                     re-skinning Blizzard frames; added with Chat Windows or Blizzard UI Windows
-    Settings/                 settings window framework (window, pages, search, tabs)
-      Widgets/                one file per widget kind (Core, Art, Text, Button, Switch, Header, Input)
+    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors
+    Skin/                     re-skinning Blizzard frames (Skin, Controls, Extras, Frame): Chat and Windows
+    Settings/                 settings window framework (window, pages, search, tabs) and its launchers (game menu, minimap addon compartment)
+      Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker)
     Templates/                XML virtual templates, added when a module needs one
   Modules/
     <Name>/
@@ -62,7 +62,7 @@ Libs  →  Shared/Runtime  →  Shared/Forever  →  Shared/Domain, Kit, Border,
   thing, it moves into `Shared/`. Modules talk to each other only through
   `Callbacks` messages.
 - **Shared never names a module.** Runtime loops over the registry; it never
-  reaches for `addon.UnitFrames` or any other module directly.
+  reaches for `addon.UnitFrames` or any other module directly. `tests/structure.lua` fails any Shared file, or other module, that uses the table a module's `Init.lua` publishes (`addon.UnitFrames` and the like).
 
 ## Load order
 
@@ -70,7 +70,7 @@ WoW's TOC can't use wildcards, so the order is explicit:
 
 1. `Libs/` files.
 2. `Shared/Runtime/Core.lua`, then the rest of `Runtime` (and `Shared/Forever/` once it exists).
-3. `Domain`, `Kit`, `Border`, `Media`, `Placement`, `Skin`, then the `Settings` framework.
+3. `Domain`, `Kit`, `Media`, `Placement`, `Border`, `Skin` (Skin, Controls, Extras, Frame), then the `Settings` framework.
 4. One `Modules\<Name>\<Name>.xml` line per module, in sidebar order.
 5. `Shared/Runtime/Boot.lua`, last.
 
@@ -105,7 +105,7 @@ local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
 local L = addon.L
-local M = { title = L["Unit Frames"], category = "interface", defaultEnabled = true,
+local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true,
     configDescription = L["Player and Target frames in the Onyx look. Configure outside combat."],
     -- The page keeps its own sections; the Mode layer restyles headings.
     modeLayout = { decorateOnly = true } }
@@ -127,11 +127,13 @@ Module fields Runtime reads:
 | Field | Meaning |
 |---|---|
 | `title` | sidebar and page title (through `L`) |
-| `category` | a registered category ID (`"interface"`, `"global"`) |
+| `category` | a registered category ID: `"global"`, `"interface"` (Blizzard's own UI restyled) or `"frames"` (unit frames, nameplates, party frames) |
 | `defaultEnabled` | `false` to start switched off on a fresh profile |
 | `alwaysOn` | `true` for a module that can't be switched off (Profiles) |
 | `configDescription` | the line under the page title |
 | `modeLayout` | the page's Mode presentation plan, such as `{ decorateOnly = true }` |
+| `standalone` | `true` for a module with its own settings window instead of a page in ModeUI's (the Cooldown Manager, `/mcdm`): no category, no sidebar entry or search results; it builds its window on demand, registers it with `addon:RegisterSettingsWindow(window)` so Edit Mode hides it and brings it back, and Edit Mode's Open Module Settings calls its `OpenSettings(elementId)` |
+| `ptgImport` | `{ positions = { ... } }` to copy this module's settings (same ID) and those position keys from the active Play The Game Tools profile once, on ModeUI's first start (Unit Frames) |
 | `Initialize(db)` | a plain function (not a method) that fills defaults, migrates and validates the module's settings, erroring on bad data. Profile validation calls it on detached copies, so it must not touch frames or other state |
 
 The module ID (`"unitFrames"`) is also its saved-variable key and must never
@@ -149,6 +151,7 @@ module's settings table and `self.enabled` its switch.
 | `OnCombatStateChanged(inCombat)` | entering and leaving combat, while enabled | |
 | `SetEditMode(on)` / `SetPreviewMode(on)` | Edit Mode or Preview changes | only outside combat |
 | `CreateConfigPage(parent)` | the settings page is opened for the first time | lives in `Settings.lua`; returns the page |
+| `OpenElementSettings(elementId)` | Edit Mode's **Open Module Settings**, after the page opens | for modules with several movable elements; shows that element's settings |
 
 A module talks to others only through `addon.Messages`. For example, Unit
 Frames redraws on `CLASS_COLORS_CHANGED` instead of Class Colors calling it.
@@ -182,6 +185,15 @@ opens it:
 - Each module's page is built the first time it's selected, or the first time a
   settings search needs its entries.
 - `tests/smoke.lua` asserts that no window exists before `/modeui`.
+- `Shared/Settings/Launchers.lua` (installed by `Boot.lua`) adds the other ways
+  in: a **ModeUI** button in its own section of the game menu, between Shop and
+  AddOns (a post-hook on `GameMenuFrame:InitButtons`, skipped in combat), and an
+  entry in the minimap's addon compartment (`AddonCompartmentFrame:RegisterAddon`,
+  so no global function). They call `addon:OpenConfig()` and
+  `addon:ToggleConfig()` and build nothing until clicked.
+- The window opens on the first page in the sidebar. Categories are listed in
+  the order `Shared/Runtime/Lifecycle.lua` registers them (Global, Interface,
+  Frames); a category's modules in the order `ModeUI.toc` loads them.
 
 WoW still reads every Lua file listed in the TOC at login. That costs very little
 compared with building frames. Real `LoadOnDemand` would need a separate
@@ -239,21 +251,53 @@ to widgets documented as accepting them.
 
 | File | API |
 |---|---|
-| `Query.lua` | `Domain.Query.Call(fn, ...)`, `.Truthy(fn, ...)`, `.Plain(fn, ...)` |
+| `Query.lua` | `Domain.Query.Call(fn, ...)`, `.Truthy(fn, ...)`, `.Plain(fn, ...)`, `.Read(fn, ...)` (up to seven values, secret ones as nil) |
 | `Health.lua` | `Domain.Health.Read(unit)` → okMax, max, okValue, value (secret); `.Percent(unit, curve)`; `.State(unit)` → `"Offline"`, `"Ghost"`, `"Dead"` or nil |
 | `Power.lua` | `Domain.Power.Read(unit)` → powerType, token, okMax, max, okValue, value; `.Percent(unit, powerType, curve)`; `.Color(token)` |
 | `Name.lua` | `Domain.Name.Get(unit)` → name (may be secret) or `""` |
 | `Level.lua` | `Domain.Level.Text(unit)` → `"60"`, `"60+"`, `"??"` or `""` |
 | `UnitColor.lua` | `Domain.UnitColor.Class(class)`, `.NativeClass(class)`, `.PlayerClass(unit)`, `.Reaction(unit)` → `"tapped"`, `"hostile"`, `"neutral"`, `"friendly"`; `.SetClassOverride(fn)` (Class Colors supplies the custom colors) |
 | `Portrait.lua` | `Domain.Portrait.Apply(icon, unit, style)`, `.SetIcon(icon, path)`, `.Exists(unit)` |
+| `ClassResource.lua` | `Domain.ClassResource.Spec()` → the player class's resource (`CLASSES`: Rogue, and Druid in Cat Form, have Combo Points on Forever) or nil, `.Read()` → ok, count (may be secret), `.Max()` (public; 0 without a resource), `.Active()`, `.ClassName()` |
+| `Cast.lua` | `Domain.Cast.Read(unit)` → nil or { channel, text, texture, startMs, endMs, notInterruptible } (may be secret); `.Now()` |
+| `RaidIcon.lua` | `Domain.RaidIcon.Apply(texture, unit)`: the marker through `SetSpriteSheetCell`, or hidden |
+| `Threat.lua` | `Domain.Threat.Status(unit)` → 0-3 or nil when unknown or secret |
+| `Nameplate.lua` | `Domain.Nameplate.ForUnit(unit)`, `.IsPlayerPlate(frame)`, `.WidgetsOnly(unit)`, `.ActiveUnits()` |
+| `Auras.lua` | `Domain.Auras.Filters(crowdControl, debuffs, buffs)` → filter strings; `.Collect(unit, filters, max)`; `.Apply(icon, unit, aura, showTimer, showCount)`; `.ApplyTimer(...)`; the game's filters choose auras, no secret field is compared |
+| `DamageMeter.lua` | `Domain.DamageMeter.types`/`.typeById` (meter IDs saved in settings), `.Supported()`, `.Available()` → ok, reason, `.GameMeterOn()` (reads the game's option), `.Session(session, typeId)` → { sources (ranked by the game), max, total, duration } (may be secret), `.Source(session, typeId, guid, creatureID)` → { spells, max, total } (public arguments only), `.Sessions()`, `.Duration(session)`, `.Reset()`, `.SpellName(id)`, `.SpellIcon(id)`, `.ClassAtlas(class)`, `.Clock(seconds)`; `.EVENTS` |
+| `Containers.lua` | `Domain.Containers.HeldBags()` (backpack, equipped and reagent bags), `.IsHeld(bag)`, `.IsReagent(bag)`, `.HasKeyring()`, `.NumSlots(bag)` (the keyring through `GetKeyRingSize`), `.FreeSlots(bag)`, `.Item(bag, slot)` → nil or { icon, count, quality, locked, link, id, name, filtered, noValue, readable, bound }, `.Quest(bag, slot)`, `.IsNew(bag, slot)`, `.Cooldown(bag, slot)`, `.ItemClass(link)`, `.ItemLevel(link)` (weapons and armor), `.QualityColor(quality)`, `.Money()`, `.SetSearch(text)`/`.HasSearch()` (the game's bag search), `.CleanUp()`/`.CanCleanUp()` (`C_Container.SortBags`); `.KEYRING` (-2) |
+| `Cooldowns.lua` | `Domain.Cooldowns.VIEWERS` (the IDs ModeUI saves → Blizzard's viewer names), `.Viewer(id)`, `.Enabled()` (the `cooldownViewerEnabled` option), `.Available()` → available, reason, `.Items(viewer)` (active item frames in Blizzard's order), `.ItemCooldownID(item)`, `.Info(cooldownID)`, `.SpellID(cooldownID)`, `.SpellName(spell)`, `.SpellIcon(spell)`, `.Cooling(spell)` (from the never-secret `isActive`/`isOnGCD`), `.Shown(region)` → true, false or nil when secret; reads only, never writes to or refreshes Blizzard's frames |
 
 `Shared/Kit/` builds frame pieces in the Mode look. It holds no game data.
 
 | File | API |
 |---|---|
 | `Color.lua` | `Kit.Tint(region, color, alpha)`, `.Lighten(color, t)`, `.Scale(color, f)`, `.Gradient(texture, top, bottom, alpha)`, `Kit.FLAT` |
-| `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)` |
-| `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`; `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA` |
+| `Palette.lua` | `Kit.palette` (Mode text and gameplay colors), `Kit.onyx` (the Onyx skin), `Kit.RGB(r, g, b)`, `Kit.ColorFromBoolean(region, value, ifTrue, ifFalse)` for possibly secret booleans |
+| `Shape.lua` | `Kit.PixelSize(frame)`, `.Bar(parent)`, `.Circle(frame, layer, sublevel)`, `.Inset(texture, host, inset)`, `.Rounded(texture, key)`, `.ModeGradient(bar, barHeight, px)` (the one bar texture), `.BarForeground(bar, choice, barHeight, px)`, `.BarBackground(bar, choice)`, `.BarTextureChoices(foreground)`, `.ValidBarTexture(value, foreground)`, `.Rim(host, layer, sublevel)`, `.PlaceRim(edges, host, thickness, cut, color, alpha)` (a hollow pixel rim; `cut` rounds the corners) |
+| `Cast.lua` | `Kit.PaintCastBar(bar, channel, notInterruptible, color, lockedColor)`, `.CastTimer(text, info, unit)`: secret-safe cast colors and seconds left |
+| `Capsule.lua` | `Kit.CapRing(parent, sublevel)`, `.PlaceCapRing(ring, host, inset, thickness, color, depth, rounded)`, `.CapDepth(height, px)`, `.EndMask(parent)`, `.PlaceEndMask(mask, host, side, depth, inset, on)`, `.AddMasks(regions, masks)`, `.SetMasks(region, masks)` (exactly these, at most 3: the client's limit per texture): boxes with rounded-rectangle ends |
+| `Border.lua` | **The ModeUI border, the standard for every border** (owner, November 13, 2026; first drawn on the unit frames): `Kit.ModeBorder(host)` → `{ edge, ring, masks }`, `.LayoutModeBorder(border, host, { px, height, rounded, color, level })` → depth, thickness, `.MaskToBorder(border, regions)`; `Kit.BORDER_PIXELS` (2) and `Kit.BORDER_COLOR` (Onyx `frameRim`). One crisp 2px rim, no glow or second line, rounded-rectangle ends a quarter of the box's height deep (either or both ends), drawn on its own frame above the content, which its end masks round 1px under the rim. Round things use the same color and thickness on a circle. Boxes taller than a bar (panels, damage meter windows, chat windows) use its rounded-rectangle form: `Kit.ModeBoxBorder(host, owner)` → `{ edge, strips, corners, masks }` (`owner`, default `host`: the frame the rim and masks belong to when `host` is a region, like a chat window's box; pass `level` to the layout then), `.LayoutModeBoxBorder(border, host, { px, radius, color, level })` → radius, thickness, `.MaskToBoxBorder(border, regions, { left, top, right, bottom })` (after the layout; each region takes only the corners it reaches, or the side ends when it reaches all four, since a texture holds at most 3 masks), `Kit.BoxFill(host)` → `{ top, middle, bottom }` and `.LayoutBoxFill(fill, border, host, inset, color, alpha)` (the background in three bands, the outer two rounded); the same rim with round corners cut from the cap art's own corners. |
+| `Slot.lua` | The Mode slot (Action Bars' buttons, the Cooldown Manager's icons): `Kit.SlotArt(host)` → `{ edges, fill, grain }`, `.PaintSlotArt(art, host, style, g)` (a hollow border in Border Size and Border Color around the background at Background Opacity with the ActionBarSlot grain), `.SlotInsets(style, px)` → border, inset, `.CropIcon(icon, g)`, `.SlotOverlay(texture, host, inset, color, alpha)`, `.SlotGlow(host)`, `.PaintSlotGlow(frame, host, style, color, pulse, px)` (a soft glow or a colored frame, with a pulse) |
+| `Points.lua` | Class resource points (the Target frame's combo points, the target nameplate's): `Kit.ResourcePoint(parent, index)`, `.LayoutResourcePoint(point, size, px, emptyColor, activeColor)`, `.ResourcePointSize(size, px)` (whole, even pixels), `.FillResourcePoints(points, count, ok, value)`: one round socket per point in the ModeUI border color, each a StatusBar spanning `(index - 1, index)` so a secret count only ever reaches `SetValue` |
+| `Bands.lua` | `Kit.Bands(parent)`, `.PlaceBands(bands, box, left, top, right, bottom, px, room)`: a rim drawn in four clipped bands around a see-through hole |
+| `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`, `.ShortNumber(value, decimals)` (abbreviated with 0-2 decimals, whole below a thousand, secret-safe); `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA`; `Kit.FontPath(style, scope)` |
+| `AuraIcon.lua` | `Kit.AuraIcon(parent)`, `Kit.LayoutAuraIcon(icon, size, px, style, fontPath)`: slate-rimmed icon with swipe and stacks |
+
+## Skin
+
+`Shared/Skin/` restyles Blizzard's own frames. Blizzard's art is faded (alpha)
+or hidden, never destroyed; ModeUI's textures go on top. Nothing is stored on
+Blizzard's frame tables (ModeUI's pieces live in weak tables keyed by the
+frame), Blizzard's globals and fields are never written, and every hook is a
+post-hook (`hooksecurefunc`, `HookScript`).
+
+| File | API |
+|---|---|
+| `Skin.lua` | `Skin.colors` (the Mode skin palette), `Skin.Snap(value, px)`, `.Once(frame, key, fn)`, `.Fade(region)`, `.FadeTextures(frame, keep)`, `.Suppress(region)`/`.Release(region)` (hidden, and hidden again whenever Blizzard shows it), `.PinAlpha(frame, getter)`/`.Unpin(frame)` (ModeUI's alpha put back after each Blizzard `SetAlpha`), `.Panel(host, layer, sublevel)`, `.PaintPanel(parts, box, fill, alpha, rimColor, thickness)`, `.Font(region, path, size, outline, shadow, px)`, `.Face(region, path)` (face only, size and flags kept), `.Edge(host, lift)`/`.PaintEdge(parts, thickness, color)` (a crisp square border on its own frame above the host's children) |
+| `Controls.lua` | `Skin.Kind(frame)` → `"Button"`, `"Field"`, `"Tab"`, `"SideTab"`, `"RightSideTab"`, `"Dropdown"`, `"ScrollBar"` or nil (by template keys); `.Button`, `.Field`, `.Tab`, `.SideTab`, `.GlyphButton(button, glyph)`, `.Close`, `.ScrollBar`, `.Inset` (field on the inset's parent, under the content), `.FadeNineSlice` |
+| `Extras.lua` | `Skin.Dropdown`, `.Menu(menu)`/`.MenuClosed(menu)`/`.WatchMenu(dropdown)` (a lent Mode panel under a WowStyle dropdown's open menu), `.RightSideTab`, `.MaxMinOf(frame)`/`.MaxMin(holder, close)`, `.Texts(frame, path, skip)` (every font string in the Mode face), `.IsScrollBox`/`.WatchList(box, onRow)`/`.Row(row, style, fadeRows)` |
+| `Frame.lua` | `Skin.Window(frame, style, options)` (art and decoration faded, fill, border on its own layer, title strip, window buttons, inset, list rows, window text, controls six levels deep), `.PaintWindow(frame, style)`, `.TitleOf(frame)`, `.CloseOf(frame)`, `.PlaceClose(frame, close, style)` (outside combat for protected windows) |
 
 ## Rules every module follows
 
@@ -267,8 +311,38 @@ to widgets documented as accepting them.
   keys under `ModeUIDB.positions`. Keys never change without a migration, and
   migrations never reset data. The top-level `schemaVersion` changes only when
   the shared layout of `ModeUIDB` does.
-- **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI` and frame
-  names that start with `ModeUI`.
+- **Look.** Every bar uses `Kit.ModeGradient` (Mode Gradient); there is no bar
+  texture setting. Settings pages group rows on cards (`page:Group`: ModeCard
+  panels, 6 px corners, a one-pixel `cardBorder` rim, 16 px padding, 12 px
+  apart, with a small uppercase accent title) and put related controls side by
+  side (`page:Columns`). Since November 13, 2026 (the owner's Layout tab
+  design) a standard row stacks its label above its 28 px control (58 px
+  pitch); sliders show their value at the right of the label line and span the
+  full width; two pairable rows in a row (sliders and dropdowns,
+  `row.pairable`) share one line in a card, 24 px apart; rows with wider
+  controls, `page:ToggleGrid` and `page:Columns`
+  (`Shared/Settings/PageControls.lua`) keep the full width. Colors: cards
+  #121316 on a #1E2024 rim, fields #0E0F11 on #2A2D32, labels #C4C8CE, values
+  #8A8F96, a #22262B selected segment. Controls are drawn by `Widgets/Shape.lua` as a
+  rounded fill inside a one-physical-pixel rim (`W.Box`, 4 px corners): buttons
+  are fields with a `rim` that turns accent on hover (primary buttons are
+  accent with ink text, quiet ones text only); toggles are 28x16 pill switches;
+  exclusive choices are segments in one field, the chosen one on `accentFill`;
+  sliders are a 4 px track with a ringed round thumb and a 48x24 value field;
+  dropdowns are fields with a chevron. Section tabs are text tabs with a 2 px
+  accent underline; sidebar captions are small uppercase `faint` text and the
+  chosen module row has an accent bar on its left. The palette (Theme.lua) is
+  near-black graphite with a cyan accent; the type scale is
+  `InterfaceTheme.fontSize` (page 24, card 19, brand 21 for the ModeUI wordmark, section 14, body 13, small 12, group 12).
+  The shape textures come from `tools/build_shape_textures.lua`. Rims are near-black (`Kit.onyx.border`). Anchoring settings
+  use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface default to Expressway, falling back to
+  the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
+- **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI`,
+  `SLASH_MODEUICDM1`/`SlashCmdList.MODEUICDM` (`/mcdm`, the Cooldown Manager's
+  window, asked for by the owner on November 13, 2026),
+  `SLASH_MODEUIKEYBIND1`/`SlashCmdList.MODEUIKEYBIND` (`/kb`, Action Bars' Keybind
+  Mode, asked for by the owner on November 13, 2026) and frame names that start
+  with `ModeUI`.
 - **Game-wide settings** (CVars, UI scale, loot) change only through the
   Optimizations module: each one is off by default, and turning it off puts back
   the game's previous value. Other modules never write them, and nothing rewrites
@@ -286,15 +360,17 @@ module is built.
 
 | # | Module | Category | Adds to Shared | Things to research first |
 |---|---|---|---|---|
-| 0 | Unit Frames | Interface | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
-| 1 | Nameplates | Interface | Domain: Cast, Auras, RaidIcon, Threat. Kit: Icon, Cooldown | what addons may change on nameplates in Forever; secret aura and cast data |
-| 2 | Party Frames | Interface | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
-| 3 | Action Bars | Interface | Kit: Button, Keybind text. Templates: secure action button. Placement: bar layouts | which action bar APIs and secure templates Forever ships |
-| 4 | Chat Windows | Interface | Skin: chat frames, edit box, tabs. Kit: ScrollText | chat frame hooks that don't taint |
-| 5 | Damage Meters | Interface | Domain: combat data source | whether Forever has a built-in damage meter API and what it exposes |
-| 6 | Bags | Interface | Domain: Containers, Items. Kit: ItemButton. Templates: item slot | `C_Container` on Forever; secure use of items from addon buttons |
-| 7 | Blizzard UI Windows | Interface | Skin: frame stripping, Mode borders, buttons, tabs, scroll bars | per-window taint risk; load-on-demand Blizzard addons |
+| 0 | Unit Frames | Frames | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
+| 1 | Nameplates | Frames | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
+| 2 | Party Frames | Frames | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
+| 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar), `Positioning:AddTarget` (bars anchor to bars), PositionGuides (alignment guides, snapping, `Nudge`). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
+| 4 | Chat | Interface | Skin: panel, suppress, alpha pin, fonts | done (native acceptance pending); tab alphas pinned, never Blizzard's constants |
+| 5 | Damage Meters | Interface | Domain: DamageMeter (the game's own meter through `C_DamageMeter`). Kit: ModeBoxBorder (the standard border on a window) | done (native acceptance pending); Forever loads Blizzard_DamageMeter |
+| 6 | Bags | Interface | Domain: Containers (bags, slots, items, search, sort). Slots are Blizzard's `ContainerFrameItemButtonTemplate` on holders carrying the bag ID, so no secure template of ModeUI's own | done (native acceptance pending); Blizzard's bag frames wait under a hidden frame and the window follows them |
+| 7 | Windows | Interface | Skin: window frames, controls by template keys (buttons, fields, tabs, side tabs, close, scroll bars, insets) | done (native acceptance pending); secure windows skinned out of combat |
 | 8 | Minimap | Interface | Skin: minimap shape and border. Kit: addon-button collector | minimap APIs and cluster frames on Forever |
+| 9 | Tooltip | Interface | Skin: Panel, Edge, Font on Blizzard's tooltips. Placement: one Edit Mode element (the tooltip's anchor) | done (native acceptance pending); GameTooltip_SetDefaultAnchor post-hook, Blizzard's container untouched |
+| 10 | Cooldown Manager | own window (`/mcdm`, standalone) | Domain: Cooldowns (Blizzard's Cooldown Manager viewers and items). Kit: Slot (the Mode slot, moved out of Action Bars). Settings: `standalone` modules, `addon:RegisterSettingsWindow`. Placement: `PositionManager:SetLabel`. Restyles and re-places Blizzard's own item frames (also onto custom bars) with post-hooks only, writing no field on them | done (native acceptance pending); Forever loads Blizzard_CooldownViewer for `camelot` |
 
 Every module gets design notes in `docs/<NAME>.md` (like `docs/UNIT_FRAMES.md`)
 and an entry in the README's module table.
@@ -331,7 +407,7 @@ change to behavior, looks or saved data.
 
 After phases 2–6, the in-game check is the same:
 
-- **Navigation:** type `/modeui`, then pick **Interface** › **Unit Frames** in the sidebar.
+- **Navigation:** type `/modeui`, then pick **Frames** › **Unit Frames** in the sidebar.
 - **Action:** switch the module off and on, open **Edit Mode**, move the Player
   frame, then `/reload`. **Edit Mode** is in the settings window header.
 - **Required state:** out of combat, with a target selected.

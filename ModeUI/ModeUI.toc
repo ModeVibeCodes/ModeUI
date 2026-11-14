@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: |cff00f0ffModeUI|r
-## Notes: Custom Mode interface for WoW Forever: unit frames, profiles, optimizations and class colors.
+## Notes: Custom Mode interface for WoW Forever: unit frames, nameplates, action bars, damage meters, chat, windows, bags, profiles, optimizations and class colors.
 ## Author: Mode
 ## Version: 0.1.0-beta.1
 ## IconTexture: Interface\AddOns\ModeUI\Media\Textures\Mode\Logo
@@ -26,19 +26,41 @@ Shared\Runtime\Lifecycle.lua
 Shared\Domain\Query.lua
 Shared\Domain\Health.lua
 Shared\Domain\Power.lua
+Shared\Domain\ClassResource.lua
+Shared\Domain\Status.lua
 Shared\Domain\Name.lua
 Shared\Domain\Level.lua
+Shared\Domain\Quest.lua
 Shared\Domain\UnitColor.lua
 Shared\Domain\Portrait.lua
+Shared\Domain\Cast.lua
+Shared\Domain\RaidIcon.lua
+Shared\Domain\Threat.lua
+Shared\Domain\Nameplate.lua
+Shared\Domain\Auras.lua
+Shared\Domain\DamageMeter.lua
+Shared\Domain\Containers.lua
+Shared\Domain\Cooldowns.lua
 Shared\Kit\Color.lua
+Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua
+Shared\Kit\Bands.lua
+Shared\Kit\Edges.lua
+Shared\Kit\Capsule.lua
+Shared\Kit\Border.lua
+Shared\Kit\Slot.lua
+Shared\Kit\Points.lua
+Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
+Shared\Kit\Cast.lua
+Shared\Kit\AuraIcon.lua
 Shared\Placement\DisplayModes.lua
 Shared\Placement\EditMode.lua
 Shared\Placement\Positioning.lua
 Shared\Placement\PositionManager.lua
 Shared\Placement\PositionAnchors.lua
 Shared\Placement\PositionDrag.lua
+Shared\Placement\PositionGuides.lua
 Shared\Placement\FrameAnchors.lua
 Shared\Media\Media.lua
 Shared\Media\Textures.lua
@@ -48,15 +70,23 @@ Shared\Media\MediaDiscovery.lua
 Shared\Placement\PreviewStates.lua
 Shared\Border\Border.lua
 Shared\Placement\PositionHighlights.lua
+Shared\Placement\PositionGrid.lua
+Shared\Skin\Skin.lua
+Shared\Skin\Controls.lua
+Shared\Skin\Extras.lua
+Shared\Skin\Frame.lua
 Shared\Settings\Theme.lua
 Shared\Settings\Widgets\Core.lua
+Shared\Settings\Widgets\Shape.lua
 Shared\Settings\Widgets\Art.lua
 Shared\Settings\Widgets\Text.lua
 Shared\Settings\Widgets\Button.lua
 Shared\Settings\Widgets\Switch.lua
 Shared\Settings\Widgets\Header.lua
 Shared\Settings\Widgets\Input.lua
+Shared\Settings\Widgets\AnchorPicker.lua
 Shared\Settings\Pages.lua
+Shared\Settings\PageControls.lua
 Shared\Settings\SectionTabs.lua
 Shared\Settings\ModeLayout.lua
 Shared\Settings\Previews.lua
@@ -69,9 +99,19 @@ Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Sidebar.lua
 Shared\Settings\Window.lua
+Shared\Settings\Launchers.lua
+Shared\Settings\EditAnchor.lua
 Shared\Settings\EditMode.lua
-Modules\UnitFrames\UnitFrames.xml
 Modules\Profiles\Profiles.xml
 Modules\Optimizations\Optimizations.xml
 Modules\ClassColors\ClassColors.xml
+Modules\Windows\Windows.xml
+Modules\Chat\Chat.xml
+Modules\DamageMeters\DamageMeters.xml
+Modules\ActionBars\ActionBars.xml
+Modules\CooldownManager\CooldownManager.xml
+Modules\Tooltip\Tooltip.xml
+Modules\Bags\Bags.xml
+Modules\UnitFrames\UnitFrames.xml
+Modules\Nameplates\Nameplates.xml
 Shared\Runtime\Boot.lua
