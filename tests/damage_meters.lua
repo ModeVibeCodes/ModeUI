@@ -156,11 +156,15 @@ world.run([==[
     assert(w1.fill.middle.vertexColor[4] == 0.75 and w1.fill.top.vertexColor[4] == 0.75, 'background 1px under the rim; 75%')
     assert(w1.divider:IsShown() and Point(w1.divider)[5] == -22 and w1.divider.vertexColor[1] == 0, 'a black hairline under the header')
 
-    -- Header buttons: 16px glyphs, 2px apart, centered in the header; the timer left of them.
+    -- Header (owner): the timer at the right edge, then the fight letter, Reset
+    -- and the lock to its left; 16px glyphs, 2px apart, centered in the header.
     local b = w1.buttons
-    assert(b.lock.width == 16 and b.lock:IsShown() and Point(b.lock)[4] == -4 and Point(b.lock)[5] == -2, 'lock in the corner')
-    assert(Point(b.reset)[4] == -22 and Point(b.session)[4] == -40, 'reset, then the fight')
-    assert(Point(w1.header.info)[2] == b.session and b.session.text.text == 'C', 'C for Current Fight')
+    local info, title = w1.header.info, w1.header.title
+    assert(Point(info)[1] == 'RIGHT' and Point(info)[2] == w1.header and Point(info)[4] == -4, 'the timer at the right edge')
+    assert(b.session.width == 16 and Point(b.session)[2] == info and Point(b.session)[3] == 'LEFT' and Point(b.session)[4] == -4 and Point(b.session)[5] == 0, 'the fight left of the timer')
+    assert(Point(b.reset)[2] == b.session and Point(b.reset)[4] == -2 and Point(b.lock)[2] == b.reset and Point(b.lock)[4] == -2 and b.lock:IsShown(), 'then Reset and the lock')
+    assert(Point(title)[1] == 'LEFT' and Point(title)[4] == 4 and title.points[2][2] == b.lock and title.points[2][4] == -4 and title.justifyH == 'LEFT', 'the title in the room left of them')
+    assert(b.session.text.text == 'C', 'C for Current Fight')
     assert(b.session.rim == nil and b.session.text.color[2] == Kit.palette.accent[2] and b.session.text.color[1] == Kit.palette.accent[1], 'just the letter, in Mode cyan')
     local hb = w1.header.bar
     assert(hb.statusBarColor[1] == Kit.onyx.health[1] and hb.sheen:IsShown() and hb.value == 1, 'the header is a full Onyx bar in Mode Gradient')
@@ -171,7 +175,14 @@ world.run([==[
     assert(w1.grip:IsShown() and Point(w1.grip)[1] == 'BOTTOMRIGHT' and w1.grip.width == 16, 'resize grip while unlocked')
 
     -- Out of combat: names, ranks, numbers and bars from the game.
-    assert(w1.header.title.text == 'DAMAGE DONE' and w1.header.info.text == '1:15', 'header: meter and time')
+    assert(w1.header.title.text == 'Damage Done' and w1.header.info.text == '1:15', 'header: meter and time, not all capitals')
+    assert(M:SetOption('window1', 'titleUpper', true) and w1.header.title.text == 'DAMAGE DONE' and M:SetOption('window1', 'titleUpper', false), 'Uppercase Title')
+    -- Title Position, X and Y.
+    assert(M:SetOption('window1', 'titleAlign', 'center') and w1.header.title.justifyH == 'CENTER', 'centered')
+    assert(M:SetOption('window1', 'titleOffsetX', 6) and M:SetOption('window1', 'titleOffsetY', -2), 'moved')
+    assert(Point(w1.header.title)[4] == 10 and Point(w1.header.title)[5] == -2 and w1.header.title.points[2][4] == 2 and w1.header.title.points[2][5] == -2, 'both edges move')
+    assert(not M:SetOption('window1', 'titleOffsetX', 41) and not M:SetOption('window1', 'titleAlign', 'top') and not M:SetOption('window1', 'titleOffsetY', 1.5), 'in range')
+    assert(M:SetOption('window1', 'titleAlign', 'left') and M:SetOption('window1', 'titleOffsetX', 0) and M:SetOption('window1', 'titleOffsetY', 0))
     assert(row1.name.text == '1. Valeria' and row1.value.text == '5K (179)', 'rank, name, whole numbers')
     assert(row1.name.color[1] == 1 and row1.name.color[3] == 1 and row1.value.color[2] == 1, 'white text')
     assert(row1.name.font[3] == 'OUTLINE' and row1.value.font[3] == 'OUTLINE', 'outlined to stand out on any bar')
@@ -314,7 +325,10 @@ world.run([==[
     w1.header.scripts.OnClick(w1.header, 'LeftButton'); assert(menu.catcher:IsShown(), 'its menu still opens')
     menu.catcher.scripts.OnClick(menu.catcher)
     assert(M:SetOption('window1', 'locked', false) and w1.grip:IsShown())
-    assert(M:SetOption('window1', 'headerButtons', false) and not b.lock:IsShown() and Point(w1.header.info)[2] == w1.header, 'Header Buttons off')
+    assert(M:SetOption('window1', 'headerButtons', false) and not b.lock:IsShown() and Point(w1.header.info)[2] == w1.header
+        and w1.header.title.points[2][2] == w1.header.info, 'Header Buttons off: the title reaches the timer')
+    assert(M:SetOption('window1', 'headerButtons', true) and M:SetOption('window1', 'showTimer', false) and Point(b.session)[2] == w1.header and Point(b.session)[3] == 'RIGHT', 'no header text: the fight at the edge')
+    assert(M:SetOption('window1', 'showTimer', true))
     assert(M:SetOption('window1', 'headerButtons', true))
 
     -- Deaths open the game's Death Recap.
@@ -359,7 +373,7 @@ world.run([==[
     assert(M:CopyStyleToAll('window1', 'all') and M.db.window3.barOpacity == 100 and M.db.window3.nameSize == 12)
 
     -- Show: Always, In Combat, In a Group, Hidden.
-    assert(M:SetOption('window2', 'show', true) and w2:IsShown() and w2.header.title.text == 'HEALING DONE', 'a second window with its own meter')
+    assert(M:SetOption('window2', 'show', true) and w2:IsShown() and w2.header.title.text == 'Healing Done', 'a second window with its own meter')
     assert(M:SetOption('window2', 'visibility', 'combat') and not w2:IsShown(), 'combat only')
     testCombat = true; FireEvent('PLAYER_REGEN_DISABLED'); assert(w2:IsShown(), 'shows in combat')
     testCombat = false; FireEvent('PLAYER_REGEN_ENABLED'); assert(not w2:IsShown())
@@ -456,7 +470,7 @@ world.run([==[
     assert(w2:IsShown() and M.db.window1.visibility == 'always', 'Show comes from the group: window 2 shows with window 1')
     p = Point(w2)
     assert(p[1] == 'BOTTOMLEFT' and p[2] == w1 and p[3] == 'TOPLEFT' and p[4] == 0 and p[5] == 2, 'stacked on top of window 1 by default, 2px apart')
-    assert(w2.width == w1.width and w2.header.title.text == 'HEALING DONE', 'same width, its own meter')
+    assert(w2.width == w1.width and w2.header.title.text == 'Healing Done', 'same width, its own meter')
     assert(M:SetOption('window2', 'nameSize', 14) and M.db.window1.nameSize == 14 and M.db.window2.nameSize == 12, 'shared settings are saved on the group')
     assert(w1.rows[1].name.font[2] == 14 and w2.rows[1].name.font[2] == 14, 'and change the whole group')
     assert(M:SetOption('window2', 'rows', 3) and M.db.window2.rows == 3 and M.db.window1.rows == 10, 'rows are its own')
@@ -510,9 +524,9 @@ world.run([==[
     local shell = view.window
     assert(M.db.window1.rows == 10 and shell.g.rows == 5 and not (shell.rows[6] and shell.rows[6]:IsShown()) and shell.scale <= 0.8, 'a sample of five rows, drawn smaller')
     assert(shell.width == 320 and shell.rows[1].name.text == '1. Valeria' and shell.rows[1].value.text == '1.2M (13.6K)', 'preview: the sample fight in the edited window')
-    assert(shell.header.title.text == 'DAMAGE DONE' and view.caption.text == 'Window 1 · sample fight' and shell.buttons.session.text.text == 'C')
+    assert(shell.header.title.text == 'Damage Done' and view.caption.text == 'Window 1 · sample fight' and shell.buttons.session.text.text == 'C')
     page.SetEditing('window2')
-    assert(page.windowEditing() == 'window2' and shell.header.title.text == 'HEALING DONE' and shell.rows[1].name.text == '1. Ysolde', 'follows the window being edited')
+    assert(page.windowEditing() == 'window2' and shell.header.title.text == 'Healing Done' and shell.rows[1].name.text == '1. Ysolde', 'follows the window being edited')
     page.SetEditing('window1')
     shell.header.scripts.OnMouseUp(shell.header, 'LeftButton')
     assert(page.selectedSection.title == 'Header', 'header click opens Header')
@@ -580,7 +594,7 @@ end
 old.window3.textColor = { 1, 0, 0 }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 6 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
+    assert(M.db.version == 7 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
     assert(M.db.window3.valueColor[2] == 0 and M.db.window3.nameColor[2] == 1, 'a chosen value color stays; names are white')
     assert(M.db.window1.nameOutline and M.db.window3.valueOutline and M.db.window1.textColor == nil and M.db.window1.outline == nil, 'outlined; old keys gone')
     assert(M.db.window1.decimals == 0 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
@@ -604,7 +618,7 @@ mod.window2.nameColorMode, mod.window2.decimals = "class", 2
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
     local s = M.db.window1
-    assert(M.db.version == 6 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
+    assert(M.db.version == 7 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
     assert(s.nameOutline and s.titleOutline, 'outline on (the owner asked)')
     assert(s.nameColor[1] == 1 and s.valueColor[1] == 0.5 and s.nameColorMode == 'custom', 'pure white names; values keep the text color')
     assert(s.titleColor[3] == 0 and s.titleSize == 13, 'title kept')
@@ -620,7 +634,7 @@ three.version, three.hideBlizzard = 3, nil
 three.window2.group, three.window2.groupSide, three.window3.groupSide = "window1", "below", "below"
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 6 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
+    assert(M.db.version == 7 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
     assert(M.db.hideBlizzard == true, "Hide Blizzard's Meter on")
 ]==], "migrate v3")
 
@@ -633,10 +647,23 @@ four.window2.backgroundColor = { 1, 0, 0 }
 four.window1.border, four.window1.borderSize, four.window1.borderColor = 'rounded', 1, { 0.06, 0.06, 0.06 }
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
-    assert(M.db.version == 6 and M.db.window1.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
+    assert(M.db.version == 7 and M.db.window1.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
     assert(M.db.window1.border == nil and M.db.window1.borderSize == nil and M.db.window1.borderColor == nil, 'the old border settings go (version 6)')
     assert(M.db.window2.backgroundColor[1] == 1, 'a picked background stays')
 ]==], "migrate v4")
+
+-- Version 6 -> 7: the owner asked for the title without every letter capitalized.
+local v6 = restored.saved()
+local six = v6.profiles.Default.modules.damageMeters
+six.version = 6
+for _, window in ipairs({ "window1", "window2", "window3" }) do
+    six[window].titleUpper, six[window].titleAlign, six[window].titleOffsetX, six[window].titleOffsetY = true, nil, nil, nil
+end
+H.Load({ before = STUBS, saved = v6 }).run([==[
+    local M = addon.DamageMeters
+    assert(M.db.version == 7 and not M.db.window1.titleUpper and not M.db.window3.titleUpper, 'Uppercase Title off')
+    assert(M.db.window1.titleAlign == 'left' and M.db.window1.titleOffsetX == 0 and M.db.window2.titleOffsetY == 0, 'Title Position, X and Y take their defaults')
+]==], "migrate v6")
 
 -- Bad saved data stops startup rather than being reset.
 local saved = restored.saved()

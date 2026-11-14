@@ -3,7 +3,8 @@ local M = addon.DamageMeters
 if not M then return end
 
 -- A meter window: a hollow pixel rim around the background, the header strip
--- (meter title on the left, fight and timer on the right) over a one-pixel
+-- (the meter title, placed by Title Position, X and Y; the lock, Reset, the
+-- fight letter and the timer on the right, the timer at the edge) over a one-pixel
 -- divider, then the rows. Each row is a square class icon and a Mode
 -- Gradient bar with the name and value on it. The same code paints the real
 -- windows, the breakdown panel and the settings preview, so they always match.
@@ -174,10 +175,11 @@ function M:PaintShell(frame, style, rows)
     divider:SetShown(g.divider > 0)
     Kit.MaskToBoxBorder(frame.border, { divider }, { left = g.border, top = g.border + g.header, right = g.border, bottom = below - px })
     local title, info = header.title, header.info
+    -- The timer at the header's right edge; the title in the room left of it
+    -- (and of the buttons, which Controls.lua puts between them).
     info:ClearAllPoints(); info:SetPoint("RIGHT", header, "RIGHT", -g.inset, 0); info:SetJustifyH("RIGHT")
-    title:ClearAllPoints(); title:SetPoint("LEFT", header, "LEFT", g.inset, 0)
-    title:SetPoint("RIGHT", info, "LEFT", -g.inset, 0); title:SetJustifyH("LEFT")
-    frame.fontPath = self:PaintText(title, style, "title", px, style.header, "LEFT")
+    self:PlaceTitle(frame, style, g, info)
+    frame.fontPath = self:PaintText(title, style, "title", px, style.header, self.TITLE_JUSTIFY[style.titleAlign])
     self:PaintText(info, style, "timer", px, style.header, "RIGHT")
     local empty = frame.empty
     self:PaintText(empty, style, "name", px)
@@ -194,6 +196,20 @@ function M:PaintShell(frame, style, rows)
     for i = g.rows + 1, #frame.rows do frame.rows[i]:Hide() end
     self:LayoutControls(frame, style, g, frame.window)
     return g
+end
+
+-- The title between the header's left edge and `limit` (the timer, or the
+-- leftmost button): justified by Title Position, moved by Title X and Title
+-- Y on whole pixels. It is never measured (a breakdown's name can be secret).
+M.TITLE_JUSTIFY = { left = "LEFT", center = "CENTER", right = "RIGHT" }
+function M:PlaceTitle(frame, style, g, limit)
+    local header = frame.header
+    local function Snap(v) return math.floor(v / g.px + 0.5) * g.px end
+    local x, y = Snap(style.titleOffsetX), Snap(style.titleOffsetY)
+    header.title:ClearAllPoints()
+    header.title:SetPoint("LEFT", header, "LEFT", g.inset + x, y)
+    header.title:SetPoint("RIGHT", limit, "LEFT", -g.inset + x, y)
+    header.title:SetJustifyH(self.TITLE_JUSTIFY[style.titleAlign])
 end
 
 function M:PaintWindow(window)

@@ -78,8 +78,13 @@ earlier fights with their length. **Reset All Data** is at the bottom.
 Right-clicking a row opens the same menu. The mouse wheel scrolls through the
 ranking.
 
-**Header buttons** (Header › Header Buttons, on by default) sit at the
-header's right, right to left: the lock, Reset All Data, and the fight. The
+**Header layout** (owner, November 13, 2026): the timer sits at the header's
+right edge, and the header buttons (Header › Header Buttons, on by default)
+sit left of it, right to left: the fight, Reset All Data, and the lock. The
+title takes the room left of them: **Title Position** (Left, Center, Right)
+justifies it there, and **Title X** (-40 to 40) and **Title Y** (-10 to 10)
+move it on whole pixels. With Show Timer and Show Fight both off, the buttons
+start at the header's edge. The
 fight button shows where the window is without spelling it out: just the
 character, in the Mode cyan (no box): **C** for Current Fight, **O** for
 Overall, or an earlier fight's number in the menu's list. It turns white under
@@ -147,9 +152,9 @@ the pixel grid. From the outside in:
 | Border | ModeUI's standard border, as on the unit frames' health bar: one crisp 2px rim in Onyx #40454C (`Kit.BORDER_COLOR`), round corners as deep as a bar the header's height would round (6px by default), above what the window holds | none: the border is locked, like the unit frames' rim |
 | Background | the Unit Frames' default health color (Onyx #1C1E21) at 75% (#040404 until settings version 5, which moves a background still at it) | Frame › Background Color, Background Opacity |
 | Header | 20px Onyx bar: Mode Gradient in the Unit Frames health color (#1C1E21) | Header › Texture, Height, Header Color, Header Opacity |
-| Title | 11, uppercase, Mode cyan, outlined | Text › Title; Header › Uppercase Title |
+| Title | 11, the meter's own capitals ("Damage Done"), Mode cyan, outlined, left | Text › Title; Header › Uppercase Title, Title Position, Title X, Title Y |
 | Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
-| Timer | 11, #B9B9B9, outlined, left of the buttons | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
+| Timer | 11, #B9B9B9, outlined, at the right edge | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
 | Hairline | 1px black under the header, like a unit frame's between health and power | shown with the header |
 | Padding | 1px | Window › Padding |
 | Rows | 8 rows, 18 high, 1 apart, 240 wide | Window › Width, Rows, Row Height, Spacing |
@@ -271,8 +276,8 @@ and names each window with its meter ("Window 1 - DPS"). Six tabs:
   Text Color; Text Inset, Show Rank; Show (numbers), Decimals, Separator, Show
   Percent.
 - **Header:** Show Header; Texture, Height, Header Color, Header Opacity;
-  Uppercase Title, Show Fight, Show Timer, Header Buttons, and buttons that open
-  the Title and Timer text settings.
+  Uppercase Title, Show Fight, Show Timer, Title Position, Title X, Title Y,
+  Header Buttons, and buttons that open the Title and Timer text settings.
 - **Frame:** Background Color, Background Opacity (the border is locked).
 - **Copy & Apply:** Copy From (the window in Editing), **Copy** (All, Window,
   Bars, Text), Apply To (tick windows), **Apply to Selected**, **Apply to All
@@ -285,7 +290,7 @@ Copy & Apply copies by part (`M.copyScopes`):
 - **Window:** the window with its header and border: Width, Padding, Opacity,
   Background Color, Background Opacity, and
   the header's Show Header, Texture, Height, Color, Opacity, Uppercase Title,
-  Show Fight, Show Timer and Header Buttons.
+  Title Position, Title X, Title Y, Show Fight, Show Timer and Header Buttons.
 - **Bars:** Row Height, Spacing, Foreground, Background, both opacities, Bar
   Color, Custom Color, Other Color, Icon and Always Show Me.
 - **Text:** every text's Font, Size, Outline, Shadow, Slug and Color, Name and
@@ -299,7 +304,7 @@ the group shares its settings with.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.damageMeters`, version 6: `window1`, `window2` and
+`ModeUIDB` profile `modules.damageMeters`, version 7: `window1`, `window2` and
 `window3`, each a full style table (`Init.lua`'s `Style`), and `hideBlizzard`
 (Hide Blizzard's Meter, for the whole module). Each window also has
 `matchWidth` (on) and `matchHeight` (off), Edit Mode's Match Width and Match
@@ -329,6 +334,11 @@ Version 4 → 5: a background still at #040404 takes the Unit Frames' health col
 
 Version 5 → 6: the window takes ModeUI's standard border, which has no
 settings, so `border`, `borderSize` and `borderColor` are removed.
+
+Version 6 → 7: the owner asked for the meter title without every letter
+capitalized, so Uppercase Title (`titleUpper`) turns off on every window.
+Title Position (`titleAlign`, left), Title X and Title Y (`titleOffsetX`,
+`titleOffsetY`, 0) take their defaults.
 
 ## Files
 

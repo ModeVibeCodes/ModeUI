@@ -255,6 +255,10 @@ function M:CreateConfigPage(parent)
             Note("By default the header is an Onyx bar: Mode Gradient in the Unit Frames health color.", 32)
             page:Group(L["Header Text"])
             page.titleToggles = Toggles({ { "Uppercase Title", "titleUpper" }, { "Show Fight", "showSession" }, { "Show Timer", "showTimer" } })
+            page.titleAlignPills = Choice("Title Position", "titleAlign", 80)
+            local offset = Columns({ "Title X", "Title Y" })
+            page.titleXSlider = Slider(offset[1], "titleOffsetX", "px")
+            page.titleYSlider = Slider(offset[2], "titleOffsetY", "px")
             page.buttonToggles = Toggles({ { "Header Buttons", "headerButtons" } })
             local tools = page:Row(L["Fonts and Colors"], 48)
             for i, part in ipairs({ "title", "timer" }) do
@@ -264,7 +268,7 @@ function M:CreateConfigPage(parent)
                 page[part .. "TextButton"] = button
             end
         end)
-        Note("Header Buttons: the fight (C for Current, O for Overall, a number for an earlier fight; click to switch, right-click for the list), Reset All Data and the lock. Show Fight adds the fight's full name to the header text. Without a header, pick the meter and fight on the Window tab, or right-click a row.", 48)
+        Note("Title Position places the meter's name in the room left of the buttons and timer; Title X and Title Y move it from there. The timer sits at the right edge, with the fight (C for Current, O for Overall, a number for an earlier fight; click to switch, right-click for the list), Reset All Data and the lock to its left. Show Fight adds the fight's full name to the header text. Without a header, pick the meter and fight on the Window tab, or right-click a row.", 64)
     end)
 
     Tab("Frame", function()

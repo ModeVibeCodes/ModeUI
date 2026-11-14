@@ -117,6 +117,16 @@ local function MigrateV5(db)
     end
 end
 
+-- Version 6 -> 7: the owner asked for the meter title without every letter
+-- capitalized, so Uppercase Title turns off on every window. Title Position,
+-- X and Y take their defaults.
+local function MigrateV6(db)
+    for _, window in ipairs(M.windows) do
+        local style = db[window]
+        if type(style) == "table" then style.titleUpper = false end
+    end
+end
+
 -- A window can't group with itself, and groups never loop.
 local function ValidateGroups(db)
     for _, window in ipairs(M.windows) do
@@ -135,6 +145,7 @@ function M.Initialize(db)
     if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
+    if db.version == 6 then MigrateV6(db); db.version = 7 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid damage meter settings version")
     if db.hideBlizzard == nil then db.hideBlizzard = true end

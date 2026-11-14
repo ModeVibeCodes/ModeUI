@@ -67,8 +67,9 @@ function M:SessionShort(session)
     return "#"
 end
 
--- Places the buttons right to left from the header's right edge (the
--- timer sits left of them) and the grip in the corner that grows.
+-- Places the buttons right to left left of the timer (owner: the timer and
+-- the fight letter on the right, the lock and Reset left of them), the
+-- title left of the buttons, and the grip in the corner that grows.
 function M:LayoutControls(frame, style, g, window)
     local buttons = frame.buttons
     if not buttons then return end
@@ -76,23 +77,26 @@ function M:LayoutControls(frame, style, g, window)
     local glyph = math.max(4, math.min(GLYPH, math.floor(g.header / px + 0.5) - 4)) * px
     local top = math.floor((g.header - glyph) / 2 / px + 0.5) * px
     local shown = style.header and style.headerButtons
-    local x = -g.inset
-    for _, key in ipairs({ "lock", "reset", "session" }) do
+    -- The timer (centered in the header) grows with its text, so the
+    -- buttons hang from its left edge, raised to sit on whole pixels; with
+    -- no header text they start at the header's edge.
+    local header, info = frame.header, frame.header.info
+    local lift = (g.header - glyph) / 2 - top
+    local anchor, point, x = info, "LEFT", -g.inset
+    if not (style.showTimer or style.showSession) then anchor, point = header, "RIGHT" end
+    for _, key in ipairs({ "session", "reset", "lock" }) do
         local button = buttons[key]
         button:ClearAllPoints()
-        button:SetPoint("TOPRIGHT", frame.header, "TOPRIGHT", x, -top)
+        button:SetPoint("RIGHT", anchor, point, x, lift)
         button:SetSize(glyph, glyph)
         button:SetShown(shown)
         button:EnableMouse(shown and not style.clickThrough)
-        x = x - glyph - GAP * px
+        anchor, point, x, lift = button, "LEFT", -GAP * px, 0
     end
+    if shown then self:PlaceTitle(frame, style, g, buttons.lock) end
     local letter = self.PartStyle(style, "title")
     letter.outline = true
     Kit.Font(buttons.session.text, letter, math.max(6, math.floor(glyph / px * 0.75 + 0.5)), frame.fontPath, px)
-    local info = frame.header.info
-    info:ClearAllPoints()
-    if shown then info:SetPoint("RIGHT", buttons.session, "LEFT", -g.inset, 0)
-    else info:SetPoint("RIGHT", frame.header, "RIGHT", -g.inset, 0) end
     -- The grip: bottom-right, or top-right under the header for a window
     -- grouped above another (it grows upward).
     local grip, up = frame.grip, window and self.db[window].group ~= "none" and self.db[window].groupSide == "above"

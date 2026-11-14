@@ -28,7 +28,9 @@ addon:RegisterModule("damageMeters", M)
 -- window on top of the one it follows), and Hide Blizzard's Meter.
 -- Version 6: the window takes ModeUI's standard border (owner); Border,
 -- Border Size and Border Color are retired.
-M.VERSION = 6
+-- Version 7: the title keeps the meter's own capitals (owner: not every
+-- letter capitalized) and takes Title Position, Title X and Title Y.
+M.VERSION = 7
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows, in sidebar order, with their Edit Mode element (and saved
@@ -101,7 +103,10 @@ local function Style(window)
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 75,
         -- Header
         header = true, headerHeight = 20, headerTexture = "mode", headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
-        titleUpper = true, showSession = false, showTimer = true, headerButtons = true,
+        titleUpper = false, showSession = false, showTimer = true, headerButtons = true,
+        -- The title's place: Left, Center or Right in the room the timer and
+        -- buttons leave, moved by Title X and Title Y (interface units).
+        titleAlign = "left", titleOffsetX = 0, titleOffsetY = 0,
         -- Bars
         barTexture = "mode", barBackground = "flat", barOpacity = 100, barBackgroundOpacity = 25,
         barColorMode = "class", barColor = Copy(Kit.palette.accent), otherColor = Copy(M.OTHER_COLOR),
@@ -135,7 +140,8 @@ M.ownKeys = { show = true, meterType = true, session = true, rows = true, group 
 -- rows' look; Text every text and number setting.
 M.copyScopes = {
     window = { "width", "padding", "opacity", "backgroundColor", "backgroundOpacity",
-        "header", "headerHeight", "headerTexture", "headerColor", "headerOpacity", "titleUpper", "showSession", "showTimer", "headerButtons" },
+        "header", "headerHeight", "headerTexture", "headerColor", "headerOpacity", "titleUpper", "titleAlign", "titleOffsetX", "titleOffsetY",
+        "showSession", "showTimer", "headerButtons" },
     bars = { "rowHeight", "spacing", "barTexture", "barBackground", "barOpacity", "barBackgroundOpacity", "barColorMode",
         "barColor", "otherColor", "icon", "alwaysShowMe" },
     text = { "textInset", "showRank", "numbers", "showPercent", "decimals", "separator", "nameColorMode", "valueColorMode" },
@@ -148,7 +154,7 @@ M.textureKeys = { barTexture = true, barBackground = false, headerTexture = true
 
 M.ranges = { width = { 120, 600, 1 }, rows = { 1, 40, 1 }, rowHeight = { 10, 40, 1 }, spacing = { 0, 10, 1 },
     padding = { 0, 10, 1 }, backgroundOpacity = { 0, 100, 5 },
-    headerHeight = { 14, 40, 1 }, headerOpacity = { 0, 100, 5 },
+    headerHeight = { 14, 40, 1 }, headerOpacity = { 0, 100, 5 }, titleOffsetX = { -40, 40, 1 }, titleOffsetY = { -10, 10, 1 },
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, opacity = { 10, 100, 5 },
     textInset = { 0, 20, 1 }, decimals = { 0, 3, 1 }, groupGap = { 0, 20, 1 } }
 for _, part in ipairs(M.textParts) do
@@ -174,6 +180,7 @@ M.choices = {
     separator = { { id = "paren", label = "( )" }, { id = "slash", label = "/" }, { id = "bar", label = "|" },
         { id = "dot", label = "·" }, { id = "dash", label = "-" }, { id = "comma", label = "," }, { id = "space", label = "Space" } },
     icon = { { id = "class", label = "Class Icon" }, { id = "none", label = "None" } },
+    titleAlign = { { id = "left", label = "Left" }, { id = "center", label = "Center" }, { id = "right", label = "Right" } },
     numbers = { { id = "primary", label = "Amount" }, { id = "both", label = "Amount and Per Second" } },
     group = { { id = "none", label = "None" } },
     groupSide = { { id = "above", label = "Above" }, { id = "below", label = "Below" } },
