@@ -44,6 +44,19 @@ function M:CreateConfigPage(parent)
         Refresh(refresh)
         return buttons
     end
+    local function Dropdown(title, key, width)
+        local function Choices()
+            local out = {}
+            for i, item in ipairs(M.choices[key]) do out[i] = { id = item.id, label = L[item.label] } end
+            return out
+        end
+        local button = W.Select(page:Row(L[title], 48), width, Choices, function()
+            for _, choice in ipairs(Choices()) do if choice.id == M.db[key] then return choice.id, choice.label end end
+            return M.db[key], tostring(M.db[key])
+        end, Set(key))
+        Refresh(function() button:Refresh() end)
+        return button
+    end
     local function Color(host, key, enabled) W.ColorRow(page, owner, host.rowLabel and host.rowLabel:GetText() or key, key, enabled, host) end
     local function Note(text)
         local host = page:Row("", 32)
@@ -78,8 +91,8 @@ function M:CreateConfigPage(parent)
     page.scaleSlider = Slider(Columns({ "Scale" })[1], "scale", "%")
     page:Group(L["Contents"])
     page.contentToggles = Toggles({ { "Separate Bags", "splitBags" }, { "Reagent Section", "reagentSection" }, { "Keyring", "keyring" } })
-    page.sortPills = Pills("Sort", "sortMode", 96)
-    Note("Sort only changes the order items show in (empty slots last); the header's Sort button switches it too. Clean Up in the header is the game's own sort, which moves the items in your bags. Separate Bags gives each bag its own block; the reagent bag and the keyring get their own sections.")
+    page.sortSelect = Dropdown("Sort", "sortMode", 200)
+    Note("Sort only changes the order items show in (empty slots last); the header's Sort menu sets it too. Clean Up in the header is the game's own sort, which moves the items in your bags. Separate Bags gives each bag its own block; the reagent bag and the keyring get their own sections.")
     page:Group(L["Defaults"])
     page.resetButton = Action("Bags Look", "Reset to Defaults", 150, function() M:ResetToDefaults() end)
 

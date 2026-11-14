@@ -176,9 +176,22 @@ world.run([==[
     assert(M:SetOption('sortMode', 'quality'))
     assert(axe.points[1][4] == g.left and axe.points[1][5] == -g.gridTop, 'best quality first')
     assert(frame.header.sort.text:GetText() == 'Quality', 'the Sort button names the order')
-    frame.header.sort:GetScript('OnClick')(frame.header.sort)
-    assert(M.db.sortMode == 'type', 'Sort cycles the order')
+    -- The header's Sort dropdown: a menu of the orders under the button.
+    local sort, menu = frame.header.sort, frame.sortMenu
+    assert(sort.chevron and not menu:IsShown(), 'a chevron; the menu starts closed')
+    sort:GetScript('OnClick')(sort)
+    assert(menu:IsShown() and #menu.rows == 4 and menu.events.GLOBAL_MOUSE_DOWN, 'the menu opens')
+    assert(menu.rows[2].chosen and not menu.rows[1].chosen and menu.rows[2].text:GetText() == 'Quality', 'the chosen order is marked')
+    assert(menu.points[1][1] == 'TOPRIGHT' and menu.points[1][2] == sort and menu.width >= sort.width, 'hangs under the button')
+    menu.rows[3]:GetScript('OnClick')(menu.rows[3])
+    assert(M.db.sortMode == 'type' and not menu:IsShown() and sort.text:GetText() == 'Type', 'picking an order sets Sort, closes the menu')
+    sort:GetScript('OnClick')(sort); sort.mouseOver = true; FireEvent('GLOBAL_MOUSE_DOWN')
+    assert(menu:IsShown(), 'a click on the button is its own toggle')
+    sort.mouseOver = false; FireEvent('GLOBAL_MOUSE_DOWN')
+    assert(not menu:IsShown() and not menu.events.GLOBAL_MOUSE_DOWN, 'a click elsewhere closes it')
+    sort:GetScript('OnClick')(sort); sort:GetScript('OnClick')(sort); assert(not menu:IsShown(), 'the button toggles it')
     assert(M:SetOption('sortMode', 'bags') and potion.points[1][5] == -g.gridTop)
+    sort:GetScript('OnClick')(sort)
     -- Clean Up: the game's sort, never in combat.
     frame.header.clean:GetScript('OnClick')(frame.header.clean)
     assert(sorts == 1, 'Clean Up sorts the bags')
@@ -187,6 +200,7 @@ world.run([==[
     -- Closing: Blizzard closes, the window follows and the search clears.
     CloseAllBags()
     assert(not frame:IsShown() and search == '' and frame.search:GetText() == '', 'closes with Blizzard\'s bags, search cleared')
+    assert(not menu:IsShown(), 'the Sort menu closes with the window')
     ToggleAllBags(); assert(frame:IsShown(), 'toggles open')
     frame.header.close:GetScript('OnClick')(frame.header.close)
     assert(not frame:IsShown() and not ContainerFrameCombinedBags:IsShown(), 'the close button closes Blizzard\'s bags too')
@@ -236,7 +250,15 @@ world.run([==[
     -- The page: built on demand, with five tabs.
     SlashCmdList.MODEUI(); addon:SelectConfigPage('bags')
     local page = M.page
-    assert(page and page.columnsSlider and page.sortPills and page.growPills and page.resetButton, 'page controls')
+    assert(page and page.columnsSlider and page.sortSelect and page.growPills and page.resetButton, 'page controls')
+    -- Sort on the page is a dropdown of the same orders.
+    local select = page.sortSelect
+    assert(select.label:GetText() == 'Bag Order', select.label:GetText())
+    select:GetScript('OnClick')(select)
+    assert(select.menu:IsShown() and select.rows[4] and select.rows[4].label:GetText() == 'Name', 'the dropdown lists the orders')
+    select.rows[2]:GetScript('OnClick')(select.rows[2])
+    assert(M.db.sortMode == 'quality' and not select.menu:IsShown() and select.label:GetText() == 'Quality', 'picked from the dropdown')
+    assert(frame.header.sort.text:GetText() == 'Quality', 'the header follows')
     assert(page.statusLabel:GetText():find('slots used', 1, true), page.statusLabel:GetText())
     assert(M:ResetToDefaults() and M.db.columns == 12 and M.db.growFrom == 'BOTTOMRIGHT' and not M.db.locked, 'reset')
 

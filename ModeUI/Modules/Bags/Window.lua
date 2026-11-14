@@ -39,6 +39,7 @@ local function HeaderButton(parent, glyph)
         local c = self.hovered and Kit.palette.accent or Kit.palette.text
         if self.icon then Kit.Tint(self.icon, c, self.hovered and 1 or 0.8) end
         if self.text then self.text:SetTextColor(c[1], c[2], c[3], 1) end
+        if self.chevron then Kit.Tint(self.chevron, c, 1) end
     end
     button:SetScript("OnEnter", function()
         button.hovered = true; button:Paint()
@@ -82,6 +83,7 @@ function M:BuildWindow()
     frame.holders = {}
     frame:Hide()
     self.frame = frame
+    self:BuildSortMenu()
     self:BindHeader()
     self:BuildMover()
     frame:SetPoint(self.db.growFrom, self.mover, self.db.growFrom, 0, 0)
@@ -132,8 +134,8 @@ end
 -- What the header buttons do, and moving the window by its header.
 function M:BindHeader()
     local header = self.frame.header
-    header.sort:SetScript("OnClick", function() self:CycleSort() end)
-    header.sort.tip = function() return L["Sort"], L["Click to change the order items show in: Bag Order, Quality, Type or Name."] end
+    header.sort:SetScript("OnClick", function() self:ToggleSortMenu() end)
+    header.sort.tip = function() return L["Sort"], L["Choose the order items show in: Bag Order, Quality, Type or Name."] end
     header.clean:SetScript("OnClick", function() self:CleanUp() end)
     header.clean.tip = function() return L["Clean Up"], L["The game sorts the items in your bags."] end
     header.close:SetScript("OnClick", function() self:CloseBags() end)
@@ -180,11 +182,14 @@ function M:PaintWindow()
         Kit.Font(button.text, look, small, path, g.px)
         button.text:SetText(key == "clean" and L["Clean Up"] or self:SortLabel())
         -- Sized from the setting, never measured: a word's width is about
-        -- 0.55 of its font size per letter, plus room either side.
-        button:SetSize(math.floor((#button.text:GetText() * small * 0.55 + 12) / g.px + 0.5) * g.px, math.max(g.px, g.header))
+        -- 0.55 of its font size per letter, plus room either side (and
+        -- Sort's chevron, a font size square).
+        local chevron = key == "sort" and small + 2 or 0
+        button:SetSize(math.floor((#button.text:GetText() * small * 0.55 + 12 + chevron) / g.px + 0.5) * g.px, math.max(g.px, g.header))
         button:ClearAllPoints(); button:SetPoint("RIGHT", prior, "LEFT", -g.inset, 0)
         prior = button
     end
+    self:PaintSortMenu(g, look, path, small)
     header.clean:SetShown(Containers.CanCleanUp())
     for _, key in ipairs({ "sort", "clean", "close" }) do header[key]:Paint() end
     self:PaintSearch(g, look, path)
