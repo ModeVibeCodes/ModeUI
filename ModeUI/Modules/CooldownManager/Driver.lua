@@ -14,7 +14,10 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 -- with ModeUI's other modules, but its window waits for /mcdm.
 function M:OnInitialize()
     self.Initialize(self.db)
+    -- Set by the version 4 migration, which can only see this module's table.
+    if self.db.movePlaces then self:MovePlaces(); self.db.movePlaces = nil end
     self:RebuildAssignments()
+    self:AddBarTargets()
     -- SharedMedia fonts and bar textures can register after login.
     addon.Media:RegisterFontListener(self, function() if self.active then self:Refresh() end end)
     addon.RegisterMessage(self, addon.Messages.MODULE_TOGGLED, function(_, id)

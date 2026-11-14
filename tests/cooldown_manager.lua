@@ -16,7 +16,8 @@ world.run([==[
     assert(M and not M.enabled and not M.built and M.standalone and M.category == nil, 'standalone, off by default')
     local first = ItemsOf(essential)[1]
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
-    assert(M.db.version == 3 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    assert(M.db.essential.width == 42 and M.db.essential.height == 34 and M.db.utility.width == 36 and M.db.utility.height == 28, 'icons 8px wider than tall')
+    assert(M.db.version == 4 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
     assert(M.db.essential.desaturate and M.db.essential.procGlow == 'mode' and M.db.essential.activeGlow == 'none', 'gray on cooldown by default')
 
     addon:SetModuleEnabled('cooldownManager', true)
@@ -25,7 +26,7 @@ world.run([==[
     local holder = M.holders.essential
     local items = ItemsOf(essential)
     -- One line of 12 slots (42x36, 2px apart); five icons centered in it.
-    assert(ModeUICooldownEssential.width == 12 * 42 + 11 * 2 and ModeUICooldownEssential.height == 36, 'stand-in is one full line')
+    assert(ModeUICooldownEssential.width == 12 * 42 + 11 * 2 and ModeUICooldownEssential.height == 34, 'stand-in is one full line')
     local p = Point(items[1])
     assert(p[1] == 'TOPLEFT' and p[2] == holder and p[4] == 154 and p[5] == 0, 'centered: seven empty slots split either side')
     assert(Point(items[2])[4] == 198 and items[1].width == 42 and items[1].scale == 1)
@@ -61,17 +62,17 @@ world.run([==[
     assert(M:SetOption('essential', 'grow', 'right')); local x = At(items[2]); assert(x == 44, 'Horizontal Right')
     assert(M:SetOption('essential', 'grow', 'left')); x = At(items[1]); assert(x == 526 - 42 and At(items[2]) == 440, 'Horizontal Left')
     assert(M:SetOption('essential', 'grow', 'down') and M.db.essential.lineGrowth == 'right', 'columns: New Lines turns Right')
-    assert(ModeUICooldownEssential.width == 42 and ModeUICooldownEssential.height == 12 * 36 + 11 * 2)
-    local _, y = At(items[2]); assert(y == -38, 'Vertical Down')
-    assert(M:SetOption('essential', 'grow', 'up')); _, y = At(items[1]); assert(y == -(454 - 36), 'Vertical Up')
-    assert(M:SetOption('essential', 'grow', 'centerV')); _, y = At(items[1]); assert(y == -133, 'Centered Vertical')
+    assert(ModeUICooldownEssential.width == 42 and ModeUICooldownEssential.height == 12 * 34 + 11 * 2)
+    local _, y = At(items[2]); assert(y == -36, 'Vertical Down')
+    assert(M:SetOption('essential', 'grow', 'up')); _, y = At(items[1]); assert(y == -(430 - 34), 'Vertical Up')
+    assert(M:SetOption('essential', 'grow', 'centerV')); _, y = At(items[1]); assert(y == -126, 'Centered Vertical')
     assert(not M:SetOption('essential', 'lineGrowth', 'up'), 'columns add lines right or left')
     assert(M:SetOption('essential', 'grow', 'down') and M:SetOption('essential', 'perLine', 3))
     x, y = At(items[4]); assert(x == 44 and y == 0, 'second column to the right')
     assert(M:SetOption('essential', 'lineGrowth', 'left')); x = At(items[4]); assert(x == -44, 'New Lines: Left')
     assert(M:SetOption('essential', 'grow', 'centerH') and M.db.essential.lineGrowth == 'down')
-    x, y = At(items[4]); assert(x == 22 and y == -38, 'short second line centered under the first')
-    assert(M:SetOption('essential', 'lineGrowth', 'up')); _, y = At(items[4]); assert(y == 38, 'New Lines: Up')
+    x, y = At(items[4]); assert(x == 22 and y == -36, 'short second line centered under the first')
+    assert(M:SetOption('essential', 'lineGrowth', 'up')); _, y = At(items[4]); assert(y == 36, 'New Lines: Up')
     assert(M:SetOption('essential', 'lineGrowth', 'down') and M:SetOption('essential', 'perLine', 12))
     essential:RefreshLayout(); items = ItemsOf(essential)
     assert(Point(items[2])[2] == holder and Point(items[2])[4] == 198, "Blizzard's grid undone after its layout")
@@ -131,7 +132,7 @@ world.run([==[
 
     -- Tracked Buffs close gaps; a secret shown state keeps its place.
     buffItems[1].activeState = false; buffItems[1]:UpdateShownState()
-    assert(M.placedCount.buffIcon == 1 and Point(buffItems[2])[4] == 204, 'the active buff takes the middle')
+    assert(M.placedCount.buffIcon == 1 and Point(buffItems[2])[4] == 209, 'the active buff takes the middle')
     buffItems[1].secretShown = true; buffItems[1]:UpdateShownState()
     assert(M.placedCount.buffIcon == 2, 'a secret shown state keeps its place')
     buffItems[1].secretShown = nil; buffItems[1].activeState = true; buffItems[1]:UpdateShownState()
@@ -166,9 +167,29 @@ world.run([==[
     assert(M:RenameCustomBar(c3, '  Burst ') and M:Label(c3) == 'Burst' and not M:RenameCustomBar(c3, ''))
     assert(PM:Element('cooldownManagerCustom3').label == 'Burst', 'Edit Mode handle renamed')
     assert(M:SetOption(c3, 'activeGlow', 'mode') and M.db.custom3.activeGlow == 'mode', 'custom bars have every setting')
+    -- Anchoring: any ModeUI element and the custom bars, 1px off the side.
+    local E = PM:Element('cooldownManagerEssential')
+    assert(E.allowedTargets.actionBarsBar1 and E.allowedTargets.cooldownManagerCustom3, 'other ModeUI elements and custom bars as targets')
+    assert(Point(ModeUICooldownUtility)[2] == ModeUICooldownEssential and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
+    assert(PM:AnchorTo('cooldownManagerCustom1', 'cooldownManagerCustom3', 'below'))
+    local hang = Point(ModeUICooldownCustom1)
+    assert(hang[2] == ModeUICooldownCustom3 and hang[5] == -1, 'anchored with the 1px gap')
+    assert(addon:SetEditMode(true) and PM:Nudge('cooldownManagerCustom1', 0, -2) and Point(ModeUICooldownCustom1)[5] == -3, 'nudged from there')
+    assert(addon:SetEditMode(false)); ModeUIConfigWindow:Hide()
+    -- Match Width: the icons resize to fill the parent's width, pixel perfect.
+    assert(M:SetOption(c1, 'perLine', 5) and ModeUICooldownCustom1.width == 5 * 42 + 4 * 2)
+    assert(PM:CanMatchSize('cooldownManagerCustom1', 'width') and PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', true) and M.db.custom1.matchWidth)
+    PM:RefreshAnchorSize('cooldownManagerCustom1')
+    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width, 'width matched')
+    assert(byKey[201].width == 68 and Point(byKey[201])[4] == 141, 'icons split the width on whole pixels')
+    assert(M:SetOption(c3, 'perLine', 6)); PM:RefreshAnchorSize('cooldownManagerCustom1')
+    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width and ModeUICooldownCustom3.width == 6 * 42 + 5 * 2, 'follows the parent')
+    assert(PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', false) and ModeUICooldownCustom1.width == 5 * 42 + 4 * 2)
+    assert(M:SetOption(c1, 'perLine', 8))
     assert(M:RemoveEntry(c1, '201') and Point(byKey[201])[2] == M.holders.utility, 'Remove from Bar sends it back')
     assert(M:DeleteCustomBar(c3) and Point(byKey[102])[2] == holder and byKey[102].alpha == 1, 'deleting gives the spells back')
     assert(addon.db.positions.cooldownManagerCustom3 == nil and not ModeUICooldownCustom3:IsShown() and M.db.custom3 == nil)
+    assert(PM:GetPosition('cooldownManagerCustom1').target == 'screen' and not E.allowedTargets.cooldownManagerCustom3, 'what hung from it moves to the screen')
 
     -- Custom spells by ID: ModeUI's own icon on a Cooldown Bar.
     assert(not M:AddCustomSpell(c1, 'abc') and not M:AddCustomSpell(c1, '950000'), 'not a spell ID; no such spell')
@@ -316,7 +337,7 @@ v1.profiles.Default.modules.cooldownManager = { enabled = true, version = 1,
     buffIcon = { orientation = "horizontal", start = "BOTTOMLEFT", center = true, readyGlow = false, readyStyle = "glow" } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 3 and db.essential.border == 'mode' and db.essential.borderColor[1] == addon.Kit.BORDER_COLOR[1], 'v1 also takes the ModeUI border')
+    assert(db.version == 4 and db.essential.border == 'mode' and db.essential.borderColor[1] == addon.Kit.BORDER_COLOR[1], 'v1 also takes the ModeUI border')
     assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
     assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow kept as a flash')
     assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 0)
@@ -334,10 +355,27 @@ old.utility.border, old.utility.borderColor = "square", { 1, 0, 0 }
 old.custom1.border = "rounded"
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v2 }).run([==[
     local db, Kit = addon.CooldownManager.db, addon.Kit
-    assert(db.version == 3 and db.essential.border == 'mode' and db.essential.borderColor[1] == Kit.BORDER_COLOR[1], 'old default to the ModeUI border')
+    assert(db.version == 4 and db.essential.border == 'mode' and db.essential.borderColor[1] == Kit.BORDER_COLOR[1], 'old default to the ModeUI border')
     assert(db.utility.border == 'square' and db.utility.borderColor[1] == 1, 'a chosen Square border and color stay')
     assert(db.custom1.border == 'mode', 'custom bars too')
 ]==], "migrate v2")
+
+-- Version 3: default sizes move to 42 by 34 and 36 by 28; Utility's default
+-- place, 4 units under Essential, sits against it now (the 1px gap is built in).
+local v3 = restored.saved()
+local before = v3.profiles.Default.modules.cooldownManager
+before.version = 3
+before.essential.width, before.essential.height = 42, 36
+before.utility.width, before.utility.height = 40, 30
+before.custom2.width, before.custom2.height = 35, 30
+v3.profiles.Default.positions.cooldownManagerUtility = { target = "cooldownManagerEssential", placement = "below", x = 0, y = -4 }
+H.Load({ before = STUBS .. "\nMakeViewers()", saved = v3 }).run([==[
+    local M, PM = addon.CooldownManager, addon.PositionManager
+    local db = M.db
+    assert(db.version == 4 and db.essential.width == 42 and db.essential.height == 34 and db.custom2.width == 36 and db.custom2.height == 28, 'default sizes move')
+    assert(db.utility.width == 40 and db.utility.height == 30 and db.movePlaces == nil, 'a chosen size stays')
+    assert(PM:GetPosition('cooldownManagerUtility').y == 0 and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
+]==], "migrate v3")
 
 -- Bad saved data stops startup rather than being reset.
 local function Refused(change, label)

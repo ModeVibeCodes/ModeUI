@@ -103,7 +103,7 @@ function PM:RegisterElement(id, frame, options)
         canDrag = options.canDrag, onPositionChanged = options.onPositionChanged, onHighlight = options.onHighlight,
         scripts = {}, handlers = {} }
     element.subject = { frame = frame, db = { position = position } }
-    element.subject.originPoint=options.originPoint
+    element.subject.originPoint,element.subject.gapPixels=options.originPoint,type(options.gapPixels)=="number" and options.gapPixels or nil
     element.subject.allowedTargets = allowed
     self.elements[id], self.frames[frame] = element, id
     self.order[#self.order + 1] = id

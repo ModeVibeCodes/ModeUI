@@ -1,8 +1,10 @@
 local _, addon = ...
 local PM, P = addon.PositionManager, addon.Positioning
 
--- Anchor width tracking: elements that size themselves to the frame they are
--- anchored to (matched width) are told when that frame's width changes.
+-- Anchor size tracking: elements that size themselves to the frame they are
+-- anchored to (matched width or height) are told when that frame's size
+-- changes: callback(element, width, height), from the target's own
+-- OnSizeChanged (through an observer frame), never by polling.
 local Combat = addon.InCombat
 local function Lookup(self, id) return self:Element(id) end
 
@@ -54,13 +56,25 @@ function PM:RefreshAnchorSize(id)
         end
     end
     local width = target and self:GetAnchorWidth(id) or nil
-    if element.lastAnchorWidth ~= width then
-        element.lastAnchorWidth = width
+    local height
+    if width then local _, _, _, h = P:Geometry(target); height = h end
+    if element.lastAnchorWidth ~= width or element.lastAnchorHeight ~= height then
+        element.lastAnchorWidth, element.lastAnchorHeight = width, height
         if element.sizeCallback then
-            local ok, message = pcall(element.sizeCallback, element, width)
+            local ok, message = pcall(element.sizeCallback, element, width, height)
             if not ok then print("ModeUI: anchor size callback failed: " .. tostring(message)) end
         end
     end
+end
+
+-- Lets an element pick a target added after it registered (a new custom bar).
+function PM:AllowTarget(id, target)
+    local element = Lookup(self, id)
+    if not element then return false, "unknown-element" end
+    for _, item in ipairs(P.targets) do
+        if item.id == target then element.allowedTargets[target] = true; return true end
+    end
+    return false, "invalid-target"
 end
 
 -- The element a target id stands for, when it is another ModeUI element's

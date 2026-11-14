@@ -19,7 +19,7 @@ local world = H.Load({ before = STUBS })
 world.run([==[
     local M, PM, Kit, Power = addon.CooldownManager, addon.PositionManager, addon.Kit, addon.Domain.Power
     local db = M.db.resources
-    assert(M.db.version == 3, 'resource bars need no new settings version')
+    assert(M.db.version == M.VERSION, 'resource bars need no settings version of their own')
     assert(db.power.show and db.combo.show and db.mana.show and not db.health.show, 'Health starts off')
     assert(db.power.border == 'mode' and db.power.barTexture == 'mode' and db.power.barBackground == 'slate' and db.power.fontMedia == 'Expressway', 'the Mode look')
     assert(db.power.matchWidth and db.power.colorMode == 'power' and db.power.text == 'current' and db.combo.text == 'none')
@@ -30,8 +30,8 @@ world.run([==[
     assert(ModeUIResourcePower and ModeUIResourceCombo and ModeUIResourceMana and ModeUIResourceHealth, 'a stand-in per bar')
     assert(PM:GetPosition('cooldownManagerResourcePower').target == 'cooldownManagerUtility', 'Power under Utility')
     assert(PM:GetPosition('cooldownManagerResourceCombo').target == 'cooldownManagerResourcePower', 'Combo Points under Power')
-    -- Match Width: Utility's line is 12 icons of 35 with 2px between.
-    assert(ModeUIResourcePower.width == 442 and ModeUIResourcePower.height == 14, 'Power matches the cooldowns above it')
+    -- Match Width: Utility's line is 12 icons of 36 with 2px between.
+    assert(ModeUIResourcePower.width == 454 and ModeUIResourcePower.height == 14, 'Power matches the cooldowns above it')
     assert(PM:GetSizeMatch('cooldownManagerResourcePower', 'width'), "Edit Mode's Match Width is on")
     assert(power:IsShown() and not ModeUIResourcePower:IsShown(), 'bar shown on its hidden stand-in')
 
@@ -63,10 +63,10 @@ world.run([==[
     assert(M:SetResourceOption('power', 'text', 'current'))
 
     -- Combo Points: a Rogue's five boxes, each lit by the count without comparing it.
-    assert(combo:IsShown() and combo.count == 5 and ModeUIResourceCombo.width == 442, 'five points, matched to Power')
+    assert(combo:IsShown() and combo.count == 5 and ModeUIResourceCombo.width == 454, 'five points, matched to Power')
     for i = 1, 5 do assert(combo.boxes[i].bar.low == i - 1 and combo.boxes[i].bar.high == i) end
     local last = combo.boxes[5]
-    assert(Point(combo.boxes[1])[4] == 0 and Point(last)[4] + last.width == 442, 'the boxes fill the width exactly')
+    assert(Point(combo.boxes[1])[4] == 0 and Point(last)[4] + last.width == 454, 'the boxes fill the width exactly')
     assert(Point(combo.boxes[2])[4] - (Point(combo.boxes[1])[4] + combo.boxes[1].width) == 2, 'Spacing apart')
     comboPoints = Secret('cp'); FireEvent('PLAYER_TARGET_CHANGED')
     assert(issecretvalue(combo.boxes[3].bar.value), 'a secret count lights the boxes')
@@ -130,7 +130,7 @@ world.run([==[
     -- Reset keeps Show Bar and the size.
     assert(M:ResetResource('power') and db.power.border == 'mode' and db.power.visibility == 'always' and db.power.opacity == 100)
     assert(db.power.matchWidth == false and db.power.show, 'size and show stay')
-    assert(M:SetResourceOption('power', 'matchWidth', true) and ModeUIResourcePower.width == 442)
+    assert(M:SetResourceOption('power', 'matchWidth', true) and ModeUIResourcePower.width == 454)
 
     -- The window: Resource Bars in the list, their own page and preview.
     SlashCmdList.MODEUICDM()
@@ -163,7 +163,7 @@ world.run([==[
     -- In combat: bars keep updating and follow a form change; settings wait.
     testCombat, testLockdown = true, true; FireEvent('PLAYER_REGEN_DISABLED')
     units.player.token = 'RAGE'; FireEvent('UNIT_DISPLAYPOWER', 'player')
-    assert(power.boxes[1].bar.statusBarColor[1] == Power.colors.RAGE[1] and ModeUIResourcePower.width == 442, 'a form change in combat')
+    assert(power.boxes[1].bar.statusBarColor[1] == Power.colors.RAGE[1] and ModeUIResourcePower.width == 454, 'a form change in combat')
     units.player.power = 70; FireEvent('UNIT_POWER_FREQUENT', 'player'); assert(power.boxes[1].bar.value == 70)
     assert(not M:SetResourceOption('power', 'height', 16), 'settings change only outside combat')
     testCombat, testLockdown = false, false; FireEvent('PLAYER_REGEN_ENABLED')

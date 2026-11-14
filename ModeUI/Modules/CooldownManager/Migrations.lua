@@ -125,6 +125,21 @@ function M.Initialize(db)
         end
         db.version = 3
     end
+    -- Version 3 -> 4: sizes still at version 3's defaults take version 4's;
+    -- the places, kept outside this table, move on start (Driver.lua).
+    if db.version == 3 then
+        local function Resize(style, old, new)
+            if type(style) == "table" and style.width == old[1] and style.height == old[2] then style.width, style.height = new.width, new.height end
+        end
+        for _, viewer in ipairs({ "essential", "utility", "buffIcon" }) do Resize(db[viewer], M.oldSizes[viewer], M.styleDefaults[viewer]) end
+        for _, bar in ipairs(type(db.customBars) == "table" and db.customBars or {}) do
+            if type(bar) == "table" and M.customKinds[bar.kind] and type(bar.id) == "string" then
+                Resize(db[bar.id], M.oldSizes[bar.kind], M.customDefaults[bar.kind])
+            end
+        end
+        db.movePlaces = true
+        db.version = 4
+    end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end

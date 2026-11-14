@@ -167,7 +167,8 @@ function M:BuildResource(id)
     mover:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     self.resourceMovers[id] = mover
     local ok, reason = PM:RegisterElement(eid, mover, { moduleId = self.id,
-        defaultPosition = self.resourcePositions[id], allowedTargets = self.resourceTargets[id],
+        -- Anchors to any ModeUI element, 1 physical pixel off its side.
+        defaultPosition = self.resourcePositions[id], anyTarget = true, gapPixels = 1,
         canDrag = function() return self.active == true and self.db.resources[id].show end,
         label = self:ResourceLabel(id) })
     assert(ok, "ModeUI: resource bar position registration failed: " .. tostring(reason))

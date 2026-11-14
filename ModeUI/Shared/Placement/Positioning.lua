@@ -122,6 +122,17 @@ function P:FallbackPoint(module)
     return module.originPoint..((point=="LEFT" or point=="RIGHT") and point or "")
 end
 
+-- An element registered with gapPixels sits that many physical pixels off
+-- the side of what it's anchored to (Above, Below, Left, Right), on top of
+-- its offsets, so an anchored stack keeps a pixel-perfect gap.
+function P:Gap(module, position)
+    local pixels = module.gapPixels
+    if not pixels or (position.target or "screen") == "screen" or position.point then return 0, 0 end
+    local item = self:Placement(position.placement)
+    local px = addon.Kit and addon.Kit.PixelSize(UIParent) or 1
+    local function Sign(v) return v > 0 and 1 or v < 0 and -1 or 0 end
+    return Sign(item.x) * pixels * px, Sign(item.y) * pixels * px
+end
 function P:ApplyFrame(module, force)
     if Combat() then self.pending = true; return false end
     local position, frame = module.runtimeAnchor or module.db.position, module.frame
@@ -144,7 +155,8 @@ function P:ApplyFrame(module, force)
         return ok
     end
     if target then
-        local ok = Anchor(point, target, relative, position.x / ratio, position.y / ratio)
+        local gx, gy = self:Gap(module, position)
+        local ok = Anchor(point, target, relative, (position.x + gx) / ratio, (position.y + gy) / ratio)
         if ok then
             module.positionTargetFrame = target
             local px, py = UIParent:GetCenter()
@@ -198,6 +210,25 @@ function P:Discover()
 end
 
 -- Compatibility methods delegate registration/storage/updates to the manager.
+-- Removes a target added with AddTarget (an element that's gone, such as a
+-- deleted custom bar): elements hanging from it move to the screen where
+-- they are, and no element can pick it any more.
+function P:RemoveTarget(id)
+    local PM = addon.PositionManager
+    for eid, element in pairs(PM.elements) do
+        if element.position.target == id then PM:DetachAnchor(eid) end
+        element.allowedTargets[id] = nil
+    end
+    for index, item in ipairs(self.targets) do
+        if item.id == id then table.remove(self.targets, index); return true end
+    end
+    return false
+end
+-- Renames a target (a custom bar renamed).
+function P:SetTargetLabel(id, label)
+    for _, item in ipairs(self.targets) do if item.id == id then item.label = label; return true end end
+    return false
+end
 function P:Apply(module) return addon.PositionManager:ApplyPosition(module.positionElementId or module.id) end
 function P:Read(module) return addon.PositionManager:GetOffsets(module.positionElementId or module.id) end
 function P:Limits(module) return addon.PositionManager:GetCoordinateBounds(module.positionElementId or module.id) end

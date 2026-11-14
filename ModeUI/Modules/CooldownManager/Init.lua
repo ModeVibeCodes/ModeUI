@@ -29,7 +29,10 @@ addon:RegisterModule("cooldownManager", M)
 -- and buff glows beside the proc glow; custom bars.
 -- Version 3: every bar takes the ModeUI border (the owner asked for it on
 -- the cooldown bars, November 13, 2026).
-M.VERSION = 3
+-- Version 4 (owner, November 13, 2026): icons 8px wider than tall by
+-- default (42 by 34; 36 by 28 on the smaller bars), and anchored bars sit 1
+-- physical pixel apart (gapPixels) instead of 4.
+M.VERSION = 4
 M.SLASH = "/mcdm"
 local P = Kit.palette
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -77,8 +80,8 @@ for _, viewer in ipairs(M.viewers) do M.customTargets[#M.customTargets + 1] = M.
 local function At(point, x, y) return { target = "screen", placement = "center", point = point, relativePoint = point, x = x, y = y } end
 M.defaultPositions = {
     essential = At("BOTTOM", 0, 300),
-    utility = { target = M.ElementId("essential"), placement = "below", x = 0, y = -4 },
-    buffIcon = { target = M.ElementId("essential"), placement = "above", x = 0, y = 4 },
+    utility = { target = M.ElementId("essential"), placement = "below", x = 0, y = 0 },
+    buffIcon = { target = M.ElementId("essential"), placement = "above", x = 0, y = 0 },
     buffBar = At("BOTTOM", 330, 300),
 }
 function M.CustomPosition(index) return At("CENTER", 0, 120 - 48 * ((index - 1) % 6)) end
@@ -119,6 +122,8 @@ local function Style(size, perLine, lineGrowth, small)
         show = true,
         perLine = perLine, grow = "centerH", lineGrowth = lineGrowth,
         width = size[1], height = size[2], spacing = 2,
+        -- Match Width / Match Height (Edit Mode): the size of what it hangs from.
+        matchWidth = false, matchHeight = false,
         border = "mode", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = M.BACKGROUND_OPACITY,
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
@@ -145,16 +150,19 @@ local function Style(size, perLine, lineGrowth, small)
     return style
 end
 M.styleDefaults = {
-    essential = Style({ 42, 36 }, 12, "down"), utility = Style({ 35, 30 }, 12, "down", true),
-    buffIcon = Style({ 35, 30 }, 12, "up", true), buffBar = Style({ 220, 22 }, 1, "up", true),
+    essential = Style({ 42, 34 }, 12, "down"), utility = Style({ 36, 28 }, 12, "down", true),
+    buffIcon = Style({ 36, 28 }, 12, "up", true), buffBar = Style({ 220, 22 }, 1, "up", true),
 }
-M.customDefaults = { cooldown = Style({ 42, 36 }, 8, "down"), buff = Style({ 35, 30 }, 8, "up", true) }
+M.customDefaults = { cooldown = Style({ 42, 34 }, 8, "down"), buff = Style({ 36, 28 }, 8, "up", true) }
+-- Version 3's default sizes, which move to version 4's (sizes chosen by hand stay).
+M.oldSizes = { essential = { 42, 36 }, utility = { 35, 30 }, buffIcon = { 35, 30 }, cooldown = { 42, 36 }, buff = { 35, 30 } }
 M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1 }
 for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[viewer]) end
 
 -- Keys Copy Style leaves alone: whether and when a bar shows, its shape,
 -- and its spells' switches.
 M.identityKeys = { show = true, perLine = true, grow = true, lineGrowth = true, width = true, height = true,
+    matchWidth = true, matchHeight = true,
     visibility = true, spells = true }
 M.colorKeys = { borderColor = true, backgroundColor = true, swipeColor = true, barColor = true }
 for _, kind in ipairs(M.glowKinds) do M.colorKeys[kind .. "Color"] = true end
