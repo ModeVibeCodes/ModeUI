@@ -8,8 +8,57 @@ if not M then return end
 -- shows or hides them (the values can be secret); ModeUI sets the font,
 -- size, color and place, and hides one by fading it. Nothing is measured:
 -- secret text makes a FontString's sizes secret too.
+-- A spell can have its own look for each text (its menu's Text rows open
+-- TextPopout.lua): saved in the bar's spells as
+--   spells["1234"].text = { cooldown = { show, size, anchor, x, y, color,
+--       font, fontMedia, outline ("none", "outline", "thick"), shadow } }
+-- starting from the bar's look (the Text tab) when first changed.
 local Kit = addon.Kit
 local PAD = 1 -- pixels between a text and the edge it sits against
+local function Copy(value) return addon.ProfileCodec.Copy(value) end
+
+-- The bar's look for a text, in a spell's own look's shape.
+local function BarLook(style, part)
+    return { show = style[part .. "Show"], size = style[part .. "Size"], anchor = style[part .. "Anchor"],
+        x = style[part .. "X"], y = style[part .. "Y"], color = style[part .. "Color"], font = style.font,
+        fontMedia = style.fontMedia, outline = style.outline and "outline" or "none", shadow = style.shadow }
+end
+
+-- A spell's own look for a text on a bar, else nil.
+function M:SpellText(viewer, key, part)
+    local style = self.db[viewer]
+    local entry = key and style and style.spells[key]
+    return entry and entry.text and entry.text[part]
+end
+-- The look a text starts from when a spell gets its own: the bar's.
+function M:TextDefaults(viewer, part) return Copy(BarLook(self.db[viewer], part)) end
+
+-- Changes one field of a spell's own look for a text (starting from the
+-- bar's look). Checked by Initialize like every setting.
+function M:SetSpellText(viewer, key, part, field, value)
+    local parts = {}
+    for _, p in ipairs(self:Parts(viewer)) do parts[p] = true end
+    if not self:Defaults(viewer) or type(key) ~= "string" or not parts[part] or not self.textFields[field] then return false end
+    local spells = Copy(self.db[viewer].spells)
+    local entry = spells[key] or {}
+    entry.text = entry.text or {}
+    local look = entry.text[part] or self:TextDefaults(viewer, part)
+    look[field] = Copy(value)
+    entry.text[part] = look
+    spells[key] = entry
+    return self:SetOption(viewer, "spells", spells)
+end
+
+-- The text goes back to the bar's look.
+function M:ResetSpellText(viewer, key, part)
+    if not self:Defaults(viewer) or not self:SpellText(viewer, key, part) then return false end
+    local spells = Copy(self.db[viewer].spells)
+    local entry = spells[key]
+    entry.text[part] = nil
+    if next(entry.text) == nil then entry.text = nil end
+    spells[key] = next(entry) and entry or nil
+    return self:SetOption(viewer, "spells", spells)
+end
 
 -- The FontString for a part on an item (Blizzard's or a sample), and the
 -- frame it is placed on, or nil when the item has none.
@@ -46,12 +95,13 @@ local function Place(text, host, anchor, x, y, g, room, width, height)
     end
 end
 
-local function StylePart(self, viewer, item, part, style, g)
+local function StylePart(self, viewer, item, part, style, g, own)
     local text, host = self.TextRegion(item, part)
     if not text then return end
-    local size, shown = style[part .. "Size"], style[part .. "Show"]
-    local look = { outline = style.outline, shadow = style.shadow, slug = style.slug, textColor = style[part .. "Color"] }
-    Kit.Font(text, look, size, Kit.FontPath(style, self.id), g.px)
+    local look = own and own[part] or BarLook(style, part)
+    local size = look.size
+    Kit.Font(text, { outline = look.outline, shadow = look.shadow, slug = style.slug, textColor = look.color },
+        size, Kit.FontPath(look, self.id), g.px)
     text:SetWordWrap(false)
     -- Icons: the count tucks into the icon's corner. Bars: the name and time
     -- sit inside the bar; the name stops short of the time.
@@ -60,15 +110,21 @@ local function StylePart(self, viewer, item, part, style, g)
         room = 4 * g.px
         local inner = math.max(g.px, g.w - g.h - 2 * g.inset)
         if part == "name" then
-            width = inner - 2 * room - (style.durationShow and 4 * style.durationSize or 0)
+            local duration = own and own.duration or BarLook(style, "duration")
+            width = inner - 2 * room - (duration.show and 4 * duration.size or 0)
         else width = inner - 2 * room end
         width = math.max(g.px, width)
     elseif host ~= item then room = g.inset + PAD * g.px end
     if part ~= "cooldown" and not width then width = math.max(g.px, (host == item and g.w or g.h) - 2 * g.inset) end
-    Place(text, host, style[part .. "Anchor"], style[part .. "X"], style[part .. "Y"], g, room, width, width and (size + 1) or nil)
-    text:SetAlpha(shown and 1 or 0)
+    Place(text, host, look.anchor, look.x, look.y, g, room, width, width and (size + 1) or nil)
+    text:SetAlpha(look.show and 1 or 0)
 end
 
-function M:StyleTexts(viewer, item, style, g)
-    for _, part in ipairs(self:Parts(viewer)) do StylePart(self, viewer, item, part, style, g) end
+-- `key`: the spell the item shows (its own texts; false for none), else
+-- the item's own.
+function M:StyleTexts(viewer, item, style, g, key)
+    if key == nil then key = self:SpellKey(item) end
+    local entry = key and style.spells[key]
+    local own = entry and entry.text
+    for _, part in ipairs(self:Parts(viewer)) do StylePart(self, viewer, item, part, style, g, own) end
 end

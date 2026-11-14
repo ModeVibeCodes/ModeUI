@@ -121,6 +121,8 @@ end
 function M:ToggleGlowPopout(kind, button)
     local popout = self:GlowPopout()
     if popout:IsShown() and popout.kind == kind then popout:Hide(); return end
+    -- One popout at a time.
+    if self.textPopout then self.textPopout:Hide() end
     local menu = self.spellMenu
     popout.kind = kind
     popout:SetScale(menu:GetScale())

@@ -50,17 +50,17 @@ function M:DressItem(viewer, item, g)
     -- Items Blizzard made before ModeUI was switched on get their hooks now.
     if not self:IsOwnIcon(item) then self:HookItem(self.sourceOf[item] or viewer, item) end
     local state = self:Dress(item)
-    -- Same settings, viewer and size since the last skin: only the alpha
-    -- and glows are brought up to date.
-    local last = state.g
-    if state.revision == self.revision and state.viewer == viewer and last and last.w == g.w and last.h == g.h
-        and last.px == g.px then
+    -- Same settings, viewer, spell (its own texts) and size since the last
+    -- skin: only the alpha and glows are brought up to date.
+    local last, key = state.g, self:SpellKey(item)
+    if state.revision == self.revision and state.viewer == viewer and state.key == key and last and last.w == g.w
+        and last.h == g.h and last.px == g.px then
         self:ApplySpell(viewer, item)
         return
     end
-    state.viewer, state.g, state.revision = viewer, g, self.revision
+    state.viewer, state.g, state.revision, state.key = viewer, g, self.revision, key
     if self:IsBar(viewer) then self:SkinBar(item, style, g, state) else self:SkinIcon(item, style, g, state) end
-    self:StyleTexts(viewer, item, style, g)
+    self:StyleTexts(viewer, item, style, g, key)
     self:ApplySpell(viewer, item)
 end
 

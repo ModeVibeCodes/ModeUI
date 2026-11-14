@@ -12,6 +12,12 @@ if not M then return end
 -- gives its spells back to their viewers. Saved as
 --   db.customBars = { { id = "custom1", name = "Cooldown Bar 1", kind = "cooldown", entries = { "1234", ... } } }
 -- with each bar's look in db[id], like a viewer's.
+-- Essential and Utility take spells the same way (owner, November 14,
+-- 2026): from each other or a custom bar, by Spell ID, or items, saved as
+--   db.extras = { essential = { "s1234", "i5512", "201" }, utility = {} }
+-- after Blizzard's own spells. A viewer's own spell can't leave it
+-- (Blizzard's Cooldown Manager decides what it tracks): removing one hides
+-- it there.
 local L, Cooldowns = addon.L, addon.Domain.Cooldowns
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -43,8 +49,9 @@ function M:IsBuff(id)
     if self.viewerSpecs[id] then return self.viewerSpecs[id].buff == true end
     return self:KindOf(id) == "buff"
 end
--- The viewers a bar's icons come from.
+-- The viewers a bar's icons come from: its own first.
 function M:Sources(id)
+    if self.entryViewers[id] then return self.entryViewers[id] end
     if self.viewerSpecs[id] then return { id } end
     local kind = self:KindOf(id)
     return kind and self.customKinds[kind].sources or {}
@@ -53,11 +60,29 @@ function M:Parts(id) return self:IsBar(id) and self.barParts or self.iconParts e
 function M:SizeRange(id, key) return self.sizeRanges[self:IsBar(id) and "bar" or "icon"][key] end
 function M:Glows(id) return self:IsBar(id) and {} or (self:IsBuff(id) and self.buffGlows or self.cooldownGlows) end
 
--- Which custom bar holds each spell (cooldown ID key), rebuilt on changes.
+-- A bar's own list of spells in `db`: a custom bar's entries, or what
+-- Essential or Utility took (db.extras). Nil for the other viewers.
+function M.EntriesIn(db, id)
+    if M.entryViewers[id] then return db.extras[id] end
+    for _, bar in ipairs(db.customBars) do if bar.id == id then return bar.entries end end
+end
+local NONE = {} -- read only
+function M:Entries(id) return self.EntriesIn(self.db, id) or NONE end
+-- Whether the + slot adds spells to a bar, and whether spells by ID and
+-- items too (Cooldown Bars, Essential and Utility).
+function M:TakesEntries(id) return self.EntriesIn(self.db, id) ~= nil end
+function M:TakesOwn(id) return self.entryViewers[id] ~= nil or self:KindOf(id) == "cooldown" end
+
+-- Which bar took each spell (cooldown ID key), rebuilt on changes.
 function M:RebuildAssignments()
     local assigned = {}
     for _, bar in ipairs(self.db.customBars) do
         for _, key in ipairs(bar.entries) do if not assigned[key] then assigned[key] = bar.id end end
+    end
+    for _, viewer in ipairs(self.viewers) do
+        for _, key in ipairs(self.entryViewers[viewer] and self.db.extras[viewer] or NONE) do
+            if not assigned[key] then assigned[key] = viewer end
+        end
     end
     self.assigned = assigned
 end
@@ -73,9 +98,14 @@ function M:Owner(item)
     if custom and Contains(self:Sources(custom), source) then return custom end
     return source
 end
--- Custom bars that take spells from a viewer.
+-- The other bars that take spells from a viewer: Essential or Utility
+-- while it holds spells of its own, and custom bars.
 function M:CustomsFrom(viewer)
     local list = {}
+    for _, other in ipairs(self.viewers) do
+        local sources = self.entryViewers[other]
+        if other ~= viewer and sources and Contains(sources, viewer) and #self:Entries(other) > 0 then list[#list + 1] = other end
+    end
     for _, bar in ipairs(self.db.customBars) do
         if Contains(self.customKinds[bar.kind].sources, viewer) then list[#list + 1] = bar.id end
     end
@@ -177,39 +207,45 @@ function M:RenameCustomBar(id, name)
     return true
 end
 
--- Puts a spell on a custom bar (taking it off any other custom bar). Only a
--- spell the bar can take, tracked now (Candidates), is accepted.
+-- Puts a spell on a bar that takes spells (taking it off every other one).
+-- Only a spell the bar can take, tracked now (Candidates), is accepted; a
+-- viewer's own spell going back to it needs no entry.
 function M:AddEntry(id, key)
-    local _, index = self:Custom(id)
-    if not self:CanConfigure() or not index or type(key) ~= "string" then return false end
-    local takes = false
-    for _, candidate in ipairs(self:Candidates(id)) do if candidate.key == key then takes = true end end
-    if not takes then return false end
+    if not self:CanConfigure() or not self:TakesEntries(id) or type(key) ~= "string" then return false end
+    local found
+    for _, candidate in ipairs(self:Candidates(id)) do if candidate.key == key then found = candidate end end
+    if not found or found.owner == id then return false end
     local candidate = Copy(self.db)
-    for _, bar in ipairs(candidate.customBars) do
-        for i = #bar.entries, 1, -1 do if bar.entries[i] == key then table.remove(bar.entries, i) end end
+    local function Drop(entries)
+        for i = #entries, 1, -1 do if entries[i] == key then table.remove(entries, i) end end
     end
-    local entries = candidate.customBars[index].entries
-    entries[#entries + 1] = key
+    for _, bar in ipairs(candidate.customBars) do Drop(bar.entries) end
+    for viewer in pairs(self.entryViewers) do Drop(candidate.extras[viewer]) end
+    local entries = self.EntriesIn(candidate, id)
+    if found.source ~= id then
+        if #entries >= self.MAX_ENTRIES then return false end
+        entries[#entries + 1] = key
+    end
     return Commit(self, candidate)
 end
 
+-- Takes a spell off a bar: back to its viewer, or (a viewer's own spell)
+-- hidden there.
 function M:RemoveEntry(id, key)
-    local _, index = self:Custom(id)
-    if not self:CanConfigure() or not index then return false end
+    if not self:CanConfigure() or not self:TakesEntries(id) then return false end
     local candidate = Copy(self.db)
-    local entries = candidate.customBars[index].entries
-    for i = #entries, 1, -1 do if entries[i] == key then table.remove(entries, i) end end
+    local entries, found = self.EntriesIn(candidate, id), false
+    for i = #entries, 1, -1 do if entries[i] == key then table.remove(entries, i); found = true end end
+    if not found and not self:IsCustom(id) then return self:SetSpellSwitch(id, key, "hide", true) end
     candidate[id].spells[key] = nil
     return Commit(self, candidate)
 end
 
--- Moves a spell earlier (-1) or later (+1) on its custom bar.
+-- Moves a spell earlier (-1) or later (+1) in its bar's own list.
 function M:MoveEntry(id, key, delta)
-    local _, index = self:Custom(id)
-    if not self:CanConfigure() or not index then return false end
+    if not self:CanConfigure() or not self:TakesEntries(id) then return false end
     local candidate = Copy(self.db)
-    local entries = candidate.customBars[index].entries
+    local entries = self.EntriesIn(candidate, id)
     for i, entry in ipairs(entries) do
         if entry == key then
             local j = i + delta
@@ -221,8 +257,9 @@ function M:MoveEntry(id, key, delta)
     return false
 end
 
--- What a custom bar can take: every spell tracked now in its source viewers,
--- in Blizzard's order, with where it shows now. { key, icon, name, owner }.
+-- What a bar can take: every spell tracked now in its source viewers, in
+-- Blizzard's order, with the viewer it comes from and the bar it shows on
+-- now. { key, icon, name, source, owner }.
 function M:Candidates(id)
     local list, seen = {}, {}
     for _, viewer in ipairs(self:Sources(id)) do
@@ -232,7 +269,7 @@ function M:Candidates(id)
                 seen[key] = true
                 local spell = self:SpellOf(key)
                 list[#list + 1] = { key = key, icon = spell and Cooldowns.SpellIcon(spell), name = self:SpellLabel(key),
-                    owner = self.assigned and self.assigned[key] or viewer }
+                    source = viewer, owner = self:Owner(item) }
             end
         end
     end

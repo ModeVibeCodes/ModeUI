@@ -35,8 +35,29 @@ local function ValidGlow(glow, kind, id)
     end
 end
 
--- Per-spell settings: a key ("1234", "s1234") to { hide = true } and the
--- glows that are on; an empty entry isn't kept.
+-- A spell's own text looks: { [part] = { show, size, anchor, x, y, color,
+-- font, fontMedia, outline, shadow } } for texts the bars have.
+local OUTLINES, ANCHORS, PARTS = {}, {}, {}
+for _, item in ipairs(M.outlineChoices) do OUTLINES[item.id] = true end
+for _, anchor in ipairs(M.anchors) do ANCHORS[anchor] = true end
+for _, part in ipairs(M.textParts) do PARTS[part] = true end
+local function ValidText(text, id)
+    assert(type(text) == "table" and next(text) ~= nil, "Invalid cooldown manager spell text: " .. id)
+    for part, look in pairs(text) do
+        assert(PARTS[part] and type(look) == "table", "Invalid cooldown manager spell text: " .. id)
+        local bad = "Invalid cooldown manager spell text: " .. id .. "." .. part
+        for field in pairs(look) do assert(M.textFields[field], bad) end
+        assert(type(look.show) == "boolean" and type(look.shadow) == "boolean" and OUTLINES[look.outline], bad)
+        assert(Whole(look.size, M.ranges[part .. "Size"]) and ANCHORS[look.anchor], bad)
+        assert(Whole(look.x, M.ranges[part .. "X"]) and Whole(look.y, M.ranges[part .. "Y"]), bad)
+        assert(type(look.font) == "string" and type(look.fontMedia) == "string" and #look.font <= 200 and #look.fontMedia <= 200, bad)
+        assert(type(look.color) == "table", bad)
+        for i = 1, 3 do assert(Number(look.color[i], 0, 1), bad) end
+    end
+end
+
+-- Per-spell settings: a key ("1234", "s1234") to { hide = true }, the
+-- glows that are on and its own texts; an empty entry isn't kept.
 local function ValidSpells(spells, id)
     local count = 0
     for key, entry in pairs(spells) do
@@ -45,7 +66,9 @@ local function ValidSpells(spells, id)
         for kind, value in pairs(entry) do
             local want = M.spellKinds[kind]
             assert(want ~= nil, "Invalid cooldown manager spell switch: " .. id)
-            if want == "glow" then ValidGlow(value, kind, id) else assert(value == want, "Invalid cooldown manager spell switch: " .. id) end
+            if want == "glow" then ValidGlow(value, kind, id)
+            elseif want == "text" then ValidText(value, id)
+            else assert(value == want, "Invalid cooldown manager spell switch: " .. id) end
         end
     end
     assert(count <= MAX_SPELLS, "Too many cooldown manager spells: " .. id)
@@ -72,6 +95,30 @@ local function Validate(style, id, defaults, bar)
     ValidSpells(style.spells, id)
 end
 
+-- A bar's own list of spells: unique keys, at most MAX_ENTRIES; spells and
+-- items by ID only where `own` allows them.
+local function ValidList(entries, id, own)
+    assert(type(entries) == "table" and #entries <= M.MAX_ENTRIES, "Invalid cooldown manager bar spells: " .. id)
+    local seen = {}
+    for i, key in pairs(entries) do
+        assert(type(i) == "number" and i >= 1 and i <= #entries and Key(key) and not seen[key], "Invalid cooldown manager bar spell: " .. id)
+        assert(own or key:match("^%d+$"), "Invalid cooldown manager custom spell: " .. id)
+        seen[key] = true
+    end
+end
+
+-- The spells Essential and Utility took (added without a version step: a
+-- profile saved before them starts with none).
+local function ValidExtras(db)
+    if db.extras == nil then db.extras = {} end
+    assert(type(db.extras) == "table", "Invalid cooldown manager viewer spells")
+    for viewer in pairs(db.extras) do assert(M.entryViewers[viewer], "Invalid cooldown manager viewer spells") end
+    for viewer in pairs(M.entryViewers) do
+        if db.extras[viewer] == nil then db.extras[viewer] = {} end
+        ValidList(db.extras[viewer], viewer, true)
+    end
+end
+
 -- Custom bars: at most MAX_CUSTOM, each with a unique "customN" ID below
 -- nextCustom, a name, a kind and its spells (unique cooldown ID keys).
 local function ValidCustom(db)
@@ -86,14 +133,8 @@ local function ValidCustom(db)
         assert(M.customKinds[bar.kind], "Invalid cooldown manager custom bar kind: " .. bar.id)
         assert(type(bar.name) == "string" and bar.name ~= "" and #bar.name <= M.MAX_NAME and not bar.name:find("[\r\n|]"),
             "Invalid cooldown manager custom bar name: " .. bar.id)
-        assert(type(bar.entries) == "table" and #bar.entries <= M.MAX_ENTRIES, "Invalid cooldown manager custom bar spells: " .. bar.id)
-        local seen = {}
-        for i, key in pairs(bar.entries) do
-            assert(type(i) == "number" and i >= 1 and i <= #bar.entries and Key(key) and not seen[key], "Invalid cooldown manager custom bar spell: " .. bar.id)
-            -- Spells and items by ID go on Cooldown Bars only.
-            assert(bar.kind == "cooldown" or key:match("^%d+$"), "Invalid cooldown manager custom spell: " .. bar.id)
-            seen[key] = true
-        end
+        -- On custom bars, spells and items by ID go on Cooldown Bars only.
+        ValidList(bar.entries, bar.id, bar.kind == "cooldown")
         if db[bar.id] == nil then db[bar.id] = Copy(M.customDefaults[bar.kind]) end
         Validate(db[bar.id], bar.id, M.customDefaults[bar.kind], false)
     end
@@ -180,6 +221,7 @@ function M.Initialize(db)
         Validate(db[viewer], viewer, M.styleDefaults[viewer], M.viewerSpecs[viewer].bar)
     end
     ValidCustom(db)
+    ValidExtras(db)
     -- Resource Bars (ResourceInit.lua): added without a version step; a
     -- profile saved before them takes their defaults.
     M.ValidateResources(db)

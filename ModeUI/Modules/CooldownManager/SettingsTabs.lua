@@ -9,6 +9,7 @@ if not M then return end
 function M:BuildTextTab(ui)
     local page, db = ui.page, ui.db
     ui.Tab("Text", function()
+        ui.Note("The bar's text look. Click a spell in the preview, then a text's > in its menu, to give that spell its own font, size, color, outline, shadow and place.", 40)
         page:Group(L["Text"])
         local function Parts(list)
             local choices = {}
@@ -107,7 +108,7 @@ function M:BuildSpellsTab(ui)
             status:SetText(hidden > 0 and string.format(L["%d spells hidden here."], hidden) or L["Every tracked spell shows."])
         end)
         page.spellsStatus = status
-        ui.Note("Click a spell in the preview to hide it from this bar (the others close up) or switch its glows off. Hidden spells show faded in the preview. Copy, Paste and Apply to Bar move one spell's switches to others. On a custom bar, the + slot adds spells and a spell's menu orders it or sends it back to its viewer.", 64)
+        ui.Note("Click a spell in the preview to hide it from this bar (the others close up) or switch its glows off. Hidden spells show faded in the preview. Copy, Paste and Apply to Bar move one spell's switches to others. On a custom bar, Essential and Utility, the + slot adds spells and a spell's menu orders it or takes it off the bar (a viewer's own spell hides there).", 64)
         local reset = page:Row("", 40)
         reset.rowLabel:Hide(); reset:ClearAllPoints(); reset:SetAllPoints(reset.row)
         page.resetSpellsButton = W.Button(reset, L["Reset All Spells"], 160, 30, "secondary")

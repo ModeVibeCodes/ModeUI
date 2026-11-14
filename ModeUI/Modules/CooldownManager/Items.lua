@@ -20,19 +20,19 @@ function M.IsOwnEntry(key) return M.IsSpellEntry(key) or M.IsItemEntry(key) end
 function M.ItemOf(key) return M.IsItemEntry(key) and tonumber(key:sub(2)) or nil end
 
 -- Adds an item by its ID (a number, or text as typed) to a custom Cooldown
--- Bar. Returns true and the item ID, or false and why.
+-- Bar, Essential or Utility. Returns true and the item ID, or false and why.
 function M:AddCustomItem(id, text)
-    local bar, index = self:Custom(id)
-    if not bar or bar.kind ~= "cooldown" then return false, L["Items go on Cooldown Bars."] end
+    if not self:TakesOwn(id) or not self:TakesEntries(id) then return false, L["Items go on Cooldown Bars, Essential and Utility."] end
     if not self:CanConfigure() then return false, L["Not in combat."] end
     local itemID = type(text) == "number" and text or tonumber(type(text) == "string" and text:match("^%s*(%d+)%s*$") or nil)
     if not itemID or not Items.Exists(itemID) then return false, L["No item has that ID."] end
     if not Items.Spell(itemID) then return false, L["That item has no Use: effect."] end
     local key = "i" .. itemID
-    for _, entry in ipairs(bar.entries) do if entry == key then return false, L["That item is on this bar already."] end end
-    if #bar.entries >= self.MAX_ENTRIES then return false, L["This bar is full."] end
+    local list = self:Entries(id)
+    for _, entry in ipairs(list) do if entry == key then return false, L["That item is on this bar already."] end end
+    if #list >= self.MAX_ENTRIES then return false, L["This bar is full."] end
     local candidate = Copy(self.db)
-    local entries = candidate.customBars[index].entries
+    local entries = self.EntriesIn(candidate, id)
     entries[#entries + 1] = key
     if not self.CommitBars(self, candidate) then return false, L["That item can't be added."] end
     Items.Load(itemID)
@@ -84,10 +84,9 @@ end
 
 -- The usable items in your bags not yet on this bar, for the + slot's list.
 function M:ItemCandidates(id)
-    local bar = self:Custom(id)
-    if not bar or bar.kind ~= "cooldown" then return {} end
+    if not self:TakesOwn(id) or not self:TakesEntries(id) then return {} end
     local here, list = {}, {}
-    for _, key in ipairs(bar.entries) do here[key] = true end
+    for _, key in ipairs(self:Entries(id)) do here[key] = true end
     for _, item in ipairs(Items.UsableInBags()) do
         local key = "i" .. item.id
         if not here[key] then list[#list + 1] = { key = key, id = item.id, icon = item.icon, name = item.name or self:ItemLabel(key) } end

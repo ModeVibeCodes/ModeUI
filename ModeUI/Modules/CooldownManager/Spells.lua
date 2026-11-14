@@ -48,11 +48,11 @@ function M:IsOwnIcon(item) return self.iconKey[item] ~= nil end
 function M:IsLive(item) return self.sourceOf[item] ~= nil or self.iconKey[item] ~= nil end
 
 -- Adds a spell by its ID (a number, or text as typed) to a custom Cooldown
--- Bar: one you know, or (unlearned) one of your class's spells in the + slot's
--- list. Returns true and the spell ID, or false and why.
+-- Bar, Essential or Utility: one you know, or (unlearned) one of your
+-- class's spells in the + slot's list. Returns true and the spell ID, or
+-- false and why.
 function M:AddCustomSpell(id, text, classSpell)
-    local bar, index = self:Custom(id)
-    if not bar or bar.kind ~= "cooldown" then return false, L["Spells by ID go on Cooldown Bars."] end
+    if not self:TakesOwn(id) or not self:TakesEntries(id) then return false, L["Spells by ID go on Cooldown Bars, Essential and Utility."] end
     if not self:CanConfigure() then return false, L["Not in combat."] end
     local spellID = type(text) == "number" and text or tonumber(type(text) == "string" and text:match("^%s*(%d+)%s*$") or nil)
     if not spellID or not Cooldowns.SpellExists(spellID) then return false, L["No spell has that ID."] end
@@ -60,10 +60,11 @@ function M:AddCustomSpell(id, text, classSpell)
     -- spell on a priest, say); the item of the same name goes in by Item ID.
     if not classSpell and not Cooldowns.Known(spellID) then return false, L["You don't know that spell. An item? Add it by Item ID."] end
     local key = "s" .. spellID
-    for _, entry in ipairs(bar.entries) do if entry == key then return false, L["That spell is on this bar already."] end end
-    if #bar.entries >= self.MAX_ENTRIES then return false, L["This bar is full."] end
+    local list = self:Entries(id)
+    for _, entry in ipairs(list) do if entry == key then return false, L["That spell is on this bar already."] end end
+    if #list >= self.MAX_ENTRIES then return false, L["This bar is full."] end
     local candidate = Copy(self.db)
-    local entries = candidate.customBars[index].entries
+    local entries = self.EntriesIn(candidate, id)
     entries[#entries + 1] = key
     if not self.CommitBars(self, candidate) then return false, L["That spell can't be added."] end
     return true, spellID
@@ -105,9 +106,8 @@ end
 -- Icons for spells no longer on their bar (or bars deleted) are put away.
 function M:SyncSpellIcons()
     for id, icons in pairs(self.spellIcons) do
-        local bar = self:Custom(id)
         local wanted = {}
-        for _, key in ipairs(bar and bar.entries or {}) do wanted[key] = true end
+        for _, key in ipairs(self:HasBar(id) and self:Entries(id) or {}) do wanted[key] = true end
         for key, icon in pairs(icons) do
             if not wanted[key] then
                 icon:Hide()
@@ -118,13 +118,12 @@ function M:SyncSpellIcons()
     end
 end
 
--- A custom bar's own icons (custom spells and items), in its order, split
--- into those to show and spells you don't know (hidden).
+-- A bar's own icons (custom spells and items), in its order, split into
+-- those to show and spells you don't know (hidden).
 function M:SpellIcons(id)
     local list = {}
-    local bar = self:Custom(id)
-    if not bar or not self.built then return list end
-    for _, key in ipairs(bar.entries) do
+    if not self.built or not self:TakesEntries(id) then return list end
+    for _, key in ipairs(self:Entries(id)) do
         if self.IsOwnEntry(key) then
             local icon = self:SpellIcon(id, key)
             if self.IsItemEntry(key) or Cooldowns.Known(self:SpellOf(key)) then list[#list + 1] = icon else icon:Hide() end

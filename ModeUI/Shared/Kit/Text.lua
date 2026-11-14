@@ -68,9 +68,17 @@ local function ApplyFont(text, style, path, size, flags)
     if not text:SetFont(path, size, flags) then text:SetFont(addon.Media.gameFont, size, flags) end
 end
 
+-- The font flags for a style's outline: true or "outline" a thin outline,
+-- "thick" a thick one, false, nil or "none" none.
+function Kit.OutlineFlags(style)
+    local outline = style.outline
+    if outline == "thick" then return "THICKOUTLINE" end
+    return (outline and outline ~= "none") and "OUTLINE" or ""
+end
+
 -- Font, color and the 1px shadow; px is one physical pixel.
 function Kit.Font(text, style, size, path, px)
-    local flags = style.outline and "OUTLINE" or ""
+    local flags = Kit.OutlineFlags(style)
     ApplyFont(text, style, path, size, flags)
     local c = style.textColor
     text:SetTextColor(c[1], c[2], c[3], 1)
@@ -85,7 +93,7 @@ function Kit.LayoutLift(text, style, size, path, px, shown, justify, lift)
     local on = shown and style.shadow and style.liftedShadow
     lift:SetShown(on)
     if not on then return end
-    local flags = style.outline and "OUTLINE" or ""
+    local flags = Kit.OutlineFlags(style)
     ApplyFont(lift, style, path, size, flags)
     lift:SetTextColor(0, 0, 0, Kit.LIFT_ALPHA)
     lift:SetShadowColor(0, 0, 0, 0); lift:SetShadowOffset(0, 0)

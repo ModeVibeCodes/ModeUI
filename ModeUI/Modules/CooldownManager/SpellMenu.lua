@@ -7,10 +7,14 @@ if not M then return end
 -- each glow the bar has (Proc, Active and Off Cooldown on cooldown icons;
 -- Buff on buff icons), all off to begin with, each with a > button that
 -- opens its popout (GlowPopout.lua) to set that glow's look; Copy, Paste and
--- Apply to Bar for the spell's settings; on a custom bar Earlier, Later and
--- Remove from Bar. It stays open while the page scrolls and closes on a
--- click anywhere but it, its popout and its icon, the close button, or
--- combat. While it's open the spell previews its glow.
+-- Apply to Bar for the spell's settings; a > per text (Cooldown and Count
+-- on icons; Name, Duration and Count on bars) that opens its popout
+-- (TextPopout.lua) for the spell's own text look; on a custom bar,
+-- Essential and Utility, Earlier and Later (spells the bar took) and Remove
+-- from Bar (a viewer's own spell hides there). It stays open while the page
+-- scrolls and closes on a click anywhere but it, its popouts and their
+-- menus, its icon, the close button, or combat. While it's open the spell
+-- previews its glow.
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local Cooldowns = addon.Domain.Cooldowns
 local WIDTH, PAD, LINE = 304, 14, 28
@@ -42,12 +46,22 @@ end
 -- A click anywhere outside the menu (and its icon) closes it.
 local function OnEvent(menu, event)
     if event == "PLAYER_REGEN_DISABLED" then menu:Hide(); return end
-    local popout = M.glowPopout
     local over = menu:IsMouseOver() or (menu.anchor and menu.anchor:IsMouseOver())
-        or (popout and popout:IsShown() and popout:IsMouseOver())
-        -- Picking a glow's color in Blizzard's color picker keeps them open.
-        or (ColorPickerFrame and ColorPickerFrame:IsShown() and ColorPickerFrame:IsMouseOver())
+    for _, frame in ipairs({ M.glowPopout, M.textPopout, ColorPickerFrame }) do
+        -- Picking a color in Blizzard's color picker keeps them open.
+        over = over or (frame and frame:IsShown() and frame:IsMouseOver())
+    end
+    -- So does a font in the text popout's font list.
+    for list in pairs(addon.fontDropdownMenus or {}) do over = over or (list:IsShown() and list:IsMouseOver()) end
     if not (addon.IsPublic(over) and over) then menu:Hide() end
+end
+
+-- A row per text: its name, whether the spell has its own look, and a >.
+local function TextRow(menu, part)
+    local row = { label = W.Label(menu, "", nil, 0, 0, INNER - 40, T.text) }
+    row.more = W.Button(menu, ">", 28, 24, "secondary")
+    row.more:SetScript("OnClick", function() M:ToggleTextPopout(part, row.more) end)
+    return row
 end
 
 function M:SpellMenu()
@@ -64,6 +78,9 @@ function M:SpellMenu()
     menu.showBox = Check(menu, L["Show on This Bar"], "hide")
     menu.glowBoxes = {}
     for _, kind in ipairs(M.glowKinds) do menu.glowBoxes[kind] = Check(menu, L[M.glowLabels[kind]], kind) end
+    menu.textSection = W.Label(menu, L["Text"], nil, PAD, 0, INNER, T.muted)
+    menu.textRows = {}
+    for _, part in ipairs(M.textParts) do menu.textRows[part] = TextRow(menu, part) end
     menu.copy = Action(menu, L["Copy"], 84, function(id, key) M:CopySpell(id, key) end)
     menu.paste = Action(menu, L["Paste"], 84, function(id, key) M:PasteSpell(id, key) end)
     menu.apply = Action(menu, L["Apply to Bar"], INNER - 176, function(id, key) M:ApplySpellToViewer(id, key) end)
@@ -81,6 +98,7 @@ function M:SpellMenu()
     menu:SetScript("OnHide", function()
         menu:UnregisterAllEvents()
         if M.glowPopout then M.glowPopout:Hide() end
+        if M.textPopout then M.textPopout:Hide() end
         local view = menu.view
         menu.view, menu.key, menu.anchor = nil, nil, nil
         if view then view.menuKey = nil; view.Refresh() end
@@ -150,6 +168,23 @@ function M:RefreshSpellMenu()
             box.more:SetSelected(self.glowPopout ~= nil and self.glowPopout:IsShown() and self.glowPopout.kind == kind)
         end
     end
+    -- The texts this bar's items have, each with its >.
+    local parts, textOpen = {}, self.textPopout ~= nil and self.textPopout:IsShown() and self.textPopout.part
+    for _, part in ipairs(self:Parts(id)) do parts[part] = true end
+    menu.textSection:ClearAllPoints(); menu.textSection:SetPoint("TOPLEFT", PAD, y - 6)
+    y = y - 26
+    for _, part in ipairs(self.textParts) do
+        local row, shown = menu.textRows[part], parts[part] == true
+        row.label:SetShown(shown); row.more:SetShown(shown)
+        if shown then
+            local own = self:SpellText(id, menu.key, part) ~= nil
+            row.label:SetText(string.format(L["%s Text"], L[self.textPartLabels[part]]) .. (own and ("  |cff8c8c8c" .. L["own look"] .. "|r") or ""))
+            row.label:ClearAllPoints(); row.label:SetPoint("TOPLEFT", PAD, y - 4)
+            row.more:ClearAllPoints(); row.more:SetPoint("TOPRIGHT", -PAD, y)
+            row.more:SetSelected(textOpen == part)
+            y = y - LINE
+        end
+    end
     local function Row(buttons, shown)
         local x = PAD
         for _, button in ipairs(buttons) do
@@ -159,16 +194,19 @@ function M:RefreshSpellMenu()
         if shown then y = y - 34 end
     end
     Row({ menu.copy, menu.paste, menu.apply }, true)
-    local custom = self:Custom(id)
-    Row({ menu.earlier, menu.later, menu.remove }, custom ~= nil)
-    if custom then
-        local first, last = custom.entries[1] == menu.key, custom.entries[#custom.entries] == menu.key
-        menu.earlier:SetEnabled(not first); menu.later:SetEnabled(not last)
-    end
+    -- Earlier and Later for spells in the bar's own list (all of a custom
+    -- bar's); Remove from Bar on every bar that takes spells.
+    local entries, listed = self:Entries(id), false
+    for _, key in ipairs(entries) do if key == menu.key then listed = true end end
+    menu.earlier:SetShown(false); menu.later:SetShown(false); menu.remove:SetShown(false)
+    if listed then Row({ menu.earlier, menu.later, menu.remove }, true)
+    else Row({ menu.remove }, self:TakesEntries(id)) end
+    if listed then menu.earlier:SetEnabled(entries[1] ~= menu.key); menu.later:SetEnabled(entries[#entries] ~= menu.key) end
     menu.paste:SetEnabled(self.spellClipboard ~= nil)
     local anyGlow = next(glows) ~= nil
     menu.more:SetShown(anyGlow)
     if anyGlow then menu.more:ClearAllPoints(); menu.more:SetPoint("TOPLEFT", PAD, y - 8); y = y - 38 end
     menu:SetHeight(-y + 14)
     self:RefreshGlowPopout()
+    self:RefreshTextPopout()
 end

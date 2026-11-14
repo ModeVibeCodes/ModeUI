@@ -12,10 +12,10 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- spells taken out of Blizzard's viewers. See docs/COOLDOWN_MANAGER.md.
 -- Resource Bars (your health, power, a Druid's mana in forms and combo
 -- points) live here too, in the same window: see ResourceInit.lua.
--- Files: Init (this), ResourceInit, Migrations, Driver, Custom, Blizzard,
--- Layout, Skin, Bars, Text, Glow, Visibility, Resources, ResourceUpdate,
--- SpellMenu, Picker, Preview, ResourcePreview, Settings, SettingsTabs,
--- ResourceSettings, Window.
+-- Files: Init (this), ResourceInit, Migrations, Driver, Custom, Spells,
+-- Items, Blizzard, Layout, Skin, Bars, Text, Glow, Visibility, Resources,
+-- ResourceUpdate, SpellMenu, GlowPopout, TextPopout, Picker, Preview,
+-- ResourcePreview, Settings, SettingsTabs, ResourceSettings, Window.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Cooldown Manager"], standalone = true, defaultEnabled = false,
     configDescription = L["Blizzard's Cooldown Manager in the Mode look, with custom bars of your own."],
@@ -53,6 +53,10 @@ M.customKinds = {
     cooldown = { label = "Cooldown Bar", sources = { "essential", "utility" } },
     buff = { label = "Buff Bar", sources = { "buffIcon" }, buff = true },
 }
+-- Essential and Utility take spells too (owner, November 14, 2026): from
+-- each other or a custom bar, by Spell ID and items; the viewers each
+-- takes spells from, its own first.
+M.entryViewers = { essential = { "essential", "utility" }, utility = { "utility", "essential" } }
 M.MAX_CUSTOM, M.MAX_ENTRIES, M.MAX_NAME = 10, 40, 32
 
 -- Element (and saved position) IDs and frame names.
@@ -163,7 +167,8 @@ M.styleDefaults = {
 M.customDefaults = { cooldown = Style({ 42, 34 }, 8, "down"), buff = Style({ 36, 28 }, 8, "up", true) }
 -- Version 3's default sizes, which move to version 4's (sizes chosen by hand stay).
 M.oldSizes = { essential = { 42, 36 }, utility = { 35, 30 }, buffIcon = { 35, 30 }, cooldown = { 42, 36 }, buff = { 35, 30 } }
-M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1 }
+-- extras: the spells Essential and Utility took themselves (Custom.lua).
+M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1, extras = { essential = {}, utility = {} } }
 for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[viewer]) end
 
 -- Keys Copy Style leaves alone: whether and when a bar shows, its shape,
@@ -213,8 +218,10 @@ M.choices = {
     iconSide = { { id = "left", label = "Left" }, { id = "right", label = "Right" } },
 }
 for _, part in ipairs(M.textParts) do M.choices[part .. "Anchor"] = M.anchors end
--- Per-spell settings: hide (true while hidden), and each glow while it's on
+-- Per-spell settings: hide (true while hidden), each glow while it's on
 -- ({ style, color, pulse, lines, thickness }; the off-cooldown glow also mode
--- and duration).
-M.spellKinds = { hide = true, proc = "glow", active = "glow", ready = "glow", buff = "glow" }
+-- and duration), and text, the spell's own look per text (Text.lua).
+M.spellKinds = { hide = true, proc = "glow", active = "glow", ready = "glow", buff = "glow", text = "text" }
+M.outlineChoices = { { id = "none", label = "None" }, { id = "outline", label = "Outline" }, { id = "thick", label = "Thick" } }
+M.textFields = { show = true, size = true, anchor = true, x = true, y = true, color = true, font = true, fontMedia = true, outline = true, shadow = true }
 M.glowRanges = { lines = { 2, 16, 1 }, thickness = { 1, 4, 1 }, duration = { 1, 10, 1 } }

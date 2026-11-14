@@ -2,17 +2,20 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- The + slot's list, as grids of icons in up to three sections:
---   Tracked in Blizzard CDM  what the custom bar can take from Blizzard's
---       Cooldown Manager (Essential and Utility cooldowns for a Cooldown Bar,
---       Tracked Buffs and Bars for a Buff Bar); clicking adds it (a spell on
---       another custom bar moves).
+-- The + slot's list (custom bars, Essential and Utility), as grids of
+-- icons in up to three sections:
+--   Tracked in Blizzard CDM  what the bar can take from Blizzard's Cooldown
+--       Manager (Essential and Utility cooldowns for a Cooldown Bar and for
+--       Essential and Utility themselves, Tracked Buffs and Bars for a Buff
+--       Bar); clicking adds it (a spell on another bar moves). A spell
+--       removed from this bar shows here too; clicking brings it back.
 --   Not in Blizzard CDM  every other spell the game has for your class and
---       spec there, learned or not, grayed. On a Cooldown Bar clicking one
+--       spec there, learned or not, grayed. On a cooldown bar clicking one
 --       adds it as a custom spell (its own icon, shown while you know it); a
 --       buff can only show once Blizzard's Cooldown Manager tracks it.
---   Items in Your Bags  (Cooldown Bars) what you carry with a Use: effect.
--- Then, on Cooldown Bars, Spell ID (a spell you know) and Item ID fields.
+--   Items in Your Bags  (cooldown bars) what you carry with a Use: effect.
+-- Then, on cooldown bars, Spell ID (a spell you know) and Item ID fields.
+-- "Cooldown bars" here: Cooldown Bars, Essential and Utility.
 -- Pointing at an icon names it and says what a click does. It stays open to
 -- add several, and closes on a click elsewhere, the close button, or combat.
 local W, T, L, Kit = addon.ConfigWidgets, addon.InterfaceTheme, addon.L, addon.Kit
@@ -123,7 +126,7 @@ end
 
 function M:OpenPicker(view, anchor)
     local id = self:PreviewViewer()
-    if not self:IsCustom(id) then return false end
+    if not self:TakesEntries(id) then return false end
     local picker = self:Picker()
     if self.spellMenu then self.spellMenu:Hide() end
     if picker.barId ~= id then
@@ -141,17 +144,16 @@ end
 -- show in any of its viewers now, without those on the bar already:
 -- { key, spell, known }.
 function M:UntrackedCandidates(id)
-    local bar = self:Custom(id)
     local list, here, tracked = {}, {}, {}
-    if not bar then return list end
-    for _, key in ipairs(bar.entries) do here[key] = true end
+    if not self:TakesEntries(id) then return list end
+    for _, key in ipairs(self:Entries(id)) do here[key] = true end
     for viewer in pairs(Cooldowns.VIEWERS) do
         for _, item in ipairs(self:Items(viewer)) do
             local key = self:SpellKey(item)
             if key then tracked[key] = true end
         end
     end
-    for _, entry in ipairs(Cooldowns.ClassCooldowns(CATEGORIES[bar.kind] or {})) do
+    for _, entry in ipairs(Cooldowns.ClassCooldowns(CATEGORIES[self:TakesOwn(id) and "cooldown" or "buff"])) do
         local key = string.format("%d", entry.cooldownID)
         if not tracked[key] and not here[key] and not here["s" .. entry.spellID] then
             list[#list + 1] = { key = key, spell = entry.spellID, known = entry.known }
@@ -180,23 +182,30 @@ function M:RefreshPicker(keepResult)
     local picker = self.picker
     if not picker or not picker:IsShown() or not self:HasBar(picker.barId) then return end
     local id = picker.barId
-    local custom = self:Custom(id)
-    local cooldownBar = custom.kind == "cooldown"
-    local here, tracked = {}, {}
-    for _, key in ipairs(custom.entries) do here[key] = true end
+    if not self:TakesEntries(id) then picker:Hide(); return end
+    local cooldownBar = self:TakesOwn(id)
+    local tracked = {}
+    -- What shows elsewhere, and what was removed from this bar.
     for _, candidate in ipairs(self:Candidates(id)) do
-        if not here[candidate.key] then tracked[#tracked + 1] = candidate end
+        if candidate.owner ~= id or self:SpellSwitch(id, candidate.key, "hide") then tracked[#tracked + 1] = candidate end
     end
-    picker.title:SetText(string.format(L["Add to %s"], custom.name))
+    picker.title:SetText(string.format(L["Add to %s"], self:Label(id)))
     picker.hover:SetText(L[HINT])
     local y, used = -58, 0
     y = Section(picker, picker.headings[1], tracked, y, used, function(button, candidate)
         button.icon:SetTexture(candidate.icon or 134400)
-        local other = self:IsCustom(candidate.owner)
-        button.icon:SetDesaturated(other); button.icon:SetAlpha(1)
-        button.where = other and string.format(L["%s · on %s (moves here)"], candidate.name, self:Label(candidate.owner))
-            or string.format(L["%s · in %s"], candidate.name, self:Label(candidate.owner))
-        button.key, button.add = candidate.key, function() return M:AddEntry(id, candidate.key) end
+        local back = candidate.owner == id
+        local other = not back and candidate.owner ~= candidate.source
+        button.icon:SetDesaturated(other or back); button.icon:SetAlpha(back and 0.6 or 1)
+        button.key = candidate.key
+        if back then
+            button.where = string.format(L["%s · removed from this bar (shows again)"], candidate.name)
+            button.add = function() return M:SetSpellSwitch(id, candidate.key, "hide", false) end
+        else
+            button.where = other and string.format(L["%s · on %s (moves here)"], candidate.name, self:Label(candidate.owner))
+                or string.format(L["%s · in %s"], candidate.name, self:Label(candidate.owner))
+            button.add = function() return M:AddEntry(id, candidate.key) end
+        end
     end)
     used = used + #tracked
     picker.empty:SetShown(#tracked == 0)

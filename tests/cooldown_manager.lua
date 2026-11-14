@@ -349,9 +349,62 @@ world.run([==[
     assert(picker.idResult.text == 'No spell has that ID.', 'says why not')
     assert(view.icons[1].key == 's9001' and view.icons[1].Icon.texture == 'icon:9001', 'custom spells in the preview')
     picker:Hide()
+    -- Essential and Utility take spells through their + too.
     M:SelectBar('essential')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
-    assert(cdmToggles == 1, "a viewer's + opens Blizzard's Cooldown Manager")
+    local function Find(key)
+        for _, button in ipairs(picker.buttons) do if button:IsShown() and button.key == key then return button end end
+    end
+    assert(picker:IsShown() and picker.title.text == 'Add to Essential Cooldowns' and cdmToggles == 0, "Essential's + lists what it can take")
+    assert(Find('202') and not Find('101') and picker.spellRow:IsShown() and picker.itemRow:IsShown(), 'Utility spells; Spell ID and Item ID')
+    Find('202').scripts.OnClick(Find('202'))
+    local util = ItemsOf(utility)
+    local moved = util[1].cooldownID == 202 and util[1] or util[2]
+    assert(M.db.extras.essential[1] == '202' and Point(moved)[2] == holder, 'a Utility spell moves to Essential')
+    assert(view.icons[1].key == '101' and view.icons[6].key == '202', 'its own spells first, then what it took')
+    picker.itemRow.input:SetText('5512'); picker.itemRow.add.scripts.OnClick(picker.itemRow.add)
+    assert(M.db.extras.essential[2] == 'i5512' and M.spellIcons.essential.i5512:IsShown(), 'an item on Essential')
+    picker:Hide()
+    assert(M:RemoveEntry('essential', '104') and M:SpellSwitch('essential', '104', 'hide') and #M.db.extras.essential == 2, "removing its own spell hides it")
+    view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
+    local back = Find('104')
+    assert(back and back.where:find('removed from this bar', 1, true), 'listed to bring back')
+    back.scripts.OnClick(back)
+    assert(not M:SpellSwitch('essential', '104', 'hide'), 'shows again')
+    picker:Hide()
+    assert(M:RemoveEntry('essential', '202') and Point(moved)[2] == M.holders.utility, 'back to Utility')
+    assert(M:RemoveEntry('essential', 'i5512') and #M.db.extras.essential == 0 and not M.spellIcons.essential.i5512)
+    -- A spell's own text look from its menu's Text row.
+    view.icons[1].scripts.OnMouseUp(view.icons[1], 'LeftButton')
+    assert(menu:IsShown() and menu.textRows.cooldown.more:IsShown() and menu.textRows.count.more:IsShown() and not menu.textRows.name.more:IsShown())
+    assert(menu.remove:IsShown() and not menu.earlier:IsShown(), "Remove from Bar on Essential; no order for Blizzard's own")
+    menu.textRows.count.more.scripts.OnClick(menu.textRows.count.more)
+    local text = M.textPopout
+    assert(text:IsShown() and text.part == 'count' and text.title.text == 'Count Text' and view.textPart == 'count' and not text.reset.enabled)
+    assert(view.icons[1].ChargeCount.Current.text == '2', 'the count shows on the spell')
+    text.outlineButtons[3].scripts.OnClick(text.outlineButtons[3])
+    local own = M.db.essential.spells['101'].text.count
+    assert(own.outline == 'thick' and own.size == 12 and own.anchor == 'BOTTOMRIGHT', "starts from the bar's look")
+    local live = ItemsOf(essential)[1].ChargeCount.Current
+    assert(live.font[3] == 'THICKOUTLINE', 'thick outline on the real icon')
+    text.anchorButtons.TOPLEFT.scripts.OnClick(text.anchorButtons.TOPLEFT)
+    assert(Point(live)[1] == 'TOPLEFT' and M:SetSpellText('essential', '101', 'count', 'size', 16) and live.font[2] == 16, 'its place and size')
+    assert(ItemsOf(essential)[2].ChargeCount.Current.font[2] == 12, 'the other spells keep the bar look')
+    assert(menu.textRows.count.label.text:find('own look', 1, true) and text.reset.enabled)
+    text.showBox.scripts.OnClick(text.showBox); assert(live.alpha == 0, 'Show This Text off')
+    assert(not M:SetSpellText('essential', '101', 'count', 'outline', 'double'), 'refused: not an outline')
+    assert(not M:SetSpellText('essential', '101', 'count', 'spin', 1) and not M:SetSpellText('essential', '101', 'name', 'size', 14), 'refused: no such field; icons have no name text')
+    menu.glowBoxes.proc.more.scripts.OnClick(menu.glowBoxes.proc.more)
+    assert(not text:IsShown() and M.glowPopout:IsShown(), 'one popout at a time')
+    menu.textRows.count.more.scripts.OnClick(menu.textRows.count.more)
+    assert(text:IsShown() and not M.glowPopout:IsShown())
+    text.reset.scripts.OnClick(text.reset)
+    assert(M.db.essential.spells['101'] == nil and live.font[2] == 12 and live.font[3] == 'OUTLINE' and live.alpha == 1, "Use Bar's Look")
+    menu:Hide(); assert(not text:IsShown())
+    M:SelectBar('buffIcon')
+    view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
+    assert(cdmToggles == 1, "Tracked Buffs' + opens Blizzard's Cooldown Manager")
+    M:SelectBar('essential')
     window.cdmButton.scripts.OnClick(window.cdmButton); assert(cdmToggles == 2, 'Open CDM')
     -- Edit Mode steps the window aside and brings it back, not ModeUI's.
     window.editButton.scripts.OnClick(window.editButton)
@@ -459,5 +512,26 @@ Refused(function(db) db.customBars[1].entries = { "12", "12" } end, "custom entr
 Refused(function(db) db.customBars[2].entries = { "s9001" } end, "a spell by ID on a Buff Bar")
 Refused(function(db) db.customBars[1].entries = { "x9001" } end, "a bad spell key")
 Refused(function(db) db.customBars[2].entries = { "i5512" } end, "an item on a Buff Bar")
+Refused(function(db) db.extras.buffIcon = { "302" } end, "spells taken by Tracked Buffs")
+Refused(function(db) db.extras.essential = { "s9001", "s9001" } end, "Essential's spells twice")
+local function Text(look) return { ["101"] = { text = { count = look } } } end
+local function Copy(t) local c = {}; for k, v in pairs(t) do c[k] = type(v) == "table" and Copy(v) or v end; return c end
+local good = { show = true, size = 12, anchor = "TOP", x = 0, y = 0, color = { 1, 1, 1 }, font = "game", fontMedia = "Expressway", outline = "thick", shadow = true }
+-- A spell's own text and Essential's own spells load back.
+do
+    local saved = restored.saved()
+    local db = saved.profiles.Default.modules.cooldownManager
+    db.essential.spells = Text(Copy(good)); db.extras.essential = { "202", "s9001", "i5512" }
+    local back = H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved })
+    back.run([==[
+        local M = addon.CooldownManager
+        assert(M.db.essential.spells['101'].text.count.outline == 'thick' and M.db.extras.essential[3] == 'i5512', 'kept')
+        assert(ItemsOf(EssentialCooldownViewer)[1].ChargeCount.Current.font[3] == 'THICKOUTLINE', 'drawn with its own look')
+        assert(Point(ItemsOf(UtilityCooldownViewer)[2])[2] == M.holders.essential, 'Utility spell on Essential after a reload')
+    ]==], "cooldown manager reload")
+end
+Refused(function(db) local look = Copy(good); look.outline = "double"; db.essential.spells = Text(look) end, "a text outline")
+Refused(function(db) local look = Copy(good); look.size = 90; db.essential.spells = Text(look) end, "a text size")
+Refused(function(db) db.essential.spells = { ["101"] = { text = { bogus = good } } } end, "a text part")
 
 print("cooldown manager: all checks passed")

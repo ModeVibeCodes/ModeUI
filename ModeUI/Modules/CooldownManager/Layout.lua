@@ -162,29 +162,32 @@ end
 -- on this bar, minus spells switched off here and items Blizzard hides (an
 -- inactive buff with Hide When Inactive). A shown state the game keeps
 -- secret counts as shown. Blizzard's own Edit Mode fills empty items with
--- sample icons; those count on its viewers.
+-- sample icons; those count on its viewers. A viewer's own spells come
+-- first, in Blizzard's order, then the bar's own list in its order (all of
+-- a custom bar's spells).
 function M:Placed(id)
-    local placed, parked = {}, {}
-    local custom = self:Custom(id)
+    local placed, listed, parked = {}, {}, {}
     local order = {}
-    if custom then for index, key in ipairs(custom.entries) do order[key] = index end end
+    for index, key in ipairs(self:Entries(id)) do order[key] = index end
     for _, viewer in ipairs(self:Sources(id)) do
         for _, item in ipairs(self:Items(viewer)) do
             local key = self:SpellKey(item)
             local shown = Cooldowns.Shown(item)
-            if (key and self:Owner(item) == id) or (not key and not custom and shown == true) then
+            if (key and self:Owner(item) == id) or (not key and viewer == id and shown == true) then
                 if key and self:SpellSwitch(id, key, "hide") then parked[#parked + 1] = item
-                elseif shown ~= false then placed[#placed + 1] = item end
+                elseif shown ~= false then
+                    local list = key and order[key] and listed or placed
+                    list[#list + 1] = item
+                end
             end
         end
     end
-    -- A custom bar's spells by ID, on ModeUI's own icons.
+    -- Spells by ID and items, on ModeUI's own icons.
     for _, icon in ipairs(self:SpellIcons(id)) do
-        if self:SpellSwitch(id, self:SpellKey(icon), "hide") then parked[#parked + 1] = icon else placed[#placed + 1] = icon end
+        if self:SpellSwitch(id, self:SpellKey(icon), "hide") then parked[#parked + 1] = icon else listed[#listed + 1] = icon end
     end
-    if custom then
-        table.sort(placed, function(a, b) return (order[self:SpellKey(a)] or 0) < (order[self:SpellKey(b)] or 0) end)
-    end
+    table.sort(listed, function(a, b) return (order[self:SpellKey(a)] or 0) < (order[self:SpellKey(b)] or 0) end)
+    for _, item in ipairs(listed) do placed[#placed + 1] = item end
     return placed, parked
 end
 

@@ -7,8 +7,8 @@ if not M then return end
 -- and names come from the game's spell data, by cooldown ID). Spells hidden
 -- here show faded, so they can be brought back; a custom bar's spell that
 -- isn't tracked now shows faded too. Icon bars end with a + slot: on a
--- custom bar it lists the spells you track to add one (Picker.lua), on a
--- viewer it opens Blizzard's Cooldown Manager. With nothing tracked yet,
+-- custom bar, Essential or Utility it lists the spells to add (Picker.lua),
+-- on Tracked Buffs it opens Blizzard's Cooldown Manager. With nothing tracked yet,
 -- sample icons stand in on a viewer. Clicking a spell opens its menu
 -- (SpellMenu.lua); while you edit the Cooldown text a sample cooldown runs
 -- on the first icon.
@@ -38,21 +38,22 @@ function M:PreviewEntries(id)
         entries[#entries + 1] = { key = key, icon = self:EntryIcon(key) or SAMPLE_ICON, name = self:SpellLabel(key),
             faded = self:SpellSwitch(id, key, "hide") or not present, missing = not present }
     end
-    local custom = self:Custom(id)
-    if custom then
-        for _, item in ipairs(self:BarItems(id)) do local key = self:SpellKey(item); if key then tracked[key] = true end end
-        for _, key in ipairs(custom.entries) do
-            -- A custom spell counts as present while you know it; an item always.
-            if self.IsItemEntry(key) then Entry(key, true)
-            elseif self.IsSpellEntry(key) then Entry(key, Cooldowns.Known(self:SpellOf(key))) else Entry(key, tracked[key] == true) end
-        end
-        return entries, true
-    end
+    -- A viewer's own spells first (Blizzard's order), then the bar's own list.
+    local list, listed = self:Entries(id), {}
+    for _, key in ipairs(list) do listed[key] = true end
     for _, item in ipairs(self:BarItems(id)) do
         local key = self:SpellKey(item)
-        if key then Entry(key, true) end
+        if key then
+            tracked[key] = true
+            if not listed[key] then Entry(key, true) end
+        end
     end
-    if #entries > 0 then return entries, true end
+    for _, key in ipairs(list) do
+        -- A custom spell counts as present while you know it; an item always.
+        if self.IsItemEntry(key) then Entry(key, true)
+        elseif self.IsSpellEntry(key) then Entry(key, Cooldowns.Known(self:SpellOf(key))) else Entry(key, tracked[key] == true) end
+    end
+    if #entries > 0 or self:IsCustom(id) then return entries, true end
     for i = 1, SAMPLE_COUNT do entries[i] = { icon = SAMPLE_ICON, name = string.format(L["Sample %d"], i) } end
     return entries, false
 end
@@ -106,7 +107,7 @@ local function Plus(view)
     plus:SetScript("OnMouseUp", function(_, mouse)
         if mouse ~= nil and mouse ~= "LeftButton" then return end
         local id = M:PreviewViewer()
-        if M:IsCustom(id) then M:OpenPicker(view, plus) else M:OpenCooldownSettings() end
+        if M:TakesEntries(id) then M:OpenPicker(view, plus) else M:OpenCooldownSettings() end
     end)
     view.plus = plus
     return plus
@@ -119,21 +120,22 @@ local function PlaceCross(plus, g)
     plus.bars[2]:ClearAllPoints(); plus.bars[2]:SetPoint("CENTER"); plus.bars[2]:SetSize(thick, arm)
 end
 
--- Fills one sample: icon, texts, a sample cooldown or bar fill.
-local function Fill(sample, entry, index, bar, demo, phase)
+-- Fills one sample: icon, texts, a sample cooldown or bar fill. `focus`:
+-- the text whose popout is open on this spell, which shows on it.
+local function Fill(sample, entry, index, bar, demo, phase, focus)
     local icon = bar and sample.Icon.Icon or sample.Icon
     icon:SetTexture(entry.icon)
-    sample.key = entry.key
+    local count = (index == 1 or focus == "count") and "2" or ""
     if bar then
         sample.Bar:SetValue(index == 1 and 0.65 or math.max(0.15, 1 - index * 0.17))
         sample.Bar.Name:SetText(entry.name)
         sample.Bar.Duration:SetText(string.format("%d", 4 + index * 3))
-        sample.Icon.Applications:SetText(index == 1 and "2" or "")
+        sample.Icon.Applications:SetText(count)
         return
     end
-    sample.ChargeCount.Current:SetText(index == 1 and "2" or "")
+    sample.ChargeCount.Current:SetText(count)
     local cooldown = sample.Cooldown
-    if demo and index == 1 then
+    if (demo and index == 1) or focus == "cooldown" then
         local elapsed = phase and phase % SAMPLE_COOLDOWN or STATIC_ELAPSED
         cooldown:SetCooldown(GetTime() - elapsed, SAMPLE_COOLDOWN); cooldown:Show()
         sample.cooldownText:SetText(string.format("%d", math.ceil(SAMPLE_COOLDOWN - elapsed)))
@@ -175,9 +177,11 @@ function M:RenderPreview(view)
         local state = self:Dress(sample)
         state.viewer, state.g = id, g
         self.Place(sample, view.holder, g, index)
+        sample.key = entry.key
         if bar then self:SkinBar(sample, style, g, state) else self:SkinIcon(sample, style, g, state) end
-        self:StyleTexts(id, sample, style, g)
-        Fill(sample, entry, index, bar, demo, phase)
+        self:StyleTexts(id, sample, style, g, entry.key or false)
+        local focus = view.menuKey ~= nil and entry.key == view.menuKey and view.textPart or nil
+        Fill(sample, entry, index, bar, demo, phase, focus)
         if sample.Icon.SetDesaturated then sample.Icon:SetDesaturated(entry.missing == true) end
         PreviewGlow(view, sample, id, style)
         sample:SetAlpha(entry.faded and FADED or 1)

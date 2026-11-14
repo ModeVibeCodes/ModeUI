@@ -218,7 +218,7 @@ function M:BuildBarTab(ui)
             page.cooldownSettingsButton:SetPoint("LEFT")
             page.cooldownSettingsButton:SetScript("OnClick", function() M:OpenCooldownSettings() end)
             ui.Refresh(function() page.cooldownSettingsButton:SetEnabled(M:CanOpenCooldownSettings()) end)
-            ui.Note("Which spells each viewer tracks, and their order, are set in Blizzard's Cooldown Manager. Blizzard's Edit Mode options for a viewer still decide Visibility, Hide When Inactive, Show Timer, Show Tooltips and, for bars, Bar Content; its size, padding and icon limit are ModeUI's.", 64)
+            ui.Note("Which spells each viewer tracks, and their order, are set in Blizzard's Cooldown Manager. Blizzard's Edit Mode options for a viewer still decide Visibility, Hide When Inactive, Show Timer, Show Tooltips and, for bars, Bar Content; its size, padding and icon limit are ModeUI's. On Essential and Utility the + slot in the preview also takes spells from the other viewer or a custom bar, spells by ID and items.", 80)
         end)
     end)
 end
