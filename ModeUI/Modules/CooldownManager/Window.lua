@@ -6,8 +6,10 @@ if not M then return end
 -- Module Settings) and built the first time it opens. ModeUI's Mode look on
 -- the shared settings widgets: a header with the title and Open CDM (Blizzard's
 -- Cooldown Settings), Edit Mode and close; a list of bars on the left
--- (Blizzard's four viewers, your resource bars, then your custom bars and
--- buttons to add more); on the right the page header with the module's
+-- (Spells and Abilities: Blizzard's four viewers; Cooldown Bars and Buff
+-- Bars: your custom bars, each heading with + to add one and each bar with
+-- - to delete it after a confirmation; then Resource Bars); on the right the
+-- page header with the module's
 -- on/off switch, and the settings of the bar chosen in the list: the
 -- cooldown page (Settings.lua) or the resource bar page
 -- (ResourceSettings.lua). Edit Mode hides it and brings it back afterward
@@ -126,12 +128,16 @@ function M:CreateWindow()
         addon.Media:BindInterfaceFont(label, GameFontHighlight, T.fontSize.group, nil, "heading")
         return label
     end
-    window.blizzardCaption, window.customCaption = Caption(L["Blizzard"]), Caption(L["Custom Bars"])
-    window.resourceCaption = Caption(L["Resource Bars"])
-    window.addCooldown = W.Button(list, L["+ Cooldown Bar"], LIST_WIDTH - 24, 28, "secondary")
-    window.addCooldown:SetScript("OnClick", function() local id = M:AddCustomBar("cooldown"); if id then M:SelectBar(id) end end)
-    window.addBuff = W.Button(list, L["+ Buff Bar"], LIST_WIDTH - 24, 28, "secondary")
-    window.addBuff:SetScript("OnClick", function() local id = M:AddCustomBar("buff"); if id then M:SelectBar(id) end end)
+    window.blizzardCaption, window.resourceCaption = Caption(L["Spells and Abilities"]), Caption(L["Resource Bars"])
+    window.cooldownCaption, window.buffCaption = Caption(L["Cooldown Bars"]), Caption(L["Buff Bars"])
+    -- + on the right of a custom heading adds a bar of that kind.
+    local function Add(caption, kind)
+        local button = W.Button(list, "+", 22, 20, "quiet")
+        button:SetPoint("RIGHT", caption, "RIGHT", 0, 0)
+        button:SetScript("OnClick", function() local id = M:AddCustomBar(kind); if id then M:SelectBar(id) end end)
+        return button
+    end
+    window.addCooldown, window.addBuff = Add(window.cooldownCaption, "cooldown"), Add(window.buffCaption, "buff")
 
     -- The body: the page header (title and on/off switch), then the page.
     local body = CreateFrame("Frame", nil, window)
@@ -176,34 +182,50 @@ function M:CreateWindow()
     addon:RegisterSettingsWindow(window)
 end
 
--- One row per bar: Blizzard's viewers, your resource bars, then the custom
--- bars, then the add buttons (gone once there are MAX_CUSTOM). Off bars say
--- so. A long list packs its rows closer to fit the window.
+-- Asks before deleting a custom bar; its spells go back to their viewers.
+function M:ConfirmDelete(id)
+    local bar = self:Custom(id)
+    if not bar then return false end
+    return W.Confirm(string.format(L["Delete %s?"], bar.name),
+        L["Its spells go back to their Blizzard viewers, and its settings and place are forgotten. This can't be undone."],
+        L["Delete Bar"], function() if M:DeleteCustomBar(id) and M.selectedBar == id then M:SelectBar("essential") end end)
+end
+
+-- The list: Spells and Abilities (Blizzard's viewers), Cooldown Bars and
+-- Buff Bars (your custom bars, + on each heading, - on each bar), then
+-- Resource Bars. Off bars say so. A long list packs its rows closer.
 function M:RefreshList()
     local window = self.window
     if not window then return end
     local list, rows, y = window.list, window.rows, 0
     local room = #self.db.customBars < self.MAX_CUSTOM
     local count = #self.viewers + #self.resources + #self.db.customBars
-    local fixed = 3 * 24 + 2 * 12 + (room and 4 + 2 * 34 or 0)
+    local fixed = 4 * 24 + 3 * 12
     local step = math.max(24, math.min(ROW, math.floor((HEIGHT - HEADER_HEIGHT - 22 - fixed) / count)))
     local function Row(index, id, resource)
         local row = rows[index]
         if not row then
             row = W.Button(list, "", LIST_WIDTH - 24, 30, "tab")
-            row.label:ClearAllPoints(); row.label:SetPoint("LEFT", 10, 0); row.label:SetPoint("RIGHT", -40, 0)
+            row.label:ClearAllPoints(); row.label:SetPoint("LEFT", 10, 0); row.label:SetPoint("RIGHT", -62, 0)
             row.label:SetJustifyH("LEFT"); row.label:SetWordWrap(false)
             row.status = W.Label(row, "", nil, 0, 0, 34, T.muted)
-            row.status:ClearAllPoints(); row.status:SetPoint("RIGHT", -10, 0); row.status:SetJustifyH("RIGHT")
+            row.status:SetJustifyH("RIGHT")
             row:SetScript("OnClick", function()
                 if row.resource then M:SelectResource(row.barId) else M:SelectBar(row.barId) end
             end)
+            -- - deletes a custom bar, after asking.
+            row.delete = W.Button(row, "-", 22, 20, "quiet")
+            row.delete:SetPoint("RIGHT", -4, 0)
+            row.delete:SetScript("OnClick", function() M:ConfirmDelete(row.barId) end)
             rows[index] = row
         end
         row.barId, row.resource = id, resource
         local style = resource and self.db.resources[id] or self.db[id]
+        local custom = not resource and self:IsCustom(id)
         row.label:SetText(resource and self:ResourceLabel(id) or self:Label(id))
         row.status:SetText(style.show and "" or L["Off"])
+        row.status:ClearAllPoints(); row.status:SetPoint("RIGHT", custom and -30 or -10, 0)
+        row.delete:SetShown(custom); row.delete:SetEnabled(self:CanConfigure())
         if resource then row:SetSelected(id == self.selectedResource)
         else row:SetSelected(not self:IsResource(self.selectedResource) and id == self.selectedBar) end
         row:SetHeight(step - 2)
@@ -217,20 +239,52 @@ function M:RefreshList()
     local index = 0
     Place(window.blizzardCaption, 24)
     for _, viewer in ipairs(self.viewers) do index = index + 1; Row(index, viewer) end
+    for _, kind in ipairs({ "cooldown", "buff" }) do
+        y = y + 12
+        Place(kind == "cooldown" and window.cooldownCaption or window.buffCaption, 24)
+        for _, bar in ipairs(self.db.customBars) do
+            if bar.kind == kind then index = index + 1; Row(index, bar.id) end
+        end
+    end
     y = y + 12
     Place(window.resourceCaption, 24)
     for _, id in ipairs(self.resources) do index = index + 1; Row(index, id, true) end
-    y = y + 12
-    Place(window.customCaption, 24)
-    for _, bar in ipairs(self.db.customBars) do index = index + 1; Row(index, bar.id) end
     for i = index + 1, #rows do rows[i]:Hide() end
-    window.addCooldown:SetShown(room); window.addBuff:SetShown(room)
-    if room then
-        y = y + 4
-        Place(window.addCooldown, 34); Place(window.addBuff, 34)
-    end
-    local configurable = self:CanConfigure()
-    window.addCooldown:SetEnabled(configurable); window.addBuff:SetEnabled(configurable)
+    local add = room and self:CanConfigure()
+    window.addCooldown:SetEnabled(add); window.addBuff:SetEnabled(add)
+end
+
+-- Editing, at the top right of a page's preview (like Action Bars): every
+-- bar and resource bar in one list, and the one shown now.
+function M:EditingChoices()
+    local list = {}
+    for _, id in ipairs(self:BarIds()) do list[#list + 1] = { id = id, label = self:Label(id) } end
+    for _, id in ipairs(self.resources) do list[#list + 1] = { id = "resource:" .. id, label = self:ResourceLabel(id) } end
+    return list
+end
+function M:EditingValue()
+    if self:IsResource(self.selectedResource) then return "resource:" .. self.selectedResource, self:ResourceLabel(self.selectedResource) end
+    local id = self.selectedBar or "essential"
+    return id, self:Label(id)
+end
+function M:SelectEditing(value)
+    local resource = type(value) == "string" and value:match("^resource:(.+)$")
+    if resource then return self:SelectResource(resource) end
+    return self:SelectBar(value)
+end
+function M:AddEditingCorner(page)
+    if not page.previewArea then return end
+    local corner = CreateFrame("Frame", nil, page.previewArea)
+    corner:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); corner:SetSize(300, 28)
+    local select = W.Select(corner, 210, function() return M:EditingChoices() end,
+        function() return M:EditingValue() end, function(value) M:SelectEditing(value) end)
+    select:ClearAllPoints(); select:SetPoint("RIGHT", 0, 0)
+    local label = W.Label(corner, L["Editing"], nil, 0, 0, 60, T.muted)
+    label:ClearAllPoints(); label:SetPoint("RIGHT", select, "LEFT", -8, 0); label:SetJustifyH("RIGHT")
+    page.refreshers[#page.refreshers + 1] = function() select:Refresh() end
+    page.editingSelect, page.editingLabel = select, label
+    page.previewReserveRight = 312
+    page:UpdatePreviewLayout()
 end
 
 function M:RefreshWindow()

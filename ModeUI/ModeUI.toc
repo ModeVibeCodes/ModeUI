@@ -41,6 +41,7 @@ Shared\Domain\Nameplate.lua
 Shared\Domain\Auras.lua
 Shared\Domain\DamageMeter.lua
 Shared\Domain\Containers.lua
+Shared\Domain\Items.lua
 Shared\Domain\Cooldowns.lua
 Shared\Kit\Color.lua
 Shared\Kit\Palette.lua
@@ -50,6 +51,7 @@ Shared\Kit\Edges.lua
 Shared\Kit\Capsule.lua
 Shared\Kit\Border.lua
 Shared\Kit\Slot.lua
+Shared\Kit\Glows.lua
 Shared\Kit\Points.lua
 Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
@@ -98,6 +100,7 @@ Shared\Settings\FontDropdown.lua
 Shared\Settings\Select.lua
 Shared\Settings\ColorRow.lua
 Shared\Settings\TextInput.lua
+Shared\Settings\Confirm.lua
 Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Sidebar.lua

@@ -7,7 +7,7 @@ if not M then return end
 -- ModeUI's own (no Blizzard frame to borrow), saved in the bar's spells as
 -- "s<spell ID>" beside the cooldown IDs, laid out, skinned and styled like
 -- every other icon on the bar. Shown only while you know the spell (or what
--- replaces it now).
+-- replaces it now). Items ("i<item ID>", Items.lua) use the same icons.
 --
 -- Secret-safe by construction: the cooldown and recharge come as duration
 -- objects (C_Spell.GetSpellCooldownDuration/GetSpellChargeDuration) that go
@@ -29,6 +29,7 @@ function M.IsSpellEntry(key) return type(key) == "string" and key:match("^s%d+$"
 -- The spell an entry is about: a custom spell's own ID, or the spell a
 -- cooldown ID casts now.
 function M:SpellOf(key)
+    if self.IsItemEntry(key) then return nil end
     if self.IsSpellEntry(key) then return tonumber(key:sub(2)) end
     return Cooldowns.SpellID(tonumber(key))
 end
@@ -46,14 +47,18 @@ function M:IsOwnIcon(item) return self.iconKey[item] ~= nil end
 -- Blizzard's items and ModeUI's own icons alike.
 function M:IsLive(item) return self.sourceOf[item] ~= nil or self.iconKey[item] ~= nil end
 
--- Adds a spell by its ID (text, as typed) to a custom Cooldown Bar.
--- Returns true and the spell ID, or false and why.
-function M:AddCustomSpell(id, text)
+-- Adds a spell by its ID (a number, or text as typed) to a custom Cooldown
+-- Bar: one you know, or (unlearned) one of your class's spells in the + slot's
+-- list. Returns true and the spell ID, or false and why.
+function M:AddCustomSpell(id, text, classSpell)
     local bar, index = self:Custom(id)
     if not bar or bar.kind ~= "cooldown" then return false, L["Spells by ID go on Cooldown Bars."] end
     if not self:CanConfigure() then return false, L["Not in combat."] end
-    local spellID = tonumber(type(text) == "string" and text:match("^%s*(%d+)%s*$") or nil)
+    local spellID = type(text) == "number" and text or tonumber(type(text) == "string" and text:match("^%s*(%d+)%s*$") or nil)
     if not spellID or not Cooldowns.SpellExists(spellID) then return false, L["No spell has that ID."] end
+    -- A spell your character doesn't have would never show (Thistle Tea as a
+    -- spell on a priest, say); the item of the same name goes in by Item ID.
+    if not classSpell and not Cooldowns.Known(spellID) then return false, L["You don't know that spell. An item? Add it by Item ID."] end
     local key = "s" .. spellID
     for _, entry in ipairs(bar.entries) do if entry == key then return false, L["That spell is on this bar already."] end end
     if #bar.entries >= self.MAX_ENTRIES then return false, L["This bar is full."] end
@@ -83,7 +88,11 @@ function M:SpellIcon(id, key)
         local tooltip = _G.GameTooltip
         if not tooltip or type(tooltip.SetSpellByID) ~= "function" then return end
         tooltip:SetOwner(frame, "ANCHOR_RIGHT")
-        tooltip:SetSpellByID(Cooldowns.Override(M:SpellOf(key)))
+        local item = M.ItemOf(key)
+        if item then
+            if type(tooltip.SetItemByID) ~= "function" then return end
+            tooltip:SetItemByID(item)
+        else tooltip:SetSpellByID(Cooldowns.Override(M:SpellOf(key))) end
         tooltip:Show()
     end)
     icon:SetScript("OnLeave", function() if _G.GameTooltip then _G.GameTooltip:Hide() end end)
@@ -109,16 +118,16 @@ function M:SyncSpellIcons()
     end
 end
 
--- A custom bar's custom spells, in its order, split into those to show and
--- those you don't know (hidden).
+-- A custom bar's own icons (custom spells and items), in its order, split
+-- into those to show and spells you don't know (hidden).
 function M:SpellIcons(id)
     local list = {}
     local bar = self:Custom(id)
     if not bar or not self.built then return list end
     for _, key in ipairs(bar.entries) do
-        if self.IsSpellEntry(key) then
+        if self.IsOwnEntry(key) then
             local icon = self:SpellIcon(id, key)
-            if Cooldowns.Known(self:SpellOf(key)) then list[#list + 1] = icon else icon:Hide() end
+            if self.IsItemEntry(key) or Cooldowns.Known(self:SpellOf(key)) then list[#list + 1] = icon else icon:Hide() end
         end
     end
     return list
@@ -130,6 +139,7 @@ function M:UpdateSpellIcon(icon)
     local id, key = self.iconBar[icon], self.iconKey[icon]
     local style = id and self.db[id]
     if not style then return end
+    if self.IsItemEntry(key) then self:UpdateItemIcon(icon, style); return end
     local spell = Cooldowns.Override(self:SpellOf(key))
     icon.Icon:SetTexture(Cooldowns.SpellIcon(spell) or 134400)
     local cooling = Cooldowns.Cooling(spell)
@@ -159,7 +169,7 @@ function M:SpellProc(spellID, on)
     for _, icons in pairs(self.spellIcons) do
         for key, icon in pairs(icons) do
             local spell = self:SpellOf(key)
-            if spell == spellID or Cooldowns.Override(spell) == spellID then
+            if spell and spell == spellID or spell and Cooldowns.Override(spell) == spellID then
                 self.procs[icon] = on or nil
                 self:ApplyGlows(icon)
             end

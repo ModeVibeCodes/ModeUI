@@ -14,7 +14,10 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 -- with ModeUI's other modules, but its window waits for /mcdm.
 function M:OnInitialize()
     self.Initialize(self.db)
+    -- Set by the version 4 migration, which can only see this module's table.
+    if self.db.movePlaces then self:MovePlaces(); self.db.movePlaces = nil end
     self:RebuildAssignments()
+    self:AddBarTargets()
     -- SharedMedia fonts and bar textures can register after login.
     addon.Media:RegisterFontListener(self, function() if self.active then self:Refresh() end end)
     addon.RegisterMessage(self, addon.Messages.MODULE_TOGGLED, function(_, id)
@@ -45,7 +48,9 @@ function M:OnEnable()
     Events:On(self, "SPELL_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
     -- Custom spells' own icons: charges, picture and usability change with
     -- these; procs light them; learning or losing a spell shows or hides one.
-    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE" }) do
+    -- Items: their cooldowns, counts, and names and icons once loaded.
+    Events:On(self, "BAG_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
+    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE", "BAG_UPDATE_DELAYED", "ITEM_DATA_LOAD_RESULT" }) do
         Events:On(self, event, function() self:UpdateSpellIcons() end)
     end
     Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW", function(_, spellID) self:SpellProc(spellID, true) end)
@@ -186,10 +191,35 @@ function M:SetSpellSwitch(viewer, key, kind, on)
     if not self:Defaults(viewer) or self.spellKinds[kind] == nil or type(key) ~= "string" then return false end
     local spells = Copy(self.db[viewer].spells)
     local entry = spells[key] or {}
-    local stored = self.spellKinds[kind]
-    -- hide stores true while on; the glows store false while off.
-    if (kind == "hide") == (on == true) then entry[kind] = stored else entry[kind] = nil end
+    -- hide stores true while on; a glow switched on starts from the bar's
+    -- look for it (Glows tab) and keeps its own look from then on.
+    if not on then entry[kind] = nil
+    elseif kind == "hide" then entry.hide = true
+    elseif type(entry[kind]) ~= "table" then entry[kind] = self:GlowDefaults(viewer, kind) end
     spells[key] = next(entry) and entry or nil
+    return self:SetOption(viewer, "spells", spells)
+end
+
+-- The look a bar gives a glow when a spell switches it on.
+function M:GlowDefaults(viewer, kind)
+    local style = self.db[viewer]
+    local look = { style = style[kind .. "Glow"], color = Copy(style[kind .. "Color"]), pulse = style[kind .. "Pulse"],
+        lines = style.glowLines, thickness = style.glowThickness }
+    if kind == "ready" then look.mode, look.duration = style.readyMode, style.readyDuration end
+    return look
+end
+
+-- Changes one part of a spell's glow look (style, color, pulse, lines,
+-- thickness; mode and duration for the off-cooldown glow), switching the
+-- glow on first if it was off. Checked by Initialize like every setting.
+function M:SetSpellGlow(viewer, key, kind, field, value)
+    if not self:Defaults(viewer) or self.spellKinds[kind] ~= "glow" or type(key) ~= "string" then return false end
+    local spells = Copy(self.db[viewer].spells)
+    local entry = spells[key] or {}
+    local look = type(entry[kind]) == "table" and entry[kind] or self:GlowDefaults(viewer, kind)
+    look[field] = Copy(value)
+    entry[kind] = look
+    spells[key] = entry
     return self:SetOption(viewer, "spells", spells)
 end
 

@@ -5,10 +5,12 @@ if not M then return end
 -- The preview's spell menu. Clicking a spell in the settings preview opens
 -- the Spells tab and a menu beside it: Show on This Bar, then a switch for
 -- each glow the bar has (Proc, Active and Off Cooldown on cooldown icons;
--- Buff on buff icons), Copy, Paste and Apply to Bar for those switches, and
--- on a custom bar Earlier, Later and Remove from Bar. It stays open while
--- the page scrolls and closes on a click anywhere else, the close button,
--- or combat. While it's open the spell previews its glow.
+-- Buff on buff icons), all off to begin with, each with a > button that
+-- opens its popout (GlowPopout.lua) to set that glow's look; Copy, Paste and
+-- Apply to Bar for the spell's settings; on a custom bar Earlier, Later and
+-- Remove from Bar. It stays open while the page scrolls and closes on a
+-- click anywhere but it, its popout and its icon, the close button, or
+-- combat. While it's open the spell previews its glow.
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local Cooldowns = addon.Domain.Cooldowns
 local WIDTH, PAD, LINE = 304, 14, 28
@@ -16,13 +18,18 @@ local INNER = WIDTH - 2 * PAD
 
 local function Check(menu, label, kind)
     local box = W.Button(menu, "", 24, 24, "checkbox")
-    box.text = W.Label(menu, label, nil, 0, 0, INNER - 34, T.text)
+    box.text = W.Label(menu, label, nil, 0, 0, INNER - 70, T.text)
     box:SetScript("OnClick", function()
         local id = M:PreviewViewer()
         M:SetSpellSwitch(id, menu.key, kind, not M:SpellSwitch(id, menu.key, kind))
         M:RefreshSpellMenu()
     end)
     box.kind = kind
+    -- A glow's > opens its popout.
+    if kind ~= "hide" then
+        box.more = W.Button(menu, ">", 28, 24, "secondary")
+        box.more:SetScript("OnClick", function() M:ToggleGlowPopout(kind, box.more) end)
+    end
     return box
 end
 
@@ -35,7 +42,11 @@ end
 -- A click anywhere outside the menu (and its icon) closes it.
 local function OnEvent(menu, event)
     if event == "PLAYER_REGEN_DISABLED" then menu:Hide(); return end
+    local popout = M.glowPopout
     local over = menu:IsMouseOver() or (menu.anchor and menu.anchor:IsMouseOver())
+        or (popout and popout:IsShown() and popout:IsMouseOver())
+        -- Picking a glow's color in Blizzard's color picker keeps them open.
+        or (ColorPickerFrame and ColorPickerFrame:IsShown() and ColorPickerFrame:IsMouseOver())
     if not (addon.IsPublic(over) and over) then menu:Hide() end
 end
 
@@ -59,7 +70,7 @@ function M:SpellMenu()
     menu.earlier = Action(menu, L["Earlier"], 84, function(id, key) M:MoveEntry(id, key, -1) end)
     menu.later = Action(menu, L["Later"], 84, function(id, key) M:MoveEntry(id, key, 1) end)
     menu.remove = Action(menu, L["Remove from Bar"], INNER - 176, function(id, key) M:RemoveEntry(id, key); menu:Hide() end)
-    menu.more = W.Button(menu, L["All Glow Settings"], INNER, 26, "secondary")
+    menu.more = W.Button(menu, L["Glow Defaults"], INNER, 26, "secondary")
     menu.more:SetScript("OnClick", function() menu:Hide(); M:JumpTo(M:IsBuff(M:PreviewViewer()) and "buffGlows" or "glows") end)
     menu:SetScript("OnEvent", OnEvent)
     menu:SetScript("OnShow", function()
@@ -69,6 +80,7 @@ function M:SpellMenu()
     end)
     menu:SetScript("OnHide", function()
         menu:UnregisterAllEvents()
+        if M.glowPopout then M.glowPopout:Hide() end
         local view = menu.view
         menu.view, menu.key, menu.anchor = nil, nil, nil
         if view then view.menuKey = nil; view.Refresh() end
@@ -96,8 +108,9 @@ function M:OpenSpellMenu(view, key, anchor)
     view.Refresh()
 end
 
--- The spell's name, else its cooldown ID.
+-- The spell's (or item's) name, else its ID.
 function M:SpellLabel(key)
+    if self.IsItemEntry(key) then return self:ItemLabel(key) end
     local spell = self:SpellOf(key)
     return (spell and Cooldowns.SpellName(spell)) or string.format(L["Spell %s"], key)
 end
@@ -111,9 +124,11 @@ function M:RefreshSpellMenu()
     local style, glows = self.db[id], {}
     for _, kind in ipairs(self:Glows(id)) do glows[kind] = true end
     menu.title:SetText(self:SpellLabel(menu.key))
-    -- A custom spell names its ID; its icon is ModeUI's own.
-    local spellEntry = self.IsSpellEntry(menu.key)
-    menu.section:SetText(spellEntry and string.format(L["Custom spell · ID %s"], menu.key:sub(2)) or L["This Spell"])
+    -- A custom spell or item names its ID; its icon is ModeUI's own.
+    local section = L["This Spell"]
+    if self.IsItemEntry(menu.key) then section = string.format(L["Item · ID %s"], menu.key:sub(2))
+    elseif self.IsSpellEntry(menu.key) then section = string.format(L["Custom spell · ID %s"], menu.key:sub(2)) end
+    menu.section:SetText(section)
     local y = -58
     local function Line(box, shown)
         box:SetShown(shown); box.text:SetShown(shown)
@@ -126,10 +141,14 @@ function M:RefreshSpellMenu()
     menu.showBox:SetSelected(not self:SpellSwitch(id, menu.key, "hide"))
     for _, kind in ipairs(self.glowKinds) do
         local box = menu.glowBoxes[kind]
-        Line(box, glows[kind] == true)
-        box:SetSelected(self:SpellSwitch(id, menu.key, kind))
-        -- The bar's own style grays out a glow it has turned off.
-        box:SetEnabled(style[kind .. "Glow"] ~= "none")
+        local shown = glows[kind] == true
+        Line(box, shown)
+        box.more:SetShown(shown)
+        if shown then
+            box:SetSelected(self:SpellSwitch(id, menu.key, kind))
+            box.more:ClearAllPoints(); box.more:SetPoint("TOPRIGHT", -PAD, y + LINE)
+            box.more:SetSelected(self.glowPopout ~= nil and self.glowPopout:IsShown() and self.glowPopout.kind == kind)
+        end
     end
     local function Row(buttons, shown)
         local x = PAD
@@ -151,4 +170,5 @@ function M:RefreshSpellMenu()
     menu.more:SetShown(anyGlow)
     if anyGlow then menu.more:ClearAllPoints(); menu.more:SetPoint("TOPLEFT", PAD, y - 8); y = y - 38 end
     menu:SetHeight(-y + 14)
+    self:RefreshGlowPopout()
 end

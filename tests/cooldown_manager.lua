@@ -16,8 +16,10 @@ world.run([==[
     assert(M and not M.enabled and not M.built and M.standalone and M.category == nil, 'standalone, off by default')
     local first = ItemsOf(essential)[1]
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
-    assert(M.db.version == 3 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
-    assert(M.db.essential.desaturate and M.db.essential.procGlow == 'mode' and M.db.essential.activeGlow == 'none', 'gray on cooldown by default')
+    assert(M.db.essential.width == 42 and M.db.essential.height == 34 and M.db.utility.width == 36 and M.db.utility.height == 28, 'icons 8px wider than tall')
+    assert(M.db.version == 4 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    assert(M.db.essential.desaturate and not M.db.essential.auraSwipe and next(M.db.essential.spells) == nil, 'gray on cooldown; glows off on every spell')
+    assert(M.db.essential.procGlow == 'blizzard' and M.db.essential.readyGlow == 'pixel', 'looks a glow starts with')
 
     addon:SetModuleEnabled('cooldownManager', true)
     assert(M.built and ModeUICooldownEssential and ModeUICooldownBuffBar, 'a stand-in per viewer')
@@ -25,7 +27,7 @@ world.run([==[
     local holder = M.holders.essential
     local items = ItemsOf(essential)
     -- One line of 12 slots (42x36, 2px apart); five icons centered in it.
-    assert(ModeUICooldownEssential.width == 12 * 42 + 11 * 2 and ModeUICooldownEssential.height == 36, 'stand-in is one full line')
+    assert(ModeUICooldownEssential.width == 12 * 42 + 11 * 2 and ModeUICooldownEssential.height == 34, 'stand-in is one full line')
     local p = Point(items[1])
     assert(p[1] == 'TOPLEFT' and p[2] == holder and p[4] == 154 and p[5] == 0, 'centered: seven empty slots split either side')
     assert(Point(items[2])[4] == 198 and items[1].width == 42 and items[1].scale == 1)
@@ -61,17 +63,17 @@ world.run([==[
     assert(M:SetOption('essential', 'grow', 'right')); local x = At(items[2]); assert(x == 44, 'Horizontal Right')
     assert(M:SetOption('essential', 'grow', 'left')); x = At(items[1]); assert(x == 526 - 42 and At(items[2]) == 440, 'Horizontal Left')
     assert(M:SetOption('essential', 'grow', 'down') and M.db.essential.lineGrowth == 'right', 'columns: New Lines turns Right')
-    assert(ModeUICooldownEssential.width == 42 and ModeUICooldownEssential.height == 12 * 36 + 11 * 2)
-    local _, y = At(items[2]); assert(y == -38, 'Vertical Down')
-    assert(M:SetOption('essential', 'grow', 'up')); _, y = At(items[1]); assert(y == -(454 - 36), 'Vertical Up')
-    assert(M:SetOption('essential', 'grow', 'centerV')); _, y = At(items[1]); assert(y == -133, 'Centered Vertical')
+    assert(ModeUICooldownEssential.width == 42 and ModeUICooldownEssential.height == 12 * 34 + 11 * 2)
+    local _, y = At(items[2]); assert(y == -36, 'Vertical Down')
+    assert(M:SetOption('essential', 'grow', 'up')); _, y = At(items[1]); assert(y == -(430 - 34), 'Vertical Up')
+    assert(M:SetOption('essential', 'grow', 'centerV')); _, y = At(items[1]); assert(y == -126, 'Centered Vertical')
     assert(not M:SetOption('essential', 'lineGrowth', 'up'), 'columns add lines right or left')
     assert(M:SetOption('essential', 'grow', 'down') and M:SetOption('essential', 'perLine', 3))
     x, y = At(items[4]); assert(x == 44 and y == 0, 'second column to the right')
     assert(M:SetOption('essential', 'lineGrowth', 'left')); x = At(items[4]); assert(x == -44, 'New Lines: Left')
     assert(M:SetOption('essential', 'grow', 'centerH') and M.db.essential.lineGrowth == 'down')
-    x, y = At(items[4]); assert(x == 22 and y == -38, 'short second line centered under the first')
-    assert(M:SetOption('essential', 'lineGrowth', 'up')); _, y = At(items[4]); assert(y == 38, 'New Lines: Up')
+    x, y = At(items[4]); assert(x == 22 and y == -36, 'short second line centered under the first')
+    assert(M:SetOption('essential', 'lineGrowth', 'up')); _, y = At(items[4]); assert(y == 36, 'New Lines: Up')
     assert(M:SetOption('essential', 'lineGrowth', 'down') and M:SetOption('essential', 'perLine', 12))
     essential:RefreshLayout(); items = ItemsOf(essential)
     assert(Point(items[2])[2] == holder and Point(items[2])[4] == 198, "Blizzard's grid undone after its layout")
@@ -82,43 +84,57 @@ world.run([==[
     items[1]:RefreshIconDesaturation()
     assert(items[1].Icon.desaturated == true, "kept after Blizzard's own gray")
     items[1].cooldownSwipeColor = CooldownViewerConstants.ITEM_AURA_COLOR; items[1]:RefreshSpellCooldownInfo()
-    assert(items[1].Icon.desaturated == false, 'full color while its effect is up')
+    assert(items[1].Icon.desaturated == true, 'still gray while its effect is up: no full-color active swipe')
     items[1].cooldownSwipeColor = CooldownViewerConstants.ITEM_COOLDOWN_COLOR; items[1]:RefreshSpellCooldownInfo()
     assert(M:SetOption('essential', 'desaturate', false) and items[1].Icon.desaturated == false, 'off: full color')
     assert(M:SetOption('essential', 'desaturate', true) and items[1].Icon.desaturated == true)
     cooling[5001] = false; FireEvent('SPELL_UPDATE_COOLDOWN'); assert(items[1].Icon.desaturated == false, 'color back when ready')
 
-    -- Glows: proc over active; active from the gold swipe; per spell off.
-    assert(M:SetOption('essential', 'activeGlow', 'border'))
+    -- Active spells: no gold full-color swipe by default; the spell's own
+    -- cooldown, gray, straight away.
+    cooling[5002] = true
     items[2].cooldownSwipeColor = CooldownViewerConstants.ITEM_AURA_COLOR; items[2]:RefreshSpellCooldownInfo()
-    local set = M.glows[items[2]]
-    assert(set.active and set.active:IsShown(), 'active glow while the effect is up')
+    assert(items[2].Cooldown.durationObject.duration == 'cd:5002' and items[2].Cooldown.auraTime == false, "the spell's cooldown, not the effect's time")
+    assert(items[2].Icon.desaturated == true and items[2].Cooldown.swipeColor[1] == M.db.essential.swipeColor[1], 'gray, in the swipe color')
+    assert(M:SetOption('essential', 'auraSwipe', true)); items[2]:RefreshSpellCooldownInfo()
+    assert(items[2].Icon.desaturated == false and items[2].Cooldown.swipeColor[2] == 0.8, "Show Aura Time: Blizzard's gold swipe in full color")
+    assert(M:SetOption('essential', 'auraSwipe', false))
+
+    -- Glows: off on every spell until switched on; each with its own look.
     ActionButtonSpellAlertManager:ShowAlert(items[2])
-    assert(set.proc:IsShown() and not set.active:IsShown() and items[2].SpellActivationAlert.alpha == 0, 'proc wins; Blizzard alert faded')
-    ActionButtonSpellAlertManager:HideAlert(items[2]); assert(set.active:IsShown() and not set.proc:IsShown())
-    assert(M:SetSpellSwitch('essential', '102', 'active', false) and not set.active:IsShown(), 'active glow off for this spell')
-    assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active:IsShown())
+    assert(not (M.glows[items[2]] and M.glows[items[2]].proc and M.glows[items[2]].proc:IsShown()) and items[2].SpellActivationAlert.alpha == 0, 'no glow until switched on')
+    assert(M:SetSpellSwitch('essential', '102', 'proc', true))
+    local look = M.db.essential.spells['102'].proc
+    assert(look.style == 'blizzard' and look.lines == 8 and look.thickness == 2, "switched on with the bar's look")
+    local set = M.glows[items[2]]
+    assert(set.proc:IsShown() and set.proc.flipbook:IsShown() and set.proc.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', "Blizzard: the game's proc loop art")
+    assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active and not set.active:IsShown(), 'proc wins over active')
+    ActionButtonSpellAlertManager:HideAlert(items[2]); assert(set.active:IsShown() and not set.proc:IsShown(), 'active glow while the effect is up')
+    assert(M:SetSpellGlow('essential', '102', 'active', 'style', 'pixel') and set.active.pixels and set.active.pixels[1]:IsShown(), 'Pixel: marching lines')
+    assert(M:SetSpellGlow('essential', '102', 'active', 'lines', 4) and set.active.pixelLines == 4 and not set.active.pixels[9]:IsShown())
+    assert(M:SetSpellGlow('essential', '102', 'active', 'style', 'gcd') and set.active.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', 'GCD art missing on this client: the proc art')
+    assert(not set.active.pixels[1]:IsShown(), 'the pixel lines put away')
+    assert(not M:SetSpellGlow('essential', '102', 'active', 'style', 'sparkles'), 'unknown looks refused')
+    assert(M:SetSpellSwitch('essential', '102', 'active', false) and not set.active:IsShown() and M.db.essential.spells['102'].active == nil, 'switched off')
     items[2].cooldownSwipeColor = CooldownViewerConstants.ITEM_COOLDOWN_COLOR; items[2]:RefreshSpellCooldownInfo()
-    assert(not set.active:IsShown(), 'ends with the effect')
-    assert(M:SetOption('essential', 'procGlow', 'blizzard')); ActionButtonSpellAlertManager:ShowAlert(items[1])
-    assert(items[1].SpellActivationAlert.alpha == 1, 'Blizzard style'); ActionButtonSpellAlertManager:HideAlert(items[1])
-    assert(M:SetOption('essential', 'procGlow', 'mode'))
-    -- Off cooldown: While Ready, then a flash for Glow Time.
-    assert(M:SetOption('essential', 'readyGlow', 'mode') and M:SetOption('essential', 'readyMode', 'always'))
+    cooling[5002] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(M:SetSpellSwitch('essential', '102', 'proc', false) and M.db.essential.spells['102'] == nil, 'an empty entry is not kept')
+    -- Off cooldown: While Ready, then a flash for its own Glow Time.
+    assert(M:SetSpellSwitch('essential', '103', 'ready', true) and M:SetSpellGlow('essential', '103', 'ready', 'mode', 'always'))
     assert(M.glows[items[3]].ready:IsShown(), 'lit while ready')
     cooling[5003] = true; FireEvent('SPELL_UPDATE_COOLDOWN'); assert(not M.glows[items[3]].ready:IsShown(), 'not while cooling')
-    assert(M:SetOption('essential', 'readyMode', 'flash'))
+    assert(M:SetSpellGlow('essential', '103', 'ready', 'mode', 'flash') and M:SetSpellGlow('essential', '103', 'ready', 'duration', 3))
     local after, timers = C_Timer.After, {}
-    C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+    C_Timer.After = function(seconds, fn) timers[#timers + 1] = { seconds, fn } end
     cooling[5003] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(M.glows[items[3]].ready:IsShown(), 'flash when the cooldown ends')
-    for _, fn in ipairs(timers) do fn() end
+    for _, timer in ipairs(timers) do if timer[1] == 3 then timer[2]() end end
     C_Timer.After = after
-    assert(not M.glows[items[3]].ready:IsShown(), 'gone after Glow Time')
-    assert(M:SetOption('essential', 'readyGlow', 'none'))
+    assert(not M.glows[items[3]].ready:IsShown(), 'gone after its Glow Time')
+    assert(M:SetSpellSwitch('essential', '103', 'ready', false))
     -- Buff glow: follows the buff's active state, secret or not.
     local buffItems = ItemsOf(buffs)
-    assert(M:SetOption('buffIcon', 'buffGlow', 'mode'))
+    assert(M:SetSpellSwitch('buffIcon', '301', 'buff', true))
     buffItems[1]:SetIsActive(true)
     local buffGlow = M.glows[buffItems[1]].buff
     assert(buffGlow:IsShown() and buffGlow.soft.alpha == 1, 'buff glow while up')
@@ -126,12 +142,11 @@ world.run([==[
     buffItems[1]:SetIsActive(Secret('active'))
     assert(issecretvalue(buffGlow.soft.alphaFromBoolean) and issecretvalue(buffGlow.edges[1].alphaFromBoolean), 'secret state passed to SetAlphaFromBoolean')
     assert(M:SetSpellSwitch('buffIcon', '301', 'buff', false) and not buffGlow:IsShown(), 'buff glow off for this buff')
-    assert(M:SetSpellSwitch('buffIcon', '301', 'buff', true) and M:SetOption('buffIcon', 'buffGlow', 'none') and not buffGlow:IsShown())
     buffItems[1]:SetIsActive(true)
 
     -- Tracked Buffs close gaps; a secret shown state keeps its place.
     buffItems[1].activeState = false; buffItems[1]:UpdateShownState()
-    assert(M.placedCount.buffIcon == 1 and Point(buffItems[2])[4] == 204, 'the active buff takes the middle')
+    assert(M.placedCount.buffIcon == 1 and Point(buffItems[2])[4] == 209, 'the active buff takes the middle')
     buffItems[1].secretShown = true; buffItems[1]:UpdateShownState()
     assert(M.placedCount.buffIcon == 2, 'a secret shown state keeps its place')
     buffItems[1].secretShown = nil; buffItems[1].activeState = true; buffItems[1]:UpdateShownState()
@@ -166,9 +181,29 @@ world.run([==[
     assert(M:RenameCustomBar(c3, '  Burst ') and M:Label(c3) == 'Burst' and not M:RenameCustomBar(c3, ''))
     assert(PM:Element('cooldownManagerCustom3').label == 'Burst', 'Edit Mode handle renamed')
     assert(M:SetOption(c3, 'activeGlow', 'mode') and M.db.custom3.activeGlow == 'mode', 'custom bars have every setting')
+    -- Anchoring: any ModeUI element and the custom bars, 1px off the side.
+    local E = PM:Element('cooldownManagerEssential')
+    assert(E.allowedTargets.actionBarsBar1 and E.allowedTargets.cooldownManagerCustom3, 'other ModeUI elements and custom bars as targets')
+    assert(Point(ModeUICooldownUtility)[2] == ModeUICooldownEssential and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
+    assert(PM:AnchorTo('cooldownManagerCustom1', 'cooldownManagerCustom3', 'below'))
+    local hang = Point(ModeUICooldownCustom1)
+    assert(hang[2] == ModeUICooldownCustom3 and hang[5] == -1, 'anchored with the 1px gap')
+    assert(addon:SetEditMode(true) and PM:Nudge('cooldownManagerCustom1', 0, -2) and Point(ModeUICooldownCustom1)[5] == -3, 'nudged from there')
+    assert(addon:SetEditMode(false)); ModeUIConfigWindow:Hide()
+    -- Match Width: the icons resize to fill the parent's width, pixel perfect.
+    assert(M:SetOption(c1, 'perLine', 5) and ModeUICooldownCustom1.width == 5 * 42 + 4 * 2)
+    assert(PM:CanMatchSize('cooldownManagerCustom1', 'width') and PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', true) and M.db.custom1.matchWidth)
+    PM:RefreshAnchorSize('cooldownManagerCustom1')
+    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width, 'width matched')
+    assert(byKey[201].width == 68 and Point(byKey[201])[4] == 141, 'icons split the width on whole pixels')
+    assert(M:SetOption(c3, 'perLine', 6)); PM:RefreshAnchorSize('cooldownManagerCustom1')
+    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width and ModeUICooldownCustom3.width == 6 * 42 + 5 * 2, 'follows the parent')
+    assert(PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', false) and ModeUICooldownCustom1.width == 5 * 42 + 4 * 2)
+    assert(M:SetOption(c1, 'perLine', 8))
     assert(M:RemoveEntry(c1, '201') and Point(byKey[201])[2] == M.holders.utility, 'Remove from Bar sends it back')
     assert(M:DeleteCustomBar(c3) and Point(byKey[102])[2] == holder and byKey[102].alpha == 1, 'deleting gives the spells back')
     assert(addon.db.positions.cooldownManagerCustom3 == nil and not ModeUICooldownCustom3:IsShown() and M.db.custom3 == nil)
+    assert(PM:GetPosition('cooldownManagerCustom1').target == 'screen' and not E.allowedTargets.cooldownManagerCustom3, 'what hung from it moves to the screen')
 
     -- Custom spells by ID: ModeUI's own icon on a Cooldown Bar.
     assert(not M:AddCustomSpell(c1, 'abc') and not M:AddCustomSpell(c1, '950000'), 'not a spell ID; no such spell')
@@ -182,10 +217,10 @@ world.run([==[
     assert(own.Cooldown.countdown.font[2] == 15, 'the cooldown numbers styled')
     cooling[9001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == true, 'gray while cooling')
-    assert(M:SetOption(c1, 'readyGlow', 'mode') and M:SetOption(c1, 'readyMode', 'always') and not (M.glows[own] and M.glows[own].ready:IsShown()))
+    assert(M:SetSpellSwitch(c1, 's9001', 'ready', true) and M:SetSpellGlow(c1, 's9001', 'ready', 'mode', 'always') and not (M.glows[own] and M.glows[own].ready and M.glows[own].ready:IsShown()))
     cooling[9001] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == false and M.glows[own].ready:IsShown(), 'ready: color and the While Ready glow')
-    assert(M:SetOption(c1, 'readyGlow', 'none'))
+    assert(M:SetSpellSwitch(c1, 's9001', 'proc', true))
     spellUsable[9001] = { false, true }; FireEvent('SPELL_UPDATE_USABLE')
     assert(own.Icon.vertexColor[3] == 1 and own.Icon.vertexColor[1] == 0.5, 'short of power: blue tint')
     spellUsable[9001] = nil; FireEvent('SPELL_UPDATE_USABLE'); assert(own.Icon.vertexColor[1] == 1)
@@ -217,26 +252,97 @@ world.run([==[
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
     assert(window:IsShown() and window.title.text == 'Cooldown Manager' and window.moduleHeader.toggle:IsShown(), 'own window, own switch')
-    assert(window.rows[9]:IsShown() and window.rows[9].label.text == 'Cooldown Bar 1' and window.rows[10].label.text == 'Buff Bar 1', 'custom bars listed')
-    window.rows[10].scripts.OnClick(window.rows[10])
+    -- The list: Spells and Abilities, Cooldown Bars, Buff Bars, then Resource Bars.
+    assert(window.blizzardCaption.text == 'SPELLS AND ABILITIES' and window.cooldownCaption.text == 'COOLDOWN BARS' and window.buffCaption.text == 'BUFF BARS')
+    assert(window.rows[5]:IsShown() and window.rows[5].label.text == 'Cooldown Bar 1' and window.rows[6].label.text == 'Buff Bar 1', 'custom bars under their headings')
+    assert(window.rows[7].resource and Point(window.resourceCaption)[5] < Point(window.rows[6])[5], 'Resource Bars after the custom bars')
+    assert(window.rows[5].delete:IsShown() and not window.rows[1].delete:IsShown(), '- on custom bars only')
+    -- + adds a bar under its heading; - asks first.
+    window.addCooldown.scripts.OnClick(window.addCooldown)
+    local added = M.selectedBar
+    assert(M:Custom(added) and M:Custom(added).kind == 'cooldown' and window.rows[6].barId == added, 'a new Cooldown Bar, listed with the others')
+    window.rows[6].delete.scripts.OnClick(window.rows[6].delete)
+    local confirm = addon.ConfigWidgets.confirmFrame
+    assert(confirm:IsShown() and M:Custom(added), 'asks before deleting')
+    confirm.cancel.scripts.OnClick(confirm.cancel)
+    assert(not confirm:IsShown() and M:Custom(added), 'Cancel keeps it')
+    window.rows[6].delete.scripts.OnClick(window.rows[6].delete); confirm.accept.scripts.OnClick(confirm.accept)
+    assert(not M:Custom(added) and M.selectedBar == 'essential', 'deleted after Delete Bar')
+    -- Editing at the top right of the preview.
+    assert(M.page.editingSelect and M.page.editingLabel.text == 'Editing')
+    M:SelectEditing('utility'); assert(M.page.viewerEditing() == 'utility', 'Editing picks the bar')
+    window.rows[6].scripts.OnClick(window.rows[6])
     local page, view = M.page, M.previewView
     assert(page.viewerEditing() == c2 and view.icons[1].key == '301' and view.plus:IsShown(), 'a custom bar: its spells, then +')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     local picker = M.picker
-    assert(picker:IsShown() and picker.buttons[1]:IsShown() and picker.buttons[1].key == '302' and not picker.buttons[2], 'tracked buffs not on it yet')
+    assert(picker:IsShown() and picker.buttons[1]:IsShown() and picker.buttons[1].key == '302', 'tracked buffs not on it yet')
+    assert(picker.headings[2]:IsShown() and picker.buttons[2].key == '303' and picker.buttons[2].icon.desaturated, 'a class buff not in Blizzard CDM: grayed')
+    assert(picker.buttons[2].where:find('Not in Blizzard CDM', 1, true) and not picker.buttons[3], 'says so; nothing else')
+    assert(not picker.headings[3]:IsShown() and not picker.spellRow:IsShown() and not picker.itemRow:IsShown(), 'no items or IDs on a Buff Bar')
+    picker.buttons[2].scripts.OnClick(picker.buttons[2])
+    assert(#M:Custom(c2).entries == 1, 'an untracked buff cannot be added')
     picker.buttons[1].scripts.OnClick(picker.buttons[1])
-    assert(M:Custom(c2).entries[2] == '302' and picker.empty:IsShown(), 'added; nothing left')
+    assert(M:Custom(c2).entries[2] == '302' and picker.empty:IsShown(), 'added; nothing tracked left')
     picker:Hide()
     view.icons[1].scripts.OnMouseUp(view.icons[1], 'LeftButton')
     local menu = M.spellMenu
     assert(menu:IsShown() and menu.remove:IsShown() and not menu.earlier.enabled and menu.glowBoxes.buff:IsShown() and not menu.glowBoxes.proc:IsShown())
+    assert(not menu.glowBoxes.buff.selected and menu.glowBoxes.buff.more:IsShown(), 'off by default, with its > button')
+    -- The > opens the glow's popout beside the menu.
+    menu.glowBoxes.buff.more.scripts.OnClick(menu.glowBoxes.buff.more)
+    local popout = M.glowPopout
+    assert(popout:IsShown() and popout.kind == 'buff' and popout.title.text == 'Buff Glow' and view.glowKind == 'buff', 'buff glow popout')
+    assert(popout.styleRow:IsShown() and popout.colorRow:IsShown() and not popout.whenRow:IsShown() and not popout.linesRow:IsShown())
+    popout.styleButtons[3].scripts.OnClick(popout.styleButtons[3])
+    assert(M.db.custom2.spells['301'].buff.style == 'pixel' and menu.glowBoxes.buff.selected, 'choosing a look switches the glow on')
+    assert(popout.linesRow:IsShown() and popout.thicknessRow:IsShown() and not popout.pulseRow:IsShown(), 'Pixel shows its lines and thickness')
+    popout.swatch.scripts.OnClick(popout.swatch)
+    ColorPickerFrame.r, ColorPickerFrame.g, ColorPickerFrame.b = 1, 0, 0; ColorPickerFrame.swatchFunc()
+    assert(M.db.custom2.spells['301'].buff.color[1] == 1 and M.db.custom2.spells['301'].buff.color[2] == 0, "Blizzard's color picker sets its color")
+    popout.onBox.scripts.OnClick(popout.onBox)
+    assert(M.db.custom2.spells['301'] == nil, 'Glow On off')
+    popout.close.scripts.OnClick(popout.close)
+    assert(not popout:IsShown() and view.glowKind == nil)
     menu.later.scripts.OnClick(menu.later)
     assert(M:Custom(c2).entries[1] == '302', 'Later')
     menu:Hide()
     M:SelectBar(c1)
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
-    assert(picker.buttons[7] and picker.buttons[7]:IsShown() and picker.buttons[8] == nil, 'all seven cooldowns from Essential and Utility')
-    assert(picker.byId:IsShown(), 'Spell ID on a Cooldown Bar')
+    assert(picker.buttons[7]:IsShown() and picker.buttons[7].key == '202', 'all seven tracked cooldowns from Essential and Utility')
+    local unknown = picker.buttons[8]
+    assert(unknown.key == 's5006' and unknown.icon.desaturated and unknown.where:find('not learned', 1, true), 'an unlearned class spell, grayed')
+    assert(picker.buttons[9].key == 'i5512' and picker.buttons[10].key == 'i191380' and not (picker.buttons[11] and picker.buttons[11]:IsShown()), 'usable items in your bags (no cloth)')
+    assert(picker.headings[3]:IsShown() and picker.spellRow:IsShown() and picker.itemRow:IsShown(), 'Spell ID and Item ID on a Cooldown Bar')
+    unknown.scripts.OnClick(unknown)
+    assert(M:Custom(c1).entries[#M:Custom(c1).entries] == 's5006', 'added as a custom spell')
+    assert(picker.buttons[8].key == 'i5512', 'gone from the list')
+    knownSpells[7676] = false
+    picker.idInput:SetText('7676'); picker.idAdd.scripts.OnClick(picker.idAdd)
+    assert(picker.idResult.text:find("know that spell", 1, true), 'a spell you do not know is refused, pointing at Item ID')
+    picker.itemRow.input:SetText('7676'); picker.itemRow.add.scripts.OnClick(picker.itemRow.add)
+    assert(M:Custom(c1).entries[#M:Custom(c1).entries] == 'i7676' and picker.idResult.text == 'Added Thistle Tea.', 'the item instead')
+    picker.itemRow.input:SetText('2589'); picker.itemRow.add.scripts.OnClick(picker.itemRow.add)
+    assert(picker.idResult.text == 'That item has no Use: effect.')
+    picker.itemRow.input:SetText('999'); picker.itemRow.add.scripts.OnClick(picker.itemRow.add)
+    assert(picker.idResult.text == 'No item has that ID.')
+    picker.buttons[8].scripts.OnClick(picker.buttons[8])
+    assert(M:Custom(c1).entries[#M:Custom(c1).entries] == 'i5512', 'an item from your bags')
+    -- An item's icon: picture, count, cooldown, gray with none left.
+    local stone = M.spellIcons[c1].i5512
+    assert(stone:IsShown() and stone.Icon.texture == 'item:5512' and stone.ChargeCount.Current.text == '1', 'its picture and count')
+    itemCooldowns[5512] = { 100, 120 }; FireEvent('BAG_UPDATE_COOLDOWN')
+    assert(stone.Cooldown.cooldownStart == 100 and stone.Cooldown.cooldownDuration == 120 and stone.Icon.desaturated == true, 'its cooldown, gray')
+    assert(M:SetSpellSwitch(c1, 'i5512', 'ready', true) and M:SetSpellGlow(c1, 'i5512', 'ready', 'mode', 'always'))
+    assert(not (M.glows[stone] and M.glows[stone].ready and M.glows[stone].ready:IsShown()), 'While Ready: not while cooling')
+    itemCooldowns[5512] = nil; FireEvent('BAG_UPDATE_COOLDOWN')
+    assert(stone.Icon.desaturated == false and M.glows[stone].ready:IsShown(), 'ready again: color and its glow')
+    itemCounts[5512] = 0; FireEvent('BAG_UPDATE_DELAYED')
+    assert(stone:IsShown() and stone.ChargeCount.Current.text == '0' and stone.Icon.desaturated == true, 'none left: kept, gray, 0')
+    itemCounts[5512] = 1; FireEvent('BAG_UPDATE_DELAYED')
+    stone.scripts.OnEnter(stone); assert(GameTooltip.item == 5512, 'item tooltip')
+    assert(M:SpellLabel('i5512') == 'Healthstone')
+    assert(M:RemoveEntry(c1, 'i7676') and M:RemoveEntry(c1, 'i5512') and M:RemoveEntry(c1, 's5006'))
     picker.idInput:SetText('9003'); picker.idAdd.scripts.OnClick(picker.idAdd)
     assert(M:Custom(c1).entries[2] == 's9003' and picker.idResult.text == 'Added Spell 9003.' and picker.idInput:GetText() == '', 'added from the list')
     picker.idInput:SetText('950000'); picker.idAdd.scripts.OnClick(picker.idAdd)
@@ -284,7 +390,7 @@ H.Load({ before = STUBS }).run([==[
 local restored = H.Load({ before = STUBS .. "\nMakeViewers()", saved = world.saved() })
 restored.run([==[
     local M = addon.CooldownManager
-    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 4, 'settings persist')
+    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 5, 'settings persist')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
     assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
@@ -298,12 +404,12 @@ v1.profiles.Default.modules.cooldownManager = { enabled = true, version = 1,
     buffIcon = { orientation = "horizontal", start = "BOTTOMLEFT", center = true, readyGlow = false, readyStyle = "glow" } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 3 and db.essential.border == 'mode' and db.essential.borderColor[1] == addon.Kit.BORDER_COLOR[1], 'v1 also takes the ModeUI border')
+    assert(db.version == 4 and db.essential.border == 'mode' and db.essential.borderColor[1] == addon.Kit.BORDER_COLOR[1], 'v1 also takes the ModeUI border')
     assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
-    assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow kept as a flash')
+    assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow look kept, as a flash')
     assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 0)
     assert(db.utility.grow == 'up' and db.utility.lineGrowth == 'left', 'columns from the bottom right')
-    assert(db.buffIcon.grow == 'centerH' and db.buffIcon.lineGrowth == 'up' and db.buffIcon.readyGlow == 'none')
+    assert(db.buffIcon.grow == 'centerH' and db.buffIcon.lineGrowth == 'up' and db.buffIcon.readyGlow == 'mode', 'None is no longer a look')
 ]==], "migrate v1")
 
 -- Version 2: a Rounded border in the old #101010 becomes the ModeUI border;
@@ -316,10 +422,27 @@ old.utility.border, old.utility.borderColor = "square", { 1, 0, 0 }
 old.custom1.border = "rounded"
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v2 }).run([==[
     local db, Kit = addon.CooldownManager.db, addon.Kit
-    assert(db.version == 3 and db.essential.border == 'mode' and db.essential.borderColor[1] == Kit.BORDER_COLOR[1], 'old default to the ModeUI border')
+    assert(db.version == 4 and db.essential.border == 'mode' and db.essential.borderColor[1] == Kit.BORDER_COLOR[1], 'old default to the ModeUI border')
     assert(db.utility.border == 'square' and db.utility.borderColor[1] == 1, 'a chosen Square border and color stay')
     assert(db.custom1.border == 'mode', 'custom bars too')
 ]==], "migrate v2")
+
+-- Version 3: default sizes move to 42 by 34 and 36 by 28; Utility's default
+-- place, 4 units under Essential, sits against it now (the 1px gap is built in).
+local v3 = restored.saved()
+local before = v3.profiles.Default.modules.cooldownManager
+before.version = 3
+before.essential.width, before.essential.height = 42, 36
+before.utility.width, before.utility.height = 40, 30
+before.custom2.width, before.custom2.height = 35, 30
+v3.profiles.Default.positions.cooldownManagerUtility = { target = "cooldownManagerEssential", placement = "below", x = 0, y = -4 }
+H.Load({ before = STUBS .. "\nMakeViewers()", saved = v3 }).run([==[
+    local M, PM = addon.CooldownManager, addon.PositionManager
+    local db = M.db
+    assert(db.version == 4 and db.essential.width == 42 and db.essential.height == 34 and db.custom2.width == 36 and db.custom2.height == 28, 'default sizes move')
+    assert(db.utility.width == 40 and db.utility.height == 30 and db.movePlaces == nil, 'a chosen size stays')
+    assert(PM:GetPosition('cooldownManagerUtility').y == 0 and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
+]==], "migrate v3")
 
 -- Bad saved data stops startup rather than being reset.
 local function Refused(change, label)
@@ -335,5 +458,6 @@ Refused(function(db) db.customBars[2].id = db.customBars[1].id end, "custom id")
 Refused(function(db) db.customBars[1].entries = { "12", "12" } end, "custom entries")
 Refused(function(db) db.customBars[2].entries = { "s9001" } end, "a spell by ID on a Buff Bar")
 Refused(function(db) db.customBars[1].entries = { "x9001" } end, "a bad spell key")
+Refused(function(db) db.customBars[2].entries = { "i5512" } end, "an item on a Buff Bar")
 
 print("cooldown manager: all checks passed")

@@ -57,9 +57,10 @@ for _, id in ipairs(M.resources) do
 end
 
 -- Default places: a stack under Utility Cooldowns (Power, Combo Points,
--- Alternate Mana, Health), each 4px under the last; each matches the width
+-- Alternate Mana, Health), each 1 physical pixel under the last (the gap
+-- the placement keeps; version 4); each matches the width
 -- of what it hangs from, so the stack lines up with the cooldowns.
-local function Below(target) return { target = target, placement = "below", x = 0, y = -4 } end
+local function Below(target) return { target = target, placement = "below", x = 0, y = 0 } end
 M.resourcePositions = {
     power = Below(M.ElementId("utility")), combo = Below(M.ResourceElementId("power")),
     mana = Below(M.ResourceElementId("combo")), health = Below(M.ResourceElementId("mana")),

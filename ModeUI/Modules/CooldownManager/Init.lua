@@ -29,7 +29,11 @@ addon:RegisterModule("cooldownManager", M)
 -- and buff glows beside the proc glow; custom bars.
 -- Version 3: every bar takes the ModeUI border (the owner asked for it on
 -- the cooldown bars, November 13, 2026).
-M.VERSION = 3
+-- Version 4 (owner, November 13, 2026): icons 8px wider than tall by
+-- default (42 by 34; 36 by 28 on the smaller bars), and anchored bars sit 1
+-- physical pixel apart (gapPixels) instead of 4; glows start off on every
+-- spell (each switched on in its menu, with its own look).
+M.VERSION = 4
 M.SLASH = "/mcdm"
 local P = Kit.palette
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -77,8 +81,8 @@ for _, viewer in ipairs(M.viewers) do M.customTargets[#M.customTargets + 1] = M.
 local function At(point, x, y) return { target = "screen", placement = "center", point = point, relativePoint = point, x = x, y = y } end
 M.defaultPositions = {
     essential = At("BOTTOM", 0, 300),
-    utility = { target = M.ElementId("essential"), placement = "below", x = 0, y = -4 },
-    buffIcon = { target = M.ElementId("essential"), placement = "above", x = 0, y = 4 },
+    utility = { target = M.ElementId("essential"), placement = "below", x = 0, y = 0 },
+    buffIcon = { target = M.ElementId("essential"), placement = "above", x = 0, y = 0 },
     buffBar = At("BOTTOM", 330, 300),
 }
 function M.CustomPosition(index) return At("CENTER", 0, 120 - 48 * ((index - 1) % 6)) end
@@ -119,6 +123,8 @@ local function Style(size, perLine, lineGrowth, small)
         show = true,
         perLine = perLine, grow = "centerH", lineGrowth = lineGrowth,
         width = size[1], height = size[2], spacing = 2,
+        -- Match Width / Match Height (Edit Mode): the size of what it hangs from.
+        matchWidth = false, matchHeight = false,
         border = "mode", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = M.BACKGROUND_OPACITY,
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
@@ -127,9 +133,15 @@ local function Style(size, perLine, lineGrowth, small)
         desaturate = true, swipeColor = Copy(M.SWIPE_COLOR), swipeOpacity = 70, showEdge = false, showBling = true, showFlash = true,
         rangeTint = true, debuffBorder = false,
         font = "game", fontMedia = "Expressway", outline = true, shadow = true, slug = true,
-        procGlow = "mode", activeGlow = "none", readyGlow = "none", buffGlow = "none",
-        procPulse = true, activePulse = false, readyPulse = true, buffPulse = false,
-        readyMode = "flash", readyDuration = 2,
+        -- Glows start off on every spell (owner, November 13, 2026); a spell's
+        -- menu switches one on, starting from these looks.
+        procGlow = "blizzard", activeGlow = "border", readyGlow = "pixel", buffGlow = "mode",
+        procPulse = false, activePulse = false, readyPulse = true, buffPulse = false,
+        readyMode = "flash", readyDuration = 2, glowLines = 8, glowThickness = 2,
+        -- While a spell's effect is up, Blizzard swaps its cooldown for the
+        -- effect's time in a full-color gold swipe; off (the default), the
+        -- icon keeps showing its cooldown, gray.
+        auraSwipe = false,
         visibility = "always", opacity = 100, fadeOpacity = 0,
         -- Tracked Bars: the bar's texture and color, its background, the icon's side and the spark.
         barTexture = "mode", barColor = Copy(M.BAR_COLOR), barBackground = "slate", barBackgroundOpacity = 70,
@@ -145,22 +157,25 @@ local function Style(size, perLine, lineGrowth, small)
     return style
 end
 M.styleDefaults = {
-    essential = Style({ 42, 36 }, 12, "down"), utility = Style({ 35, 30 }, 12, "down", true),
-    buffIcon = Style({ 35, 30 }, 12, "up", true), buffBar = Style({ 220, 22 }, 1, "up", true),
+    essential = Style({ 42, 34 }, 12, "down"), utility = Style({ 36, 28 }, 12, "down", true),
+    buffIcon = Style({ 36, 28 }, 12, "up", true), buffBar = Style({ 220, 22 }, 1, "up", true),
 }
-M.customDefaults = { cooldown = Style({ 42, 36 }, 8, "down"), buff = Style({ 35, 30 }, 8, "up", true) }
+M.customDefaults = { cooldown = Style({ 42, 34 }, 8, "down"), buff = Style({ 36, 28 }, 8, "up", true) }
+-- Version 3's default sizes, which move to version 4's (sizes chosen by hand stay).
+M.oldSizes = { essential = { 42, 36 }, utility = { 35, 30 }, buffIcon = { 35, 30 }, cooldown = { 42, 36 }, buff = { 35, 30 } }
 M.defaults = { version = M.VERSION, customBars = {}, nextCustom = 1 }
 for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[viewer]) end
 
 -- Keys Copy Style leaves alone: whether and when a bar shows, its shape,
 -- and its spells' switches.
 M.identityKeys = { show = true, perLine = true, grow = true, lineGrowth = true, width = true, height = true,
+    matchWidth = true, matchHeight = true,
     visibility = true, spells = true }
 M.colorKeys = { borderColor = true, backgroundColor = true, swipeColor = true, barColor = true }
 for _, kind in ipairs(M.glowKinds) do M.colorKeys[kind .. "Color"] = true end
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
-M.ranges = { perLine = { 1, 20, 1 }, spacing = { 0, 20, 1 },
+M.ranges = { perLine = { 1, 20, 1 }, spacing = { 0, 20, 1 }, glowLines = { 2, 16, 1 }, glowThickness = { 1, 4, 1 },
     borderSize = { 1, 4, 1 }, backgroundOpacity = { 0, 100, 5 }, swipeOpacity = { 0, 100, 5 }, readyDuration = { 1, 10, 1 },
     opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 } }
 for _, part in ipairs(M.textParts) do
@@ -180,21 +195,26 @@ function M.LinesFor(grow) return M.horizontalGrowth[grow] and M.lineChoices.hori
 M.anchors = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
 M.anchorLabels = { TOPLEFT = "Top Left", TOP = "Top", TOPRIGHT = "Top Right", LEFT = "Left", CENTER = "Center",
     RIGHT = "Right", BOTTOMLEFT = "Bottom Left", BOTTOM = "Bottom", BOTTOMRIGHT = "Bottom Right" }
-local GLOW_STYLES = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "none", label = "None" } }
+-- Glow looks: Mode Glow (soft), Border, Pixel (marching lines), Blizzard
+-- (the action bar proc loop) and GCD (the Assisted Combat ants).
+local GLOW_STYLES = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "pixel", label = "Pixel" },
+    { id = "blizzard", label = "Blizzard" }, { id = "gcd", label = "GCD" } }
+M.glowStyles = GLOW_STYLES
 M.choices = {
     grow = { { id = "centerH", label = "Centered Horizontal" }, { id = "centerV", label = "Centered Vertical" },
         { id = "right", label = "Horizontal Right" }, { id = "left", label = "Horizontal Left" },
         { id = "down", label = "Vertical Down" }, { id = "up", label = "Vertical Up" } },
     lineGrowth = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" }, { id = "left", label = "Left" } },
     border = { { id = "mode", label = "ModeUI" }, { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
-    procGlow = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "blizzard", label = "Blizzard" },
-        { id = "none", label = "None" } },
-    activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,
+    procGlow = GLOW_STYLES, activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,
     readyMode = { { id = "flash", label = "Flash" }, { id = "always", label = "While Ready" } },
     visibility = { { id = "always", label = "Always" }, { id = "combat", label = "In Combat" }, { id = "noCombat", label = "Out of Combat" },
         { id = "target", label = "In Combat or With a Target" }, { id = "mouseover", label = "Mouseover" }, { id = "hidden", label = "Hidden" } },
     iconSide = { { id = "left", label = "Left" }, { id = "right", label = "Right" } },
 }
 for _, part in ipairs(M.textParts) do M.choices[part .. "Anchor"] = M.anchors end
--- Per-spell switches, and the value each stores while it differs from the bar.
-M.spellKinds = { hide = true, proc = false, active = false, ready = false, buff = false }
+-- Per-spell settings: hide (true while hidden), and each glow while it's on
+-- ({ style, color, pulse, lines, thickness }; the off-cooldown glow also mode
+-- and duration).
+M.spellKinds = { hide = true, proc = "glow", active = "glow", ready = "glow", buff = "glow" }
+M.glowRanges = { lines = { 2, 16, 1 }, thickness = { 1, 4, 1 }, duration = { 1, 10, 1 } }

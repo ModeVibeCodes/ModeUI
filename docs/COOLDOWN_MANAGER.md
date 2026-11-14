@@ -26,61 +26,86 @@ on the shared settings widgets:
   where you choose the tracked spells; outside combat), **Edit Mode** and
   the close button. Edit Mode hides the window and brings it back when it
   ends.
-- **List** on the left: **Blizzard** (the four viewers) and **Custom Bars**,
-  then **+ Cooldown Bar** and **+ Buff Bar** (up to ten custom bars). A bar
-  that's off says so.
-- **Page** on the right: the module's title and on/off switch, a live
-  preview of the bar chosen in the list, and its tabs: Bar, Look, Text,
-  Glows, Spells, Visibility, Copy & Apply.
+- **List** on the left: **Spells and Abilities** (the four viewers), then
+  **Cooldown Bars** and **Buff Bars** (your custom bars, up to ten), each
+  heading with a **+** on its right that makes a new bar of that kind, and
+  each custom bar with a **-** that deletes it after asking (**Delete Bar**
+  in the confirmation). **Resource Bars** come last. A bar that's off says so.
+- **Page** on the right: the module's title and on/off switch, **Editing**
+  (the bar being edited, with a dropdown of every bar, at the top right), a
+  live preview of that bar, and its tabs: Bar, Look, Text, Glows, Spells,
+  Visibility, Copy & Apply.
 
 ### Every bar's settings
 
 | Part | Look and behavior |
 |---|---|
-| Placement | Each bar has a stand-in in ModeUI's Edit Mode (`ModeUICooldownEssential`, ..., `ModeUICooldownCustom1`), one full line long, anchored to the screen, your frames or a viewer. The first line never moves; more lines grow outside it. Essential starts at the bottom middle, 300 px up, Utility under it, Tracked Buffs on top, Tracked Bars to the right; custom bars in the middle of the screen. |
+| Placement | Each bar has a stand-in in ModeUI's Edit Mode (`ModeUICooldownEssential`, ..., `ModeUICooldownCustom1`), one full line long, anchored to the screen or to any ModeUI element (another Cooldown Manager bar, a resource bar, your unit frames, ...). Anchored, it sits 1 px off its target's edge, pixel-perfect at any UI scale; the nudge buttons move it from there. **Match Width** and **Match Height** in the Edit Mode window size its line to what it's anchored on, separately, and follow that element when its size changes (the size is pushed on change, never polled). The first line never moves; more lines grow outside it. Essential starts at the bottom middle, 300 px up, Utility under it, Tracked Buffs on top, Tracked Bars to the right; custom bars in the middle of the screen. Icons are 8 px wider than tall by default (Essential 42 by 34; Utility, buffs and custom bars 36 by 28). |
 | Growth | **Centered Horizontal** (default), **Centered Vertical**, **Horizontal Right**, **Horizontal Left**, **Vertical Down** or **Vertical Up**, with **New Lines** going Down or Up for rows, Right or Left for columns (Tracked Buffs and Bars: Up). **Icons per Line** (12; bars 1; custom bars 8), Spacing (2 px), Width and Height. Spells Blizzard hides (an inactive buff) leave no gap. |
 | Icons | **Border**: **ModeUI** (default; ModeUI's standard border, `Kit.ModeBoxBorder`: one crisp 2px rim in Border Color, #40454C, with corners rounded 4px, on its own frame above the icon), or the action bars' slot rim (**Rounded**, **Square**, with Border Size) or **None**. Inside it the 75% background with the slot grain and the icon, cropped square, starting at the rim's inner edge, so the rim's corners cover the icon's square corners (no mask on Blizzard's textures). Tracked Bars' icons and bar boxes take the same border. Blizzard's round mask and frame art come off. |
-| Cooldown | **Desaturate on Cooldown** (on): an icon goes gray while its spell is on a real cooldown (not the global cooldown, nor while its effect is up); off, icons keep full color. A flat swipe in Swipe Color at Swipe Opacity (70%); Blizzard's gold swipe for an active aura stays. **Edge**, **Bling**, **Ready Flash**, **Out of Range Tint** (Blizzard's red tint on an out-of-range spell; off keeps full color) and, on buffs, **Debuff Border**. Blizzard's out-of-range shade, cut to its round mask, stays faded: repainted it showed as a solid red block, and Blizzard leaves it shown on an icon with no spell yet. |
+| Cooldown | **Desaturate on Cooldown** (on): an icon goes gray while its spell is on a real cooldown (not the global cooldown); off, icons keep full color. A flat swipe in Swipe Color at Swipe Opacity (70%). While a spell's effect is up Blizzard shows the effect's time in a full-color gold swipe; ModeUI shows the spell's own cooldown instead, gray, straight away. **Show Aura Time** brings Blizzard's gold swipe back. **Edge**, **Bling**, **Ready Flash**, **Out of Range Tint** (Blizzard's red tint on an out-of-range spell; off keeps full color) and, on buffs, **Debuff Border**. Blizzard's out-of-range shade, cut to its round mask, stays faded: repainted it showed as a solid red block, and Blizzard leaves it shown on an icon with no spell yet. |
 | Bars | Tracked Bars: the icon in the Mode slot beside the bar's own box, filled in Bar Texture (Mode Gradient) and Bar Color over Bar Background; Icon Side, Spark. |
 | Text | Icons: **Cooldown** and **Count**; bars: **Name**, **Duration**, **Count**. Each with Show This Text, Anchor, Size, Offsets and Color; Font, Outline, Text Shadow, Slug Text. |
-| Glows | Each with a style (Mode Glow, Border or None), a Glow Color and Pulse. Cooldown icons: **Proc Glow** (also Blizzard's own animation; on by default, gold), **Active Glow** (while the spell's effect is up, the time Blizzard shows with its gold swipe), **Off Cooldown Glow** (**Flash** for Glow Time when a cooldown ends, or **While Ready**). One shows at a time: proc, active, off cooldown. Buff icons: **Buff Glow** (while the buff is up). Tracked Bars have none. All but the proc glow start off. |
-| Spells | Clicking a spell in the preview opens its menu: **Show on This Bar**, a switch for each of the bar's glows, **Copy**, **Paste** and **Apply to Bar**; on a custom bar also **Earlier**, **Later** and **Remove from Bar**. Hidden spells leave no gap and show faded in the preview. Switches are kept by the game's cooldown ID. **Reset All Spells** on the Spells tab clears them. |
+| Glows | Every glow starts off on every spell; a spell's menu switches one on. Cooldown icons: **Proc Glow** (the game lights the spell up; Blizzard's own animation stays hidden while the module is on), **Active Glow** (while the spell's effect is up), **Off Cooldown Glow** (**Flash** for Glow Time when a cooldown ends, or **While Ready**). One shows at a time: proc, active, off cooldown. Buff icons: **Buff Glow** (while the buff is up). Tracked Bars have none. Each glow has its own look per spell: a Style (**Mode Glow**, **Border**, **Pixel**: marching lines with Lines and Thickness, **Blizzard**: the game's proc loop, **GCD**: the game's rotation-assist art), a Color and, for Mode Glow and Border, Pulse. The Glows tab sets the **Glow Defaults**, the look a glow starts with when switched on (Proc: Blizzard, gold; Active: Border; Off Cooldown: Pixel; Buff: Mode Glow). |
+| Spells | Clicking a spell in the preview opens its menu: **Show on This Bar**, a switch for each of the bar's glows, each with a **>** that opens its popout beside the menu (**Glow On**, Style, Color, Pulse, Lines, Thickness, and for the off-cooldown glow When and Glow Time; the preview shows that glow while it's open; changing the look switches the glow on), **Copy**, **Paste**, **Apply to Bar** and **Glow Defaults**; on a custom bar also **Earlier**, **Later** and **Remove from Bar**. Hidden spells leave no gap and show faded in the preview. Switches are kept by the game's cooldown ID. **Reset All Spells** on the Spells tab clears them. |
 | Visibility | Show: Always, In Combat, Out of Combat, In Combat or With a Target, Mouseover (Faded Opacity) or Hidden; Opacity; **Show Bar**. |
 | Copy & Apply | The bar being edited is the source; its look goes to the bars you tick, each keeping its size, lines, spells and show settings. **Reset to Defaults**. |
 
 ### Custom bars
 
-**+ Cooldown Bar** makes a bar for spells from Essential and Utility
-Cooldowns; **+ Buff Bar** one for Tracked Buffs. Its preview ends with a
-**+** slot: clicking it lists, as icons, the spells you track in Blizzard's
-Cooldown Manager that the bar can take (pointing at one names it and says
-where it shows now). Clicking one adds it. Blizzard's own icon for that spell
-moves onto the custom bar, so it keeps updating exactly as before, and its
-viewer closes up. A spell sits on one custom bar at a time; adding it to
-another moves it. The bar's Bar tab has its **Name**, how many spells it
-holds and **Delete Bar** (its spells go back to their viewers). A spell that
-isn't tracked now (you removed it in Blizzard's window) stays in the list,
-faded and gray in the preview, and comes back when you track it again. On a
-viewer the **+** slot opens Blizzard's Cooldown Manager instead.
+The **+** on the **Cooldown Bars** heading makes a bar for spells from
+Essential and Utility Cooldowns; the one on **Buff Bars** a bar for Tracked
+Buffs. Its preview ends with a **+** slot. Clicking it opens a list of icons
+in up to three sections (pointing at one names it and says what a click does):
+
+- **Tracked in Blizzard CDM**: the spells Blizzard's Cooldown Manager tracks
+  that the bar can take. Clicking one adds it: Blizzard's own icon for that
+  spell moves onto the custom bar, so it keeps updating exactly as before,
+  and its viewer closes up. A spell sits on one custom bar at a time; adding
+  it to another moves it.
+- **Not in Blizzard CDM**: every other spell the game has for your class and
+  spec in those categories (`C_CooldownViewer.GetCooldownViewerCategorySet`
+  with unlearned spells), grayed; ones you haven't learned say so. On a
+  Cooldown Bar clicking one adds it as a custom spell (below). A buff can only
+  show once Blizzard's Cooldown Manager tracks it, so on a Buff Bar these only
+  point you there.
+- **Items in Your Bags** (Cooldown Bars): what you carry with a Use: effect,
+  such as potions, healthstones and food.
+
+The bar's Bar tab has its **Name**, how many spells it holds and **Delete
+Bar** (its spells go back to their viewers). A tracked spell you stop
+tracking in Blizzard's window stays in the bar, faded and gray in the
+preview, and comes back when you track it again. On a viewer the **+** slot
+opens Blizzard's Cooldown Manager instead.
 
 Custom bars follow the viewer their spells come from for Blizzard's own
 Visibility and the game option: the icons are still that viewer's children.
 
-### Custom spells by ID
+### Custom spells and items
 
-On a Cooldown Bar, the **+** slot's list also has **Spell ID**: type a spell's
-ID and press Enter or **Add**. Any spell works, tracked in Blizzard's
-Cooldown Manager or not. It gets an icon of ModeUI's own on the bar (saved as
-`s<ID>` among the bar's spells), with the bar's border, text, gray on
-cooldown, Proc and Off Cooldown glows, per-spell switches and order, plus a
-blue tint while short of power and a gray one while unusable, and the
-spell's tooltip. It shows only while you know the spell, or what replaces it
-now (an override follows its picture, cooldown and procs). The cooldown and
-recharge come as duration objects straight to the icon's cooldown, which
-draws the numbers; charge counts go straight to the text. The Active and
-Buff glows need Blizzard's own tracking, so they don't light on custom
-spells, and buffs can't be added by ID. Its icons hide while the module is
-off.
+A Cooldown Bar's **+** list ends with **Spell ID** and **Item ID**: type an
+ID and press Enter or **Add**.
+
+- **Spell ID** takes a spell you know, tracked in Blizzard's Cooldown Manager
+  or not; a spell your character doesn't have is refused (it would never
+  show), pointing you at Item ID for an item of the same name (Thistle Tea).
+  It gets an icon of ModeUI's own on the bar (saved as `s<ID>` among the
+  bar's spells), with the bar's border, text, gray on cooldown, Proc and Off
+  Cooldown glows, per-spell switches and order, plus a blue tint while short
+  of power and a gray one while unusable, and the spell's tooltip. It shows
+  only while you know the spell, or what replaces it now (an override follows
+  its picture, cooldown and procs); a class spell added unlearned from the
+  list shows once you learn it. The cooldown and recharge come as duration
+  objects straight to the icon's cooldown, which draws the numbers; charge
+  counts go straight to the text.
+- **Item ID** takes an item with a Use: effect (saved as `i<ID>`): its
+  picture, cooldown (`C_Container.GetItemCooldown`), how many you carry
+  (charges counted), the item's tooltip, gray on cooldown and the Off
+  Cooldown glow. With none left it stays, gray, showing 0.
+
+The Active and Buff glows need Blizzard's own tracking, so they don't light
+on custom spells or items, and neither goes on a Buff Bar. Their icons hide
+while the module is off.
 
 ## What stays Blizzard's
 
@@ -119,7 +144,10 @@ untainted. So ModeUI:
   (`GetCooldownViewerCooldownInfo`), names and icons, and
   `C_Spell.GetSpellCooldown`'s never-secret `isActive` and `isOnGCD` (gray,
   off-cooldown glow). The active glow compares Blizzard's swipe color table
-  by reference (`rawequal`). A buff's active state can be secret in combat;
+  by reference (`rawequal`). While an effect is up, the icon's Cooldown is
+  set to the spell's own cooldown duration object
+  (`SetUseAuraDisplayTime(false)`, `SetCooldownFromDurationObject`) after
+  Blizzard's refresh, so the swipe stays secret-safe. A buff's active state can be secret in combat;
   it goes straight to `SetAlphaFromBoolean` on the glow's textures, which
   accepts secrets from addon code. A secret shown state counts as shown.
 
@@ -135,7 +163,7 @@ custom bar (`custom1`, ...), `customBars` (each bar's ID, name, kind and
 spells in order) and `nextCustom`. Version 2 replaced Lines, First Icon and
 Center Lines with Growth and New Lines, and the ready glow's switch and style
 with the Off Cooldown glow's style (a flash, as before); the migration keeps
-your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Bad data stops startup; nothing is reset.
+your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Bad data stops startup; nothing is reset.
 
 ## Files
 
@@ -145,37 +173,64 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Migrations.lua` | `Initialize(db)`: version 1 to 2, validation |
 | `Driver.lua` | lifecycle, `/mcdm`, events, settings changes, per-spell switches, copy and reset, status |
 | `Custom.lua` | the bar list, custom bars and which spell shows where |
-| `Spells.lua` | custom spells by ID on ModeUI's own icons |
+| `Spells.lua`, `Items.lua` | custom spells and items by ID on ModeUI's own icons |
 | `Blizzard.lua` | finding and hooking Blizzard's viewers and items |
 | `Layout.lua` | Growth geometry, stand-ins and holders, placing the icons |
 | `Skin.lua`, `Bars.lua`, `Text.lua` | icon skin, swipe and gray; Tracked Bars; texts |
 | `Glow.lua` | the four glows; a spell's alpha |
+| `GlowPopout.lua` | a glow's popout beside the spell menu |
 | `Visibility.lua` | Show, Opacity, Mouseover |
 | `SpellMenu.lua`, `Picker.lua`, `Preview.lua` | the preview, its spell menu and the + slot's list |
 | `Settings.lua`, `SettingsTabs.lua` | the settings page |
 | `Window.lua` | the module's own window |
 
 Shared pieces it uses or added: `Shared/Domain/Cooldowns.lua`,
-`Shared/Kit/Slot.lua`, `addon:RegisterSettingsWindow` (Edit Mode returns to
+`Shared/Domain/Items.lua`, `Shared/Kit/Slot.lua`, `Shared/Kit/Glows.lua`
+(Pixel, Blizzard and GCD glows on one shared ticker), `W.Confirm`
+(`Shared/Settings/Confirm.lua`), size matching and pixel gaps in the
+PositionManager (`gapPixels`, `SetSizeMatch`, `AllowTarget`, `RemoveTarget`), `addon:RegisterSettingsWindow` (Edit Mode returns to
 a standalone module's window), `PositionManager:SetLabel`, and the
 `standalone` module field (no sidebar entry or search results in ModeUI's
 window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
 
 ## In-game check
 
-- **Navigation:** type `/mcdm`.
-- **Action:** turn the module on with the switch at the top right of the
-  window's page. Click **+ Cooldown Bar** in the list, then the **+** slot in
-  the preview, and click a spell in the list that opens. Then click
-  **Edit Mode** in the window's header and drag the new bar's stand-in.
-  Click **Exit** in the Edit Mode window.
-- **Required state:** out of combat, with the game's Cooldown Manager option
-  on and spells tracked in Blizzard's Cooldown Manager (**Open CDM**).
-- **Confirmation:** the spell's icon leaves its viewer (the rest close up)
-  and shows on the new bar where you dragged it; icons go gray while their
-  spell cools down; the Cooldown Manager window comes back after Edit Mode;
-  ModeUI's own window (`/modeui`) has no Cooldown Manager page. In combat,
-  cooldowns, charges and procs keep updating, with no Lua errors.
+1. Custom bar, glows and the active swipe
+   - **Navigation:** type `/mcdm`.
+   - **Action:** turn the module on with the switch at the top right of the
+     window's page. Click the **+** on the **Cooldown Bars** heading, then the
+     **+** slot in the preview, and click a spell under **Tracked in Blizzard
+     CDM**. Click that spell's icon in the preview, then the **>** beside
+     **Proc Glow**, and choose **Pixel** under Style. Cast a spell with a
+     lasting effect from Essential Cooldowns.
+   - **Required state:** out of combat for the clicks, with the game's
+     Cooldown Manager option on and spells tracked in Blizzard's Cooldown
+     Manager (**Open CDM**).
+   - **Confirmation:** the spell leaves its viewer (the rest close up) and
+     shows on the new bar; the popout shows the Pixel glow on it in the
+     preview; the cast spell goes gray with its own cooldown at once, with
+     no gold full-color swipe while its effect is up.
+2. Class spells and items
+   - **Navigation:** type `/mcdm`, click your Cooldown Bar in the list.
+   - **Action:** click the **+** slot in the preview; click a grayed icon
+     under **Not in Blizzard CDM**; click a potion or healthstone under
+     **Items in Your Bags**; type a spell ID you don't know in **Spell ID**
+     and click **Add**.
+   - **Required state:** out of combat, carrying a usable item.
+   - **Confirmation:** the grayed spell and the item show on the bar (the
+     item with its count, gray while it cools down); the unknown spell is
+     refused with "You don't know that spell. An item? Add it by Item ID."
+3. Anchoring and matching
+   - **Navigation:** click **Edit Mode** in the window's header.
+   - **Action:** select your custom bar's stand-in, anchor it below
+     Essential Cooldowns, tick **Match Width**, click a nudge button; then
+     change Essential's **Icons per Line** in `/mcdm` (Bar tab).
+   - **Required state:** out of combat.
+   - **Confirmation:** the bar sits 1 px under Essential, the nudge moves it,
+     and its width follows Essential's with no stutter. Clicking **-** on the
+     bar in the list asks before deleting it. ModeUI's own window
+     (`/modeui`) has no Cooldown Manager page. In combat, cooldowns, charges
+     and procs keep updating, with no Lua errors.
 
 ## Resource Bars
 

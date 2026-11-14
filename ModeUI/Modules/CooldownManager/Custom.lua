@@ -98,6 +98,32 @@ end
 
 M.CommitBars = Commit
 
+-- Version 4: bars still in version 3's default places (4 units off what
+-- they hang from: Utility, Tracked Buffs, the resource bars) sit right
+-- against it; the 1px gap comes from the placement itself now.
+function M:MovePlaces()
+    local positions = addon.db and addon.db.positions
+    if type(positions) ~= "table" then return end
+    local olds = { [self.ElementId("utility")] = { self.ElementId("essential"), -4 }, [self.ElementId("buffIcon")] = { self.ElementId("essential"), 4 } }
+    for id, place in pairs(self.resourcePositions or {}) do olds[self.ResourceElementId(id)] = { place.target, -4 } end
+    for eid, old in pairs(olds) do
+        local place = positions[eid]
+        if type(place) == "table" and place.target == old[1] and place.x == 0 and place.y == old[2] and place.point == nil then place.y = 0 end
+    end
+end
+
+-- Custom bars as anchor targets: each saved one at start, a new one when
+-- added; every element of this module may pick it.
+function M:AddBarTargets()
+    for _, bar in ipairs(self.db.customBars) do addon.Positioning:AddTarget(self.ElementId(bar.id), bar.name, self.FrameName(bar.id)) end
+end
+function M:AllowBarTarget(id)
+    local PM = addon.PositionManager
+    for eid, element in pairs(PM.elements) do
+        if element.module == self and eid ~= self.ElementId(id) then PM:AllowTarget(eid, self.ElementId(id)) end
+    end
+end
+
 -- A new custom bar ("cooldown" or "buff"); returns its ID.
 function M:AddCustomBar(kind)
     if not self:CanConfigure() or not self.customKinds[kind] or #self.db.customBars >= self.MAX_CUSTOM then return nil end
@@ -109,13 +135,25 @@ function M:AddCustomBar(kind)
     candidate.customBars[#candidate.customBars + 1] = { id = id, kind = kind, entries = {},
         name = string.format("%s %d", L[self.customKinds[kind].label], count) }
     candidate[id] = Copy(self.customDefaults[kind])
-    return Commit(self, candidate) and id or nil
+    -- Other bars can anchor to it, like to the viewers.
+    local name = candidate.customBars[#candidate.customBars].name
+    addon.Positioning:AddTarget(self.ElementId(id), name, self.FrameName(id))
+    if not Commit(self, candidate) then addon.Positioning:RemoveTarget(self.ElementId(id)); return nil end
+    self:AllowBarTarget(id)
+    return id
 end
 
 -- Deleting a bar gives its spells back to their viewers and forgets its place.
 function M:DeleteCustomBar(id)
     local _, index = self:Custom(id)
     if not self:CanConfigure() or not index then return false end
+    -- The page moves off the bar first, so nothing draws a bar that's gone.
+    if self.selectedBar == id then
+        self.selectedBar = "essential"
+        if self.page then self.page.SetEditing("essential") end
+    end
+    -- What hangs from it moves to the screen where it is.
+    addon.Positioning:RemoveTarget(self.ElementId(id))
     local candidate = Copy(self.db)
     table.remove(candidate.customBars, index)
     candidate[id] = nil
@@ -135,6 +173,7 @@ function M:RenameCustomBar(id, name)
     if not Commit(self, candidate) then return false end
     -- Edit Mode's handle takes the new name.
     if self.built then addon.PositionManager:SetLabel(self.ElementId(id), name) end
+    addon.Positioning:SetTargetLabel(self.ElementId(id), name)
     return true
 end
 

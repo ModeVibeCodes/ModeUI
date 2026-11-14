@@ -15,52 +15,73 @@ if not M then return end
 local Kit, L = addon.Kit, addon.L
 local Cooldowns = addon.Domain.Cooldowns
 
--- style: a bar's settings; count: icons to place; px: one physical pixel.
--- Returns { width, height (the first line), w, h, px, border, inset,
--- extent = { width, height, x, y } (every line, and where the first sits in
--- it), points = { { "TOPLEFT", x, y } } (from the holder's top left) }.
-function M.Geometry(style, count, px)
+-- style: a bar's settings; count: icons to place; px: one physical pixel;
+-- match: { width, height } to take from what the bar hangs from (Match
+-- Width / Match Height), or nil. Returns { width, height (the first line),
+-- w, h (an icon's size), px, border, inset, extent = { width, height, x, y }
+-- (every line, and where the first sits in it), points = { { "TOPLEFT", x, y } }
+-- (from the holder's top left), sizes = { { w, h } } (each icon's own) }.
+--
+-- A line is cut into Icons per Line slots on whole pixels: slot s runs from
+-- Round(s * (line + gap) / per) to the next slot's start less the gap. With
+-- the icons' own size that's exactly icon, gap, icon...; matched to a length
+-- it stays pixel perfect, the icons differing by a pixel at most. Centered
+-- lines shift a short line by half a slot per missing icon.
+function M.Geometry(style, count, px, match)
     px = px or 1
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local function Round(v) return math.floor(v / px + 0.5) * px end
+    local horizontal = M.horizontalGrowth[style.grow] == true
     local w, h, gap = Snap(style.width), Snap(style.height), Round(style.spacing)
     count = math.max(0, count)
     local per = math.max(1, style.perLine)
-    local horizontal = M.horizontalGrowth[style.grow] == true
-    local g = { px = px, w = w, h = h, points = {} }
+    local alongKey, crossKey = horizontal and "width" or "height", horizontal and "height" or "width"
+    local along, cross = horizontal and w or h, horizontal and h or w
+    local long = per * along + (per - 1) * gap
+    if match and match[alongKey] then long = math.max(per * px, Snap(match[alongKey])) end
+    if match and match[crossKey] then cross = Snap(match[crossKey]) end
+    local slot = (long + gap) / per
+    along = math.max(px, Round(slot - gap))
+    if horizontal then w, h = along, cross else w, h = cross, along end
+    local g = { px = px, w = w, h = h, points = {}, sizes = {} }
     -- The ModeUI border is 2px; the content starts at its inner edge.
     if style.border == "mode" then g.border = Kit.BORDER_PIXELS * px; g.inset = g.border
     else g.border, g.inset = Kit.SlotInsets(style, px) end
-    local long = per * (horizontal and w or h) + (per - 1) * gap
-    g.width, g.height = horizontal and long or w, horizontal and h or long
+    g.width, g.height = horizontal and long or cross, horizontal and cross or long
     local function Even(v) return math.floor(v / px + 0.5) % 2 == 1 and v + px or v end
-    g.width, g.height = Even(g.width), Even(g.height)
+    if not (match and match.width) then g.width = Even(g.width) end
+    if not (match and match.height) then g.height = Even(g.height) end
     local lines = math.max(1, math.ceil(count / per))
     local back = style.lineGrowth == "up" or style.lineGrowth == "left"
-    local across = (lines - 1) * ((horizontal and h or w) + gap)
+    local across = (lines - 1) * (cross + gap)
     g.extent = { width = g.width + (horizontal and 0 or across), height = g.height + (horizontal and across or 0),
         x = (not horizontal and back) and across or 0, y = (horizontal and back) and across or 0 }
-    local step = (horizontal and w or h) + gap
-    local size = horizontal and w or h
+    local function Start(at) return Round(at * slot) end
     for i = 1, count do
-        local along, line = (i - 1) % per, math.floor((i - 1) / per)
+        local index, line = (i - 1) % per, math.floor((i - 1) / per)
         local inLine = math.min(per, count - line * per)
-        local offset
-        if style.grow == "right" or style.grow == "down" then offset = along * step
-        elseif style.grow == "left" or style.grow == "up" then offset = long - size - along * step
-        else offset = Round((per - inLine) * step / 2) + along * step end
-        local cross = line * ((horizontal and h or w) + gap) * (back and -1 or 1)
-        if horizontal then g.points[i] = { "TOPLEFT", offset, -cross }
-        else g.points[i] = { "TOPLEFT", cross, -offset } end
+        local at
+        if style.grow == "right" or style.grow == "down" then at = index
+        elseif style.grow == "left" or style.grow == "up" then at = per - 1 - index
+        else at = index + (per - inLine) / 2 end
+        local offset, size = Start(at), Start(at + 1) - gap - Start(at)
+        local shift = line * (cross + gap) * (back and -1 or 1)
+        if horizontal then g.points[i], g.sizes[i] = { "TOPLEFT", offset, -shift }, { size, cross }
+        else g.points[i], g.sizes[i] = { "TOPLEFT", shift, -offset }, { cross, size } end
     end
     return g
 end
 
+-- Places a frame at one of the geometry's points inside `holder`, at that
+-- icon's own size. Returns the geometry for that icon (its own w and h).
 function M.Place(frame, holder, g, index)
-    local p = g.points[index]
+    local p, size = g.points[index], g.sizes and g.sizes[index]
     frame:ClearAllPoints()
     frame:SetPoint(p[1], holder, p[1], p[2], p[3])
-    frame:SetSize(g.w, g.h)
+    local w, h = size and size[1] or g.w, size and size[2] or g.h
+    frame:SetSize(w, h)
+    if w == g.w and h == g.h then return g end
+    return setmetatable({ w = w, h = h }, { __index = g })
 end
 
 -- The stand-ins and holders, built on first enable, and a custom bar's when
@@ -68,7 +89,7 @@ end
 function M:Build()
     if self.built then return end
     self.built = true
-    self.movers, self.holders = {}, {}
+    self.movers, self.holders, self.anchorSizes = {}, {}, {}
     self:SyncBarFrames()
     self:BuildResources()
 end
@@ -84,12 +105,29 @@ function M:EnsureBarFrames(id)
     mover:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     self.movers[id] = mover
     local custom, index = self:Custom(id)
-    local ok, reason = addon.PositionManager:RegisterElement(self.ElementId(id), mover, { moduleId = self.id,
+    local PM, eid = addon.PositionManager, self.ElementId(id)
+    -- Anchors to any ModeUI element (the other bars, resource bars, unit
+    -- frames, action bars...) and to frames picked with Anchor To, 1 physical
+    -- pixel off the side it hangs from.
+    local ok, reason = PM:RegisterElement(eid, mover, { moduleId = self.id,
         defaultPosition = custom and self.CustomPosition(index) or self.defaultPositions[id],
-        allowedTargets = custom and self.customTargets or self.allowedTargets[id],
+        anyTarget = true, gapPixels = 1,
         canDrag = function() return self.active == true and self:HasBar(id) and self.db[id].show end,
         label = custom and custom.name or L[self.viewerSpecs[id].label] })
     assert(ok, "ModeUI: cooldown manager position registration failed: " .. tostring(reason))
+    -- Match Width / Match Height in the Edit Mode window: the bar takes the
+    -- size of what it hangs from (its icons resize to fill it) and follows
+    -- it when that changes size (the target's own OnSizeChanged, no polling).
+    local function Key(axis) return axis == "width" and "matchWidth" or "matchHeight" end
+    PM:SetSizeMatch(eid, { axes = { width = true, height = true },
+        get = function(axis) return self:HasBar(id) and self.db[id][Key(axis)] == true end,
+        set = function(axis, on) return self:SetOption(id, Key(axis), on == true) end })
+    PM:SetAnchorSizeListener(eid, function(_, width, height)
+        if not self:HasBar(id) then return end
+        local Number = addon.IsNumber
+        self.anchorSizes[id] = Number(width, 1, 10000) and Number(height, 1, 10000) and { width = width, height = height } or nil
+        if self.active and (self.db[id].matchWidth or self.db[id].matchHeight) then self:LayoutViewer(id) end
+    end)
     mover:Hide()
     local holder = CreateFrame("Frame", nil, UIParent)
     holder:SetAllPoints(mover)
@@ -101,6 +139,7 @@ function M:SyncBarFrames()
     for _, id in ipairs(self:BarIds()) do self:EnsureBarFrames(id) end
     for id, mover in pairs(self.movers) do
         if not self:HasBar(id) then
+            self.anchorSizes[id] = nil
             addon.PositionManager:UnregisterElement(self.ElementId(id))
             mover:Hide()
             self.movers[id], self.holders[id] = nil, nil
@@ -154,13 +193,12 @@ function M:LayoutViewer(id)
     if not self.built or not self.active or not self.holders[id] then return end
     local style, holder, mover = self.db[id], self.holders[id], self.movers[id]
     local placed, parked = self:Placed(id)
-    local g = self.Geometry(style, #placed, self.PixelSize(holder))
+    local g = self.Geometry(style, #placed, self.PixelSize(holder), self:MatchSize(id))
     mover:SetSize(g.width, g.height)
     for index, item in ipairs(placed) do
         if self:IsOwnIcon(item) then item:Show() end
         if item.SetScale then item:SetScale(1) end
-        self.Place(item, holder, g, index)
-        self:DressItem(id, item, g)
+        self:DressItem(id, item, self.Place(item, holder, g, index))
     end
     -- Spells switched off here wait, unseen, in the middle of the bar.
     for _, item in ipairs(parked) do
@@ -172,6 +210,13 @@ function M:LayoutViewer(id)
     self.placedCount[id] = #placed
     for _, item in ipairs(placed) do if self:IsOwnIcon(item) then self:UpdateSpellIcon(item) end end
     self:QueuePreview(id)
+end
+
+-- The size a bar takes from what it hangs from, on the axes it matches.
+function M:MatchSize(id)
+    local style, size = self.db[id], self.anchorSizes and self.anchorSizes[id]
+    if not size or not (style.matchWidth or style.matchHeight) then return nil end
+    return { width = style.matchWidth and size.width or nil, height = style.matchHeight and size.height or nil }
 end
 
 function M.PixelSize(frame) return Kit.PixelSize(frame) end

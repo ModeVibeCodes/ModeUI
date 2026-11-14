@@ -5,6 +5,7 @@
     <Script file="Driver.lua"/>
     <Script file="Custom.lua"/>
     <Script file="Spells.lua"/>
+    <Script file="Items.lua"/>
     <Script file="Blizzard.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Skin.lua"/>
@@ -15,6 +16,7 @@
     <Script file="Resources.lua"/>
     <Script file="ResourceUpdate.lua"/>
     <Script file="SpellMenu.lua"/>
+    <Script file="GlowPopout.lua"/>
     <Script file="Picker.lua"/>
     <Script file="Preview.lua"/>
     <Script file="ResourcePreview.lua"/>

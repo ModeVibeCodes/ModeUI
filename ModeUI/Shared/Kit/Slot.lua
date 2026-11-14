@@ -84,14 +84,17 @@ function Kit.SlotOverlay(texture, host, inset, color, alpha)
 end
 
 -- A glow on a slot: a soft glow texture and a border of four edges; the
--- style ("mode"/"glow" soft, "border" a frame) picks which shows. It can
--- pulse (an alpha bounce).
+-- style ("mode"/"glow" soft, "border" a frame, and in Glows.lua "pixel",
+-- "blizzard" and "gcd") picks which shows. It can pulse (an alpha bounce).
+-- `frame.parts` lists every texture it draws with, for callers that fade
+-- them (from a boolean that may be secret, say).
 function Kit.SlotGlow(host)
     local frame = CreateFrame("Frame", nil, host)
     frame:SetAllPoints(host)
     frame.soft = frame:CreateTexture(nil, "OVERLAY")
     frame.edges = {}
     for i = 1, 4 do frame.edges[i] = frame:CreateTexture(nil, "OVERLAY", nil, 1) end
+    frame.parts = { frame.soft, frame.edges[1], frame.edges[2], frame.edges[3], frame.edges[4] }
     if frame.CreateAnimationGroup then
         local pulse = frame:CreateAnimationGroup()
         local fade = pulse:CreateAnimation("Alpha")
@@ -103,11 +106,16 @@ function Kit.SlotGlow(host)
     return frame
 end
 
-function Kit.PaintSlotGlow(frame, host, style, color, pulse, px)
+-- options (optional): width and height (the slot's, so nothing is measured),
+-- lines and thickness (Pixel).
+function Kit.PaintSlotGlow(frame, host, style, color, pulse, px, options)
     px = px or 1
     frame:SetFrameLevel(host:GetFrameLevel() + 6)
+    frame.glowWidth, frame.glowHeight = options and options.width, options and options.height
+    Kit.HideGlowExtras(frame, style)
     local soft = style == "glow" or style == "mode"
-    frame.isSoft = soft
+    local drawn = soft or style == "border"
+    frame.isSoft = soft or style == "blizzard" or style == "gcd"
     frame.soft:SetShown(soft)
     if soft then
         frame.soft:ClearAllPoints()
@@ -120,10 +128,14 @@ function Kit.PaintSlotGlow(frame, host, style, color, pulse, px)
     local top, bottom, left, right = frame.edges[1], frame.edges[2], frame.edges[3], frame.edges[4]
     local function Side(edge, a, x1, y1, b, x2, y2)
         edge:ClearAllPoints(); edge:SetPoint("TOPLEFT", host, a, x1, y1); edge:SetPoint("BOTTOMRIGHT", host, b, x2, y2)
-        edge:SetTexture(FLAT); Kit.Tint(edge, color, 1); edge:SetShown(not soft)
+        edge:SetTexture(FLAT); Kit.Tint(edge, color, 1); edge:SetShown(drawn and not soft)
     end
     Side(top, "TOPLEFT", 0, 0, "TOPRIGHT", 0, -t); Side(bottom, "BOTTOMLEFT", 0, t, "BOTTOMRIGHT", 0, 0)
     Side(left, "TOPLEFT", 0, -t, "BOTTOMLEFT", t, t); Side(right, "TOPRIGHT", -t, -t, "BOTTOMRIGHT", 0, t)
+    if style == "pixel" then Kit.PaintPixelGlow(frame, host, color, px, options and options.lines, options and options.thickness)
+    elseif style == "blizzard" or style == "gcd" then Kit.PaintFlipbookGlow(frame, host, style, color, px) end
+    -- Pulse is for the soft glow and the border; the others move already.
+    pulse = pulse and drawn
     if frame.pulse then
         if pulse and not frame.pulse:IsPlaying() then frame.pulse:Play() elseif not pulse then frame.pulse:Stop(); frame:SetAlpha(1) end
     end

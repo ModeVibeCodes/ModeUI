@@ -2,23 +2,25 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- How icons react, and each spell's own switches. Each glow has a style
--- (Mode Glow, Border or None; procs also Blizzard), a color and a pulse.
---   Proc     Blizzard shows a spell alert on a cooldown icon when its spell
---            lights up (ActionButtonSpellAlertManager:ShowAlert/HideAlert,
---            as on the action bars); ModeUI hooks the manager and fades
---            Blizzard's alert while it draws its own.
+-- How icons react. Every glow starts off on every spell; a spell's menu
+-- switches one on, with its own look: style (Mode Glow, Border, Pixel,
+-- Blizzard, GCD), color, pulse, and for Pixel its lines and thickness
+-- (M:SpellGlow).
+--   Proc     the game lights the spell up. On Blizzard's icons that's its
+--            spell alert (ActionButtonSpellAlertManager:ShowAlert/HideAlert,
+--            hooked as on the action bars), which ModeUI hides while it's on;
+--            on custom spells the overlay glow events (Spells.lua).
 --   Active   the spell's effect is up: Blizzard swaps the icon's swipe to its
 --            gold aura color (compared by reference, never secret).
 --   Off Cooldown  on SPELL_UPDATE_COOLDOWN, C_Spell.GetSpellCooldown tells
 --            whether a spell is on a real cooldown (isActive and isOnGCD are
---            never secret). Flash lights the icon for Glow Time when one
+--            never secret). Flash lights the icon for its Glow Time when one
 --            ends; While Ready keeps it lit while the spell is ready.
 --   Buff     a tracked buff is up. Blizzard keeps that as the item's active
 --            state, which can be secret in combat, so the glow's textures
 --            take it through SetAlphaFromBoolean (allowed with secrets).
 -- On a cooldown icon one glow shows at a time: proc, then active, then off
--- cooldown. A spell can have each glow switched off, or be hidden.
+-- cooldown.
 local Kit, Cooldowns, Public = addon.Kit, addon.Domain.Cooldowns, addon.IsPublic
 M.glows = setmetatable({}, { __mode = "k" })
 M.procs = setmetatable({}, { __mode = "k" })
@@ -33,27 +35,30 @@ function M:Glow(item, kind)
     return set[kind]
 end
 
-local function Paint(item, frame, style, color, pulse)
+-- Paints a glow from a look ({ style, color, pulse, lines, thickness }), at
+-- the item's own size (never measured).
+local function Paint(item, frame, look)
     local state = M.dress[item]
-    Kit.PaintSlotGlow(frame, item, style, color, pulse, state and state.g and state.g.px or 1)
+    local g = state and state.g
+    Kit.PaintSlotGlow(frame, item, look.style, look.color, look.pulse, g and g.px or 1,
+        { width = g and g.w, height = g and g.h, lines = look.lines, thickness = look.thickness })
 end
 M.PaintGlow = Paint
 
--- Wants (or not) one kind of glow on an item, painted in the bar's style.
-function M:WantGlow(item, kind, on, style)
+-- Wants (look) or not (nil) one kind of glow on an item.
+function M:WantGlow(item, kind, look)
     local set = self.glows[item]
-    if not on and not (set and set[kind]) then return end
+    if not look and not (set and set[kind]) then return end
     local glow = self:Glow(item, kind)
-    if on then Paint(item, glow, style[kind .. "Glow"], style[kind .. "Color"], style[kind .. "Pulse"]) end
-    glow.wanted = on
+    if look then Paint(item, glow, look) end
+    glow.wanted = look ~= nil
 end
 
--- Proc, then active, then off cooldown; Blizzard's own proc animation
--- counts as a proc.
+-- Proc, then active, then off cooldown.
 function M:ResolveGlows(item)
     local set = self.glows[item]
     if not set then return end
-    local winner = set.blizzard and "blizzard" or nil
+    local winner
     for _, kind in ipairs(ORDER) do
         local glow = set[kind]
         if not winner and glow and glow.wanted then winner = kind end
@@ -61,45 +66,40 @@ function M:ResolveGlows(item)
     for _, kind in ipairs(ORDER) do if set[kind] then set[kind]:SetShown(winner == kind) end end
 end
 
--- Every glow on one item, from its bar's settings and its state now.
+-- Every glow on one item, from its spell's glows and its state now.
 function M:ApplyGlows(item)
     local owner = self:Owner(item)
     local style = owner and self.db[owner]
     if not style or self:IsBar(owner) then return end
     local key, on, buff = self:SpellKey(item), self.active == true, self:IsBuff(owner)
-    local function Allowed(kind) return on and style[kind .. "Glow"] ~= "none" and self:SpellSwitch(owner, key, kind) end
-    -- Proc: Blizzard's alert shows for its own style, and whenever ModeUI is off.
-    local proc = not buff and Allowed("proc") and self.procs[item] == true
+    local function Look(kind) return on and self:SpellGlow(owner, key, kind) or nil end
+    -- Blizzard's own alert hides while ModeUI is on: ModeUI draws the procs.
     local alert = item.SpellActivationAlert
-    if alert and alert.SetAlpha then alert:SetAlpha((not on or (proc and style.procGlow == "blizzard")) and 1 or 0) end
-    if proc or self.glows[item] then
-        local set = self.glows[item] or {}
-        self.glows[item] = set
-        set.blizzard = proc and style.procGlow == "blizzard"
-    end
-    self:WantGlow(item, "proc", proc and style.procGlow ~= "blizzard", style)
-    self:WantGlow(item, "active", not buff and Allowed("active") and self.AuraUp(item), style)
-    local cooling = self.cooling[item]
-    local ready = not buff and Allowed("ready") and ((style.readyMode == "always" and cooling ~= nil and cooling.on == false)
-        or (style.readyMode == "flash" and self.flashing[item] ~= nil))
-    self:WantGlow(item, "ready", ready, style)
+    if alert and alert.SetAlpha then alert:SetAlpha(on and 0 or 1) end
+    local proc = not buff and self.procs[item] == true and Look("proc") or nil
+    self:WantGlow(item, "proc", proc)
+    self:WantGlow(item, "active", not buff and self.AuraUp(item) and Look("active") or nil)
+    local ready, cooling = not buff and Look("ready") or nil, self.cooling[item]
+    if ready and not ((ready.mode == "always" and cooling ~= nil and cooling.on == false)
+        or (ready.mode == "flash" and self.flashing[item] ~= nil)) then ready = nil end
+    self:WantGlow(item, "ready", ready)
     self:ResolveGlows(item)
-    self:ApplyBuffGlow(item, buff and Allowed("buff"), style)
+    self:ApplyBuffGlow(item, buff and Look("buff") or nil)
 end
 
--- The buff glow: shown while wanted, its textures as opaque as the buff is
--- up (the item's active state, passed to the client as it is).
-function M:ApplyBuffGlow(item, wanted, style)
+-- The buff glow: shown while the buff's glow is on, its textures as opaque
+-- as the buff is up (the item's active state, passed to the client as it is).
+function M:ApplyBuffGlow(item, look)
     local set = self.glows[item]
-    if not wanted then
+    if not look then
         if set and set.buff then set.buff:Hide() end
         return
     end
     local glow = self:Glow(item, "buff")
-    Paint(item, glow, style.buffGlow, style.buffColor, style.buffPulse)
+    Paint(item, glow, look)
     glow:Show()
     local up = item.isActive
-    for _, region in ipairs({ glow.soft, unpack(glow.edges) }) do
+    for _, region in ipairs(glow.parts) do
         if Public(up) then region:SetAlpha(up == true and 1 or 0)
         elseif region.SetAlphaFromBoolean then region:SetAlphaFromBoolean(up) end
     end
@@ -145,14 +145,15 @@ function M:UpdateCooldowns()
         local owner = self:Owner(item)
         local style = owner and self.db[owner]
         local id = style and self:SpellKey(item)
-        local cooling = id and Cooldowns.Cooling(self:CooldownSpell(id))
+        local cooling = id and self:EntryCooling(id)
         local state = self.cooling[item]
         local ended = state and state.id == id and state.on == true and cooling == false
         state = state or {}
         state.id, state.on = id, cooling
         self.cooling[item] = state
         if style then
-            if ended and style.readyGlow ~= "none" and style.readyMode == "flash" then self:FlashReady(item, style.readyDuration)
+            local ready = ended and self:SpellGlow(owner, id, "ready")
+            if ready and ready.mode == "flash" then self:FlashReady(item, ready.duration)
             else self:ApplyGlows(item) end
             if self:IsOwnIcon(item) then self:UpdateSpellIcon(item) else self:StyleDesaturation(item, style) end
         end
@@ -182,7 +183,6 @@ function M:RefreshGlows()
     if self.active then return end
     for item, set in pairs(self.glows) do
         for _, kind in ipairs(ORDER) do if set[kind] then set[kind].wanted = false end end
-        set.blizzard = nil
         self:ResolveGlows(item)
         if set.buff then set.buff:Hide() end
     end

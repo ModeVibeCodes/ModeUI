@@ -204,3 +204,37 @@
         for item in viewer.itemFramePool:EnumerateActive() do list[#list + 1] = item end
         return list
     end
+    -- Blizzard's Cooldown frame: whether it shows an aura's time (12.x).
+    function methods:SetUseAuraDisplayTime(on) self.auraTime = on end
+    -- Your class's full cooldown sets, learned or not (106 unlearned, 303
+    -- and 106 not shown by the viewers).
+    Enum = Enum or {}
+    Enum.CooldownViewerCategory = { Essential = 0, Utility = 1, TrackedBuff = 2, TrackedBar = 3 }
+    spellsOf[106], spellsOf[303] = 5006, 7003
+    classSets, unlearned = { [0] = { 101, 102, 103, 104, 105, 106 }, [1] = { 201, 202 }, [2] = { 301, 302, 303 }, [3] = { 401, 402 } }, { [106] = true }
+    C_CooldownViewer.GetCooldownViewerCategorySet = function(category, allowUnlearned) assert(allowUnlearned == true); return classSets[category] or {} end
+    C_CooldownViewer.GetCooldownViewerCooldownInfo = function(id)
+        return spellsOf[id] and { cooldownID = id, spellID = spellsOf[id], isKnown = not unlearned[id] } or nil
+    end
+    -- Items: names, counts, cooldowns, what's in the backpack. Linen Cloth
+    -- (2589) has no Use: effect.
+    itemNames = { [5512] = 'Healthstone', [191380] = 'Healing Potion', [7676] = 'Thistle Tea', [2589] = 'Linen Cloth' }
+    itemCounts, itemCooldowns, backpack = { [5512] = 1, [191380] = 3, [2589] = 20 }, {}, { 5512, 2589, 191380 }
+    C_Item = {
+        DoesItemExistByID = function(id) return itemNames[id] ~= nil end,
+        RequestLoadItemDataByID = function() end,
+        GetItemNameByID = function(id) return itemNames[id] end,
+        GetItemIconByID = function(id) return itemNames[id] and 'item:' .. id or nil end,
+        GetItemCount = function(id, bank, uses) assert(bank == false and uses == true); return itemCounts[id] or 0 end,
+        IsUsableItem = function(id) return (itemCounts[id] or 0) > 0, false end,
+        GetItemSpell = function(id) if itemNames[id] and id ~= 2589 then return 'Use', 80000 + id % 1000 end end,
+    }
+    C_Container = {
+        GetItemCooldown = function(id) local c = itemCooldowns[id]; if c then return c[1], c[2], 1 end return 0, 0, 1 end,
+        GetContainerNumSlots = function(bag) return bag == 0 and #backpack or 0 end,
+        GetContainerItemInfo = function(bag, slot)
+            local id = bag == 0 and backpack[slot]
+            if id then return { itemID = id, iconFileID = 'item:' .. id, stackCount = itemCounts[id], itemName = itemNames[id] } end
+        end,
+    }
+    function GameTooltip:SetItemByID(id) self.item = id end
