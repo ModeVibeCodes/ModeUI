@@ -34,7 +34,7 @@ M.palette = {
 }
 -- The Onyx skin, locked for every frame: default health fill, empty bar, the
 -- 2px slate rim and the 2px black gap inside it (owner, layout version 9).
-M.onyx = { health = RGB(28, 30, 33), track = RGB(10, 11, 12), border = RGB(106, 115, 125), inner = RGB(0, 0, 0) }
+M.onyx = { health = RGB(19, 18, 18), track = RGB(10, 11, 12), border = RGB(106, 115, 125), inner = RGB(0, 0, 0) }
 -- Plain-text name colors that contrast the cool Onyx/slate skin (owner's
 -- picks). Sky, the owner's own color (layout version 11), is the default.
 M.nameAccents = { sky = RGB(145, 198, 255), champagne = RGB(242, 223, 184), lilac = RGB(201, 187, 255),

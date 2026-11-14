@@ -21,7 +21,7 @@ world.run([====[
     for _,key in ipairs(M.retiredKeys) do assert(M.frameDefaults.player[key]==nil and M.db.player[key]==nil,'retired: '..key) end
     -- The locked Onyx skin and the Sky, Champagne, Lilac and Frost name colors.
     local function Hex(c) return string.format('%02X%02X%02X',math.floor(c[1]*255+0.5),math.floor(c[2]*255+0.5),math.floor(c[3]*255+0.5)) end
-    assert(Hex(O.health)=='1C1E21' and Hex(O.track)=='0A0B0C' and Hex(O.border)=='6A737D' and Hex(O.inner)=='000000')
+    assert(Hex(O.health)=='131212' and Hex(O.track)=='0A0B0C' and Hex(O.border)=='6A737D' and Hex(O.inner)=='000000')
     assert(Hex(M.ACCENT)=='91C6FF' and Hex(M.nameAccents.sky)=='91C6FF' and Hex(M.nameAccents.champagne)=='F2DFB8' and Hex(M.nameAccents.lilac)=='C9BBFF' and Hex(M.nameAccents.frost)=='EAF1F8')
     local ids={};for _,c in ipairs(M.choices.nameColor) do ids[#ids+1]=c.id end
     assert(table.concat(ids,',')=='sky,champagne,lilac,frost,class,custom')
@@ -88,7 +88,7 @@ world.run([====[
     local function Soft(c,amount) amount=amount or 0.4;return {c[1]+(1-c[1])*amount,c[2]+(1-c[2])*amount,c[3]+(1-c[3])*amount} end
     local function Near(a,b) return math.abs(a-b)<1e-9 end
     local rc=addon.ClassColors:GetColor('ROGUE');local rogue={rc.r,rc.g,rc.b}
-    assert(p.health.statusBarColor[1]==O.health[1] and t.health.statusBarColor[1]==O.health[1],'Onyx #1C1E21 health by default')
+    assert(p.health.statusBarColor[1]==O.health[1] and t.health.statusBarColor[1]==O.health[1],'Onyx #131212 health by default')
     assert(p.nameText.color[1]==M.ACCENT[1] and t.nameText.color[2]==M.ACCENT[2] and p.nameText:GetText()=='Fixture','plain Sky names')
     assert(t.nameText.text.label=='name','secret target name passed straight to SetText')
     -- The suite's text style: every text has an opaque one-pixel shadow and a lifted
