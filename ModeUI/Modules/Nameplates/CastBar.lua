@@ -18,6 +18,8 @@ if not M then return end
 local Kit, Domain = addon.Kit, addon.Domain
 local Cast, UnitColor = Domain.Cast, Domain.UnitColor
 local TIMER_STEP = 0.1
+-- The timer's room on a line it shares with the spell name, in font sizes.
+M.CAST_TIMER_EMS = 2.5
 
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
 
@@ -108,9 +110,13 @@ function M:LayoutCast(plate)
         Place(text, h == "" and "CENTER" or h, db[entry.show])
     end
     -- A spell name on the left and a timer on the right, both inside, share the
-    -- line: the name stops where the timer starts.
+    -- line: the name stops short of the room the timer takes. The timer text
+    -- spans the bar and may be secret (so it can't be measured); its room comes
+    -- from the font size, wide enough for "00.0".
     if db.castShowTimer and db.castTextAnchor == "LEFT" and db.castTimerAnchor == "RIGHT" then
-        plate.castText:SetPoint("RIGHT", plate.castTimer, "LEFT", -2 * px, 0)
+        local room = Snap(size * M.CAST_TIMER_EMS, px)
+        local right = -2 * px + Round(db.castTimerX) - room - 2 * px
+        plate.castText:SetPoint("RIGHT", plate.cast, "RIGHT", right, Round(db.castTextY))
     end
 end
 

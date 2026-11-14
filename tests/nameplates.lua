@@ -622,6 +622,11 @@ world.run([==[
     assert(sample.castTarget.color[1] == paladin.r, 'target in its class color')
     assert(sample.castTimer:IsShown() and sample.castTimer.text == '1.0', 'timer shows seconds left: ' .. tostring(sample.castTimer.text))
     assert(Point(sample.castText)[1] == 'LEFT' and Point(sample.castIcon)[1] == 'TOPLEFT', 'icon on the left')
+    -- Spell name left, timer right: the name ends before the timer's room, on
+    -- the bar (the timer text spans the bar, so its left edge would hide the name).
+    local shared = Point(sample.castText, 2)
+    assert(shared[1] == 'RIGHT' and shared[2] == sample.cast and shared[3] == 'RIGHT', 'spell name stops on the bar, not on the timer')
+    assert(shared[4] < -sample.castText:GetHeight(), 'room kept for the timer: ' .. tostring(shared[4]))
     assert(M:SetOption('enemy', 'castIcon', 'RIGHT') and Point(sample.castIcon)[1] == 'TOPRIGHT' and sample.castIcon:IsShown(), 'icon on the right')
     assert(M:SetOption('enemy', 'castIcon', 'none') and not sample.castIcon:IsShown() and Point(sample.cast)[2] == sample.castBox, 'icon hidden')
     assert(M:SetOption('enemy', 'castShowTimer', false) and not sample.castTimer:IsShown(), 'timer off')
