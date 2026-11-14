@@ -20,16 +20,11 @@ if not M then return end
 -- See Blizzard_AuraContainer (Blizzard_CustomAuraContainer.lua,
 -- Blizzard_CustomAuraButton.lua) and docs/API_COMPATIBILITY.md.
 local Kit, Auras = addon.Kit, addon.Domain.Auras
-local TEMPLATE = "CustomAuraContainerTemplate"
-local DISPELS = { "Magic", "Curse", "Disease", "Poison", "Enrage", "Bleed" }
+local TEMPLATE, DISPELS = Kit.AURA_CONTAINER_TEMPLATE, Kit.DISPEL_NAMES
 
-function M:UsesAuraContainers()
-    if self.auraContainers == nil then
-        local ok, info = pcall(function() return C_XMLUtil and C_XMLUtil.GetTemplateInfo(TEMPLATE) end)
-        self.auraContainers = (ok and info ~= nil) and true or false
-    end
-    return self.auraContainers
-end
+-- Detection, dispel color curves and the time format are shared with every
+-- module that uses containers (Shared/Kit/AuraContainer.lua).
+function M:UsesAuraContainers() return Kit.HasAuraContainers() end
 
 -- Everything buttons bake in when they are made.
 local function LookKey(style, path, px)
@@ -56,40 +51,11 @@ end
 -- IDs without a named type take the no-type color.
 local function DispelColors(style, group, alpha)
     local none = NoTypeColor(style, group)
-    local function Color(c) return CreateColor(c[1], c[2], c[3], alpha or 1) end
-    if C_CurveUtil and C_CurveUtil.CreateColorCurve and Enum and Enum.LuaCurveType then
-        local ok, curve = pcall(function()
-            local made = C_CurveUtil.CreateColorCurve()
-            made:SetType(Enum.LuaCurveType.Step)
-            for id, name in pairs(M.dispelTypeIDs) do
-                made:AddPoint(id, Color(name == "none" and none or style[M.dispelColorKeys[name]]))
-            end
-            return made
-        end)
-        if ok and curve then return { customDispelColorCurve = curve } end
-    end
-    local map = { None = Color(none) }
-    for _, name in ipairs(DISPELS) do map[name] = Color(style[M.dispelColorKeys[name]]) end
-    return { customDispelColorMap = map }
+    return Kit.AuraDispelColors(function(name) return name == "none" and none or style[M.dispelColorKeys[name]] end, alpha)
 end
 
--- Seconds as whole numbers, minutes past a minute ("12", "3m"); nil leaves
--- the game's own format. Made once.
-function M:AuraTimeFormatter()
-    if self.timeFormatter == nil then
-        self.timeFormatter = false
-        if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter then
-            local ok, formatter = pcall(function()
-                local made = C_StringUtil.CreateNumericRuleFormatter()
-                made:AddBreakpoint({ threshold = 0, step = 1, format = "%d" })
-                made:AddBreakpoint({ threshold = 60, format = "%dm", components = { { div = 60, step = 1 } } })
-                return made
-            end)
-            if ok and formatter then self.timeFormatter = formatter end
-        end
-    end
-    return self.timeFormatter or nil
-end
+-- Seconds as whole numbers, minutes past a minute ("12", "3m").
+function M:AuraTimeFormatter() return Kit.AuraTimeFormatter() end
 
 -- Styles one button as it is made: the parts of Kit.AuraIcon on the button,
 -- then registers them so the container fills them (possibly with secrets).

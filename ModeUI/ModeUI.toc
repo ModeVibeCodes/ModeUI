@@ -54,6 +54,7 @@ Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
 Shared\Kit\Cast.lua
 Shared\Kit\AuraIcon.lua
+Shared\Kit\AuraContainer.lua
 Shared\Placement\DisplayModes.lua
 Shared\Placement\EditMode.lua
 Shared\Placement\Positioning.lua

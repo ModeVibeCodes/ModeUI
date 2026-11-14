@@ -124,8 +124,7 @@ M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Diseas
     Poison = "auraPoisonColor", Enrage = "auraEnrageColor", Bleed = "auraBleedColor" }
 -- The game's dispel type IDs, the x values of a dispel color curve
 -- (C_UnitAuras.GetAuraDispelTypeColor); "none" gets the no-type color.
-M.dispelTypeIDs = { [0] = "none", [1] = "Magic", [2] = "Curse", [3] = "Disease", [4] = "Poison", [5] = "none",
-    [9] = "Enrage", [10] = "none", [11] = "Bleed", [12] = "none" }
+M.dispelTypeIDs = Kit.DISPEL_TYPE_IDS
 
 M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 },
     auraBorderSize = { 1, 3, 1 },
