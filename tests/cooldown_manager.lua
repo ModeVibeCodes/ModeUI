@@ -89,6 +89,21 @@ world.run([==[
     assert(M:SetOption('essential', 'desaturate', false) and items[1].Icon.desaturated == false, 'off: full color')
     assert(M:SetOption('essential', 'desaturate', true) and items[1].Icon.desaturated == true)
     cooling[5001] = false; FireEvent('SPELL_UPDATE_COOLDOWN'); assert(items[1].Icon.desaturated == false, 'color back when ready')
+    -- A cooldown running out sends no event, and Blizzard's own refresh as
+    -- it ends can still find it cooling: the ticker asks again.
+    cooling[5001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
+    local ticker = M.coolingTicker
+    assert(items[1].Icon.desaturated == true and ticker:IsShown() and M.watching[items[1]], 'watched while cooling')
+    ticker.scripts.OnUpdate(ticker, 0.25)
+    assert(items[1].Icon.desaturated == true and ticker:IsShown(), 'still cooling: still gray')
+    items[1]:RefreshIconDesaturation()
+    cooling[5001] = false
+    ticker.scripts.OnUpdate(ticker, 0.1)
+    assert(items[1].Icon.desaturated == true, 'asks every 0.2 seconds, not every frame')
+    ticker.scripts.OnUpdate(ticker, 0.15)
+    assert(items[1].Icon.desaturated == false and not M.watching[items[1]], 'ended with no event: color back')
+    ticker.scripts.OnUpdate(ticker, 0.25)
+    assert(not ticker:IsShown(), 'nothing left to watch: the ticker stops')
 
     -- Active spells: no gold full-color swipe by default; the spell's own
     -- cooldown, gray, straight away.
@@ -167,7 +182,7 @@ world.run([==[
     for _, viewer in ipairs({ essential, utility, buffs }) do for _, item in ipairs(ItemsOf(viewer)) do byKey[item:GetCooldownID()] = item end end
     assert(M:AddEntry(c1, '102') and M:AddEntry(c1, '201'))
     assert(Point(byKey[102])[2] == M.holders.custom1 and Point(byKey[201])[2] == M.holders.custom1, 'icons move onto the custom bar')
-    assert(M.placedCount.essential == 4 and M.placedCount.utility == 1, 'their viewers close up')
+    assert(M.placedCount.essential == 4 and M.placedCount.utility == 2, 'their viewers close up (Utility keeps Berserking)')
     assert(Point(byKey[102])[4] == 132 and Point(byKey[201])[4] == 176, 'in the order added, centered')
     assert(M:MoveEntry(c1, '201', -1) and Point(byKey[201])[4] == 132, 'Earlier')
     assert(not M:AddEntry(c1, '301'), 'a Cooldown Bar takes no buffs')
@@ -218,7 +233,9 @@ world.run([==[
     cooling[9001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == true, 'gray while cooling')
     assert(M:SetSpellSwitch(c1, 's9001', 'ready', true) and M:SetSpellGlow(c1, 's9001', 'ready', 'mode', 'always') and not (M.glows[own] and M.glows[own].ready and M.glows[own].ready:IsShown()))
-    cooling[9001] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
+    cooling[9001] = false; M.coolingTicker.scripts.OnUpdate(M.coolingTicker, 0.25)
+    assert(own.Icon.desaturated == false, "a custom spell's icon gets its color back with no event too")
+    FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == false and M.glows[own].ready:IsShown(), 'ready: color and the While Ready glow')
     assert(M:SetSpellSwitch(c1, 's9001', 'proc', true))
     spellUsable[9001] = { false, true }; FireEvent('SPELL_UPDATE_USABLE')
@@ -312,11 +329,12 @@ world.run([==[
     assert(picker.buttons[7]:IsShown() and picker.buttons[7].key == '202', 'all seven tracked cooldowns from Essential and Utility')
     local unknown = picker.buttons[8]
     assert(unknown.key == 's5006' and unknown.icon.desaturated and unknown.where:find('not learned', 1, true), 'an unlearned class spell, grayed')
-    assert(picker.buttons[9].key == 'i5512' and picker.buttons[10].key == 'i191380' and not (picker.buttons[11] and picker.buttons[11]:IsShown()), 'usable items in your bags (no cloth)')
+    assert(picker.buttons[9].key == 's26297' and picker.buttons[9].where:find('Not in Blizzard CDM', 1, true) and picker.buttons[9].add ~= nil, 'your racial, for a bar that does not show it')
+    assert(picker.buttons[10].key == 'i5512' and picker.buttons[11].key == 'i191380' and not (picker.buttons[12] and picker.buttons[12]:IsShown()), 'usable items in your bags (no cloth)')
     assert(picker.headings[3]:IsShown() and picker.spellRow:IsShown() and picker.itemRow:IsShown(), 'Spell ID and Item ID on a Cooldown Bar')
     unknown.scripts.OnClick(unknown)
     assert(M:Custom(c1).entries[#M:Custom(c1).entries] == 's5006', 'added as a custom spell')
-    assert(picker.buttons[8].key == 'i5512', 'gone from the list')
+    assert(picker.buttons[8].key == 's26297', 'gone from the list')
     knownSpells[7676] = false
     picker.idInput:SetText('7676'); picker.idAdd.scripts.OnClick(picker.idAdd)
     assert(picker.idResult.text:find("know that spell", 1, true), 'a spell you do not know is refused, pointing at Item ID')
@@ -326,7 +344,7 @@ world.run([==[
     assert(picker.idResult.text == 'That item has no Use: effect.')
     picker.itemRow.input:SetText('999'); picker.itemRow.add.scripts.OnClick(picker.itemRow.add)
     assert(picker.idResult.text == 'No item has that ID.')
-    picker.buttons[8].scripts.OnClick(picker.buttons[8])
+    picker.buttons[9].scripts.OnClick(picker.buttons[9])
     assert(M:Custom(c1).entries[#M:Custom(c1).entries] == 'i5512', 'an item from your bags')
     -- An item's icon: picture, count, cooldown, gray with none left.
     local stone = M.spellIcons[c1].i5512
@@ -377,7 +395,7 @@ world.run([==[
     -- A spell's own text look from its menu's Text row.
     view.icons[1].scripts.OnMouseUp(view.icons[1], 'LeftButton')
     assert(menu:IsShown() and menu.textRows.cooldown.more:IsShown() and menu.textRows.count.more:IsShown() and not menu.textRows.name.more:IsShown())
-    assert(menu.remove:IsShown() and not menu.earlier:IsShown(), "Remove from Bar on Essential; no order for Blizzard's own")
+    assert(menu.remove:IsShown() and menu.earlier:IsShown() and not menu.earlier.enabled and menu.later.enabled, "Remove from Bar and order on Essential")
     menu.textRows.count.more.scripts.OnClick(menu.textRows.count.more)
     local text = M.textPopout
     assert(text:IsShown() and text.part == 'count' and text.title.text == 'Count Text' and view.textPart == 'count' and not text.reset.enabled)
@@ -401,6 +419,61 @@ world.run([==[
     text.reset.scripts.OnClick(text.reset)
     assert(M.db.essential.spells['101'] == nil and live.font[2] == 12 and live.font[3] == 'OUTLINE' and live.alpha == 1, "Use Bar's Look")
     menu:Hide(); assert(not text:IsShown())
+    -- Dragging a spell in the preview moves it on the bar.
+    local function Live(id) for _, item in ipairs(ItemsOf(essential)) do if item.cooldownID == id then return item end end end
+    local thirdX = Point(Live(103))[4]
+    local s1, s3 = view.icons[1], view.icons[3]
+    assert(s1.key == '101' and s3.key == '103')
+    s1.scripts.OnMouseDown(s1, 'LeftButton'); s1.scripts.OnDragStart(s1)
+    assert(view.ghost:IsShown() and s1.alpha == 0.3 and view.frame.scripts.OnUpdate, 'a copy of the icon follows the cursor')
+    s3.mouseOver = true; view.frame.scripts.OnUpdate(view.frame)
+    assert(s3.highlight:IsShown() and not s1.highlight:IsShown(), 'the slot under the cursor lights up')
+    s1.scripts.OnDragStop(s1); s3.mouseOver = false
+    s1.scripts.OnMouseUp(s1, 'LeftButton')
+    assert(not menu:IsShown() and not view.ghost:IsShown() and not view.frame.scripts.OnUpdate, 'a drag is not a click; nothing left running')
+    assert(M.db.order.essential[1] == '102' and M.db.order.essential[3] == '101', 'the order is saved')
+    assert(view.icons[3].key == '101' and Point(Live(101))[4] == thirdX, 'the preview and the bar follow')
+    s1 = view.icons[1]; s1.scripts.OnMouseDown(s1, 'LeftButton'); s1.scripts.OnDragStart(s1); s1.scripts.OnDragStop(s1)
+    assert(M.db.order.essential[1] == '102', 'let go off any other slot: it stays')
+    essential:RefreshLayout()
+    assert(Point(Live(101))[4] == thirdX, "kept after Blizzard's own layout")
+    view.icons[3].scripts.OnMouseDown(view.icons[3], 'LeftButton'); view.icons[3].scripts.OnMouseUp(view.icons[3], 'LeftButton')
+    assert(menu:IsShown() and menu.key == '101', 'a click still opens the menu')
+    menu.later.scripts.OnClick(menu.later)
+    assert(M.db.order.essential[4] == '101', 'Later')
+    menu:Hide()
+    assert(M:MoveSpell('essential', '101', 1) and view.icons[1].key == '101' and not M:MoveSpell('essential', '101', 9), 'back first; no ninth place')
+    -- Racials show on their own, on Utility by default.
+    local berserk = M.spellIcons.utility.s26297
+    assert(M.db.racials == 'utility' and berserk and berserk:IsShown() and Point(berserk)[2] == M.holders.utility, 'Berserking on Utility')
+    assert(M:Entries('utility')[#M:Entries('utility')] == 's26297' and #M.db.extras.utility == 0, 'listed, not saved')
+    assert(not M.spellIcons.utility.s20594 and not M.spellIcons.utility.s28730, "other races' racials stay off")
+    M:SelectBar('utility')
+    assert(page.racialsSelect and view.icons[#M:SpellOrder('utility')].key == 's26297', 'Racial Abilities on the Bar tab; in the preview')
+    assert(M:RemoveEntry('utility', 's26297') and M:SpellSwitch('utility', 's26297', 'hide') and berserk.alpha == 0, 'Remove from Bar hides it')
+    assert(M:SetSpellSwitch('utility', 's26297', 'hide', false))
+    assert(M:SetRacials('essential') and M.spellIcons.essential.s26297:IsShown() and not M.spellIcons.utility.s26297, 'moved to Essential')
+    assert(not M:SetRacials('buffIcon') and M.db.racials == 'essential', 'not on Tracked Buffs')
+    local temp = M:AddCustomBar('cooldown')
+    assert(M:SetRacials(temp) and M.spellIcons[temp].s26297 and M:DeleteCustomBar(temp) and M.db.racials == 'utility', 'a deleted bar gives them back to Utility')
+    assert(M:SetRacials('none') and not M.spellIcons.utility.s26297 and not M.spellIcons.essential.s26297, 'Off')
+    assert(M:SetRacials('utility'))
+    -- An orc: IsSpellKnown says yes to another class's Blood Fury too,
+    -- which isn't in the spellbook; and two versions with one name show once.
+    knownSpells[20572], knownSpells[33702], knownSpells[26297] = true, true, false
+    noSlot[33702] = true
+    local function Racials() M:Refresh(); return table.concat(M:RacialKeys(), ',') end
+    assert(Racials() == 's20572', "only the version in the spellbook")
+    noSlot[33702] = nil
+    local getName = C_Spell.GetSpellName
+    C_Spell.GetSpellName = function(id) if id == 20572 or id == 33702 then return 'Blood Fury' end return getName(id) end
+    assert(Racials() == 's20572', 'one Blood Fury')
+    assert(M:Entries('utility')[#M:Entries('utility')] == 's20572' and M.spellIcons.utility.s20572:IsShown(), 'on Utility')
+    C_Spell.GetSpellName = getName
+    knownSpells[20572], knownSpells[33702], knownSpells[26297] = false, false, nil
+    local bloodFury = M.spellIcons.utility.s20572
+    assert(Racials() == 's26297' and not bloodFury:IsShown() and not M.spellIcons.utility.s20572, "back to a troll: Blood Fury's icon put away")
+    M:SelectBar('essential')
     M:SelectBar('buffIcon')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     assert(cdmToggles == 1, "Tracked Buffs' + opens Blizzard's Cooldown Manager")
@@ -443,7 +516,7 @@ H.Load({ before = STUBS }).run([==[
 local restored = H.Load({ before = STUBS .. "\nMakeViewers()", saved = world.saved() })
 restored.run([==[
     local M = addon.CooldownManager
-    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 5, 'settings persist')
+    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 6 and M.db.racials == 'utility', 'settings persist')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
     assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
@@ -513,6 +586,9 @@ Refused(function(db) db.customBars[2].entries = { "s9001" } end, "a spell by ID 
 Refused(function(db) db.customBars[1].entries = { "x9001" } end, "a bad spell key")
 Refused(function(db) db.customBars[2].entries = { "i5512" } end, "an item on a Buff Bar")
 Refused(function(db) db.extras.buffIcon = { "302" } end, "spells taken by Tracked Buffs")
+Refused(function(db) db.order = { essential = { "101", "101" } } end, "a spell twice in an order")
+Refused(function(db) db.order = { custom9 = { "101" } } end, "an order for no viewer")
+Refused(function(db) db.racials = "buffIcon" end, "racials on Tracked Buffs")
 Refused(function(db) db.extras.essential = { "s9001", "s9001" } end, "Essential's spells twice")
 local function Text(look) return { ["101"] = { text = { count = look } } } end
 local function Copy(t) local c = {}; for k, v in pairs(t) do c[k] = type(v) == "table" and Copy(v) or v end; return c end

@@ -6,6 +6,7 @@
     <Script file="Custom.lua"/>
     <Script file="Spells.lua"/>
     <Script file="Items.lua"/>
+    <Script file="Racials.lua"/>
     <Script file="Blizzard.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Skin.lua"/>
@@ -20,6 +21,7 @@
     <Script file="TextPopout.lua"/>
     <Script file="Picker.lua"/>
     <Script file="Preview.lua"/>
+    <Script file="PreviewDrag.lua"/>
     <Script file="ResourcePreview.lua"/>
     <Script file="Settings.lua"/>
     <Script file="SettingsTabs.lua"/>

@@ -67,7 +67,14 @@ function M.EntriesIn(db, id)
     for _, bar in ipairs(db.customBars) do if bar.id == id then return bar.entries end end
 end
 local NONE = {} -- read only
-function M:Entries(id) return self.EntriesIn(self.db, id) or NONE end
+-- A bar's list as it shows: on the racials' bar, your racials follow it
+-- (Racials.lua). Read only.
+function M:Entries(id)
+    local stored = self.EntriesIn(self.db, id)
+    if not stored then return NONE end
+    if self.db.racials == id then return self:WithRacials(id, stored) end
+    return stored
+end
 -- Whether the + slot adds spells to a bar, and whether spells by ID and
 -- items too (Cooldown Bars, Essential and Utility).
 function M:TakesEntries(id) return self.EntriesIn(self.db, id) ~= nil end
@@ -187,6 +194,8 @@ function M:DeleteCustomBar(id)
     local candidate = Copy(self.db)
     table.remove(candidate.customBars, index)
     candidate[id] = nil
+    -- Racials on it go back to Utility.
+    if candidate.racials == id then candidate.racials = "utility" end
     if not Commit(self, candidate) then return false end
     local positions = addon.db and addon.db.positions
     if type(positions) == "table" then positions[self.ElementId(id)] = nil end
@@ -236,23 +245,72 @@ function M:RemoveEntry(id, key)
     local candidate = Copy(self.db)
     local entries, found = self.EntriesIn(candidate, id), false
     for i = #entries, 1, -1 do if entries[i] == key then table.remove(entries, i); found = true end end
-    if not found and not self:IsCustom(id) then return self:SetSpellSwitch(id, key, "hide", true) end
+    -- A viewer's own spell, or a racial the bar shows on its own, hides there.
+    if not found and (not self:IsCustom(id) or self:IsRacialHere(id, key)) then return self:SetSpellSwitch(id, key, "hide", true) end
     candidate[id].spells[key] = nil
     return Commit(self, candidate)
 end
 
--- Moves a spell earlier (-1) or later (+1) in its bar's own list.
-function M:MoveEntry(id, key, delta)
-    if not self:CanConfigure() or not self:TakesEntries(id) then return false end
+-- The order spells show in on a bar. A custom bar's is its list. A
+-- viewer's is Blizzard's (its own spells, then what it took) until you move
+-- one (owner, November 14, 2026): then db.order[viewer] ranks the keys, and
+-- spells it doesn't name follow in their own order. ModeUI lays the icons
+-- out, so Blizzard's own order in its window is untouched.
+-- Sorts `list` (items or keys; KeyOf gives each one's key) in place.
+function M:Ordered(id, list, KeyOf)
+    local order = self.db.order[id]
+    if not order or #order == 0 or #list < 2 then return list end
+    local rank, last = {}, #order
+    for index, key in ipairs(order) do rank[key] = index end
+    local scored = {}
+    for index, value in ipairs(list) do
+        local key = KeyOf(value)
+        scored[index] = { value, (key and rank[key]) or (last + index) }
+    end
+    table.sort(scored, function(a, b) return a[2] < b[2] end)
+    for index, pair in ipairs(scored) do list[index] = pair[1] end
+    return list
+end
+
+-- The keys a bar shows now, in order (the preview's spells, faded ones too).
+function M:SpellOrder(id)
+    local keys = {}
+    for _, entry in ipairs((self:PreviewEntries(id))) do if entry.key then keys[#keys + 1] = entry.key end end
+    return keys
+end
+
+-- Moves a spell to place `index` on its bar (dragged in the preview, or
+-- Earlier and Later in its menu).
+function M:MoveSpell(id, key, index)
+    if not self:CanConfigure() or not self:HasBar(id) or type(index) ~= "number" then return false end
+    local keys, from = self:SpellOrder(id), nil
+    for i, other in ipairs(keys) do if other == key then from = i end end
+    if not from or index < 1 or index > #keys or index == from then return false end
+    table.remove(keys, from)
+    table.insert(keys, index, key)
     local candidate = Copy(self.db)
-    local entries = self.EntriesIn(candidate, id)
-    for i, entry in ipairs(entries) do
-        if entry == key then
-            local j = i + delta
-            if j < 1 or j > #entries then return false end
-            entries[i], entries[j] = entries[j], entries[i]
-            return Commit(self, candidate)
-        end
+    local custom = self:Custom(id)
+    if custom then
+        -- The bar's list in the new order; anything not shown keeps its place at the end.
+        -- A racial the bar shows on its own joins its list once moved.
+        local entries, placed, allowed = self.EntriesIn(candidate, id), {}, {}
+        for _, k in ipairs(self:Entries(id)) do allowed[k] = true end
+        local list = {}
+        for _, k in ipairs(keys) do if allowed[k] and not placed[k] then placed[k] = true; list[#list + 1] = k end end
+        for _, e in ipairs(entries) do if not placed[e] then list[#list + 1] = e end end
+        for i = #entries, 1, -1 do entries[i] = nil end
+        for i, k in ipairs(list) do entries[i] = k end
+    else
+        while #keys > self.MAX_ORDER do keys[#keys] = nil end
+        candidate.order[id] = keys
+    end
+    return Commit(self, candidate)
+end
+
+-- Moves a spell earlier (-1) or later (+1) on its bar.
+function M:MoveEntry(id, key, delta)
+    for index, other in ipairs(self:SpellOrder(id)) do
+        if other == key then return self:MoveSpell(id, key, index + delta) end
     end
     return false
 end

@@ -152,6 +152,8 @@ function M:StyleDesaturation(item, style)
     -- With Show Aura Time on, the icon keeps Blizzard's full color while the
     -- effect's time shows; off, it's gray for as long as the spell cools.
     if cooling ~= nil then icon:SetDesaturated(cooling and not (style.auraSwipe and self.AuraUp(item))) end
+    -- Gray until the cooldown ends, which no event reports (Glow.lua).
+    if cooling == true then self:WatchCooling(item, true) end
 end
 
 -- Show Aura Time off: while the spell's effect is up, the icon shows the

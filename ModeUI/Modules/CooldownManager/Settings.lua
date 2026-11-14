@@ -172,6 +172,14 @@ function M:BuildBarTab(ui)
                 if M:DeleteCustomBar(ui.Viewer()) then M:SelectBar("essential") end
             end)
         end)
+        -- Racials (Racials.lua): one choice for the module, shown on the bars that can take them.
+        ui.When(function() return M:TakesOwn(ui.Viewer()) end, function()
+            page:Group(L["Racial Abilities"])
+            local racials = ui.Columns({ "Show On" })
+            page.racialsSelect = ui.SelectIn(racials[1], 240, function() return M:RacialChoices() end,
+                function() return M.db.racials end, function(value) M:SetRacials(value) end)
+            ui.Note("Your race's abilities (Berserking, Stoneform, Arcane Torrent...) show on their own at the end of the bar picked here; Blizzard's Cooldown Manager doesn't track them. Remove from Bar hides one; the + list adds one to another bar.", 48)
+        end)
         page:Group(L["Layout"])
         local grow = ui.Columns({ "Growth" })
         page.growSelect = ui.SelectIn(grow[1], 240, function() return M.choices.grow end, function() return db().grow end, ui.Set("grow")); ui.Mark("layout")

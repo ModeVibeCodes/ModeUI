@@ -119,6 +119,31 @@ local function ValidExtras(db)
     end
 end
 
+-- A viewer's spell order: unique keys (added without a version step: a
+-- profile saved before it keeps Blizzard's order).
+local function ValidOrder(db)
+    if db.order == nil then db.order = {} end
+    assert(type(db.order) == "table", "Invalid cooldown manager spell order")
+    for viewer, keys in pairs(db.order) do
+        assert(M.viewerSpecs[viewer] and type(keys) == "table" and #keys <= M.MAX_ORDER, "Invalid cooldown manager spell order")
+        local seen = {}
+        for i, key in pairs(keys) do
+            assert(type(i) == "number" and i >= 1 and i <= #keys and Key(key) and not seen[key], "Invalid cooldown manager spell order: " .. viewer)
+            seen[key] = true
+        end
+    end
+end
+
+-- The bar racials show on: "none", Essential, Utility or a custom Cooldown
+-- Bar (added without a version step: a profile saved before shows them on
+-- Utility).
+local function ValidRacials(db)
+    if db.racials == nil then db.racials = "utility" end
+    local ok = db.racials == "none" or M.entryViewers[db.racials] ~= nil
+    for _, bar in ipairs(db.customBars) do if bar.id == db.racials and bar.kind == "cooldown" then ok = true end end
+    assert(ok, "Invalid cooldown manager racials bar")
+end
+
 -- Custom bars: at most MAX_CUSTOM, each with a unique "customN" ID below
 -- nextCustom, a name, a kind and its spells (unique cooldown ID keys).
 local function ValidCustom(db)
@@ -222,6 +247,8 @@ function M.Initialize(db)
     end
     ValidCustom(db)
     ValidExtras(db)
+    ValidOrder(db)
+    ValidRacials(db)
     -- Resource Bars (ResourceInit.lua): added without a version step; a
     -- profile saved before them takes their defaults.
     M.ValidateResources(db)

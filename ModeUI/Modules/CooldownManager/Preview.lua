@@ -53,6 +53,7 @@ function M:PreviewEntries(id)
         if self.IsItemEntry(key) then Entry(key, true)
         elseif self.IsSpellEntry(key) then Entry(key, Cooldowns.Known(self:SpellOf(key))) else Entry(key, tracked[key] == true) end
     end
+    if not self:IsCustom(id) then self:Ordered(id, entries, function(entry) return entry.key end) end
     if #entries > 0 or self:IsCustom(id) then return entries, true end
     for i = 1, SAMPLE_COUNT do entries[i] = { icon = SAMPLE_ICON, name = string.format(L["Sample %d"], i) } end
     return entries, false
@@ -81,15 +82,19 @@ local function Hover(sample)
     sample:SetScript("OnLeave", function() sample.highlight:Hide() end)
 end
 
--- A sample that lights up under the mouse and opens its spell menu.
+-- A sample that lights up under the mouse, opens its spell menu, and can
+-- be dragged to a new place on the bar (PreviewDrag.lua).
 local function Sample(view, index, bar)
     local list = bar and view.bars or view.icons
     local sample = list[index]
     if sample then return sample end
     sample = M:BuildSample(view.holder, bar)
     Hover(sample)
+    M:EnableSampleDrag(view, sample)
     sample:SetScript("OnMouseUp", function(_, mouse)
         if mouse ~= nil and mouse ~= "LeftButton" then return end
+        -- A press that became a drag isn't a click.
+        if view.dragged then view.dragged = nil; return end
         M:JumpTo("spells")
         if sample.key then M:OpenSpellMenu(view, sample.key, sample) end
     end)
@@ -177,7 +182,7 @@ function M:RenderPreview(view)
         local state = self:Dress(sample)
         state.viewer, state.g = id, g
         self.Place(sample, view.holder, g, index)
-        sample.key = entry.key
+        sample.key, sample.index, sample.dragIcon = entry.key, index, entry.icon
         if bar then self:SkinBar(sample, style, g, state) else self:SkinIcon(sample, style, g, state) end
         self:StyleTexts(id, sample, style, g, entry.key or false)
         local focus = view.menuKey ~= nil and entry.key == view.menuKey and view.textPart or nil
@@ -227,7 +232,7 @@ function M:CreateConfigPreview(parent)
     view.holder = CreateFrame("Frame", nil, view.area)
     view.caption = W.Label(frame, "", nil, 0, 0, 360, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
-    view.hint = W.Label(frame, L["Click a spell for its own switches"], nil, 0, 0, 220, T.faint or T.muted)
+    view.hint = W.Label(frame, L["Click a spell for its switches; drag to move"], nil, 0, 0, 240, T.faint or T.muted)
     view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2); view.hint:SetJustifyH("RIGHT")
     function view.Refresh() M:RenderPreview(view) end
     view.RenderSimulation = view.Refresh

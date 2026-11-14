@@ -159,6 +159,12 @@ function M:UntrackedCandidates(id)
             list[#list + 1] = { key = key, spell = entry.spellID, known = entry.known }
         end
     end
+    -- Your racials, on a bar that doesn't show them already.
+    if self:TakesOwn(id) then
+        for _, key in ipairs(self:RacialKeys()) do
+            if not here[key] then list[#list + 1] = { key = key, spell = tonumber(key:sub(2)), known = true } end
+        end
+    end
     return list
 end
 

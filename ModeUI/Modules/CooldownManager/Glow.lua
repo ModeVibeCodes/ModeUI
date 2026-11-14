@@ -151,11 +151,60 @@ function M:UpdateCooldowns()
         state = state or {}
         state.id, state.on = id, cooling
         self.cooling[item] = state
+        self:WatchCooling(item, cooling == true)
         if style then
             local ready = ended and self:SpellGlow(owner, id, "ready")
             if ready and ready.mode == "flash" then self:FlashReady(item, ready.duration)
             else self:ApplyGlows(item) end
             if self:IsOwnIcon(item) then self:UpdateSpellIcon(item) else self:StyleDesaturation(item, style) end
+        end
+    end
+end
+
+-- Cooldowns running out. The game sends no event when one ends, and
+-- Blizzard's own refresh at that moment (its cooldown frame's
+-- OnCooldownDone, timed by itself) can still find the spell cooling in
+-- C_Spell.GetSpellCooldown, which would leave the icon gray and the
+-- off-cooldown glow unlit. So each icon on a real cooldown is watched: a
+-- shared ticker asks again every WATCH_EVERY seconds, only while one is
+-- watched, and brings every icon up to date once one has ended.
+local WATCH_EVERY = 0.2
+M.watching = setmetatable({}, { __mode = "k" })
+function M:WatchCooling(item, on)
+    if not on then self.watching[item] = nil; return end
+    self.watching[item] = true
+    local ticker = self.coolingTicker
+    if ticker and ticker:IsShown() then return end
+    if not ticker then
+        ticker = CreateFrame("Frame")
+        ticker.elapsed = 0
+        ticker:SetScript("OnUpdate", function(frame, elapsed)
+            frame.elapsed = frame.elapsed + (elapsed or 0)
+            if frame.elapsed < WATCH_EVERY then return end
+            frame.elapsed = 0
+            M.Safe(function() M:CheckCooling() end)
+        end)
+        self.coolingTicker = ticker
+    end
+    ticker.elapsed = 0
+    ticker:Show()
+end
+
+-- One tick: stops with nothing to watch (or the module off); otherwise any
+-- watched icon whose cooldown ended (or that shows another spell now)
+-- brings every icon up to date, which watches those still cooling again.
+function M:CheckCooling()
+    if not self.active or next(self.watching) == nil then
+        for item in pairs(self.watching) do self.watching[item] = nil end
+        self.coolingTicker:Hide()
+        return
+    end
+    for item in pairs(self.watching) do
+        local key = self:SpellKey(item)
+        local state = self.cooling[item]
+        if not key or not state or state.id ~= key or self:EntryCooling(key) ~= true then
+            self:UpdateCooldowns()
+            return
         end
     end
 end

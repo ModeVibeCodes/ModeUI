@@ -43,11 +43,11 @@ on the shared settings widgets:
 | Placement | Each bar has a stand-in in ModeUI's Edit Mode (`ModeUICooldownEssential`, ..., `ModeUICooldownCustom1`), one full line long, anchored to the screen or to any ModeUI element (another Cooldown Manager bar, a resource bar, your unit frames, ...). Anchored, it sits 1 px off its target's edge, pixel-perfect at any UI scale; the nudge buttons move it from there. **Match Width** and **Match Height** in the Edit Mode window size its line to what it's anchored on, separately, and follow that element when its size changes (the size is pushed on change, never polled). The first line never moves; more lines grow outside it. Essential starts at the bottom middle, 300 px up, Utility under it, Tracked Buffs on top, Tracked Bars to the right; custom bars in the middle of the screen. Icons are 8 px wider than tall by default (Essential 42 by 34; Utility, buffs and custom bars 36 by 28). |
 | Growth | **Centered Horizontal** (default), **Centered Vertical**, **Horizontal Right**, **Horizontal Left**, **Vertical Down** or **Vertical Up**, with **New Lines** going Down or Up for rows, Right or Left for columns (Tracked Buffs and Bars: Up). **Icons per Line** (12; bars 1; custom bars 8), Spacing (2 px), Width and Height. Spells Blizzard hides (an inactive buff) leave no gap. |
 | Icons | **Border**: **ModeUI** (default; ModeUI's standard border, `Kit.ModeBoxBorder`: one crisp 2px rim in Border Color, #40454C, with corners rounded 4px, on its own frame above the icon), or the action bars' slot rim (**Rounded**, **Square**, with Border Size) or **None**. Inside it the 75% background with the slot grain and the icon, cropped square, starting at the rim's inner edge, so the rim's corners cover the icon's square corners (no mask on Blizzard's textures). Tracked Bars' icons and bar boxes take the same border. Blizzard's round mask and frame art come off. |
-| Cooldown | **Desaturate on Cooldown** (on): an icon goes gray while its spell is on a real cooldown (not the global cooldown); off, icons keep full color. A flat swipe in Swipe Color at Swipe Opacity (70%). While a spell's effect is up Blizzard shows the effect's time in a full-color gold swipe; ModeUI shows the spell's own cooldown instead, gray, straight away. **Show Aura Time** brings Blizzard's gold swipe back. **Edge**, **Bling**, **Ready Flash**, **Out of Range Tint** (Blizzard's red tint on an out-of-range spell; off keeps full color) and, on buffs, **Debuff Border**. Blizzard's out-of-range shade, cut to its round mask, stays faded: repainted it showed as a solid red block, and Blizzard leaves it shown on an icon with no spell yet. |
+| Cooldown | **Desaturate on Cooldown** (on): an icon goes gray while its spell is on a real cooldown (not the global cooldown) and takes its color back within a fifth of a second of the cooldown ending: the game sends no event then, so icons on a real cooldown are asked about again by one small ticker that runs only while one is cooling; off, icons keep full color. A flat swipe in Swipe Color at Swipe Opacity (70%). While a spell's effect is up Blizzard shows the effect's time in a full-color gold swipe; ModeUI shows the spell's own cooldown instead, gray, straight away. **Show Aura Time** brings Blizzard's gold swipe back. **Edge**, **Bling**, **Ready Flash**, **Out of Range Tint** (Blizzard's red tint on an out-of-range spell; off keeps full color) and, on buffs, **Debuff Border**. Blizzard's out-of-range shade, cut to its round mask, stays faded: repainted it showed as a solid red block, and Blizzard leaves it shown on an icon with no spell yet. |
 | Bars | Tracked Bars: the icon in the Mode slot beside the bar's own box, filled in Bar Texture (Mode Gradient) and Bar Color over Bar Background; Icon Side, Spark. |
 | Text | Icons: **Cooldown** and **Count**; bars: **Name**, **Duration**, **Count**. The Text tab sets the bar's look: each text's Show This Text, Anchor, Size, Offsets and Color; Font, Outline, Text Shadow, Slug Text. A spell can have its own look per text from its menu (below). |
 | Glows | Every glow starts off on every spell; a spell's menu switches one on. Cooldown icons: **Proc Glow** (the game lights the spell up; Blizzard's own animation stays hidden while the module is on), **Active Glow** (while the spell's effect is up), **Off Cooldown Glow** (**Flash** for Glow Time when a cooldown ends, or **While Ready**). One shows at a time: proc, active, off cooldown. Buff icons: **Buff Glow** (while the buff is up). Tracked Bars have none. Each glow has its own look per spell: a Style (**Mode Glow**, **Border**, **Pixel**: marching lines with Lines and Thickness, **Blizzard**: the game's proc loop, **GCD**: the game's rotation-assist art), a Color and, for Mode Glow and Border, Pulse. The Glows tab sets the **Glow Defaults**, the look a glow starts with when switched on (Proc: Blizzard, gold; Active: Border; Off Cooldown: Pixel; Buff: Mode Glow). |
-| Spells | Clicking a spell in the preview opens its menu: **Show on This Bar**, a switch for each of the bar's glows, each with a **>** that opens its popout beside the menu (**Glow On**, Style, Color, Pulse, Lines, Thickness, and for the off-cooldown glow When and Glow Time; the preview shows that glow while it's open; changing the look switches the glow on), a **Text** row per text (Cooldown Text and Count Text on icons; Name, Duration and Count Text on bars), each with a **>** that opens its text popout (**Show This Text**, **Text Shadow**, **Font**, **Size**, **Color**, **Outline**: None, Outline or Thick, **Anchor**, **Offset X** and **Offset Y**; the first change copies the bar's look and changes it, the row then says "own look", and **Use Bar's Look** goes back; the preview shows that text on the spell while it's open), **Copy**, **Paste**, **Apply to Bar** and **Glow Defaults**; on a custom bar, Essential and Utility also **Remove from Bar** (a viewer's own spell hides there), with **Earlier** and **Later** for spells the bar took. One popout shows at a time. Hidden spells leave no gap and show faded in the preview. Switches are kept by the game's cooldown ID. **Reset All Spells** on the Spells tab clears them. |
+| Spells | Clicking a spell in the preview opens its menu: **Show on This Bar**, a switch for each of the bar's glows, each with a **>** that opens its popout beside the menu (**Glow On**, Style, Color, Pulse, Lines, Thickness, and for the off-cooldown glow When and Glow Time; the preview shows that glow while it's open; changing the look switches the glow on), a **Text** row per text (Cooldown Text and Count Text on icons; Name, Duration and Count Text on bars), each with a **>** that opens its text popout (**Show This Text**, **Text Shadow**, **Font**, **Size**, **Color**, **Outline**: None, Outline or Thick, **Anchor**, **Offset X** and **Offset Y**; the first change copies the bar's look and changes it, the row then says "own look", and **Use Bar's Look** goes back; the preview shows that text on the spell while it's open), **Copy**, **Paste**, **Apply to Bar**, **Glow Defaults**, **Earlier** and **Later**; on a custom bar, Essential and Utility also **Remove from Bar** (a viewer's own spell hides there). One popout shows at a time. **Dragging** a spell in the preview moves it: a copy of its icon follows the cursor, the slot under it lights up, and letting go there puts the spell in that place (a plain click still opens the menu). On a custom bar this is its list's order; on a viewer it's ModeUI's own order for that bar (`order`), which only changes where ModeUI lays the icons out: Blizzard's window keeps its order, and spells it starts tracking later go at the end. Only the preview's icons can be dragged; Blizzard's icons on screen are never made draggable. Hidden spells leave no gap and show faded in the preview. Switches are kept by the game's cooldown ID. **Reset All Spells** on the Spells tab clears them. |
 | Visibility | Show: Always, In Combat, Out of Combat, In Combat or With a Target, Mouseover (Faded Opacity) or Hidden; Opacity; **Show Bar**. |
 | Copy & Apply | The bar being edited is the source; its look goes to the bars you tick, each keeping its size, lines, spells and show settings. **Reset to Defaults**. |
 
@@ -94,6 +94,20 @@ slot opens Blizzard's Cooldown Manager.
 
 Custom bars follow the viewer their spells come from for Blizzard's own
 Visibility and the game option: the icons are still that viewer's children.
+
+### Racial abilities
+
+Your race's abilities (Berserking, Stoneform, Arcane Torrent, Fireblood,
+...) are added on their own. Blizzard's Cooldown Manager doesn't track them,
+so they show on ModeUI's own icons at the end of one bar: **Utility** by
+default. **Racial Abilities** on the Bar tab of Essential, Utility or a
+Cooldown Bar picks the bar, or **Off**. Only racials your character knows
+show (`C_SpellBook.IsSpellKnown`, and in your spellbook: `FindSpellBookSlotForSpell`; one per name, so an orc sees one Blood Fury), worked out again whenever your spells
+change, so nothing is saved per racial. They work like spells added by ID:
+cooldown, charges, gray on cooldown, the Proc and Off Cooldown glows, text
+looks, dragging. **Remove from Bar** hides one there. Another bar's **+**
+list offers them under **Not in Blizzard CDM**. Deleting the custom bar that
+held them moves them back to Utility.
 
 ### Custom spells and items
 
@@ -177,7 +191,7 @@ custom bar (`custom1`, ...), `customBars` (each bar's ID, name, kind and
 spells in order) and `nextCustom`. Version 2 replaced Lines, First Icon and
 Center Lines with Growth and New Lines, and the ready glow's switch and style
 with the Off Cooldown glow's style (a flash, as before); the migration keeps
-your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Bad data stops startup; nothing is reset.
+your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), `order = { essential = { "102", "101", ... } }`, a viewer's spell order once you move one, `racials` (the bar racials show on: `"utility"` by default, `"essential"`, a custom Cooldown Bar's ID or `"none"`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Bad data stops startup; nothing is reset.
 
 ## Files
 
@@ -187,14 +201,14 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Migrations.lua` | `Initialize(db)`: version 1 to 2, validation |
 | `Driver.lua` | lifecycle, `/mcdm`, events, settings changes, per-spell switches, copy and reset, status |
 | `Custom.lua` | the bar list, custom bars, what Essential and Utility took, and which spell shows where |
-| `Spells.lua`, `Items.lua` | custom spells and items by ID on ModeUI's own icons |
+| `Spells.lua`, `Items.lua`, `Racials.lua` | custom spells, items and racials on ModeUI's own icons |
 | `Blizzard.lua` | finding and hooking Blizzard's viewers and items |
 | `Layout.lua` | Growth geometry, stand-ins and holders, placing the icons |
 | `Skin.lua`, `Bars.lua`, `Text.lua` | icon skin, swipe and gray; Tracked Bars; texts and a spell's own text looks |
 | `Glow.lua` | the four glows; a spell's alpha |
 | `GlowPopout.lua`, `TextPopout.lua` | a glow's and a text's popout beside the spell menu |
 | `Visibility.lua` | Show, Opacity, Mouseover |
-| `SpellMenu.lua`, `Picker.lua`, `Preview.lua` | the preview, its spell menu and the + slot's list |
+| `SpellMenu.lua`, `Picker.lua`, `Preview.lua`, `PreviewDrag.lua` | the preview, its spell menu, the + slot's list, and dragging spells to move them |
 | `Settings.lua`, `SettingsTabs.lua` | the settings page |
 | `Window.lua` | the module's own window |
 
@@ -262,6 +276,29 @@ window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
      spell shows a sample cooldown in the preview, and on screen its cooldown
      numbers turn thick-outlined, top left, larger, while the other spells
      keep the bar's look; **Use Bar's Look** puts them back.
+5. Dragging to reorder
+   - **Navigation:** type `/mcdm`, click **Essential Cooldowns** in the list.
+   - **Action:** press on the first spell in the preview, drag it onto the
+     third, and let go; then do the same on your Cooldown Bar; then click a
+     spell without dragging.
+   - **Required state:** out of combat, with at least three spells on each
+     bar.
+   - **Confirmation:** while dragging, a copy of the icon follows the cursor
+     and the third slot lights up; after letting go the spell is third in the
+     preview and on screen, and stays third after `/reload`; Blizzard's own
+     Cooldown Manager window keeps its order; the plain click opens the
+     spell's menu.
+6. Racial abilities
+   - **Navigation:** type `/mcdm`, click **Utility Cooldowns** in the list.
+   - **Action:** look at the end of the preview; then on the Bar tab under
+     **Racial Abilities** pick **Essential Cooldowns** in **Show On**, then
+     **Off**, then **Utility Cooldowns** again. Use the racial in combat.
+   - **Required state:** a character with an active racial (Berserking,
+     Stoneform, Arcane Torrent...), out of combat for the clicks.
+   - **Confirmation:** your racial shows at the end of Utility (on screen
+     and in the preview) and only your race's; it moves to Essential, goes
+     away with Off and comes back on Utility; in combat it shows its
+     cooldown and goes gray while cooling, with no Lua errors.
 
 ## Resource Bars
 
