@@ -50,6 +50,12 @@ frame and fades Blizzard's art. Each plate has:
   size (icon size, or the level's text size). Indicators on the same anchor line
   up in one row; beside the bar the row sits past the raid marker, and aura rows
   and target arrows sit past it. Clicking one in the preview selects it.
+- **Soft Target Icon** (on by default): the cursor the game shows over your soft
+  target (a sword on your soft enemy, a bag or gear on what your interact key
+  would use), centered above everything on the plate's top edge, with a
+  **Size** and **Offset X/Y**. It replaces the icon Blizzard draws on its own
+  plate, which ModeUI fades with the rest. Which soft targets get one stays the
+  game's interact icon setting in its Accessibility options.
 - **Slug Text** (on by default): text drawn from glyph outlines, sharp at any
   size. See [API_COMPATIBILITY.md](API_COMPATIBILITY.md) for how it is applied.
 - **Auras** in three groups, the **raid marker**, and a **target indicator**.
@@ -161,14 +167,14 @@ centered. It's built by the same code as the plates in the world, so it matches
 every setting, including Name Only, the target style and auras with their type
 colors. **Static** shows the cast 60% done; **Animated** loops it. **Click any
 part of the sample** (health bar, name, health text, cast bar, an aura, the raid
-marker or the combo points) to jump to its settings; parts light up under the mouse.
+marker, the soft-target icon or the combo points) to jump to its settings; parts light up under the mouse.
 
 ## Settings page
 
 Tabs: **Nameplates** (style, size, textures, health), **Text** (name, health
 text, font), **Cast Bar** (layout, content, colors), **Auras**, **Target** (target
-indicator and combo points) and **Indicators** (the level, elite and quest indicator, and the raid
-marker). Clicking text in the preview opens its settings only where the text is
+indicator and combo points) and **Indicators** (the level, elite and quest indicator, the raid
+marker and the soft-target icon). Clicking text in the preview opens its settings only where the text is
 written; the rest of the bar opens the health settings. Each tab starts
 with the Editing switch; settings are grouped on cards with accent titles, with
 related sliders and choices side by side.
@@ -178,6 +184,8 @@ related sliders and choices side by side.
 - Where plates appear, their stacking, scale, clicks and hit areas.
 - Friendly plates inside instances (forbidden to addons).
 - Your personal resource display, and widget-only plates.
+  Their soft-target icons, and the ones the game draws for objects itself, are
+  Blizzard's.
 
 Switching the module off gives every plate back to Blizzard. Plates are plain
 frames, never secure, so they also work in combat. Settings change outside combat.
@@ -204,6 +212,7 @@ to #FF5948. New settings (such as the combo points) take their defaults.
 | `Indicator.lua` | the level, classification and quest indicators |
 | `Focus.lua` | the focus highlight, focus texture and fading other plates |
 | `Combo.lua` | combo points on the target's plate, following the target |
+| `SoftTarget.lua` | the soft-target icon: the game's cursor art for your soft target, above the plate |
 | `Update.lua` | health, name, colors, threat, raid marker |
 | `CastBar.lua` | cast and channel bars, icon side, target line and timer |
 | `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |
@@ -241,6 +250,9 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`, `Class
     and put a debuff on an enemy.
   - As a Rogue, target an enemy and use a combo point builder, then target
     another enemy.
+  - On **Indicators** in **Soft Target Icon**, keep **Show Soft Target Icon** on.
+    In the world, without targeting, face an enemy near enough to become your
+    soft target, then kill one and face its corpse to loot it.
 - **Required state:** out of combat to change settings; enemy nameplates shown.
 - **Confirmation:**
   - The preview matches the plates in the world.
@@ -254,5 +266,9 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`, `Class
   - The target style shows on your target.
   - Combo points show only on your target's plate, light up as you build them,
     and move to the new target's plate when you change targets.
+  - The sword (on a soft enemy) or the bag (on a lootable unit) sits centered
+    above that ModeUI plate, clear of its name and aura rows, and goes away when
+    you face something else. No icon floats off to the side of a ModeUI plate.
+    (Seeing none at all means the game's interact icon setting has that kind off.)
   - Settings sit on cards, the Editing pills line up with their label, and no
     Lua errors appear.

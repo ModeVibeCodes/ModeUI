@@ -15,7 +15,10 @@ if not M then return end
 -- (Blizzard_CooldownBroadcaster/TrackedCooldowns.lua, RacialCooldowns, with
 -- each class's Arcane Torrent and Gift of the Naaru), plus Blood Fury's
 -- class versions. A racial counts only when C_SpellBook.IsSpellKnown says
--- so, never when the client can't tell.
+-- so, never when the client can't tell, and when it has a slot in your
+-- spellbook: IsSpellKnown can say true for another class's version (an orc
+-- showed Blood Fury twice, one of them dim and unusable).
+-- One racial per name shows, the first in the list.
 local L, Cooldowns = addon.L, addon.Domain.Cooldowns
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -52,9 +55,12 @@ M.RACIALS = {
 -- again after each Refresh (spells changing refreshes the module).
 function M:RacialKeys()
     if self.racialKeys then return self.racialKeys end
-    local keys = {}
+    local keys, names = {}, {}
     for _, spellID in ipairs(self.RACIALS) do
-        if Cooldowns.SurelyKnown(spellID) then keys[#keys + 1] = "s" .. spellID end
+        if Cooldowns.SurelyKnown(spellID) and Cooldowns.InSpellBook(spellID) ~= false then
+            local name = Cooldowns.SpellName(spellID) or spellID
+            if not names[name] then names[name] = true; keys[#keys + 1] = "s" .. spellID end
+        end
     end
     self.racialKeys = keys
     return keys

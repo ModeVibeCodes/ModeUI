@@ -20,6 +20,7 @@ function M:UpdatePlate(plate)
     self:UpdateTarget(plate)
     self:UpdateFocus(plate)
     self:UpdateCombo(plate)
+    self:UpdateSoftTarget(plate)
     self:UpdateCast(plate)
     self:UpdateAuras(plate)
 end

@@ -74,6 +74,31 @@ bars are named in the Forever source: `PlayerCastingBarFrame`
 hook, never hidden or reparented. The ModeUI cast bar is a plain child of the
 secure unit button, shown and hidden in combat. Unverified in game.
 
+## Nameplate soft-target icon — November 14, 2026
+
+Blizzard draws the soft-target icon on its own plates
+(`Blizzard_NamePlates.lua` `NamePlateDriverMixin:UpdateSoftTargetIconInternal`,
+Forever branch): when the plate's unit is `softenemy`, `softfriend` or
+`softinteract` and that kind's CVar is on (`SoftTargetIconEnemy`,
+`SoftTargetIconFriend`, `SoftTargetIconInteract`, with
+`SoftTargetNameplateSize` above 0), it calls
+`SetUnitCursorTexture(UnitFrame.SoftTargetFrame.Icon, unit, nil, nil, true)` and
+shows the icon if that returns true. Forever passes the fifth argument; mainline
+12.1.5 passes only the texture and unit, and its UnitDocumentation lists four
+arguments (`SecretArguments = "AllowedWhenUntainted"`; ModeUI passes only a
+texture and a nameplate unit token, never a secret). `SoftTargetFrame` has no
+`ignoreParentAlpha`, so on a ModeUI plate it is hidden with the faded unit
+frame. ModeUI's plates make the same call on their own texture, with Forever's
+arguments, refreshed on `PLAYER_SOFT_ENEMY_CHANGED`, `PLAYER_SOFT_FRIEND_CHANGED`,
+`PLAYER_SOFT_INTERACT_CHANGED` (payloads unused), `CVAR_UPDATE` for those CVars,
+and `EventRegistry`'s `Gamepad.PreferredGamepadInteractTargetChanged`, as
+Blizzard's driver does. Soft targets are matched by
+`C_NamePlate.GetNamePlateForUnit` frames, not `UnitIsUnit`. CVars are read
+with `C_CVar.GetCVar`. A secret return from `SetUnitCursorTexture` hides the
+icon. The settings preview uses `Interface\Cursor\Attack` and `Interact`, which
+the glue screens load (`Blizzard_GlueXML/Mainline/Redlist.xml`). Unverified in
+game.
+
 ## Interrupted cast bars — November 14, 2026
 
 Blizzard's cast bars inherit `CastingBarFrameAnimsTemplate`
@@ -1121,7 +1146,7 @@ come from Blizzard's own table of racial cooldowns
 (`Blizzard_CooldownBroadcaster/TrackedCooldowns.lua`, `RacialCooldowns`,
 12.1.5 mainline source), including each class's Arcane Torrent and Gift of
 the Naaru, plus Blood Fury's class versions (33697, 33702). A racial shows
-only when `C_SpellBook.IsSpellKnown(spellID)` returns a public `true`
+only when `C_SpellBook.IsSpellKnown(spellID)` returns a public `true` and `C_SpellBook.FindSpellBookSlotForSpell(spellID)` finds a slot (both on the Forever branch; IsSpellKnown alone showed a second, unusable Blood Fury on an orc), one per spell name,
 (`Domain.Cooldowns.SurelyKnown`); a missing API, an error or a secret answer
 means not shown. `UnitRace` isn't needed. Forever's racial spell IDs and
 `IsSpellKnown` answers for them need in-game confirmation.

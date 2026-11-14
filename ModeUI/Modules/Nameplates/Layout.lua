@@ -94,6 +94,7 @@ function M:LayoutPlate(plate)
     plate.markSize = Snap(db.raidSize)
     self:PlaceIcon(plate, plate.raidIcon, db.raidAnchor, plate.markSize, plate.markSize, db.raidX, db.raidY)
     self:LayoutIndicator(plate)
+    self:LayoutSoftTarget(plate)
 
     -- Combo points: sized here, placed with the arrows (Combo.lua).
     self:SizeCombo(plate)

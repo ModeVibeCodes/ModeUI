@@ -458,6 +458,21 @@ world.run([==[
     assert(M:SetRacials(temp) and M.spellIcons[temp].s26297 and M:DeleteCustomBar(temp) and M.db.racials == 'utility', 'a deleted bar gives them back to Utility')
     assert(M:SetRacials('none') and not M.spellIcons.utility.s26297 and not M.spellIcons.essential.s26297, 'Off')
     assert(M:SetRacials('utility'))
+    -- An orc: IsSpellKnown says yes to another class's Blood Fury too,
+    -- which isn't in the spellbook; and two versions with one name show once.
+    knownSpells[20572], knownSpells[33702], knownSpells[26297] = true, true, false
+    noSlot[33702] = true
+    local function Racials() M:Refresh(); return table.concat(M:RacialKeys(), ',') end
+    assert(Racials() == 's20572', "only the version in the spellbook")
+    noSlot[33702] = nil
+    local getName = C_Spell.GetSpellName
+    C_Spell.GetSpellName = function(id) if id == 20572 or id == 33702 then return 'Blood Fury' end return getName(id) end
+    assert(Racials() == 's20572', 'one Blood Fury')
+    assert(M:Entries('utility')[#M:Entries('utility')] == 's20572' and M.spellIcons.utility.s20572:IsShown(), 'on Utility')
+    C_Spell.GetSpellName = getName
+    knownSpells[20572], knownSpells[33702], knownSpells[26297] = false, false, nil
+    local bloodFury = M.spellIcons.utility.s20572
+    assert(Racials() == 's26297' and not bloodFury:IsShown() and not M.spellIcons.utility.s20572, "back to a troll: Blood Fury's icon put away")
     M:SelectBar('essential')
     M:SelectBar('buffIcon')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
