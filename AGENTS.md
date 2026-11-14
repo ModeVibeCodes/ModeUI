@@ -29,7 +29,7 @@
   other's files. Files stay under 400 lines. Settings pages are built only when opened.
 - Keep `ModeUI/ModeUI.toc` load order correct. No placeholder functionality.
 - Run `lua tests/structure.lua`, `lua tests/runtime.lua`, `lua tests/smoke.lua`,
-  `lua tests/unit_frames.lua`, `lua tests/nameplates.lua`, `lua tests/global.lua` and
+  `lua tests/unit_frames.lua`, `lua tests/nameplates.lua`, `lua tests/party_frames.lua`, `lua tests/global.lua` and
   `lua tests/template.lua`.
   New modules start from `docs/module-template`. Do not claim native testing without
   the user's in-game confirmation.

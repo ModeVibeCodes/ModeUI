@@ -262,6 +262,7 @@ to widgets documented as accepting them.
 | `Cast.lua` | `Domain.Cast.Read(unit)` → nil or { channel, text, texture, startMs, endMs, notInterruptible } (may be secret); `.Now()` |
 | `RaidIcon.lua` | `Domain.RaidIcon.Apply(texture, unit)`: the marker through `SetSpriteSheetCell`, or hidden |
 | `Threat.lua` | `Domain.Threat.Status(unit)` → 0-3 or nil when unknown or secret |
+| `Group.lua` | `Domain.Group.Role(unit)` → `"TANK"`, `"HEALER"`, `"DAMAGER"` or nil, `.LeaderAtlas(unit)`, `.ReadyCheck(unit)` → `"ready"`, `"notready"`, `"waiting"` or nil, `.Incoming(unit)` (summon, resurrection or another phase), `.InRange(unit)` → ok, inRange (secret; for `SetAlphaFromBoolean`), `.IncomingHeals(unit)`/`.Absorbs(unit)` → ok, amount (secret; for `StatusBar:SetValue`); `ROLE_ATLAS`, `READY_ATLAS`, `INCOMING_ATLAS` |
 | `Nameplate.lua` | `Domain.Nameplate.ForUnit(unit)`, `.IsPlayerPlate(frame)`, `.WidgetsOnly(unit)`, `.ActiveUnits()` |
 | `Auras.lua` | `Domain.Auras.Filters(crowdControl, debuffs, buffs)` → filter strings; `.Collect(unit, filters, max)`; `.Apply(icon, unit, aura, showTimer, showCount)`; `.ApplyTimer(...)`; the game's filters choose auras, no secret field is compared |
 | `DamageMeter.lua` | `Domain.DamageMeter.types`/`.typeById` (meter IDs saved in settings), `.Supported()`, `.Available()` → ok, reason, `.GameMeterOn()` (reads the game's option), `.Session(session, typeId)` → { sources (ranked by the game), max, total, duration } (may be secret), `.Source(session, typeId, guid, creatureID)` → { spells, max, total } (public arguments only), `.Sessions()`, `.Duration(session)`, `.Reset()`, `.SpellName(id)`, `.SpellIcon(id)`, `.ClassAtlas(class)`, `.Clock(seconds)`; `.EVENTS` |
@@ -283,6 +284,7 @@ to widgets documented as accepting them.
 | `Bands.lua` | `Kit.Bands(parent)`, `.PlaceBands(bands, box, left, top, right, bottom, px, room)`: a rim drawn in four clipped bands around a see-through hole |
 | `Text.lua` | the suite's text style: `Kit.Text(layer, drawLayer)`, `.Write(text, value)`, `.Formatted(text, pattern, ...)`, `.Font(text, style, size, path, px)`, `.LayoutLift(...)`, `.ValueText(text, mode, percentFn, unit, hasCurrent, current)`, `.ShortNumber(value, decimals)` (abbreviated with 0-2 decimals, whole below a thousand, secret-safe); `Kit.LIFT_PIXELS`, `Kit.LIFT_ALPHA`; `Kit.FontPath(style, scope)` |
 | `AuraIcon.lua` | `Kit.AuraIcon(parent)`, `Kit.LayoutAuraIcon(icon, size, px, style, fontPath)`: slate-rimmed icon with swipe and stacks |
+| `AuraContainer.lua` | Blizzard's custom aura containers: `Kit.HasAuraContainers()`, `.AuraDispelColors(colorOf, alpha)` (a step curve on `Kit.DISPEL_TYPE_IDS`, or a name map), `.AuraDispelOptions(colors)`, `.AuraTimeFormatter()`; `Kit.AURA_CONTAINER_TEMPLATE`, `Kit.AURA_FLOW`, `Kit.AURA_AXIS`. Used by Nameplates and Party Frames |
 
 ## Skin
 
@@ -362,7 +364,7 @@ module is built.
 |---|---|---|---|---|
 | 0 | Unit Frames | Frames | Domain: Health, Power, Name, Level, UnitColor, Portrait. Kit: Bar, Text (lifted shadow), Circle, Gradient | done (native acceptance pending) |
 | 1 | Nameplates | Frames | Domain: Cast, RaidIcon, Threat, Nameplate, Auras. Kit: Palette, ColorFromBoolean, FontPath, ModeGradient, AuraIcon | done; auras native acceptance pending |
-| 2 | Party Frames | Frames | Domain: Absorb, HealPrediction, Range, Role, Status (dead, offline, AFK), ReadyCheck. Templates: secure group header | secure group header attributes; range checks under secret rules |
+| 2 | Party Frames | Frames | Domain: Group (role, leader, ready check, summons, range, heals and absorbs). Kit: AuraContainer (moved from Nameplates). Uses Blizzard's secure group header; no Templates folder needed | done (November 13, 2026); native acceptance pending |
 | 3 | Action Bars | Interface | Placement: `PositionManager:SetEditable` (one element per bar), `Positioning:AddTarget` (bars anchor to bars), PositionGuides (alignment guides, snapping, `Nudge`). Kit: `LayoutLift` for text ModeUI doesn't own. Reuses Blizzard's buttons, so no secure template | done (native acceptance pending) |
 | 4 | Chat | Interface | Skin: panel, suppress, alpha pin, fonts | done (native acceptance pending); tab alphas pinned, never Blizzard's constants |
 | 5 | Damage Meters | Interface | Domain: DamageMeter (the game's own meter through `C_DamageMeter`). Kit: ModeBoxBorder (the standard border on a window) | done (native acceptance pending); Forever loads Blizzard_DamageMeter |
