@@ -19,8 +19,11 @@ local function Over(frame)
 end
 
 -- The alpha a viewer's icons take now.
-function M:ViewerAlpha(viewer)
-    local style = self.db[viewer]
+function M:ViewerAlpha(viewer) return self:StyleAlpha(self.db[viewer], self.holders and self.holders[viewer]) end
+
+-- The alpha for a bar's settings (a viewer, a custom bar or a resource bar);
+-- `hover` is the frame Mouseover watches.
+function M:StyleAlpha(style, hover)
     if not self.active then return 1 end
     if not style.show then return 0 end
     local full = style.opacity / 100
@@ -32,7 +35,7 @@ function M:ViewerAlpha(viewer)
     if mode == "noCombat" then return combat and 0 or full end
     if mode == "target" then return (combat or addon.Domain.Status.Exists("target")) and full or 0 end
     if mode == "mouseover" then
-        if Over(self.holders and self.holders[viewer]) then return full end
+        if Over(hover) then return full end
         return math.min(style.fadeOpacity, style.opacity) / 100
     end
     return full
@@ -60,6 +63,8 @@ function M:UpdateFade()
         self:UpdateAlpha(id)
         fading = fading or (self.active and self.db[id].show and self.db[id].visibility == "mouseover")
     end
+    -- Resource bars (ResourceUpdate.lua) fade the same way.
+    if self:UpdateResourceAlpha() then fading = true end
     if fading and not self.fader then
         self.fader = CreateFrame("Frame")
         local elapsed, last = 0, {}
@@ -72,6 +77,10 @@ function M:UpdateFade()
                     local alpha = self:ViewerAlpha(id)
                     if alpha ~= last[id] then last[id] = alpha; self:UpdateAlpha(id) end
                 end
+            end
+            for _, id in ipairs(self.resources) do
+                local style, frame = self.db.resources[id], self.resourceFrames and self.resourceFrames[id]
+                if frame and style.visibility == "mouseover" then frame:SetAlpha(self:StyleAlpha(style, frame)) end
             end
         end)
     end

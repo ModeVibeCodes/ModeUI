@@ -130,4 +130,7 @@ function M.Initialize(db)
         Validate(db[viewer], viewer, M.styleDefaults[viewer], M.viewerSpecs[viewer].bar)
     end
     ValidCustom(db)
+    -- Resource Bars (ResourceInit.lua): added without a version step; a
+    -- profile saved before them takes their defaults.
+    M.ValidateResources(db)
 end

@@ -181,8 +181,8 @@ world.run([==[
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
     assert(window:IsShown() and window.title.text == 'Cooldown Manager' and window.moduleHeader.toggle:IsShown(), 'own window, own switch')
-    assert(window.rows[5]:IsShown() and window.rows[5].label.text == 'Cooldown Bar 1' and window.rows[6].label.text == 'Buff Bar 1', 'custom bars listed')
-    window.rows[6].scripts.OnClick(window.rows[6])
+    assert(window.rows[9]:IsShown() and window.rows[9].label.text == 'Cooldown Bar 1' and window.rows[10].label.text == 'Buff Bar 1', 'custom bars listed')
+    window.rows[10].scripts.OnClick(window.rows[10])
     local page, view = M.page, M.previewView
     assert(page.viewerEditing() == c2 and view.icons[1].key == '301' and view.plus:IsShown(), 'a custom bar: its spells, then +')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
