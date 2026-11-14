@@ -3,6 +3,7 @@
     <Script file="Driver.lua"/>
     <Script file="Blizzard.lua"/>
     <Script file="Window.lua"/>
+    <Script file="SortMenu.lua"/>
     <Script file="Slots.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Settings.lua"/>

@@ -51,7 +51,8 @@ function M:CombatEnded()
     if self.layoutPending then self.layoutPending = nil; self:Update() end
 end
 
--- Shows or hides the window. Closing clears the search, as Blizzard's box does.
+-- Shows or hides the window. Closing clears the search, as Blizzard's box
+-- does, and closes the Sort menu.
 function M:SetOpen(open)
     open = open == true and self.active == true and self.frame ~= nil
     if self.open == open then return end
@@ -63,6 +64,7 @@ function M:SetOpen(open)
         self:Update()
     else
         frame:Hide()
+        self:CloseSortMenu()
         self:ClearSearch()
     end
 end
@@ -106,13 +108,6 @@ function M:UpdateCooldowns()
     for _, button in ipairs(self.slots) do
         if button:IsShown() then self:PaintCooldown(button) end
     end
-end
-
--- Cycles the view order (the header's Sort button).
-function M:CycleSort()
-    local list, current = self.choices.sortMode, 1
-    for i, item in ipairs(list) do if item.id == self.db.sortMode then current = i end end
-    return self:SetOption("sortMode", list[current % #list + 1].id)
 end
 
 function M:CleanUp()

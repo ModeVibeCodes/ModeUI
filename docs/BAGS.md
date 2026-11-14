@@ -14,7 +14,7 @@ bag and the keyring show together on one grid of slots.
 | Part | Look and behavior |
 |---|---|
 | Window | A fill in Background Color (the unit frames' health color, Onyx #1C1E21, at 95%) inside ModeUI's border in its rounded-rectangle form (`Kit.ModeBoxBorder`: 2px, `Kit.BORDER_COLOR`, Corner Radius 6). |
-| Header | A Mode Gradient bar in Header Color over a one-pixel black divider: the **Bags** title on the left; **Sort** (names the view order), **Clean Up** and the close cross on the right, in the text color and the Mode cyan under the mouse. Unlocked, dragging the header moves the window (out of combat). |
+| Header | A Mode Gradient bar in Header Color over a one-pixel black divider: the **Bags** title on the left; **Sort** (a dropdown that names the view order, with the Mode chevron), **Clean Up** and the close cross on the right, in the text color and the Mode cyan under the mouse. Unlocked, dragging the header moves the window (out of combat). |
 | Search | A Mode field under the header. It sets the game's own bag search (`C_Container.SetItemSearch`, the one Blizzard's bag search box uses), so names, types and tooltip text match; items that don't match fade to 25%. Escape clears it; closing the bags clears it. |
 | Slots | Columns wide (12), Slot Size (38 px) apart by Spacing (4 px), Padding (8 px) inside the border. Each slot looks like an action bar slot: a hollow rim Slot Border Size thick (2px, Onyx border color), a near-black fill with the ActionBarSlot grain at Slot Opacity (75%), the icon one pixel inside the rim cropped square. Pushed and highlight states are flat Mode overlays. |
 | Rims | A new item: the Mode cyan, until you point at it. A quest item: Quest Color (#FFB12F). Otherwise the item's quality color from Minimum Quality (Uncommon) up, else Slot Border Color. |
@@ -28,7 +28,10 @@ bag and the keyring show together on one grid of slots.
   in the bags), **Quality** (best first, then type, then name), **Type** (item
   class and subclass, then quality, then name) or **Name**. Empty slots go
   last; ties keep bag order, so the view never shuffles between redraws. The
-  header's Sort button cycles through them; the Layout tab sets it.
+  header's Sort button opens a menu under it (a fill in Background Color
+  inside ModeUI's border, the chosen order in the Mode cyan); picking one sets
+  it, and a click elsewhere or closing the bags closes the menu. The Layout
+  tab's **Sort** dropdown sets it too.
 - **Clean Up** is the game's own sort (`C_Container.SortBags`, Blizzard's
   "Clean Up Bags"), which moves items in the bags. Not in combat.
 
@@ -107,7 +110,7 @@ corner as an offset from the same corner of the screen, in whole pixels.
 |---|---|---|
 | Layout | (top) | Status, **Show Bags** |
 | | Grid | Columns (4-24), Slot Size (24-64 px), Spacing (0-12 px), Padding (0-24 px), Scale (50-200%) |
-| | Contents | Separate Bags, Reagent Section, Keyring; Sort (Bag Order, Quality, Type, Name) |
+| | Contents | Separate Bags, Reagent Section, Keyring; Sort dropdown (Bag Order, Quality, Type, Name) |
 | | Defaults | Reset to Defaults |
 | Window | Frame | Background Color and Opacity, Border Color, Corner Radius (2-16 px), Header Color |
 | | Parts | Title, Search Box, Money, Free Slots, Lock Window |
@@ -141,8 +144,9 @@ Saved under `ModeUIDB` profile `modules.bags` (settings version 1) and
    Shift-click a stack; drag an item to an empty slot. **Confirmation:** each
    works as in Blizzard's bags, with no "action blocked" message.
 4. **Action:** type part of an item name in **Search**; click **Sort** in the
-   header; click **Clean Up**. **Confirmation:** other items fade; the order
-   changes and the button names it; the game sorts the bags.
+   header and pick **Quality** from its menu; click **Clean Up**.
+   **Confirmation:** other items fade; the menu closes, the order changes and
+   the button reads Quality; the game sorts the bags.
 5. **Navigation:** the Slots, Window and Position tabs. **Action:** change
    Columns, Slot Size, Background Color, Quality Borders and Grow From with
    the bags open. **Confirmation:** the window updates at once.
