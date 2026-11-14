@@ -34,14 +34,16 @@ M.SAMPLE_ICONS = {
     role = { "TANK", "HEALER", "DAMAGER", "DAMAGER", "DAMAGER" },
     ready = { "ready", "ready", "waiting", "notready", "ready" },
 }
-function M:PaintIconSample(f, index)
+-- One member shows the ready check and another a summon, so both can be
+-- placed; preview states (Samples.lua) show them on every member.
+function M:PaintIconSample(f, index, states)
     local db, icons = self.db, f.icons
-    local role = self.SAMPLE_ICONS.role[index]
+    states = states or {}
+    local role = f.role or self.SAMPLE_ICONS.role[index]
     if role == "DAMAGER" and db.hideDamagerRole then role = nil end
     Atlas(icons.role, db.roleShow and role and Group.ROLE_ATLAS[role] or nil)
-    Atlas(icons.leader, db.leaderShow and index == 1 and Group.LEADER_ATLAS or nil)
-    if db.raidIconShow and index == 2 then RaidIcon.ApplyIndex(icons.raidIcon, 8) else icons.raidIcon:Hide() end
-    -- One member shows the ready check and another a summon, so both can be placed.
-    Atlas(icons.readyCheck, db.readyCheckShow and index == 3 and Group.READY_ATLAS[self.SAMPLE_ICONS.ready[index]] or nil)
-    Atlas(icons.incoming, db.incomingShow and index == 4 and Group.INCOMING_ATLAS.summonPending or nil)
+    Atlas(icons.leader, db.leaderShow and (index == 1 or states.leader) and Group.LEADER_ATLAS or nil)
+    if db.raidIconShow and (index == 2 or states.raidIcon) then RaidIcon.ApplyIndex(icons.raidIcon, 8) else icons.raidIcon:Hide() end
+    Atlas(icons.readyCheck, db.readyCheckShow and (index == 3 or states.readyCheck) and Group.READY_ATLAS[self.SAMPLE_ICONS.ready[index]] or nil)
+    Atlas(icons.incoming, db.incomingShow and (index == 4 or states.summon) and Group.INCOMING_ATLAS.summonPending or nil)
 end

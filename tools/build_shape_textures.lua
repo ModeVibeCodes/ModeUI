@@ -19,6 +19,10 @@
 --   Mode/CapRight.tga, CapLeft.tga  ModeCapRight/Left: 64x256, a straight end with 64px round corners, open
 --                        at the left (Right) or right (Left); the rounded end of a box, and its mask
 --   Mode/CapHoleRight.tga, CapHoleLeft.tga  the same, inverted: masks that hollow a cap into a ring
+--   Mode/CornerTopLeft.tga (TopRight, BottomLeft, BottomRight)  ModeCorner*: 64x64, one round corner
+--                        of a box (a quarter circle on the corner's side), and its mask; box borders use
+--                        these instead of a quarter of the cap, so no mask needs texture coordinates
+--   Mode/CornerHoleTopLeft.tga (and the other three)  the same, inverted: hollow a corner into a ring
 --   UnitFrames/Rested.tga  UnitFrameRested: a "Zz" in square strokes, for the rested badge
 --   UnitFrames/Combat.tga  UnitFrameCombat: crossed swords with guards, for the combat badge
 --   DamageMeters/Reset.tga  a circular arrow (Reset All Data)
@@ -108,6 +112,17 @@ local function Cap(width, height, left, hole)
         local u = left and width - x or x
         local cy = math.max(width, math.min(height - width, y))
         local inside = u * u + (y - cy) * (y - cy) <= width * width
+        if hole then return inside and 0 or 1 end
+        return inside and 1 or 0
+    end
+end
+
+-- One round corner of a box, 64x64: a quarter circle of radius 64 centered on
+-- the corner's inner side, opaque inside (or inverted, a hole).
+local function Corner(right, bottom, hole)
+    local cx, cy = right and 0 or 64, bottom and 0 or 64
+    return function(x, y)
+        local inside = (x - cx) * (x - cx) + (y - cy) * (y - cy) <= 64 * 64
         if hole then return inside and 0 or 1 end
         return inside and 1 or 0
     end
@@ -252,6 +267,14 @@ local TEXTURES = {
     { "Mode/CapLeft.tga", 64, 256, Cap(64, 256, true, false), true },
     { "Mode/CapHoleRight.tga", 64, 256, Cap(64, 256, false, true), true },
     { "Mode/CapHoleLeft.tga", 64, 256, Cap(64, 256, true, true), true },
+    { "Mode/CornerTopLeft.tga", 64, 64, Corner(false, false, false), true },
+    { "Mode/CornerTopRight.tga", 64, 64, Corner(true, false, false), true },
+    { "Mode/CornerBottomLeft.tga", 64, 64, Corner(false, true, false), true },
+    { "Mode/CornerBottomRight.tga", 64, 64, Corner(true, true, false), true },
+    { "Mode/CornerHoleTopLeft.tga", 64, 64, Corner(false, false, true), true },
+    { "Mode/CornerHoleTopRight.tga", 64, 64, Corner(true, false, true), true },
+    { "Mode/CornerHoleBottomLeft.tga", 64, 64, Corner(false, true, true), true },
+    { "Mode/CornerHoleBottomRight.tga", 64, 64, Corner(true, true, true), true },
     { "UnitFrames/Rested.tga", 32, 32, Strokes({ { 5, 8, 16, 8 }, { 16, 8, 5, 21 }, { 5, 21, 16, 21 },
         { 19, 15, 27, 15 }, { 27, 15, 19, 24 }, { 19, 24, 27, 24 } }, 3), true },
     { "UnitFrames/Combat.tga", 32, 32, Strokes({ { 7, 7, 25, 25 }, { 25, 7, 7, 25 }, { 4, 22, 10, 28 }, { 22, 28, 28, 22 } }, 3), true },

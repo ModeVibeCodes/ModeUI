@@ -154,8 +154,10 @@ function M:LayoutReader(f)
             for index = 1, f.auraShown[group] do
                 local icon = f.auraIcons[group][index]
                 Kit.LayoutAuraIcon(icon, width, height, g.px, style, f.fontPath)
-                -- Icons take the mouse only for tooltips; clicks fall through to the member.
-                if icon.SetMouseMotionEnabled and icon.SetMouseClickEnabled then
+                -- Icons take the mouse only for tooltips; clicks fall through to the
+                -- member. Preview samples take clicks: they open the group's settings.
+                if f.sample then icon:EnableMouse(true)
+                elseif icon.SetMouseMotionEnabled and icon.SetMouseClickEnabled then
                     icon:SetMouseMotionEnabled(adb.tooltip); icon:SetMouseClickEnabled(false)
                 else icon:EnableMouse(adb.tooltip) end
                 if n > 0 and n % first.perRow == 0 then along, line = 0, line + 1 end
@@ -181,11 +183,30 @@ function M:LayoutAuras(f)
     self:LayoutReader(f)
 end
 
--- Whether a readable aura belongs to a group by its dispel type.
-local function TypeMatches(group, dispelType)
-    local wanted = M.groupDispelType[group]
+-- A tracked group's spells as a set, and every shown tracked group's spells
+-- together (the ones the other buff groups leave out).
+function M:SpellSet(group)
+    local set, any = {}, false
+    for _, id in ipairs(self.db.auras[group].spells or {}) do set[id] = true; any = true end
+    return set, any
+end
+function M:TrackedSpells()
+    local set, any = {}, false
+    for group in pairs(self.TRACKED) do
+        if self.db.auras[group].show then
+            for _, id in ipairs(self.db.auras[group].spells) do set[id] = true; any = true end
+        end
+    end
+    return set, any
+end
+
+-- Whether a readable aura belongs to a group by its dispel type or spell.
+local function Belongs(self, group, dispelType, spell)
+    local wanted = self.groupDispelType[group]
     if wanted then return dispelType == wanted end
-    if group == "otherDebuffs" then return not (dispelType and M.dispelColorKeys[dispelType]) end
+    if group == "otherDebuffs" then return not (dispelType and self.dispelColorKeys[dispelType]) end
+    if self.TRACKED[group] then return spell ~= nil and self:SpellSet(group)[spell] == true end
+    if self.HELPFUL[group] then return spell == nil or not self:TrackedSpells()[spell] end
     return true
 end
 
@@ -199,9 +220,10 @@ function M:UpdateAuras(f)
         if adb.show then
             for _, aura in ipairs(Auras.Collect(f.unit, filters, 40)) do
                 if count >= adb.max then break end
-                local name = Auras.Field(aura, "dispelName")
+                local name, id = Auras.Field(aura, "dispelName"), Auras.Field(aura, "spellId")
                 local dispel = (addon.IsPublic(name) and type(name) == "string") and name or nil
-                if TypeMatches(group, dispel) then
+                local spell = addon.IsNumber(id) and id or nil
+                if Belongs(self, group, dispel, spell) then
                     count = count + 1
                     local icon = self:ReaderIcon(f, group, count)
                     Auras.Apply(icon, f.unit, aura, adb.timer, adb.count)
@@ -229,20 +251,23 @@ M.SAMPLE_AURAS = { heals = "Interface\\Icons\\Spell_Holy_Renew", buffs = "Interf
     curse = "Interface\\Icons\\Spell_Shadow_CurseOfTounges", disease = "Interface\\Icons\\Spell_Shadow_AbominationExplosion",
     poison = "Interface\\Icons\\Ability_Rogue_DualWeild", bleed = "Interface\\Icons\\Ability_Gouge",
     otherDebuffs = "Interface\\Icons\\Spell_Shadow_ShadowWordPain", crowdControl = "Interface\\Icons\\Spell_Nature_Polymorph" }
-M.SAMPLE_COUNTS = { heals = 2, buffs = 2, defensives = 1, magic = 1, curse = 1, disease = 0, poison = 1, bleed = 0,
-    otherDebuffs = 1, crowdControl = 1 }
+M.SAMPLE_COUNTS = { heals = 2, buffs = 2, defensives = 1, tracked1 = 2, tracked2 = 2, tracked3 = 2, dispellable = 1, magic = 1,
+    curse = 0, disease = 0, poison = 1, bleed = 0, otherDebuffs = 1, crowdControl = 1 }
+M.SAMPLE_AURAS.dispellable = "Interface\\Icons\\Spell_Holy_DispelMagic"
 function M:PaintAuraSample(f, index, only)
     for _, group in ipairs(self.auraGroups) do
         local adb = self.db.auras[group]
         -- The edited group shows as many as it may; otherwise a few per group.
         local count = 0
         if only then count = group == only and adb.max or 0
+        elseif adb.show and self.TRACKED[group] then count = math.min(adb.max, #adb.spells)
         elseif adb.show then count = math.min(adb.max, self.SAMPLE_COUNTS[group] or 1) end
-        local dispel = self.groupDispelType[group]
+        local dispel = self.groupDispelType[group] or (group == "dispellable" and "Magic" or nil)
         for i = 1, count do
             local icon = self:ReaderIcon(f, group, i)
             icon.auraUnit, icon.auraID = nil, nil
-            icon.icon:SetTexture(self.SAMPLE_AURAS[group])
+            local tracked = self.TRACKED[group] and adb.spells[i]
+            icon.icon:SetTexture(tracked and addon.Domain.Cooldowns.SpellIcon(tracked) or self.SAMPLE_AURAS[group] or self.SAMPLE_AURAS.buffs)
             Kit.Write(icon.count, adb.count and i == 1 and "2" or "")
             Kit.Write(icon.timer, adb.timerText and tostring(4 + 3 * i) or "")
             icon.cooldown:Hide()

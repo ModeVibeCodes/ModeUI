@@ -41,6 +41,12 @@ function M:BuildFace(f)
     for _, region in ipairs({ f.targetFill, f.hover, f.dispel.health, f.dispel.gradient }) do region:SetTexture(Kit.FLAT); region:Hide() end
     f.textLayer = CreateFrame("Frame", nil, f)
     f.textLayer:SetAllPoints(panel)
+    -- The power text sits on the power bar, above its border.
+    f.powerTextLayer = CreateFrame("Frame", nil, f.power)
+    f.powerTextLayer:SetAllPoints(f.power)
+    f.powerText = Kit.Text(f.powerTextLayer)
+    f.powerText.lift = Kit.Text(f.powerTextLayer, "ARTWORK")
+    Kit.Write(f.powerText, "")
     f.texts = {}
     for element in pairs(self.textElements) do
         local text = Kit.Text(f.textLayer)

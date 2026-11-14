@@ -3,11 +3,13 @@ local M, W, T, L = addon.PartyFrames, addon.ConfigWidgets, addon.InterfaceTheme,
 if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
--- preview sits above the tabs (Layout, Bars, Text and Icons, Highlights,
--- Auras): one member by default, a party or raid sizes from its header
--- buttons, and on the Auras tab the group being edited. Clicking a part of it
--- jumps to that part's settings. Cards of related settings, side by side where
--- they fit, on the shared Mode widgets. Text and Icons and Highlights are in
+-- preview sits above the tabs (Layout, Bars, Power Bars and Resources, Text
+-- and Icons, Highlights and Overlay, Auras): one member by default, a party or
+-- raid sizes from its header buttons, each tab's element shown on it, and on
+-- the Auras tab the group being edited. Clicking a part of it jumps to that
+-- part's settings. Cards of related settings, side by side where they fit,
+-- on the shared Mode widgets. Power Bars and Resources is in
+-- SettingsPower.lua, Text and Icons and Highlights and Overlay in
 -- SettingsElements.lua, the Auras tab in SettingsAuras.lua.
 
 -- Control builders shared by the settings files. Each takes the host it
@@ -87,14 +89,19 @@ function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     page.jumpTargets = {}
     local c = self:SettingsControls(page)
-    local element, auraGroup, dispelType = "name", "heals", "Magic"
+    local element, auraGroup, dispelType, barPart = "name", "heals", "Magic", "heals"
     page.partyElement = function() return element end
     page.partyAuraGroup = function() return auraGroup end
+    page.partyAuraKind = function() return M:AuraKind(auraGroup) end
     page.partyDispelType = function() return dispelType end
-    function page.SetElement(id) if M.elementDefaults[id] then element = id; page:Refresh(); page:Layout() end end
-    function page.SetAuraGroup(id) if M.auraDefaults[id] then auraGroup = id; page:Refresh(); page:Layout() end end
-    function page.SetDispelType(id) if M.dispelColorKeys[id] then dispelType = id; page:Refresh(); page:Layout() end end
-    page.configPreview = W.Preview(page, M, { contentHeight = M.PREVIEW_HEIGHT })
+    page.partyBarPart = function() return barPart end
+    local function Changed() page:Refresh(); page:Layout() end
+    function page.SetElement(id) if M.elementDefaults[id] then element = id; Changed() end end
+    function page.SetAuraGroup(id) if M.auraDefaults[id] then auraGroup = id; Changed() end end
+    function page.SetAuraKind(kind) page.SetAuraGroup(M:AuraKindGroups(kind)[1]) end
+    function page.SetDispelType(id) if M.dispelColorKeys[id] then dispelType = id; Changed() end end
+    function page.SetBarPart(id) if M.barParts[id] then barPart = id; Changed() end end
+    page.configPreview = W.Preview(page, M, { contentHeight = 190 })
     if page.UpdatePreviewLayout then
         page.previewHeaderButtons = M:PreviewSampleButtons(page)
         page:UpdatePreviewLayout()
@@ -105,7 +112,16 @@ function M:CreateConfigPage(parent)
     page.layoutToggles = c.Toggles({ { "Show Yourself", "showPlayer" }, { "Show When Solo", "showSolo" },
         { "Reverse Order", "reverseOrder" }, { "Hide Blizzard's Party Frames", "hideBlizzard" } })
     page.sortPills = c.Pills("Sort By", M.choices.sortBy, function() return M.db.sortBy end, c.Set("sortBy"), 120)
-    page.growthPills = c.Pills("Grow", M.choices.growth, function() return M.db.growth end, c.Set("growth"), 80)
+    -- Arrange: members in a column or a row, then which way it grows.
+    local function Vertical() return M.db.growth == "down" or M.db.growth == "up" end
+    page.arrangePills = c.Pills("Arrange", M.choices.arrange, function() return Vertical() and "vertical" or "horizontal" end,
+        function(value) M:SetOption("growth", value == "vertical" and "down" or "right") end, 110)
+    c.When(Vertical, function()
+        page.verticalPills = c.Pills("Direction", { M.choices.growth[1], M.choices.growth[2] }, function() return M.db.growth end, c.Set("growth"), 80)
+    end)
+    c.When(function() return not Vertical() end, function()
+        page.horizontalPills = c.Pills("Direction", { M.choices.growth[3], M.choices.growth[4] }, function() return M.db.growth end, c.Set("growth"), 80)
+    end)
     local group = c.Columns({ "Spacing", "Scale" })
     page.spacingSlider = c.Slider(group[1], "spacing", "px"); page.scaleSlider = c.Slider(group[2], "scale", "%")
     c.Note("Role sorts tanks, then healers, then damage. Party frames show in a party, not a raid. Move them with Edit Mode in the window header; resizing keeps the corner they grow from in place.", 48)
@@ -115,24 +131,7 @@ function M:CreateConfigPage(parent)
     page.borderPills = c.Pills("Border", M.choices.borderStyle, function() return M.db.borderStyle end, c.Set("borderStyle"), 96)
     local corner = c.Columns({ "Corner Size" })
     page.cornerSlider = c.Slider(corner[1], "corner", "px")
-    c.Note("Thin is the ModeUI border one pixel wide, for pixel-perfect rows: with Spacing 1 the members sit one pixel apart.", 32)
-    page:Group(L["Power Bar"])
-    page.powerSelect = c.Select(page:Row(L["Power Bar For"], 48), 200, M.choices.powerShown, "powerShown"); c.Mark("power")
-    c.When(function() return M.db.powerShown ~= "none" end, function()
-        page.powerStylePills = c.Pills("Style", M.choices.powerStyle, function() return M.db.powerStyle end, c.Set("powerStyle"), 120)
-        local power = c.Columns({ "Power Height" })
-        page.powerHeightSlider = c.Slider(power[1], "powerHeight", "px")
-        c.When(function() return M.db.powerStyle == "inset" end, function()
-            local inset = c.Columns({ "Power Width" })
-            page.powerWidthSlider = c.Slider(inset[1], "powerWidth", "%")
-            page.powerAlignPills = c.Pills("Alignment", M.choices.powerAlign, function() return M.db.powerAlign end, c.Set("powerAlign"), 80)
-            local offset = c.Columns({ "Offset X", "Offset Y" })
-            c.Slider(offset[1], "powerX", "px"); c.Slider(offset[2], "powerY", "px")
-            page.powerNudge = c.Nudge(function() return M.db.powerX end, function() return M.db.powerY end,
-                c.Set("powerX"), c.Set("powerY"), M.ranges.powerX)
-        end)
-    end)
-    c.Note("Mana Users shows power only on members whose power is mana; Healer Mana only on healers with mana, hiding everyone else's. Inset sits on the health bar in a border of its own.", 48)
+    c.Note("Every size is whole pixels, so with Spacing 1 the members sit exactly one pixel apart. Thin is the ModeUI border one pixel wide.", 32)
     page:Group(L["This Module"])
     local tools = page:Row(L["Settings"], 48)
     page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
@@ -150,34 +149,46 @@ function M:CreateConfigPage(parent)
     page.healthOpacitySlider = c.Slider(fade[1], "healthOpacity", "%"); page.backgroundOpacitySlider = c.Slider(fade[2], "backgroundOpacity", "%")
     page.fillPills = c.Pills("Fill", M.choices.fillDirection, function() return M.db.fillDirection end, c.Set("fillDirection"), 120)
     page.fillToggles = c.Toggles({ { "Fill End Line", "fillEdge" } })
-    page:Group(L["Power"])
-    local power = c.Columns({ "Power Color", "Custom Color" })
-    page.powerColorSelect = c.Select(power[1], 200, M.choices.powerColorMode, "powerColorMode")
-    c.Color(power[2], "powerColor", function() return M.db.powerColorMode == "custom" end)
-    local powerTextures = c.Columns({ "Foreground", "Background" })
-    c.Texture(powerTextures[1], "powerForegroundTexture", function() return M.TextureChoices(true) end)
-    c.Texture(powerTextures[2], "powerBackgroundTexture", function() return M.TextureChoices(false) end)
+    -- Heals and Shields: one tab per part, each with its own settings; the
+    -- preview shows the part being edited.
     page:Group(L["Heals and Shields"])
-    page.predictionToggles = c.Toggles({ { "Incoming Heals", "showHealPrediction" }, { "Shields", "showAbsorbs" },
-        { "Overshields", "showOvershields" } })
-    for _, row in ipairs({ { "Heal", "healTexture", "healPredictionColor", "healPredictionOpacity" },
-        { "Shield", "shieldTexture", "absorbColor", "absorbOpacity" }, { "Overshield", "overshieldTexture", "overshieldColor", "overshieldOpacity" } }) do
-        local cells = c.Columns({ row[1] .. " Texture", row[1] .. " Color", row[1] .. " Opacity" })
-        c.Texture(cells[1], row[2], M.FillChoices); c.Color(cells[2], row[3]); c.Slider(cells[3], row[4], "%")
+    local parts = {}
+    for _, id in ipairs(M.barPartOrder) do parts[#parts + 1] = { id = id, label = M.barParts[id].label } end
+    page.barPartPills = c.Pills("Part", parts, function() return barPart end, page.SetBarPart, 120)
+    c.Mark("heals")
+    for _, id in ipairs(M.barPartOrder) do
+        local part = M.barParts[id]
+        c.When(function() return barPart == id end, function()
+            c.Toggles({ { "Show " .. part.label, part.show } })
+            local look = c.Columns({ "Texture", "Color", "Opacity" })
+            c.Texture(look[1], part.texture, M.FillChoices); c.Color(look[2], part.color); c.Slider(look[3], part.opacity, "%")
+            c.Note(part.note, 32)
+        end)
     end
-    c.Note("Shields ride on the end of the health. Overshields fill back from full health with the whole shield, shown while it is bigger than the missing health. Mode Slate Hatch draws crisp 1px lines at any size.", 48)
 
+    self:BuildPowerTab(page, c)
     self:BuildElementsTab(page, c, function() return element end)
     self:BuildHighlightsTab(page, c, function() return dispelType end)
     self:BuildAuraTab(page, c, function() return auraGroup end)
 
     W.SectionTabs(page)
-    -- The preview follows the open tab (the Auras tab shows its group).
+    -- The preview follows the open tab (each tab shows what it edits).
     local select = page.SelectSectionTab
     function page:SelectSectionTab(...)
         select(self, ...)
-        if self.configPreview and self.configPreview.Refresh then self.configPreview:Refresh() end
         self:Refresh()
+        if self.UpdatePreviewLayout then self:UpdatePreviewLayout() end
     end
     page:Finish(); return page
 end
+
+-- Heals and Shields parts: their settings keys and what each does.
+M.barPartOrder = { "heals", "shields", "overshield" }
+M.barParts = {
+    heals = { label = "Incoming Heals", show = "showHealPrediction", texture = "healTexture", color = "healPredictionColor",
+        opacity = "healPredictionOpacity", note = "Heals on their way, riding on the end of the health." },
+    shields = { label = "Shields", show = "showAbsorbs", texture = "shieldTexture", color = "absorbColor", opacity = "absorbOpacity",
+        note = "Absorb shields, riding on the end of the health and any incoming heals." },
+    overshield = { label = "Overshields", show = "showOvershields", texture = "overshieldTexture", color = "overshieldColor",
+        opacity = "overshieldOpacity", note = "The whole shield, filling back from full health, shown while it is bigger than the missing health." },
+}

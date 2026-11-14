@@ -2,23 +2,23 @@ local _, addon = ...
 local M = addon.PartyFrames
 if not M then return end
 
--- The settings preview: sample members built and laid out by the same code
--- as the members in the world. One member by default; the header's sample
--- buttons show a party or raid sizes (groups of five side by side) to see how
--- the layout scales. Each sample size has a fixed scale and the samples hang
--- from a fixed top-left spot, so changing a size grows the sample in place
--- instead of rescaling or moving it. On the Auras tab the preview shows one
--- larger member with only the group being edited. Clicking a part opens its
--- settings. Shown through the shared settings preview (W.Preview).
+-- The settings preview: sample members (Samples.lua) built and laid out by
+-- the same code as the members in the world. One member by default; the
+-- header's sample buttons show a party or raid sizes (groups of five side by
+-- side). Each sample size keeps its scale, and the preview grows taller to
+-- hold the samples; only a layout too big for it is scaled down to fit, so
+-- nothing clips. The open tab's element shows on the first sample
+-- (M:PreviewFocus), and Show in the header adds states to every sample. On
+-- the Auras tab the preview shows one larger member with only the group
+-- being edited, beside a quick list of the groups (PreviewTools.lua).
+-- Clicking a part opens its settings. Shown through W.Preview.
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
-local HINT_HEIGHT, MARGIN = 18, 36
-M.PREVIEW_WIDTH, M.PREVIEW_HEIGHT = 440, 190
+local HINT_HEIGHT, MARGIN, MIN_HEIGHT, MAX_HEIGHT = 18, 24, 150, 380
+M.PREVIEW_WIDTH, M.QUICK_WIDTH = 440, 132
 M.AURA_PREVIEW_SCALE = 1.5
 M.previewSample = "one"
 
 addon.PreviewStates:Register(M.id, { states = { { id = "static", label = "Static" } }, sample = function() end })
-
-function M:GetPreviewSize() return self.PREVIEW_WIDTH, self.PREVIEW_HEIGHT end
 
 local function Clickable(region, target, host)
     local hit = region
@@ -33,11 +33,12 @@ local function Clickable(region, target, host)
     hit:SetScript("OnEnter", function() hit.jumpHighlight:Show() end)
     hit:SetScript("OnLeave", function() hit.jumpHighlight:Hide() end)
     hit:SetScript("OnMouseUp", function(_, button)
-        if button == nil or button == "LeftButton" then M:JumpTo(target) end
+        if button == nil or button == "LeftButton" then M:JumpTo(hit.jump) end
     end)
     hit.jump = target
     return hit
 end
+M.PreviewClickable = Clickable
 
 local function MakeClickable(face)
     if face.jumpReady then return end
@@ -62,45 +63,109 @@ function M:SetPreviewSample(id)
     return false
 end
 
+-- The open tab's title, if the page is built.
+function M:PreviewSection()
+    local section = self.page and self.page.selectedSection
+    return section and section.title
+end
 -- The aura group the Auras tab is editing while it is open, else nil.
 function M:PreviewAuraGroup()
-    local page = self.page
-    local section = page and page.selectedSection
-    if section and section.title == L["Auras"] and page.partyAuraGroup then return page.partyAuraGroup() end
+    if self:PreviewSection() == L["Auras"] and self.page.partyAuraGroup then return self.page.partyAuraGroup() end
+end
+
+-- What the open tab edits, shown on the first sample: the heal, shield or
+-- overshield on Bars, the power bar on Power Bars and Resources, the element
+-- on Text and Icons, the dispel overlay (by type) and your target on
+-- Highlights and Overlay.
+local ELEMENT_STATES = { readyCheck = "readyCheck", incoming = "summon", status = "dead", raidIcon = "raidIcon", leader = "leader" }
+function M:PreviewFocus()
+    local page, section = self.page, self:PreviewSection()
+    if not page or not section then return {} end
+    if section == L["Bars"] and page.partyBarPart then return { [page.partyBarPart()] = true } end
+    if section == L["Power Bars and Resources"] then return { power = true } end
+    if section == L["Text and Icons"] and page.partyElement then
+        local state = ELEMENT_STATES[page.partyElement()]
+        return state and { [state] = true } or {}
+    end
+    if section == L["Highlights and Overlay"] and page.partyDispelType then return { dispel = page.partyDispelType(), target = page.partyShowTarget } end
+    return {}
+end
+
+-- How many samples, at what scale (on top of the frames' own Scale), and how
+-- tall the preview is for an `available` width.
+function M:PreviewMetrics(available)
+    local db = self.db
+    local aura = self:PreviewAuraGroup() ~= nil
+    local sample = self:PreviewSample()
+    local count, scale = sample.count, sample.scale
+    if aura then count, scale = 1, self.AURA_PREVIEW_SCALE end
+    local g = self:Geometry(1)
+    local spacing = math.floor(db.spacing + 0.5)
+    local w, h = self:SampleSize(count, g, spacing, spacing + self.RAID_GROUP_GAP)
+    local frames = db.scale / 100
+    local room = available - 2 * MARGIN - (aura and self.QUICK_WIDTH or 0)
+    if w * frames * scale > room then scale = room / (w * frames) end
+    local tallest = MAX_HEIGHT - MARGIN - HINT_HEIGHT
+    if h * frames * scale > tallest then scale = tallest / (h * frames) end
+    local height = h * frames * scale + MARGIN + HINT_HEIGHT
+    if aura then height = math.max(height, self:QuickListHeight() + HINT_HEIGHT + 8) end
+    return count, scale, math.max(MIN_HEIGHT, math.floor(height + 0.5))
+end
+
+function M:PreviewWidth()
+    local area = self.page and self.page.previewArea
+    local width = area and area:GetWidth()
+    if addon.IsNumber(width, 200) then return math.floor(width - 24) end
+    return self.PREVIEW_WIDTH
+end
+function M:GetPreviewSize()
+    local width = self:PreviewWidth()
+    local _, _, height = self:PreviewMetrics(width)
+    return width, height
 end
 
 function M:RenderPreview(view)
     local frame, faces = view.frame, view.faces
     local auraGroup = self:PreviewAuraGroup()
-    local sample = self:PreviewSample()
-    local count, fixed = sample.count, sample.scale
-    if auraGroup then count, fixed = 1, self.AURA_PREVIEW_SCALE end
+    local available = frame:GetWidth()
+    if not addon.IsNumber(available, 100) then available = self:PreviewWidth() end
+    local count, scale = self:PreviewMetrics(available)
     for i = #faces + 1, count do
         local face = CreateFrame("Frame", nil, view.group)
         face.ghost, face.sample = true, true
         self:BuildFace(face)
         faces[i] = face
     end
-    for _, face in ipairs(faces) do face.previewScale = fixed end
+    for _, face in ipairs(faces) do face.previewScale = scale end
     local width, height = self:LayoutSamples(view.group, faces, count)
-    local scale = faces[1]:GetScale()
-    view.group:SetSize(width * scale, height * scale)
+    local s = faces[1]:GetScale()
+    view.group:SetSize(width * s, height * s)
     view.group:ClearAllPoints()
-    -- One member sits in the middle; groups hang from the top left.
+    local quick = auraGroup and self.QUICK_WIDTH or 0
+    -- One member sits in the middle of the room left of the quick list;
+    -- groups hang from the top left.
+    local px = faces[1].geometry.px * s
+    local function Snap(v) return math.floor(v / px + 0.5) * px end
     if count == 1 then
-        local px = faces[1].geometry.px * scale
-        local function Snap(v) return math.floor(v / px + 0.5) * px end
-        view.group:SetPoint("TOPLEFT", frame, "TOPLEFT", Snap((frame:GetWidth() - width * scale) / 2),
-            -Snap(math.max(MARGIN / 2, (frame:GetHeight() - HINT_HEIGHT - height * scale) / 2)))
+        view.group:SetPoint("TOPLEFT", frame, "TOPLEFT", Snap(math.max(MARGIN, (available - quick - width * s) / 2)),
+            -Snap(math.max(MARGIN / 2, (frame:GetHeight() - HINT_HEIGHT - height * s) / 2)))
     else view.group:SetPoint("TOPLEFT", frame, "TOPLEFT", MARGIN, -MARGIN / 2) end
+    local focus = self:PreviewFocus()
     for i = 1, count do
+        local states = {}
+        for key, on in pairs(self.previewStates) do states[key] = on end
+        if i == 1 then for key, on in pairs(focus) do states[key] = on end end
         local face = faces[i]
-        self:PaintSample(face, i, auraGroup)
+        self:PaintSample(face, i, auraGroup, states)
         MakeClickable(face)
         for _, group in ipairs(self.auraGroups) do
-            for _, icon in ipairs(face.auraIcons[group]) do if not icon.jump then Clickable(icon, "auras:" .. group) end end
+            for _, icon in ipairs(face.auraIcons[group]) do
+                if not icon.jump then Clickable(icon, "auras:" .. group) end
+            end
         end
     end
+    self:LayoutQuickList(view, auraGroup)
+    local sample = self:PreviewSample()
     local caption = auraGroup and L["Editing"] .. ": " .. L[self.auraGroupLabels[auraGroup]] or L[sample.label]
     view.caption:SetText(self.enabled and caption or L["Party Frames are turned off"])
 end
@@ -120,29 +185,10 @@ function M:CreateConfigPreview(parent)
     return view
 end
 
--- Sample buttons for the preview header: One, Party and the raid sizes.
-function M:PreviewSampleButtons(page)
-    local buttons = {}
-    for _, item in ipairs(self.previewSamples) do
-        local button = W.Button(page.previewArea or page, L[item.label], 64, 24, "choice")
-        button:SetScript("OnClick", function() M:SetPreviewSample(item.id) end)
-        button.sampleId = item.id
-        buttons[#buttons + 1] = button
-    end
-    page.refreshers[#page.refreshers + 1] = function()
-        local aura = M:PreviewAuraGroup() ~= nil
-        for _, button in ipairs(buttons) do
-            button:SetSelected(button.sampleId == M.previewSample)
-            button:SetEnabled(not aura)
-        end
-    end
-    return buttons
-end
-
 -- Opens the settings for a part of the sample: its tab, element or aura group.
 function M:JumpTo(target)
     local page = self.page
-    if not page or not page.jumpTargets then return false end
+    if not page or not page.jumpTargets or type(target) ~= "string" then return false end
     local element = target:match("^element:(.+)$")
     local group = target:match("^auras:(.+)$")
     if element and page.SetElement then page.SetElement(element); target = "element" end

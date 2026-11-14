@@ -72,6 +72,42 @@ local function MigrateV1(db)
     db.dispelHighlight = nil
 end
 
+-- Version 2 -> 3. Frames at the old default height and spacing take the new
+-- ones (8px taller, 1px apart). The power bar gets its own opacities, copied
+-- from the bars'. Debuff type groups that showed every debuff of their type
+-- now show the ones you can't dispel, as Dispellable by You comes first in
+-- their row (in the Magic group's place).
+local function MigrateV2(db)
+    if db.healthHeight == 44 then db.healthHeight = M.defaults.healthHeight end
+    if db.spacing == 4 then db.spacing = M.defaults.spacing end
+    if db.powerOpacity == nil and Number(db.healthOpacity, 10, 100) then db.powerOpacity = db.healthOpacity end
+    if db.powerBackgroundOpacity == nil and Number(db.backgroundOpacity, 0, 100) then db.powerBackgroundOpacity = db.backgroundOpacity end
+    local auras = type(db.auras) == "table" and db.auras or nil
+    if not auras then return end
+    for group in pairs(M.groupDispelType) do
+        local g = auras[group]
+        if type(g) == "table" and (g.filter == "all" or g.filter == "mine") then g.filter = "notMine" end
+    end
+    if auras.dispellable == nil and type(auras.magic) == "table" then
+        local place = Copy(M.auraDefaults.dispellable)
+        for _, key in ipairs({ "anchor", "place", "grow", "x", "y", "width", "height", "spacing", "perRow" }) do
+            if auras.magic[key] ~= nil then place[key] = auras.magic[key] end
+        end
+        auras.dispellable = place
+    end
+end
+
+-- A tracked group's spells: whole spell IDs, each once, at most MAX_TRACKED_SPELLS.
+local function ValidateSpells(spells, group)
+    assert(#spells <= M.MAX_TRACKED_SPELLS, "Too many tracked spells: " .. group)
+    local seen = {}
+    for key, id in pairs(spells) do
+        assert(type(key) == "number" and key >= 1 and key <= #spells and key == math.floor(key), "Invalid tracked spell list: " .. group)
+        assert(Number(id, 1, 10000000) and id == math.floor(id) and not seen[id], "Invalid tracked spell: " .. group)
+        seen[id] = true
+    end
+end
+
 local function ValidateGroup(value, default, group)
     assert(Public(value) and type(value) == "table", "Invalid party aura group: " .. group)
     for key, fallback in pairs(default) do
@@ -84,6 +120,7 @@ local function ValidateGroup(value, default, group)
     assert(FILTERS[group][value.filter], "Invalid party aura filter: " .. group)
     for key, allowed in pairs(GROUP_CHOICES) do assert(allowed[value[key]], "Invalid party aura choice: " .. group .. "." .. key) end
     assert(Color(value.borderColor) and Color(value.glowCustomColor), "Invalid party aura color: " .. group)
+    if default.spells then ValidateSpells(value.spells, group) end
 end
 
 local function ValidateDispel(db)
@@ -103,6 +140,7 @@ end
 -- newer ModeUI's settings survive an older one).
 function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
+    if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid party frame settings version")
     for key, default in pairs(M.defaults) do

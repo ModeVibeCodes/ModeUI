@@ -1209,3 +1209,31 @@ Same source (Forever branch 1.60.1, build 70938). Native confirmation pending.
   `GetLeft`/`GetBottom`/`GetWidth`/`GetHeight` and effective scales before and
   after a resize; the difference goes to `PositionManager:SetOffsets`, outside
   combat. No client API beyond those.
+
+### Party frames, third pass — November 14, 2026
+
+Same source. Native confirmation pending.
+
+- **Box border corners.** The owner saw solid corner blocks and unrounded
+  bars on the party frames' box border. The corners and their masks had used
+  a quarter of `Mode/CapLeft`/`CapRight` (and the hole masks) picked with
+  `SetTexCoord`; Forever's `SimpleMaskTextureAPIDocumentation.lua` lists no
+  functions of its own, so a mask's texture coordinates aren't documented to
+  apply, and in game the masks behaved as if they used the whole cap. Every
+  corner is now a whole 64×64 texture (`Mode/CornerTopLeft` … and
+  `Mode/CornerHole*`, built by `tools/build_shape_textures.lua`), so no mask
+  needs texture coordinates. This affects every `Kit.ModeBoxBorder` (chat,
+  damage meters, bags, Cooldown Manager, party frames).
+- **Tracked Buffs.** `candidateFilters.includeSpellIDs` / `excludeSpellIDs`
+  (maps of spell ID → true; `ValidateCandidateFilters`). The game applies spell
+  matching to helpful auras on group members
+  (`AuraContainerUtil.CanApplyIdentityCandidateFilters`: "Filtering helpful
+  spells on the active player / any group members … is always allowed").
+  `SetAuraGroupCandidateFilters(groupKey, filters)` updates a group in place.
+  The + picker lists the buffs on you and your party from
+  `C_UnitAuras.GetUnitAuras(unit, "HELPFUL")` with public `spellId`s (out of
+  combat), and checks typed IDs with `C_Spell.GetSpellName`
+  (`Domain.Cooldowns.SpellName`).
+- **Dispellable by You.** `HARMFUL|RAID` (debuffs the player can dispel) first
+  in the debuff row; the type groups default to `HARMFUL|!RAID` so a debuff
+  shows once. Both are documented `AuraUtil.AuraFilters` components.
