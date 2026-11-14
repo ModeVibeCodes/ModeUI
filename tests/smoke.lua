@@ -9,12 +9,12 @@ assert(metadata["X-ModeUI-Edition"] == "Forever" and metadata.Interface == "1600
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,unitFrames,nameplates')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,bags,unitFrames,nameplates')
     -- Sidebar order (owner, November 13, 2026): Global, Interface, Frames.
     assert(table.concat(addon.categoryOrder,',')=='global,interface,frames' and addon.categories.interface.title=='Interface'
         and addon.categories.global.title=='Global' and addon.categories.frames.title=='Frames')
     assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
-    assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,tooltip')
+    assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,tooltip,bags')
     assert(table.concat(addon.categories.frames.modules,',')=='unitFrames,nameplates')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
     assert(addon.InterfaceTheme.primary[2]==240/255,'Mode cyan accent')
@@ -43,7 +43,9 @@ world.run([[
     local nested=window.sidebarModuleButtons.unitFrames
     assert(nested and nested:IsShown() and nested.label:GetText()=='· Unit Frames','Unit Frames nested under Frames')
     local count=0;for _ in pairs(window.sidebarModuleButtons) do count=count+1 end
-    assert(count==10,'ten pages in the sidebar')
+    assert(count==11,'eleven pages in the sidebar')
+    assert(window.sidebarModuleButtons.bags:IsShown(),'Bags nested under Interface')
+    addon:SelectConfigPage('bags');assert(window.pages.bags:IsShown() and window.moduleHeader.title:GetText()=='Bags')
     assert(window.sidebarModuleButtons.nameplates:IsShown(),'Nameplates nested under Frames')
     addon:SelectConfigPage('unitFrames');assert(window.selectedCategory=='frames' and window.pages.unitFrames:IsShown())
     addon:SelectConfigPage('nameplates');assert(window.pages.nameplates:IsShown() and window.moduleHeader.title:GetText()=='Nameplates')

@@ -824,3 +824,57 @@ the game type `camelot`). Code: `Shared/Settings/Launchers.lua`.
 - **Unverified natively:** what exactly sent the owner's meter window and
   tooltip to the top left corner; the simulated client doesn't reproduce it.
   The loop and off-screen checks above stop both causes that fit.
+
+## Bags — November 13, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source. Forever loads
+`Blizzard_UIPanels_Game` as the `camelot` game type: the mainline
+`[Family]\ContainerFrame.lua`/`.xml` plus `Camelot\ContainerFrame.lua` (two
+small overrides: the portrait mask, and empty combined slots show the bag
+icon). [Details](BAGS.md).
+
+- **Bag IDs.** `Constants.InventoryConstants.NumBagSlots` (4) and
+  `NumReagentBagSlots`; bag 0 is the backpack, 1-4 the equipped bags, 5 the
+  reagent bag. `KEYRING_CONTAINER`/`Enum.BagIndex.Keyring` (-2), shown when
+  `C_ActionBar.ShouldShowKeyring()`, sized by `GetKeyRingSize()` (Blizzard's
+  `ContainerFrame_GetContainerNumSlots` does the same).
+- **Reads.** `C_Container.GetContainerNumSlots`, `GetContainerNumFreeSlots`,
+  `GetContainerItemInfo` (→ `ContainerItemInfo`: `iconFileID`, `stackCount`,
+  `isLocked`, `quality`, `hyperlink`, `isFiltered`, `hasNoValue`, `itemID`,
+  `itemName`, ...), `GetContainerItemQuestInfo`, `GetContainerItemCooldown`,
+  `C_NewItems.IsNewItem`, `C_Item.GetItemInfoInstant`,
+  `C_Item.GetDetailedItemLevelInfo`, `C_Item.GetItemQualityColor`,
+  `GetMoney`. All are `SecretArguments = "AllowedWhenUntainted"` (ModeUI
+  passes plain bag and slot numbers) with no secret returns; Domain still
+  keeps only public values.
+- **Search and sort.** `C_Container.SetItemSearch(text)` sets the game's bag
+  search (Blizzard's `BagItemSearchBox` uses it) and fires
+  `INVENTORY_SEARCH_UPDATE`; matches come back through `isFiltered`.
+  `C_Container.SortBags()` is Blizzard's "Clean Up Bags"; no restrictions in
+  the documentation; ModeUI doesn't call it in combat.
+- **Item buttons.** `ContainerFrameItemButtonTemplate` (an `ItemButton`, not
+  secure). Its `OnClick` (`ContainerFrameItemButtonMixin:OnClick` →
+  `ContainerFrameItemButton_OnClick`) and `OnModifiedClick`, drag handlers
+  and `OnEnter` tooltip read only `self:GetID()` and `self:GetBagID()`
+  (`self.bagID or self:GetParent():GetID()`; `bagID` comes from the
+  `bagid` attribute, which ModeUI never sets). ModeUI parents each button to
+  a holder with `SetID(bag)` and gives it `SetID(slot)`, so Blizzard's
+  handlers start from Blizzard's code with values from the client.
+  `CreateFrame("ItemButton", name, parent, template)` with a name: the
+  template names children `$parentCooldown` and `$parentIconQuestTexture`.
+- **Opening and closing.** `OpenAllBags`, `CloseAllBags`, `ToggleAllBags`,
+  `ToggleBackpack`, `OpenBag`, `ToggleBag`, `CloseBag` show and hide
+  `ContainerFrameCombinedBags` or `ContainerFrame1-N` (`NUM_CONTAINER_FRAMES`)
+  through `ContainerFrame_GenerateFrame` (`SetBagID` = `SetID`, then `Show`).
+  `IsBagOpen` and `IsAnyBagOpen` use `IsShown()`, which stays true under a
+  hidden parent. `FRAME_THAT_OPENED_BAGS` is a file local in Forever, so
+  ModeUI calling `CloseAllBags()` writes no global. Esc reaches
+  `CloseAllWindows` → `CloseAllBags()`; center panels call
+  `securecall("CloseAllBags")`. `ContainerFrame_SetFullScreenFrame` and
+  `ContainerFrame_ClearFullScreenFrame` reparent the bag frames
+  (`FrameUtil.SetParentMaintainRenderLayering`), so ModeUI post-hooks both.
+  The frames aren't protected, so `SetParent` works in combat.
+- **Unverified natively:** using items and splitting stacks from ModeUI's
+  buttons in combat (expected to work, as Blizzard's handler runs) and the
+  bag bar's open highlights while Blizzard's frames are hidden. The junk
+  coin uses the atlas Forever's own template names (`bags-junkcoin`).
