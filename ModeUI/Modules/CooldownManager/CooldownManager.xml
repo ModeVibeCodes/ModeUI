@@ -2,6 +2,7 @@
     <Script file="Init.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
+    <Script file="Custom.lua"/>
     <Script file="Blizzard.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Skin.lua"/>
@@ -10,7 +11,9 @@
     <Script file="Glow.lua"/>
     <Script file="Visibility.lua"/>
     <Script file="SpellMenu.lua"/>
+    <Script file="Picker.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
     <Script file="SettingsTabs.lua"/>
+    <Script file="Window.lua"/>
 </Ui>

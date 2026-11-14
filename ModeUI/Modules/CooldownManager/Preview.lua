@@ -2,18 +2,21 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- The settings preview: the viewer being edited, drawn by the same layout,
--- skin and text code as the real one, with your own tracked spells (their
--- icons and names come from the game's spell data, by cooldown ID). Spells
--- hidden here show faded, so they can be brought back. With nothing tracked
--- yet, sample icons stand in. Clicking an icon opens its spell menu
--- (SpellMenu.lua); while you edit the Cooldown text a sample cooldown runs on
--- the first icon.
+-- The settings preview: the bar being edited, drawn by the same layout, skin
+-- and text code as the real one, with your own tracked spells (their icons
+-- and names come from the game's spell data, by cooldown ID). Spells hidden
+-- here show faded, so they can be brought back; a custom bar's spell that
+-- isn't tracked now shows faded too. Icon bars end with a + slot: on a
+-- custom bar it lists the spells you track to add one (Picker.lua), on a
+-- viewer it opens Blizzard's Cooldown Manager. With nothing tracked yet,
+-- sample icons stand in on a viewer. Clicking a spell opens its menu
+-- (SpellMenu.lua); while you edit the Cooldown text a sample cooldown runs
+-- on the first icon.
 local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local Cooldowns = addon.Domain.Cooldowns
 local SAMPLE_COOLDOWN, STATIC_ELAPSED, HINT_HEIGHT, MAX_WIDTH, MAX_HEIGHT = 8, 3, 18, 560, 200
 local SAMPLE_ICON, SAMPLE_COUNT = 134400, 6 -- the question mark icon
-local HIDDEN_ALPHA = 0.3
+local FADED = 0.3
 
 addon.PreviewStates:Register(M.id, {
     states = { { id = "static", label = "Static" }, { id = "animated", label = "Animated" } },
@@ -21,39 +24,57 @@ addon.PreviewStates:Register(M.id, {
     sample = function(_, phase) return phase end,
 })
 
--- The viewer the page is editing, else Essential.
+-- The bar the page is editing, else Essential.
 function M:PreviewViewer()
     local page = self.page
     return page and page.viewerEditing and page.viewerEditing() or "essential"
 end
 
--- What the preview shows: { key, icon, name, hidden } per tracked spell, in
--- Blizzard's order, or samples when nothing is tracked.
-function M:PreviewEntries(viewer)
-    local entries = {}
-    for _, item in ipairs(self:Items(viewer)) do
+-- What the preview shows: { key, icon, name, faded } per spell in the bar's
+-- order, or samples when a viewer tracks nothing yet; and whether they're real.
+function M:PreviewEntries(id)
+    local entries, tracked = {}, {}
+    local function Entry(key, present)
+        local spell = Cooldowns.SpellID(tonumber(key))
+        entries[#entries + 1] = { key = key, icon = spell and Cooldowns.SpellIcon(spell) or SAMPLE_ICON, name = self:SpellLabel(key),
+            faded = self:SpellSwitch(id, key, "hide") or not present, missing = not present }
+    end
+    local custom = self:Custom(id)
+    if custom then
+        for _, item in ipairs(self:BarItems(id)) do local key = self:SpellKey(item); if key then tracked[key] = true end end
+        for _, key in ipairs(custom.entries) do Entry(key, tracked[key] == true) end
+        return entries, true
+    end
+    for _, item in ipairs(self:BarItems(id)) do
         local key = self:SpellKey(item)
-        if key then
-            local spell = Cooldowns.SpellID(tonumber(key))
-            entries[#entries + 1] = { key = key, icon = spell and Cooldowns.SpellIcon(spell) or SAMPLE_ICON,
-                name = self:SpellLabel(key), hidden = self:SpellSwitch(viewer, key, "hide") }
-        end
+        if key then Entry(key, true) end
     end
     if #entries > 0 then return entries, true end
     for i = 1, SAMPLE_COUNT do entries[i] = { icon = SAMPLE_ICON, name = string.format(L["Sample %d"], i) } end
     return entries, false
 end
 
+-- Icon bars end with the + slot.
+function M:HasPlus(id) return not self:IsBar(id) end
+
+local function Count(id, entries) return #entries + (M:HasPlus(id) and 1 or 0) end
 local function Scale(style, count)
     local g = M.Geometry(style, count, 1)
-    return math.min(1, MAX_WIDTH / g.width, MAX_HEIGHT / g.height), g
+    return math.min(1, MAX_WIDTH / g.extent.width, MAX_HEIGHT / g.extent.height), g
 end
 
 function M:GetPreviewSize()
-    local viewer = self:PreviewViewer()
-    local entries = self:PreviewEntries(viewer)
-    local scale, g = Scale(self.db[viewer], #entries)
-    return math.max(320, g.width * scale), g.height * scale + 8 + HINT_HEIGHT
+    local id = self:PreviewViewer()
+    local scale, g = Scale(self.db[id], Count(id, (self:PreviewEntries(id))))
+    return math.max(320, g.extent.width * scale), g.extent.height * scale + 8 + HINT_HEIGHT
+end
+
+local function Hover(sample)
+    sample:EnableMouse(true)
+    sample.highlight = W.Fill(sample, T.primary, "OVERLAY", 0, 0.16)
+    sample.highlight:Hide()
+    sample:SetScript("OnEnter", function() sample.highlight:Show() end)
+    sample:SetScript("OnLeave", function() sample.highlight:Hide() end)
 end
 
 -- A sample that lights up under the mouse and opens its spell menu.
@@ -62,11 +83,7 @@ local function Sample(view, index, bar)
     local sample = list[index]
     if sample then return sample end
     sample = M:BuildSample(view.holder, bar)
-    sample:EnableMouse(true)
-    sample.highlight = W.Fill(sample, T.primary, "OVERLAY", 0, 0.16)
-    sample.highlight:Hide()
-    sample:SetScript("OnEnter", function() sample.highlight:Show() end)
-    sample:SetScript("OnLeave", function() sample.highlight:Hide() end)
+    Hover(sample)
     sample:SetScript("OnMouseUp", function(_, mouse)
         if mouse ~= nil and mouse ~= "LeftButton" then return end
         M:JumpTo("spells")
@@ -76,9 +93,31 @@ local function Sample(view, index, bar)
     return sample
 end
 
+-- The + slot: an empty slot with a plus in it.
+local function Plus(view)
+    if view.plus then return view.plus end
+    local plus = M:BuildSample(view.holder, false)
+    Hover(plus)
+    plus.bars = { plus:CreateTexture(nil, "OVERLAY"), plus:CreateTexture(nil, "OVERLAY") }
+    for _, line in ipairs(plus.bars) do line:SetTexture(Kit.FLAT); Kit.Tint(line, T.muted or Kit.palette.muted, 0.9) end
+    plus:SetScript("OnMouseUp", function(_, mouse)
+        if mouse ~= nil and mouse ~= "LeftButton" then return end
+        local id = M:PreviewViewer()
+        if M:IsCustom(id) then M:OpenPicker(view, plus) else M:OpenCooldownSettings() end
+    end)
+    view.plus = plus
+    return plus
+end
+
+local function PlaceCross(plus, g)
+    local arm = math.max(g.px * 6, math.floor(math.min(g.w, g.h) * 0.4 / g.px) * g.px)
+    local thick = math.max(g.px, 2 * g.px)
+    plus.bars[1]:ClearAllPoints(); plus.bars[1]:SetPoint("CENTER"); plus.bars[1]:SetSize(arm, thick)
+    plus.bars[2]:ClearAllPoints(); plus.bars[2]:SetPoint("CENTER"); plus.bars[2]:SetSize(thick, arm)
+end
+
 -- Fills one sample: icon, texts, a sample cooldown or bar fill.
-local function Fill(sample, entry, index, viewer, style, demo, phase)
-    local bar = M:IsBar(viewer)
+local function Fill(sample, entry, index, bar, demo, phase)
     local icon = bar and sample.Icon.Icon or sample.Icon
     icon:SetTexture(entry.icon)
     sample.key = entry.key
@@ -100,41 +139,50 @@ local function Fill(sample, entry, index, viewer, style, demo, phase)
     end
 end
 
--- The glow on the icon whose menu is open, as it would show on screen.
-local function PreviewGlow(view, sample, viewer, style)
-    local chosen = view.menuKey ~= nil and sample.key == view.menuKey and not M:IsBuff(viewer)
-    local proc = chosen and M:SpellSwitch(viewer, sample.key, "proc") and (style.procGlow == "mode" or style.procGlow == "border")
-    local set = M.glows[sample]
-    if proc or (set and set.proc) then
-        local glow = M:Glow(sample, "proc")
-        if proc then M.PaintGlow(sample, glow, style.procGlow, style.procColor, style.procPulse) end
-        glow.wanted = proc
-        M:ResolveGlows(sample)
+-- The first glow that's on for the spell whose menu is open, as it would
+-- show on screen (Blizzard's proc animation shows as Mode Glow here).
+local function PreviewGlow(view, sample, id, style)
+    local chosen = view.menuKey ~= nil and sample.key == view.menuKey
+    local shown
+    for _, kind in ipairs(M:Glows(id)) do
+        if not shown and chosen and style[kind .. "Glow"] ~= "none" and M:SpellSwitch(id, sample.key, kind) then shown = kind end
     end
+    local look = style
+    if shown then
+        local glow = style[shown .. "Glow"]
+        look = { procGlow = glow == "blizzard" and "mode" or glow, procColor = style[shown .. "Color"], procPulse = style[shown .. "Pulse"] }
+    end
+    M:WantGlow(sample, "proc", shown ~= nil, look)
+    M:ResolveGlows(sample)
 end
 
 function M:RenderPreview(view)
-    local viewer = self:PreviewViewer()
-    local style, bar = self.db[viewer], self:IsBar(viewer)
-    local entries, real = self:PreviewEntries(viewer)
-    local scale = Scale(style, #entries)
-    view.holder:SetScale(scale)
-    local g = self.Geometry(style, #entries, self.PixelSize(view.holder))
+    local id = self:PreviewViewer()
+    local style, bar = self.db[id], self:IsBar(id)
+    local entries, real = self:PreviewEntries(id)
+    local plus = self:HasPlus(id)
+    local count = Count(id, entries)
+    local scale = Scale(style, count)
+    view.area:SetScale(scale)
+    local g = self.Geometry(style, count, self.PixelSize(view.area))
+    view.area:SetSize(g.extent.width, g.extent.height)
+    view.area:ClearAllPoints(); view.area:SetPoint("TOP", view.frame, "TOP", 0, -2 / scale)
     view.holder:SetSize(g.width, g.height)
-    view.holder:ClearAllPoints(); view.holder:SetPoint("TOP", view.frame, "TOP", 0, -2 / scale)
-    view.holder:SetAlpha(style.show and style.opacity / 100 or 0.4)
+    view.holder:ClearAllPoints(); view.holder:SetPoint("TOPLEFT", view.area, "TOPLEFT", g.extent.x, -g.extent.y)
+    view.area:SetAlpha(style.show and style.opacity / 100 or 0.4)
     local demo = not bar and self.page ~= nil and self.page.textPart ~= nil and self.page.textPart() == "cooldown"
     local phase = addon.PreviewStates:Sample(self.id)
     for index, entry in ipairs(entries) do
         local sample = Sample(view, index, bar)
         local state = self:Dress(sample)
-        state.viewer, state.g = viewer, g
+        state.viewer, state.g = id, g
         self.Place(sample, view.holder, g, index)
         if bar then self:SkinBar(sample, style, g, state) else self:SkinIcon(sample, style, g, state) end
-        self:StyleTexts(viewer, sample, style, g)
-        Fill(sample, entry, index, viewer, style, demo, phase)
-        PreviewGlow(view, sample, viewer, style)
-        sample:SetAlpha(entry.hidden and HIDDEN_ALPHA or 1)
+        self:StyleTexts(id, sample, style, g)
+        Fill(sample, entry, index, bar, demo, phase)
+        if sample.Icon.SetDesaturated then sample.Icon:SetDesaturated(entry.missing == true) end
+        PreviewGlow(view, sample, id, style)
+        sample:SetAlpha(entry.faded and FADED or 1)
         sample:Show()
     end
     for _, list in ipairs({ view.icons, view.bars }) do
@@ -142,12 +190,30 @@ function M:RenderPreview(view)
             if list ~= (bar and view.bars or view.icons) or index > #entries then list[index]:Hide() end
         end
     end
-    local label = L[self.viewerSpecs[viewer].label]
-    local caption = style.show and label or string.format(L["%s is hidden"], label)
-    if not real then caption = caption .. " · " .. L["no spells tracked yet"]
-    elseif self:HiddenCount(viewer) > 0 then caption = caption .. " · " .. string.format(L["%d hidden"], self:HiddenCount(viewer)) end
-    view.caption:SetText(caption)
+    if plus then
+        local slot = Plus(view)
+        local state = self:Dress(slot)
+        state.viewer, state.g = id, g
+        self.Place(slot, view.holder, g, count)
+        self:SkinIcon(slot, style, g, state)
+        slot.Icon:SetTexture(nil); slot.Cooldown:Hide(); slot.ChargeCount.Current:SetText(""); slot.cooldownText:SetText("")
+        PlaceCross(slot, g)
+        slot:Show()
+    elseif view.plus then view.plus:Hide() end
+    view.caption:SetText(self:PreviewCaption(id, entries, real))
     self:RefreshSpellMenu()
+end
+
+function M:PreviewCaption(id, entries, real)
+    local label = self:Label(id)
+    local caption = self.db[id].show and label or string.format(L["%s is off"], label)
+    local missing = 0
+    for _, entry in ipairs(entries) do if entry.missing then missing = missing + 1 end end
+    if self:IsCustom(id) and #entries == 0 then caption = caption .. " · " .. L["click + to add a spell"]
+    elseif not real then caption = caption .. " · " .. L["no spells tracked yet"] end
+    if self:HiddenCount(id) > 0 then caption = caption .. " · " .. string.format(L["%d hidden"], self:HiddenCount(id)) end
+    if missing > 0 then caption = caption .. " · " .. string.format(L["%d not tracked now"], missing) end
+    return caption
 end
 
 function M:CreateConfigPreview(parent)
@@ -155,8 +221,9 @@ function M:CreateConfigPreview(parent)
     frame:SetAllPoints()
     local view = { frame = frame, icons = {}, bars = {} }
     self.previewView = view
-    view.holder = CreateFrame("Frame", nil, frame)
-    view.caption = W.Label(frame, "", nil, 0, 0, 320, T.muted)
+    view.area = CreateFrame("Frame", nil, frame)
+    view.holder = CreateFrame("Frame", nil, view.area)
+    view.caption = W.Label(frame, "", nil, 0, 0, 360, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
     view.hint = W.Label(frame, L["Click a spell for its own switches"], nil, 0, 0, 220, T.faint or T.muted)
     view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2); view.hint:SetJustifyH("RIGHT")
@@ -166,11 +233,11 @@ function M:CreateConfigPreview(parent)
 end
 
 -- The tracked spells change with talents and Blizzard's Cooldown Settings;
--- each time Blizzard lays the viewer out again, so does ModeUI, and the open
+-- each time Blizzard lays a viewer out again, so does ModeUI, and the open
 -- preview follows on the next frame.
-function M:QueuePreview(viewer)
+function M:QueuePreview(id)
     local view, page = self.previewView, self.page
-    if not view or not page or not page:IsShown() or viewer ~= self:PreviewViewer() or self.previewQueued then return end
+    if not view or not page or not page:IsShown() or id ~= self:PreviewViewer() or self.previewQueued then return end
     self.previewQueued = true
     local function Run() M.previewQueued = nil; if M.page and M.page:IsShown() then view.Refresh() end end
     if C_Timer and C_Timer.After then C_Timer.After(0, Run) else Run() end

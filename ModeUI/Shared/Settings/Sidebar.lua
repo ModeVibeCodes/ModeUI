@@ -61,7 +61,9 @@ function addon:BuildConfigSidebar(ctx)
         if #self.categories[id].modules > 0 then AddNavigation(id, self.categories[id].title) end
     end
     for _, id in ipairs(self.moduleOrder) do
-        if not self.modules[id].developer and not self.modules[id].category then AddNavigation(id, self.modules[id].title) end
+        -- Standalone modules open their own window and have no page here.
+        local module = self.modules[id]
+        if not module.developer and not module.category and not module.standalone then AddNavigation(id, module.title) end
     end
     for _, id in ipairs(self.moduleOrder) do
         if self.modules[id].developer then AddNavigation(id, self.modules[id].title, true) end

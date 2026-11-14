@@ -25,7 +25,10 @@ function addon:SearchSettings(query)
     else
         addon.Defer:Cancel("settings:search")
     end
-    for _, id in ipairs(self.moduleOrder) do
+    -- Standalone modules have their own window, not a page here.
+    local searchable = {}
+    for _, id in ipairs(self.moduleOrder) do if not self.modules[id].standalone then searchable[#searchable + 1] = id end end
+    for _, id in ipairs(searchable) do
         local module = self.modules[id]
         local page = self.configWindow.pages[id]
         if not page and not combat then page = self:EnsureConfigPage(id) end

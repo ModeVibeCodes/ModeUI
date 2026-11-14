@@ -47,6 +47,15 @@ function PM:UpdateEditDecoration(element, selected, show)
     d.frame:SetShown(active and true or false)
 end
 
+-- Renames an element's Edit Mode handle (a custom bar renamed, say).
+function PM:SetLabel(id, label)
+    local element = self.elements[id]
+    if not element or type(label) ~= "string" or label == "" then return false end
+    element.label = label
+    if element.decoration then element.decoration.label:SetText(label) end
+    return true
+end
+
 -- The selected element's place on the screen, left of its name: its
 -- center's X and Y from the screen's center (where the center lines cross),
 -- in whole UI units, kept current while it's dragged or nudged.
