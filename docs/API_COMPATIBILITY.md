@@ -1121,7 +1121,7 @@ come from Blizzard's own table of racial cooldowns
 (`Blizzard_CooldownBroadcaster/TrackedCooldowns.lua`, `RacialCooldowns`,
 12.1.5 mainline source), including each class's Arcane Torrent and Gift of
 the Naaru, plus Blood Fury's class versions (33697, 33702). A racial shows
-only when `C_SpellBook.IsSpellKnown(spellID)` returns a public `true`
+only when `C_SpellBook.IsSpellKnown(spellID)` returns a public `true` and `C_SpellBook.FindSpellBookSlotForSpell(spellID)` finds a slot (both on the Forever branch; IsSpellKnown alone showed a second, unusable Blood Fury on an orc), one per spell name,
 (`Domain.Cooldowns.SurelyKnown`); a missing API, an error or a secret answer
 means not shown. `UnitRace` isn't needed. Forever's racial spell IDs and
 `IsSpellKnown` answers for them need in-game confirmation.

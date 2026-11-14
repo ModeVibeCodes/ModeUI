@@ -102,7 +102,7 @@ Your race's abilities (Berserking, Stoneform, Arcane Torrent, Fireblood,
 so they show on ModeUI's own icons at the end of one bar: **Utility** by
 default. **Racial Abilities** on the Bar tab of Essential, Utility or a
 Cooldown Bar picks the bar, or **Off**. Only racials your character knows
-show (`C_SpellBook.IsSpellKnown`), worked out again whenever your spells
+show (`C_SpellBook.IsSpellKnown`, and in your spellbook: `FindSpellBookSlotForSpell`; one per name, so an orc sees one Blood Fury), worked out again whenever your spells
 change, so nothing is saved per racial. They work like spells added by ID:
 cooldown, charges, gray on cooldown, the Proc and Off Cooldown glows, text
 looks, dragging. **Remove from Bar** hides one there. Another bar's **+**

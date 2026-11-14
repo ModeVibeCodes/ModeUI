@@ -169,6 +169,16 @@ function CD.SurelyKnown(spellID)
     return ok and Public(known) and known == true
 end
 
+-- Whether the spell has a slot in your spellbook (active spec, not hidden):
+-- true, false, or nil when the client can't say.
+function CD.InSpellBook(spellID)
+    local api = C_SpellBook and C_SpellBook.FindSpellBookSlotForSpell
+    if type(api) ~= "function" or not Number(spellID, 1, 99999999) then return nil end
+    local ok, slot = Call(api, spellID)
+    if not ok or not Public(slot) then return nil end
+    return Number(slot, 1, 100000) == true
+end
+
 -- Whether you know the spell (or what overrides it): true, false, or true
 -- when the client can't say.
 function CD.Known(spellID)

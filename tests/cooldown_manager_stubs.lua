@@ -71,6 +71,9 @@
     end
     C_Spell.IsSpellUsable = function(id) local u = spellUsable[id]; if u then return u[1], u[2] end return true, false end
     C_SpellBook = { IsSpellKnown = function(id) return knownSpells[id] ~= false end }
+    -- The spellbook: every spell has a slot unless noSlot says otherwise.
+    noSlot = {}
+    C_SpellBook.FindSpellBookSlotForSpell = function(id) if not noSlot[id] then return 1, 0 end end
     -- Racials: the character is a troll, so only Berserking is known.
     for _, id in ipairs({ 20572, 33697, 33702, 7744, 20549, 50613, 202719, 80483, 28730, 129597, 155145, 232633, 25046, 69179,
         69070, 59752, 20594, 58984, 20589, 59545, 59543, 59548, 121093, 59542, 59544, 370626, 59547, 416250, 28880, 68992,

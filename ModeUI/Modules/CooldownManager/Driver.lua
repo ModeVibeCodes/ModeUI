@@ -96,8 +96,10 @@ end
 M.revision = 0
 function M:Refresh()
     self.revision = self.revision + 1
-    -- Spells changing refreshes: the racials you know are found again.
+    -- Spells changing refreshes: the racials you know are found again, and
+    -- the icon of one you no longer have is put away.
     self:ForgetRacials()
+    self:SyncSpellIcons()
     if self.active then
         self:LayoutAll()
         self:RenderMovers()
