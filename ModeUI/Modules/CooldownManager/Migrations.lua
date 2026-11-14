@@ -100,11 +100,27 @@ local function GrowthFromV1(style)
     style.readyStyle = nil
 end
 
+-- Version 2 -> 3: the ModeUI border on every bar. A Rounded border (the
+-- old default) becomes it, and the old default color (#101010) its color;
+-- Square and None stay as chosen.
+local function SameColor(a, b) return type(a) == "table" and a[1] == b[1] and a[2] == b[2] and a[3] == b[3] end
+local function BorderToV3(style)
+    if style.border == "rounded" or style.border == nil then style.border = "mode" end
+    if style.borderColor == nil or SameColor(style.borderColor, M.OLD_BORDER_COLOR) then style.borderColor = Copy(M.BORDER_COLOR) end
+end
+
 function M.Initialize(db)
     if db.version == nil then db.version = M.VERSION end
     if db.version == 1 then
         for _, viewer in ipairs(M.viewers) do if type(db[viewer]) == "table" then GrowthFromV1(db[viewer]) end end
         db.version = 2
+    end
+    if db.version == 2 then
+        for _, viewer in ipairs(M.viewers) do if type(db[viewer]) == "table" then BorderToV3(db[viewer]) end end
+        for _, bar in ipairs(type(db.customBars) == "table" and db.customBars or {}) do
+            if type(bar) == "table" and type(bar.id) == "string" and type(db[bar.id]) == "table" then BorderToV3(db[bar.id]) end
+        end
+        db.version = 3
     end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end

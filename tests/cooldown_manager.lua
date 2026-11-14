@@ -16,7 +16,7 @@ world.run([==[
     assert(M and not M.enabled and not M.built and M.standalone and M.category == nil, 'standalone, off by default')
     local first = ItemsOf(essential)[1]
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
-    assert(M.db.version == 2 and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    assert(M.db.version == 3 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
     assert(M.db.essential.desaturate and M.db.essential.procGlow == 'mode' and M.db.essential.activeGlow == 'none', 'gray on cooldown by default')
 
     addon:SetModuleEnabled('cooldownManager', true)
@@ -33,11 +33,28 @@ world.run([==[
     -- Skin.
     local icon = items[1].Icon
     assert(icon.mask == nil and items[1].overlay.alpha == 0, 'round mask removed, frame art faded')
-    assert(M.dress[items[1]].art.fill.vertexColor[4] == 0.75 and icon.points[1][4] == 3, 'Mode slot, icon a pixel inside the border')
+    -- The ModeUI border: a 2px rim with round corners above the icon, which
+    -- starts at its inner edge; the slot's own edges hide.
+    local dress = M.dress[items[1]]
+    local rim = dress.modeBorder
+    assert(rim and rim.edge:IsShown() and rim.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and rim.radius == 4, 'ModeUI border')
+    assert(rim.edge.frameLevel > items[1]:GetFrameLevel() and not dress.art.edges[1]:IsShown(), 'rim above the icon; no slot edges')
+    assert(dress.art.fill.vertexColor[4] == 0.75 and dress.art.fill.points[1][4] == 2 and icon.points[1][4] == 2, 'background and icon inside the rim')
+    assert(items[1].Cooldown.points[1][4] == 2, 'swipe inside the rim')
+    -- Out of range: Blizzard's shade stays faded (no red block); its red tint on the icon stays.
+    assert(items[1].OutOfRange.alpha == 0 and items[1].OutOfRange.atlas == 'UI-CooldownManager-OORshadow', "Blizzard's shade faded, not repainted")
+    items[1].spellOutOfRange = true; items[1]:RefreshIconColor()
+    assert(items[1].OutOfRange.alpha == 0 and items[1].Icon.vertexColor[2] == 0.15, 'out of range: the red tint only')
+    assert(M:SetOption('essential', 'rangeTint', false)); items[1]:RefreshIconColor()
+    assert(items[1].Icon.vertexColor[2] == 1, 'Out of Range Tint off: full color')
+    assert(M:SetOption('essential', 'rangeTint', true)); items[1].spellOutOfRange = nil; items[1]:RefreshIconColor()
+    -- Rounded keeps the slot's own rim.
+    assert(M:SetOption('essential', 'border', 'rounded') and dress.art.edges[1]:IsShown() and not rim.edge:IsShown() and icon.points[1][4] == 3)
+    assert(M:SetOption('essential', 'border', 'mode'))
     items[1]:RefreshSpellCooldownInfo()
     assert(items[1].Cooldown.drawEdge == false and items[1].Cooldown.swipeColor[4] == 0.7, 'edge off, 70% swipe after the refresh')
     local count = items[1].ChargeCount.Current
-    assert(count.font[2] == 12 and Point(count)[1] == 'BOTTOMRIGHT' and Point(count)[4] == -4, 'count in the corner')
+    assert(count.font[2] == 12 and Point(count)[1] == 'BOTTOMRIGHT' and Point(count)[4] == -3, 'count in the corner')
 
     -- Growth and New Lines.
     local function At(item) local q = Point(item); return q[4], q[5] end
@@ -123,6 +140,8 @@ world.run([==[
     local bar = ItemsOf(bars)[1]
     assert(bar.width == 220 and bar.Icon.width == 22 and Point(M.dress[bar].box)[4] == 24, 'icon square, bar box beside it')
     assert(bar.Bar.statusBarTexture == Kit.FLAT and bar.Bar.BarBG.alpha == 0, 'Mode Gradient')
+    assert(M.dress[bar].iconBorder.modeBorder.edge:IsShown() and M.dress[bar].boxBorder.modeBorder.edge:IsShown(), 'ModeUI border on the icon and the bar')
+    assert(not M.dress[bar].rim[1]:IsShown() and Point(bar.Bar)[4] == 2, 'no slot rim; the bar inside the ModeUI rim')
     assert(Point(ItemsOf(bars)[2])[5] == 24, 'Tracked Bars add lines upward')
 
     -- Custom bars: Blizzard's own icons move onto them.
@@ -197,7 +216,7 @@ world.run([==[
     -- Copy and reset, then the no-writes rule.
     assert(M:SetOption('essential', 'border', 'square') and M:CopyStyleToAll('essential'))
     assert(M.db.custom1.border == 'square' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
-    assert(M:ResetViewer(c1) and M.db.custom1.border == 'rounded')
+    assert(M:ResetViewer(c1) and M.db.custom1.border == 'mode')
     assert(#blizzardWrites == 0, 'wrote to Blizzard frames: ' .. table.concat(blizzardWrites, ', '))
 
     -- Switching off: icons back at full, a reload for the look.
@@ -235,12 +254,28 @@ v1.profiles.Default.modules.cooldownManager = { enabled = true, version = 1,
     buffIcon = { orientation = "horizontal", start = "BOTTOMLEFT", center = true, readyGlow = false, readyStyle = "glow" } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 2 and db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
+    assert(db.version == 3 and db.essential.border == 'mode' and db.essential.borderColor[1] == addon.Kit.BORDER_COLOR[1], 'v1 also takes the ModeUI border')
+    assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
     assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow kept as a flash')
     assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 0)
     assert(db.utility.grow == 'up' and db.utility.lineGrowth == 'left', 'columns from the bottom right')
     assert(db.buffIcon.grow == 'centerH' and db.buffIcon.lineGrowth == 'up' and db.buffIcon.readyGlow == 'none')
 ]==], "migrate v1")
+
+-- Version 2: a Rounded border in the old #101010 becomes the ModeUI border;
+-- Square stays.
+local v2 = restored.saved()
+local old = v2.profiles.Default.modules.cooldownManager
+old.version = 2
+old.essential.border, old.essential.borderColor = "rounded", { 16 / 255, 16 / 255, 16 / 255 }
+old.utility.border, old.utility.borderColor = "square", { 1, 0, 0 }
+old.custom1.border = "rounded"
+H.Load({ before = STUBS .. "\nMakeViewers()", saved = v2 }).run([==[
+    local db, Kit = addon.CooldownManager.db, addon.Kit
+    assert(db.version == 3 and db.essential.border == 'mode' and db.essential.borderColor[1] == Kit.BORDER_COLOR[1], 'old default to the ModeUI border')
+    assert(db.utility.border == 'square' and db.utility.borderColor[1] == 1, 'a chosen Square border and color stay')
+    assert(db.custom1.border == 'mode', 'custom bars too')
+]==], "migrate v2")
 
 -- Bad saved data stops startup rather than being reset.
 local function Refused(change, label)

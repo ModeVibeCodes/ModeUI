@@ -983,3 +983,19 @@ local mainline 12.1.5 copy and the Forever files from the first pass.
   was open; no Blizzard API.
 - **Unverified natively:** everything here; `SetAlphaFromBoolean`'s default
   alphas on a texture whose vertex color carries its own alpha (the soft glow).
+
+### Cooldown Manager, border and range — November 13, 2026
+
+- **Out of range.** The item templates show `OutOfRange` (atlas
+  `UI-CooldownManager-OORshadow`, vertex alpha 0.5) by default.
+  `CooldownViewerCooldownItemMixin:RefreshIconColor` hides or shows it only
+  after its `if not spellID then ... return end`, so on an item with no spell
+  it stays shown. ModeUI had repainted it as a flat fill, which showed as a
+  red block in game (owner's screenshot); it now only fades it (`SetAlpha(0)`)
+  and leaves the atlas alone. The same function tints the icon
+  `ITEM_NOT_IN_RANGE_COLOR` (0.64, 0.15, 0.15) from `self.spellOutOfRange`;
+  Out of Range Tint off resets the vertex color after it when that field is
+  public and `true`.
+- **Border.** `Kit.ModeBoxBorder` draws on a child frame of the item; its
+  masks are ModeUI's own regions and are not applied to Blizzard's
+  textures. No new client API.

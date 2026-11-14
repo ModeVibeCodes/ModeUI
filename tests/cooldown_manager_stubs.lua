@@ -116,6 +116,11 @@
                 item.cooldownSwipeColor = CooldownViewerConstants.ITEM_COOLDOWN_COLOR
                 -- Blizzard's own gray, set on each refresh.
                 function item:RefreshIconDesaturation() self.Icon:SetDesaturated(self.blizzardGray == true) end
+                -- Blizzard's tint: red out of range (and its shade, shown or hidden).
+                function item:RefreshIconColor()
+                    if self.spellOutOfRange then self.Icon:SetVertexColor(0.64, 0.15, 0.15, 1) else self.Icon:SetVertexColor(1, 1, 1, 1) end
+                    self.OutOfRange:SetShown(self.spellOutOfRange == true)
+                end
                 function item:SetIsActive(active) self.isActive = active end
             end
         end

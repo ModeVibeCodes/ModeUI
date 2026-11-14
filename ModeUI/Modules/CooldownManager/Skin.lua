@@ -2,19 +2,18 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- The icon skin: the Mode slot (Kit.Slot: a hollow border around the
--- background, the icon a pixel inside it, cropped square to the slot) on
--- Blizzard's own item frames. Blizzard's round mask and frame art come off;
--- its out-of-range shade becomes a flat tint inside the border; its swipe
--- becomes a flat one in Swipe Color at Swipe Opacity (Blizzard's gold swipe
--- for an active aura is kept). Ready Flash, Edge, Bling and the debuff border
+-- The icon skin on Blizzard's own item frames: the ModeUI border (by
+-- default) or the Mode slot's (Kit.Slot) around the background, the icon
+-- inside it, cropped square. Blizzard's round mask, frame art and
+-- out-of-range shade come off (its red out-of-range tint stays, unless Out
+-- of Range Tint is off); its swipe becomes a flat one in Swipe Color at
+-- Swipe Opacity (Blizzard's gold swipe for an active aura is kept). Ready Flash, Edge, Bling and the debuff border
 -- follow their switches. The same code skins the settings preview's samples.
 --
 -- Nothing is stored on Blizzard's frames: the textures ModeUI adds live in
 -- `M.dress`, keyed by the item.
 local Kit, Public, Cooldowns = addon.Kit, addon.IsPublic, addon.Domain.Cooldowns
 local OVERLAY_ATLAS = "UI-HUD-CoolDownManager-IconOverlay"
-local RANGE_COLOR = Kit.palette.hostile
 M.dress = setmetatable({}, { __mode = "k" })
 
 -- Blizzard's mask comes off the icon and its frame art fades; once per frame.
@@ -68,6 +67,25 @@ end
 local function Fade(region, shown) if region and region.SetAlpha then region:SetAlpha(shown and 1 or 0) end end
 M.FadeRegion = Fade
 
+-- The ModeUI border (Kit.ModeBoxBorder, the standard for every border in
+-- ModeUI): one crisp 2px rim in Border Color on its own frame above the
+-- content, with round corners RADIUS pixels deep. The content starts at the
+-- rim's inner edge, so the rim's corners cover the content's square corners
+-- and no mask goes on Blizzard's textures. The slot's own edges hide and its
+-- background moves in to the rim. Other border styles hide it.
+local RADIUS = 4
+function M:PaintBorder(host, style, g, state)
+    local mode = style.border == "mode"
+    if mode then
+        state.modeBorder = state.modeBorder or Kit.ModeBoxBorder(host)
+        Kit.LayoutModeBoxBorder(state.modeBorder, host, { px = g.px, radius = RADIUS * g.px, color = style.borderColor,
+            level = host:GetFrameLevel() + 3 })
+    end
+    if state.modeBorder then state.modeBorder.edge:SetShown(mode) end
+    -- The slot draws the background (inset by the rim) without its edges.
+    return mode and setmetatable({ border = "none" }, { __index = style }) or style
+end
+
 function M:SkinIcon(item, style, g, state)
     local icon = item.Icon
     if not state.stripped then
@@ -76,7 +94,7 @@ function M:SkinIcon(item, style, g, state)
         state.art = Kit.SlotArt(item)
     end
     item:SetSize(g.w, g.h)
-    Kit.PaintSlotArt(state.art, item, style, g)
+    Kit.PaintSlotArt(state.art, item, self:PaintBorder(item, style, g, state), g)
     if icon and icon.SetTexCoord then
         Kit.Inset(icon, item, g.inset)
         Kit.CropIcon(icon, g)
@@ -86,12 +104,12 @@ function M:SkinIcon(item, style, g, state)
         Kit.Inset(cooldown, item, g.inset)
         if not state.swipe and cooldown.SetSwipeTexture then state.swipe = pcall(cooldown.SetSwipeTexture, cooldown, Kit.FLAT) end
     end
-    -- Out of range: Blizzard tints the icon and shows its shade; the shade
-    -- becomes flat red inside the border, or nothing.
-    if item.OutOfRange then
-        Kit.SlotOverlay(item.OutOfRange, item, g.inset, RANGE_COLOR, 0.28)
-        Fade(item.OutOfRange, style.rangeTint)
-    end
+    -- Out of range, Blizzard tints the icon red (Out of Range Tint) and shows
+    -- its shade, a soft shadow cut to its round mask. The shade stays faded:
+    -- on square icons it was a block, and Blizzard leaves it shown on an
+    -- icon that has no spell yet (RefreshIconColor returns before hiding it).
+    Fade(item.OutOfRange, false)
+    self:StyleRange(item, style)
     Fade(item.CooldownFlash, style.showFlash)
     Fade(item.DebuffBorder, style.debuffBorder)
     -- Counts sit above the swipe; glows go above them.
@@ -101,6 +119,16 @@ function M:SkinIcon(item, style, g, state)
         if frame and frame.SetFrameLevel then frame:SetFrameLevel(level + 4) end
     end
     self:StyleCooldown(item)
+end
+
+-- Out of Range Tint off: the icon keeps its color while Blizzard says the
+-- spell is out of range (spellOutOfRange, read only when public). Blizzard's
+-- other tints (unusable, no mana) stay.
+function M:StyleRange(item, style)
+    local icon = item.Icon
+    if style.rangeTint or not icon or not icon.SetVertexColor then return end
+    local out = item.spellOutOfRange
+    if Public(out) and out == true then icon:SetVertexColor(1, 1, 1, 1) end
 end
 
 -- Whether Blizzard shows a spell's effect as up on its icon: it swaps the

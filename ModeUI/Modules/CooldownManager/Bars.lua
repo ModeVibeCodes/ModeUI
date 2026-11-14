@@ -2,9 +2,10 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- Tracked Bars: each item is an icon beside a status bar. The icon gets the
--- Mode slot (a square as tall as the bar) on the Icon Side; the bar sits in a
--- box of its own beside it, a border around a background (Bar Background at
+-- Tracked Bars: each item is an icon beside a status bar. The icon, a
+-- square as tall as the bar, gets the bar's border (the ModeUI border by
+-- default) and background on the Icon Side; the bar sits in a box of its
+-- own beside it, a border around a background (Bar Background at
 -- Background Opacity) and the fill in Bar Texture and Bar Color, Mode
 -- Gradient by default. Blizzard's bar art (its background and the spark) is
 -- faded. Blizzard still fills the bar and writes the name and time left; its
@@ -37,21 +38,24 @@ function M:SkinBar(item, style, g, state)
         state.bg = state.box:CreateTexture(nil, "BACKGROUND", nil, -8)
         -- Mode Gradient's sheen: over the fill (ARTWORK 0), under the texts.
         state.sheen = bar:CreateTexture(nil, "ARTWORK", nil, 7)
+        state.iconBorder, state.boxBorder = {}, {}
     end
     item:SetSize(g.w, g.h)
-    -- The icon: a square as tall as the bar, in the Mode slot.
+    -- The icon: a square as tall as the bar, in the bar's border.
     local ig = { w = g.h, h = g.h, px = g.px, border = g.border, inset = g.inset }
     iconFrame:SetSize(g.h, g.h)
-    Kit.PaintSlotArt(state.art, iconFrame, style, ig)
+    Kit.PaintSlotArt(state.art, iconFrame, self:PaintBorder(iconFrame, style, ig, state.iconBorder), ig)
     if iconFrame.Icon then Kit.Inset(iconFrame.Icon, iconFrame, g.inset); Kit.CropIcon(iconFrame.Icon, ig) end
     Fade(item.DebuffBorder, style.debuffBorder)
     Fade(bar.BarBG, false)
     Fade(bar.Pip, style.showSpark)
     self:LayoutBarParts(item)
-    -- The box: the slot's border and the bar's background inside it.
+    -- The box: its border (the ModeUI border, or the slot's rim) and the
+    -- bar's background inside it.
     local box, t = state.box, g.border
     local cut = (style.border == "rounded") and g.px or 0
-    Kit.PlaceRim(state.rim, box, t, cut, style.borderColor, 1)
+    self:PaintBorder(box, style, g, state.boxBorder)
+    Kit.PlaceRim(state.rim, box, style.border == "mode" and 0 or t, cut, style.borderColor, 1)
     Kit.Inset(state.bg, box, t)
     Kit.BarBackground({ bg = state.bg }, style.barBackground, g.w, g.h, g.px)
     Kit.Tint(state.bg, Kit.BarBackgroundColor(style.barBackground), style.barBackgroundOpacity / 100)

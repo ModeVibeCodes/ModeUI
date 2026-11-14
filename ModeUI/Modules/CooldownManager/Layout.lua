@@ -28,7 +28,9 @@ function M.Geometry(style, count, px)
     local per = math.max(1, style.perLine)
     local horizontal = M.horizontalGrowth[style.grow] == true
     local g = { px = px, w = w, h = h, points = {} }
-    g.border, g.inset = Kit.SlotInsets(style, px)
+    -- The ModeUI border is 2px; the content starts at its inner edge.
+    if style.border == "mode" then g.border = Kit.BORDER_PIXELS * px; g.inset = g.border
+    else g.border, g.inset = Kit.SlotInsets(style, px) end
     local long = per * (horizontal and w or h) + (per - 1) * gap
     g.width, g.height = horizontal and long or w, horizontal and h or long
     local function Even(v) return math.floor(v / px + 0.5) % 2 == 1 and v + px or v end

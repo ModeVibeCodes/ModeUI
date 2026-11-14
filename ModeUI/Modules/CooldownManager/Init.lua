@@ -24,7 +24,9 @@ addon:RegisterModule("cooldownManager", M)
 -- Version 2: one Growth choice (and which way new lines go) replaces Lines,
 -- First Icon and Center Lines; Desaturate on Cooldown; active, off-cooldown
 -- and buff glows beside the proc glow; custom bars.
-M.VERSION = 2
+-- Version 3: every bar takes the ModeUI border (the owner asked for it on
+-- the cooldown bars, November 13, 2026).
+M.VERSION = 3
 M.SLASH = "/mcdm"
 local P = Kit.palette
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -91,11 +93,12 @@ M.glowKinds = { "proc", "active", "ready", "buff" }
 M.glowLabels = { proc = "Proc Glow", active = "Active Glow", ready = "Off Cooldown Glow", buff = "Buff Glow" }
 M.cooldownGlows, M.buffGlows = { "proc", "active", "ready" }, { "buff" }
 
--- Colors: the Action Bars look (a #101010 border around a #040404 background
--- at 75%), amber cooldown numbers, a dark swipe; procs gold, active and
+-- Colors: the ModeUI border (Kit.BORDER_COLOR) around the Action Bars'
+-- background (#040404 at 75%; Rounded and Square borders were #101010), amber cooldown numbers, a dark swipe; procs gold, active and
 -- buff glows green, the off-cooldown glow Mode cyan; bars Mode cyan over
 -- Mode Slate.
-M.BORDER_COLOR, M.BACKGROUND_COLOR, M.BACKGROUND_OPACITY = Kit.RGB(16, 16, 16), Kit.RGB(4, 4, 4), 75
+M.BORDER_COLOR, M.OLD_BORDER_COLOR = Kit.BORDER_COLOR, Kit.RGB(16, 16, 16)
+M.BACKGROUND_COLOR, M.BACKGROUND_OPACITY = Kit.RGB(4, 4, 4), 75
 M.COOLDOWN_COLOR, M.SWIPE_COLOR = Copy(P.cooldown), Kit.RGB(0, 0, 0)
 M.GLOW_COLORS = { proc = Kit.RGB(255, 210, 90), active = Copy(P.green), ready = Copy(P.accent), buff = Copy(P.green) }
 M.BAR_COLOR = Copy(P.accent)
@@ -112,7 +115,7 @@ local function Style(size, perLine, lineGrowth, small)
         show = true,
         perLine = perLine, grow = "centerH", lineGrowth = lineGrowth,
         width = size[1], height = size[2], spacing = 2,
-        border = "rounded", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
+        border = "mode", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = M.BACKGROUND_OPACITY,
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
         -- in Swipe Color at Swipe Opacity; Edge is the bright line on its
@@ -179,7 +182,7 @@ M.choices = {
         { id = "right", label = "Horizontal Right" }, { id = "left", label = "Horizontal Left" },
         { id = "down", label = "Vertical Down" }, { id = "up", label = "Vertical Up" } },
     lineGrowth = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" }, { id = "left", label = "Left" } },
-    border = { { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
+    border = { { id = "mode", label = "ModeUI" }, { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
     procGlow = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "blizzard", label = "Blizzard" },
         { id = "none", label = "None" } },
     activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,

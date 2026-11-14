@@ -93,6 +93,13 @@ function M:HookItem(viewer, item)
     for _, method in ipairs({ "RefreshSpellCooldownInfo", "RefreshCooldownInfo", "RefreshIconDesaturation" }) do
         HookMethod(item, method, function(hooked) M.Safe(function() if M.active then M:StyleCooldown(hooked) end end) end)
     end
+    -- Blizzard tints the icon for range, usability and mana.
+    HookMethod(item, "RefreshIconColor", function(hooked)
+        M.Safe(function()
+            local state = M.dress[hooked]
+            if M.active and state and M.db[state.viewer] then M:StyleRange(hooked, M.db[state.viewer]) end
+        end)
+    end)
     -- A tracked buff coming or going (its active state can be secret).
     HookMethod(item, "SetIsActive", function(hooked) M.Safe(function() if M.active then M:ApplyGlows(hooked) end end) end)
 end
