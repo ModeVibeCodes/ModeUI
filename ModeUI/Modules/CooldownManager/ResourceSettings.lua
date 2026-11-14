@@ -85,6 +85,8 @@ function M:CreateResourcePage(parent)
     end
 
     W.Preview(page, self:ResourcePreviewOwner(), { contentHeight = 90 })
+    -- Editing: which bar this page shows, at the top right of the preview.
+    self:AddEditingCorner(page)
 
     Tab("Bar", function()
         page.resourceShowToggles = Toggles({ { "Show Bar", "show" } })

@@ -97,6 +97,7 @@ Shared\Settings\FontDropdown.lua
 Shared\Settings\Select.lua
 Shared\Settings\ColorRow.lua
 Shared\Settings\TextInput.lua
+Shared\Settings\Confirm.lua
 Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Sidebar.lua

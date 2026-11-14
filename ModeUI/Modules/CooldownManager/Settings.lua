@@ -117,6 +117,8 @@ function M:CreateConfigPage(parent)
     end
 
     page.configPreview = W.Preview(page, M, { contentHeight = 120 })
+    -- Editing: which bar this page shows, at the top right of the preview.
+    M:AddEditingCorner(page)
     self:BuildBarTab(ui)
     self:BuildLookTab(ui)
     self:BuildTextTab(ui)

@@ -116,6 +116,11 @@ end
 function M:DeleteCustomBar(id)
     local _, index = self:Custom(id)
     if not self:CanConfigure() or not index then return false end
+    -- The page moves off the bar first, so nothing draws a bar that's gone.
+    if self.selectedBar == id then
+        self.selectedBar = "essential"
+        if self.page then self.page.SetEditing("essential") end
+    end
     local candidate = Copy(self.db)
     table.remove(candidate.customBars, index)
     candidate[id] = nil

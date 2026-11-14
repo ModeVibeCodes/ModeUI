@@ -217,8 +217,26 @@ world.run([==[
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
     assert(window:IsShown() and window.title.text == 'Cooldown Manager' and window.moduleHeader.toggle:IsShown(), 'own window, own switch')
-    assert(window.rows[9]:IsShown() and window.rows[9].label.text == 'Cooldown Bar 1' and window.rows[10].label.text == 'Buff Bar 1', 'custom bars listed')
-    window.rows[10].scripts.OnClick(window.rows[10])
+    -- The list: Spells and Abilities, Cooldown Bars, Buff Bars, then Resource Bars.
+    assert(window.blizzardCaption.text == 'SPELLS AND ABILITIES' and window.cooldownCaption.text == 'COOLDOWN BARS' and window.buffCaption.text == 'BUFF BARS')
+    assert(window.rows[5]:IsShown() and window.rows[5].label.text == 'Cooldown Bar 1' and window.rows[6].label.text == 'Buff Bar 1', 'custom bars under their headings')
+    assert(window.rows[7].resource and Point(window.resourceCaption)[5] < Point(window.rows[6])[5], 'Resource Bars after the custom bars')
+    assert(window.rows[5].delete:IsShown() and not window.rows[1].delete:IsShown(), '- on custom bars only')
+    -- + adds a bar under its heading; - asks first.
+    window.addCooldown.scripts.OnClick(window.addCooldown)
+    local added = M.selectedBar
+    assert(M:Custom(added) and M:Custom(added).kind == 'cooldown' and window.rows[6].barId == added, 'a new Cooldown Bar, listed with the others')
+    window.rows[6].delete.scripts.OnClick(window.rows[6].delete)
+    local confirm = addon.ConfigWidgets.confirmFrame
+    assert(confirm:IsShown() and M:Custom(added), 'asks before deleting')
+    confirm.cancel.scripts.OnClick(confirm.cancel)
+    assert(not confirm:IsShown() and M:Custom(added), 'Cancel keeps it')
+    window.rows[6].delete.scripts.OnClick(window.rows[6].delete); confirm.accept.scripts.OnClick(confirm.accept)
+    assert(not M:Custom(added) and M.selectedBar == 'essential', 'deleted after Delete Bar')
+    -- Editing at the top right of the preview.
+    assert(M.page.editingSelect and M.page.editingLabel.text == 'Editing')
+    M:SelectEditing('utility'); assert(M.page.viewerEditing() == 'utility', 'Editing picks the bar')
+    window.rows[6].scripts.OnClick(window.rows[6])
     local page, view = M.page, M.previewView
     assert(page.viewerEditing() == c2 and view.icons[1].key == '301' and view.plus:IsShown(), 'a custom bar: its spells, then +')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
@@ -284,7 +302,7 @@ H.Load({ before = STUBS }).run([==[
 local restored = H.Load({ before = STUBS .. "\nMakeViewers()", saved = world.saved() })
 restored.run([==[
     local M = addon.CooldownManager
-    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 4, 'settings persist')
+    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 5, 'settings persist')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
     assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
