@@ -8,7 +8,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- their own settings. Unit values can be secret and only reach widgets
 -- documented as accepting them. See docs/NAMEPLATES.md.
 -- Files: Init (this), Migrations, Driver, Plate, Layout, Target, Indicator, Focus,
--- Combo, Update, CastBar, Auras, AuraContainers, Preview, Settings.
+-- Combo, SoftTarget, Update, CastBar, Auras, AuraContainers, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Nameplates"], category = "frames", defaultEnabled = false,
     configDescription = L["Onyx nameplates with health, names, cast bars, auras and raid markers."],
@@ -83,6 +83,8 @@ local function Style(kind)
         castTextAnchor = "LEFT", castTextX = 0, castTextY = 0, castTimerAnchor = "RIGHT", castTimerX = 0, castTimerY = 0,
         castTargetAnchor = "BOTTOM", castTargetX = 0, castTargetY = 0, castIconX = 0, castIconY = 0,
         showRaidIcon = true, raidAnchor = "LEFT", raidX = 0, raidY = 0, raidSize = 16,
+        -- The soft-target icon (the cursor art the game shows over the unit), above the plate.
+        showSoftTarget = true, softTargetSize = 20, softTargetX = 0, softTargetY = 0,
         -- Indicator: quest icon, classification icon and level, by anchor.
         showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
         questAnchor = "LEFT", questX = 0, questY = 0, questSize = 14,
@@ -139,6 +141,7 @@ M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = {
     questX = { -50, 50, 1 }, questY = { -50, 50, 1 }, questSize = { 8, 32, 1 },
     classificationX = { -50, 50, 1 }, classificationY = { -50, 50, 1 }, classificationSize = { 8, 32, 1 },
     levelX = { -50, 50, 1 }, levelY = { -50, 50, 1 }, levelSize = { 6, 20, 1 }, raidX = { -50, 50, 1 }, raidY = { -50, 50, 1 }, raidSize = { 10, 40, 1 },
+    softTargetSize = { 12, 40, 1 }, softTargetX = { -50, 50, 1 }, softTargetY = { -50, 50, 1 },
     targetThickness = { 1, 3, 1 }, targetArrowSize = { 8, 48, 1 }, targetArrowGap = { 0, 60, 1 },
     comboX = { -50, 50, 1 }, comboY = { -50, 50, 1 }, comboSize = { 4, 24, 1 }, comboSpacing = { 0, 12, 1 } }
 M.groupRanges = { size = { 10, 40, 1 }, max = { 1, 12, 1 }, x = { -50, 50, 1 }, y = { -50, 50, 1 } }

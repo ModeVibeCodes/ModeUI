@@ -7,18 +7,20 @@ if not M then return end
 -- matches the current settings (layout, auras, target style, Name Only).
 -- Static shows a cast part-way through; Animated loops it. Clicking a part of
 -- the sample (health, name, health text, cast bar, an aura, the raid marker,
--- the combo points)
+-- the soft-target icon, the combo points)
 -- jumps to its settings. Shown through the shared settings preview (W.Preview).
 local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local RaidIcon, UnitColor, Level = addon.Domain.RaidIcon, addon.Domain.UnitColor, addon.Domain.Level
 local CAST_SECONDS, STATIC_PROGRESS, HINT_HEIGHT = 2.5, 0.6, 18
 local ICONS = "Interface\\Icons\\"
+-- The game's cursor art (the glue screens load Interface\Cursor\Attack and Interact).
+local CURSORS = "Interface\\Cursor\\"
 
 -- Each sample aura belongs to a group; its tags say which Which choices it
 -- matches, and dispel names a dispel type, as the game would report them.
 M.previewSamples = {
     enemy = { name = "Enemy Nameplate", caption = "Enemy, shown as your target", health = 72, reaction = "hostile", raid = 8, targeted = true,
-        level = 62, classification = "elite", quest = true,
+        level = 62, classification = "elite", quest = true, softTarget = CURSORS .. "Attack",
         cast = { text = "Shadow Bolt", icon = ICONS .. "Spell_Shadow_ShadowBolt", target = "Mode", targetClass = "PALADIN" },
         auras = {
             { icon = ICONS .. "Spell_Nature_Polymorph", group = "crowdControl", dispel = "Magic", duration = 8, elapsed = 3 },
@@ -26,7 +28,7 @@ M.previewSamples = {
             { icon = ICONS .. "Spell_Shadow_CurseOfTounges", group = "debuffs", tags = { dispellable = true }, dispel = "Curse", count = 3, duration = 30, elapsed = 10 },
             { icon = ICONS .. "Spell_Holy_PowerWordShield", group = "buffs", tags = { dispellable = true, important = true }, dispel = "Magic", duration = 15, elapsed = 5 },
         } },
-    friendly = { name = "Friendly Nameplate", caption = "Friendly player (Mage)", health = 90, reaction = "friendly", class = "MAGE", level = 60,
+    friendly = { name = "Friendly Nameplate", caption = "Friendly player (Mage)", health = 90, reaction = "friendly", class = "MAGE", level = 60, softTarget = CURSORS .. "Interact",
         cast = { text = "Flash Heal", icon = ICONS .. "Spell_Holy_FlashHeal", target = "Tank", targetClass = "WARRIOR" },
         auras = {
             { icon = ICONS .. "Spell_Frost_ChainsOfIce", group = "crowdControl", dispel = "Magic", duration = 6, elapsed = 2 },
@@ -134,6 +136,7 @@ function M:PaintSample(plate, style, sample, progress)
     Kit.Write(plate.name, L[sample.name])
     Kit.Write(plate.healthText, HealthText(style.healthText, sample.health))
     if style.showRaidIcon and sample.raid then RaidIcon.ApplyIndex(plate.raidIcon, sample.raid) else plate.raidIcon:Hide() end
+    if style.showSoftTarget and sample.softTarget then plate.softTarget:SetTexture(sample.softTarget); plate.softTarget:Show() else plate.softTarget:Hide() end
     self:PaintIndicator(plate, sample.quest, sample.classification, tostring(sample.level), Level.DifficultyColor(sample.level))
     -- On the Focus tab the sample is your focus instead of your target.
     local page = self.page
@@ -193,6 +196,7 @@ function M:PreviewBounds(plate, style, sample)
         for key in pairs(side) do side[key] = side[key] + style.targetArrowGap * px + style.targetArrowSize end
     end
     local top = plate.above + (up > 0 and up + gap or 0)
+    if style.showSoftTarget and sample.softTarget then top = math.max(top, plate.softTargetTop or 0) end
     local bottom = plate.below + (down > 0 and down + gap or 0)
     return top, bottom, side.LEFT, side.RIGHT
 end
@@ -258,6 +262,7 @@ function M:CreateConfigPreview(parent)
             name = Clickable(plate.name, kind, "name", nil, plate.textLayer),
             healthText = Clickable(plate.healthText, kind, "healthText", nil, plate.textLayer),
             markers = Clickable(plate.raidIcon, kind, "markers", nil, plate.textLayer),
+            softTarget = Clickable(plate.softTarget, kind, "softTarget", nil, plate.textLayer),
             combo = Clickable(plate.combo, kind, "combo"),
             quest = Clickable(plate.indicatorParts.quest, kind, "indicator", "quest", plate.textLayer),
             classification = Clickable(plate.indicatorParts.classification, kind, "indicator", "classification", plate.textLayer),

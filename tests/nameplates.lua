@@ -377,6 +377,40 @@ world.run([==[
     units.nameplate1.channel = nil; FireEvent('UNIT_SPELLCAST_CHANNEL_STOP', 'nameplate1', 'guid', 5, nil)
     assert(not plate.castBox:IsShown(), 'a channel that runs out clears at once')
 
+    -- Soft-target icon: the game's cursor art for the soft target's plate, on
+    -- the CVars Blizzard reads, found by nameplate frame; drawn above the plate.
+    local cvars = { SoftTargetNameplateSize = '19', SoftTargetIconEnemy = '1', SoftTargetIconFriend = '0', SoftTargetIconInteract = '1' }
+    C_CVar = { GetCVar = function(name) return cvars[name] end }
+    local cursor = { nameplate1 = true }
+    function SetUnitCursorTexture(texture, unit, ...) texture.cursorUnit, texture.cursorArgs = unit, { ... }; return cursor[unit] end
+    local icon = plate.softTarget
+    assert(icon and not icon:IsShown(), 'no icon without a soft target')
+    nameplates.softenemy = nameplates.nameplate1; FireEvent('PLAYER_SOFT_ENEMY_CHANGED')
+    assert(icon:IsShown() and icon.cursorUnit == 'nameplate1' and icon.cursorArgs[3] == true, 'icon on the soft enemy, art from the game')
+    local at = Point(icon)
+    assert(at[1] == 'BOTTOM' and at[2] == plate.healthBox and at[3] == 'TOP' and at[5] > plate.above, 'above the plate and its top rows')
+    cursor.nameplate1 = Secret('cursor'); FireEvent('PLAYER_SOFT_ENEMY_CHANGED')
+    assert(not icon:IsShown(), 'a secret answer hides it')
+    cursor.nameplate1 = true
+    cvars.SoftTargetIconEnemy = '0'; FireEvent('CVAR_UPDATE', 'softTargetIconEnemy', '0')
+    assert(not icon:IsShown(), "the game's enemy icon setting turns it off")
+    nameplates.softenemy, nameplates.softinteract = nil, nameplates.nameplate1; FireEvent('PLAYER_SOFT_INTERACT_CHANGED')
+    assert(icon:IsShown(), 'interact icon on')
+    cvars.SoftTargetNameplateSize = '0'; FireEvent('CVAR_UPDATE', 'SoftTargetNameplateSize', '0')
+    assert(not icon:IsShown(), 'icon size 0 turns every icon off')
+    cvars.SoftTargetNameplateSize = '19'; FireEvent('CVAR_UPDATE', 'SoftTargetNameplateSize', '19')
+    assert(icon:IsShown(), 'back on')
+    assert(M:SetOption('enemy', 'showSoftTarget', false) and not M.byUnit.nameplate1.softTarget:IsShown(), 'Show Soft Target Icon off')
+    assert(M:SetOption('enemy', 'showSoftTarget', true) and M.byUnit.nameplate1.softTarget:IsShown(), 'and on')
+    local before = Point(icon)[5]
+    assert(M:SetOption('enemy', 'softTargetY', 6) and Point(icon)[5] == before + 6, 'Offset Y moves it')
+    assert(M:SetOption('enemy', 'softTargetSize', 30) and icon:GetWidth() == 30, 'Size')
+    assert(not M:SetOption('enemy', 'softTargetSize', 60), 'size range')
+    M:SetOption('enemy', 'softTargetY', 0); M:SetOption('enemy', 'softTargetSize', 20)
+    nameplates.softinteract = nil; FireEvent('PLAYER_SOFT_INTERACT_CHANGED')
+    assert(not icon:IsShown(), 'gone when the soft target moves on')
+    cvars.SoftTargetIconEnemy = '1'
+
     -- Every bar is Mode Gradient; health and cast boxes share the same rounded rims.
     local rim, gapTexture = addon.Media:GetTexture('NameplateRim'), addon.Media:GetTexture('NameplateGap')
     assert(plate.health.statusBarTexture == Kit.FLAT and plate.health.sheen:IsShown() and plate.health.sheen.gradient, 'Mode Gradient health')
@@ -640,6 +674,7 @@ world.run([==[
     assert(math.abs(sample.width - 180) < 1, 'sample size follows the kind')
     assert(sample.name.text == 'Enemy Nameplate' and sample.healthText.text == '72%' and sample.health.value == 72)
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
+    assert(sample.softTarget:IsShown() and sample.softTarget.texture == 'Interface\\Cursor\\Attack' and top >= sample.softTargetTop, 'sword icon sample, inside the preview')
     assert(sample.targeted and sample.healthBox.rim.vertexColor[3] == P.accent[3], 'sample target rim')
     assert(sample.castBox:IsShown() and sample.cast.value == 0.6 and sample.castText.text == 'Shadow Bolt')
     local function Shown(p, group)
@@ -771,6 +806,9 @@ world.run([==[
     assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
     view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')
     assert(page.selectedSection.title == 'Indicators', 'marker click opens Indicators')
+    page:SelectSectionTab(1)
+    view.targets.enemy.softTarget.scripts.OnMouseUp(view.targets.enemy.softTarget, 'LeftButton')
+    assert(page.selectedSection.title == 'Indicators', 'soft-target icon click opens Indicators')
     -- Combo points: the enemy sample shows every socket with a few lit; a click opens Target.
     assert(sample.combo:IsShown() and sample.combo.count == 5 and sample.combo.sockets[5].bar.value == M.COMBO_SAMPLE, 'sample combo points')
     assert(page.comboNote:GetText():find('Combo Points', 1, true), 'names your class\'s combo points')
