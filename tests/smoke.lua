@@ -14,7 +14,7 @@ world.run([[
     assert(table.concat(addon.categoryOrder,',')=='global,interface,frames' and addon.categories.interface.title=='Interface'
         and addon.categories.global.title=='Global' and addon.categories.frames.title=='Frames')
     assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
-    assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,cooldownManager,tooltip,bags')
+    assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,tooltip,bags')
     assert(table.concat(addon.categories.frames.modules,',')=='unitFrames,nameplates')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
     assert(addon.InterfaceTheme.primary[2]==240/255,'Mode cyan accent')
@@ -44,7 +44,7 @@ world.run([[
     local nested=window.sidebarModuleButtons.unitFrames
     assert(nested and nested:IsShown() and nested.label:GetText()=='· Unit Frames','Unit Frames nested under Frames')
     local count=0;for _ in pairs(window.sidebarModuleButtons) do count=count+1 end
-    assert(count==12,'twelve pages in the sidebar')
+    assert(count==11,'eleven pages in the sidebar')
     assert(window.sidebarModuleButtons.bags:IsShown(),'Bags nested under Interface')
     addon:SelectConfigPage('bags');assert(window.pages.bags:IsShown() and window.moduleHeader.title:GetText()=='Bags')
     assert(window.sidebarModuleButtons.nameplates:IsShown(),'Nameplates nested under Frames')
@@ -52,8 +52,13 @@ world.run([[
     addon:SelectConfigPage('nameplates');assert(window.pages.nameplates:IsShown() and window.moduleHeader.title:GetText()=='Nameplates')
     assert(window.sidebarModuleButtons.actionBars:IsShown(),'Action Bars nested under Interface')
     addon:SelectConfigPage('actionBars');assert(window.pages.actionBars:IsShown() and window.moduleHeader.title:GetText()=='Action Bars')
-    assert(window.sidebarModuleButtons.cooldownManager:IsShown(),'Cooldown Manager nested under Interface')
-    addon:SelectConfigPage('cooldownManager');assert(window.pages.cooldownManager:IsShown() and window.moduleHeader.title:GetText()=='Cooldown Manager')
+    -- The Cooldown Manager is standalone: its own window, opened with /mcdm.
+    assert(window.sidebarModuleButtons.cooldownManager==nil and addon.modules.cooldownManager.standalone,'no Cooldown Manager page here')
+    assert(SLASH_MODEUICDM1=='/mcdm' and addon.CooldownManager.window==nil,'its window waits for /mcdm')
+    SlashCmdList.MODEUICDM()
+    assert(ModeUICooldownManagerWindow:IsShown() and addon.CooldownManager.page,'/mcdm opens it')
+    SlashCmdList.MODEUICDM()
+    assert(not ModeUICooldownManagerWindow:IsShown(),'and closes it')
     assert(window.sidebarModuleButtons.damageMeters:IsShown(),'Damage Meters nested under Interface')
     addon:SelectConfigPage('damageMeters');assert(window.pages.damageMeters:IsShown() and window.moduleHeader.title:GetText()=='Damage Meters')
     for _,id in ipairs({'profiles','optimizations','classColors'}) do

@@ -13,7 +13,7 @@ if not M then return end
 -- The viewers and items are plain frames: anchors, sizes, alpha and textures
 -- may change in combat.
 local Cooldowns = addon.Domain.Cooldowns
-M.viewerOf = setmetatable({}, { __mode = "k" }) -- item frame -> viewer ID
+M.sourceOf = setmetatable({}, { __mode = "k" }) -- item frame -> its Blizzard viewer
 M.itemHooked = setmetatable({}, { __mode = "k" })
 M.viewerHooked = setmetatable({}, { __mode = "k" })
 
@@ -34,7 +34,7 @@ function M:Frame(viewer) return Cooldowns.Viewer(viewer) end
 function M:Items(viewer)
     local frame = self:Frame(viewer)
     local items = frame and Cooldowns.Items(frame) or {}
-    for _, item in ipairs(items) do self.viewerOf[item] = viewer end
+    for _, item in ipairs(items) do self.sourceOf[item] = viewer end
     return items
 end
 
@@ -60,47 +60,62 @@ end
 function M:HookViewer(viewer, frame)
     -- A new item: skin and place it. Blizzard set its scale and size first.
     HookMethod(frame, "OnAcquireItemFrame", function(_, item)
-        M.Safe(function() M.viewerOf[item] = viewer; M:HookItem(viewer, item); if M.active then M:DressItem(viewer, item) end end)
+        M.Safe(function()
+            M.sourceOf[item] = viewer; M:HookItem(viewer, item)
+            if M.active then M:DressItem(M:Owner(item), item) end
+        end)
     end)
     -- Blizzard's grid has just placed every item; ModeUI places them again,
-    -- right away, so nothing shows at Blizzard's spot for a frame.
-    HookMethod(frame, "Layout", function() M.Safe(function() if M.active then M:LayoutViewer(viewer) end end) end)
-    -- The tracked spells changed in place (no new layout): per-spell
-    -- switches and glows follow the cooldown IDs.
-    HookMethod(frame, "RefreshData", function() M.Safe(function() if M.active then M:QueueLayout(viewer) end end) end)
+    -- right away (the viewer and the custom bars it feeds), so nothing shows
+    -- at Blizzard's spot for a frame.
+    HookMethod(frame, "Layout", function() M.Safe(function() if M.active then M:LayoutSource(viewer) end end) end)
+    -- The tracked spells changed in place (no new layout).
+    HookMethod(frame, "RefreshData", function() M.Safe(function() if M.active then M:QueueSource(viewer) end end) end)
 end
 
 -- Item hooks, once per item frame (Blizzard reuses them from a pool).
 function M:HookItem(viewer, item)
     if self.itemHooked[item] or not hooksecurefunc then return end
     self.itemHooked[item] = true
-    -- Shown and hidden as auras come and go (Hide When Inactive): the
-    -- viewer closes the gap on the next frame.
+    -- Shown and hidden as auras come and go (Hide When Inactive): its bar
+    -- closes the gap on the next frame.
     HookMethod(item, "UpdateShownState", function(hooked)
-        M.Safe(function() if M.active then M:QueueLayout(M.viewerOf[hooked]) end end)
+        M.Safe(function() if M.active then M:QueueLayout(M:Owner(hooked)) end end)
     end)
-    -- Blizzard sets the swipe and edge on every cooldown refresh; ModeUI's
-    -- go back on after it. Bars refresh every frame and have no swipe.
-    if not self:IsBar(viewer) then
-        for _, method in ipairs({ "RefreshSpellCooldownInfo", "RefreshCooldownInfo" }) do
-            HookMethod(item, method, function(hooked) M.Safe(function() if M.active then M:StyleCooldown(hooked) end end) end)
-        end
-    else
+    if self:IsBar(viewer) then
         -- Bar Content re-anchors the bar to the icon.
         HookMethod(item, "SetBarContent", function(hooked) M.Safe(function() if M.active then M:LayoutBarParts(hooked) end end) end)
+        return
     end
+    -- Blizzard sets the swipe, edge and gray on every cooldown refresh;
+    -- ModeUI's go back on after it, with the glows that follow the state.
+    -- Bars refresh every frame and have neither.
+    for _, method in ipairs({ "RefreshSpellCooldownInfo", "RefreshCooldownInfo", "RefreshIconDesaturation" }) do
+        HookMethod(item, method, function(hooked) M.Safe(function() if M.active then M:StyleCooldown(hooked) end end) end)
+    end
+    -- A tracked buff coming or going (its active state can be secret).
+    HookMethod(item, "SetIsActive", function(hooked) M.Safe(function() if M.active then M:ApplyGlows(hooked) end end) end)
 end
 
--- Re-lays a viewer out on the next frame, once however often it's asked.
+-- Re-lays a bar out on the next frame, once however often it's asked.
 M.pending = {}
-function M:QueueLayout(viewer)
-    if not viewer or self.pending[viewer] then return end
-    self.pending[viewer] = true
+function M:QueueLayout(id)
+    if not id or self.pending[id] then return end
+    self.pending[id] = true
     local function Run()
-        M.pending[viewer] = nil
-        if M.active then M.Safe(function() M:LayoutViewer(viewer) end) end
+        M.pending[id] = nil
+        if M.active and M:HasBar(id) then M.Safe(function() M:LayoutViewer(id) end) end
     end
     if C_Timer and C_Timer.After then C_Timer.After(0, Run) else Run() end
+end
+-- A viewer, and every custom bar that takes spells from it.
+function M:LayoutSource(viewer)
+    self:LayoutViewer(viewer)
+    for _, id in ipairs(self:CustomsFrom(viewer)) do self:LayoutViewer(id) end
+end
+function M:QueueSource(viewer)
+    self:QueueLayout(viewer)
+    for _, id in ipairs(self:CustomsFrom(viewer)) do self:QueueLayout(id) end
 end
 
 -- The cooldown ID an item tracks, as a settings key ("1234"), or nil.
@@ -109,10 +124,11 @@ function M:SpellKey(item)
     return id and string.format("%d", id) or nil
 end
 
--- A spell's own switch ("hide", "proc", "ready") in a viewer: hide is on
--- while stored; proc and ready are on unless stored off.
-function M:SpellSwitch(viewer, key, kind)
-    local entry = key and self.db[viewer].spells[key]
+-- A spell's own switch ("hide", "proc", "active", "ready", "buff") on a bar:
+-- hide is on while stored; the glows are on unless stored off.
+function M:SpellSwitch(id, key, kind)
+    local style = self.db[id]
+    local entry = key and style and style.spells[key]
     if kind == "hide" then return entry ~= nil and entry.hide == true end
     return not (entry and entry[kind] == false)
 end

@@ -132,6 +132,7 @@ Module fields Runtime reads:
 | `alwaysOn` | `true` for a module that can't be switched off (Profiles) |
 | `configDescription` | the line under the page title |
 | `modeLayout` | the page's Mode presentation plan, such as `{ decorateOnly = true }` |
+| `standalone` | `true` for a module with its own settings window instead of a page in ModeUI's (the Cooldown Manager, `/mcdm`): no category, no sidebar entry or search results; it builds its window on demand, registers it with `addon:RegisterSettingsWindow(window)` so Edit Mode hides it and brings it back, and Edit Mode's Open Module Settings calls its `OpenSettings(elementId)` |
 | `ptgImport` | `{ positions = { ... } }` to copy this module's settings (same ID) and those position keys from the active Play The Game Tools profile once, on ModeUI's first start (Unit Frames) |
 | `Initialize(db)` | a plain function (not a method) that fills defaults, migrates and validates the module's settings, erroring on bad data. Profile validation calls it on detached copies, so it must not touch frames or other state |
 
@@ -337,6 +338,8 @@ post-hook (`hooksecurefunc`, `HookScript`).
   use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface default to Expressway, falling back to
   the bundled Lato. Frames use the Onyx palette (`Kit.palette`, `Kit.onyx`).
 - **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI`,
+  `SLASH_MODEUICDM1`/`SlashCmdList.MODEUICDM` (`/mcdm`, the Cooldown Manager's
+  window, asked for by the owner on November 13, 2026),
   `SLASH_MODEUIKEYBIND1`/`SlashCmdList.MODEUIKEYBIND` (`/kb`, Action Bars' Keybind
   Mode, asked for by the owner on November 13, 2026) and frame names that start
   with `ModeUI`.
@@ -367,7 +370,7 @@ module is built.
 | 7 | Windows | Interface | Skin: window frames, controls by template keys (buttons, fields, tabs, side tabs, close, scroll bars, insets) | done (native acceptance pending); secure windows skinned out of combat |
 | 8 | Minimap | Interface | Skin: minimap shape and border. Kit: addon-button collector | minimap APIs and cluster frames on Forever |
 | 9 | Tooltip | Interface | Skin: Panel, Edge, Font on Blizzard's tooltips. Placement: one Edit Mode element (the tooltip's anchor) | done (native acceptance pending); GameTooltip_SetDefaultAnchor post-hook, Blizzard's container untouched |
-| 10 | Cooldown Manager | Interface | Domain: Cooldowns (Blizzard's Cooldown Manager viewers and items). Kit: Slot (the Mode slot, moved out of Action Bars). Restyles and re-places Blizzard's own item frames with post-hooks only, writing no field on them | done (native acceptance pending); Forever loads Blizzard_CooldownViewer for `camelot` |
+| 10 | Cooldown Manager | own window (`/mcdm`, standalone) | Domain: Cooldowns (Blizzard's Cooldown Manager viewers and items). Kit: Slot (the Mode slot, moved out of Action Bars). Settings: `standalone` modules, `addon:RegisterSettingsWindow`. Placement: `PositionManager:SetLabel`. Restyles and re-places Blizzard's own item frames (also onto custom bars) with post-hooks only, writing no field on them | done (native acceptance pending); Forever loads Blizzard_CooldownViewer for `camelot` |
 
 Every module gets design notes in `docs/<NAME>.md` (like `docs/UNIT_FRAMES.md`)
 and an entry in the README's module table.

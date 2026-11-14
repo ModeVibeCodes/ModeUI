@@ -2,12 +2,12 @@ local _, addon = ...
 local M, W, T, L = addon.CooldownManager, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 if not M then return end
 
--- Only defines the page; ModeUI builds it the first time it's opened. A live
--- preview of the viewer being edited sits above the tabs (Viewer, Look,
--- Text, Glows, Spells, Visibility, Copy & Apply); clicking a spell in it opens
--- that spell's switches. Editing (which viewer) sits in the preview header,
--- shared by every tab. This file builds the page, its helpers and the Viewer
--- and Look tabs; SettingsTabs.lua the rest.
+-- Only defines the page; the module's window (Window.lua) builds it the
+-- first time it opens. A live preview of the bar chosen in the window's list
+-- sits above the tabs (Bar, Look, Text, Glows, Spells, Visibility, Copy &
+-- Apply); clicking a spell in it opens that spell's switches, and on a
+-- custom bar the + slot adds a spell. This file builds the page, its helpers
+-- and the Bar and Look tabs; SettingsTabs.lua the rest.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing, textPart = "essential", "cooldown"
@@ -15,15 +15,19 @@ function M:CreateConfigPage(parent)
     local function Part() return textPart end
     local function db() return M.db[editing] end
     page.viewerEditing, page.textPart = Viewer, Part
-    -- A text the new viewer doesn't have falls back to its first.
+    -- A text the new bar doesn't have falls back to its first.
     local function FitPart()
         for _, part in ipairs(M:Parts(editing)) do if part == textPart then return end end
         textPart = M:Parts(editing)[1]
     end
-    function page.SetEditing(viewer)
-        if not M.viewerSpecs[viewer] then return end
-        if viewer ~= editing and M.spellMenu then M.spellMenu:Hide() end
-        editing = viewer
+    function page.SetEditing(id)
+        if not M:HasBar(id) then return end
+        if id ~= editing then
+            if M.spellMenu then M.spellMenu:Hide() end
+            if M.picker then M.picker:Hide() end
+        end
+        editing = id
+        M.selectedBar = id
         FitPart()
         page:Refresh(); page:Layout()
     end
@@ -38,6 +42,7 @@ function M:CreateConfigPage(parent)
     function ui.Icons() return not M:IsBar(editing) end
     function ui.Bars() return M:IsBar(editing) end
     function ui.Cooldowns() return not M:IsBuff(editing) end
+    function ui.Custom() return M:IsCustom(editing) end
     function ui.When(predicate, build)
         local start = #page.rows; build()
         for i = start + 1, #page.rows do
@@ -93,40 +98,26 @@ function M:CreateConfigPage(parent)
         for i, title in ipairs(titles) do localized[i] = L[title] end
         return page:Columns(localized, height)
     end
-    function ui.ViewerLabel(viewer)
-        local label = L[M.viewerSpecs[viewer].label]
-        return M.db[viewer].show and label or (label .. "  |cff8c8c8c" .. L["Off"] .. "|r")
+    function ui.ViewerLabel(id)
+        local label = M:Label(id)
+        return M.db[id].show and label or (label .. "  |cff8c8c8c" .. L["Off"] .. "|r")
     end
     function ui.ViewerChoices()
         local list = {}
-        for _, viewer in ipairs(M.viewers) do list[#list + 1] = { id = viewer, label = ui.ViewerLabel(viewer) } end
+        for _, id in ipairs(M:BarIds()) do list[#list + 1] = { id = id, label = ui.ViewerLabel(id) } end
         return list
     end
-    -- Each tab but Viewer and Copy & Apply says so when the viewer is off.
+    -- Each tab but Bar and Copy & Apply says so when the bar is off.
     function ui.Tab(title, build)
         page:Section(L[title], nil, false)
-        if title ~= "Viewer" and title ~= "Copy & Apply" then
-            ui.When(function() return not db().show end, function() ui.Note("This viewer is off. Turn on Show Viewer on the Viewer tab to use it.") end)
+        if title ~= "Bar" and title ~= "Copy & Apply" then
+            ui.When(function() return not db().show end, function() ui.Note("This bar is off. Turn on Show Bar on the Bar tab to use it.") end)
         end
         build()
     end
 
     page.configPreview = W.Preview(page, M, { contentHeight = 120 })
-    -- The preview's header, seen from every tab: Editing (the viewer being
-    -- changed) at the top right.
-    if page.previewArea then
-        local corner = CreateFrame("Frame", nil, page.previewArea)
-        corner:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); corner:SetSize(300, 28)
-        page.viewerSelect = ui.SelectIn(corner, 210, ui.ViewerChoices, Viewer, page.SetEditing)
-        page.viewerSelect:ClearAllPoints(); page.viewerSelect:SetPoint("RIGHT", 0, 0)
-        page.editingLabel = W.Label(corner, L["Editing"], nil, 0, 0, 60, T.muted)
-        page.editingLabel:ClearAllPoints(); page.editingLabel:SetPoint("RIGHT", page.viewerSelect, "LEFT", -8, 0)
-        page.editingLabel:SetWidth(60); page.editingLabel:SetJustifyH("RIGHT")
-        page.previewReserveRight = 312
-        page:UpdatePreviewLayout()
-    end
-
-    self:BuildViewerTab(ui)
+    self:BuildBarTab(ui)
     self:BuildLookTab(ui)
     self:BuildTextTab(ui)
     self:BuildGlowTab(ui)
@@ -134,35 +125,77 @@ function M:CreateConfigPage(parent)
     self:BuildVisibilityTab(ui)
     self:BuildCopyTab(ui)
 
-    page:HookScript("OnHide", function() if M.spellMenu then M.spellMenu:Hide() end end)
+    page:HookScript("OnHide", function()
+        if M.spellMenu then M.spellMenu:Hide() end
+        if M.picker then M.picker:Hide() end
+    end)
     W.SectionTabs(page)
     page:Finish(); return page
 end
 
--- Viewer: on or off, the game's state, the layout and size, and where
--- Blizzard's own settings still apply.
-function M:BuildViewerTab(ui)
+-- Bar: on or off, the game's state, a custom bar's name, the layout and
+-- size, and where Blizzard's own settings still apply.
+function M:BuildBarTab(ui)
     local page, db = ui.page, ui.db
-    ui.Tab("Viewer", function()
-        page.showToggles = ui.Toggles({ { "Show Viewer", "show" } })
+    ui.Tab("Bar", function()
+        page.showToggles = ui.Toggles({ { "Show Bar", "show" } })
         local status = W.Label(page:Row(L["Status"], 48), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
         ui.Refresh(function() status:SetText(M:Status()) end)
         page.statusLabel = status
+        ui.When(ui.Custom, function()
+            page:Group(L["Custom Bar"])
+            local host = page:Row(L["Name"], 48)
+            local box = W.TextInput(host, 260, L["Bar name"], M.MAX_NAME)
+            -- Enter keeps the name; Escape leaves it as it was.
+            box.onEnter = function(text) M:RenameCustomBar(ui.Viewer(), text); page:Refresh() end
+            ui.Refresh(function()
+                local bar = M:Custom(ui.Viewer())
+                if bar and not box:HasFocus() then box:SetText(bar.name) end
+            end)
+            page.nameInput = box
+            local kind = W.Label(page:Row(L["Holds"], 48), "", nil, 0, -4, 420, T.muted); kind:SetWordWrap(true)
+            ui.Refresh(function()
+                local bar = M:Custom(ui.Viewer())
+                if not bar then return end
+                kind:SetText(string.format(bar.kind == "buff" and L["%d tracked buffs (from Tracked Buffs)."]
+                    or L["%d cooldowns (from Essential and Utility Cooldowns)."], #bar.entries))
+            end)
+            page.holdsLabel = kind
+            ui.Note("Click + in the preview to add a spell you track in Blizzard's Cooldown Manager; it moves here from its viewer. Click a spell for its switches, its order, or to send it back.", 48)
+            local delete = page:Row("", 40)
+            delete.rowLabel:Hide(); delete:ClearAllPoints(); delete:SetAllPoints(delete.row)
+            page.deleteButton = W.Button(delete, L["Delete Bar"], 140, 30, "secondary")
+            page.deleteButton:SetPoint("LEFT")
+            page.deleteButton:SetScript("OnClick", function()
+                if M:DeleteCustomBar(ui.Viewer()) then M:SelectBar("essential") end
+            end)
+        end)
         page:Group(L["Layout"])
+        local grow = ui.Columns({ "Growth" })
+        page.growSelect = ui.SelectIn(grow[1], 240, function() return M.choices.grow end, function() return db().grow end, ui.Set("grow")); ui.Mark("layout")
+        local function Horizontal() return M.horizontalGrowth[db().grow] == true end
+        local function Lines(list)
+            local out = {}
+            for _, id in ipairs(list) do for _, choice in ipairs(M.choices.lineGrowth) do if choice.id == id then out[#out + 1] = choice end end end
+            return out
+        end
+        ui.When(Horizontal, function()
+            page.rowLinePills = ui.Pills("New Lines", Lines(M.lineChoices.horizontal), function() return db().lineGrowth end, ui.Set("lineGrowth"), 90)
+        end)
+        ui.When(function() return not Horizontal() end, function()
+            page.columnLinePills = ui.Pills("New Lines", Lines(M.lineChoices.vertical), function() return db().lineGrowth end, ui.Set("lineGrowth"), 90)
+        end)
         local shape = ui.Columns({ "Icons per Line", "Spacing" })
-        page.perLineSlider = ui.Slider(shape[1], "perLine"); ui.Mark("layout")
+        page.perLineSlider = ui.Slider(shape[1], "perLine")
         page.spacingSlider = ui.Slider(shape[2], "spacing", "px")
-        page.orientationPills = ui.Pills("Lines", M.choices.orientation, function() return db().orientation end, ui.Set("orientation"), 110)
-        page.startPills = ui.Pills("First Icon", M.choices.start, function() return db().start end, ui.Set("start"), 100)
-        page.centerToggles = ui.Toggles({ { "Center Lines", "center" } })
-        ui.Note("Tracked Buffs and Bars start at the bottom so new ones grow upward. Center Lines puts a short last line in the middle.", 32)
+        ui.Note("Centered keeps a line's icons in its middle; the others start at one end. The first line stays where the bar is placed; further lines go the New Lines way.", 40)
         page:Group(L["Size"])
         local size = ui.Columns({ "Width", "Height" })
         local function SizeSlider(host, key)
-            -- Icons and bars have their own ranges.
+            -- Icons and bars have their own ranges; the range changes before
+            -- the slider shows the new bar's value.
             local function Low() return M:SizeRange(ui.Viewer(), key)[1] end
             local function High() return M:SizeRange(ui.Viewer(), key)[2] end
-            -- The range changes before the slider shows the new viewer's value.
             ui.Refresh(function()
                 if host.slider and host.slider.SetMinMaxValues then host.slider:SetMinMaxValues(Low(), High()) end
             end)
@@ -175,14 +208,16 @@ function M:BuildViewerTab(ui)
         local edit = page:Row(L["Edit Mode"], 48)
         page.editModeButton = W.Button(edit, L["Open Edit Mode"], 160, 30, "secondary")
         page.editModeButton:SetPoint("LEFT"); page.editModeButton:SetScript("OnClick", function() addon:SetEditMode(true) end)
-        ui.Note("Each viewer is placed in ModeUI's Edit Mode, and can attach to another viewer, the screen or your frames. Blizzard's Edit Mode box for it no longer moves it.", 40)
-        page:Group(L["Blizzard's Settings"])
-        local settings = page:Row(L["Tracked Spells"], 48)
-        page.cooldownSettingsButton = W.Button(settings, L["Cooldown Settings"], 160, 30, "secondary")
-        page.cooldownSettingsButton:SetPoint("LEFT")
-        page.cooldownSettingsButton:SetScript("OnClick", function() M:OpenCooldownSettings() end)
-        ui.Refresh(function() page.cooldownSettingsButton:SetEnabled(M:CanOpenCooldownSettings()) end)
-        ui.Note("Which spells each viewer tracks, and their order, are set in Blizzard's Cooldown Settings. Blizzard's Edit Mode options for a viewer still decide Visibility, Hide When Inactive, Show Timer, Show Tooltips and, for bars, Bar Content; its size, padding and icon limit are ModeUI's.", 64)
+        ui.Note("Each bar is placed in ModeUI's Edit Mode, and can attach to a viewer, the screen or your frames. Blizzard's Edit Mode box no longer moves a viewer.", 40)
+        ui.When(function() return not ui.Custom() end, function()
+            page:Group(L["Blizzard's Settings"])
+            local settings = page:Row(L["Tracked Spells"], 48)
+            page.cooldownSettingsButton = W.Button(settings, L["Open CDM"], 160, 30, "secondary")
+            page.cooldownSettingsButton:SetPoint("LEFT")
+            page.cooldownSettingsButton:SetScript("OnClick", function() M:OpenCooldownSettings() end)
+            ui.Refresh(function() page.cooldownSettingsButton:SetEnabled(M:CanOpenCooldownSettings()) end)
+            ui.Note("Which spells each viewer tracks, and their order, are set in Blizzard's Cooldown Manager. Blizzard's Edit Mode options for a viewer still decide Visibility, Hide When Inactive, Show Timer, Show Tooltips and, for bars, Bar Content; its size, padding and icon limit are ModeUI's.", 64)
+        end)
     end)
 end
 
@@ -202,12 +237,15 @@ function M:BuildLookTab(ui)
         page.backgroundSlider = ui.Slider(background[2], "backgroundOpacity", "%")
         ui.When(ui.Icons, function()
             page:Group(L["Cooldown"])
+            ui.When(ui.Cooldowns, function()
+                page.desaturateToggles = ui.Toggles({ { "Desaturate on Cooldown", "desaturate" } })
+            end)
             local swipe = ui.Columns({ "Swipe Color", "Swipe Opacity" })
             ui.Color(swipe[1], "swipeColor")
             page.swipeSlider = ui.Slider(swipe[2], "swipeOpacity", "%")
             page.cooldownToggles = ui.Toggles({ { "Edge", "showEdge" }, { "Bling", "showBling" }, { "Ready Flash", "showFlash" } })
             ui.When(ui.Cooldowns, function() page.rangeToggles = ui.Toggles({ { "Out of Range Shade", "rangeTint" } }) end)
-            ui.Note("The swipe darkens the icon while it cools down (Blizzard's gold swipe for an active aura stays). Edge is the bright line on the swipe, Bling the sparkle as it ends, Ready Flash Blizzard's flash just before.", 48)
+            ui.Note("Desaturate on Cooldown turns an icon gray while its spell cools down (not for the global cooldown, nor while its effect is up). The swipe darkens it meanwhile (Blizzard's gold swipe for an active aura stays). Edge is the bright line on the swipe, Bling the sparkle as it ends, Ready Flash Blizzard's flash just before.", 64)
         end)
         ui.When(ui.Bars, function()
             page:Group(L["Bar"])
@@ -236,6 +274,5 @@ function M:CanOpenCooldownSettings()
 end
 function M:OpenCooldownSettings()
     if not self:CanOpenCooldownSettings() then return false end
-    if addon.configWindow and addon.configWindow:IsShown() then addon:ToggleConfig() end
     return pcall(_G.CooldownViewerSettings.TogglePanel, _G.CooldownViewerSettings)
 end

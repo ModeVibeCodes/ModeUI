@@ -17,6 +17,8 @@
         return self.countdown
     end
     function methods:GetRegions() return unpack(self.regions or {}) end
+    -- Alpha from a boolean that may be secret (allowed for addon code).
+    function methods:SetAlphaFromBoolean(value) self.alphaFromBoolean = value; if not issecretvalue(value) then self.alpha = value and 1 or 0 end end
     local createTexture = methods.CreateTexture
     function methods:CreateTexture(...)
         local texture = createTexture(self, ...)
@@ -58,6 +60,9 @@
         GetSpellCooldown = function(spell) return { isActive = cooling[spell] == true, isOnGCD = false, startTime = Secret('start'), duration = Secret('duration') } end,
     }
     CooldownViewerConstants = { ITEM_AURA_COLOR = { r = 1, g = 0.8, b = 0 }, ITEM_COOLDOWN_COLOR = { r = 0, g = 0, b = 0, a = 0.7 } }
+    -- Blizzard's Cooldown Settings window (Open CDM).
+    cdmToggles = 0
+    CooldownViewerSettings = { TogglePanel = function() cdmToggles = cdmToggles + 1 end }
     ActionButtonSpellAlertManager = { activeAlerts = {} }
     function ActionButtonSpellAlertManager:ShowAlert(button)
         if not button.SpellActivationAlert then rawset(button, 'SpellActivationAlert', CreateFrame('Frame', nil, button)) end
@@ -96,6 +101,8 @@
                 item.Applications.Applications = item.Applications:CreateFontString()
                 item.DebuffBorder = CreateFrame('Frame', nil, item)
                 function item:RefreshCooldownInfo() self.Cooldown:SetSwipeColor(0, 0, 0, 0.7) end
+                -- A buff's active state, kept by Blizzard (secret in combat).
+                function item:SetIsActive(active) self.isActive = active end
             else
                 item.OutOfRange = item:CreateTexture(nil, 'OVERLAY'); item.OutOfRange:SetAtlas('UI-CooldownManager-OORshadow')
                 item.ChargeCount = CreateFrame('Frame', nil, item)
@@ -107,6 +114,9 @@
                     self.Cooldown:SetSwipeColor(c.r, c.g, c.b, c.a or 1); self.Cooldown:SetDrawEdge(true)
                 end
                 item.cooldownSwipeColor = CooldownViewerConstants.ITEM_COOLDOWN_COLOR
+                -- Blizzard's own gray, set on each refresh.
+                function item:RefreshIconDesaturation() self.Icon:SetDesaturated(self.blizzardGray == true) end
+                function item:SetIsActive(active) self.isActive = active end
             end
         end
         item.activeState = true

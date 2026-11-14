@@ -12,7 +12,7 @@ if not M then return end
 --
 -- Nothing is stored on Blizzard's frames: the textures ModeUI adds live in
 -- `M.dress`, keyed by the item.
-local Kit, Public = addon.Kit, addon.IsPublic
+local Kit, Public, Cooldowns = addon.Kit, addon.IsPublic, addon.Domain.Cooldowns
 local OVERLAY_ATLAS = "UI-HUD-CoolDownManager-IconOverlay"
 local RANGE_COLOR = Kit.palette.hostile
 M.dress = setmetatable({}, { __mode = "k" })
@@ -41,14 +41,15 @@ function M:Dress(item)
     return state
 end
 
--- Skins an item for its viewer's settings. `g` is the viewer's geometry when
--- called from a layout; a new item takes one sized from the settings.
+-- Skins an item for the settings of the bar it shows on (`viewer`: a
+-- viewer or a custom bar). `g` is the bar's geometry when called from a
+-- layout; a new item takes one sized from the settings.
 function M:DressItem(viewer, item, g)
     if not viewer or not self.db[viewer] then return end
     local style = self.db[viewer]
     g = g or self.Geometry(style, 1, self.PixelSize(item))
     -- Items Blizzard made before ModeUI was switched on get their hooks now.
-    self:HookItem(viewer, item)
+    self:HookItem(self.sourceOf[item] or viewer, item)
     local state = self:Dress(item)
     -- Same settings, viewer and size since the last skin: only the alpha
     -- and glows are brought up to date.
@@ -102,21 +103,43 @@ function M:SkinIcon(item, style, g, state)
     self:StyleCooldown(item)
 end
 
--- The swipe, edge and bling, put back after each Blizzard refresh. The gold
--- swipe Blizzard draws while a spell's aura is up is left as it is.
+-- Whether Blizzard shows a spell's effect as up on its icon: it swaps the
+-- swipe to its gold aura color (a table it shares, compared by reference;
+-- never a secret).
+function M.AuraUp(item)
+    local constants = _G.CooldownViewerConstants
+    return constants ~= nil and constants.ITEM_AURA_COLOR ~= nil and rawequal(item.cooldownSwipeColor, constants.ITEM_AURA_COLOR)
+end
+
+-- Desaturate on Cooldown: the icon is gray while its spell is on a real
+-- cooldown (not the global cooldown, nor while its effect is up), from
+-- C_Spell's never-secret isActive and isOnGCD. Off, icons keep full color.
+-- When the game can't say (an item, say), Blizzard's own gray stays.
+function M:StyleDesaturation(item, style)
+    local icon = item.Icon
+    if not icon or not icon.SetDesaturated or self:IsBuff(self.sourceOf[item]) then return end
+    if not style.desaturate then icon:SetDesaturated(false); return end
+    local key = self:SpellKey(item)
+    local cooling = key and Cooldowns.Cooling(Cooldowns.SpellID(tonumber(key)))
+    if cooling ~= nil then icon:SetDesaturated(cooling and not self.AuraUp(item)) end
+end
+
+-- The swipe, edge, bling and gray, put back after each Blizzard refresh,
+-- and the glows that follow the icon's state. The gold swipe Blizzard draws
+-- while a spell's aura is up is left as it is.
 function M:StyleCooldown(item)
     local state = self.dress[item]
     local style = state and self.db[state.viewer]
     local cooldown = item.Cooldown
     if not style or not cooldown or not cooldown.SetSwipeColor then return end
-    local constants = _G.CooldownViewerConstants
-    local aura = constants ~= nil and constants.ITEM_AURA_COLOR ~= nil and rawequal(item.cooldownSwipeColor, constants.ITEM_AURA_COLOR)
-    if not aura then
+    self:StyleDesaturation(item, style)
+    if not self.AuraUp(item) then
         local c = style.swipeColor
         cooldown:SetSwipeColor(c[1], c[2], c[3], style.swipeOpacity / 100)
     end
     if cooldown.SetDrawEdge then cooldown:SetDrawEdge(style.showEdge) end
     if cooldown.SetDrawBling then cooldown:SetDrawBling(style.showBling) end
+    if self.sourceOf[item] then self:ApplyGlows(item) end
 end
 
 -- A ModeUI-made icon with the parts the skin and text code look for, for the

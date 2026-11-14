@@ -10,10 +10,18 @@ if not M then return end
 local Events, L, Cooldowns = addon.Events, addon.L, addon.Domain.Cooldowns
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
+-- Its own start: the settings are checked and the custom bars sorted out
+-- with ModeUI's other modules, but its window waits for /mcdm.
 function M:OnInitialize()
     self.Initialize(self.db)
+    self:RebuildAssignments()
     -- SharedMedia fonts and bar textures can register after login.
     addon.Media:RegisterFontListener(self, function() if self.active then self:Refresh() end end)
+    addon.RegisterMessage(self, addon.Messages.MODULE_TOGGLED, function(_, id)
+        if id == self.id and self.window then self:RefreshWindow() end
+    end)
+    SLASH_MODEUICDM1 = self.SLASH
+    SlashCmdList.MODEUICDM = function() self:ToggleWindow() end
 end
 
 -- Runtime sets self.enabled after these return, so they keep their own state.
@@ -46,7 +54,7 @@ function M:OnDisable()
     self.active = false
     Events:OffAll(self)
     if self.built then
-        for _, viewer in ipairs(self.viewers) do self:UpdateAlpha(viewer) end
+        for _, id in ipairs(self:BarIds()) do self:UpdateAlpha(id) end
         self:RefreshGlows()
         self:RenderMovers()
         addon.ReloadManager:Request("cooldownManager", L["Cooldown Manager: reload to give Blizzard's cooldowns back their own look and place."])
@@ -73,6 +81,7 @@ function M:Refresh()
         self:LayoutAll()
         self:RenderMovers()
         self:UpdateFade()
+        self:UpdateCooldowns()
         self:RefreshGlows()
     end
     if addon.EditMode then addon.EditMode:RefreshElements() end
@@ -95,10 +104,16 @@ M.alphaKeys = { opacity = true, fadeOpacity = true }
 
 -- Values are checked by Initialize on a copy before they're kept.
 function M:SetOption(viewer, key, value)
-    local defaults = self.styleDefaults[viewer]
+    local defaults = self:Defaults(viewer)
     if not self:CanConfigure() or not defaults or defaults[key] == nil then return false end
     local candidate = Copy(self.db)
     candidate[viewer][key] = Copy(value)
+    -- Rows add lines down or up, columns right or left: a new Growth keeps
+    -- New Lines if it still fits, else takes the first that does.
+    if key == "grow" then
+        local lines, current = self.LinesFor(value), candidate[viewer].lineGrowth
+        if current ~= lines[1] and current ~= lines[2] then candidate[viewer].lineGrowth = lines[1] end
+    end
     if not pcall(self.Initialize, candidate) then return false end
     if self.alphaKeys[key] then
         self.db[viewer][key] = candidate[viewer][key]
@@ -110,8 +125,8 @@ function M:SetOption(viewer, key, value)
 end
 
 function M:ResetViewer(viewer)
-    if not self:CanConfigure() or not self.styleDefaults[viewer] then return false end
-    local style = Copy(self.styleDefaults[viewer])
+    if not self:CanConfigure() or not self:Defaults(viewer) then return false end
+    local style = Copy(self:Defaults(viewer))
     for key in pairs(self.identityKeys) do style[key] = Copy(self.db[viewer][key]) end
     return Commit(self, viewer, style)
 end
@@ -120,9 +135,9 @@ end
 -- opacity, bars) to the viewers in `targets` (a set). What each shows,
 -- when, its shape and its spells stay its own. Returns how many took it.
 function M:CopyStyleTo(from, targets)
-    if not self:CanConfigure() or not self.styleDefaults[from] or type(targets) ~= "table" then return false end
+    if not self:CanConfigure() or not self:Defaults(from) or type(targets) ~= "table" then return false end
     local applied = 0
-    for _, viewer in ipairs(self.viewers) do
+    for _, viewer in ipairs(self:BarIds()) do
         if viewer ~= from and targets[viewer] then
             local style = Copy(self.db[from])
             for key in pairs(self.identityKeys) do style[key] = Copy(self.db[viewer][key]) end
@@ -142,20 +157,21 @@ end
 
 function M:CopyStyleToAll(from)
     local all = {}
-    for _, viewer in ipairs(self.viewers) do all[viewer] = true end
+    for _, id in ipairs(self:BarIds()) do all[id] = true end
     return self:CopyStyleTo(from, all)
 end
 
 -- Per-spell switches ---------------------------------------------------------
 
--- Sets one switch ("hide", "proc" or "ready") for the spell with cooldown
--- ID `key` ("1234"); a switch is stored only while it differs from the viewer.
+-- Sets one switch ("hide", or a glow: "proc", "active", "ready", "buff") for
+-- the spell with cooldown ID `key` ("1234") on a bar; a switch is stored
+-- only while it differs from the bar.
 function M:SetSpellSwitch(viewer, key, kind, on)
-    if not self.styleDefaults[viewer] or self.spellKinds[kind] == nil or type(key) ~= "string" then return false end
+    if not self:Defaults(viewer) or self.spellKinds[kind] == nil or type(key) ~= "string" then return false end
     local spells = Copy(self.db[viewer].spells)
     local entry = spells[key] or {}
     local stored = self.spellKinds[kind]
-    -- hide stores true while on; proc and ready store false while off.
+    -- hide stores true while on; the glows store false while off.
     if (kind == "hide") == (on == true) then entry[kind] = stored else entry[kind] = nil end
     spells[key] = next(entry) and entry or nil
     return self:SetOption(viewer, "spells", spells)
@@ -172,11 +188,11 @@ function M:PasteSpell(viewer, key)
     spells[key] = next(self.spellClipboard) and Copy(self.spellClipboard) or nil
     return self:SetOption(viewer, "spells", spells)
 end
--- Every spell tracked in the viewer now takes this spell's switches.
+-- Every spell on the bar now takes this spell's switches.
 function M:ApplySpellToViewer(viewer, key)
     local entry = self.db[viewer].spells[key]
     local spells = Copy(self.db[viewer].spells)
-    for _, item in ipairs(self:Items(viewer)) do
+    for _, item in ipairs(self:BarItems(viewer)) do
         local other = self:SpellKey(item)
         if other then spells[other] = entry and Copy(entry) or nil end
     end
@@ -204,10 +220,12 @@ function M:AppearanceOwner(viewer, part)
     return owner
 end
 
--- Edit Mode's Open Module Settings opens the page on the chosen viewer.
-function M:OpenElementSettings(id)
-    for _, viewer in ipairs(self.viewers) do
-        if self.elementIds[viewer] == id and self.page and self.page.SetEditing then self.page.SetEditing(viewer) end
+-- Edit Mode's Open Module Settings opens this module's window on the
+-- chosen bar (a standalone module has no page in ModeUI's window).
+function M:OpenSettings(elementId)
+    self:OpenWindow()
+    for _, id in ipairs(self:BarIds()) do
+        if self.ElementId(id) == elementId then self:SelectBar(id) end
     end
 end
 
@@ -225,5 +243,5 @@ function M:Status()
         end
         return L["Turn on the game's Cooldown Manager in its Options to see it."]
     end
-    return L["On. Move viewers with Edit Mode; choose spells in Blizzard's Cooldown Settings."]
+    return L["On. Move bars with Edit Mode; choose spells in Blizzard's Cooldown Manager (Open CDM)."]
 end

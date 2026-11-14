@@ -966,3 +966,34 @@ Checked against the `forever` branch of Gethe/wow-ui-source (head 1.60.1,
   `AdvancedOptions.lua` checkbox loads for `camelot` (its TOC entry is
   `[AllowLoadGameType mainline]`); hooks and re-anchoring during Blizzard's
   own Edit Mode.
+
+### Cooldown Manager, second pass — November 13, 2026
+
+Own window, custom bars, gray on cooldown, four glows. Checked against the
+local mainline 12.1.5 copy and the Forever files from the first pass.
+
+- **Gray on cooldown.** Blizzard sets `cooldownDesaturated = isOnActualCooldown`
+  in `CheckCacheCooldownValuesFromSpellCooldown` and applies it in
+  `CooldownViewerCooldownItemMixin:RefreshIconDesaturation`, which `RefreshData`
+  and `RefreshCooldownOnly` call after `RefreshSpellCooldownInfo`. ModeUI
+  post-hooks it and calls `Texture:SetDesaturated` with a public boolean
+  (`SecretArguments = "AllowedWhenTainted"`) from `C_Spell.GetSpellCooldown`'s
+  never-secret `isActive`/`isOnGCD`.
+- **Active state.** `CheckCacheCooldownValuesFromAura` sets
+  `cooldownSwipeColor = CooldownViewerConstants.ITEM_AURA_COLOR` (a shared
+  table) while a spell's aura or totem is shown; other paths set
+  `ITEM_COOLDOWN_COLOR`. A reference comparison (`rawequal`) reads no secret.
+- **Buff state.** `CooldownViewerItemMixin:SetIsActive(active)` stores
+  `isActive`; for buffs it comes from `IsExpired()`, which compares aura
+  times and can be secret in combat. `SimpleRegion:SetAlphaFromBoolean(value,
+  alphaIfTrue, alphaIfFalse)` is `AllowedWhenTainted`; ModeUI passes the value
+  with the default alphas, and never tests it.
+- **Custom bars.** They re-anchor Blizzard's item frames (plain frames) to
+  ModeUI holders, exactly as the viewers' own layout does; the item stays the
+  viewer's child, so `ShouldBeShown` (the CVar, Edit Mode Visibility) still
+  hides it. No new API.
+- **Edit Mode return.** ModeUI's own `BeginEditWorkspace`/`FinishEditWorkspace`
+  (`Shared/Settings/EditMode.lua`) remember a registered settings window that
+  was open; no Blizzard API.
+- **Unverified natively:** everything here; `SetAlphaFromBoolean`'s default
+  alphas on a texture whose vertex color carries its own alpha (the soft glow).

@@ -192,6 +192,11 @@ function addon:CreateEditWindow()
         if not element or not self.modules[element.module.id] then return end
         local id, module, elementId = element.module.id, element.module, element.id
         self:SetEditMode(false)
+        -- A standalone module opens its own window on the chosen element.
+        if module.standalone then
+            if module.OpenSettings then module:OpenSettings(elementId) end
+            return
+        end
         self:SelectConfigPage(id)
         -- A module with several elements can open its page on the chosen one.
         if module.OpenElementSettings then module:OpenElementSettings(elementId) end
@@ -259,7 +264,25 @@ function addon:CreateEditWindow()
     end)
 end
 
+-- Settings windows of standalone modules (addon:RegisterSettingsWindow):
+-- one that's open when Edit Mode starts steps aside and comes back after it,
+-- instead of ModeUI's own window.
+addon.settingsWindows = {}
+function addon:RegisterSettingsWindow(window)
+    assert(type(window) == "table" and window.Hide and window.Show, "ModeUI: settings window required.")
+    self.settingsWindows[#self.settingsWindows + 1] = window
+end
+
 function addon:BeginEditWorkspace()
+    self.editReturnWindow = nil
+    self.editConfigWasShown = self.configWindow ~= nil and self.configWindow:IsShown()
+    for _, other in ipairs(self.settingsWindows) do
+        if other:IsShown() then
+            self.editReturnWindow = other
+            other.editSuspended = true
+            other:Hide()
+        end
+    end
     if not self.configWindow then self:CreateConfig() end
     self:FinishWindowInteraction()
     if not self.editWindow then self:CreateEditWindow() end
@@ -278,6 +301,17 @@ function addon:FinishEditWorkspace()
     window:Hide()
     window.ending = false
     self.configWindow.editSuspended = false
+    local other = self.editReturnWindow
+    if other then
+        self.editReturnWindow = nil
+        other.editSuspended = false
+        if not (InCombatLockdown() or UnitAffectingCombat("player")) then
+            other:Show()
+            -- ModeUI's window comes back too if it was open as well.
+            if self.editConfigWasShown then self.configWindow:Show() end
+        end
+        return
+    end
     -- Never put the settings window over a pull; suspending skipped its close cleanup.
     if InCombatLockdown() or UnitAffectingCombat("player") then
         self:NotifyConfigClosed()

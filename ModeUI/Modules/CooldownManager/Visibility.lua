@@ -2,7 +2,7 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- When each viewer shows, and how see-through it is. Blizzard's viewer
+-- When each bar shows, and how see-through it is. Blizzard's viewer
 -- frames are never shown, hidden or faded by ModeUI (Blizzard does that
 -- from its own Edit Mode Visibility and Opacity, which still apply on top);
 -- ModeUI fades the icons in them. Show picks when: Always, In Combat, Out
@@ -38,18 +38,27 @@ function M:ViewerAlpha(viewer)
     return full
 end
 
--- Every icon in a viewer at its alpha (a spell hidden here stays at none).
-function M:UpdateAlpha(viewer)
-    for _, item in ipairs(self:Items(viewer)) do self:ApplySpell(viewer, item) end
+-- The items that show on a bar (a viewer or a custom bar).
+function M:BarItems(id)
+    local list = {}
+    for _, viewer in ipairs(self:Sources(id)) do
+        for _, item in ipairs(self:Items(viewer)) do if self:Owner(item) == id then list[#list + 1] = item end end
+    end
+    return list
+end
+
+-- Every icon on a bar at its alpha (a spell hidden here stays at none).
+function M:UpdateAlpha(id)
+    for _, item in ipairs(self:BarItems(id)) do self:ApplySpell(id, item) end
 end
 
 -- Applies every viewer's alpha; the mouseover check runs only while a viewer
 -- that's on uses Mouseover. Combat and target changes re-apply it.
 function M:UpdateFade()
     local fading = false
-    for _, viewer in ipairs(self.viewers) do
-        self:UpdateAlpha(viewer)
-        fading = fading or (self.active and self.db[viewer].show and self.db[viewer].visibility == "mouseover")
+    for _, id in ipairs(self:BarIds()) do
+        self:UpdateAlpha(id)
+        fading = fading or (self.active and self.db[id].show and self.db[id].visibility == "mouseover")
     end
     if fading and not self.fader then
         self.fader = CreateFrame("Frame")
@@ -58,10 +67,10 @@ function M:UpdateFade()
             elapsed = elapsed + delta
             if elapsed < TICK then return end
             elapsed = 0
-            for _, viewer in ipairs(self.viewers) do
-                if self.db[viewer].visibility == "mouseover" then
-                    local alpha = self:ViewerAlpha(viewer)
-                    if alpha ~= last[viewer] then last[viewer] = alpha; self:UpdateAlpha(viewer) end
+            for _, id in ipairs(self:BarIds()) do
+                if self.db[id].visibility == "mouseover" then
+                    local alpha = self:ViewerAlpha(id)
+                    if alpha ~= last[id] then last[id] = alpha; self:UpdateAlpha(id) end
                 end
             end
         end)
