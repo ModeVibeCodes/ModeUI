@@ -66,6 +66,22 @@ viewer the **+** slot opens Blizzard's Cooldown Manager instead.
 Custom bars follow the viewer their spells come from for Blizzard's own
 Visibility and the game option: the icons are still that viewer's children.
 
+### Custom spells by ID
+
+On a Cooldown Bar, the **+** slot's list also has **Spell ID**: type a spell's
+ID and press Enter or **Add**. Any spell works, tracked in Blizzard's
+Cooldown Manager or not. It gets an icon of ModeUI's own on the bar (saved as
+`s<ID>` among the bar's spells), with the bar's border, text, gray on
+cooldown, Proc and Off Cooldown glows, per-spell switches and order, plus a
+blue tint while short of power and a gray one while unusable, and the
+spell's tooltip. It shows only while you know the spell, or what replaces it
+now (an override follows its picture, cooldown and procs). The cooldown and
+recharge come as duration objects straight to the icon's cooldown, which
+draws the numbers; charge counts go straight to the text. The Active and
+Buff glows need Blizzard's own tracking, so they don't light on custom
+spells, and buffs can't be added by ID. Its icons hide while the module is
+off.
+
 ## What stays Blizzard's
 
 - **Which spells are tracked, and their order** in each viewer: Blizzard's
@@ -129,6 +145,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Migrations.lua` | `Initialize(db)`: version 1 to 2, validation |
 | `Driver.lua` | lifecycle, `/mcdm`, events, settings changes, per-spell switches, copy and reset, status |
 | `Custom.lua` | the bar list, custom bars and which spell shows where |
+| `Spells.lua` | custom spells by ID on ModeUI's own icons |
 | `Blizzard.lua` | finding and hooking Blizzard's viewers and items |
 | `Layout.lua` | Growth geometry, stand-ins and holders, placing the icons |
 | `Skin.lua`, `Bars.lua`, `Text.lua` | icon skin, swipe and gray; Tracked Bars; texts |
@@ -159,3 +176,84 @@ window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
   spell cools down; the Cooldown Manager window comes back after Edit Mode;
   ModeUI's own window (`/modeui`) has no Cooldown Manager page. In combat,
   cooldowns, charges and procs keep updating, with no Lua errors.
+
+## Resource Bars
+
+November 13, 2026. Your own health and power next to the cooldowns, in the
+same `/mcdm` window: the list has a **Resource Bars** group between
+Blizzard and Custom Bars. Checked against the mock client only
+(`tests/resource_bars.lua`); **native acceptance is pending**. Their APIs
+are in [API_COMPATIBILITY.md](API_COMPATIBILITY.md#cooldown-manager-resource-bars--november-13-2026).
+They run while the Cooldown Manager is on, whatever Blizzard's Cooldown
+Manager option says.
+
+| Bar | Shows | Default |
+|---|---|---|
+| **Power** | the power your character shows now: mana, rage or energy, in its own color | on, 14px, Current text |
+| **Combo Points** | one box per point you can hold, lit for each point on your target (Rogues; Druids in Cat Form) | on, 10px, no text |
+| **Alternate Mana** | a Druid's mana while Bear Form (rage) or Cat Form (energy) shows another power; Forever's own frames show none then | on, 8px, no text |
+| **Health** | your health, in your class color | off, 14px, Percent text |
+
+Each bar has its own settings, on four tabs under a preview with sample
+values (every class sees every bar; Animated runs the fill):
+
+| Tab | Settings |
+|---|---|
+| Bar | **Show Bar**, Status (whether it shows for this character now), **Width**, **Height**, **Match Width** (the width of what it's attached to in Edit Mode, followed when that changes; also in Edit Mode's window), Combo Points' **Spacing**, **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
+| Look | **Border** (ModeUI or None) and **Border Color**; **Bar Texture** (Mode Gradient, Flat or SharedMedia), **Bar Color** (Power Type, Class Color or Custom; Combo Points: Custom or Class Color), **Bar Opacity**, **Bar Background** (Mode Slate by default) and **Background Opacity**; **Fill Direction**, **Smooth** and **Fill End Line** |
+| Text | **Text** (None, Current, Percent, Current and Percent, Current / Max; Combo Points: None or Count), **Anchor** (Left, Center, Right), **Size**, **Offset X/Y**, **Text Color**; **Font**, **Outline**, **Text Shadow**, **Slug Text** |
+| Visibility | **Show** (Always, In Combat, Out of Combat, In Combat or With a Target, Mouseover, Hidden), **Opacity**, **Faded Opacity** |
+
+**Placement.** Each bar is an element of ModeUI's Edit Mode
+(`ModeUIResourcePower`, `ModeUIResourceCombo`, `ModeUIResourceMana`,
+`ModeUIResourceHealth`; positions `cooldownManagerResourcePower` and so
+on). They start as a stack under Utility Cooldowns, each 4px under the last
+and matching its width. A bar can attach to the screen, your frames, any
+viewer or another resource bar, and the viewers and custom bars can attach
+to a resource bar. A bar with nothing to show (Combo Points on a Warrior)
+still holds its place, so the bars under it don't move.
+
+**Look.** Every box is ModeUI's standard border (`Kit.ModeBorder`: a crisp
+2px rim in `Kit.BORDER_COLOR` with rounded ends, on its own frame above the
+fill), the fill and background rounded by its end masks, as on the unit
+frames' cast bar.
+
+**How values are handled.** Health and power can be secret: they go only
+to the status bars, `AbbreviateNumbers` and the text setters, and percent
+text comes from the game's 0-100 curve. Combo points light one box each
+from `SetValue(count)` on boxes spanning `i - 1` to `i`. No value is
+compared, so there is no Hide When Full.
+
+**Saved settings.** `modules.cooldownManager.resources` with one table per
+bar (`power`, `combo`, `mana`, `health`). Added without a version step: a
+profile saved before them takes their defaults; bad data stops startup.
+
+| File | Job |
+|---|---|
+| `ResourceInit.lua` | the bars, their Edit Mode targets, defaults, ranges, choices and validation |
+| `Resources.lua` | frames, stand-ins, Match Width, the border and bar layout, combo boxes, the text's place, status |
+| `ResourceUpdate.lua` | filling from the game, colors, texts, events, alpha, settings changes and reset |
+| `ResourcePreview.lua`, `ResourceSettings.lua` | the preview and the page |
+
+Shared: `Domain.Power.ManaType`, `ReadType`, `HasAlternateMana` and
+`AlternateManaActive`; the Edit Mode size match and anchor size listener
+(`PositionManager:SetSizeMatch`, `SetAnchorSizeListener`).
+
+### In-game check
+
+- **Navigation:** type `/mcdm`, then click **Power** under **Resource Bars**
+  in the window's list.
+- **Action:** if the switch at the top right of the page is off, turn it
+  on. On the **Look** tab set **Bar Color** to **Class Color**, on the
+  **Text** tab set **Text** to **Current / Max**. Click **Combo Points** in
+  the list (on a Rogue or a Druid). Click **Edit Mode** in the window's
+  header, drag the **Power** stand-in, then click **Exit** in the Edit Mode
+  window.
+- **Required state:** out of combat for the settings and Edit Mode; then
+  spend and regain power, in and out of combat, with a target for combo
+  points. On a Druid, shift into Bear Form and Cat Form.
+- **Confirmation:** a Power bar in the ModeUI border sits under Utility
+  Cooldowns at its width, fills smoothly in your class color and shows
+  "current / max"; combo point boxes light one by one on your target; a
+  Druid sees a thin mana bar in Bear and Cat Form only; the Power bar stays
+  where you dropped it; no Lua errors in combat.

@@ -20,6 +20,8 @@ function M:OnInitialize()
     addon.RegisterMessage(self, addon.Messages.MODULE_TOGGLED, function(_, id)
         if id == self.id and self.window then self:RefreshWindow() end
     end)
+    -- Resource bars in Class Color follow the Class Colors module.
+    addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function() if self.active then self:RefreshResources() end end)
     SLASH_MODEUICDM1 = self.SLASH
     SlashCmdList.MODEUICDM = function() self:ToggleWindow() end
 end
@@ -29,6 +31,7 @@ function M:OnEnable()
     self.active = true
     addon.ReloadManager:Clear("cooldownManager")
     self:Build()
+    self:SetResourceEvents(true)
     self:HookProcs()
     -- Blizzard's Cooldown Manager loads with the game, normally before
     -- ModeUI; if not yet, its viewers are hooked when it does.
@@ -40,6 +43,14 @@ function M:OnEnable()
         end)
     end
     Events:On(self, "SPELL_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
+    -- Custom spells' own icons: charges, picture and usability change with
+    -- these; procs light them; learning or losing a spell shows or hides one.
+    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE" }) do
+        Events:On(self, event, function() self:UpdateSpellIcons() end)
+    end
+    Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW", function(_, spellID) self:SpellProc(spellID, true) end)
+    Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE", function(_, spellID) self:SpellProc(spellID, false) end)
+    Events:On(self, "SPELLS_CHANGED", function() self:Refresh() end)
     Events:On(self, "PLAYER_TARGET_CHANGED", function() self:UpdateFade() end)
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         Events:On(self, event, function() self:Refresh() end)
@@ -53,10 +64,13 @@ end
 function M:OnDisable()
     self.active = false
     Events:OffAll(self)
+    self:SetResourceEvents(false)
     if self.built then
         for _, id in ipairs(self:BarIds()) do self:UpdateAlpha(id) end
         self:RefreshGlows()
         self:RenderMovers()
+        self:HideSpellIcons()
+        self:RefreshResources()
         addon.ReloadManager:Request("cooldownManager", L["Cooldown Manager: reload to give Blizzard's cooldowns back their own look and place."])
     end
     if self.fader then self.fader:Hide() end
@@ -69,7 +83,7 @@ function M:SetEditMode(enabled)
     local editing = enabled and self.active or false
     if editing == (self.editing or false) then return end
     self.editing = editing
-    if self.built then self:RenderMovers(); self:UpdateFade() end
+    if self.built then self:RenderMovers(); self:RenderResourceMovers(); self:UpdateFade() end
 end
 
 -- Lays every viewer out and skins it again. The revision tells a later
@@ -84,8 +98,10 @@ function M:Refresh()
         self:UpdateCooldowns()
         self:RefreshGlows()
     end
+    self:RefreshResources()
     if addon.EditMode then addon.EditMode:RefreshElements() end
     if self.page then self.page:Refresh() end
+    if self.resourcePage then self.resourcePage:Refresh() end
 end
 
 function M:CanConfigure() return not addon.InCombat() end
@@ -226,6 +242,9 @@ function M:OpenSettings(elementId)
     self:OpenWindow()
     for _, id in ipairs(self:BarIds()) do
         if self.ElementId(id) == elementId then self:SelectBar(id) end
+    end
+    for _, id in ipairs(self.resources) do
+        if self.ResourceElementId(id) == elementId then self:SelectResource(id) end
     end
 end
 

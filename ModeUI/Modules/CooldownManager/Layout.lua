@@ -70,6 +70,7 @@ function M:Build()
     self.built = true
     self.movers, self.holders = {}, {}
     self:SyncBarFrames()
+    self:BuildResources()
 end
 
 function M:EnsureBarFrames(id)
@@ -138,6 +139,10 @@ function M:Placed(id)
             end
         end
     end
+    -- A custom bar's spells by ID, on ModeUI's own icons.
+    for _, icon in ipairs(self:SpellIcons(id)) do
+        if self:SpellSwitch(id, self:SpellKey(icon), "hide") then parked[#parked + 1] = icon else placed[#placed + 1] = icon end
+    end
     if custom then
         table.sort(placed, function(a, b) return (order[self:SpellKey(a)] or 0) < (order[self:SpellKey(b)] or 0) end)
     end
@@ -152,17 +157,20 @@ function M:LayoutViewer(id)
     local g = self.Geometry(style, #placed, self.PixelSize(holder))
     mover:SetSize(g.width, g.height)
     for index, item in ipairs(placed) do
+        if self:IsOwnIcon(item) then item:Show() end
         if item.SetScale then item:SetScale(1) end
         self.Place(item, holder, g, index)
         self:DressItem(id, item, g)
     end
     -- Spells switched off here wait, unseen, in the middle of the bar.
     for _, item in ipairs(parked) do
+        if self:IsOwnIcon(item) then item:Show() end
         item:ClearAllPoints(); item:SetPoint("CENTER", holder, "CENTER", 0, 0)
         self:DressItem(id, item, g)
     end
     self.placedCount = self.placedCount or {}
     self.placedCount[id] = #placed
+    for _, item in ipairs(placed) do if self:IsOwnIcon(item) then self:UpdateSpellIcon(item) end end
     self:QueuePreview(id)
 end
 

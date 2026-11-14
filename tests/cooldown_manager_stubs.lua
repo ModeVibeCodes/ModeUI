@@ -59,6 +59,21 @@
         GetSpellTexture = function(spell) return 'icon:' .. spell end,
         GetSpellCooldown = function(spell) return { isActive = cooling[spell] == true, isOnGCD = false, startTime = Secret('start'), duration = Secret('duration') } end,
     }
+    -- Spells by ID: IDs under 900000 exist; durations are opaque objects.
+    knownSpells, spellCharges, spellUsable, overrides = {}, {}, {}, {}
+    C_Spell.DoesSpellExist = function(id) return id < 900000 end
+    C_Spell.GetOverrideSpell = function(id) return overrides[id] or id end
+    C_Spell.GetSpellCooldownDuration = function(id, ignoreGCD) assert(ignoreGCD == true); return { duration = 'cd:' .. id } end
+    C_Spell.GetSpellChargeDuration = function(id) return { duration = 'charge:' .. id } end
+    C_Spell.GetSpellCharges = function(id)
+        local c = spellCharges[id]
+        if c then return { currentCharges = c.current, maxCharges = c.max, isActive = c.active } end
+    end
+    C_Spell.IsSpellUsable = function(id) local u = spellUsable[id]; if u then return u[1], u[2] end return true, false end
+    C_SpellBook = { IsSpellKnown = function(id) return knownSpells[id] ~= false end }
+    function methods:SetCooldownFromDurationObject(duration) self.durationObject = duration end
+    function GameTooltip:SetOwner(owner) self.owner = owner end
+    function GameTooltip:SetSpellByID(id) self.spell = id end
     CooldownViewerConstants = { ITEM_AURA_COLOR = { r = 1, g = 0.8, b = 0 }, ITEM_COOLDOWN_COLOR = { r = 0, g = 0, b = 0, a = 0.7 } }
     -- Blizzard's Cooldown Settings window (Open CDM).
     cdmToggles = 0

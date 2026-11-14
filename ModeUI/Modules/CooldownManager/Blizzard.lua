@@ -125,8 +125,10 @@ function M:QueueSource(viewer)
     for _, id in ipairs(self:CustomsFrom(viewer)) do self:QueueLayout(id) end
 end
 
--- The cooldown ID an item tracks, as a settings key ("1234"), or nil.
+-- The key of what an item shows: the cooldown ID a Blizzard item tracks
+-- ("1234"), a custom spell icon's spell ("s1234"), or nil.
 function M:SpellKey(item)
+    if self.iconKey[item] then return self.iconKey[item] end
     local id = Cooldowns.ItemCooldownID(item)
     return id and string.format("%d", id) or nil
 end

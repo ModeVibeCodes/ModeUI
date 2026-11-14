@@ -170,6 +170,42 @@ world.run([==[
     assert(M:DeleteCustomBar(c3) and Point(byKey[102])[2] == holder and byKey[102].alpha == 1, 'deleting gives the spells back')
     assert(addon.db.positions.cooldownManagerCustom3 == nil and not ModeUICooldownCustom3:IsShown() and M.db.custom3 == nil)
 
+    -- Custom spells by ID: ModeUI's own icon on a Cooldown Bar.
+    assert(not M:AddCustomSpell(c1, 'abc') and not M:AddCustomSpell(c1, '950000'), 'not a spell ID; no such spell')
+    local ok, sid = M:AddCustomSpell(c1, ' 9001 ')
+    assert(ok and sid == 9001 and M:Custom(c1).entries[1] == 's9001', 'added as s9001')
+    assert(not M:AddCustomSpell(c1, '9001') and not M:AddCustomSpell(c2, '9001'), 'once per bar; not on a Buff Bar')
+    local own = M.spellIcons[c1].s9001
+    assert(own:IsShown() and Point(own)[2] == M.holders.custom1 and M.placedCount.custom1 == 1, 'its own icon, on the bar')
+    assert(own.Icon.texture == 'icon:9001' and M.dress[own].modeBorder.edge:IsShown() and own.Icon.points[1][4] == 2, 'skinned like the rest')
+    assert(own.Cooldown.durationObject.duration == 'cd:9001', 'cooldown from its duration object')
+    assert(own.Cooldown.countdown.font[2] == 15, 'the cooldown numbers styled')
+    cooling[9001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(own.Icon.desaturated == true, 'gray while cooling')
+    assert(M:SetOption(c1, 'readyGlow', 'mode') and M:SetOption(c1, 'readyMode', 'always') and not (M.glows[own] and M.glows[own].ready:IsShown()))
+    cooling[9001] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(own.Icon.desaturated == false and M.glows[own].ready:IsShown(), 'ready: color and the While Ready glow')
+    assert(M:SetOption(c1, 'readyGlow', 'none'))
+    spellUsable[9001] = { false, true }; FireEvent('SPELL_UPDATE_USABLE')
+    assert(own.Icon.vertexColor[3] == 1 and own.Icon.vertexColor[1] == 0.5, 'short of power: blue tint')
+    spellUsable[9001] = nil; FireEvent('SPELL_UPDATE_USABLE'); assert(own.Icon.vertexColor[1] == 1)
+    FireEvent('SPELL_ACTIVATION_OVERLAY_GLOW_SHOW', 9001)
+    assert(M.glows[own].proc:IsShown(), 'procs light it'); FireEvent('SPELL_ACTIVATION_OVERLAY_GLOW_HIDE', 9001)
+    assert(not M.glows[own].proc:IsShown())
+    -- Charges: the recharge, and the count (secret) straight to the text.
+    spellCharges[9002] = { current = Secret('charges'), max = 2, active = true }
+    assert(M:AddCustomSpell(c1, '9002'))
+    local charged = M.spellIcons[c1].s9002
+    assert(charged.Cooldown.durationObject.duration == 'charge:9002' and issecretvalue(charged.ChargeCount.Current.text), 'recharge and charges')
+    assert(Point(charged)[4] > Point(own)[4], 'in the order added')
+    -- Unknown spells hide; hidden spells wait unseen; removed ones go.
+    knownSpells[9002] = false; FireEvent('SPELLS_CHANGED')
+    assert(not charged:IsShown() and M.placedCount.custom1 == 1, 'a spell you do not know is not shown')
+    knownSpells[9002] = nil; FireEvent('SPELLS_CHANGED'); assert(charged:IsShown())
+    assert(M:SetSpellSwitch(c1, 's9002', 'hide', true) and charged.alpha == 0 and M.placedCount.custom1 == 1)
+    assert(M:RemoveEntry(c1, 's9002') and not charged:IsShown() and M.spellIcons[c1].s9002 == nil, 'Remove from Bar')
+    own.scripts.OnEnter(own); assert(GameTooltip.spell == 9001, 'its tooltip')
+
     -- Visibility.
     assert(M:SetOption('utility', 'visibility', 'combat') and ItemsOf(utility)[1].alpha == 0, 'In Combat')
     testCombat = true; FireEvent('PLAYER_REGEN_DISABLED'); assert(ItemsOf(utility)[1].alpha == 1)
@@ -181,8 +217,8 @@ world.run([==[
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
     assert(window:IsShown() and window.title.text == 'Cooldown Manager' and window.moduleHeader.toggle:IsShown(), 'own window, own switch')
-    assert(window.rows[5]:IsShown() and window.rows[5].label.text == 'Cooldown Bar 1' and window.rows[6].label.text == 'Buff Bar 1', 'custom bars listed')
-    window.rows[6].scripts.OnClick(window.rows[6])
+    assert(window.rows[9]:IsShown() and window.rows[9].label.text == 'Cooldown Bar 1' and window.rows[10].label.text == 'Buff Bar 1', 'custom bars listed')
+    window.rows[10].scripts.OnClick(window.rows[10])
     local page, view = M.page, M.previewView
     assert(page.viewerEditing() == c2 and view.icons[1].key == '301' and view.plus:IsShown(), 'a custom bar: its spells, then +')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
@@ -200,6 +236,12 @@ world.run([==[
     M:SelectBar(c1)
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     assert(picker.buttons[7] and picker.buttons[7]:IsShown() and picker.buttons[8] == nil, 'all seven cooldowns from Essential and Utility')
+    assert(picker.byId:IsShown(), 'Spell ID on a Cooldown Bar')
+    picker.idInput:SetText('9003'); picker.idAdd.scripts.OnClick(picker.idAdd)
+    assert(M:Custom(c1).entries[2] == 's9003' and picker.idResult.text == 'Added Spell 9003.' and picker.idInput:GetText() == '', 'added from the list')
+    picker.idInput:SetText('950000'); picker.idAdd.scripts.OnClick(picker.idAdd)
+    assert(picker.idResult.text == 'No spell has that ID.', 'says why not')
+    assert(view.icons[1].key == 's9001' and view.icons[1].Icon.texture == 'icon:9001', 'custom spells in the preview')
     picker:Hide()
     M:SelectBar('essential')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
@@ -223,6 +265,7 @@ world.run([==[
     assert(M:SetSpellSwitch('essential', '105', 'hide', true))
     addon:SetModuleEnabled('cooldownManager', false)
     assert(ItemsOf(essential)[5].alpha == 1 and addon.ReloadManager:IsPending(), 'full icons; reload offered')
+    assert(not M.spellIcons.custom1.s9001:IsShown(), "ModeUI's own icons hide while off")
     addon:SetModuleEnabled('cooldownManager', true)
     assert(Point(ItemsOf(essential)[1])[2] == holder and #blizzardWrites == 0)
 ]==], "cooldown manager")
@@ -244,6 +287,7 @@ restored.run([==[
     assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 4, 'settings persist')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
+    assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
 ]==], "restore")
 
 -- Version 1: Lines, First Icon and Center Lines; the ready glow switch.
@@ -289,5 +333,7 @@ Refused(function(db) db.essential.grow = "centerV"; db.essential.lineGrowth = "d
 Refused(function(db) db.customBars[1].kind = "aura" end, "custom kind")
 Refused(function(db) db.customBars[2].id = db.customBars[1].id end, "custom id")
 Refused(function(db) db.customBars[1].entries = { "12", "12" } end, "custom entries")
+Refused(function(db) db.customBars[2].entries = { "s9001" } end, "a spell by ID on a Buff Bar")
+Refused(function(db) db.customBars[1].entries = { "x9001" } end, "a bad spell key")
 
 print("cooldown manager: all checks passed")

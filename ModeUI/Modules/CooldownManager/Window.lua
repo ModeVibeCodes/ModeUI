@@ -6,10 +6,12 @@ if not M then return end
 -- Module Settings) and built the first time it opens. ModeUI's Mode look on
 -- the shared settings widgets: a header with the title and Open CDM (Blizzard's
 -- Cooldown Settings), Edit Mode and close; a list of bars on the left
--- (Blizzard's four viewers, then your custom bars and buttons to add more);
--- on the right the page header with the module's on/off switch, and the
--- settings of the bar chosen in the list. Edit Mode hides it and brings it
--- back afterward (addon:RegisterSettingsWindow).
+-- (Blizzard's four viewers, your resource bars, then your custom bars and
+-- buttons to add more); on the right the page header with the module's
+-- on/off switch, and the settings of the bar chosen in the list: the
+-- cooldown page (Settings.lua) or the resource bar page
+-- (ResourceSettings.lua). Edit Mode hides it and brings it back afterward
+-- (addon:RegisterSettingsWindow).
 local WIDTH, HEIGHT, LIST_WIDTH, HEADER_HEIGHT, ROW = 1060, 740, 220, 56, 32
 
 function M:ToggleWindow()
@@ -28,9 +30,38 @@ end
 function M:SelectBar(id)
     if not self:HasBar(id) then return false end
     self.selectedBar = id
+    self.selectedResource = nil
     if self.page and self.page.SetEditing then self.page.SetEditing(id) end
-    if self.window then self:RefreshList() end
+    if self.window then self:ShowSelectedPage(); self:RefreshList() end
     return true
+end
+-- Shows a resource bar's settings.
+function M:SelectResource(id)
+    if not self:IsResource(id) then return false end
+    self.selectedResource = id
+    if self.window then self:ShowSelectedPage(); self:RefreshList() end
+    return true
+end
+
+-- One page shows at a time: the resource bar page while a resource bar is
+-- chosen (built the first time), else the cooldown page.
+function M:ShowSelectedPage()
+    local window = self.window
+    if not window then return end
+    if self:IsResource(self.selectedResource) then
+        if not self.resourcePage then
+            local page = self:CreateResourcePage(window.pageHost)
+            if W.ApplyModeModuleLayout then W.ApplyModeModuleLayout(page, self.id) end
+            page.modeMediaScope = self.id
+            if page.SelectSectionTab then page:SelectSectionTab(1) end
+        end
+        if self.page then self.page:Hide() end
+        self.resourcePage:Show()
+        self.resourcePage.SetEditing(self.selectedResource)
+    else
+        if self.resourcePage then self.resourcePage:Hide() end
+        if self.page then self.page:Show() end
+    end
 end
 
 local function Scale(window)
@@ -96,6 +127,7 @@ function M:CreateWindow()
         return label
     end
     window.blizzardCaption, window.customCaption = Caption(L["Blizzard"]), Caption(L["Custom Bars"])
+    window.resourceCaption = Caption(L["Resource Bars"])
     window.addCooldown = W.Button(list, L["+ Cooldown Bar"], LIST_WIDTH - 24, 28, "secondary")
     window.addCooldown:SetScript("OnClick", function() local id = M:AddCustomBar("cooldown"); if id then M:SelectBar(id) end end)
     window.addBuff = W.Button(list, L["+ Buff Bar"], LIST_WIDTH - 24, 28, "secondary")
@@ -126,7 +158,7 @@ function M:CreateWindow()
         if not M:HasBar(M.selectedBar or "") then M.selectedBar = "essential" end
         M.page.SetEditing(M.selectedBar)
         if M.page.SelectSectionTab then M.page:SelectSectionTab(1) end
-        M.page:Show(); M:RefreshWindow()
+        M.page:Show(); M:ShowSelectedPage(); M:RefreshWindow()
         addon.Media:ScheduleTextRedraw()
     end)
     window:SetScript("OnHide", function()
@@ -144,13 +176,18 @@ function M:CreateWindow()
     addon:RegisterSettingsWindow(window)
 end
 
--- One row per bar: Blizzard's viewers, then the custom bars, then the add
--- buttons (gone once there are MAX_CUSTOM). Off bars say so.
+-- One row per bar: Blizzard's viewers, your resource bars, then the custom
+-- bars, then the add buttons (gone once there are MAX_CUSTOM). Off bars say
+-- so. A long list packs its rows closer to fit the window.
 function M:RefreshList()
     local window = self.window
     if not window then return end
     local list, rows, y = window.list, window.rows, 0
-    local function Row(index, id)
+    local room = #self.db.customBars < self.MAX_CUSTOM
+    local count = #self.viewers + #self.resources + #self.db.customBars
+    local fixed = 3 * 24 + 2 * 12 + (room and 4 + 2 * 34 or 0)
+    local step = math.max(24, math.min(ROW, math.floor((HEIGHT - HEADER_HEIGHT - 22 - fixed) / count)))
+    local function Row(index, id, resource)
         local row = rows[index]
         if not row then
             row = W.Button(list, "", LIST_WIDTH - 24, 30, "tab")
@@ -158,15 +195,20 @@ function M:RefreshList()
             row.label:SetJustifyH("LEFT"); row.label:SetWordWrap(false)
             row.status = W.Label(row, "", nil, 0, 0, 34, T.muted)
             row.status:ClearAllPoints(); row.status:SetPoint("RIGHT", -10, 0); row.status:SetJustifyH("RIGHT")
-            row:SetScript("OnClick", function() M:SelectBar(row.barId) end)
+            row:SetScript("OnClick", function()
+                if row.resource then M:SelectResource(row.barId) else M:SelectBar(row.barId) end
+            end)
             rows[index] = row
         end
-        row.barId = id
-        row.label:SetText(self:Label(id))
-        row.status:SetText(self.db[id].show and "" or L["Off"])
-        row:SetSelected(id == self.selectedBar)
+        row.barId, row.resource = id, resource
+        local style = resource and self.db.resources[id] or self.db[id]
+        row.label:SetText(resource and self:ResourceLabel(id) or self:Label(id))
+        row.status:SetText(style.show and "" or L["Off"])
+        if resource then row:SetSelected(id == self.selectedResource)
+        else row:SetSelected(not self:IsResource(self.selectedResource) and id == self.selectedBar) end
+        row:SetHeight(step - 2)
         row:ClearAllPoints(); row:SetPoint("TOPLEFT", 0, -y); row:Show()
-        y = y + ROW
+        y = y + step
     end
     local function Place(region, height)
         region:ClearAllPoints(); region:SetPoint("TOPLEFT", 0, -y); region:Show()
@@ -176,10 +218,12 @@ function M:RefreshList()
     Place(window.blizzardCaption, 24)
     for _, viewer in ipairs(self.viewers) do index = index + 1; Row(index, viewer) end
     y = y + 12
+    Place(window.resourceCaption, 24)
+    for _, id in ipairs(self.resources) do index = index + 1; Row(index, id, true) end
+    y = y + 12
     Place(window.customCaption, 24)
     for _, bar in ipairs(self.db.customBars) do index = index + 1; Row(index, bar.id) end
     for i = index + 1, #rows do rows[i]:Hide() end
-    local room = #self.db.customBars < self.MAX_CUSTOM
     window.addCooldown:SetShown(room); window.addBuff:SetShown(room)
     if room then
         y = y + 4
@@ -197,4 +241,5 @@ function M:RefreshWindow()
     window.cdmButton:SetEnabled(self:CanOpenCooldownSettings())
     self:RefreshList()
     if self.page and self.page:IsShown() then self.page:Refresh(); self.page:Layout() end
+    if self.resourcePage and self.resourcePage:IsShown() then self.resourcePage:Refresh(); self.resourcePage:Layout() end
 end

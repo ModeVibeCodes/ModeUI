@@ -18,7 +18,8 @@ end
 local MAX_SPELLS = 200
 
 local function Whole(value, range) return Number(value, range[1], range[2]) and value == math.floor(value) end
-local function Key(value) return type(value) == "string" and value:match("^%d+$") ~= nil and #value <= 12 end
+-- A spell's key: a cooldown ID ("1234"), or a custom spell's ID ("s1234").
+local function Key(value) return type(value) == "string" and value:match("^s?%d+$") ~= nil and #value <= 12 end
 
 -- Per-spell switches: a cooldown ID ("1234") to { hide = true, proc = false, ... },
 -- each kept only while it differs from the bar.
@@ -73,6 +74,8 @@ local function ValidCustom(db)
         local seen = {}
         for i, key in pairs(bar.entries) do
             assert(type(i) == "number" and i >= 1 and i <= #bar.entries and Key(key) and not seen[key], "Invalid cooldown manager custom bar spell: " .. bar.id)
+            -- Spells by ID go on Cooldown Bars only.
+            assert(bar.kind == "cooldown" or key:sub(1, 1) ~= "s", "Invalid cooldown manager custom spell: " .. bar.id)
             seen[key] = true
         end
         if db[bar.id] == nil then db[bar.id] = Copy(M.customDefaults[bar.kind]) end
@@ -130,4 +133,7 @@ function M.Initialize(db)
         Validate(db[viewer], viewer, M.styleDefaults[viewer], M.viewerSpecs[viewer].bar)
     end
     ValidCustom(db)
+    -- Resource Bars (ResourceInit.lua): added without a version step; a
+    -- profile saved before them takes their defaults.
+    M.ValidateResources(db)
 end

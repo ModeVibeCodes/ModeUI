@@ -131,24 +131,30 @@ function M:FlashReady(item, seconds)
     end)
 end
 
--- Checks every cooldown icon: a real cooldown ending flashes, the gray and
--- the While Ready glow follow whether one runs.
+-- Checks every cooldown icon (Blizzard's, and custom spells' own): a real
+-- cooldown ending flashes, the gray and the While Ready glow follow whether
+-- one runs.
 function M:UpdateCooldowns()
     if not self.active then return end
+    local items = {}
     for _, viewer in ipairs({ "essential", "utility" }) do
-        for _, item in ipairs(self:Items(viewer)) do
-            local owner = self:Owner(item)
-            local style = self.db[owner]
-            local id = Cooldowns.ItemCooldownID(item)
-            local cooling = id and Cooldowns.Cooling(Cooldowns.SpellID(id))
-            local state = self.cooling[item]
-            local ended = state and state.id == id and state.on == true and cooling == false
-            state = state or {}
-            state.id, state.on = id, cooling
-            self.cooling[item] = state
+        for _, item in ipairs(self:Items(viewer)) do items[#items + 1] = item end
+    end
+    for _, icons in pairs(self.spellIcons) do for _, icon in pairs(icons) do items[#items + 1] = icon end end
+    for _, item in ipairs(items) do
+        local owner = self:Owner(item)
+        local style = owner and self.db[owner]
+        local id = style and self:SpellKey(item)
+        local cooling = id and Cooldowns.Cooling(self:CooldownSpell(id))
+        local state = self.cooling[item]
+        local ended = state and state.id == id and state.on == true and cooling == false
+        state = state or {}
+        state.id, state.on = id, cooling
+        self.cooling[item] = state
+        if style then
             if ended and style.readyGlow ~= "none" and style.readyMode == "flash" then self:FlashReady(item, style.readyDuration)
             else self:ApplyGlows(item) end
-            self:StyleDesaturation(item, style)
+            if self:IsOwnIcon(item) then self:UpdateSpellIcon(item) else self:StyleDesaturation(item, style) end
         end
     end
 end
@@ -165,13 +171,14 @@ function M:ApplySpell(viewer, item)
         local tooltips = not frame or frame.tooltipsShown ~= false
         item:SetMouseMotionEnabled(alpha > 0 and tooltips)
     end
-    if self.sourceOf[item] then self:ApplyGlows(item) end
+    if self:IsLive(item) then self:ApplyGlows(item) end
 end
 
 -- After a settings change: every glow in step with the settings; switched
 -- off, no ModeUI glows and Blizzard's alerts back.
 function M:RefreshGlows()
     for item in pairs(self.sourceOf) do self:ApplyGlows(item) end
+    for item in pairs(self.iconKey) do self:ApplyGlows(item) end
     if self.active then return end
     for item, set in pairs(self.glows) do
         for _, kind in ipairs(ORDER) do if set[kind] then set[kind].wanted = false end end

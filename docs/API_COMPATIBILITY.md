@@ -1014,6 +1014,82 @@ local mainline 12.1.5 copy and the Forever files from the first pass.
   masks are ModeUI's own regions and are not applied to Blizzard's
   textures. No new client API.
 
+### Cooldown Manager, custom spells by ID — November 13, 2026
+
+Checked against the `forever` branch's `SpellDocumentation.lua`,
+`FrameAPICooldownDocumentation.lua`, `LuaDurationObjectAPIDocumentation.lua`,
+`SpellActivationOverlayDocumentation.lua` and `SpellBookDocumentation.lua`
+(same as local mainline for these), and the events Forever's own
+Cooldown Manager registers.
+
+- **Cooldowns.** `C_Spell.GetSpellCooldownDuration(spell, ignoreGCD)` and
+  `GetSpellChargeDuration(spell)` return a `LuaDurationObject`
+  (`SecretArguments = "AllowedWhenTainted"`). It goes straight to
+  `Cooldown:SetCooldownFromDurationObject(duration)`, never read. The setter
+  is documented `IsProtectedFunction`, like every Cooldown setter including
+  `SetCooldown`, which addons call on cooldowns they create; ModeUI only
+  calls it on its own icons' Cooldown frames, through `pcall`.
+- **Charges.** `C_Spell.GetSpellCharges` is `SecretWhenCooldownsRestricted`;
+  `maxCharges` and `isActive` are `NeverSecret`, `currentCharges` goes only to
+  `FontString:SetText`.
+- **State.** `C_Spell.GetSpellCooldown` (`isActive`, `isOnGCD` never secret),
+  `C_Spell.IsSpellUsable`, `C_Spell.DoesSpellExist`, `C_Spell.GetOverrideSpell`,
+  `C_Spell.GetSpellTexture`, `C_Spell.GetSpellName` and
+  `C_SpellBook.IsSpellKnown` (`AllowedWhenUntainted` arguments: ModeUI passes
+  plain spell IDs). A secret or failed answer counts as unknown.
+- **Events.** `SPELL_UPDATE_COOLDOWN`, `SPELL_UPDATE_USES`, `SPELL_UPDATE_ICON`,
+  `SPELL_UPDATE_USABLE` and `SPELL_ACTIVATION_OVERLAY_GLOW_SHOW`/`HIDE` (payload
+  `spellID`, used only when public), all registered by Forever's own
+  `Blizzard_CooldownViewer`; `SPELLS_CHANGED` (`SpellBookDocumentation`).
+- **Tooltip.** `GameTooltip:SetSpellByID`.
+- **Unverified natively:** all of it, in particular `SetCooldownFromDurationObject`
+  from addon code on Forever.
+### Cooldown Manager, resource bars — November 13, 2026
+
+Sources: the local `WoWUI-live` 12.1.5 API documentation
+(`UnitDocumentation.lua`, `SimpleStatusBarAPIDocumentation.lua`,
+`SimpleStatusBarConstantsDocumentation.lua`) and Forever's own
+`Blizzard_UnitFrame` on the `forever` branch of Gethe/wow-ui-source. Also
+compared with how Sensei Class Resource Bar, BetterCooldownManager, Ayije
+CDM and oUF draw resource bars (their approach, not their code).
+
+- **Values.** `UnitPower`, `UnitPowerPercent`, `UnitPartialPower` and
+  `GetComboPoints` are `SecretWhenUnitPowerRestricted`; `UnitPowerMax` is
+  `SecretWhenUnitPowerMaxRestricted`; `UnitHealth` is secret on Forever.
+  ModeUI passes them only to `StatusBar:SetMinMaxValues`/`SetValue`
+  (`AllowedWhenTainted`), `AbbreviateNumbers` and `FontString:SetText`/
+  `SetFormattedText`. Percent text comes from `UnitPowerPercent(unit,
+  powerType, false, CurveConstants.ScaleTo100)` and `UnitHealthPercent`.
+  Nothing compares or does arithmetic on a value; there is no Hide When Full
+  for that reason.
+- **Smooth.** `StatusBar:SetValue(value, interpolation)` takes
+  `Enum.StatusBarInterpolation.ExponentialEaseOut` (`NeverSecret`). A client
+  without the enum gets the plain `SetValue`.
+- **Combo points.** One `StatusBar` per point spanning `i - 1` to `i`, fed
+  `SetValue(count)` (`Kit.FillResourcePoints`), so a secret count lights the
+  right boxes without being compared. `Domain.ClassResource` reads
+  `GetComboPoints("player", "target")` as Forever's Camelot
+  `TargetBoundComboPointBar` does, and `COMBO_TARGET_CHANGED` (registered
+  through `pcall`) moves them to a new target.
+- **Alternate Mana.** Forever loads the mainline `AlternatePowerBar`, whose
+  `ALT_POWER_BAR_PAIR_DISPLAY_INFO` pairs a Druid's mana only with
+  `Enum.PowerType.LunarPower`. Camelot Druids show Rage in Bear Form and
+  Energy in Cat Form, so the game shows no mana bar then. ModeUI reads
+  `UnitPower("player", Enum.PowerType.Mana)` while the class is DRUID and
+  `UnitPowerType` isn't `MANA` (`Domain.Power.AlternateManaActive`).
+- **Events.** `UNIT_HEALTH`, `UNIT_MAXHEALTH`, `UNIT_POWER_FREQUENT`,
+  `UNIT_MAXPOWER`, `UNIT_DISPLAYPOWER` (unit-filtered to the player on the
+  module's own frame), `PLAYER_TARGET_CHANGED`, `PLAYER_ENTERING_WORLD`;
+  `UPDATE_SHAPESHIFT_FORM` and `COMBO_TARGET_CHANGED` through `pcall`.
+- **Frames.** Plain addon frames, never secure: they update, show, hide and
+  fade in combat. Placement goes through ModeUI's Position Manager (moves
+  only outside combat), and Match Width reads the anchor's width with
+  `PositionManager:GetAnchorWidth` outside combat.
+- **Unverified natively:** whether Forever marks player power or combo
+  points secret in combat (both paths are handled), and whether
+  `UPDATE_SHAPESHIFT_FORM` fires on Forever (`UNIT_DISPLAYPOWER` covers form
+  changes either way).
+
 ## Party frames — November 13, 2026
 
 Checked against the Forever branch of Gethe/wow-ui-source (1.60.1, build 70938,

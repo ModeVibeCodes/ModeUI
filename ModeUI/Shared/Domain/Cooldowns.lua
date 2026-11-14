@@ -112,3 +112,69 @@ function CD.Items(viewer)
     table.sort(list, function(a, b) return Index(a) < Index(b) end)
     return list
 end
+
+-- Spells by ID (custom spells on ModeUI's own icons) -------------------------
+-- Arguments are always public spell IDs. Cooldown and charge times come back
+-- as duration objects, which go straight to Cooldown:SetCooldownFromDurationObject;
+-- charge counts may be secret and only go to FontString:SetText.
+
+-- Whether a spell ID names a spell at all (learned or not).
+function CD.SpellExists(spellID)
+    local api = C_Spell and C_Spell.DoesSpellExist
+    if not Number(spellID, 1, 99999999) then return false end
+    local ok, exists = Call(api, spellID)
+    return ok and Public(exists) and exists == true
+end
+
+-- The spell a talent or form puts in its place now, else itself.
+function CD.Override(spellID)
+    local api = C_Spell and C_Spell.GetOverrideSpell
+    local ok, override = Call(api, spellID)
+    if ok and Number(override, 1, 99999999) then return override end
+    return spellID
+end
+
+-- Whether you know the spell (or what overrides it): true, false, or true
+-- when the client can't say.
+function CD.Known(spellID)
+    local api = C_SpellBook and C_SpellBook.IsSpellKnown
+    if type(api) ~= "function" then return true end
+    for _, id in ipairs({ spellID, CD.Override(spellID) }) do
+        local ok, known = Call(api, id)
+        if not ok or not Public(known) or known == true then return true end
+    end
+    return false
+end
+
+-- The spell's cooldown (global cooldown left out) and recharge as duration
+-- objects, or nil.
+function CD.CooldownDuration(spellID)
+    local api = C_Spell and C_Spell.GetSpellCooldownDuration
+    local ok, duration = Call(api, spellID, true)
+    if ok and duration ~= nil then return duration end
+end
+function CD.ChargeDuration(spellID)
+    local api = C_Spell and C_Spell.GetSpellChargeDuration
+    local ok, duration = Call(api, spellID)
+    if ok and duration ~= nil then return duration end
+end
+
+-- A charge spell's charges: current (may be secret), max and whether one is
+-- recharging (both never secret); nil for a spell without charges.
+function CD.Charges(spellID)
+    local api = C_Spell and C_Spell.GetSpellCharges
+    local ok, info = Call(api, spellID)
+    if not ok or not Public(info) or type(info) ~= "table" then return nil end
+    local max, recharging = info.maxCharges, info.isActive
+    if not Number(max) or max <= 1 then return nil end
+    return info.currentCharges, max, Public(recharging) and recharging == true
+end
+
+-- Whether the spell can be cast now, and whether only its power is short;
+-- nil when the game won't say.
+function CD.Usable(spellID)
+    local api = C_Spell and C_Spell.IsSpellUsable
+    local ok, usable, noPower = Call(api, spellID)
+    if not ok or not Public(usable) or not Public(noPower) then return nil end
+    return usable == true, noPower == true
+end

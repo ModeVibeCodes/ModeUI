@@ -48,7 +48,7 @@ function M:DressItem(viewer, item, g)
     local style = self.db[viewer]
     g = g or self.Geometry(style, 1, self.PixelSize(item))
     -- Items Blizzard made before ModeUI was switched on get their hooks now.
-    self:HookItem(self.sourceOf[item] or viewer, item)
+    if not self:IsOwnIcon(item) then self:HookItem(self.sourceOf[item] or viewer, item) end
     local state = self:Dress(item)
     -- Same settings, viewer and size since the last skin: only the alpha
     -- and glows are brought up to date.
@@ -148,7 +148,7 @@ function M:StyleDesaturation(item, style)
     if not icon or not icon.SetDesaturated or self:IsBuff(self.sourceOf[item]) then return end
     if not style.desaturate then icon:SetDesaturated(false); return end
     local key = self:SpellKey(item)
-    local cooling = key and Cooldowns.Cooling(Cooldowns.SpellID(tonumber(key)))
+    local cooling = key and Cooldowns.Cooling(self:CooldownSpell(key))
     if cooling ~= nil then icon:SetDesaturated(cooling and not self.AuraUp(item)) end
 end
 
@@ -167,7 +167,7 @@ function M:StyleCooldown(item)
     end
     if cooldown.SetDrawEdge then cooldown:SetDrawEdge(style.showEdge) end
     if cooldown.SetDrawBling then cooldown:SetDrawBling(style.showBling) end
-    if self.sourceOf[item] then self:ApplyGlows(item) end
+    if self:IsLive(item) then self:ApplyGlows(item) end
 end
 
 -- A ModeUI-made icon with the parts the skin and text code look for, for the
