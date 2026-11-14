@@ -133,13 +133,20 @@ function M:SpellKey(item)
     return id and string.format("%d", id) or nil
 end
 
--- A spell's own switch ("hide", "proc", "active", "ready", "buff") on a bar:
--- hide is on while stored; the glows are on unless stored off.
+-- A spell's own switch ("hide", or a glow: "proc", "active", "ready",
+-- "buff") on a bar: on while stored (a glow's look is what's stored).
 function M:SpellSwitch(id, key, kind)
     local style = self.db[id]
     local entry = key and style and style.spells[key]
     if kind == "hide" then return entry ~= nil and entry.hide == true end
-    return not (entry and entry[kind] == false)
+    return entry ~= nil and type(entry[kind]) == "table"
+end
+-- A spell's glow look while that glow is on, else nil.
+function M:SpellGlow(id, key, kind)
+    local style = self.db[id]
+    local entry = key and style and style.spells[key]
+    local look = entry and entry[kind]
+    if type(look) == "table" then return look end
 end
 
 -- Whether the game's Cooldown Manager can show anything now, and why not.

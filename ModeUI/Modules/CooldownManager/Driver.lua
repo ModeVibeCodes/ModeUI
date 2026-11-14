@@ -189,10 +189,35 @@ function M:SetSpellSwitch(viewer, key, kind, on)
     if not self:Defaults(viewer) or self.spellKinds[kind] == nil or type(key) ~= "string" then return false end
     local spells = Copy(self.db[viewer].spells)
     local entry = spells[key] or {}
-    local stored = self.spellKinds[kind]
-    -- hide stores true while on; the glows store false while off.
-    if (kind == "hide") == (on == true) then entry[kind] = stored else entry[kind] = nil end
+    -- hide stores true while on; a glow switched on starts from the bar's
+    -- look for it (Glows tab) and keeps its own look from then on.
+    if not on then entry[kind] = nil
+    elseif kind == "hide" then entry.hide = true
+    elseif type(entry[kind]) ~= "table" then entry[kind] = self:GlowDefaults(viewer, kind) end
     spells[key] = next(entry) and entry or nil
+    return self:SetOption(viewer, "spells", spells)
+end
+
+-- The look a bar gives a glow when a spell switches it on.
+function M:GlowDefaults(viewer, kind)
+    local style = self.db[viewer]
+    local look = { style = style[kind .. "Glow"], color = Copy(style[kind .. "Color"]), pulse = style[kind .. "Pulse"],
+        lines = style.glowLines, thickness = style.glowThickness }
+    if kind == "ready" then look.mode, look.duration = style.readyMode, style.readyDuration end
+    return look
+end
+
+-- Changes one part of a spell's glow look (style, color, pulse, lines,
+-- thickness; mode and duration for the off-cooldown glow), switching the
+-- glow on first if it was off. Checked by Initialize like every setting.
+function M:SetSpellGlow(viewer, key, kind, field, value)
+    if not self:Defaults(viewer) or self.spellKinds[kind] ~= "glow" or type(key) ~= "string" then return false end
+    local spells = Copy(self.db[viewer].spells)
+    local entry = spells[key] or {}
+    local look = type(entry[kind]) == "table" and entry[kind] or self:GlowDefaults(viewer, kind)
+    look[field] = Copy(value)
+    entry[kind] = look
+    spells[key] = entry
     return self:SetOption(viewer, "spells", spells)
 end
 

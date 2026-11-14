@@ -21,15 +21,30 @@ local function Whole(value, range) return Number(value, range[1], range[2]) and 
 -- A spell's key: a cooldown ID ("1234"), or a custom spell's ID ("s1234").
 local function Key(value) return type(value) == "string" and value:match("^s?%d+$") ~= nil and #value <= 12 end
 
--- Per-spell switches: a cooldown ID ("1234") to { hide = true, proc = false, ... },
--- each kept only while it differs from the bar.
+-- A spell's glow while it's on: its look (the off-cooldown glow also when).
+local STYLES = {}
+for _, item in ipairs(M.glowStyles) do STYLES[item.id] = true end
+local function ValidGlow(glow, kind, id)
+    assert(type(glow) == "table" and STYLES[glow.style] and type(glow.pulse) == "boolean", "Invalid cooldown manager spell glow: " .. id)
+    assert(type(glow.color) == "table", "Invalid cooldown manager spell glow color: " .. id)
+    for i = 1, 3 do assert(Number(glow.color[i], 0, 1), "Invalid cooldown manager spell glow color: " .. id) end
+    for _, key in ipairs({ "lines", "thickness" }) do assert(Whole(glow[key], M.glowRanges[key]), "Invalid cooldown manager spell glow: " .. id) end
+    if kind == "ready" then
+        assert((glow.mode == "flash" or glow.mode == "always") and Whole(glow.duration, M.glowRanges.duration), "Invalid cooldown manager spell glow: " .. id)
+    end
+end
+
+-- Per-spell settings: a key ("1234", "s1234") to { hide = true } and the
+-- glows that are on; an empty entry isn't kept.
 local function ValidSpells(spells, id)
     local count = 0
     for key, entry in pairs(spells) do
         count = count + 1
         assert(Key(key) and type(entry) == "table" and next(entry) ~= nil, "Invalid cooldown manager spell: " .. id)
         for kind, value in pairs(entry) do
-            assert(M.spellKinds[kind] ~= nil and value == M.spellKinds[kind], "Invalid cooldown manager spell switch: " .. id)
+            local want = M.spellKinds[kind]
+            assert(want ~= nil, "Invalid cooldown manager spell switch: " .. id)
+            if want == "glow" then ValidGlow(value, kind, id) else assert(value == want, "Invalid cooldown manager spell switch: " .. id) end
         end
     end
     assert(count <= MAX_SPELLS, "Too many cooldown manager spells: " .. id)
@@ -136,6 +151,22 @@ function M.Initialize(db)
             if type(bar) == "table" and M.customKinds[bar.kind] and type(bar.id) == "string" then
                 Resize(db[bar.id], M.oldSizes[bar.kind], M.customDefaults[bar.kind])
             end
+        end
+        -- Glows start off on every spell now: the old per-spell "off" marks
+        -- go; a bar's None (no longer a look) becomes Mode Glow.
+        local function Glows(style)
+            if type(style) ~= "table" then return end
+            for _, kind in ipairs(M.glowKinds) do if style[kind .. "Glow"] == "none" then style[kind .. "Glow"] = "mode" end end
+            for key, entry in pairs(type(style.spells) == "table" and style.spells or {}) do
+                if type(entry) == "table" then
+                    for _, kind in ipairs(M.glowKinds) do if entry[kind] == false then entry[kind] = nil end end
+                    if next(entry) == nil then style.spells[key] = nil end
+                end
+            end
+        end
+        for _, viewer in ipairs(M.viewers) do Glows(db[viewer]) end
+        for _, bar in ipairs(type(db.customBars) == "table" and db.customBars or {}) do
+            if type(bar) == "table" and type(bar.id) == "string" then Glows(db[bar.id]) end
         end
         db.movePlaces = true
         db.version = 4

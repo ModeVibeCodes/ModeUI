@@ -149,7 +149,27 @@ function M:StyleDesaturation(item, style)
     if not style.desaturate then icon:SetDesaturated(false); return end
     local key = self:SpellKey(item)
     local cooling = key and Cooldowns.Cooling(self:CooldownSpell(key))
-    if cooling ~= nil then icon:SetDesaturated(cooling and not self.AuraUp(item)) end
+    -- With Show Aura Time on, the icon keeps Blizzard's full color while the
+    -- effect's time shows; off, it's gray for as long as the spell cools.
+    if cooling ~= nil then icon:SetDesaturated(cooling and not (style.auraSwipe and self.AuraUp(item))) end
+end
+
+-- Show Aura Time off: while the spell's effect is up, the icon shows the
+-- spell's cooldown (or recharge) instead of Blizzard's gold effect swipe.
+-- The time comes as a duration object straight to the Cooldown, and the
+-- aura display time Blizzard switched on goes off again; Blizzard puts its
+-- own back on its next refresh, and this runs after each one.
+function M:ShowSpellCooldown(item)
+    local cooldown, key = item.Cooldown, self:SpellKey(item)
+    local spell = key and self:CooldownSpell(key)
+    if not spell or not cooldown.SetCooldownFromDurationObject then return end
+    local _, max, recharging = Cooldowns.Charges(spell)
+    local duration
+    if max and recharging and Cooldowns.Cooling(spell) ~= true then duration = Cooldowns.ChargeDuration(spell)
+    else duration = Cooldowns.CooldownDuration(spell) end
+    if not duration then return end
+    if cooldown.SetUseAuraDisplayTime then pcall(cooldown.SetUseAuraDisplayTime, cooldown, false) end
+    pcall(cooldown.SetCooldownFromDurationObject, cooldown, duration)
 end
 
 -- The swipe, edge, bling and gray, put back after each Blizzard refresh,
@@ -160,8 +180,10 @@ function M:StyleCooldown(item)
     local style = state and self.db[state.viewer]
     local cooldown = item.Cooldown
     if not style or not cooldown or not cooldown.SetSwipeColor then return end
+    local aura = self.AuraUp(item) and not self:IsBuff(self.sourceOf[item])
+    if aura and not style.auraSwipe then self:ShowSpellCooldown(item) end
     self:StyleDesaturation(item, style)
-    if not self.AuraUp(item) then
+    if not (aura and style.auraSwipe) then
         local c = style.swipeColor
         cooldown:SetSwipeColor(c[1], c[2], c[3], style.swipeOpacity / 100)
     end

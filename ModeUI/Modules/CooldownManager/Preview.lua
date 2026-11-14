@@ -142,20 +142,15 @@ local function Fill(sample, entry, index, bar, demo, phase)
     end
 end
 
--- The first glow that's on for the spell whose menu is open, as it would
--- show on screen (Blizzard's proc animation shows as Mode Glow here).
+-- On the spell whose menu is open: the glow being set up in its popout,
+-- else the first glow that's on, as it would show on screen.
 local function PreviewGlow(view, sample, id, style)
-    local chosen = view.menuKey ~= nil and sample.key == view.menuKey
-    local shown
-    for _, kind in ipairs(M:Glows(id)) do
-        if not shown and chosen and style[kind .. "Glow"] ~= "none" and M:SpellSwitch(id, sample.key, kind) then shown = kind end
+    local look
+    if view.menuKey ~= nil and sample.key == view.menuKey then
+        local kinds = view.glowKind and { view.glowKind } or M:Glows(id)
+        for _, kind in ipairs(kinds) do look = look or M:SpellGlow(id, sample.key, kind) end
     end
-    local look = style
-    if shown then
-        local glow = style[shown .. "Glow"]
-        look = { procGlow = glow == "blizzard" and "mode" or glow, procColor = style[shown .. "Color"], procPulse = style[shown .. "Pulse"] }
-    end
-    M:WantGlow(sample, "proc", shown ~= nil, look)
+    M:WantGlow(sample, "proc", look)
     M:ResolveGlows(sample)
 end
 

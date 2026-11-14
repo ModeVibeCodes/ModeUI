@@ -204,3 +204,5 @@
         for item in viewer.itemFramePool:EnumerateActive() do list[#list + 1] = item end
         return list
     end
+    -- Blizzard's Cooldown frame: whether it shows an aura's time (12.x).
+    function methods:SetUseAuraDisplayTime(on) self.auraTime = on end

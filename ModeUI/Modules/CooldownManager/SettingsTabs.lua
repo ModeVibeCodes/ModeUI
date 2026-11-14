@@ -42,40 +42,55 @@ function M:BuildTextTab(ui)
     end)
 end
 
--- Glows: proc, active and off-cooldown glows on cooldown icons, the buff
--- glow on buff icons. Each has a style, a color and a pulse.
+-- Glow Defaults: every glow starts off on every spell; a spell's menu in
+-- the preview switches one on and its popout sets its own look. These are
+-- the looks a glow starts with when it's switched on.
 function M:BuildGlowTab(ui)
     local page, db = ui.page, ui.db
+    local STYLE_WIDTHS = { mode = 92, border = 72, pixel = 64, blizzard = 76, gcd = 56 }
+    local styles = {}
+    for _, item in ipairs(M.glowStyles) do styles[#styles + 1] = { id = item.id, label = item.label } end
     local function GlowGroup(kind, note, extra)
         page:Group(L[M.glowLabels[kind]])
-        page[kind .. "Pills"] = ui.Pills("Style", M.choices[kind .. "Glow"], function() return db()[kind .. "Glow"] end, ui.Set(kind .. "Glow"), 96)
+        local choices = {}
+        for _, item in ipairs(styles) do choices[#choices + 1] = { label = L[item.label], value = item.id, width = STYLE_WIDTHS[item.id] } end
+        local buttons, refresh = W.Exclusive(page:Row(L["Style"], 48), choices, function() return db()[kind .. "Glow"] end, ui.Set(kind .. "Glow"))
+        ui.Refresh(refresh); page[kind .. "Pills"] = buttons
         if kind == "proc" or kind == "buff" then ui.Mark(kind == "proc" and "glows" or "buffGlows") end
-        if extra then extra() end
+        local color = ui.Columns({ "Glow Color" })
+        ui.Color(color[1], kind .. "Color")
         ui.When(function() local style = db()[kind .. "Glow"]; return style == "mode" or style == "border" end, function()
-            local color = ui.Columns({ "Glow Color" })
-            ui.Color(color[1], kind .. "Color")
             page[kind .. "Toggles"] = ui.Toggles({ { "Pulse", kind .. "Pulse" } })
         end)
+        if extra then extra() end
         ui.Note(note, 40)
     end
     ui.Tab("Glows", function()
         ui.When(ui.Bars, function() ui.Note("Tracked Bars have no glows; Tracked Buffs and your own bars do.", 32) end)
+        ui.When(ui.Icons, function()
+            ui.Note("Glows start off on every spell. Click a spell in the preview to switch its glows on; each one's > sets its own look there. A glow switched on starts with the look below.", 48)
+        end)
         ui.When(function() return ui.Icons() and ui.Cooldowns() end, function()
-            GlowGroup("proc", "A proc is the game lighting up a spell you should use now. Blizzard keeps the game's own animation; None shows nothing.")
-            GlowGroup("active", "Lights an icon while its spell's effect is up (the time Blizzard shows with its gold swipe).")
+            GlowGroup("proc", "A proc is the game lighting up a spell you should use now (Blizzard's own animation hides while ModeUI is on).")
+            GlowGroup("active", "While the spell's effect is up.")
             GlowGroup("ready", "Flash lights an icon for Glow Time when a cooldown longer than the global cooldown ends; While Ready keeps it lit for as long as the spell is ready.", function()
-                ui.When(function() return db().readyGlow ~= "none" end, function()
-                    page.readyModePills = ui.Pills("When", M.choices.readyMode, function() return db().readyMode end, ui.Set("readyMode"), 110)
-                    ui.When(function() return db().readyMode == "flash" end, function()
-                        local time = ui.Columns({ "Glow Time" })
-                        page.readySlider = ui.Slider(time[1], "readyDuration", "s")
-                    end)
+                page.readyModePills = ui.Pills("When", M.choices.readyMode, function() return db().readyMode end, ui.Set("readyMode"), 110)
+                ui.When(function() return db().readyMode == "flash" end, function()
+                    local time = ui.Columns({ "Glow Time" })
+                    page.readySlider = ui.Slider(time[1], "readyDuration", "s")
                 end)
             end)
-            ui.Note("One glow shows at a time: proc, then active, then off cooldown. Click a spell in the preview to switch its glows off.", 32)
+            ui.Note("One glow shows at a time: proc, then active, then off cooldown.", 32)
         end)
         ui.When(function() return ui.Icons() and not ui.Cooldowns() end, function()
-            GlowGroup("buff", "Lights a tracked buff's icon while the buff is up. Click a buff in the preview to switch it off for that buff.")
+            GlowGroup("buff", "Lights a tracked buff's icon while the buff is up.")
+        end)
+        ui.When(ui.Icons, function()
+            page:Group(L["Pixel Glow"])
+            local pixel = ui.Columns({ "Lines", "Thickness" })
+            page.glowLinesSlider = ui.Slider(pixel[1], "glowLines")
+            page.glowThicknessSlider = ui.Slider(pixel[2], "glowThickness", "px")
+            ui.Note("Pixel draws lines that march around the icon; GCD and Blizzard are the game's own animated art, in the glow's color.", 40)
         end)
     end)
 end

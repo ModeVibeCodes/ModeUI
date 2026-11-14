@@ -31,7 +31,8 @@ addon:RegisterModule("cooldownManager", M)
 -- the cooldown bars, November 13, 2026).
 -- Version 4 (owner, November 13, 2026): icons 8px wider than tall by
 -- default (42 by 34; 36 by 28 on the smaller bars), and anchored bars sit 1
--- physical pixel apart (gapPixels) instead of 4.
+-- physical pixel apart (gapPixels) instead of 4; glows start off on every
+-- spell (each switched on in its menu, with its own look).
 M.VERSION = 4
 M.SLASH = "/mcdm"
 local P = Kit.palette
@@ -132,9 +133,15 @@ local function Style(size, perLine, lineGrowth, small)
         desaturate = true, swipeColor = Copy(M.SWIPE_COLOR), swipeOpacity = 70, showEdge = false, showBling = true, showFlash = true,
         rangeTint = true, debuffBorder = false,
         font = "game", fontMedia = "Expressway", outline = true, shadow = true, slug = true,
-        procGlow = "mode", activeGlow = "none", readyGlow = "none", buffGlow = "none",
-        procPulse = true, activePulse = false, readyPulse = true, buffPulse = false,
-        readyMode = "flash", readyDuration = 2,
+        -- Glows start off on every spell (owner, November 13, 2026); a spell's
+        -- menu switches one on, starting from these looks.
+        procGlow = "blizzard", activeGlow = "border", readyGlow = "pixel", buffGlow = "mode",
+        procPulse = false, activePulse = false, readyPulse = true, buffPulse = false,
+        readyMode = "flash", readyDuration = 2, glowLines = 8, glowThickness = 2,
+        -- While a spell's effect is up, Blizzard swaps its cooldown for the
+        -- effect's time in a full-color gold swipe; off (the default), the
+        -- icon keeps showing its cooldown, gray.
+        auraSwipe = false,
         visibility = "always", opacity = 100, fadeOpacity = 0,
         -- Tracked Bars: the bar's texture and color, its background, the icon's side and the spark.
         barTexture = "mode", barColor = Copy(M.BAR_COLOR), barBackground = "slate", barBackgroundOpacity = 70,
@@ -168,7 +175,7 @@ M.colorKeys = { borderColor = true, backgroundColor = true, swipeColor = true, b
 for _, kind in ipairs(M.glowKinds) do M.colorKeys[kind .. "Color"] = true end
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
-M.ranges = { perLine = { 1, 20, 1 }, spacing = { 0, 20, 1 },
+M.ranges = { perLine = { 1, 20, 1 }, spacing = { 0, 20, 1 }, glowLines = { 2, 16, 1 }, glowThickness = { 1, 4, 1 },
     borderSize = { 1, 4, 1 }, backgroundOpacity = { 0, 100, 5 }, swipeOpacity = { 0, 100, 5 }, readyDuration = { 1, 10, 1 },
     opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 } }
 for _, part in ipairs(M.textParts) do
@@ -188,21 +195,26 @@ function M.LinesFor(grow) return M.horizontalGrowth[grow] and M.lineChoices.hori
 M.anchors = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
 M.anchorLabels = { TOPLEFT = "Top Left", TOP = "Top", TOPRIGHT = "Top Right", LEFT = "Left", CENTER = "Center",
     RIGHT = "Right", BOTTOMLEFT = "Bottom Left", BOTTOM = "Bottom", BOTTOMRIGHT = "Bottom Right" }
-local GLOW_STYLES = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "none", label = "None" } }
+-- Glow looks: Mode Glow (soft), Border, Pixel (marching lines), Blizzard
+-- (the action bar proc loop) and GCD (the Assisted Combat ants).
+local GLOW_STYLES = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "pixel", label = "Pixel" },
+    { id = "blizzard", label = "Blizzard" }, { id = "gcd", label = "GCD" } }
+M.glowStyles = GLOW_STYLES
 M.choices = {
     grow = { { id = "centerH", label = "Centered Horizontal" }, { id = "centerV", label = "Centered Vertical" },
         { id = "right", label = "Horizontal Right" }, { id = "left", label = "Horizontal Left" },
         { id = "down", label = "Vertical Down" }, { id = "up", label = "Vertical Up" } },
     lineGrowth = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" }, { id = "left", label = "Left" } },
     border = { { id = "mode", label = "ModeUI" }, { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
-    procGlow = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "blizzard", label = "Blizzard" },
-        { id = "none", label = "None" } },
-    activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,
+    procGlow = GLOW_STYLES, activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,
     readyMode = { { id = "flash", label = "Flash" }, { id = "always", label = "While Ready" } },
     visibility = { { id = "always", label = "Always" }, { id = "combat", label = "In Combat" }, { id = "noCombat", label = "Out of Combat" },
         { id = "target", label = "In Combat or With a Target" }, { id = "mouseover", label = "Mouseover" }, { id = "hidden", label = "Hidden" } },
     iconSide = { { id = "left", label = "Left" }, { id = "right", label = "Right" } },
 }
 for _, part in ipairs(M.textParts) do M.choices[part .. "Anchor"] = M.anchors end
--- Per-spell switches, and the value each stores while it differs from the bar.
-M.spellKinds = { hide = true, proc = false, active = false, ready = false, buff = false }
+-- Per-spell settings: hide (true while hidden), and each glow while it's on
+-- ({ style, color, pulse, lines, thickness }; the off-cooldown glow also mode
+-- and duration).
+M.spellKinds = { hide = true, proc = "glow", active = "glow", ready = "glow", buff = "glow" }
+M.glowRanges = { lines = { 2, 16, 1 }, thickness = { 1, 4, 1 }, duration = { 1, 10, 1 } }

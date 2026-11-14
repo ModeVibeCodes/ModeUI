@@ -18,7 +18,8 @@ world.run([==[
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
     assert(M.db.essential.width == 42 and M.db.essential.height == 34 and M.db.utility.width == 36 and M.db.utility.height == 28, 'icons 8px wider than tall')
     assert(M.db.version == 4 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
-    assert(M.db.essential.desaturate and M.db.essential.procGlow == 'mode' and M.db.essential.activeGlow == 'none', 'gray on cooldown by default')
+    assert(M.db.essential.desaturate and not M.db.essential.auraSwipe and next(M.db.essential.spells) == nil, 'gray on cooldown; glows off on every spell')
+    assert(M.db.essential.procGlow == 'blizzard' and M.db.essential.readyGlow == 'pixel', 'looks a glow starts with')
 
     addon:SetModuleEnabled('cooldownManager', true)
     assert(M.built and ModeUICooldownEssential and ModeUICooldownBuffBar, 'a stand-in per viewer')
@@ -83,43 +84,57 @@ world.run([==[
     items[1]:RefreshIconDesaturation()
     assert(items[1].Icon.desaturated == true, "kept after Blizzard's own gray")
     items[1].cooldownSwipeColor = CooldownViewerConstants.ITEM_AURA_COLOR; items[1]:RefreshSpellCooldownInfo()
-    assert(items[1].Icon.desaturated == false, 'full color while its effect is up')
+    assert(items[1].Icon.desaturated == true, 'still gray while its effect is up: no full-color active swipe')
     items[1].cooldownSwipeColor = CooldownViewerConstants.ITEM_COOLDOWN_COLOR; items[1]:RefreshSpellCooldownInfo()
     assert(M:SetOption('essential', 'desaturate', false) and items[1].Icon.desaturated == false, 'off: full color')
     assert(M:SetOption('essential', 'desaturate', true) and items[1].Icon.desaturated == true)
     cooling[5001] = false; FireEvent('SPELL_UPDATE_COOLDOWN'); assert(items[1].Icon.desaturated == false, 'color back when ready')
 
-    -- Glows: proc over active; active from the gold swipe; per spell off.
-    assert(M:SetOption('essential', 'activeGlow', 'border'))
+    -- Active spells: no gold full-color swipe by default; the spell's own
+    -- cooldown, gray, straight away.
+    cooling[5002] = true
     items[2].cooldownSwipeColor = CooldownViewerConstants.ITEM_AURA_COLOR; items[2]:RefreshSpellCooldownInfo()
-    local set = M.glows[items[2]]
-    assert(set.active and set.active:IsShown(), 'active glow while the effect is up')
+    assert(items[2].Cooldown.durationObject.duration == 'cd:5002' and items[2].Cooldown.auraTime == false, "the spell's cooldown, not the effect's time")
+    assert(items[2].Icon.desaturated == true and items[2].Cooldown.swipeColor[1] == M.db.essential.swipeColor[1], 'gray, in the swipe color')
+    assert(M:SetOption('essential', 'auraSwipe', true)); items[2]:RefreshSpellCooldownInfo()
+    assert(items[2].Icon.desaturated == false and items[2].Cooldown.swipeColor[2] == 0.8, "Show Aura Time: Blizzard's gold swipe in full color")
+    assert(M:SetOption('essential', 'auraSwipe', false))
+
+    -- Glows: off on every spell until switched on; each with its own look.
     ActionButtonSpellAlertManager:ShowAlert(items[2])
-    assert(set.proc:IsShown() and not set.active:IsShown() and items[2].SpellActivationAlert.alpha == 0, 'proc wins; Blizzard alert faded')
-    ActionButtonSpellAlertManager:HideAlert(items[2]); assert(set.active:IsShown() and not set.proc:IsShown())
-    assert(M:SetSpellSwitch('essential', '102', 'active', false) and not set.active:IsShown(), 'active glow off for this spell')
-    assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active:IsShown())
+    assert(not (M.glows[items[2]] and M.glows[items[2]].proc and M.glows[items[2]].proc:IsShown()) and items[2].SpellActivationAlert.alpha == 0, 'no glow until switched on')
+    assert(M:SetSpellSwitch('essential', '102', 'proc', true))
+    local look = M.db.essential.spells['102'].proc
+    assert(look.style == 'blizzard' and look.lines == 8 and look.thickness == 2, "switched on with the bar's look")
+    local set = M.glows[items[2]]
+    assert(set.proc:IsShown() and set.proc.flipbook:IsShown() and set.proc.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', "Blizzard: the game's proc loop art")
+    assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active and not set.active:IsShown(), 'proc wins over active')
+    ActionButtonSpellAlertManager:HideAlert(items[2]); assert(set.active:IsShown() and not set.proc:IsShown(), 'active glow while the effect is up')
+    assert(M:SetSpellGlow('essential', '102', 'active', 'style', 'pixel') and set.active.pixels and set.active.pixels[1]:IsShown(), 'Pixel: marching lines')
+    assert(M:SetSpellGlow('essential', '102', 'active', 'lines', 4) and set.active.pixelLines == 4 and not set.active.pixels[9]:IsShown())
+    assert(M:SetSpellGlow('essential', '102', 'active', 'style', 'gcd') and set.active.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', 'GCD art missing on this client: the proc art')
+    assert(not set.active.pixels[1]:IsShown(), 'the pixel lines put away')
+    assert(not M:SetSpellGlow('essential', '102', 'active', 'style', 'sparkles'), 'unknown looks refused')
+    assert(M:SetSpellSwitch('essential', '102', 'active', false) and not set.active:IsShown() and M.db.essential.spells['102'].active == nil, 'switched off')
     items[2].cooldownSwipeColor = CooldownViewerConstants.ITEM_COOLDOWN_COLOR; items[2]:RefreshSpellCooldownInfo()
-    assert(not set.active:IsShown(), 'ends with the effect')
-    assert(M:SetOption('essential', 'procGlow', 'blizzard')); ActionButtonSpellAlertManager:ShowAlert(items[1])
-    assert(items[1].SpellActivationAlert.alpha == 1, 'Blizzard style'); ActionButtonSpellAlertManager:HideAlert(items[1])
-    assert(M:SetOption('essential', 'procGlow', 'mode'))
-    -- Off cooldown: While Ready, then a flash for Glow Time.
-    assert(M:SetOption('essential', 'readyGlow', 'mode') and M:SetOption('essential', 'readyMode', 'always'))
+    cooling[5002] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
+    assert(M:SetSpellSwitch('essential', '102', 'proc', false) and M.db.essential.spells['102'] == nil, 'an empty entry is not kept')
+    -- Off cooldown: While Ready, then a flash for its own Glow Time.
+    assert(M:SetSpellSwitch('essential', '103', 'ready', true) and M:SetSpellGlow('essential', '103', 'ready', 'mode', 'always'))
     assert(M.glows[items[3]].ready:IsShown(), 'lit while ready')
     cooling[5003] = true; FireEvent('SPELL_UPDATE_COOLDOWN'); assert(not M.glows[items[3]].ready:IsShown(), 'not while cooling')
-    assert(M:SetOption('essential', 'readyMode', 'flash'))
+    assert(M:SetSpellGlow('essential', '103', 'ready', 'mode', 'flash') and M:SetSpellGlow('essential', '103', 'ready', 'duration', 3))
     local after, timers = C_Timer.After, {}
-    C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+    C_Timer.After = function(seconds, fn) timers[#timers + 1] = { seconds, fn } end
     cooling[5003] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(M.glows[items[3]].ready:IsShown(), 'flash when the cooldown ends')
-    for _, fn in ipairs(timers) do fn() end
+    for _, timer in ipairs(timers) do if timer[1] == 3 then timer[2]() end end
     C_Timer.After = after
-    assert(not M.glows[items[3]].ready:IsShown(), 'gone after Glow Time')
-    assert(M:SetOption('essential', 'readyGlow', 'none'))
+    assert(not M.glows[items[3]].ready:IsShown(), 'gone after its Glow Time')
+    assert(M:SetSpellSwitch('essential', '103', 'ready', false))
     -- Buff glow: follows the buff's active state, secret or not.
     local buffItems = ItemsOf(buffs)
-    assert(M:SetOption('buffIcon', 'buffGlow', 'mode'))
+    assert(M:SetSpellSwitch('buffIcon', '301', 'buff', true))
     buffItems[1]:SetIsActive(true)
     local buffGlow = M.glows[buffItems[1]].buff
     assert(buffGlow:IsShown() and buffGlow.soft.alpha == 1, 'buff glow while up')
@@ -127,7 +142,6 @@ world.run([==[
     buffItems[1]:SetIsActive(Secret('active'))
     assert(issecretvalue(buffGlow.soft.alphaFromBoolean) and issecretvalue(buffGlow.edges[1].alphaFromBoolean), 'secret state passed to SetAlphaFromBoolean')
     assert(M:SetSpellSwitch('buffIcon', '301', 'buff', false) and not buffGlow:IsShown(), 'buff glow off for this buff')
-    assert(M:SetSpellSwitch('buffIcon', '301', 'buff', true) and M:SetOption('buffIcon', 'buffGlow', 'none') and not buffGlow:IsShown())
     buffItems[1]:SetIsActive(true)
 
     -- Tracked Buffs close gaps; a secret shown state keeps its place.
@@ -203,10 +217,10 @@ world.run([==[
     assert(own.Cooldown.countdown.font[2] == 15, 'the cooldown numbers styled')
     cooling[9001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == true, 'gray while cooling')
-    assert(M:SetOption(c1, 'readyGlow', 'mode') and M:SetOption(c1, 'readyMode', 'always') and not (M.glows[own] and M.glows[own].ready:IsShown()))
+    assert(M:SetSpellSwitch(c1, 's9001', 'ready', true) and M:SetSpellGlow(c1, 's9001', 'ready', 'mode', 'always') and not (M.glows[own] and M.glows[own].ready and M.glows[own].ready:IsShown()))
     cooling[9001] = false; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == false and M.glows[own].ready:IsShown(), 'ready: color and the While Ready glow')
-    assert(M:SetOption(c1, 'readyGlow', 'none'))
+    assert(M:SetSpellSwitch(c1, 's9001', 'proc', true))
     spellUsable[9001] = { false, true }; FireEvent('SPELL_UPDATE_USABLE')
     assert(own.Icon.vertexColor[3] == 1 and own.Icon.vertexColor[1] == 0.5, 'short of power: blue tint')
     spellUsable[9001] = nil; FireEvent('SPELL_UPDATE_USABLE'); assert(own.Icon.vertexColor[1] == 1)
@@ -269,6 +283,22 @@ world.run([==[
     view.icons[1].scripts.OnMouseUp(view.icons[1], 'LeftButton')
     local menu = M.spellMenu
     assert(menu:IsShown() and menu.remove:IsShown() and not menu.earlier.enabled and menu.glowBoxes.buff:IsShown() and not menu.glowBoxes.proc:IsShown())
+    assert(not menu.glowBoxes.buff.selected and menu.glowBoxes.buff.more:IsShown(), 'off by default, with its > button')
+    -- The > opens the glow's popout beside the menu.
+    menu.glowBoxes.buff.more.scripts.OnClick(menu.glowBoxes.buff.more)
+    local popout = M.glowPopout
+    assert(popout:IsShown() and popout.kind == 'buff' and popout.title.text == 'Buff Glow' and view.glowKind == 'buff', 'buff glow popout')
+    assert(popout.styleRow:IsShown() and popout.colorRow:IsShown() and not popout.whenRow:IsShown() and not popout.linesRow:IsShown())
+    popout.styleButtons[3].scripts.OnClick(popout.styleButtons[3])
+    assert(M.db.custom2.spells['301'].buff.style == 'pixel' and menu.glowBoxes.buff.selected, 'choosing a look switches the glow on')
+    assert(popout.linesRow:IsShown() and popout.thicknessRow:IsShown() and not popout.pulseRow:IsShown(), 'Pixel shows its lines and thickness')
+    popout.swatch.scripts.OnClick(popout.swatch)
+    ColorPickerFrame.r, ColorPickerFrame.g, ColorPickerFrame.b = 1, 0, 0; ColorPickerFrame.swatchFunc()
+    assert(M.db.custom2.spells['301'].buff.color[1] == 1 and M.db.custom2.spells['301'].buff.color[2] == 0, "Blizzard's color picker sets its color")
+    popout.onBox.scripts.OnClick(popout.onBox)
+    assert(M.db.custom2.spells['301'] == nil, 'Glow On off')
+    popout.close.scripts.OnClick(popout.close)
+    assert(not popout:IsShown() and view.glowKind == nil)
     menu.later.scripts.OnClick(menu.later)
     assert(M:Custom(c2).entries[1] == '302', 'Later')
     menu:Hide()
@@ -339,10 +369,10 @@ H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
     assert(db.version == 4 and db.essential.border == 'mode' and db.essential.borderColor[1] == addon.Kit.BORDER_COLOR[1], 'v1 also takes the ModeUI border')
     assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
-    assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow kept as a flash')
+    assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow look kept, as a flash')
     assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 0)
     assert(db.utility.grow == 'up' and db.utility.lineGrowth == 'left', 'columns from the bottom right')
-    assert(db.buffIcon.grow == 'centerH' and db.buffIcon.lineGrowth == 'up' and db.buffIcon.readyGlow == 'none')
+    assert(db.buffIcon.grow == 'centerH' and db.buffIcon.lineGrowth == 'up' and db.buffIcon.readyGlow == 'mode', 'None is no longer a look')
 ]==], "migrate v1")
 
 -- Version 2: a Rounded border in the old #101010 becomes the ModeUI border;
