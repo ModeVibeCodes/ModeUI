@@ -40,6 +40,14 @@ function M:OnEnable()
         end)
     end
     Events:On(self, "SPELL_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
+    -- Custom spells' own icons: charges, picture and usability change with
+    -- these; procs light them; learning or losing a spell shows or hides one.
+    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE" }) do
+        Events:On(self, event, function() self:UpdateSpellIcons() end)
+    end
+    Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW", function(_, spellID) self:SpellProc(spellID, true) end)
+    Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE", function(_, spellID) self:SpellProc(spellID, false) end)
+    Events:On(self, "SPELLS_CHANGED", function() self:Refresh() end)
     Events:On(self, "PLAYER_TARGET_CHANGED", function() self:UpdateFade() end)
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         Events:On(self, event, function() self:Refresh() end)
@@ -57,6 +65,7 @@ function M:OnDisable()
         for _, id in ipairs(self:BarIds()) do self:UpdateAlpha(id) end
         self:RefreshGlows()
         self:RenderMovers()
+        self:HideSpellIcons()
         addon.ReloadManager:Request("cooldownManager", L["Cooldown Manager: reload to give Blizzard's cooldowns back their own look and place."])
     end
     if self.fader then self.fader:Hide() end

@@ -1013,3 +1013,34 @@ local mainline 12.1.5 copy and the Forever files from the first pass.
 - **Border.** `Kit.ModeBoxBorder` draws on a child frame of the item; its
   masks are ModeUI's own regions and are not applied to Blizzard's
   textures. No new client API.
+
+### Cooldown Manager, custom spells by ID — November 13, 2026
+
+Checked against the `forever` branch's `SpellDocumentation.lua`,
+`FrameAPICooldownDocumentation.lua`, `LuaDurationObjectAPIDocumentation.lua`,
+`SpellActivationOverlayDocumentation.lua` and `SpellBookDocumentation.lua`
+(same as local mainline for these), and the events Forever's own
+Cooldown Manager registers.
+
+- **Cooldowns.** `C_Spell.GetSpellCooldownDuration(spell, ignoreGCD)` and
+  `GetSpellChargeDuration(spell)` return a `LuaDurationObject`
+  (`SecretArguments = "AllowedWhenTainted"`). It goes straight to
+  `Cooldown:SetCooldownFromDurationObject(duration)`, never read. The setter
+  is documented `IsProtectedFunction`, like every Cooldown setter including
+  `SetCooldown`, which addons call on cooldowns they create; ModeUI only
+  calls it on its own icons' Cooldown frames, through `pcall`.
+- **Charges.** `C_Spell.GetSpellCharges` is `SecretWhenCooldownsRestricted`;
+  `maxCharges` and `isActive` are `NeverSecret`, `currentCharges` goes only to
+  `FontString:SetText`.
+- **State.** `C_Spell.GetSpellCooldown` (`isActive`, `isOnGCD` never secret),
+  `C_Spell.IsSpellUsable`, `C_Spell.DoesSpellExist`, `C_Spell.GetOverrideSpell`,
+  `C_Spell.GetSpellTexture`, `C_Spell.GetSpellName` and
+  `C_SpellBook.IsSpellKnown` (`AllowedWhenUntainted` arguments: ModeUI passes
+  plain spell IDs). A secret or failed answer counts as unknown.
+- **Events.** `SPELL_UPDATE_COOLDOWN`, `SPELL_UPDATE_USES`, `SPELL_UPDATE_ICON`,
+  `SPELL_UPDATE_USABLE` and `SPELL_ACTIVATION_OVERLAY_GLOW_SHOW`/`HIDE` (payload
+  `spellID`, used only when public), all registered by Forever's own
+  `Blizzard_CooldownViewer`; `SPELLS_CHANGED` (`SpellBookDocumentation`).
+- **Tooltip.** `GameTooltip:SetSpellByID`.
+- **Unverified natively:** all of it, in particular `SetCooldownFromDurationObject`
+  from addon code on Forever.

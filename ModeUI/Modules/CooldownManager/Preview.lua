@@ -35,14 +35,17 @@ end
 function M:PreviewEntries(id)
     local entries, tracked = {}, {}
     local function Entry(key, present)
-        local spell = Cooldowns.SpellID(tonumber(key))
+        local spell = self:CooldownSpell(key)
         entries[#entries + 1] = { key = key, icon = spell and Cooldowns.SpellIcon(spell) or SAMPLE_ICON, name = self:SpellLabel(key),
             faded = self:SpellSwitch(id, key, "hide") or not present, missing = not present }
     end
     local custom = self:Custom(id)
     if custom then
         for _, item in ipairs(self:BarItems(id)) do local key = self:SpellKey(item); if key then tracked[key] = true end end
-        for _, key in ipairs(custom.entries) do Entry(key, tracked[key] == true) end
+        for _, key in ipairs(custom.entries) do
+            -- A custom spell counts as present while you know it.
+            if self.IsSpellEntry(key) then Entry(key, Cooldowns.Known(self:SpellOf(key))) else Entry(key, tracked[key] == true) end
+        end
         return entries, true
     end
     for _, item in ipairs(self:BarItems(id)) do
@@ -212,7 +215,7 @@ function M:PreviewCaption(id, entries, real)
     if self:IsCustom(id) and #entries == 0 then caption = caption .. " · " .. L["click + to add a spell"]
     elseif not real then caption = caption .. " · " .. L["no spells tracked yet"] end
     if self:HiddenCount(id) > 0 then caption = caption .. " · " .. string.format(L["%d hidden"], self:HiddenCount(id)) end
-    if missing > 0 then caption = caption .. " · " .. string.format(L["%d not tracked now"], missing) end
+    if missing > 0 then caption = caption .. " · " .. string.format(L["%d not tracked or known now"], missing) end
     return caption
 end
 

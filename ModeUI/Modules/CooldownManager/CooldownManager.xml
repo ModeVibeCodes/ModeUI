@@ -3,6 +3,7 @@
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Custom.lua"/>
+    <Script file="Spells.lua"/>
     <Script file="Blizzard.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Skin.lua"/>

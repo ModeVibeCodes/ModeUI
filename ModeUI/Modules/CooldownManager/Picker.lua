@@ -6,9 +6,10 @@ if not M then return end
 -- the custom bar can take (Essential and Utility cooldowns for a Cooldown
 -- Bar, Tracked Buffs for a Buff Bar), as a grid of their icons. Pointing at
 -- one names it and says where it shows now; clicking adds it to the bar (a
--- spell on another custom bar moves). It stays open to add several, and
--- closes on a click elsewhere, the close button, or combat. With nothing to
--- add it says so and offers Open CDM.
+-- spell on another custom bar moves). On a Cooldown Bar, Spell ID adds any
+-- spell by its ID instead, tracked or not (Spells.lua). It stays open to add
+-- several, and closes on a click elsewhere, the close button, or combat.
+-- With nothing to add it says so and offers Open CDM.
 local W, T, L, Kit = addon.ConfigWidgets, addon.InterfaceTheme, addon.L, addon.Kit
 local WIDTH, PAD, SIZE, GAP, COLUMNS = 320, 14, 36, 6, 7
 local INNER = WIDTH - 2 * PAD
@@ -35,6 +36,26 @@ function M:Picker()
     picker.cdm = W.Button(picker, L["Open CDM"], 120, 26, "secondary")
     picker.cdm:SetPoint("BOTTOMLEFT", PAD, 12)
     picker.cdm:SetScript("OnClick", function() picker:Hide(); M:OpenCooldownSettings() end)
+    -- Spell ID: a field, Add, and what happened.
+    picker.byId = CreateFrame("Frame", nil, picker)
+    picker.byId:SetSize(INNER, 48)
+    picker.idLabel = W.Label(picker.byId, L["Spell ID"], nil, 0, 0, INNER, T.muted)
+    local field = CreateFrame("Frame", nil, picker.byId)
+    field:SetPoint("TOPLEFT", 0, -18); field:SetSize(140, 28)
+    picker.idInput = W.TextInput(field, 140, L["e.g. 12345"], 9)
+    picker.idAdd = W.Button(picker.byId, L["Add"], 60, 28, "secondary")
+    picker.idAdd:SetPoint("TOPLEFT", 148, -18)
+    picker.idResult = W.Label(picker.byId, "", nil, 214, -24, INNER - 214, T.muted)
+    local function Add()
+        local ok, result = M:AddCustomSpell(picker.barId, picker.idInput:GetText())
+        if ok then
+            picker.idInput:SetText("")
+            picker.idResult:SetText(string.format(L["Added %s."], M:SpellLabel("s" .. result)))
+        else picker.idResult:SetText(result) end
+        M:RefreshPicker(true)
+    end
+    picker.idInput.onEnter = Add
+    picker.idAdd:SetScript("OnClick", Add)
     picker.buttons = {}
     picker:SetScript("OnEvent", OnEvent)
     picker:SetScript("OnShow", function()
@@ -76,6 +97,7 @@ function M:OpenPicker(view, anchor)
     if not self:IsCustom(id) then return false end
     local picker = self:Picker()
     if self.spellMenu then self.spellMenu:Hide() end
+    if picker.barId ~= id then picker.idResult:SetText(""); picker.idInput:SetText("") end
     picker.barId, picker.anchor, picker.view = id, anchor, view
     picker:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
     picker:ClearAllPoints(); picker:SetPoint("TOP", anchor, "BOTTOM", 0, -8)
@@ -85,7 +107,7 @@ function M:OpenPicker(view, anchor)
 end
 
 -- Every candidate not already on this bar; spells elsewhere say where.
-function M:RefreshPicker()
+function M:RefreshPicker(keepResult)
     local picker = self.picker
     if not picker or not picker:IsShown() or not self:HasBar(picker.barId) then return end
     local id = picker.barId
@@ -111,7 +133,13 @@ function M:RefreshPicker()
     for index = #list + 1, #picker.buttons do picker.buttons[index]:Hide() end
     picker.empty:SetShown(#list == 0)
     picker.cdm:SetEnabled(self:CanOpenCooldownSettings())
+    if not keepResult then picker.idResult:SetText("") end
     local rows = math.max(1, math.ceil(#list / COLUMNS))
-    picker:SetHeight(60 + rows * (SIZE + GAP) + (#list == 0 and 40 or 0) + 46)
+    local top = 60 + rows * (SIZE + GAP) + (#list == 0 and 40 or 0)
+    -- Spells by ID: Cooldown Bars only.
+    local byId = custom.kind == "cooldown"
+    picker.byId:SetShown(byId)
+    picker.byId:ClearAllPoints(); picker.byId:SetPoint("TOPLEFT", PAD, -top)
+    picker:SetHeight(top + (byId and 56 or 0) + 46)
     if picker.view then picker.view.Refresh() end
 end

@@ -3,7 +3,9 @@ local M = addon.CooldownManager
 if not M then return end
 
 -- Bars: Blizzard's four viewers, then your custom bars. A custom bar houses
--- spells you track in Blizzard's Cooldown Manager, taken out of their viewer:
+-- spells you track in Blizzard's Cooldown Manager, taken out of their viewer
+-- (a Cooldown Bar also takes any spell by its ID, on an icon of ModeUI's own:
+-- Spells.lua):
 -- Blizzard's own icon moves onto the custom bar, so it keeps updating as
 -- before (a Cooldown Bar takes Essential and Utility spells, a Buff Bar
 -- Tracked Buffs). A spell sits on at most one custom bar; deleting the bar
@@ -64,6 +66,7 @@ local function Contains(list, value) for _, v in ipairs(list) do if v == value t
 -- The bar an item shows on: the custom bar holding its spell (when that bar
 -- takes spells from the item's viewer), else its own viewer.
 function M:Owner(item)
+    if self.iconBar[item] then return self.iconBar[item] end
     local source = self.sourceOf[item]
     local key = source and self:SpellKey(item)
     local custom = key and self.assigned and self.assigned[key]
@@ -87,10 +90,13 @@ local function Commit(self, candidate)
     for key, value in pairs(candidate) do db[key] = value end
     self:RebuildAssignments()
     self:SyncBarFrames()
+    self:SyncSpellIcons()
     self:Refresh()
     if self.window then self:RefreshWindow() end
     return true
 end
+
+M.CommitBars = Commit
 
 -- A new custom bar ("cooldown" or "buff"); returns its ID.
 function M:AddCustomBar(kind)
@@ -185,7 +191,7 @@ function M:Candidates(id)
             local key = self:SpellKey(item)
             if key and not seen[key] then
                 seen[key] = true
-                local spell = Cooldowns.SpellID(tonumber(key))
+                local spell = self:SpellOf(key)
                 list[#list + 1] = { key = key, icon = spell and Cooldowns.SpellIcon(spell), name = self:SpellLabel(key),
                     owner = self.assigned and self.assigned[key] or viewer }
             end

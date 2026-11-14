@@ -66,6 +66,22 @@ viewer the **+** slot opens Blizzard's Cooldown Manager instead.
 Custom bars follow the viewer their spells come from for Blizzard's own
 Visibility and the game option: the icons are still that viewer's children.
 
+### Custom spells by ID
+
+On a Cooldown Bar, the **+** slot's list also has **Spell ID**: type a spell's
+ID and press Enter or **Add**. Any spell works, tracked in Blizzard's
+Cooldown Manager or not. It gets an icon of ModeUI's own on the bar (saved as
+`s<ID>` among the bar's spells), with the bar's border, text, gray on
+cooldown, Proc and Off Cooldown glows, per-spell switches and order, plus a
+blue tint while short of power and a gray one while unusable, and the
+spell's tooltip. It shows only while you know the spell, or what replaces it
+now (an override follows its picture, cooldown and procs). The cooldown and
+recharge come as duration objects straight to the icon's cooldown, which
+draws the numbers; charge counts go straight to the text. The Active and
+Buff glows need Blizzard's own tracking, so they don't light on custom
+spells, and buffs can't be added by ID. Its icons hide while the module is
+off.
+
 ## What stays Blizzard's
 
 - **Which spells are tracked, and their order** in each viewer: Blizzard's
@@ -129,6 +145,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Migrations.lua` | `Initialize(db)`: version 1 to 2, validation |
 | `Driver.lua` | lifecycle, `/mcdm`, events, settings changes, per-spell switches, copy and reset, status |
 | `Custom.lua` | the bar list, custom bars and which spell shows where |
+| `Spells.lua` | custom spells by ID on ModeUI's own icons |
 | `Blizzard.lua` | finding and hooking Blizzard's viewers and items |
 | `Layout.lua` | Growth geometry, stand-ins and holders, placing the icons |
 | `Skin.lua`, `Bars.lua`, `Text.lua` | icon skin, swipe and gray; Tracked Bars; texts |

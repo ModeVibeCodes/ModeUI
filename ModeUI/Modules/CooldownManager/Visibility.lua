@@ -44,6 +44,7 @@ function M:BarItems(id)
     for _, viewer in ipairs(self:Sources(id)) do
         for _, item in ipairs(self:Items(viewer)) do if self:Owner(item) == id then list[#list + 1] = item end end
     end
+    for _, icon in pairs(self.spellIcons[id] or {}) do list[#list + 1] = icon end
     return list
 end
 

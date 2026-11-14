@@ -98,7 +98,7 @@ end
 
 -- The spell's name, else its cooldown ID.
 function M:SpellLabel(key)
-    local spell = Cooldowns.SpellID(tonumber(key))
+    local spell = self:SpellOf(key)
     return (spell and Cooldowns.SpellName(spell)) or string.format(L["Spell %s"], key)
 end
 
@@ -111,6 +111,9 @@ function M:RefreshSpellMenu()
     local style, glows = self.db[id], {}
     for _, kind in ipairs(self:Glows(id)) do glows[kind] = true end
     menu.title:SetText(self:SpellLabel(menu.key))
+    -- A custom spell names its ID; its icon is ModeUI's own.
+    local spellEntry = self.IsSpellEntry(menu.key)
+    menu.section:SetText(spellEntry and string.format(L["Custom spell · ID %s"], menu.key:sub(2)) or L["This Spell"])
     local y = -58
     local function Line(box, shown)
         box:SetShown(shown); box.text:SetShown(shown)

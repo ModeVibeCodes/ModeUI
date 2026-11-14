@@ -161,7 +161,7 @@ function M:BuildBarTab(ui)
                     or L["%d cooldowns (from Essential and Utility Cooldowns)."], #bar.entries))
             end)
             page.holdsLabel = kind
-            ui.Note("Click + in the preview to add a spell you track in Blizzard's Cooldown Manager; it moves here from its viewer. Click a spell for its switches, its order, or to send it back.", 48)
+            ui.Note("Click + in the preview to add a spell you track in Blizzard's Cooldown Manager (it moves here from its viewer) or, on a Cooldown Bar, any spell by its Spell ID (on an icon of ModeUI's own, shown while you know the spell). Click a spell for its switches, its order, or to send it back.", 64)
             local delete = page:Row("", 40)
             delete.rowLabel:Hide(); delete:ClearAllPoints(); delete:SetAllPoints(delete.row)
             page.deleteButton = W.Button(delete, L["Delete Bar"], 140, 30, "secondary")
