@@ -88,6 +88,18 @@ world.run([[
     window.backCatcher:Hide();assert(window:IsShown() and window.selectedPage=='home' and window.backCatcher:IsShown(),'Esc: module to main panel')
     window.backCatcher:Hide();assert(not window:IsShown(),'Esc: main panel to closed')
     SlashCmdList.MODEUI();assert(window:IsShown() and window.selectedPage=='home')
+    -- Segmented choices: side by side while every label fits; a row that can't
+    -- fit them on a shared line stays on its own; narrower still, one per line.
+    local W=addon.ConfigWidgets
+    local test=W.Page(UIParent);test.cardColumns=2;test:Group('Fit')
+    local host=test:Row('Pick')
+    local segments=W.Exclusive(host,{{label='Alpha Choice',value=1},{label='Bravo Choice',value=2},{label='Charlie Choice',value=3}},
+        function() return 1 end,function() end)
+    local row,box=host.row,segments[1]:GetParent()
+    row:layoutChildren(900);assert(not box.vertical and row:GetHeight()==58,'side by side when the labels fit')
+    assert(row.segmentNeeds[1]()>100,'too wide to share a narrow line')
+    row:layoutChildren(100);assert(box.vertical and row:GetHeight()>58,'one per line when even the full width is short')
+    row:layoutChildren(900);assert(not box.vertical and row:GetHeight()==58,'and back')
     -- Combat closes the window.
     window:GetScript('OnEvent')(window,'PLAYER_REGEN_DISABLED');assert(not window:IsShown(),'closes when combat starts')
     SlashCmdList.MODEUI();assert(window:IsShown())

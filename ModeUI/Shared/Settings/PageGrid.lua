@@ -38,23 +38,36 @@ local function FitNote(row, width)
 end
 
 -- Text a module sized for one wide column wraps inside a narrower card; a row
--- grows to fit text anchored from its top. host: the row or its control host,
--- hostTop: how far the host sits below the row's top.
+-- grows to fit text anchored from its top. Each layout starts again from the
+-- text's own width and the row's own height, so a later, wider layout undoes a
+-- narrow one. host: the row or its control host; hostTop: how far the host
+-- sits below the row's top.
 local function ClampText(row, host, width, hostTop)
     if not (host and host.GetRegions) then return end
     for _, region in ipairs({ host:GetRegions() }) do
         if region:GetObjectType() == "FontString" and region:IsShown() then
             local point, _, _, x, y = region:GetPoint(1)
             local room = width - Measured(x, 0)
-            if room > 20 and Measured(region:GetWidth(), 0) > room then
-                region:SetWidth(room); region:SetWordWrap(true)
-                if type(point) == "string" and point:find("^TOP") then
-                    local bottom = hostTop - Measured(y, 0) + Measured(region:GetStringHeight(), 0) + 6
-                    if bottom > row:GetHeight() then row:SetHeight(bottom) end
+            region.gridNaturalWidth = region.gridNaturalWidth or Measured(region:GetWidth(), 0)
+            local natural = region.gridNaturalWidth
+            if room > 20 then
+                region:SetWidth(math.min(natural, room))
+                if natural > room then
+                    region:SetWordWrap(true)
+                    if type(point) == "string" and point:find("^TOP") then
+                        local bottom = hostTop - Measured(y, 0) + Measured(region:GetStringHeight(), 0) + 6
+                        if bottom > row:GetHeight() then row:SetHeight(bottom) end
+                    end
                 end
             end
         end
     end
+end
+
+-- Whether a row's segmented choices fit a shared (half) line.
+local function PairFits(row, half)
+    for _, need in ipairs(row.segmentNeeds or {}) do if need() > half then return false end end
+    return true
 end
 
 -- Lays out one card's rows from `padding` down; returns { row, y, x } entries and the height.
@@ -68,6 +81,8 @@ local function CardRows(page, card, inner, padding, Snap)
         end
     end
     local function Fit(row, rowWidth)
+        row.gridNaturalHeight = row.gridNaturalHeight or row:GetHeight()
+        row:SetHeight(row.gridNaturalHeight)
         row:SetWidth(rowWidth)
         if row.layoutChildren then row:layoutChildren(rowWidth) end
         if row.settingsFooterNote and page.modeFooterLayout then FitNote(row, rowWidth)
@@ -80,7 +95,8 @@ local function CardRows(page, card, inner, padding, Snap)
     local half, placed, y, index = Snap((inner - PAIR_GAP) / 2), {}, padding, 1
     while index <= #visible do
         local row, partner = visible[index], visible[index + 1]
-        if half >= PAIR_MIN and row.stacked and row.pairable and partner and partner.stacked and partner.pairable then
+        if half >= PAIR_MIN and row.stacked and row.pairable and partner and partner.stacked and partner.pairable
+            and PairFits(row, half) and PairFits(partner, half) then
             Fit(row, half); Fit(partner, half)
             placed[#placed + 1] = { row = row, y = y, x = 0 }
             placed[#placed + 1] = { row = partner, y = y, x = half + PAIR_GAP }
@@ -112,6 +128,26 @@ function W.LayoutCardGrid(page, width, left, padding, gap, top)
         else for _, entry in ipairs(placed) do entry.row:Hide() end end
     end
     local cursor = top or 0
+    -- Untitled cards (a page's status and quick actions) are a frameless strip
+    -- across every column, above the tiles.
+    local tiles = {}
+    for _, entry in ipairs(laid) do
+        local card = entry.card
+        local strip = not card.title
+        if card.fill then card.fill:SetShown(not strip) end
+        if card.edge then card.edge:SetShown(not strip) end
+        if strip then
+            local placed, height = CardRows(page, card, width - 2 * padding, padding, Snap)
+            card.frame:ClearAllPoints(); card.frame:SetPoint("TOPLEFT", left, -cursor); card.frame:SetSize(width, height)
+            card.top, card.bottom = cursor, cursor + height
+            for _, item in ipairs(placed) do
+                item.row:ClearAllPoints(); item.row:SetPoint("TOPLEFT", left + padding + item.x, -(cursor + item.y))
+                item.row.offset = cursor + item.y
+            end
+            cursor = Snap(cursor + height - padding + gap)
+        else tiles[#tiles + 1] = entry end
+    end
+    laid = tiles
     for first = 1, #laid, columns do
         local rowHeight = 0
         for i = first, math.min(#laid, first + columns - 1) do rowHeight = math.max(rowHeight, laid[i].height) end

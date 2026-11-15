@@ -94,21 +94,59 @@ function W.Exclusive(parent, choices, getter, setter)
         x = x + width
     end
     container:SetSize(x + PADDING, SEGMENT_HEIGHT + 2 * PADDING)
-    -- Narrower than its segments' widths (a tile, a shared line): the segments
-    -- shrink evenly to fit the host.
-    local natural = x + PADDING
-    local function Fit(_, available)
-        available = type(available) == "number" and not (issecretvalue and issecretvalue(available)) and available or natural
-        local scale = (available > 40 and available < natural) and available / natural or 1
-        local left = PADDING
-        for index, button in ipairs(buttons) do
-            local width = math.floor(widths[index] * scale)
-            button:SetWidth(width); button:ClearAllPoints(); button:SetPoint("LEFT", left, 0)
-            left = left + width
-        end
-        container:SetWidth(left + PADDING)
+    -- Fitting (docs/DESIGN_LANGUAGE.md, "Settings window"): side by side while
+    -- every label fits; a row that would share its line gets the full width
+    -- instead (row.segmentNeeds); narrower still, one segment per line.
+    local function Measure(value) return type(value) == "number" and not (issecretvalue and issecretvalue(value)) and value or nil end
+    local function Need(index) return math.max(40, math.ceil(Measure(buttons[index].label:GetStringWidth()) or 40) + 20) end
+    local function Needed()
+        local total = 2 * PADDING
+        for index in ipairs(buttons) do total = total + Need(index) end
+        return total
     end
-    if parent.HookScript then parent:HookScript("OnSizeChanged", Fit) end
+    local row = parent.row
+    local function Fit(available)
+        available = Measure(available) or (x + PADDING)
+        local vertical = available >= 40 and Needed() > available
+        container:ClearAllPoints()
+        container.vertical = vertical
+        if vertical then
+            local width = available - 2 * PADDING
+            for index, button in ipairs(buttons) do
+                button:SetWidth(width); button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", PADDING, -PADDING - (index - 1) * SEGMENT_HEIGHT)
+            end
+            container:SetSize(available, #buttons * SEGMENT_HEIGHT + 2 * PADDING)
+            container:SetPoint("TOPLEFT", 0, 0)
+        else
+            -- Natural widths, shrunk evenly (never below a label) when short of room.
+            local natural, need = x + PADDING, Needed()
+            local scale = available < natural and math.max(need / natural, available / natural) or 1
+            local left = PADDING
+            for index, button in ipairs(buttons) do
+                local width = math.max(Need(index), math.floor(widths[index] * scale))
+                button:SetWidth(width); button:ClearAllPoints(); button:SetPoint("LEFT", left, 0)
+                left = left + width
+            end
+            container:SetSize(left + PADDING, SEGMENT_HEIGHT + 2 * PADDING)
+            container:SetPoint("LEFT", 0, 0)
+        end
+        if row then
+            row.segmentBaseHeight = row.segmentBaseHeight or row:GetHeight()
+            local top = (parent == row.settingsHost and row.stacked and 22) or (parent.valueAnchor and 24) or 4
+            row:SetHeight(vertical and math.max(row.segmentBaseHeight, top + container:GetHeight() + 8) or row.segmentBaseHeight)
+        end
+    end
+    if row then
+        row.segmentNeeds = row.segmentNeeds or {}
+        row.segmentNeeds[#row.segmentNeeds + 1] = Needed
+        local previous = row.layoutChildren
+        function row:layoutChildren(width)
+            if previous then previous(self, width) end
+            local available = parent == self.settingsHost and (self.stacked and width or width - 198) or Measure(parent:GetWidth())
+            Fit(available)
+        end
+    end
     container.FitSegments = Fit
     local function Refresh()
         for index, button in ipairs(buttons) do button:SetSelected(getter() == choices[index].value) end

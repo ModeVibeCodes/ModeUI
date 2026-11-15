@@ -173,6 +173,14 @@ A hybrid window built one-to-one from the study:
   not yet rebuilt show their existing cards as tiles two across (one column in
   the split view, which widens to fit them); a rebuilt page sets `cardColumns`
   (4 on a sidebar or strip page, 2 in the 432px split column). Cards in one grid row share its height.
+- **Untitled cards** (a page's status line and quick actions) have no tile:
+  they run as a plain strip across the page above the tiles.
+- **Segmented choices** (`W.Exclusive`) sit side by side while every label
+  fits. A choice that would share its line with another control and can't fit
+  there gets the full width of its card instead. Narrower still, the segments
+  stack vertically, one per line, at full width. New pages need nothing extra
+  for this; prefer a dropdown over segments when there are more than four
+  options or long labels.
 - **Combat:** the window closes itself when combat starts.
 - **Controls:** Slide toggle (Celadon ON with dark text; Rosewood Deep OFF with
   bold white text), rail slider (2px rail, Ivory fill, 4 × 14 blade), dropdowns,
