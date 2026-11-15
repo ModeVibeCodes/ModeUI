@@ -11,7 +11,7 @@ world.run([====[
     local M=addon.UnitFrames
     local P,O=M.palette,M.onyx
     assert(M and addon.modules.unitFrames==M and M.category=='frames' and M.defaultEnabled==true)
-    assert(addon.categories.interface.title=='Interface')
+    assert(addon.categories.frames.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
     assert(M.db.layoutVersion==19 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     assert(M.db.player.fontMedia=='Expressway' and M.db.player.texture==nil,'one bar texture: Mode Gradient')
@@ -783,6 +783,8 @@ restored.run([====[
     assert(M:ResetFrame('player') and M:SetFrameOption('target','matchPlayer',true))
     if not addon.EnsureConfigPage then addon:ToggleConfig() end
     local page=addon:EnsureConfigPage('unitFrames')
+    -- Unit Frames opens in split view: its live preview shows in the pane while the page is open.
+    addon:SelectConfigPage('unitFrames')
     local titles={};for _,section in ipairs(page.sections) do titles[#titles+1]=section.title end
     assert(table.concat(titles,'|')=='Frame|Health Bar|Power Bar|Portrait|Cast Bar|Auras|Class Resource|Text','one tab per part of the frame; no Border tab')
     assert(page.sectionTabs and #page.sectionTabs.buttons==8)
@@ -809,7 +811,7 @@ restored.run([====[
     -- Editing at the preview's top right, with whether the frame is on.
     assert(page.unitFrameEditSelect and Point(page.unitFrameEditSelect:GetParent())[1]=='TOPRIGHT' and page.unitFrameEditSelect:GetParent():GetParent()==page.previewArea)
     -- Each frame in the Editing list says On or Off beside its name.
-    assert(M.FrameStateLabel('player'):find('^Player  |cff7fdb97On|r') and page.unitFrameEditSelect.label:GetText():find('On',1,true) and not page.unitFrameTurnOn:IsShown())
+    assert(M.FrameStateLabel('player'):find('^Player  |cffb4cdb6On|r') and page.unitFrameEditSelect.label:GetText():find('On',1,true) and not page.unitFrameTurnOn:IsShown())
     -- Each bar's own textures and opacity, two to a row.
     assert(page.unitFrameForeground and page.unitFrameBackground and page.unitFrameForegroundOpacity and page.unitFrameBackgroundOpacity)
     assert(page.unitFramePowerForeground and page.unitFramePowerBackgroundOpacity and page.unitFrameCastForeground and page.unitFrameCastBackground)

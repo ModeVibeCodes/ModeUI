@@ -16,30 +16,30 @@ addon.Theme = {
     spacing = { small = 8, medium = 16, large = 24 },
 }
 
-local function RGB(r, g, b, a) return { r / 255, g / 255, b / 255, a or 1 } end
-
--- Mode: near-black graphite surfaces and a cyan accent. This is the only
--- settings theme ModeUI ships. The November 2026 redesign (owner-approved
--- mockup): settings sit on cards (card, cardBorder; ModeCard texture), controls
--- are fields with a one-pixel rim (field, rim), and the accent marks what is
--- chosen (primary; accentFill behind a selected segment).
--- Colors follow the owner's Layout tab design (November 13, 2026): a cooler
--- near-black with cards #121316 on a #1E2024 rim, fields #0E0F11 on #2A2D32,
--- labels #C4C8CE over values #8A8F96, and a #22262B selected segment.
+-- Mode: the settings window in the Mode design language
+-- (docs/DESIGN_LANGUAGE.md, "Settings window"): Graphite surfaces, Ivory as
+-- the accent, Celadon and Rosewood for on and off, 1px black separators. Every
+-- color is a Style.Tone token.
+local Style = addon.Style
+local Tone, G = Style.Tone, Style.Tone.graphite
+local function C(color, alpha) return { color[1], color[2], color[3], alpha or 1 } end
 local MODE = {
-    primary = RGB(0, 240, 255), accentFill = RGB(34, 38, 43),
-    enabled = RGB(127, 219, 151), danger = RGB(255, 90, 95),
-    off = RGB(184, 184, 191), unavailable = RGB(102, 102, 110),
-    highlight = RGB(244, 244, 245), ink = RGB(11, 11, 13),
-    background = RGB(11, 11, 13), pageBackground = RGB(11, 11, 13),
-    sidebar = RGB(11, 11, 13), navSelected = RGB(22, 24, 28),
-    card = RGB(18, 19, 22), cardBorder = RGB(30, 32, 36), panel = RGB(18, 19, 22),
-    field = RGB(14, 15, 17), surface = RGB(18, 19, 22), hover = RGB(34, 38, 43),
-    rim = RGB(42, 45, 50), line = RGB(30, 32, 36), lineStrong = RGB(74, 79, 86),
-    -- Switch and slider tracks.
-    track = RGB(42, 45, 50), trackRim = RGB(58, 62, 68),
-    text = RGB(228, 228, 228), heading = RGB(242, 242, 242),
-    secondary = RGB(196, 200, 206), muted = RGB(138, 143, 150), faint = RGB(110, 115, 122),
+    primary = C(Tone.ivory), accentFill = C(Style.Mix(Tone.ivory, G.raised, 0.12)),
+    -- Flat rims of the Ivory and Rosewood buttons: their color 70% toward black.
+    primaryRim = C(Style.Mix(Tone.ivory, G.void, 0.3)), dangerRim = C(Style.Mix(Tone.rosewood, G.void, 0.3)),
+    enabled = C(Tone.celadon), danger = C(Tone.rosewood),
+    off = C(Tone.rosewood), unavailable = C(G.rimStrong),
+    highlight = C(G.white), ink = C(Tone.mono.panel), onInk = C(Tone.celadonInk),
+    background = C(G.panel), pageBackground = C(G.panel),
+    sidebar = C(G.base), navSelected = C(Style.Mix(G.white, G.base, 0.05)),
+    card = C(G.raised), cardBorder = C(G.line), panel = C(G.panel), header = C(G.raised),
+    field = C(G.panel), surface = C(G.raised), hover = C(G.track), button = C(Style.Mix(G.line, G.track, 0.5)),
+    rim = C(G.rim), line = C(G.void), lineStrong = C(G.rim),
+    -- Slide toggle and rail slider.
+    track = C(G.rim), trackRim = C(G.rimStrong), toggleTrack = C(Style.Mix(G.base, G.void, 0.5)),
+    toggleOn = C(Tone.celadon), toggleOff = C(Tone.rosewoodDeep), toggleIdle = C(G.muted),
+    text = C(G.text), heading = C(G.white),
+    secondary = C(G.secondary), muted = C(G.muted), faint = C(Style.Mix(G.muted, G.rimStrong, 0.5)),
 }
 
 addon.InterfaceThemes = {
@@ -55,12 +55,11 @@ local function Copy(color) return { color[1], color[2], color[3], color[4] or 1 
 addon.InterfaceTheme = {
     id = "mode",
     blizzardArt = false,
-    -- One spacing scale and one font scale for every settings surface: page
-    -- titles (page), section tabs and headings (section), card titles (card),
-    -- sidebar captions, uppercase (group), setting labels (body), help (small)
-    -- and the ModeUI wordmark in the header (brand, 7 px above section).
+    -- One font scale for every settings surface (the artifact's sizes): page
+    -- titles 18, section tabs and headings 12, card titles 11 uppercase, sidebar
+    -- captions 10 uppercase, labels 12, values and help 11, the MODE wordmark 13.
     spacing = addon.Theme.spacing,
-    fontSize = { small = 12, body = 13, group = 12, card = 19, section = 14, brand = 21, page = 24, display = 24 },
+    fontSize = { small = 11, body = 12, group = 10, card = 11, section = 12, brand = 13, page = 18, display = 18 },
 }
 for key, color in pairs(MODE) do addon.InterfaceTheme[key] = Copy(color) end
 

@@ -5,7 +5,7 @@ local ARROWS = { LEFT = { -1, 0 }, RIGHT = { 1, 0 }, UP = { 0, 1 }, DOWN = { 0, 
 
 -- Small owned dropdown; options are rebuilt on open, never polled.
 local function Dropdown(parent, width, choices, getter, setter)
-    local button = W.Button(parent, "", width, 28)
+    local button = W.Button(parent, "", width, 24, "dropdown")
     W.DropdownLabel(button)
     local menu = CreateFrame("Frame", nil, button)
     menu:Hide()

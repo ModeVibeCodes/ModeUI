@@ -1,4 +1,4 @@
--- ModeUI startup, Mode-themed window with Global, Interface and Frames categories,
+-- ModeUI startup, the hybrid Mode settings window (Interface, Panels, System),
 -- settings restoration and the one-time Play The Game Tools import; not WoW.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 
@@ -10,14 +10,14 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
     assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,cooldownManager,tooltip,bags,minimap,unitFrames,nameplates,partyFrames')
-    -- Sidebar order (owner, November 13, 2026): Global, Interface, Frames.
-    assert(table.concat(addon.categoryOrder,',')=='global,interface,frames' and addon.categories.interface.title=='Interface'
-        and addon.categories.global.title=='Global' and addon.categories.frames.title=='Frames')
+    -- Sidebar order and captions (docs/DESIGN_LANGUAGE.md): Interface, Panels, System.
+    assert(table.concat(addon.categoryOrder,',')=='frames,interface,global' and addon.categories.frames.title=='Interface'
+        and addon.categories.interface.title=='Panels' and addon.categories.global.title=='System')
     assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
     assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,tooltip,bags,minimap')
     assert(table.concat(addon.categories.frames.modules,',')=='unitFrames,nameplates,partyFrames')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
-    assert(addon.InterfaceTheme.primary[2]==240/255,'Mode cyan accent')
+    assert(addon.Style.SameColor(addon.InterfaceTheme.primary,addon.Style.Tone.ivory),'Mode Ivory accent')
     assert(SLASH_MODEUI1=='/modeui' and SLASH_PLAYTHEGAMETOOLS1==nil)
     assert(addon.modules.unitFrames.enabled,'unit frames are on for a fresh install')
     assert(not addon.modules.nameplates.enabled,'nameplates start off')
@@ -33,31 +33,55 @@ world.run([[
     assert(addon.configWindow==nil,'settings window waits for /modeui')
     SlashCmdList.MODEUI()
     local window=addon.configWindow
-    assert(window:IsShown() and window.title:GetText()=='ModeUI' and window.brandLogo==nil,'Mode brand header: the wordmark, no logo')
-    assert(window.title.font[2]==addon.InterfaceTheme.fontSize.section+7,'wordmark 7 px larger than before')
-    assert(window.moduleHeader.title:GetText()=='Profiles','opens on the first page in the sidebar, Global > Profiles')
-    assert(window.selectedCategory=='global' and window.pages.profiles:IsShown())
-    assert(window.navigationButtons.interface.label:GetText()=='INTERFACE' and window.navigationButtons.global.label:GetText()=='GLOBAL'
-        and window.navigationButtons.frames.label:GetText()=='FRAMES','category headings (uppercase captions)')
-    local function Top(id) return select(5, window.navigationButtons[id]:GetPoint(1)) end
-    assert(Top('global')>Top('interface') and Top('interface')>Top('frames'),'Global above Interface above Frames')
-    assert(window.navigationButtons.dashboard==nil and window.navigationButtons.globalSettings==nil,'no Dashboard or Global Settings')
-    assert(window.profileButton==nil,'no profile button')
-    local nested=window.sidebarModuleButtons.unitFrames
-    assert(nested and nested:IsShown() and nested.label:GetText()=='· Unit Frames','Unit Frames nested under Frames')
-    local count=0;for _ in pairs(window.sidebarModuleButtons) do count=count+1 end
-    assert(count==13,'thirteen pages in the sidebar')
-    assert(window.sidebarModuleButtons.bags:IsShown(),'Bags nested under Interface')
-    addon:SelectConfigPage('bags');assert(window.pages.bags:IsShown() and window.moduleHeader.title:GetText()=='Bags')
-    assert(window.sidebarModuleButtons.minimap:IsShown(),'Minimap nested under Interface')
-    addon:SelectConfigPage('minimap');assert(window.pages.minimap:IsShown() and window.moduleHeader.title:GetText()=='Minimap')
-    assert(window.sidebarModuleButtons.nameplates:IsShown(),'Nameplates nested under Frames')
-    addon:SelectConfigPage('unitFrames');assert(window.selectedCategory=='frames' and window.pages.unitFrames:IsShown())
-    addon:SelectConfigPage('nameplates');assert(window.pages.nameplates:IsShown() and window.moduleHeader.title:GetText()=='Nameplates')
-    assert(window.sidebarModuleButtons.partyFrames:IsShown(),'Party Frames nested under Frames')
-    addon:SelectConfigPage('partyFrames');assert(window.pages.partyFrames:IsShown() and window.moduleHeader.title:GetText()=='Party Frames')
-    assert(window.sidebarModuleButtons.actionBars:IsShown(),'Action Bars nested under Interface')
-    addon:SelectConfigPage('actionBars');assert(window.pages.actionBars:IsShown() and window.moduleHeader.title:GetText()=='Action Bars')
+    local S=addon.ConfigWidgets.SETTINGS_SIZES
+    local function Click(button) button:GetScript('OnClick')(button) end
+    local function Has(list,value) for _,v in ipairs(list or {}) do if v==value then return true end end end
+    assert(window:IsShown() and window:GetWidth()==1000 and S.sidebar==184 and S.rail==48 and S.column==432,'the artifact measurements')
+    assert(window.title:GetText()=='M O D E' and window.title.font[2]==addon.InterfaceTheme.fontSize.brand,'MODE wordmark')
+    assert(window.title.font[1]:find('Geist%-Bold%.ttf$'),'the wordmark in Geist Bold')
+    -- Opens on the main panel: full sidebar, General page, no breadcrumb.
+    assert(window.selectedPage=='home' and window.layout=='home' and window.pages.home:IsShown())
+    assert(window.moduleHeader.title:GetText()=='General' and not window.moduleHeader.toggle:IsShown())
+    assert(window.sidebar:IsShown() and not window.rail:IsShown() and not window.previewPane:IsShown())
+    assert(not window.backButton:IsShown() and not window.resetButton:IsShown(),'no breadcrumb or Reset on the main panel')
+    assert(window.pages.home.cardColumns==4 and window.pages.home.homeProfile and window.pages.home.homeResetWindow,'General cards, four across')
+    assert(window.navigationButtons.frames.label:GetText()=='INTERFACE' and window.navigationButtons.interface.label:GetText()=='PANELS'
+        and window.navigationButtons.global.label:GetText()=='SYSTEM','category captions (uppercase)')
+    local function Top(row) return select(5, row:GetPoint(1)) end
+    local rows=window.sidebarModuleButtons
+    assert(Top(rows.home)>Top(rows.unitFrames) and Top(rows.unitFrames)>Top(rows.chat) and Top(rows.chat)>Top(rows.profiles),'General, then Interface, Panels, System')
+    assert(rows.unitFrames.label:GetText()=='Unit Frames' and rows.unitFrames.icon and rows.unitFrames.dot and not rows.profiles.dot,'icons and on/off dots')
+    local count=0;for _ in pairs(rows) do count=count+1 end
+    assert(count==14,'General and thirteen modules in the sidebar')
+    assert(window.profileSelect and window.searchInput and window.closeButton,'header: search, profile, close')
+    assert(window.doneButton and window.editButton and window.reloadButton and window.previewButton,'footer buttons')
+    -- A simple module keeps the sidebar and the whole page, with a breadcrumb.
+    addon:SelectConfigPage('bags')
+    assert(window.layout=='page' and window.pages.bags:IsShown() and window.moduleHeader.title:GetText()=='Bags')
+    assert(window.backButton:IsShown() and window.crumbTitle:GetText()=='Bags' and window.sidebar:IsShown())
+    assert(window.resetButton:IsShown(),'Bags has a reset to defaults')
+    -- A visual module folds the sidebar into the icon rail, with the preview beside the settings.
+    addon:SelectConfigPage('unitFrames')
+    assert(window.layout=='split' and window.rail:IsShown() and not window.sidebar:IsShown() and window.previewPane:IsShown())
+    assert(window.selectedCategory=='frames' and window.pages.unitFrames:IsShown() and window.pages.unitFrames.previewSplit)
+    assert(window.pages.unitFrames.previewArea:GetParent()==window.previewPane and window.pages.unitFrames.previewArea:IsShown(),'live preview in the pane')
+    assert(window.railButtons.unitFrames.selected and not window.resetButton:IsShown())
+    for _,id in ipairs({'nameplates','partyFrames','actionBars'}) do
+        addon:SelectConfigPage(id);assert(window.layout=='split' and window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)
+    end
+    assert(not window.pages.unitFrames.previewArea:IsShown(),'one preview at a time')
+    -- Back: the rail's home, "All modules", the wordmark or Esc; Esc on the main panel closes.
+    Click(window.railButtons.home);assert(window.selectedPage=='home' and window.sidebar:IsShown())
+    addon:SelectConfigPage('chat');Click(window.backButton);assert(window.selectedPage=='home')
+    addon:SelectConfigPage('chat');Click(window.wordmark);assert(window.selectedPage=='home')
+    addon:SelectConfigPage('unitFrames')
+    assert(window.backCatcher:IsShown() and Has(UISpecialFrames,'ModeUIConfigBack'))
+    window.backCatcher:Hide();assert(window:IsShown() and window.selectedPage=='home' and window.backCatcher:IsShown(),'Esc: module to main panel')
+    window.backCatcher:Hide();assert(not window:IsShown(),'Esc: main panel to closed')
+    SlashCmdList.MODEUI();assert(window:IsShown() and window.selectedPage=='home')
+    for _,id in ipairs({'minimap','windows','chat','tooltip','bags'}) do
+        addon:SelectConfigPage(id);assert(window.layout=='page' and window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)
+    end
     -- The Cooldown Manager is standalone: its own window, opened with /mcdm.
     assert(window.sidebarModuleButtons.cooldownManager==nil and addon.modules.cooldownManager.standalone,'no Cooldown Manager page here')
     assert(SLASH_MODEUICDM1=='/mcdm' and addon.CooldownManager.window==nil,'its window waits for /mcdm')
@@ -65,10 +89,10 @@ world.run([[
     assert(ModeUICooldownManagerWindow:IsShown() and addon.CooldownManager.page,'/mcdm opens it')
     SlashCmdList.MODEUICDM()
     assert(not ModeUICooldownManagerWindow:IsShown(),'and closes it')
-    assert(window.sidebarModuleButtons.damageMeters:IsShown(),'Damage Meters nested under Interface')
+    assert(window.sidebarModuleButtons.damageMeters:IsShown(),'Damage Meters under Panels')
     addon:SelectConfigPage('damageMeters');assert(window.pages.damageMeters:IsShown() and window.moduleHeader.title:GetText()=='Damage Meters')
     for _,id in ipairs({'profiles','optimizations','classColors'}) do
-        assert(window.sidebarModuleButtons[id]:IsShown(),id..' nested under Global')
+        assert(window.sidebarModuleButtons[id]:IsShown(),id..' under System')
         addon:SelectConfigPage(id);assert(window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)
     end
     addon:SelectConfigPage('profiles');assert(not window.moduleHeader.toggle:IsShown(),'Profiles has no on/off switch')
@@ -230,14 +254,14 @@ end
 assert(#missing == 0, "missing assets: " .. table.concat(missing, ", "))
 print("assets: all present")
 
--- ModeUI's interface uses Expressway when an installed provider brings it,
--- and the bundled Lato otherwise.
+-- ModeUI's interface is Geist (docs/DESIGN_LANGUAGE.md, "Text"), even when an
+-- installed provider brings Expressway; choosing the bundled Lato keeps Lato.
 local function TitleFont(before)
     local world = H.Load({ before = before })
     return world.run([[ SlashCmdList.MODEUI(); return addon.configWindow.title.font[1] ]], "font")
 end
-assert(TitleFont(STUBS):find("Lato", 1, true), "Lato without Expressway")
+assert(TitleFont(STUBS):find("Geist", 1, true), "Geist by default")
 local provider = STUBS .. "\ntestProviderFonts = { [AYIJE_EXPRESSWAY] = true }\n"
 provider = "AYIJE_EXPRESSWAY = 'Interface' .. string.char(92) .. 'AddOns' .. string.char(92) .. 'AyijeUI' .. string.char(92) .. 'Media' .. string.char(92) .. 'Fonts' .. string.char(92) .. 'Expressway.ttf'\n" .. provider
-assert(TitleFont(provider):find("Expressway", 1, true), "Expressway by default when installed")
-print("fonts: Expressway by default")
+assert(TitleFont(provider):find("Geist", 1, true), "Geist even with Expressway installed")
+print("fonts: Geist by default")

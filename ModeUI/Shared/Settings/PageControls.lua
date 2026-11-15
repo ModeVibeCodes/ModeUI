@@ -69,7 +69,7 @@ function W.PageControls(page, ROW_HEIGHT)
             for i, cell in ipairs(cells) do
                 cell.frame:ClearAllPoints(); cell.frame:SetSize(cellWidth, ROW_HEIGHT)
                 cell.frame:SetPoint("TOPLEFT", ((i-1)%columns)*cellWidth, -math.floor((i-1)/columns)*ROW_HEIGHT)
-                cell.label:SetWidth(cellWidth-46)
+                cell.label:SetWidth(cellWidth-78)
             end
         end
         self.toggleGrids = self.toggleGrids or {}; self.toggleGrids[#self.toggleGrids+1] = cells

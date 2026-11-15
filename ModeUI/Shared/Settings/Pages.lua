@@ -1,12 +1,12 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
--- Settings are grouped on cards: ModeCard panels (6 px corners, a one-pixel
--- cardBorder rim) with an uppercase accent title (page:Group). Rows added
--- outside a titled group share an untitled card. Standard rows put 28 px
--- controls on a 36 px pitch, labels centered on them.
-local CARD_PADDING, CARD_GAP = 16, 12
--- A card title row fits the 19px title (T.fontSize.card) with room under it.
-local CARD_TITLE = 30
+-- Settings are grouped on cards (docs/DESIGN_LANGUAGE.md, "Settings window"):
+-- a Mode Matte face in Graphite raised inside the `card` border, with an
+-- uppercase Ivory title (page:Group). Rows added outside a titled group share
+-- an untitled card. Standard rows put 28 px controls on a 36 px pitch.
+local CARD_PADDING, CARD_GAP = 12, 10
+-- A card title row fits the 11px uppercase title (T.fontSize.card).
+local CARD_TITLE = 22
 local ROW_HEIGHT, ROW_INSET, LEGACY_ROW_HEIGHT = 36, 4, 48
 -- Standard rows stack their label above the control (owner's Layout tab
 -- design, November 13, 2026); a slider's value sits at the right of the label
@@ -53,6 +53,14 @@ function W.Page(parent, minimumWidth)
         local leftInset=self.contentInset+(self.layoutInsetLeft or 0)
         width=math.max(1,width-leftInset-self.contentInset)
         local cursor = self.layoutTopInset or 0
+        if self.cardColumns then
+            cursor = W.LayoutCardGrid(self, width, leftInset, CARD_PADDING, CARD_GAP, cursor)
+            self.cursor = cursor
+            content:SetHeight(math.max(cursor + 12, self.layoutMinHeight or 0))
+            local maximum = math.max(0, content:GetHeight() - scroll:GetHeight())
+            bar:SetMinMaxValues(0, maximum); bar:SetValue(math.min(bar:GetValue(), maximum)); bar:SetShown(maximum > 0)
+            return
+        end
         local footers={}
         local function Visible(row)
             local show = row.sectionHeader or not row.section or row.section.expanded
@@ -157,7 +165,6 @@ function W.Page(parent, minimumWidth)
                 card.frame:ClearAllPoints()
                 card.frame:SetPoint("TOPLEFT", leftInset, -card.top)
                 card.frame:SetSize(width, card.bottom - card.top + CARD_PADDING)
-                addon.Kit.Inset(card.fill, card.frame, px)
             end
         end
         local visibleFooters,footerHeight={},0
@@ -311,13 +318,16 @@ function W.Page(parent, minimumWidth)
         self.cursor = self.cursor + height + 4
         return controls
     end
-    -- A card: a rounded rim (ModeCard in cardBorder) with the card fill one pixel inside.
+    -- A card: a Mode Matte face in the card color inside the `card` border.
     function page:NewCard(title)
         local frame = CreateFrame("Frame", nil, content)
         frame:SetFrameLevel(content:GetFrameLevel() + 1)
-        local rim, fill = W.Shape(frame, "ModeCard", "BACKGROUND", 0), W.Shape(frame, "ModeCard", "BACKGROUND", 1)
-        rim:SetAllPoints(); rim:SetVertexColor(unpack(T.cardBorder)); fill:SetVertexColor(unpack(T.card))
-        local card = { frame = frame, rim = rim, fill = fill, title = title }
+        local fill = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+        fill:SetAllPoints()
+        addon.Style.ApplyAsset(fill, "Matte")
+        fill:SetVertexColor(unpack(T.card))
+        local edge = addon.Style.Edge(frame, "card")
+        local card = { frame = frame, rim = edge.rimTexture, fill = fill, edge = edge, title = title }
         self.cards[#self.cards + 1] = card
         self.activeCard = card
         return card
@@ -330,7 +340,7 @@ function W.Page(parent, minimumWidth)
         row:SetSize(400, CARD_TITLE)
         row:SetFrameLevel(content:GetFrameLevel() + 2)
         row.section, row.gapBefore, row.gapAfter, row.card, row.cardTitle = self.activeSection, 0, 0, card, true
-        row.subsectionHeading=W.Heading(row, title:upper(), T.fontSize.card, 0, 0, 360)
+        row.subsectionHeading=W.Heading(row, title:upper(), T.fontSize.card, 0, -2, 360)
         row.subsectionHeading:SetTextColor(unpack(T.primary))
         row.settingsGroupTitle=title;self.activeGroup=title
         row.modeFeature,row.modePanel=self.activeModeFeature,self.activeModePanel

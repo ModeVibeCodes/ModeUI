@@ -5,7 +5,7 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 local function MediaDropdown(parent, timer, border)
     local statusbar=border=="statusbar"
     border=border==true
-    local button = W.Button(parent, "", 260, 28)
+    local button = W.Button(parent, "", 260, 24, "dropdown")
     button:SetPoint("LEFT")
     W.DropdownLabel(button)
     local menu = W.Popup(button,280,224)

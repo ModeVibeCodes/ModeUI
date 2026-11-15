@@ -87,8 +87,9 @@ function W.ScrollThumb(bar, height)
     return thumb
 end
 
--- A 4 px rounded track with the accent filled up to the value, a light round
--- thumb in a dark ring, and the value in a small field at the right (an
+-- The rail slider (docs/DESIGN_LANGUAGE.md, "Settings window"): a 2px rail
+-- filled in Ivory up to the value and a 4 x 14 light blade in a 1px black ring;
+-- the value sits on the label line (or in a small field at the right; an
 -- editable number when numeric is set).
 function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeric)
     local settingsParent=parent
@@ -106,7 +107,8 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
     if slot then valueBox:SetPoint("RIGHT", slot, "RIGHT", 0, 0) else valueBox:SetPoint("RIGHT", 0, 0) end
     valueBox.box = W.Box(valueBox, "ModeFlat"); valueBox.box:SetColors(T.field, T.rim)
     valueBox.box:SetShown(not slot)
-    local label = W.Label(valueBox, "", nil, 0, 0, VALUE_WIDTH - 4, slot and T.muted or T.text)
+    local label = W.Label(valueBox, "", nil, 0, 0, VALUE_WIDTH - 4, T.text)
+    addon.Media:BindInterfaceFont(label, GameFontHighlight, T.fontSize.small, nil, "medium")
     label:ClearAllPoints()
     label:SetPoint(slot and "RIGHT" or "CENTER", 0, 0)
     label:SetJustifyH(slot and "RIGHT" or "CENTER")
@@ -118,22 +120,27 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
     slider:SetMinMaxValues(minimum, maximum)
     slider:SetValueStep(step)
     slider:SetObeyStepOnDrag(true)
-    local track = W.Shape(slider, "ModeTrack", "BACKGROUND")
-    track:SetPoint("LEFT", 0, 0); track:SetPoint("RIGHT", 0, 0); track:SetHeight(4)
+    local Style = addon.Style
+    local track = slider:CreateTexture(nil, "BACKGROUND")
+    Style.ApplyAsset(track, "Solid")
+    track:SetPoint("LEFT", 0, 0); track:SetPoint("RIGHT", 0, 0); track:SetHeight(2)
     track:SetVertexColor(unpack(T.track))
-    local progress = W.Shape(slider, "ModeTrack", "BORDER")
-    progress:SetPoint("LEFT", 0, 0); progress:SetHeight(4); progress:SetWidth(4)
+    local progress = slider:CreateTexture(nil, "BORDER")
+    Style.ApplyAsset(progress, "Solid")
+    progress:SetPoint("LEFT", 0, 0); progress:SetHeight(2); progress:SetWidth(2)
     progress:SetVertexColor(unpack(T.primary))
-    -- The thumb texture is the dark ring; the light dot is centered on it.
-    local thumb = W.Shape(slider, "ModeCircle", "OVERLAY")
-    thumb:SetSize(16, 16)
-    thumb:SetVertexColor(unpack(T.ink))
+    -- The thumb texture is the black ring; the blade sits one pixel inside it.
+    local thumb = slider:CreateTexture(nil, "OVERLAY", nil, 0)
+    Style.ApplyAsset(thumb, "Solid")
+    thumb:SetSize(6, 16)
+    thumb:SetVertexColor(unpack(T.line))
     slider:SetThumbTexture(thumb)
-    local dot = W.Shape(slider, "ModeCircle", "OVERLAY", 1)
-    dot:SetSize(12, 12); dot:SetPoint("CENTER", thumb, "CENTER", 0, 0)
+    local dot = slider:CreateTexture(nil, "OVERLAY", nil, 1)
+    Style.ApplyAsset(dot, "Blade")
+    dot:SetSize(4, 14); dot:SetPoint("CENTER", thumb, "CENTER", 0, 0)
     local hovered
     local function Tint(color) dot:SetVertexColor(unpack(color)) end
-    Tint(T.text)
+    Tint(T.highlight)
     local function Progress()
         local low, high = slider:GetMinMaxValues()
         local width = slider:GetWidth()
@@ -141,16 +148,16 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
             or type(low) ~= "number" or type(high) ~= "number" or type(width) ~= "number" then return end
         local span = high - low
         local ratio = span > 0 and (slider:GetValue() - low) / span or 0
-        progress:SetWidth(math.max(4, math.min(1, math.max(0, ratio)) * width))
+        progress:SetWidth(math.max(2, math.min(1, math.max(0, ratio)) * width))
         progress:SetShown(ratio > 0)
     end
     slider:SetScript("OnEnter", function() hovered = true; Tint(T.primary) end)
-    slider:SetScript("OnLeave", function() hovered = false; Tint(T.text) end)
+    slider:SetScript("OnLeave", function() hovered = false; Tint(T.highlight) end)
     slider:HookScript("OnMouseDown",function(_,button)
-        if button=="LeftButton" then Tint(T.highlight) end
+        if button=="LeftButton" then Tint(T.primary) end
     end)
-    slider:HookScript("OnMouseUp",function() Tint(hovered and T.primary or T.text) end)
-    slider:HookScript("OnHide",function() hovered = false; Tint(T.text) end)
+    slider:HookScript("OnMouseUp",function() Tint(hovered and T.primary or T.highlight) end)
+    slider:HookScript("OnHide",function() hovered = false; Tint(T.highlight) end)
     slider:HookScript("OnSizeChanged", Progress)
     local updating, input
     local function Refresh()
@@ -184,7 +191,7 @@ function W.Slider(parent, minimum, maximum, step, getter, setter, suffix, numeri
         if slot then
             -- Plain right-aligned text on the label line; its field shows while editing.
             input:SetPoint("RIGHT", slot, "RIGHT", 0, 0)
-            input:SetJustifyH("RIGHT"); input:SetTextColor(unpack(T.muted))
+            input:SetJustifyH("RIGHT"); input:SetTextColor(unpack(T.text))
             local outline = input.field and input.field.outline
             if outline then
                 outline:SetShown(false)

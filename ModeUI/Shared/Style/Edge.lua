@@ -19,6 +19,7 @@ Style.EDGE_PRESETS = {
     frameThin = { rim = 1, metal = "gunmetal", light = "edge", shadow = true },
     group = { rim = 1, metal = "gunmetal", light = "solid" },
     window = { rim = 1, metal = "steel", light = "sheen", shadow = true, soft = true, gap = true },
+    card = { rim = 1, metal = "steel", light = "sheen", gap = true },
     control = { rim = 1, metal = "steel", light = "sheen", shadow = true },
     line = { rim = 1, light = "solid", shadow = true, flat = true },
     empty = { rim = 1, light = "edge", shadow = true, flat = true },
@@ -54,6 +55,13 @@ end
 
 local Edge = {}
 Edge.__index = Edge
+-- Every border, so a window can re-lay them after its scale changes.
+local edges = setmetatable({}, { __mode = "k" })
+
+-- Re-lays every border on whole pixels (UI scale or a window's own scale changed).
+function Style.RelayoutEdges()
+    for edge in pairs(edges) do edge:Layout() end
+end
 
 -- A border of `preset` for `host`. opts: level (frame levels above the host,
 -- default 2), color (flat presets), rim (override thickness, 1 or 2).
@@ -79,6 +87,7 @@ function Style.Edge(host, preset, opts)
         edge.below = below
         edge.soft = Piece(below, "BACKGROUND", -8, "Soft")
     end
+    edges[edge] = true
     edge:Layout()
     edge:Paint()
     return edge

@@ -127,9 +127,24 @@ local function ModeInputField(frame, layer)
     return texture
 end
 
+-- Mode popups and dialogs: a Graphite panel ("Window") in a Mode Window
+-- border ("BorderSilver": Steel Sheen, gap, shadow and soft drop).
+local function ModeWindowBorder(frame)
+    local edge = addon.Style.Edge(frame, "window", { level = 30 })
+    local texture = W.Fill(frame, T.background, "BACKGROUND", 0, 0)
+    texture.outline = {
+        SetColor = function() end,
+        SetShown = function(_, shown) edge:SetShown(shown) end,
+    }
+    texture.edge = edge
+    return texture
+end
+
 function W.Texture(frame, key, layer, inset, alpha)
     local skin = assert(SKIN[key], "ModeUI: unknown texture " .. tostring(key))
     if key == "InputField" and not T.blizzardArt then return ModeInputField(frame, layer) end
+    if T.id == "mode" and key == "BorderSilver" then return ModeWindowBorder(frame) end
+    if T.id == "mode" and key == "Window" then return W.Fill(frame, T.panel, layer, inset, alpha) end
     if T.blizzardArt then
         -- Window surfaces take the stock tooltip backdrop; their silver edge is
         -- then already drawn. Without a backdrop both keep the flat drawing.

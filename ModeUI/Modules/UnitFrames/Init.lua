@@ -10,7 +10,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Files: Init (this), TextSlots, Migrations, Driver, Native, Layout, Texts, Build, Update,
 -- Combo, CastBar, Auras, Status, Preview, Settings, SettingsExtra, SettingsText.
 local L = addon.L
-local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true,
+local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true, layout = "split",
     configDescription = L["Player, Target, Target of Target and Focus frames in the Onyx look. Configure outside combat."],
     -- The settings page keeps its own sections; the Mode layer restyles headings.
     modeLayout = { decorateOnly = true } }

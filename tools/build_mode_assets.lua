@@ -22,6 +22,7 @@
 --   LibSharedMedia. Shield: a 32x32 tile, a 1px 45-degree line every 8 texels.
 --   CometHead, CometTrail, LineGlow: the Comet spark and the shield finish line.
 -- Controls/ Knob (slide toggle block, radius 2), Blade (slider thumb).
+-- Icons/    the module icons for the settings sidebar and icon rail (tools/mode_icons.lua).
 -- Masks/    Circle: a filled disc (portrait metal disc and the portrait's own crop).
 local here = (debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "")
 local T = dofile(here .. "mode_tga.lua")
@@ -165,6 +166,10 @@ Save("Bars/CometHead", 32, 64, function(x, y)
 end)
 Lift("Bars/CometTrail", 64, 16, function(x) return 0.7 * ((x + 0.5) / 64) end)
 Lift("Bars/LineGlow", 16, 64, function(x) return 0.8 * (1 - T.Smooth(math.abs(x + 0.5 - 8) / 8)) end)
+
+-- Icons --------------------------------------------------------------------
+local ICONS = dofile(here .. "mode_icons.lua")
+for _, name in ipairs(ICONS.ORDER) do Shape("Icons/" .. name, 32, 32, ICONS[name]) end
 
 -- Controls -----------------------------------------------------------------
 Shape("Controls/Knob", 8, 8, T.RoundedRect(0, 0, 8, 8, 2))

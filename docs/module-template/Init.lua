@@ -7,6 +7,10 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 local L = addon.L
 local M = { title = L["Example"], category = "interface", defaultEnabled = false,
     configDescription = L["Shows your target's name above the middle of the screen."],
+    -- The settings window shape (docs/DESIGN_LANGUAGE.md, "Settings window"):
+    -- "page" keeps the sidebar; "split" (modules with a live preview) opens
+    -- beside the preview. icon: a Style.ICONS name for the sidebar and rail.
+    layout = "page", icon = "Windows",
     -- The page keeps its own sections; the Mode layer restyles headings.
     modeLayout = { decorateOnly = true } }
 addon.Example = M

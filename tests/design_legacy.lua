@@ -66,7 +66,6 @@ return {
     ["Shared/Runtime/Feedback.lua"] = { color = 2 },
     ["Shared/Settings/ColorRow.lua"] = { color = 1 },
     ["Shared/Settings/Launchers.lua"] = { color = 2 },
-    ["Shared/Settings/Theme.lua"] = { color = 29 },
     ["Shared/Settings/Widgets/Core.lua"] = { color = 6 },
     ["Shared/Skin/Controls.lua"] = { border = 1 },
     ["Shared/Skin/Skin.lua"] = { color = 14, border = 4 },

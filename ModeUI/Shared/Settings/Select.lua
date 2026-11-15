@@ -24,7 +24,7 @@ end
 
 function W.Select(parent,width,choices,getter,setter,options)
     local multi=options and options.multi
-    local button=W.Button(parent,"",width or 260,28)
+    local button=W.Button(parent,"",width or 260,24,"dropdown")
     button:SetPoint("LEFT");W.DropdownLabel(button)
     -- In a stacked row (Pages.lua) the field spans the row and may share its line.
     local row=parent.row

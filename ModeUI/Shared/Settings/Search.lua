@@ -66,34 +66,27 @@ function addon:SearchSettings(query)
     return results
 end
 
-function addon:CreateSettingsSearch(sidebar)
-    local mode=T.id=="mode"
-    local input = CreateFrame("EditBox", nil, mode and self.configWindow.headerBar or sidebar)
-    if mode then
-        input:SetPoint("TOPLEFT",self.configWindow,"TOPLEFT",self.configWindow.contentLeft,-14)
-        input:SetWidth(200)
-        -- The drag strip ends before this left-aligned input. Keep a visible
-        -- fragment of that strip when recovering an off-screen window.
-        self.configWindow.headerReserved=self.configWindow:GetWidth()-self.configWindow.contentLeft+16
-        self.configWindow.header:ClearAllPoints()
-        self.configWindow.header:SetPoint("TOPLEFT")
-        self.configWindow.header:SetPoint("BOTTOMRIGHT",input,"BOTTOMLEFT",-16,-14)
-    else
-        input:SetPoint("TOPLEFT", 0, 0)
-        input:SetPoint("TOPRIGHT", 0, 0)
-    end
-    input:SetHeight(28)
+-- The search field in the settings header, left of the profile menu.
+function addon:CreateSettingsSearch()
+    local window = self.configWindow
+    local controls = window.headerControls
+    local input = CreateFrame("EditBox", nil, controls)
+    input:SetFrameLevel(controls:GetFrameLevel() + 1)
+    input:SetPoint("RIGHT", window.profileSelect, "LEFT", -12, 0)
+    input:SetWidth(190)
+    input:SetHeight(22)
     input:SetAutoFocus(false)
     input:SetMaxLetters(80)
     input:SetFontObject(GameFontHighlight)
     input:SetTextInsets(10, 10, 0, 0)
     self.Media:BindInterfaceFont(input, GameFontHighlight)
     W.Texture(input, "InputField")
-    local placeholder = W.Label(input, "Search settings...", nil, 0, 0, 180, T.muted)
+    local placeholder = W.Label(input, "Search settings", nil, 0, 0, 170, T.faint)
+    addon.Media:BindInterfaceFont(placeholder, GameFontHighlight, T.fontSize.body)
     placeholder:ClearAllPoints(); placeholder:SetPoint("LEFT", 10, 0)
     local popup = CreateFrame("Frame", nil, input)
     popup:Hide()
-    popup:SetPoint("TOPLEFT", input, "BOTTOMLEFT", 0, -4)
+    popup:SetPoint("TOPRIGHT", input, "BOTTOMRIGHT", 0, -6)
     popup:SetSize(340, 124)
     popup:SetFrameStrata("TOOLTIP")
     popup:SetFrameLevel(input:GetFrameLevel() + 40)

@@ -14,12 +14,28 @@ local function View(module, parent, context)
     return view
 end
 
--- Fixed preview header/body above the section tabs and scrolling settings.
+-- The module preview. On a sidebar page it is a fixed header/body above the
+-- section tabs and scrolling settings; in split view (the window passes its
+-- preview pane as the page host's modeSplitPane) it fills the live preview
+-- pane beside the settings column, under a "Live preview" title.
 function W.Preview(page, module, options)
     if not module.CreateConfigPreview then return end
+    local pane = page:GetParent() and page:GetParent().modeSplitPane
     page:ClearAllPoints();page:SetPoint("TOPLEFT");page:SetPoint("BOTTOMRIGHT")
-    local area=CreateFrame("Frame",nil,page)
-    area:SetPoint("TOPLEFT"); area:SetPoint("TOPRIGHT",-24,0)
+    local area=CreateFrame("Frame",nil,pane or page)
+    local paneTitle
+    if pane then
+        page.previewSplit = true
+        area:SetPoint("TOPLEFT", pane, "TOPLEFT", 14, -14); area:SetPoint("BOTTOMRIGHT", pane, "BOTTOMRIGHT", -14, 14)
+        area:Hide()
+        page:HookScript("OnShow", function() area:Show() end)
+        page:HookScript("OnHide", function() area:Hide() end)
+        paneTitle = W.Label(area, "LIVE PREVIEW", nil, 0, -10, 100, T.secondary)
+        addon.Media:BindInterfaceFont(paneTitle, GameFontHighlight, T.fontSize.card, nil, "heading")
+        page.previewPaneTitle = paneTitle
+    else
+        area:SetPoint("TOPLEFT"); area:SetPoint("TOPRIGHT",-24,0)
+    end
     local height=(options and (options.contentHeight or options.squareSize)) or 136
     local headerHeight=46
     area:SetHeight(height)
@@ -55,13 +71,14 @@ function W.Preview(page, module, options)
         -- there). Wrap only on narrow layouts. previewHeaderButtons are the
         -- page's own buttons, placed after the standard ones.
         local available=math.max(180,area:GetWidth()-(self.previewReserveRight or 90))
-        local x,y=0,-6
+        local x,y=pane and 104 or 0,-6
         local buttons={static,animated,test,collapse}
         for _,button in ipairs(self.previewHeaderButtons or {}) do buttons[#buttons+1]=button end
         for _,button in ipairs(buttons) do
-            if (button~=animated or addon.PreviewStates:CanAnimate(module.id)) and (button~=test or module.SetTestDisplay) then
+            if button==collapse and pane then button:Hide()
+            elseif (button~=animated or addon.PreviewStates:CanAnimate(module.id)) and (button~=test or module.SetTestDisplay) then
                 button:SetWidth(math.max(button:GetWidth(),math.ceil(button.label:GetStringWidth())+12))
-                if x>0 and x+button:GetWidth()>available then x,y=0,y-30 end
+                if x>(pane and 104 or 0) and x+button:GetWidth()>available then x,y=pane and 104 or 0,y-30 end
                 button:ClearAllPoints();button:SetPoint("TOPLEFT",x,y);x=x+button:GetWidth()+4
             end
         end
@@ -77,7 +94,7 @@ function W.Preview(page, module, options)
         end
         body:ClearAllPoints();body:SetPoint("TOPLEFT",0,-headerHeight);body:SetPoint("BOTTOMRIGHT")
         local external=module.testing
-        local collapsed=self.previewSectionCollapsed or self.previewManualCollapsed or external or false
+        local collapsed=external or (not pane and (self.previewSectionCollapsed or self.previewManualCollapsed)) or false
         self.previewCollapsed=collapsed and true or false
         if module.GetPreviewSize then
             local width,bodyHeight=module:GetPreviewSize(display)
@@ -86,7 +103,8 @@ function W.Preview(page, module, options)
             self.previewExpandedHeight=headerHeight+bodyHeight+6
         end
         local h=collapsed and headerHeight or math.max(headerHeight+32,self.previewExpandedHeight)
-        area:SetHeight(h); body:SetShown(not collapsed)
+        if pane then h=0 else area:SetHeight(h) end
+        body:SetShown(not collapsed)
         collapse.label:SetText(collapsed and "Expand" or "Collapse")
         collapse:SetEnabled(not self.previewSectionCollapsed)
         static:SetSelected(addon.PreviewStates:PreviewMode(module.id)=="static")
@@ -97,11 +115,12 @@ function W.Preview(page, module, options)
         local permitted=module.SetTestDisplay and module.active and not (InCombatLockdown() or UnitAffectingCombat("player") or addon.editMode or addon.previewMode)
         if module.CanTestDisplay then permitted=module:CanTestDisplay() end
         test:SetEnabled(module.testing==true or permitted==true)
-        local top=h+12
+        local top=pane and 0 or h+12
         if self.sectionTabs then
-            self.sectionTabs:ClearAllPoints(); self.sectionTabs:SetPoint("TOPLEFT",0,-h-6)
-            self.sectionTabs:SetPoint("TOPRIGHT",-24,-h-6)
-            top=h+6+self.sectionTabs:GetHeight()+12
+            local tabsTop=pane and 0 or h+6
+            self.sectionTabs:ClearAllPoints(); self.sectionTabs:SetPoint("TOPLEFT",0,-tabsTop)
+            self.sectionTabs:SetPoint("TOPRIGHT",-24,-tabsTop)
+            top=tabsTop+self.sectionTabs:GetHeight()+12
         end
         if self.LayoutSectionPanel then top=self:LayoutSectionPanel(top) end
         self.scroll:ClearAllPoints(); self.scroll:SetPoint("TOPLEFT",0,-top); self.scroll:SetPoint("BOTTOMRIGHT",-24,0)

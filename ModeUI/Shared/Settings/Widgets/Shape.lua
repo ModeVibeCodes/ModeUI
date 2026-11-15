@@ -2,12 +2,11 @@ local _, addon = ...
 local T, W = addon.InterfaceTheme, addon.ConfigWidgets
 local Kit = addon.Kit
 
--- Rounded shapes for settings controls, cut from the white textures made by
--- tools/build_shape_textures.lua and tinted. A box is a rim with its fill one
--- physical pixel inside, so every control edge is exactly one screen pixel.
--- Insets follow the frame's effective scale; the window re-applies them
--- after its own scale changes (W.RefreshPixelInsets).
-local boxes = setmetatable({}, { __mode = "k" })
+-- Settings control faces in the Mode design language: a box is a fill (a
+-- Mode texture tinted with the fill color) inside a Style.Edge border, the
+-- `control` preset (1px Steel Sheen and a 1px shadow) unless the box asks for
+-- another. W.Shape still cuts the older rounded shapes for small glyphs.
+local Style = addon.Style
 
 -- A texture cut from a bundled shape (a Media texture key), or a flat square
 -- when the key is nil or the client refuses the file.
@@ -20,47 +19,60 @@ end
 local Box = {}
 Box.__index = Box
 
+-- Re-lays the border on whole pixels (after the window's scale changes).
 function Box:Inset()
-    Kit.Inset(self.fill, self.frame, Kit.PixelSize(self.frame))
+    if self.edge then self.edge:Layout() end
 end
 
-local function Tint(texture, color, alpha)
-    if not color then texture:Hide(); return end
-    texture:SetVertexColor(color[1], color[2], color[3], (color[4] or 1) * (alpha or 1))
-    texture:Show()
+
+-- Rim colors that mean "the preset's metal"; any other color tints the rim.
+local function MetalRim(color)
+    return color == T.rim or color == T.trackRim or color == T.lineStrong or color == T.cardBorder
 end
 
 -- Palette colors for the fill and the rim; nil hides that part. alpha scales both.
 function Box:SetColors(fill, rim, alpha)
-    self:Inset()
-    Tint(self.fill, fill, alpha)
-    Tint(self.rim, rim, alpha)
+    self.fillColor, self.rimColor = fill, rim
+    if fill then
+        self.fill:SetVertexColor(fill[1], fill[2], fill[3], (fill[4] or 1) * (alpha or 1))
+        self.fill:Show()
+    else self.fill:Hide() end
+    if self.edge then
+        self.edge:SetShown(rim ~= nil)
+        if rim then
+            self.edge:SetTint(not MetalRim(rim) and rim or nil)
+            self.edge.holder:SetAlpha(alpha or 1)
+        end
+    end
 end
 
 function Box:SetShown(shown)
-    if shown then self:SetColors(self.fillColor, self.rimColor) else self.fill:Hide(); self.rim:Hide() end
+    if shown then self:SetColors(self.fillColor, self.rimColor)
+    else self.fill:Hide(); if self.edge then self.edge:SetShown(false) end end
 end
 
--- frame: the host; key: the Media shape (nil: square); layer: draw layer for
--- both parts (the rim one sublevel below the fill).
-function W.Box(frame, key, layer, sublevel)
-    sublevel = sublevel or 0
+-- The face texture: a Style.ASSETS key ("Solid" by default; buttons use "Gradient").
+function Box:SetAsset(key)
+    local asset = Style.ASSETS[key]
+    Style.ApplyAsset(self.fill, asset and asset.fill or key)
+    if self.fillColor then self:SetColors(self.fillColor, self.rimColor) end
+end
+
+-- frame: the host; key: nil for a square, borderless face (sidebar rows),
+-- otherwise any value for a bordered face; layer: the fill's draw layer.
+-- opts.preset: a Style.EDGE_PRESETS key (default "control").
+function W.Box(frame, key, layer, sublevel, opts)
     local box = setmetatable({ frame = frame }, Box)
-    box.rim = W.Shape(frame, key, layer, sublevel)
-    box.rim:SetAllPoints(frame)
-    box.fill = W.Shape(frame, key, layer, sublevel + 1)
-    local setColors = box.SetColors
-    function box:SetColors(fill, rim, alpha)
-        self.fillColor, self.rimColor = fill, rim
-        setColors(self, fill, rim, alpha)
-    end
-    box:Inset()
-    boxes[box] = true
+    box.fill = frame:CreateTexture(nil, layer or "BACKGROUND", nil, (sublevel or 0) + 1)
+    box.fill:SetAllPoints(frame)
+    Style.ApplyAsset(box.fill, "Solid")
+    box.rim = box.fill -- older callers only read the fill
+    if key then box.edge = Style.Edge(frame, opts and opts.preset or "control") end
     return box
 end
 
 function W.RefreshPixelInsets()
-    for box in pairs(boxes) do box:Inset() end
+    Style.RelayoutEdges()
 end
 
 -- A small down chevron at the right of a dropdown button; muted, lit by hover.

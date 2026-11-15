@@ -260,6 +260,8 @@ function methods:CreateFontString() local text = Object(self); text.kind = "Font
 function methods:GetObjectType() return self.kind end
 UIParent = Object()
 UIParent.width, UIParent.height = 1280, 800
+-- Frames Esc closes (CloseSpecialWindows).
+UISpecialFrames = {}
 GameFontHighlight = Object()
 GameFontNormalLarge = Object()
 GameFontNormalLarge.font = {"Fonts/FRIZQT__.TTF", 16, ""}

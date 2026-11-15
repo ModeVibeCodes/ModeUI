@@ -101,6 +101,7 @@ Shared\Settings\Widgets\Input.lua
 Shared\Settings\Widgets\AnchorPicker.lua
 Shared\Settings\Widgets\Nudge.lua
 Shared\Settings\Pages.lua
+Shared\Settings\PageGrid.lua
 Shared\Settings\PageControls.lua
 Shared\Settings\SectionTabs.lua
 Shared\Settings\ModeLayout.lua
@@ -114,6 +115,8 @@ Shared\Settings\Confirm.lua
 Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Sidebar.lua
+Shared\Settings\Navigation.lua
+Shared\Settings\Home.lua
 Shared\Settings\Window.lua
 Shared\Settings\Launchers.lua
 Shared\Settings\EditAnchor.lua

@@ -52,6 +52,11 @@ Style.ASSETS = {
     Circle = { file = "Masks\\Circle" },
 }
 
+-- Module icons (white line glyphs, tinted): Style.ASSETS["Icon" .. name].
+Style.ICONS = { "Home", "UnitFrames", "GroupFrames", "Nameplates", "ActionBars", "DamageMeters", "Chat", "Windows",
+    "Tooltip", "Bags", "Minimap", "Profiles", "Optimizations", "ClassColors", "Cooldowns", "Back" }
+for _, name in ipairs(Style.ICONS) do Style.ASSETS["Icon" .. name] = { file = "Icons\\" .. name } end
+
 -- The bar textures every picker offers, in menu order ("Mode" heading, short names).
 Style.BAR_TEXTURES = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield" }
 

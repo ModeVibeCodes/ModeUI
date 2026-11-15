@@ -15,7 +15,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Preview, PreviewTools, Settings, SettingsPower, SettingsElements,
 -- SettingsAuras. Aura declarations: AuraInit.
 local L, Kit = addon.L, addon.Kit
-local M = { title = L["Party Frames"], category = "frames", defaultEnabled = false,
+local M = { title = L["Party Frames"], category = "frames", defaultEnabled = false, layout = "split",
     configDescription = L["You and your party in the Onyx look, with an aura manager. Configure outside combat."],
     modeLayout = { decorateOnly = true } }
 addon.PartyFrames = M

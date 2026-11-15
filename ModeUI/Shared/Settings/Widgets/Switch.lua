@@ -1,35 +1,62 @@
 local _, addon = ...
 local T, W = addon.InterfaceTheme, addon.ConfigWidgets
 
-local SWITCH_WIDTH, SWITCH_HEIGHT, KNOB = 28, 16, 10
-local KNOB_MARGIN = (SWITCH_HEIGHT - KNOB) / 2
+local Style = addon.Style
+-- The slide toggle (docs/DESIGN_LANGUAGE.md, "Settings window"): two 34px
+-- halves, OFF and ON, on a near-black track in a Steel Sheen rim; a 30px block
+-- slides under the chosen half, Rosewood Deep with bold white OFF, or Celadon
+-- with dark ON. The button keeps its own size as the hit target.
+local HALF, HEIGHT, INSET = 34, 20, 2
+local SWITCH_WIDTH = HALF * 2
 
--- Toggles and checkboxes are both a 28x16 pill switch centered on the button:
--- off is a dark track with a muted knob at the left, on an accent track with
--- an ink knob at the right. The button keeps its own size as the hit target.
+local function Half(frame, text, side)
+    local label = frame:CreateFontString(nil, "OVERLAY")
+    label:SetPoint(side, frame, side, 0, 0)
+    label:SetSize(HALF, HEIGHT)
+    label:SetJustifyH("CENTER")
+    label:SetText(text)
+    return label
+end
+
+-- Toggles and checkboxes are both a slide toggle centered on the button.
 function W.Switch(button, text, height, style)
     local frame = CreateFrame("Frame", nil, button)
-    frame:SetPoint("CENTER"); frame:SetSize(SWITCH_WIDTH, SWITCH_HEIGHT)
-    local track = W.Box(frame, "ModeSwitch", "ARTWORK")
-    local knob = W.Shape(frame, "ModeCircle", "OVERLAY")
-    knob:SetSize(KNOB, KNOB)
+    frame:SetPoint("CENTER"); frame:SetSize(SWITCH_WIDTH, HEIGHT)
+    if button:GetWidth() < SWITCH_WIDTH then button:SetWidth(SWITCH_WIDTH) end
+    local track = W.Box(frame, "ModeFlat", "ARTWORK")
+    local knob = frame:CreateTexture(nil, "OVERLAY", nil, 0)
+    Style.ApplyAsset(knob, "Knob")
+    knob:SetSize(HALF - 2 * INSET, HEIGHT - 2 * INSET)
+    local off, on = Half(frame, "OFF", "LEFT"), Half(frame, "ON", "RIGHT")
+    for _, half in ipairs({ off, on }) do
+        addon.Media:BindInterfaceFont(half, GameFontHighlight, T.fontSize.group, nil, "heading")
+        half:SetDrawLayer("OVERLAY", 2)
+    end
     button.switchFrame, button.track, button.fill, button.knob = frame, track, track.fill, knob
+    button.offLabel, button.onLabel = off, on
     button.label = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     button.label:SetPoint("CENTER")
     button.label:SetText(text)
     addon.Media:BindInterfaceFont(button.label, GameFontHighlight, T.fontSize.body)
     W.CrispText(button.label)
+    local function Text(label, color, shadow)
+        label:SetTextColor(color[1], color[2], color[3], color[4] or 1)
+        label:SetShadowColor(0, 0, 0, shadow and 0.5 or 0)
+        label:SetShadowOffset(0, shadow and -1 or 0)
+    end
     function button:RefreshAppearance()
         local available = self:IsEnabled()
-        local on = self.selected == true
+        local isOn = self.selected == true
         local hovered = available and self.hovered
         local alpha = available and 1 or 0.4
-        if on then track:SetColors(T.primary, T.primary, alpha)
-        else track:SetColors(T.track, T.trackRim, alpha) end
+        track:SetColors(T.toggleTrack, hovered and T.primary or T.rim, alpha)
+        local block = isOn and T.toggleOn or T.toggleOff
+        knob:SetVertexColor(block[1], block[2], block[3], alpha)
         knob:ClearAllPoints()
-        knob:SetPoint(on and "RIGHT" or "LEFT", frame, on and "RIGHT" or "LEFT", on and -KNOB_MARGIN or KNOB_MARGIN, 0)
-        local color = on and T.ink or (hovered and T.text or T.muted)
-        knob:SetVertexColor(color[1], color[2], color[3], alpha)
+        knob:SetPoint(isOn and "RIGHT" or "LEFT", frame, isOn and "RIGHT" or "LEFT", isOn and -INSET or INSET, 0)
+        Text(off, isOn and T.toggleIdle or T.highlight, not isOn)
+        Text(on, isOn and T.onInk or T.toggleIdle, false)
+        frame:SetAlpha(alpha)
         local label = self.labelColor or T.text
         self.label:SetTextColor(label[1], label[2], label[3], available and (label[4] or 1) or 0.5)
     end

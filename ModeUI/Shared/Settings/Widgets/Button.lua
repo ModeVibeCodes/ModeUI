@@ -3,12 +3,21 @@ local T, W = addon.InterfaceTheme, addon.ConfigWidgets
 
 -- Button recipes: palette keys for the fill, rim and label at rest, and what
 -- hover and selection change. A missing fill or rim draws nothing. press
--- nudges the label one pixel down while the button is held.
+-- nudges the label one pixel down while the button is held. asset: the face
+-- texture (Solid when absent). Rims in the theme's rim color keep the Steel
+-- Sheen metal; any other rim color tints it.
 local RECIPES = {
-    -- Secondary, the default: a field with a rim that turns accent on hover.
-    button = { fill = "field", rim = "rim", label = "text", hoverRim = "primary", press = true,
+    -- Secondary, the default: a Mode Gradient face in a Steel Sheen rim that
+    -- turns Ivory on hover.
+    button = { fill = "button", asset = "Gradient", rim = "rim", label = "text", hoverRim = "primary", press = true,
+        selectedFill = "accentFill", selectedRim = "primary", selectedLabel = "primary", weight = "heading" },
+    -- Ivory (Done) and Rosewood (Reset): flat faces with dark text and a rim of
+    -- their own color, 70% toward black.
+    primary = { fill = "primary", rim = "primaryRim", label = "ink", hoverAlpha = 0.86, press = true, weight = "heading" },
+    danger = { fill = "danger", rim = "dangerRim", label = "ink", hoverAlpha = 0.86, press = true, weight = "heading" },
+    -- Dropdown fields: a dark solid face.
+    dropdown = { fill = "field", rim = "rim", label = "text", hoverRim = "primary", press = false,
         selectedFill = "accentFill", selectedRim = "primary", selectedLabel = "primary" },
-    primary = { fill = "primary", label = "ink", hoverAlpha = 0.86, press = true },
     -- Quiet (ghost): text only.
     quiet = { label = "muted", hoverLabel = "text", selectedLabel = "primary", press = true },
     -- A standalone choice (anchor picker cells, preview modes).
@@ -19,9 +28,9 @@ local RECIPES = {
         selectedFill = "accentFill", selectedRim = "primary", selectedLabel = "primary" },
     -- Sidebar and menu rows: a quiet fill, and an accent bar on the left edge when chosen.
     tab = { label = "secondary", hoverFill = "navSelected", hoverLabel = "text", square = true,
-        selectedFill = "navSelected", selectedLabel = "text", edge = "left" },
+        selectedFill = "navSelected", selectedLabel = "heading", edge = "left" },
     -- Section tabs: text, with a 2 px accent underline when chosen.
-    underline = { label = "muted", hoverLabel = "text", selectedLabel = "text", edge = "bottom", size = "section" },
+    underline = { label = "muted", hoverLabel = "text", selectedLabel = "heading", edge = "bottom", size = "section", weight = "heading" },
     -- Sidebar captions.
     categoryHeading = { label = "faint", hoverLabel = "secondary", size = "group", weight = "heading" },
 }
@@ -52,7 +61,8 @@ function W.Button(parent, text, width, height, style)
         return W.Switch(button, text, height, style)
     end
     local recipe = RECIPES[style] or RECIPES.button
-    button.box = W.Box(button, not recipe.square and "ModeFlat" or nil, "BACKGROUND")
+    button.box = W.Box(button, not recipe.square and (recipe.fill or recipe.rim or recipe.selectedFill) and "ModeFlat" or nil, "BACKGROUND")
+    if recipe.asset then button.box:SetAsset(recipe.asset) end
     button.fill = button.box.fill
     if recipe.edge then
         local edge = W.Shape(button, nil, "OVERLAY")
@@ -81,7 +91,7 @@ function W.Button(parent, text, width, height, style)
         end
         local color = self.labelColor or T[label]
         if not available then
-            if style == "primary" then fill, rim = "field", "rim" end
+            if style == "primary" or style == "danger" then fill, rim = "field", "rim" end
             color = T.unavailable
         end
         self.box:SetColors(T[fill], T[rim], hovered and recipe.hoverAlpha or nil)

@@ -102,24 +102,17 @@ function W.ModePageDetail(frame,inset)
     return texture
 end
 
+-- A flat surface or line in a theme color: Mode Solid tinted (Global Texture
+-- belongs to module displays, never the settings window or popups).
 function W.Fill(frame, color, layer, inset, alpha)
     color = InterfaceColor(color)
     local texture = frame:CreateTexture(nil, layer or "BACKGROUND")
     inset = inset or 0
     texture:SetPoint("TOPLEFT", inset, -inset)
     texture:SetPoint("BOTTOMRIGHT", -inset, inset)
-    Paint(texture, color, alpha)
-    if T.id=="mode" and color==T.line then
-        texture.modeAsset="ModeDivider";Paint(texture,color,alpha)
-    end
-    if color==T.panel or color==T.surface or color==T.sidebar or color==T.field or color==T.background or color==T.pageBackground then
-        -- Configuration surfaces belong to the interface theme. Global Texture
-        -- is reserved for module displays, never the settings window or popups.
-        if T.id == "mode" then
-            texture.modeAsset = "ModeSurface"
-            Paint(texture, color, alpha)
-        end
-    end
+    if T.id == "mode" and addon.Style.ApplyAsset(texture, "Solid") then
+        texture:SetVertexColor(color[1], color[2], color[3], alpha or color[4] or 1)
+    else Paint(texture, color, alpha) end
     return texture
 end
 
@@ -129,18 +122,17 @@ function W.Outline(frame, color, layer, inset, alpha, scope)
     scope=scope or addon.Media:FrameScope(frame)
     inset = inset or 0
     local style=addon.Media:GlobalStyle("border",scope) or "thin"
-    if T.id == "mode" and not frame.modeSquareOutline and (frame.modeFixedSprite or style == "thin" or style == "none") then
-        local texture=frame:CreateTexture(nil,layer or "BORDER")
-        texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
-        texture.modeAsset=frame.modeBorderAsset or "ModeBorder"
-        local outline={edges={texture},shown=true,kind=style,rounded=true}
-        function outline:SetShown(shown) self.shown=shown;texture:SetShown(shown and self.kind~="none") end
-        function outline:SetColor(value,opacity)
-            Paint(texture,InterfaceColor(value),opacity or 0.36)
-            self.kind=addon.Media:GlobalStyle("border",scope)=="none" and "none" or "thin"
+    if T.id == "mode" and not frame.modeSquareOutline then
+        -- Mode: a Mode Line border (flat 1px rim in the color, 1px shadow).
+        local edge = addon.Style.Edge(frame, "line", { color = InterfaceColor(color) })
+        local outline = { edges = {}, shown = true, kind = "thin", edge = edge }
+        function outline:SetShown(shown) self.shown = shown; edge:SetShown(shown) end
+        function outline:SetColor(value, opacity)
+            edge:SetTint(InterfaceColor(value))
+            edge.holder:SetAlpha(opacity or 1)
             self:SetShown(self.shown)
         end
-        outline:SetColor(color,alpha)
+        outline:SetColor(color, alpha)
         return outline
     end
     local edges = {}

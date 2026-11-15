@@ -79,7 +79,9 @@ rims).
 | `frame` | Round 4 | 2px Gunmetal | Edge-lit (top 1px catches light) | 1px shadow + soft drop | — | player, target, cast bars, action buttons |
 | `frameThin` | Round 4 | 1px Gunmetal | Edge-lit (half strength on 1px, so the top keeps the sides' weight) | 1px shadow | — | minor and boss frames, nameplates, icons, auras |
 | `group` | Round 4 or Round 2 | 1px Gunmetal | Solid | — | — | party and raid frames (1px apart), bag slots |
-| `window` | Round 4 | 1px Steel | Sheen (light band through the middle) | 1px shadow + soft drop | 1px black | every window and panel, settings window and cards |
+| `window` | Round 4 | 1px Steel | Sheen (light band through the middle) | 1px shadow + soft drop | 1px black | every window and panel, the settings window, popups |
+| `card` | Round 4 | 1px Steel | Sheen | — | 1px black | settings cards (a window border without the shadow) |
+| `control` | Round 4 | 1px Steel | Sheen | 1px shadow | — | buttons, dropdowns, fields, the slide toggle |
 | `ring` | circle | 2px Steel | Sheen | — | — | portraits, badges |
 | `line` | Round 4 | 1px flat color | — | 1px shadow | — | aura dispel rims, item quality |
 | `empty` | Round 4 | 1px or 2px, any color | Edge-lit, tinted | 1px shadow | — | an element's only border in a custom color: proc ready, aggro, target in group frames |
@@ -148,15 +150,25 @@ from the top edge (56% → 0 over 72%) by default, Rim and Inner glow as options
 A hybrid window built one-to-one from the study:
 
 - **Main panel:** 1000px wide; header (MODE wordmark, search, profile, close);
-  184px sidebar of categories with module icons and Celadon/Rosewood status
-  dots; global cards four across (186px); footer with Edit Mode, Reset
-  (Rosewood) and Done (Ivory).
+  184px sidebar of categories (Interface, Panels, System) with module icons
+  ("Mode Icon&lt;Name&gt;" art) and Celadon/Rosewood status dots; the General
+  page's global cards four across (186px); footer with Edit Mode, Reset
+  (Rosewood, shown for a module that can reset to defaults) and Done (Ivory) on
+  the right, and Reload and Preview on the left.
+- **General** holds only global settings that already work. Each redesign
+  phase adds the cards its modules obey (Accent, Text, Textures, Borders,
+  Shields, Names, Scale, Combat), never a control that does nothing yet.
 - **Visual modules** (`layout = "split"`): the sidebar folds into a 48px icon
   rail, settings sit in a 432px column of cards two across, and a live preview
   fills the rest. The header shows "‹ All modules" and a breadcrumb.
 - **Simple modules** (`layout = "page"`): sidebar plus cards four across.
 - **Back:** the rail's home icon, "‹ All modules", the wordmark, or Esc (module
-  → main panel → close).
+  → main panel → close). Esc works through `UISpecialFrames`, so it also works
+  in combat without capturing the keyboard.
+- **Cards:** a Mode Matte face in Graphite raised inside the `card` border, an
+  11px uppercase Ivory title, labels above controls. Existing module pages keep
+  one full-width card per row until their redesign; a redesigned page sets
+  `cardColumns` (4 on a sidebar page, 2 in the split column).
 - **Controls:** Slide toggle (Celadon ON with dark text; Rosewood Deep OFF with
   bold white text), rail slider (2px rail, Ivory fill, 4 × 14 blade), dropdowns,
   cards, color swatches, 1px nudges, anchor compass. Labels sit above controls

@@ -98,14 +98,16 @@ function M:RefreshBorders()
     for owner, callback in pairs(self.borderListeners) do callback(owner) end
 end
 
--- ModeUI's interface font is Expressway by default (registered by Media from an
--- installed AyijeUI or EllesmereUI copy), falling back to the bundled Lato.
+-- ModeUI's interface font is Geist by default (docs/DESIGN_LANGUAGE.md,
+-- "Text"); headings use Geist SemiBold. Choosing the bundled Lato keeps Lato.
 function M:GetInterfaceFont(fallbackPath, scope, weight)
     local theme = addon.InterfaceTheme
     local selection = self:GlobalStyle("font", scope)
-    if theme and theme.id == "mode" and (selection == nil or selection == "game" or selection == "media:ModeUI Lato") then
-        local expressway = selection ~= "media:ModeUI Lato" and self:GetFont("Expressway")
-        return expressway or self.latoPath .. (weight == "heading" and "Bold" or "Regular") .. ".ttf"
+    if theme and theme.id == "mode" and selection == "media:ModeUI Lato" then
+        return self.latoPath .. (weight == "heading" and "Bold" or "Regular") .. ".ttf"
+    end
+    if theme and theme.id == "mode" and (selection == nil or selection == "game") then
+        return addon.Style.FontPath(weight == "heading" and "semibold" or weight or "regular")
     end
     local inherited=self:ResolveFont(self:GlobalStyle("font",scope))
     if inherited then return inherited end
