@@ -30,7 +30,7 @@ local Tone = {
     graphite = Ramp({ "000000", "0A0A0B", "121213", "1A1A1C", "222224", "2C2C2F", "3D3D41", "5A5A5F", "85858B", "A9A9AE", "D8D8DB", "F5F5F6" }),
     darkFill = Hex("1C1D1C"),
     darkFillGraphite = Hex("1D1D1F"),
-    slate = Hex("474747"),
+    slate = Hex("575757"),
     ivory = Hex("EFE6D2"),
     celadon = Hex("B4CDB6"),
     rosewood = Hex("CF6A6F"),
@@ -101,6 +101,13 @@ function Style.Pixel(frame)
     local scale = frame and Plain(frame.GetEffectiveScale, frame)
     if not (Number(factor, 0.01, 10) and Number(scale, 0.01, 100)) then return 1 end
     return factor / scale
+end
+
+-- Blizzard's pixel factor (one physical pixel in UI units at scale 1), or nil
+-- when the client can't report it.
+function Style.PixelFactor()
+    local factor = PixelUtil and addon.Domain.Query.Plain(PixelUtil.GetPixelToUIUnitFactor)
+    if addon.IsNumber(factor, 0.01, 10) then return factor end
 end
 
 -- `n` physical pixels in `frame`'s units, rounded to whole pixels.

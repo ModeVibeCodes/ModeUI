@@ -353,7 +353,7 @@ world.run([====[
     -- The ring sits above the bars and the border, so its whole circle is drawn over the block's end.
     assert(ring:GetFrameLevel()>p.health:GetFrameLevel() and ring:GetFrameLevel()>p.panel.edge.holder:GetFrameLevel(),'ring over the block end')
     assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and ring.ring.sheen.texture==addon.Style.AssetPath('RingSheen'),'Steel Sheen ring')
-    assert(Point(ring.icon)[4]==2 and Point(ring.icon)[5]==-2 and ring.ring.mask,'the portrait 2px inside, cut round, no gap')
+    assert(Point(ring.icon)[4]==4 and Point(ring.icon)[5]==-4 and ring.ring.mask,'the portrait 4px inside (a 4px ring), cut round, no gap')
     assert(p.nameClip==nil and p.nameShine==nil and p.panel.ringBorder==nil)
     assert(p.textLayer:GetFrameLevel()>ring:GetFrameLevel(),'text above the portrait')
     -- On the Border (default): the baseline on the top rim's middle (bottom = 2 - 1 - 3
@@ -798,6 +798,13 @@ world.run([====[
     M.Initialize(v21)
     assert(v21.layoutVersion==23 and v21.player.buffs.size==22 and v21.player.buffs.perRow==5 and v21.player.castBar.fontSize==11)
     assert(v21.player.debuffs.size==30 and v21.player.debuffs.perRow==3 and v21.player.healthTextColor=='health')
+    -- Health Text Glow: on by default; a halo behind health texts only.
+    assert(M.db.player.healthTextGlow==true and v21.player.healthTextGlow==true)
+    local ht0=assert(p.textKinds.health[1],'a health text').text
+    assert(ht0.glow and ht0.glow.on and ht0.glow:IsShown(),'health numbers glow')
+    assert(not (p.textKinds.name[1].text.glow and p.textKinds.name[1].text.glow.on),'names do not')
+    assert(M:SetFrameOption('player','healthTextGlow',false) and not ht0.glow:IsShown(),'Health Text Glow off')
+    assert(M:SetFrameOption('player','healthTextGlow',true) and ht0.glow:IsShown())
     -- Version 22 -> 23: solid empty bars (100) take the see-through 60; picked values stay.
     local v22={layoutVersion=22,player={barBackgroundOpacity=100,powerBackgroundOpacity=40},target={barBackgroundOpacity=80}}
     M.Initialize(v22)

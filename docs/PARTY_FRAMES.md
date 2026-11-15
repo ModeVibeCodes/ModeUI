@@ -52,7 +52,8 @@ member is:
   SemiBold in the **Gradient** (class color toward white; Soft Class, Text
   Color and Custom are options); health text is Geist Bold, colored **By
   Health** (Rosewood at 30% and under, through Ivory, to Celadon) or in the
-  Text Color.
+  Text Color, with a soft glow in its own color (**Health Text Glow**, on by
+  default).
 - **Highlights and Overlay**: your target (Border: the rim in Ivory; Tint;
   or None), **Aggro Rim** (the rim in the hostile red while a mob is on the
   member), a mouse highlight, and the **Dispel Overlay**: for each dispel type

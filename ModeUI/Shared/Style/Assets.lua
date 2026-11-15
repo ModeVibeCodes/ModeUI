@@ -48,6 +48,7 @@ Style.ASSETS = {
     CometHead = { file = "Bars\\CometHead" },
     CometTrail = { file = "Bars\\CometTrail" },
     LineGlow = { file = "Bars\\LineGlow" },
+    TextGlow = { file = "Glows\\TextGlow" },
     -- Controls and masks.
     Knob = { file = "Controls\\Knob", slice = 3 },
     Blade = { file = "Controls\\Blade" },

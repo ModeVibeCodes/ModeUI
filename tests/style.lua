@@ -103,6 +103,18 @@ world.run([[
         edge:SetTint(Tone.dispel.Magic)
         edge:SetTint(nil)
     end
+    -- A host whose scale changes after layout (a nameplate aura button made
+    -- once) keeps one physical pixel per holder unit: the holder ignores its
+    -- parents' scale and takes the pixel factor itself.
+    PixelUtil = { GetPixelToUIUnitFactor = function() return 768 / 1440 end }
+    local plateFrame = CreateFrame("Frame", nil, host); plateFrame:SetScale(0.1)
+    local aura = CreateFrame("Frame", nil, plateFrame); aura:SetSize(22, 22)
+    local auraEdge = Style.Edge(aura, "frameThin")
+    plateFrame:SetScale(0.8)
+    assert(auraEdge.holder:IsIgnoringParentScale() and math.abs(auraEdge.holder:GetEffectiveScale() - 768 / 1440) < 1e-9, "a holder unit is one physical pixel, whatever the host's scale")
+    PixelUtil = nil
+    auraEdge:Layout()
+    assert(not auraEdge.holder:IsIgnoringParentScale() and auraEdge.holder.scale == 1, "without the factor: the host's pixel size")
     -- Bars: every picker texture applies; unknown keys fall back to Matte.
     local bar = Style.Bar(host, { role = "health" })
     assert(bar.textureKey == "Matte", "health bars default to Mode Matte")
@@ -167,8 +179,31 @@ world.run([[
     -- Icons: wider than tall.
     assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
     local ring = Style.Ring(host, 66)
-    assert(ring.portrait and ring.mask, "portrait ring")
-    assert(Style.SameColor({ 0x47 / 255, 0x47 / 255, 0x47 / 255 }, Tone.slate))
+    assert(ring.portrait and ring.mask and ring.rim == 4, "portrait ring, 4px of metal")
+    assert(Style.SameColor(Style.Hex("575757"), Tone.slate), "Slate, a little lighter")
+    -- Health text glow: a halo in the text's color, sized from the format and
+    -- set on the text's justified side; it follows the color and visibility.
+    local hooked = {}
+    local oldHook = hooksecurefunc
+    hooksecurefunc = function(t, name, hook)
+        local old = t[name]; hooked[#hooked + 1] = name
+        t[name] = function(...) old(...); hook(...) end
+    end
+    local text = host:CreateFontString(nil, "OVERLAY")
+    text:SetTextColor(0.2, 0.8, 0.4, 1)
+    Style.TextGlow(text, { size = 10, chars = Style.GLOW_CHARS.percent, justify = "RIGHT", px = 1 })
+    local glow = text.glow
+    assert(glow and glow.texture == Style.AssetPath("TextGlow") and glow.blendMode == "ADD" and glow.layer == "OVERLAY", "an added-light halo")
+    assert(glow.width == 25 + 8 and glow.height == 10 + 8, "sized from the format: 4 digits x 0.62 x 10, 4px round")
+    assert(glow.points[1][1] == "RIGHT" and glow.points[1][2] == text and glow.points[1][4] == 4, "on the justified side")
+    assert(glow.vertexColor[2] == 0.8 and glow.vertexColor[4] == Style.TEXT_GLOW_ALPHA and glow:IsShown(), "the text's color")
+    text:SetTextColor(0.9, 0.3, 0.3, 1)
+    assert(glow.vertexColor[1] == 0.9, "follows a new color")
+    text:Hide(); assert(not glow:IsShown(), "hides with the text")
+    text:Show(); assert(glow:IsShown())
+    Style.TextGlow(text, nil); assert(not glow:IsShown(), "toggled off")
+    text:Show(); assert(not glow:IsShown(), "stays off")
+    hooksecurefunc = oldHook
     assert(Style.Accent("specialty") == Tone.rosewood and Style.Accent() == Tone.ivory)
     -- The style sheet builds on demand.
     assert(_G.ModeUIStyleSheet == nil, "no sheet before /modeui style")

@@ -143,6 +143,8 @@ local function Frame(side, extra)
         healthColorMode = "default", healthColor = Copy(M.palette.green),
         -- Health texts in the bars: colored by health (Style.PaintHealthText).
         healthTextColor = "health",
+        -- A soft glow behind the health numbers (Style.TextGlow).
+        healthTextGlow = true,
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
         font = "game", fontMedia = "Mode Geist", outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus

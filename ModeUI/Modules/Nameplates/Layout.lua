@@ -90,7 +90,12 @@ function M:LayoutPlate(plate)
     else
         PlaceText(plate.name, db.nameAnchor, db.nameFontSize, db.showName, db.nameX, db.nameY)
     end
-    PlaceText(plate.healthText, db.healthTextAnchor, db.healthFontSize, not nameOnly and db.healthText ~= "none", db.healthTextX, db.healthTextY)
+    local healthShown = not nameOnly and db.healthText ~= "none"
+    PlaceText(plate.healthText, db.healthTextAnchor, db.healthFontSize, healthShown, db.healthTextX, db.healthTextY)
+    -- Health numbers glow (Health Text Glow); width from the format.
+    local glowSide = Horizontal(db.healthTextAnchor)
+    Style.TextGlow(plate.healthText, healthShown and db.healthTextGlow and { size = db.healthFontSize,
+        chars = Style.GLOW_CHARS[db.healthText], justify = glowSide == "" and "CENTER" or glowSide, px = px } or nil)
     self:LayoutCast(plate)
 
     -- The raid marker: around the bar, or in its middle.

@@ -146,6 +146,9 @@ world.run([==[
     assert(plate.health.statusBarColor[1] == hostile[1] and plate.health.statusBarColor[4] == 1, 'true hostile color, opaque bar')
     assert(M.db.enemy.softness == nil and M.db.enemy.healthOpacity == 100 and M.db.enemy.backgroundOpacity == 60, 'opacity defaults: see-through empty bars')
     assert(math.abs(plate.health.bg.vertexColor[4] - 0.6) < 1e-9, 'Slate at 60%')
+    local hg = plate.healthText.glow
+    assert(M.db.enemy.healthTextGlow and hg and hg.on and hg:IsShown(), 'health numbers glow')
+    assert(M:SetOption('enemy', 'healthTextGlow', false) and not hg:IsShown() and M:SetOption('enemy', 'healthTextGlow', true) and hg:IsShown())
     assert(M:SetOption('enemy', 'healthOpacity', 60) and math.abs(plate.health.statusBarColor[4] - 0.6) < 1e-9, 'Health Opacity fades the bar')
     assert(plate.health.statusBarColor[1] == hostile[1], 'fading keeps the color')
     assert(M:SetOption('enemy', 'backgroundOpacity', 20) and math.abs(plate.health.bg.vertexColor[4] - 0.2) < 1e-9, 'Background Opacity')

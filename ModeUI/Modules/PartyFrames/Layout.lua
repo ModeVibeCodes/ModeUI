@@ -226,6 +226,11 @@ function M:LayoutElements(f)
         text:SetJustifyH(justify)
         Kit.LayoutLift(text, db, size, weighted, px, db[element .. "Show"], justify)
         text:SetShown(db[element .. "Show"] and true or false)
+        -- Health numbers glow (Health Text Glow); width from the format.
+        if element == "healthText" then
+            Style.TextGlow(text, db.healthTextShow and db.healthTextGlow
+                and { size = size, chars = Style.GLOW_CHARS[db.healthText], justify = justify, px = px } or nil)
+        end
     end
     for element, icon in pairs(f.icons) do
         local size = math.max(px, math.floor(db[element .. "Size"] / px + 0.5) * px)

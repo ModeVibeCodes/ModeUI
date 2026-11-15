@@ -21,6 +21,7 @@
 --   baked files Gradient, Button, Glass, Cast that other addons get through
 --   LibSharedMedia (and Matte). Shield: a 32x32 tile, a 1px 45-degree line every 8 texels.
 --   CometHead, CometTrail, LineGlow: the Comet spark and the shield finish line.
+-- Glows/   TextGlow: a soft capsule of light behind health numbers (stretched).
 -- Controls/ Knob (slide toggle block, radius 2), Blade (slider thumb).
 -- Icons/    the module icons for the settings sidebar and icon rail (tools/mode_icons.lua).
 -- Masks/    Circle: a filled disc (portrait metal disc and the portrait's own crop).
@@ -174,6 +175,17 @@ Save("Bars/CometHead", 32, 64, function(x, y)
 end)
 Lift("Bars/CometTrail", 64, 16, function(x) return 0.7 * ((x + 0.5) / 64) end)
 Lift("Bars/LineGlow", 16, 64, function(x) return 0.8 * (1 - T.Smooth(math.abs(x + 0.5 - 8) / 8)) end)
+
+-- Glows --------------------------------------------------------------------
+-- Text glow: flat through the middle 60% of its width, fading to nothing at the
+-- ends, and soft top to bottom; drawn stretched over the digits.
+Lift("Glows/TextGlow", 128, 32, function(x, y)
+    local t = math.abs(x + 0.5 - 64) / 64
+    local fx = t < 0.6 and 1 or (1 - T.Smooth((t - 0.6) / 0.4))
+    local u = math.abs(y + 0.5 - 16) / 16
+    local fy = u < 0.25 and 1 or (1 - T.Smooth((u - 0.25) / 0.75))
+    return 0.9 * fx * fy
+end)
 
 -- Icons --------------------------------------------------------------------
 local ICONS = dofile(here .. "mode_icons.lua")

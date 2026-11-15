@@ -95,6 +95,54 @@ function Style.PaintHealthText(fontString, unit)
     return ok
 end
 
+-- Health text glow ("Text"): a soft halo behind the numbers in the text's own
+-- color, as added light. Its width is estimated from the format (characters),
+-- never measured (health text can be secret); it sits on the text's justified
+-- side and follows the text's color (secret colors included: SetVertexColor
+-- accepts them) and visibility through hooks.
+Style.GLOW_CHARS = { percent = 4, percentPlain = 3, current = 5, deficit = 5, both = 11 }
+Style.TEXT_GLOW_ALPHA = 0.45
+local GLOW_OUT = 4
+local function SyncGlow(text)
+    local glow = text.glow
+    if not glow then return end
+    local shown = text:IsShown()
+    if addon.IsPublic(shown) then glow:SetShown(glow.on and shown and true or false) end
+end
+local function FollowColor(text, r, g, b)
+    local glow = text.glow
+    if glow and glow.on then glow:SetVertexColor(r, g, b, Style.TEXT_GLOW_ALPHA) end
+end
+-- opts: size (font size), chars (Style.GLOW_CHARS), justify, px; nil turns it off.
+function Style.TextGlow(text, opts)
+    local glow = text.glow
+    if not opts then
+        if glow then glow.on = false; glow:Hide() end
+        return
+    end
+    if not glow then
+        local layer, sublevel = text:GetDrawLayer()
+        glow = text:GetParent():CreateTexture(nil, layer or "ARTWORK", nil, math.max(-8, (sublevel or 0) - 1))
+        Style.ApplyAsset(glow, "TextGlow")
+        glow:SetBlendMode("ADD")
+        text.glow = glow
+        if hooksecurefunc then
+            hooksecurefunc(text, "SetTextColor", FollowColor)
+            for _, method in ipairs({ "Show", "Hide", "SetShown" }) do hooksecurefunc(text, method, SyncGlow) end
+        end
+    end
+    glow.on = true
+    local px = opts.px or Style.Pixel(text)
+    local out = GLOW_OUT * px
+    local digits = math.floor((opts.chars or 4) * 0.62 * opts.size / px + 0.5) * px
+    glow:SetSize(digits + 2 * out, math.floor(opts.size / px + 0.5) * px + 2 * out)
+    local side = (opts.justify == "LEFT" or opts.justify == "RIGHT") and opts.justify or "CENTER"
+    glow:ClearAllPoints()
+    glow:SetPoint(side, text, side, side == "LEFT" and -out or side == "RIGHT" and out or 0, 0)
+    FollowColor(text, text:GetTextColor())
+    SyncGlow(text)
+end
+
 -- The Mode text shadow: 1px offset (1, -1) at 95% black.
 function Style.Shadow(fontString, px)
     local shadow = Tone.textShadow

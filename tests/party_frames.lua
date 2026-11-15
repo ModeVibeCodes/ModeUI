@@ -220,6 +220,10 @@ world.run([==[
     assert(math.abs(p1.health.bg.vertexColor[4] - 0.6) < 1e-6 and p1.panel.back.vertexColor[4] == 0, 'see-through, no plate')
     assert(M:SetOption('healthColorMode', 'default') and p1.health.statusBarColor[1] == S.Tone.darkFill[1] and S.Hex('1C1D1C')[2] == S.Tone.darkFill[2], 'Dark is #1C1D1C')
     assert(M:SetOption('healthColorMode', 'class'))
+    -- Health Text Glow: on by default, a halo on the health text's side.
+    local hg = p1.texts.healthText.glow
+    assert(M.db.healthTextGlow and hg and hg.on and hg:IsShown() and hg.points[1][1] == 'RIGHT', 'health numbers glow')
+    assert(M:SetOption('healthTextGlow', false) and not hg:IsShown() and M:SetOption('healthTextGlow', true) and hg:IsShown())
     assert(p1.alphaFromBoolean and p1.alphaFromBoolean[1].label == 'range' and p1.alphaFromBoolean[3] == 0.55, 'secret range via SetAlphaFromBoolean')
     assert(M.members[1]:GetAlpha() == 1 and M.members[3]:GetAlpha() == 1, 'you and members in range stay opaque')
     -- Class color by default.

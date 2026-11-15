@@ -132,6 +132,10 @@ function M:LayoutTexts(f, unit)
         end
         text:SetShown(shown)
         LayoutLift(text, fdb, s.size, path, g.px, shown, justify)
+        -- Health numbers glow (Health Text Glow); width from the format.
+        local glow = shown and fdb.healthTextGlow and self.contentKind[s.content] == "health"
+        addon.Style.TextGlow(text, glow and { size = s.size, chars = addon.Style.GLOW_CHARS[(s.content:gsub("^health", ""):lower())],
+            justify = justify, px = g.px } or nil)
     end
 end
 

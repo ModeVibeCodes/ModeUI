@@ -93,13 +93,23 @@ function Style.Edge(host, preset, opts)
     return edge
 end
 
+-- One physical pixel per unit on a holder: it ignores its parents' scale and
+-- takes Blizzard's pixel factor as its own, so a host whose scale changes
+-- after layout (nameplates, aura buttons a container made once) never leaves
+-- the border at a stale size. Without the factor, the host's pixel size.
+local function PixelGrid(frame, px)
+    local factor = frame.SetIgnoreParentScale and Style.PixelFactor()
+    if frame.SetIgnoreParentScale then frame:SetIgnoreParentScale(factor ~= nil) end
+    frame:SetScale(factor or px)
+end
+
 -- Places every piece on whole physical pixels. Call again when the host's
--- effective scale changes (UI scale, parent scale).
+-- effective scale changes without a pixel factor (the fallback only).
 function Edge:Layout()
     local px = Style.Pixel(self.host)
     self.px = px
-    self.holder:SetScale(px)
-    if self.below then self.below:SetScale(px) end
+    PixelGrid(self.holder, px)
+    if self.below then PixelGrid(self.below, px) end
     local gap = self.def.gap and 1 or 0
     local rim = self.rim
     if self.gap then Around(self.gap, self.holder, gap) end

@@ -145,7 +145,7 @@ M.defaults = {
     dispelFilter = "mine", dispelGradientOpacity = 56,
     dispel = { Magic = Effects(), Curse = Effects(), Disease = Effects(), Poison = Effects(), Bleed = Effects() },
     -- Text.
-    nameColorMode = "gradient", nameColor = Copy(P.text), healthText = "percent", healthTextColor = "health", nameWidth = 60,
+    nameColorMode = "gradient", nameColor = Copy(P.text), healthText = "percent", healthTextColor = "health", healthTextGlow = true, nameWidth = 60,
     font = "game", fontMedia = "Mode Geist", outline = false, shadow = true, liftedShadow = false, slug = false,
     textColor = Copy(P.text), hideDamagerRole = false,
     -- Aura rims, glows and dispel effects by type (Blizzard's DebuffTypeColor family).

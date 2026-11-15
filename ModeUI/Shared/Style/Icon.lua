@@ -24,8 +24,9 @@ end
 -- A portrait in a ring (the `ring` preset): a metal disc `diameter + 2 * rim`
 -- wide with its light band, and the portrait texture cropped to a circle on top.
 -- Returns { frame, portrait, disc } sized in `host`'s units.
+Style.RING_RIM = 4 -- the `ring` preset's metal, in physical pixels
 function Style.Ring(host, diameter, rim)
-    rim = rim or 2
+    rim = rim or Style.RING_RIM
     local px = Style.Pixel(host)
     local outer = (diameter + 2 * rim) * px
     local ring = { rim = rim }

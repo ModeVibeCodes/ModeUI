@@ -146,7 +146,12 @@ function methods:SetAllPoints(relative)
 end
 function methods:GetHeight() return self.height or 240 end
 function methods:SetScale(scale) self.scale = scale; self.layoutWrites = (self.layoutWrites or 0) + 1 end
-function methods:GetEffectiveScale() return (self.scale or 1) * (self.parent and self.parent:GetEffectiveScale() or 1) end
+function methods:SetIgnoreParentScale(value) self.ignoreParentScale = value and true or false end
+function methods:IsIgnoringParentScale() return self.ignoreParentScale == true end
+function methods:GetEffectiveScale()
+    if self.ignoreParentScale then return self.scale or 1 end
+    return (self.scale or 1) * (self.parent and self.parent:GetEffectiveScale() or 1)
+end
 function methods:GetCenter()
     -- Opt-in strict rectangle for registration regressions. Historical fixtures
     -- supply synthetic positions; a newly created native frame need not have one.
@@ -172,6 +177,8 @@ function methods:SetText(text)
 end
 function methods:SetColorTexture(...) self.color = {...} end
 function methods:SetTextColor(...) self.color = {...} end
+function methods:GetTextColor() local c = self.color or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] or 1 end
+function methods:GetDrawLayer() return self.drawLayer or self.layer, self.sublevel or 0 end
 function CreateColor(r,g,b,a) return {r=r,g=g,b=b,a=a} end
 function methods:SetGradient(orientation,minimum,maximum)
     assert(orientation=="HORIZONTAL" or orientation=="VERTICAL")
@@ -281,8 +288,8 @@ function methods:CreateTexture(_, layer)
     self.regionList = self.regionList or {}; self.regionList[#self.regionList + 1] = texture
     return texture
 end
-function methods:CreateFontString(_, _, template)
-    local text = Object(self); text.kind = "FontString"; text.hasFont = template ~= nil
+function methods:CreateFontString(_, layer, template)
+    local text = Object(self); text.kind = "FontString"; text.hasFont = template ~= nil; text.layer = layer
     self.regionList = self.regionList or {}; self.regionList[#self.regionList + 1] = text
     return text
 end

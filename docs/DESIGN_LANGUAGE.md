@@ -45,7 +45,7 @@ Two neutral ramps. Frames and buttons use **Mono**, windows and panels use
 | Token | Value | Use |
 |---|---|---|
 | `darkFill` | `#1C1D1C` (Graphite `#1D1D1F`) | dark-mode health fill (every "Dark"/"Default" health color) |
-| `slate` | `#474747` at 60% (`emptyAlpha`) | every empty bar, behind every fill; semi-transparent |
+| `slate` | `#575757` at 60% (`emptyAlpha`) | every empty bar, behind every fill; semi-transparent |
 | `ivory` | `#EFE6D2` | main accent: highlights, selected tabs, card titles, primary buttons |
 | `celadon` | `#B4CDB6` | specialty accent; ON |
 | `rosewood` | `#CF6A6F` | specialty accent: focus, priority, destructive; OFF |
@@ -82,7 +82,7 @@ rims).
 | `window` | Round 4 | 1px Steel | Sheen (light band through the middle) | 1px shadow + soft drop | 1px black | every window and panel, the settings window, popups |
 | `card` | Round 4 | 1px Steel | Sheen | — | 1px black | settings cards (a window border without the shadow) |
 | `control` | Round 4 | 1px Steel | Sheen | 1px shadow | — | buttons, dropdowns, fields, the slide toggle |
-| `ring` | circle | 2px Steel | Sheen | — | — | portraits, badges |
+| `ring` | circle | 4px Steel | Sheen | — | — | portraits, badges |
 | `line` | Round 4 | 1px flat color | — | 1px shadow | — | aura dispel rims, item quality |
 | `empty` | Round 4 | 1px or 2px, any color | Edge-lit, tinted | 1px shadow | — | an element's only border in a custom color: proc ready, aggro, target in group frames |
 
@@ -139,6 +139,11 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
 - **Text in bars** (health, power, cast) in Geist Bold. Health text is colored
   by health: Rosewood at 30% and under, through Ivory, to Celadon at full
   (the client evaluates a color curve, since the health percent is secret).
+- **Health text glow** (on by default, a module toggle): a soft halo behind
+  the health numbers in the text's own color (added light, 45%), 4px past
+  the digits. Its width comes from the format (characters × 0.62 × size),
+  never from measuring, since health text can be secret; it sits on the
+  text's justified side and follows the text's color and visibility.
 - **Placement:** the name sits on the top border, 9px in from the side
   opposite the portrait, lifted so the rim runs near its baseline. Health is
   right-aligned inside the health bar (padded past a portrait on that side).
@@ -248,6 +253,7 @@ Menus group them under "Mode" with the short name.
 | Shield | absorbs and overshields |
 | Solid, Matte, Gradient, Glass | general fills |
 | Spark | Comet head and trail; shield finish line |
+| Text Glow | the health text halo |
 | Light, Empty | border art |
 
 ## Companion addons

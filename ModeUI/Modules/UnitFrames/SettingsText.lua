@@ -181,6 +181,7 @@ function M:BuildTextTab(ui)
         When(function() return ui.db().nameColorMode == "custom" end, function() ui.Color("Custom Name Color", "nameColor") end)
         -- Health texts: by health (Rosewood low, Ivory, Celadon full) or the Text Color.
         ui.Choice("Health Text Color", "healthTextColor")
+        ui.Toggles({ { "Health Text Glow", "healthTextGlow" } })
         -- Pastel: class-colored names, class health and the class ring all use it.
         ui.Slider("Class Color Softness", "classSoftness", "%")
         M:BuildTextKinds(ui)

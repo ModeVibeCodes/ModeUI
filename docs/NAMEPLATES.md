@@ -21,7 +21,8 @@ frame and fades Blizzard's art. Each plate has:
   toward white) by default; Class or Reaction and Text Color are options.
   **Health text** (Percent, Current Health, Current and Percent, None) in Geist
   Bold, colored **By Health** (Rosewood at 30% and under, through Ivory, to
-  Celadon) or in the Text Color. Cast texts are Geist Bold. One shadow, no
+  Celadon) or in the Text Color, with a soft glow in its own color (**Health
+  Text Glow**, on by default). Cast texts are Geist Bold. One shadow, no
   lifted copy.
 - **Health color**: Reaction and Class, Reaction, Onyx or Custom, used exactly
   as they are (true colors). **Threat Colors** (enemies, on by default) gives

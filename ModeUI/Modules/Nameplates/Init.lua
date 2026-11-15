@@ -80,7 +80,7 @@ local function Style(kind)
         foregroundTexture = "media:Mode BG", backgroundTexture = "media:Mode BG", castTexture = "media:Mode Cast",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
         threatPullingColor = Copy(M.threatPalette.warning),
-        healthText = enemy and "percent" or "none", healthFontSize = 9, healthTextColor = "health",
+        healthText = enemy and "percent" or "none", healthFontSize = 9, healthTextColor = "health", healthTextGlow = true,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
         showName = true, nameFontSize = 10, nameColorMode = "gradient", nameAnchor = "TOP", nameX = 0, nameY = 0,
         showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
