@@ -5,6 +5,17 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Text by kind, outlined cast text, a whiter Gradient
+
+- The Text tab: Font and Colors, then a tile per kind of text (Name, Level,
+  Health Text, Power Text) with the same controls: Show (its formats or
+  Hidden), Position (a spot on the frame; a spot another text holds says so),
+  Size, Color (the modes that suit it, and a Custom swatch), Offset X and Y.
+  Moving a text carries its size, color and offset; turning a hidden one on
+  puts it in its home spot. The spot grid and its quick color icons are gone.
+- Cast text has its own Outline (Cast Bar tab), on by default.
+- The Gradient ends 50% toward white, and the letters reach it sooner.
+
 ## Bold bar text, health by color, auras clear of the ring (layout version 22)
 
 - Text in the bars and the cast bar in Geist Bold; names on the border stay

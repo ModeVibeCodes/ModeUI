@@ -11,7 +11,7 @@ local LEGACY = dofile(here .. "design_legacy.lua")
 
 local RULES = {
     { id = "color", why = "colors come from Style.Tone",
-      patterns = { "RGB%(", "SetColorTexture%(%s*[%d%.]", "SetVertexColor%(%s*[%d%.]", "SetTextColor%(%s*[%d%.]",
+      patterns = { "%f[%w]RGB%(", "SetColorTexture%(%s*[%d%.]", "SetVertexColor%(%s*[%d%.]", "SetTextColor%(%s*[%d%.]",
                    "SetStatusBarColor%(%s*[%d%.]", "SetGradient%(", "|c[fF][fF]%x%x%x%x%x%x" } },
     { id = "border", why = "borders come from Style.Edge presets",
       patterns = { "Kit%.Rim%(", "Kit%.PlaceRim%(", "ModeBorder%(", "ModeBoxBorder%(", "SetBackdrop%(" } },

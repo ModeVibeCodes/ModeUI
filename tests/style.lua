@@ -122,11 +122,11 @@ world.run([[
         assert(first and first[2] == bar, "hairline lines anchor to the bar, not the fill")
     end
     assert(shield.attachedClip.points[1][2] == shield.attached:GetStatusBarTexture(), "and clip to the shield fill")
-    -- Names: Gradient is per letter from the color to 60% color + 40% white.
+    -- Names: Gradient is per letter from the color to 50% color + 50% white.
     local text = Style.GradientText("Mode", { 1, 0, 0 })
     assert(text:sub(1, 10) == "|cffff0000" and text:find("|r$"), "gradient starts at the color")
     local finish = Style.GradientEnd({ 1, 0, 0 })
-    assert(math.abs(finish[2] - 0.4) < 1e-6, "gradient ends 40% toward white")
+    assert(math.abs(finish[2] - 0.5) < 1e-6, "gradient ends 50% toward white")
     assert(Style.GradientText(nil, { 1, 0, 0 }) == nil)
     -- Icons: wider than tall.
     assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)

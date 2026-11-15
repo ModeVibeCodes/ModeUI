@@ -117,7 +117,8 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
 - One shadow: 1px offset (1, −1) at 95% black (no second, lifted copy);
   OUTLINE only as a player choice.
 - **Names:** in SemiBold, and the Gradient is standard (class or reaction
-  color fading to 60% class + 40% white across the name, one color per letter;
+  color fading to 50% class + 50% white across the name, one color per letter,
+  the letters reaching the end color sooner (the square root of their place);
   names Forever returns as secret fall back to Soft class). Options: Soft class
   (55% class + 45% white), White.
 - **Text in bars** (health, power, cast) in Geist Bold. Health text is colored

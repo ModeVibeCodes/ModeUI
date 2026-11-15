@@ -885,40 +885,38 @@ restored.run([====[
         for _,section in ipairs(page.sections) do assert(not Find(section.title,title),'replaced by text slots: '..title) end
     end
     assert(M:ResetFrame('player'))
-    -- Text slots: three spots to a line in frame order (left, centre, right), every
-    -- dropdown the same width; a spot with a text has a swatch and a size under it.
+    -- The Text tab: a tile per kind of text (Name, Level, Health Text, Power Text),
+    -- each with the same controls: Show, Position, Size, Color, Offset X and Y.
     assert(not Find('Text','Style Slot') and page.unitFrameStyleSlot==nil,'no Slot Style')
-    local S=page.unitFrameTextSelects
-    local function Cells(slot) return S[slot]:GetParent():GetParent():GetParent().row end
-    for _,line in ipairs({{'topLeft','top','topRight'},{'left','center','right'},{'bottomLeft','bottom','bottomRight'},{'powerLeft','powerCenter','powerRight'}}) do
-        local row=Cells(line[1]);assert(Cells(line[2])==row and Cells(line[3])==row and row.settingsTitles[2]==M.textSlotLabels[line[2]],'one line: '..line[1])
-        assert(row.section.title=='Text','every text spot on the Text tab')
-        assert(Visible(row) and Point(S[line[1]])[1]=='TOPLEFT' and Point(S[line[1]],2)[1]=='TOPRIGHT','stretched across its cell')
+    local K=page.unitFrameTextKinds
+    for _,id in ipairs({'name','level','health','power'}) do
+        local c=K[id];assert(c and c.show and c.position and c.size and c.color and c.x and c.y,'uniform controls: '..id)
+        assert(c.show:GetParent().row.section.title=='Text','on the Text tab: '..id)
     end
-    assert(Cells('topLeft').settingsTitles[1]=='Top Left' and Cells('topLeft').settingsTitles[3]=='Top Right')
-    local right,top=page.unitFrameTextSizes.right,page.unitFrameTextSizes.top
-    assert(right.line:IsShown() and not top.line:IsShown(),'size and color only where a text is')
-    assert(page.unitFrameTextSwatches.right.sample.vertexColor[1]==M.db.player.textColor[1])
-    -- Quick unit color icons: Reaction and Class Color for any text, Level Difficulty for the level.
-    local lvl=page.unitFrameTextSizes.bottomLeft
-    assert(right.icons.reaction:IsShown() and right.icons.class:IsShown() and not right.icons.difficulty:IsShown(),'the icons that suit health text')
-    assert(lvl.icons.difficulty:IsShown() and lvl.icons.reaction:IsShown(),'the level can follow difficulty too')
-    assert(Point(right.icons.class)[1]=='RIGHT' and Point(right.icons.class)[2]==right.line and Point(right.icons.reaction)[2]==right.icons.class,'from the right edge')
-    assert(right.icons.class.classIcon.atlas=='classicon-rogue','your class icon')
-    right.icons.reaction.scripts.OnClick();assert(M.db.player.texts.right.colorMode=='reaction' and right.icons.reaction.selected and not right.icons.class.selected)
-    right.icons.reaction.scripts.OnClick();assert(M.db.player.texts.right.colorMode=='default' and not right.icons.reaction.selected,'click again: default')
-    lvl.icons.difficulty.scripts.OnClick();assert(M.db.player.texts.bottomLeft.colorMode=='difficulty' and M:SetTextOption('player','bottomLeft','colorMode','default'))
-    right.larger.scripts.OnClick();assert(M.db.player.texts.right.size==12 and M.frames.player.texts.right.font[2]==12,'+ grows the text')
-    right.smaller.scripts.OnClick();assert(M.db.player.texts.right.size==11)
-    page.unitFrameTextSwatches.right.scripts.OnClick();assert(ColorPickerFrame:IsShown())
+    local H=K.health
+    assert(H.show.label:GetText()=='Health Percent' and H.position.label:GetText()=='Right','health percent at the right')
+    assert(Visible(H.position:GetParent().row) and not Visible(H.custom:GetParent().row),'custom color only when chosen')
+    -- Moving a text carries its size, color and offset; the old spot clears.
+    assert(M:SetTextOptions('player','right',{size=13,x=2}))
+    H.position.rows=H.position.rows or {};H.position:GetScript('OnClick')(H.position)
+    local moved=false
+    for _,row in ipairs(H.position.rows) do if row:IsShown() and row.choice and row.choice.id=='center' then row:GetScript('OnClick')(row);moved=true end end
+    assert(moved and M.db.player.texts.center.content=='healthPercent' and M.db.player.texts.center.size==13 and M.db.player.texts.center.x==2,'moved with its settings')
+    assert(M.db.player.texts.right.content=='none','the old spot cleared')
+    assert(M:SetTextOptions('player','right',{content='healthPercent',size=11,x=0}) and M.db.player.texts.center.content=='none')
+    -- Hidden: only Show is left; turning it on again takes its home spot.
+    assert(M:SetTextOption('player','right','content','none') and not Visible(H.position:GetParent().row) and H.show.label:GetText()=='Hidden')
+    assert(M:SetTextOption('player','right','content','healthPercent') and Visible(H.size:GetParent():GetParent()))
+    -- Color: modes that suit the text; the custom swatch opens the picker.
+    assert(M:SetTextOption('player','right','colorMode','custom') and Visible(H.custom:GetParent().row))
+    H.custom.scripts.OnClick();assert(ColorPickerFrame:IsShown())
     ColorPickerFrame.r,ColorPickerFrame.g,ColorPickerFrame.b=1,0,0;ColorPickerFrame.swatchFunc()
     assert(M.db.player.texts.right.colorMode=='custom' and M.db.player.texts.right.color[1]==1,'picked color is custom')
-    ColorPickerFrame.info.cancelFunc();assert(M.db.player.texts.right.colorMode=='default','cancel restores')
-    assert(M:SetTextOption('player','right','colorMode','custom'))
-    local sw=page.unitFrameTextSwatches.right;sw.scripts.OnClick(sw,'RightButton');assert(M.db.player.texts.right.colorMode=='default','right-click: default color')
-    assert(page.unitFrameBorderAlign:IsShown() and M:SetTextOption('player','border','content','none') and not page.unitFrameBorderAlign:IsShown())
+    assert(M:SetTextOption('player','right','colorMode','default'))
+    -- The border alignment shows while the name is on the border.
+    assert(Visible(K.name.align:GetParent().row) and M:SetTextOption('player','border','content','none') and not Visible(K.name.align:GetParent().row))
     assert(M:SetTextOption('player','border','content','name'))
-    assert(M:SetFrameOption('player','showPower',false) and not Visible(Cells('powerLeft')) and M:SetFrameOption('player','showPower',true))
+    assert(M:SetFrameOption('player','showPower',false) and not Visible(K.power.show:GetParent().row) and M:SetFrameOption('player','showPower',true))
     -- Frame tab: the edited frame's switches and its tools.
     assert(page.unitFrameReset and page.unitFrameCopy and page.unitFrameCopy.label:GetText()=='Copy Style to Target')
     assert(not Visible(Toggle('Frame','Match Player Frame')),"matching is the Target's")

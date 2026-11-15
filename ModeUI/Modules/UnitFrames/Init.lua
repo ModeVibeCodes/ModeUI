@@ -191,7 +191,7 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 2, icon = "near",
     fullWidth = true, width = 160,
     foregroundTexture = "media:Mode Cast", backgroundTexture = "media:Mode BG",
-    showText = true, showTimer = true, fontSize = 11, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
+    showText = true, showTimer = true, fontSize = 11, outline = true, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
 M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
 M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "Hidden" } }

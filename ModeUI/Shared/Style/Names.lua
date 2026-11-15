@@ -19,7 +19,8 @@ function Style.GradientText(name, color)
     for char in name:gmatch("[%z\1-\127\194-\244][\128-\191]*") do letters[#letters + 1] = char end
     local n, finish, parts = #letters, Style.GradientEnd(color), {}
     for i, char in ipairs(letters) do
-        local t = n > 1 and (i - 1) / (n - 1) or 0
+        -- The square root moves the letters toward the end color sooner.
+        local t = n > 1 and math.sqrt((i - 1) / (n - 1)) or 0
         parts[#parts + 1] = Code(Style.Mix(finish, color, t)) .. char
     end
     return table.concat(parts) .. "|r"
