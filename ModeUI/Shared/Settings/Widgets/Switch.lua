@@ -82,10 +82,11 @@ function W.Exclusive(parent, choices, getter, setter)
     container:SetPoint("LEFT", 0, 0)
     container.box = W.Box(container, "ModeFlat")
     container.box:SetColors(T.field, T.rim)
-    local buttons, x = {}, PADDING
+    local buttons, widths, x = {}, {}, PADDING
     for _, choice in ipairs(choices) do
         local value = choice.value
         local width = choice.width or 132
+        widths[#widths + 1] = width
         local button = W.Button(container, choice.label, width, SEGMENT_HEIGHT, "segment")
         button:SetPoint("LEFT", x, 0)
         button:SetScript("OnClick", function() setter(value) end)
@@ -93,6 +94,22 @@ function W.Exclusive(parent, choices, getter, setter)
         x = x + width
     end
     container:SetSize(x + PADDING, SEGMENT_HEIGHT + 2 * PADDING)
+    -- Narrower than its segments' widths (a tile, a shared line): the segments
+    -- shrink evenly to fit the host.
+    local natural = x + PADDING
+    local function Fit(_, available)
+        available = type(available) == "number" and not (issecretvalue and issecretvalue(available)) and available or natural
+        local scale = (available > 40 and available < natural) and available / natural or 1
+        local left = PADDING
+        for index, button in ipairs(buttons) do
+            local width = math.floor(widths[index] * scale)
+            button:SetWidth(width); button:ClearAllPoints(); button:SetPoint("LEFT", left, 0)
+            left = left + width
+        end
+        container:SetWidth(left + PADDING)
+    end
+    if parent.HookScript then parent:HookScript("OnSizeChanged", Fit) end
+    container.FitSegments = Fit
     local function Refresh()
         for index, button in ipairs(buttons) do button:SetSelected(getter() == choices[index].value) end
     end

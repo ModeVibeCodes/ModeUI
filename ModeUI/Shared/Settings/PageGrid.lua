@@ -1,12 +1,12 @@
 local _, addon = ...
 -- Cards side by side (docs/DESIGN_LANGUAGE.md, "Settings window"): a page with
--- cardColumns = n lays its cards n across (four on a sidebar page, two in the
--- split view's settings column), each card in the shortest column, its rows
--- stacked inside; on a card wide enough, two pairable rows (sliders,
--- dropdowns) share a line. Pages without cardColumns keep one full-width card
--- per row.
+-- cardColumns = n lays its cards n across in grid rows, left to right; every
+-- card in a grid row takes that row's height, as in the artifact. Rows stack
+-- inside a card; on a card wide enough, two pairable rows (sliders, dropdowns)
+-- share a line. Notes wrap to the card. Pages without cardColumns keep one
+-- full-width card per row.
+local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 local PAIR_GAP, PAIR_MIN = 24, 150
-local W = addon.ConfigWidgets
 
 local function Visible(page, row)
     local show = not row.sectionHeader
@@ -16,64 +16,117 @@ local function Visible(page, row)
     return show and true or false
 end
 
--- Places every card and row; returns the height used below `top`.
+local function Measured(value, fallback)
+    if (issecretvalue and issecretvalue(value)) or type(value) ~= "number" or value ~= value or value < 0 or value == math.huge then return fallback end
+    return value
+end
+
+-- A footer note (page:FooterNote) inside a card: its title, then the note
+-- wrapped to the card's width.
+local function FitNote(row, width)
+    local note, title = row.settingsFooterNote, row.settingsLabel
+    if note:GetParent() ~= row then note:SetParent(row) end
+    local titled = title and row.settingsTitle and row.settingsTitle ~= ""
+    if titled then
+        title:Show(); title:ClearAllPoints(); title:SetPoint("TOPLEFT", 0, 0); title:SetWidth(width)
+        title:SetTextColor(unpack(T.secondary))
+    end
+    note:ClearAllPoints(); note:SetPoint("TOPLEFT", 0, titled and -20 or 0)
+    note:SetWidth(math.max(1, width)); note:SetWordWrap(true); note:SetTextColor(unpack(T.muted))
+    row:SetHeight(math.max(14, Measured(note:GetStringHeight(), 32)) + (titled and 20 or 0) + 8)
+    row.settingsFooterMoved = true
+end
+
+-- Text a module sized for one wide column wraps inside a narrower card; a row
+-- grows to fit text anchored from its top. host: the row or its control host,
+-- hostTop: how far the host sits below the row's top.
+local function ClampText(row, host, width, hostTop)
+    if not (host and host.GetRegions) then return end
+    for _, region in ipairs({ host:GetRegions() }) do
+        if region:GetObjectType() == "FontString" and region:IsShown() then
+            local point, _, _, x, y = region:GetPoint(1)
+            local room = width - Measured(x, 0)
+            if room > 20 and Measured(region:GetWidth(), 0) > room then
+                region:SetWidth(room); region:SetWordWrap(true)
+                if type(point) == "string" and point:find("^TOP") then
+                    local bottom = hostTop - Measured(y, 0) + Measured(region:GetStringHeight(), 0) + 6
+                    if bottom > row:GetHeight() then row:SetHeight(bottom) end
+                end
+            end
+        end
+    end
+end
+
+-- Lays out one card's rows from `padding` down; returns { row, y, x } entries and the height.
+local function CardRows(page, card, inner, padding, Snap)
+    local visible, content = {}, false
+    for _, row in ipairs(page.rows) do
+        if row.card == card then
+            local show = Visible(page, row)
+            row:SetShown(show)
+            if show then visible[#visible + 1] = row; content = content or not row.cardTitle end
+        end
+    end
+    local function Fit(row, rowWidth)
+        row:SetWidth(rowWidth)
+        if row.layoutChildren then row:layoutChildren(rowWidth) end
+        if row.settingsFooterNote and page.modeFooterLayout then FitNote(row, rowWidth)
+        else
+            ClampText(row, row, rowWidth, 0)
+            local host = row.settingsHost
+            if host and host ~= row then ClampText(row, host, rowWidth - (row.stacked and 0 or 184), row.stacked and 22 or 4) end
+        end
+    end
+    local half, placed, y, index = Snap((inner - PAIR_GAP) / 2), {}, padding, 1
+    while index <= #visible do
+        local row, partner = visible[index], visible[index + 1]
+        if half >= PAIR_MIN and row.stacked and row.pairable and partner and partner.stacked and partner.pairable then
+            Fit(row, half); Fit(partner, half)
+            placed[#placed + 1] = { row = row, y = y, x = 0 }
+            placed[#placed + 1] = { row = partner, y = y, x = half + PAIR_GAP }
+            y = Snap(y + math.max(row:GetHeight(), partner:GetHeight()))
+            index = index + 2
+        else
+            Fit(row, inner)
+            placed[#placed + 1] = { row = row, y = y, x = 0 }
+            y = Snap(y + row:GetHeight())
+            index = index + 1
+        end
+    end
+    return placed, y + padding, content
+end
+
+-- Places every card and row; returns the bottom of the last grid row.
 function W.LayoutCardGrid(page, width, left, padding, gap, top)
     local columns = math.max(1, page.cardColumns)
     local px = addon.Kit.PixelSize(page.content)
     local function Snap(value) return math.floor(value / px + 0.5) * px end
     local cardWidth = Snap((width - gap * (columns - 1)) / columns)
     local inner = cardWidth - 2 * padding
-    local heights = {}
-    for i = 1, columns do heights[i] = top or 0 end
     for _, row in ipairs(page.rows) do if not row.card then row:SetShown(false) end end
+    local laid = {}
     for _, card in ipairs(page.cards) do
-        local y, placed, content, visible = padding, {}, false, {}
-        for _, row in ipairs(page.rows) do
-            if row.card == card then
-                local show = Visible(page, row)
-                row:SetShown(show)
-                if show then visible[#visible + 1] = row; content = content or not row.cardTitle end
-            end
-        end
-        local half = Snap((inner - PAIR_GAP) / 2)
-        local function Fit(row, rowWidth)
-            row:SetWidth(rowWidth)
-            if row.layoutChildren then row:layoutChildren(rowWidth) end
-        end
-        local index = 1
-        while index <= #visible do
-            local row, partner = visible[index], visible[index + 1]
-            if half >= PAIR_MIN and row.stacked and row.pairable and partner and partner.stacked and partner.pairable then
-                Fit(row, half); Fit(partner, half)
-                placed[#placed + 1] = { row = row, y = y, x = 0 }
-                placed[#placed + 1] = { row = partner, y = y, x = half + PAIR_GAP }
-                y = Snap(y + math.max(row:GetHeight(), partner:GetHeight()))
-                index = index + 2
-            else
-                Fit(row, inner)
-                placed[#placed + 1] = { row = row, y = y, x = 0 }
-                y = Snap(y + row:GetHeight())
-                index = index + 1
-            end
-        end
+        local placed, height, content = CardRows(page, card, inner, padding, Snap)
         card.frame:SetShown(content)
-        if content then
-            local column = 1
-            for i = 2, columns do if heights[i] < heights[column] then column = i end end
-            local x, cardTop = left + (column - 1) * (cardWidth + gap), heights[column]
-            card.frame:ClearAllPoints(); card.frame:SetPoint("TOPLEFT", x, -cardTop)
-            card.frame:SetSize(cardWidth, y + padding)
-            card.top, card.bottom = cardTop, cardTop + y + padding
-            for _, entry in ipairs(placed) do
-                entry.row:ClearAllPoints(); entry.row:SetPoint("TOPLEFT", x + padding + entry.x, -(cardTop + entry.y))
-                entry.row.offset = cardTop + entry.y
-            end
-            heights[column] = Snap(cardTop + y + padding + gap)
-        else
-            for _, entry in ipairs(placed) do entry.row:Hide() end
-        end
+        if content then laid[#laid + 1] = { card = card, placed = placed, height = height }
+        else for _, entry in ipairs(placed) do entry.row:Hide() end end
     end
-    local bottom = 0
-    for i = 1, columns do bottom = math.max(bottom, heights[i]) end
-    return bottom
+    local cursor = top or 0
+    for first = 1, #laid, columns do
+        local rowHeight = 0
+        for i = first, math.min(#laid, first + columns - 1) do rowHeight = math.max(rowHeight, laid[i].height) end
+        for i = first, math.min(#laid, first + columns - 1) do
+            local entry = laid[i]
+            local x = left + (i - first) * (cardWidth + gap)
+            entry.card.frame:ClearAllPoints(); entry.card.frame:SetPoint("TOPLEFT", x, -cursor)
+            entry.card.frame:SetSize(cardWidth, rowHeight)
+            entry.card.top, entry.card.bottom = cursor, cursor + rowHeight
+            for _, item in ipairs(entry.placed) do
+                item.row:ClearAllPoints(); item.row:SetPoint("TOPLEFT", x + padding + item.x, -(cursor + item.y))
+                item.row.offset = cursor + item.y
+            end
+        end
+        cursor = Snap(cursor + rowHeight + gap)
+    end
+    return cursor
 end

@@ -12,7 +12,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Files: Init (this), Migrations, Driver, Layout, Skin, Text, Utility, Bars,
 -- Visibility, Keybind, Glow, GlowMenu, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
-local M = { title = L["Action Bars"], category = "interface", defaultEnabled = false, layout = "split",
+local M = { title = L["Action Bars"], category = "interface", defaultEnabled = false, layout = "strip",
     configDescription = L["Action bars in the Mode look: layout, size, borders, text and when each bar shows."],
     modeLayout = { decorateOnly = true } }
 addon.ActionBars = M

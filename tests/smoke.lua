@@ -45,6 +45,8 @@ world.run([[
     assert(window.sidebar:IsShown() and not window.rail:IsShown() and not window.previewPane:IsShown())
     assert(not window.backButton:IsShown() and not window.resetButton:IsShown(),'no breadcrumb or Reset on the main panel')
     assert(window.pages.home.cardColumns==4 and window.pages.home.homeProfile and window.pages.home.homeResetWindow,'General cards, four across')
+    local cards=window.pages.home.cards
+    assert(#cards==4 and cards[1].frame:GetHeight()==cards[4].frame:GetHeight() and cards[1].top==cards[4].top,'a grid row: one height for every card')
     assert(window.navigationButtons.frames.label:GetText()=='INTERFACE' and window.navigationButtons.interface.label:GetText()=='PANELS'
         and window.navigationButtons.global.label:GetText()=='SYSTEM','category captions (uppercase)')
     local function Top(row) return select(5, row:GetPoint(1)) end
@@ -69,13 +71,14 @@ world.run([[
     assert(window.railButtons.unitFrames.selected and not window.resetButton:IsShown())
     assert(select(2,window.editButton:GetPoint(1))==window.doneButton,'without Reset, Edit Mode sits beside Done')
     addon:SelectConfigPage('nameplates');assert(window.layout=='strip')
+    addon:SelectConfigPage('actionBars');assert(window.layout=='strip','one bar at a time: a strip')
     -- Tall previews: the settings column beside the live preview.
-    for _,id in ipairs({'partyFrames','actionBars'}) do
+    for _,id in ipairs({'partyFrames'}) do
         addon:SelectConfigPage(id);assert(window.layout=='split' and window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)
         assert(window.previewPane:IsShown() and window.pages[id].previewArea:GetParent()==window.previewPane and window.pages[id].previewArea:IsShown(),id..' preview in the pane')
         assert(window.column:GetWidth()>=480+44 and window.pages[id].cardColumns==nil,'the column fits a page not yet rebuilt')
     end
-    assert(not window.pages.partyFrames.previewArea:IsShown(),'one preview at a time')
+    addon:SelectConfigPage('chat');assert(not window.pages.partyFrames.previewArea:IsShown() and not window.previewPane:IsShown(),'one preview at a time')
     -- Back: the rail's home, "All modules", the wordmark or Esc; Esc on the main panel closes.
     Click(window.railButtons.home);assert(window.selectedPage=='home' and window.sidebar:IsShown())
     addon:SelectConfigPage('chat');Click(window.backButton);assert(window.selectedPage=='home')

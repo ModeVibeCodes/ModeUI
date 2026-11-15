@@ -161,8 +161,8 @@ A hybrid window built one-to-one from the study:
 - **Visual modules** (`layout = "split"`): the sidebar folds into a 48px icon
   rail, settings sit in a 432px column of cards two across, and a live preview
   fills the rest. The header shows "‹ All modules" and a breadcrumb.
-  Split is for tall previews (Party Frames, Action Bars).
-- **Small previews** (`layout = "strip"`, Unit Frames and Nameplates): the icon
+  Split is for tall previews (Party Frames).
+- **Small previews** (`layout = "strip"`, Unit Frames, Nameplates, Action Bars): the icon
   rail, the preview in a strip across the top, cards across the full width below.
 - **Simple modules** (`layout = "page"`): sidebar plus cards four across.
 - **Back:** the rail's home icon, "‹ All modules", the wordmark, or Esc (module
@@ -172,7 +172,7 @@ A hybrid window built one-to-one from the study:
   11px uppercase Ivory title, labels above controls, cards 10px apart. Pages
   not yet rebuilt show their existing cards as tiles two across (one column in
   the split view, which widens to fit them); a rebuilt page sets `cardColumns`
-  (4 on a sidebar or strip page, 2 in the 432px split column).
+  (4 on a sidebar or strip page, 2 in the 432px split column). Cards in one grid row share its height.
 - **Combat:** the window closes itself when combat starts.
 - **Controls:** Slide toggle (Celadon ON with dark text; Rosewood Deep OFF with
   bold white text), rail slider (2px rail, Ivory fill, 4 × 14 blade), dropdowns,
