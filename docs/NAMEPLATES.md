@@ -100,8 +100,9 @@ aura filters decide what belongs to each, so secret aura data is never compared.
 
 - Every group: **Show Auras**, **Timer Swipe**, **Stack Count**, **Icon Shape**
   (Cropped: 6px wider than tall, the default, for example 32 x 26; or Square),
-  **Borders** (By Type or Mode), **Border Size** (1-3px, 2 by default),
-  **Corners** (Sharp: crisp, pixel-snapped square rims, the default; or Rounded),
+  **Borders** (By Type: the rim tinted by dispel type; or Mode: the Gunmetal
+  metal) on the `frameThin` edge every icon wears, **Border Size** (1 or 2px,
+  1 by default),
   **Spacing**, **Timer Text** in **Timer Text Color** (the action bar cooldown
   color, #FFB12F, by default) and **Crowd Control Glow** in the rim color, with
   **Glow Style**: GCD Flash (Blizzard's action button GCD flipbook,
@@ -198,7 +199,9 @@ frames, never secure, so they also work in combat. Settings change outside comba
 
 ## Settings versions
 
-Version 9. Version 8 settings still at their defaults take the Mode ones
+Version 10. Version 9 settings move to the aura edge: Border Size 2 (the
+old default) takes 1 and 3 takes 2, Corners retire, and the old no-type rim
+takes the Gunmetal one. Version 8 settings still at their defaults take the Mode ones
 per kind (Mode BG on Mode BG at 100%, the Gradient name, Geist with one
 shadow, the Ivory target and the Rosewood focus); picked values stay, and the
 Cast Bar texture and Health Text Color arrive with their defaults. Version 1 (one shared set) copies into both kinds; version 2 drops the

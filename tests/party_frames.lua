@@ -171,7 +171,7 @@ world.run([==[
     assert(M and addon.modules.partyFrames == M and M.category == 'frames' and M.defaultEnabled == false)
     assert(not M.enabled and M.header == nil and M.ghost == nil, 'off by default; nothing built')
     -- The Mode design language: Geist, Mode Glass on Mode BG, 150 x 34 + 3, Gradient names.
-    assert(M.db.version == 5 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
+    assert(M.db.version == 6 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
     assert(M.db.shieldsTexture == 'Shield' and M.db.shieldsColorMode == 'health' and M.db.shieldsOpacity == 100, 'the standard shield look')
     assert(M.db.nameShow and M.db.nameAnchor == 'LEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
     assert(M.db.spacing == 1 and M.db.auras.dispellable.show and M.db.auras.magic.filter == 'notMine' and M.db.auras.tracked1.spells[1] == nil)
@@ -349,10 +349,10 @@ world.run([==[
     b = Point(p1.auraIcons.heals[1]); assert(b[1]:find('LEFT') and b[3] == 'RIGHT', 'outside right: starts past the right edge')
     -- Borders and glows per group: custom colors, none, a glow by type (off by default).
     assert(M:SetAuraOption('magic', 'border', 'custom') and M:SetAuraOption('magic', 'borderColor', { 1, 0, 0 }) and p1.auraIcons.magic[1].rim.vertexColor[1] == 1)
-    assert(M:SetAuraOption('magic', 'border', 'none') and not p1.auraIcons.magic[1].rim:IsShown())
+    assert(M:SetAuraOption('magic', 'border', 'none') and not p1.auraIcons.magic[1].edge.holder:IsShown())
     assert(not p1.auraIcons.magic[1].glow:IsShown() and not p1.auraIcons.magic[1].flash:IsShown(), 'no glow by default')
     assert(M:SetAuraOption('magic', 'glow', 'soft') and p1.auraIcons.magic[1].glow:IsShown() and p1.auraIcons.magic[1].glow.vertexColor[3] == M.db.auraMagicColor[3])
-    assert(M:SetAuraOption('magic', 'borderSize', 3) and not M:SetAuraOption('magic', 'borderSize', 4), 'border size 1-3')
+    assert(M:SetAuraOption('magic', 'border', 'type') and M:SetAuraOption('magic', 'borderSize', 2) and p1.auraIcons.magic[1].edge.rim == 2 and not M:SetAuraOption('magic', 'borderSize', 3), 'border size 1 or 2')
     assert(M:SetAuraOption('heals', 'show', false) and not p1.auraIcons.heals[1]:IsShown())
     assert(not M:SetAuraOption('heals', 'filter', 'nonsense') and not M:SetAuraOption('heals', 'width', 99) and not M:SetAuraOption('heals', 'glow', 'blink'), 'validated')
     -- Debuff effects by type: the Gradient from the top edge by default (72% of
@@ -623,7 +623,7 @@ pf.auras = { buffs = { show = true, filter = 'mine', anchor = 'TOPLEFT', place =
     max = 3, perRow = 3, spacing = 2, shape = 'square', border = 'type', timer = true, timerText = true, count = true, tooltip = true } }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local db = addon.PartyFrames.db
-    assert(db.version == 5 and db.healthHeight == 34 and db.powerHeight == 3 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
+    assert(db.version == 6 and db.healthHeight == 34 and db.powerHeight == 3 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
     local heals = db.auras.heals
     assert(heals.anchor == 'TOPLEFT' and heals.width == 20 and heals.height == 16 and heals.filter == 'mine' and heals.border == 'mode' and heals.size == nil)
     for _, group in ipairs({ 'magic', 'curse', 'disease', 'poison', 'bleed', 'otherDebuffs' }) do
@@ -650,7 +650,7 @@ p3.healthTextAnchor, p3.healthTextX, p3.healthTextY, p3.healthTextSize = 'TOP', 
 p3.dispel = { Magic = { border = true, health = false, gradient = false }, Curse = { border = true, health = true, gradient = false } }
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local db, M = addon.PartyFrames.db, addon.PartyFrames
-    assert(db.version == 5 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
+    assert(db.version == 6 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
     assert(db.borderStyle == nil and db.corner == nil and db.shieldTexture == nil and db.absorbColor == nil and db.overshieldOpacity == nil, 'retired')
     assert(db.foregroundTexture == 'media:Mode Glass' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode Geist')
     assert(db.liftedShadow == false and db.nameColorMode == 'custom' and db.rangeOpacity == 55, 'a picked name color stays')
@@ -667,9 +667,21 @@ for _, case in ipairs({ { 'media:Mode Gradient', 'media:Mode Glass' }, { 'media:
     p4.version, p4.foregroundTexture = 4, case[1]
     p4.shieldsTexture, p4.shieldsColorMode, p4.shieldsColor, p4.shieldsOpacity = nil, nil, nil, nil
     local loaded = H.Load({ before = STUBS, saved = v4 })
-    loaded.run("local db = addon.PartyFrames.db; assert(db.version == 5 and db.foregroundTexture == '" .. case[2] ..
+    loaded.run("local db = addon.PartyFrames.db; assert(db.version == 6 and db.foregroundTexture == '" .. case[2] ..
         "' and db.shieldsTexture == 'Shield' and db.shieldsOpacity == 100, 'v4 -> v5: ' .. db.foregroundTexture)", "party_v4")
 end
+
+-- Version 5 -> 6: auras wear the frameThin edge: Border Size 3 becomes 2,
+-- the old no-type rim takes the Gunmetal one, a picked color stays.
+local v5 = world.saved()
+local p5 = v5.profiles.Default.modules.partyFrames
+p5.version, p5.auras.magic.borderSize, p5.auras.curse.borderSize = 5, 3, 1
+p5.auraNoTypeColor = { 64 / 255, 69 / 255, 76 / 255 }
+H.Load({ before = STUBS, saved = v5 }).run([==[
+    local db = addon.PartyFrames.db
+    assert(db.version == 6 and db.auras.magic.borderSize == 2 and db.auras.curse.borderSize == 1, 'size 3 becomes 2')
+    assert(addon.Style.SameColor(db.auraNoTypeColor, addon.Style.Tone.gunmetal.mid), 'the Gunmetal no-type rim')
+]==], "party_v5")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

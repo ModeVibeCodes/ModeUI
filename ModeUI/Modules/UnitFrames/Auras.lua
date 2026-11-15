@@ -119,7 +119,7 @@ local function HideFrom(f, group, from)
     f.auraShown[group] = from - 1
 end
 
--- The rim: the dispel type's color with By Type borders, else the Onyx rim.
+-- The rim: the dispel type's color with By Type borders, else the Gunmetal metal.
 function M:AuraRim(icon, adb, dispelType)
     Kit.TintAuraRim(icon, adb.border == "type" and dispelType and self.dispelColors[dispelType] or nil)
 end

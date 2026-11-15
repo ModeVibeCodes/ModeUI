@@ -89,7 +89,9 @@ Per group: **Show This Group**, **Which Auras**, **Anchor**, **Place**,
 **Grow**, **Offset X/Y** and **Nudge**, **Most Shown**, **Per Row**,
 **Spacing**, **Icon Width** and **Icon Height**, **Timer Swipe**, **Timer
 Text**, **Stack Count**, **Tooltips**, **Border** (By Type, Mode, Custom or
-None) with **Border Size** (1-3) and **Border Color**, and **Glow** (Off by
+None) on the `frameThin` edge every aura icon wears (By Type and Custom
+tint its rim, Mode keeps the Gunmetal metal, None hides it) with **Border
+Size** (1 or 2) and **Border Color**, and **Glow** (Off by
 default, GCD Flash or Soft Glow) with **Glow Color** (By Type or Custom).
 **Reset Group** (a tracked group keeps its buffs) and **Copy Look To**. Groups
 on the same anchor and place continue in one row, in the table's order, placed
@@ -162,7 +164,7 @@ still show only in a party.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.partyFrames` (version 5) and the position
+`ModeUIDB` profile `modules.partyFrames` (version 6) and the position
 `positions.partyFrames`. Version 1 settings migrate: frames still at the old
 default size (34 health, 5 power) take the new one, Buffs becomes Healing
 Buffs in its place, Debuffs' place goes to every debuff type and Other
@@ -179,7 +181,9 @@ and role moved to their new places, and debuff effects that were the Border
 alone become the Gradient). Anything the player picked stays. Border, Corner
 Size and the shield and overshield textures, colors and opacities retire.
 Version 4 settings migrate: health still on Mode Gradient takes Mode Glass,
-and the shield look settings arrive at the standard look.
+and the shield look settings arrive at the standard look. Version 5 settings
+migrate to the aura edge: Border Size 3 becomes 2 and the old no-type rim
+takes the Gunmetal one.
 
 ## In-game check
 

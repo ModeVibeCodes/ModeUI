@@ -148,6 +148,22 @@ local function MigrateV8(db)
     end
 end
 
+-- Version 9 -> 10: auras wear the frameThin edge. Border Size 2 (the old
+-- default) takes 1, 3 becomes 2; Corners retire; the old no-type rim takes
+-- the Gunmetal one.
+local function MigrateV9(db)
+    for _, kind in ipairs(M.kinds) do
+        local style = db[kind]
+        if type(style) == "table" then
+            if style.auraBorderSize == 2 then style.auraBorderSize = 1 elseif style.auraBorderSize == 3 then style.auraBorderSize = 2 end
+            style.auraCorners = nil
+            if addon.Style.SameColor(style.auraNoTypeColor, Kit.onyx.border) then
+                style.auraNoTypeColor = Copy(M.styleDefaults[kind].auraNoTypeColor)
+            end
+        end
+    end
+end
+
 local ValidTexture = Kit.ValidBarTexture
 
 local function Validate(style, kind)
@@ -185,6 +201,7 @@ function M.Initialize(db)
     if db.version == 6 then MigrateV6(db); db.version = 7 end
     if db.version == 7 then MigrateV7(db); db.version = 8 end
     if db.version == 8 then MigrateV8(db); db.version = 9 end
+    if db.version == 9 then MigrateV9(db); db.version = 10 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

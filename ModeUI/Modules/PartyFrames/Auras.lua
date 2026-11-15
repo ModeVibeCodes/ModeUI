@@ -92,11 +92,11 @@ function M:TypeColor(dispelType)
     local key = dispelType and self.dispelColorKeys[dispelType]
     return key and self.db[key] or self.db.auraNoTypeColor
 end
--- The rim: by type, the Mode rim, the group's own color, or none (nil).
+-- The rim's tint: by type or the group's own color; nil keeps the Gunmetal
+-- metal (Mode). Border None hides the edge (PaintAuraLook).
 function M:AuraRimColor(adb, dispelType)
     if adb.border == "type" then return self:TypeColor(dispelType) end
     if adb.border == "custom" then return adb.borderColor end
-    if adb.border == "mode" then return Kit.BORDER_COLOR end
 end
 -- The glow: off (nil), by type, or the group's own color.
 function M:AuraGlowColor(adb, dispelType)
@@ -106,9 +106,8 @@ end
 
 -- Paints an icon's rim and glow (reader path and samples).
 function M:PaintAuraLook(icon, adb, dispelType)
-    local rim = self:AuraRimColor(adb, dispelType)
-    icon.rim:SetShown(rim ~= nil)
-    if rim then Kit.TintAuraRim(icon, rim) end
+    Kit.ShowAuraRim(icon, adb.border ~= "none")
+    Kit.TintAuraRim(icon, self:AuraRimColor(adb, dispelType))
     Kit.GlowAura(icon, self:AuraGlowColor(adb, dispelType), adb.glow)
 end
 

@@ -139,6 +139,17 @@ local function MigrateV4(db)
     if db.foregroundTexture == "media:Mode Gradient" then db.foregroundTexture = M.defaults.foregroundTexture end
 end
 
+-- Version 5 -> 6: auras wear the frameThin edge: Border Size 3 becomes 2,
+-- and the old no-type rim takes the Gunmetal one.
+local function MigrateV5(db)
+    if type(db.auras) == "table" then
+        for _, g in pairs(db.auras) do
+            if type(g) == "table" and g.borderSize == 3 then g.borderSize = 2 end
+        end
+    end
+    if addon.Style.SameColor(db.auraNoTypeColor, Kit.BORDER_COLOR) then db.auraNoTypeColor = Copy(M.defaults.auraNoTypeColor) end
+end
+
 -- A tracked group's spells: whole spell IDs, each once, at most MAX_TRACKED_SPELLS.
 local function ValidateSpells(spells, group)
     assert(#spells <= M.MAX_TRACKED_SPELLS, "Too many tracked spells: " .. group)
@@ -185,6 +196,7 @@ function M.Initialize(db)
     if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
+    if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid party frame settings version")
     for key, default in pairs(M.defaults) do

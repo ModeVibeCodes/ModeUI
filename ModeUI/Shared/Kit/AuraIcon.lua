@@ -1,10 +1,12 @@
 local _, addon = ...
-local Kit = addon.Kit
+local Kit, Style = addon.Kit, addon.Style
 
--- An aura icon in the Mode look, built like a plate box: a rounded 1px rim
--- (tinted per dispel type or the Onyx rim color), a 1px black gap, then the
--- icon inset two pixels and cropped to the icon's shape, with a cooldown swipe
--- and the stack count in the corner. Fill it with Domain.Auras.Apply.
+-- An aura icon in the Mode design language (docs/DESIGN_LANGUAGE.md: icons
+-- and auras wear the `frameThin` edge): the art one rim inside the icon,
+-- cropped to its shape, inside a 1px Gunmetal edge-lit rim (2px at Border
+-- Size 2) that a dispel type tints, with a cooldown swipe and the stack count
+-- in the corner. The rim art covers its own corners: no masks. Fill it with
+-- Domain.Auras.Apply.
 function Kit.AuraIcon(parent)
     local icon = CreateFrame("Frame", nil, parent)
     Kit.AuraIconParts(icon)
@@ -18,9 +20,14 @@ function Kit.AuraIconParts(icon)
     -- A soft glow around the icon (crowd control), behind the rim.
     icon.glow = icon:CreateTexture(nil, "BACKGROUND", nil, -1)
     icon.glow:Hide()
-    icon.rim = icon:CreateTexture(nil, "BACKGROUND", nil, 0)
-    icon.gap = icon:CreateTexture(nil, "BACKGROUND", nil, 1)
-    icon.rim:SetTexture(Kit.FLAT); icon.gap:SetTexture(Kit.FLAT)
+    -- The art's area, one rim inside the icon; the edge sits round it. A
+    -- black back so nothing shows past the art's edge.
+    icon.inner = CreateFrame("Frame", nil, icon)
+    icon.back = icon:CreateTexture(nil, "BACKGROUND", nil, 1)
+    Style.ApplyAsset(icon.back, "Solid"); Style.Paint(icon.back, Style.Tone.shadow)
+    icon.edge = Style.Edge(icon.inner, "frameThin")
+    -- The rim art: aura containers recolor it by dispel type (AddDispelTypeTexture).
+    icon.rim = icon.edge.rimTexture
     icon.icon = icon:CreateTexture(nil, "ARTWORK")
     -- CooldownFrameTemplate carries the swipe texture; a bare Cooldown draws nothing.
     icon.cooldown = CreateFrame("Cooldown", nil, icon, "CooldownFrameTemplate")
@@ -61,14 +68,6 @@ function Kit.AuraIconParts(icon)
     return icon
 end
 
--- Rounded rims are slices and must not snap one by one (Kit.Unsnap); sharp
--- rims are single flat textures that snap to whole pixels, crisp at any spot.
-local function Skin(texture, key, rounded)
-    if rounded and addon.Media:ApplyTexture(texture, key) then Kit.Unsnap(texture); return end
-    if texture.ClearTextureSlice then texture:ClearTextureSlice() end
-    texture:SetTexture(Kit.FLAT)
-    if texture.SetSnapToPixelGrid then texture:SetSnapToPixelGrid(true) end
-end
 -- Blizzard's GCD flash (ActionButtonCooldownFlashTemplate): 11 x 2 frames.
 Kit.GCD_FLASH_ATLAS = "UI-HUD-ActionBar-GCD-Flipbook"
 Kit.AURA_GLOW_OUTSET = 6 -- the aura glow texture's hollow core starts 6 texels in
@@ -76,25 +75,29 @@ Kit.AURA_GLOW_OUTSET = 6 -- the aura glow texture's hollow core starts 6 texels 
 -- Size, rim, crop and text for one icon. width and height are whole pixels;
 -- px is one physical pixel. The icon's texture is cropped so it is never
 -- stretched: 8% off each side, and the height cut to the icon's shape.
+-- style.auraBorderSize: 1 or 2 (the rim's pixels; 1 when unset).
 function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon:SetSize(width, height)
-    local rounded = style.auraCorners == "rounded" and width >= 8 and height >= 8
-    -- The rim is style.auraBorderSize pixels (1 when unset), then a 1px black gap.
-    local border = (style.auraBorderSize or 1) * px
-    icon.rim:ClearAllPoints(); icon.rim:SetAllPoints(icon)
-    Skin(icon.rim, "NameplateRim", rounded)
-    Kit.Inset(icon.gap, icon, border)
-    Skin(icon.gap, "NameplateGap", rounded); Kit.Tint(icon.gap, Kit.onyx.inner, 1)
-    Kit.Inset(icon.icon, icon, border + px)
+    icon.edge:SetRim(math.max(1, math.min(2, style.auraBorderSize or 1)))
+    local border = icon.edge.rim * px
+    icon.inner:ClearAllPoints()
+    icon.inner:SetPoint("TOPLEFT", icon, "TOPLEFT", border, -border)
+    icon.inner:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -border, border)
+    icon.back:ClearAllPoints(); icon.back:SetAllPoints(icon.inner)
+    icon.icon:ClearAllPoints(); icon.icon:SetAllPoints(icon.inner)
+    icon.edge.holder:SetFrameLevel(icon:GetFrameLevel() + 2)
+    icon.edge:Layout()
     local o = Kit.AURA_GLOW_OUTSET
     icon.glow:ClearAllPoints()
     icon.glow:SetPoint("TOPLEFT", icon, "TOPLEFT", -o, o); icon.glow:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", o, -o)
     Kit.Rounded(icon.glow, "AuraGlow")
-    local innerWidth, innerHeight = math.max(px, width - 2 * (border + px)), math.max(px, height - 2 * (border + px))
+    local innerWidth, innerHeight = math.max(px, width - 2 * border), math.max(px, height - 2 * border)
     local span = 0.84 * innerHeight / innerWidth
     icon.icon:SetTexCoord(0.08, 0.92, 0.5 - span / 2, 0.5 + span / 2)
     icon.textLayer:SetFrameLevel(icon.cooldown:GetFrameLevel() + 2)
     local countSize = math.max(7, math.floor(height * 0.45 + 0.5))
+    -- Counts and timers in Geist Bold (another font keeps its one weight).
+    fontPath = Style.Weighted(fontPath, "bold")
     Kit.Font(icon.count, style, countSize, fontPath, px)
     icon.count:ClearAllPoints()
     icon.count:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -px, px)
@@ -111,8 +114,10 @@ function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon.timer:SetShown(style.auraTimerText ~= false)
 end
 
--- The rim color: a dispel type's color, or the Onyx rim.
-function Kit.TintAuraRim(icon, color) Kit.Tint(icon.rim, color or Kit.onyx.border, 1) end
+-- The rim color: a dispel type's color, or nil for the Gunmetal metal.
+function Kit.TintAuraRim(icon, color) icon.edge:SetTint(color) end
+-- Shows or hides the whole edge (a group's Border: None).
+function Kit.ShowAuraRim(icon, shown) icon.edge:SetShown(shown and true or false) end
 
 -- The glow: shown in a color at a soft strength, or hidden (color nil).
 -- `style` is "gcd" (Blizzard's GCD flash, looping) or "soft" (a soft halo).

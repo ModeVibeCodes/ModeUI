@@ -52,9 +52,8 @@ local function Initializer(self, group, width, height, px, path)
     return function(button)
         Kit.AuraIconParts(button)
         Kit.LayoutAuraIcon(button, width, height, px, style, path)
-        local rim = self:AuraRimColor(adb, nil)
-        button.rim:SetShown(rim ~= nil)
-        if rim then Kit.TintAuraRim(button, rim) end
+        Kit.ShowAuraRim(button, adb.border ~= "none")
+        Kit.TintAuraRim(button, self:AuraRimColor(adb, nil))
         button:SetIcon(button.icon)
         if adb.timer then button:SetDurationCooldown(button.cooldown) else button.cooldown:Hide() end
         -- Game-filled text can't drive the lifted copies.

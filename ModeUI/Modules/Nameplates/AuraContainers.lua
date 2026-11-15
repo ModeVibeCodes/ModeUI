@@ -29,7 +29,7 @@ function M:UsesAuraContainers() return Kit.HasAuraContainers() end
 -- Everything buttons bake in when they are made.
 local function LookKey(style, path, px)
     local t = style.auraTimerColor
-    local parts = { style.auraShape, style.auraBorder, style.auraBorderSize, tostring(style.auraCCGlow), style.auraCorners,
+    local parts = { style.auraShape, style.auraBorder, style.auraBorderSize, tostring(style.auraCCGlow),
         style.auraGlowStyle, string.format("%.3f,%.3f,%.3f", t[1], t[2], t[3]), tostring(style.auraTimer), tostring(style.auraTimerText), tostring(style.auraCount), path, px,
         tostring(style.outline), tostring(style.shadow), tostring(style.liftedShadow), tostring(style.slug) }
     local colors = { "auraNoTypeColor", "auraCCNoTypeColor" }

@@ -34,7 +34,9 @@ addon:RegisterModule("nameplates", M)
 -- outer line in Ivory, focus in Rosewood), Mode BG fills and empty parts,
 -- Mode Cast cast bars with the Comet spark (Cast Texture), Gradient names
 -- in SemiBold, Bold health text colored by health, Geist with one shadow.
-M.VERSION = 9
+-- Version 10: auras wear the frameThin edge (Border Size 1 or 2, 1 by
+-- default; Corners retire), and auras without a type keep the Gunmetal metal.
+M.VERSION = 10
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
 M.kinds = { "enemy", "friendly" }
@@ -104,13 +106,13 @@ local function Style(kind)
         comboActiveColor = RGB(240, 84, 84), comboEmptyColor = Copy(Kit.onyx.track),
         -- Auras: settings for every group, then each group on its own.
         showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
-        auraBorderSize = 2, auraCorners = "sharp", auraCCGlow = true, auraGlowStyle = "gcd",
+        auraBorderSize = 1, auraCCGlow = true, auraGlowStyle = "gcd",
         auraTimerColor = Copy(P.cooldown),
         auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
         auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85), auraBleedColor = RGB(200, 45, 45),
         -- Auras without a dispel type (Cheap Shot, most crowd control): #FF5948 for
-        -- crowd control, the Mode rim for the rest.
-        auraNoTypeColor = RGB(37, 40, 44), auraCCNoTypeColor = RGB(255, 89, 72),
+        -- crowd control, the Gunmetal rim for the rest.
+        auraNoTypeColor = Copy(addon.Style.Tone.gunmetal.mid), auraCCNoTypeColor = RGB(255, 89, 72),
         crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),
@@ -134,7 +136,7 @@ M.dispelColorKeys = { Magic = "auraMagicColor", Curse = "auraCurseColor", Diseas
 M.dispelTypeIDs = Kit.DISPEL_TYPE_IDS
 
 M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 },
-    auraBorderSize = { 1, 3, 1 },
+    auraBorderSize = { 1, 2, 1 },
     healthOpacity = { 10, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },
@@ -176,7 +178,6 @@ M.choices = {
         { id = "borderArrows", label = "Border and Arrows" }, { id = "none", label = "None" } },
     auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
     auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" } },
-    auraCorners = { { id = "sharp", label = "Sharp" }, { id = "rounded", label = "Rounded" } },
     auraGlowStyle = { { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,
     questAnchor = M.elementAnchors, classificationAnchor = M.elementAnchors, levelAnchor = M.elementAnchors,

@@ -207,7 +207,7 @@ world.run([====[
     FireEvent('UNIT_AURA','target')
     local b1,b2=t.auraIcons.buffs[1],t.auraIcons.buffs[2]
     assert(b1:IsShown() and b2:IsShown() and t.auraShown.buffs==2 and t.auraShown.debuffs==0 and auraFilters[#auraFilters]=='HELPFUL')
-    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.rim.vertexColor[1]==O.border[1])
+    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.edge.preset=='frameThin' and b1.edge.tint==nil and b1.rim.vertexColor[1]==addon.Style.Tone.gunmetal.mid[1],'auras wear the frameThin edge')
     -- Hover shows the game's tooltip for that aura; a secret ID (combat) shows none.
     function GameTooltip:SetOwner(owner) self.owner=owner end
     function GameTooltip:GetOwner() return self.owner end
@@ -237,7 +237,7 @@ world.run([====[
     assert(d1:IsShown() and d1.rim.vertexColor[3]==M.dispelColors.Magic[3])
     local dq=Point(d1);assert(dq[1]=='TOPRIGHT' and dq[2]==t.power and dq[5]==-(2+2+2+2+14+2),'below the cast bar (its 2px gap clear of both shadow rings)')
     assert(M:SetCastOption('target','position','above') and Point(d1)[5]==-(2+2) and M:SetCastOption('target','position','below'))
-    assert(M:SetAuraOption('target','debuffs','border','mode') and d1.rim.vertexColor[1]==O.border[1])
+    assert(M:SetAuraOption('target','debuffs','border','mode') and d1.edge.tint==nil,'Mode: the Gunmetal metal')
     assert(not M:SetAuraOption('target','debuffs','anchor','MIDDLE') and not M:SetAuraOption('target','debuffs','size',99) and not M:SetAuraOption('target','nope','size',20))
     assert(M:FrameDB('target').buffs==M.db.target.buffs,'a matched Target keeps its own auras')
     assert(M:SetAuraOption('target','debuffs','enabled',false) and not d1:IsShown())

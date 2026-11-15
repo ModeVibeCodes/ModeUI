@@ -28,7 +28,7 @@ return {
     ["Modules/Minimap/Shape.lua"] = { border = 2, mask = 1 },
     ["Modules/Minimap/Text.lua"] = { border = 2 },
     ["Modules/Minimap/Tiles.lua"] = { border = 2 },
-    ["Modules/Nameplates/Init.lua"] = { color = 11 },
+    ["Modules/Nameplates/Init.lua"] = { color = 10 },
     ["Modules/Nameplates/Migrations.lua"] = { color = 1 },
     ["Modules/PartyFrames/AuraInit.lua"] = { color = 1 },
     ["Modules/PartyFrames/Init.lua"] = { color = 6 },

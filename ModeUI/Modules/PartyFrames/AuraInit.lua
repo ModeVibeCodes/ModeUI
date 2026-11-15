@@ -105,7 +105,7 @@ for group in pairs(M.TRACKED) do
     M.auraDefaults[group].spells = {}
 end
 M.auraRanges = { x = { -80, 80, 1 }, y = { -80, 80, 1 }, width = { 8, 48, 1 }, height = { 8, 48, 1 }, max = { 1, 10, 1 },
-    perRow = { 1, 10, 1 }, spacing = { 0, 8, 1 }, borderSize = { 1, 3, 1 } }
+    perRow = { 1, 10, 1 }, spacing = { 0, 8, 1 }, borderSize = { 1, 2, 1 } }
 M.growChoices = { { id = "right", label = "Right" }, { id = "left", label = "Left" }, { id = "up", label = "Up" },
     { id = "down", label = "Down" } }
 M.defaults.auras = Copy(M.auraDefaults)

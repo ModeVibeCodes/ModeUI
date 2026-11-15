@@ -37,7 +37,9 @@ addon:RegisterModule("partyFrames", M)
 -- text colored by health, the dispel Gradient by default, an aggro rim, Geist.
 -- Version 5: Mode Glass health by default; shields get their own tab with a
 -- texture, a color (follow the health or custom) and an opacity.
-M.VERSION = 5
+-- Version 6: auras wear the frameThin edge (Border Size 1 or 2; Mode is the
+-- Gunmetal metal), and auras without a type take the Gunmetal rim.
+M.VERSION = 6
 M.ELEMENT_ID = "partyFrames"
 M.MAX_MEMBERS = 5
 M.defaultPosition = { target = "screen", placement = "center", x = -520, y = 120 }
@@ -146,7 +148,7 @@ M.defaults = {
     textColor = Copy(P.text), hideDamagerRole = false,
     -- Aura rims, glows and dispel effects by type (Blizzard's DebuffTypeColor family).
     auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
-    auraPoisonColor = RGB(85, 187, 85), auraBleedColor = RGB(200, 45, 45), auraNoTypeColor = Copy(Kit.BORDER_COLOR),
+    auraPoisonColor = RGB(85, 187, 85), auraBleedColor = RGB(200, 45, 45), auraNoTypeColor = Copy(addon.Style.Tone.gunmetal.mid),
     auraTimerColor = Copy(P.cooldown),
 }
 for _, element in ipairs(M.elements) do

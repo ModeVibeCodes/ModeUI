@@ -118,7 +118,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'frames' and not M.enabled, 'registered under Frames, off by default')
-    assert(M.db.version == 9 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 10 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     -- The Mode design language: Mode BG on Mode BG, Mode Cast, Gradient names, health text by health, Geist.
     assert(M.db.enemy.foregroundTexture == 'media:Mode BG' and M.db.enemy.backgroundTexture == 'media:Mode BG' and M.db.enemy.castTexture == 'media:Mode Cast')
     assert(M.db.enemy.nameColorMode == 'gradient' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode Geist' and not M.db.enemy.liftedShadow)
@@ -499,13 +499,11 @@ world.run([==[
     -- whole pixels from the health bar's bottom left (180 x 16 here).
     local function Corner(icon) local at = Point(icon); assert(at[1] == 'BOTTOMLEFT' and at[2] == plate.healthBox and at[3] == 'BOTTOMLEFT'); return at[4], at[5] end
     assert(math.abs(A.crowdControl[1].width - 24) < 1 and math.abs(A.crowdControl[1].height - 18) < 1, 'cropped 24 x 18')
-    -- A 2px rim, then the 1px gap; rounded slices don't snap on their own.
+    -- The frameThin edge: the art one rim (1px) inside the icon; the rim art
+    -- covers its corners, nothing is masked; Corners retired.
     local cc1 = A.crowdControl[1]
-    assert(Point(cc1.gap)[4] == 2 and Point(cc1.icon)[4] == 3, '2px rim and 1px gap')
-    -- Sharp corners by default: single flat textures snapped to whole pixels.
-    assert(cc1.rim.texture == Kit.FLAT and cc1.rim.snapToPixelGrid == true and cc1.gap.snapToPixelGrid == true, 'sharp, snapped rim')
-    assert(M:SetOption('enemy', 'auraCorners', 'rounded') and cc1.rim.snapToPixelGrid == false and cc1.rim.texelSnappingBias == 0, 'rounded slices unsnapped')
-    assert(M:SetOption('enemy', 'auraCorners', 'sharp'))
+    assert(cc1.edge.preset == 'frameThin' and cc1.edge.rim == 1 and cc1.edge.host == cc1.inner and Point(cc1.inner)[4] == 1, '1px frameThin edge')
+    assert(cc1.rim == cc1.edge.rimTexture and #(cc1.icon.masks or {}) == 0 and not M:SetOption('enemy', 'auraCorners', 'rounded'))
     -- Crowd control: Blizzard's GCD flash, looping, in the rim color; other groups none.
     assert(cc1.flash:IsShown() and cc1.flash.atlas == Kit.GCD_FLASH_ATLAS and cc1.flashAnim:IsPlaying(), 'GCD flash plays')
     assert(cc1.flashAnim.looping == 'REPEAT' and cc1.flashAnim.anims[1].kind == 'FlipBook' and cc1.flashAnim.anims[1].SetFlipBookFramesArgs[1] == 22, 'flipbook 22 frames')
@@ -517,9 +515,9 @@ world.run([==[
     assert(M:SetOption('enemy', 'auraCCGlow', false) and not cc1.glow:IsShown() and not cc1.flash:IsShown(), 'glow off')
     -- Timer text in the action bar cooldown color.
     assert(cc1.timer.color[1] == P.cooldown[1] and cc1.timer.color[2] == P.cooldown[2], 'cooldown text color')
-    assert(M:SetOption('enemy', 'auraBorderSize', 1) and Point(cc1.gap)[4] == 1 and Point(cc1.icon)[4] == 2, '1px rim')
-    assert(not M:SetOption('enemy', 'auraBorderSize', 4), 'border size range')
-    assert(M:SetOption('enemy', 'auraCCGlow', true) and M:SetOption('enemy', 'auraBorderSize', 2) and cc1.flash:IsShown())
+    assert(M:SetOption('enemy', 'auraBorderSize', 2) and cc1.edge.rim == 2 and Point(cc1.inner)[4] == 2, '2px rim')
+    assert(not M:SetOption('enemy', 'auraBorderSize', 3), 'border size 1 or 2')
+    assert(M:SetOption('enemy', 'auraCCGlow', true) and M:SetOption('enemy', 'auraBorderSize', 1) and cc1.flash:IsShown())
     local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -2, 'crowd control left of the marker: ' .. x .. ',' .. y)
     x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 30, 'debuffs centered above the name: ' .. x .. ',' .. y)
     x, y = Corner(A.buffs[1]); assert(x == 182 and y == 1, 'buffs right of the bar: ' .. x .. ',' .. y)
@@ -572,7 +570,7 @@ world.run([==[
         { auraInstanceID = 22, icon = 'hidden', harmful = true, player = true, dispelName = Secret('type'), duration = 5, expirationTime = 103 } }
     FireEvent('UNIT_AURA', 'nameplate1')
     assert(A.debuffs[1].rim.vertexColor[1] == M.db.enemy.auraPoisonColor[1], 'Poison rim from the public dispel type')
-    assert(A.debuffs[2].rim.vertexColor[1] == Kit.onyx.border[1], 'a secret dispel type keeps the Mode rim')
+    assert(A.debuffs[2].rim.vertexColor[1] == M.db.enemy.auraNoTypeColor[1], 'a secret dispel type keeps the no-type rim')
     units.nameplate1.auras = savedAuras; FireEvent('UNIT_AURA', 'nameplate1')
     assert(M:SetOption('enemy', 'size', 30, 'debuffs') and math.abs(A.debuffs[1].width - 30) < 1, 'icon size per group')
     assert(M:SetOption('enemy', 'size', 20, 'debuffs'))
@@ -680,7 +678,7 @@ world.run([==[
     end
     assert(Shown(sample, 'crowdControl') == 1 and Shown(sample, 'debuffs') == 1 and Shown(sample, 'buffs') == 1, 'enemy sample auras')
     assert(sample.auraIcons.debuffs[1].rim.vertexColor[1] == M.db.enemy.auraMagicColor[1], 'Magic rim by type')
-    assert(M:SetOption('enemy', 'auraBorder', 'mode') and sample.auraIcons.debuffs[1].rim.vertexColor[1] == Kit.onyx.border[1], 'Mode rim')
+    assert(M:SetOption('enemy', 'auraBorder', 'mode') and sample.auraIcons.debuffs[1].edge.tint == nil, 'Mode: the Gunmetal metal')
     assert(M:SetOption('enemy', 'auraBorder', 'type'))
     -- Switching Editing switches the sample.
     page.SetEditing('friendly')
@@ -876,7 +874,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 9 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 10 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -897,7 +895,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 9 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 10 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -912,7 +910,7 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 9 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 10 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
         assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
@@ -933,7 +931,7 @@ end
 np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 9 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.version == 10 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
     assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
     assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
 ]==], "nameplates_v4")
@@ -947,7 +945,7 @@ np.enemy.healthOpacity, np.enemy.backgroundOpacity = nil, nil
 np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 9 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
+    assert(db.version == 10 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
     assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 100 and db.friendly.backgroundOpacity == 100, 'opacity defaults (55 then the Mode 100)')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v5")
@@ -962,7 +960,7 @@ end
 np.enemy.indicatorAnchor, np.enemy.indicatorX, np.enemy.indicatorY, np.enemy.indicatorSize, np.enemy.indicatorFontSize = 'TOPLEFT', 3, -2, 18, 11
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local e = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 9 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 10 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
     assert(e.questAnchor == 'TOPLEFT' and e.levelAnchor == 'TOPLEFT' and e.classificationX == 3 and e.levelY == -2, 'place carried over')
     assert(e.questSize == 18 and e.classificationSize == 18 and e.levelSize == 11, 'sizes carried over')
 ]==], "nameplates_v6")
@@ -1078,7 +1076,7 @@ np.enemy.auraCCNoTypeColor = { 1, 140 / 255, 40 / 255 }
 np.friendly.auraCCNoTypeColor = { 0.2, 0.4, 0.9 }
 H.Load({ before = STUBS, saved = v7 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 9 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
+    assert(db.version == 10 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
     assert(db.friendly.auraCCNoTypeColor[3] == 0.9, 'a picked color stays')
 ]==], "nameplates_v7")
 
@@ -1097,11 +1095,25 @@ np.friendly.backgroundOpacity, np.friendly.nameColorMode = 40, 'class'
 H.Load({ before = STUBS, saved = v8 }).run([==[
     local db, Tone, P = addon.Nameplates.db, addon.Style.Tone, addon.Kit.palette
     local e, f = db.enemy, db.friendly
-    assert(db.version == 9 and e.foregroundTexture == 'media:Mode BG' and e.backgroundTexture == 'media:Mode BG' and e.backgroundOpacity == 100)
+    assert(db.version == 10 and e.foregroundTexture == 'media:Mode BG' and e.backgroundTexture == 'media:Mode BG' and e.backgroundOpacity == 100)
     assert(e.nameColorMode == 'gradient' and e.fontMedia == 'Mode Geist' and e.liftedShadow == false and e.castTexture == 'media:Mode Cast')
     assert(e.healthTextColor == 'health' and e.focusColor[1] == Tone.rosewood[1], 'old focus amber takes Rosewood')
     assert(f.backgroundOpacity == 40 and f.nameColorMode == 'class', 'picked values stay')
 ]==], "nameplates_v8")
+
+-- Version 9 -> 10: auras wear the frameThin edge. Border Size 2 (the old
+-- default) takes 1 and 3 takes 2; Corners retire; the old no-type rim takes Gunmetal.
+local v9 = world.saved()
+np = v9.profiles.Default.modules.nameplates
+np.version = 9
+np.enemy.auraBorderSize, np.enemy.auraCorners, np.enemy.auraNoTypeColor = 2, 'rounded', { 37 / 255, 40 / 255, 44 / 255 }
+np.friendly.auraBorderSize, np.friendly.auraCorners, np.friendly.auraNoTypeColor = 3, 'sharp', { 0.5, 0.1, 0.1 }
+H.Load({ before = STUBS, saved = v9 }).run([==[
+    local db = addon.Nameplates.db
+    assert(db.version == 10 and db.enemy.auraBorderSize == 1 and db.friendly.auraBorderSize == 2, 'sizes move')
+    assert(db.enemy.auraCorners == nil and db.friendly.auraCorners == nil, 'Corners retired')
+    assert(addon.Style.SameColor(db.enemy.auraNoTypeColor, addon.Style.Tone.gunmetal.mid) and db.friendly.auraNoTypeColor[1] == 0.5, 'old rim moves, picked stays')
+]==], "nameplates_v9")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

@@ -156,6 +156,17 @@ function Edge:SetHighlight(kind)
     self:Paint()
 end
 
+-- Changes the rim's thickness (1 or 2 pixels): its art, its light and layout.
+function Edge:SetRim(rim)
+    rim = rim == 2 and 2 or 1
+    if rim == self.rim then return end
+    self.rim = rim
+    Style.ApplyAsset(self.rimTexture, rim == 2 and "Rim2" or "Rim1")
+    if self.def.light == "edge" and self.light then Style.ApplyAsset(self.light, rim == 2 and "Edge2" or "Edge1") end
+    self:Layout()
+    self:Paint()
+end
+
 function Edge:SetShown(shown)
     self.holder:SetShown(shown)
     if self.below then self.below:SetShown(shown) end
