@@ -21,7 +21,7 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         return group
     end
     function methods:SetVertexColorFromBoolean(value, ifTrue, ifFalse) self.colorFromBoolean = { value, ifTrue, ifFalse } end
-    function methods:SetReverseFill(value) self.reverseFill = value end
+    function methods:SetReverseFill(value) assert(type(value) == "boolean", "Usage: self:SetReverseFill(isReverseFill)"); self.reverseFill = value end
 
     -- Game nameplates: Blizzard acquires a pooled unit frame for each unit.
     nameplates = {}

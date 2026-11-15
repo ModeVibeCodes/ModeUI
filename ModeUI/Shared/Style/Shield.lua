@@ -69,7 +69,7 @@ function Style.Shield(bar)
     -- From max: right to left, full width.
     shield.full = CreateFrame("StatusBar", nil, bar)
     shield.full:SetAllPoints(bar)
-    shield.full:SetReverseFill(not bar.reverse)
+    shield.full:SetReverseFill(bar.reverse ~= true)
     shield.full:SetStatusBarTexture(Style.AssetPath("Solid"))
     shield.full:GetStatusBarTexture():SetAlpha(0)
     shield.fullLift, shield.fullLines, shield.fullClip = Layer(bar, shield.full, 4)
@@ -103,14 +103,18 @@ end
 
 function Shield:Layout()
     local bar, px = self.bar, Style.Pixel(self.bar)
+    -- A bar gets its fill texture when its owner styles it; lay out from then on.
     local healthFill = bar:GetStatusBarTexture()
+    if not healthFill then return end
     local side = bar.reverse and "LEFT" or "RIGHT"
     local away = bar.reverse and "RIGHT" or "LEFT"
     self.attached:ClearAllPoints()
     self.attached:SetPoint("TOP" .. away, healthFill, "TOP" .. side)
     self.attached:SetPoint("BOTTOM" .. away, healthFill, "BOTTOM" .. side)
     self.attached:SetWidth(math.max(1, bar:GetWidth()))
-    self.attached:SetReverseFill(bar.reverse)
+    -- SetReverseFill takes a boolean only.
+    self.attached:SetReverseFill(bar.reverse == true)
+    self.full:SetReverseFill(bar.reverse ~= true)
     local attachedFill, fullFill = self.attached:GetStatusBarTexture(), self.full:GetStatusBarTexture()
     Fit(self.attachedLift, attachedFill); Fit(self.attachedClip, attachedFill)
     Fit(self.fullLift, fullFill); Fit(self.fullClip, fullFill); Fit(self.fullLight, fullFill)

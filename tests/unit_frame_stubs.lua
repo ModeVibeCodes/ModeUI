@@ -35,7 +35,10 @@
     local setTexture=methods.SetTexture
     function methods:SetTexture(path,...) self.atlas=nil;return setTexture(self,path,...) end
     function methods:SetGradient(orientation,a,b) self.gradient={orientation,a,b} end
-    function methods:GetStatusBarTexture() self.fillTexture=self.fillTexture or self:CreateTexture(nil,'BACKGROUND');return self.fillTexture end
+    function methods:GetStatusBarTexture()
+        if self.statusBarTexture==nil then return nil end
+        self.fillTexture=self.fillTexture or self:CreateTexture(nil,'BACKGROUND');return self.fillTexture
+    end
     function methods:SetDrawLayer(layer,sub) self.drawLayer,self.drawSublevel=layer,sub end
     -- Native GetCenter is nil until a frame has an anchor, and Position Manager
     -- measures with it: unit frame stand-ins must be anchored before registering.
@@ -122,7 +125,7 @@
     comboPoints=0
     function GetComboPoints(unit,target) assert(unit=='player' and target=='target');return comboPoints end
     -- Casts: Blizzard's player cast bar and the Target/Focus spell bars.
-    function methods:SetReverseFill(value) self.reverseFill=value end
+    function methods:SetReverseFill(value) assert(type(value)=='boolean','Usage: self:SetReverseFill(isReverseFill)');self.reverseFill=value end
     -- As in the client: three numbers, or one color object (with GetRGB).
     local setBarColor=methods.SetStatusBarColor
     function methods:SetStatusBarColor(r,g,b,a)
