@@ -152,6 +152,21 @@ function M:SetOption(key, value)
     return true
 end
 
+-- The General page's quick action: Set UI Scale on, at the Pixel Perfect
+-- scale for this screen (switching Optimizations on if it was off).
+function M:UsingSuggestedScale()
+    return self:On("manageScale") and self.db.scaleMode == "auto" and self:SuggestedScale() ~= nil
+end
+function M:UseSuggestedScale()
+    local scale, height = self:SuggestedScale()
+    if not scale or not self:CanConfigure() then return false end
+    if not self.enabled then addon:SetModuleEnabled(self.id, true) end
+    self.db.scaleMode = "auto"
+    if not self:SetOption("manageScale", true) then return false end
+    addon:PrintAction(string.format("UI scale %.2f%%, pixel perfect for %dp.", scale, height), "uiScale")
+    return true
+end
+
 -- Play The Game Tools has its own Optimizations; if both manage the same
 -- setting, whichever applies last wins.
 function M:OtherManager()

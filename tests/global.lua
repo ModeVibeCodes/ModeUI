@@ -134,8 +134,41 @@ world.run([==[
 -- Optimizations ----------------------------------------------------------
 world.run([==[
     local O=addon.Optimizations
-    assert(O.enabled and #cvarWrites==0,'nothing changes until an optimization is turned on')
-    assert(not next(ModeUIDB.optimizationOriginals))
+    -- The UI scale starts on, pixel perfect for the screen (1440p: 768/1440 =
+    -- 53.33%, below the game's own floor, so UIParent takes it directly);
+    -- nothing else changes until it's turned on.
+    assert(O.enabled and O.db.version==2 and O.db.manageScale and O.db.scaleMode=='auto','Set UI Scale starts on, Pixel Perfect')
+    assert(table.concat(cvarWrites,',')=='useUiScale=1,uiScale=0.6500','only the UI scale is set')
+    assert(math.abs(UIParent:GetScale()-768/1440)<1e-6 and O.status.scale=='UI scale 53.33%.')
+    assert(ModeUIDB.optimizationOriginals.useUiScale=='0' and ModeUIDB.optimizationOriginals.uiScale=='1.0','the game scale is remembered')
+    assert(O:UsingSuggestedScale(),'the suggested scale is in use')
+    -- Suggested scales: one pixel per UI unit up to 2159 tall, two from 2160.
+    local function Suggest(w,h) local physical=GetPhysicalScreenSize;GetPhysicalScreenSize=function() return w,h end
+        local scale,height,per=O:SuggestedScale();GetPhysicalScreenSize=physical;return scale,height,per end
+    local s,h,per=Suggest(1920,1080);assert(math.abs(s-768/1080*100)<1e-9 and h==1080 and per==1,'1080p: 71.11%')
+    s,h,per=Suggest(2560,1440);assert(math.abs(s-768/1440*100)<1e-9 and per==1,'1440p: 53.33%')
+    s,h,per=Suggest(3840,2160);assert(math.abs(s-768*2/2160*100)<1e-9 and per==2,'4K: two pixels per unit, 71.11%')
+    -- The General page's UI Scale card: the screen, and the quick action.
+    SlashCmdList.MODEUI();addon:SelectConfigPage('home')
+    local home=addon.configWindow.pages.home
+    local button,row=home.homeScaleButton,home.homeScaleRow
+    assert(row.settingsLabel:GetText()=='1440p' and button.label:GetText()=='Using 53.33%' and not button:IsEnabled(),'in use: nothing to do')
+    assert(O:SetOption('manageScale',false) and cvars.useUiScale=='0' and cvars.uiScale=='1.0','off: the game scale back')
+    addon.ReloadManager:Clear('uiScale');home:Refresh()
+    assert(button.label:GetText()=='Use 53.33%' and button:IsEnabled(),'off: offered')
+    addon:SetModuleEnabled('optimizations',false);addon.ReloadManager:Clear('uiScale')
+    button.scripts.OnClick(button)
+    assert(O.enabled and O.db.manageScale and O.db.scaleMode=='auto' and cvars.uiScale=='0.6500' and math.abs(UIParent:GetScale()-768/1440)<1e-6,'one click: Optimizations on, Pixel Perfect')
+    assert(button.label:GetText()=='Using 53.33%' and not button:IsEnabled())
+    addon.configWindow:Hide()
+    cvarWrites={}
+    local remembered=0;for _ in pairs(ModeUIDB.optimizationOriginals) do remembered=remembered+1 end
+    assert(remembered==2,'only the two scale settings remembered')
+    -- Version 1 profiles at the old default (Set UI Scale off) take the new
+    -- one; their Scale choice stays.
+    local old={autoLoot=true,manageScale=false,scaleMode='custom',uiScale=80};O.Initialize(old)
+    assert(old.version==2 and old.manageScale and old.scaleMode=='custom' and old.uiScale==80 and old.autoLoot,'on, with its custom scale')
+    local fresh={};O.Initialize(fresh);assert(fresh.manageScale and fresh.scaleMode=='auto','a new profile: Pixel Perfect')
     assert(O:SetOption('autoLoot',true) and cvars.autoLootDefault=='1' and ModeUIDB.optimizationOriginals.autoLootDefault=='0')
     assert(O:SetOption('autoLoot',false) and cvars.autoLootDefault=='0' and ModeUIDB.optimizationOriginals.autoLootDefault==nil,'game value restored')
     assert(O:SetOption('manageCamera',true) and cvars.cameraDistanceMaxZoomFactor=='4.0')

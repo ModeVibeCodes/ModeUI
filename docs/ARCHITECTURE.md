@@ -373,8 +373,9 @@ post-hook (`hooksecurefunc`, `HookScript`).
   Mode, asked for by the owner on November 13, 2026) and frame names that start
   with `ModeUI`.
 - **Game-wide settings** (CVars, UI scale, loot) change only through the
-  Optimizations module: each one is off by default, and turning it off puts back
-  the game's previous value. Other modules never write them, and nothing rewrites
+  Optimizations module: each one is off by default except the UI scale (on at
+  Pixel Perfect since November 15, 2026, the owner's request), and turning one
+  off puts back the game's previous value. Other modules never write them, and nothing rewrites
   the game-wide fonts.
 - **APIs:** before building a module, write down every API it relies on, with a
   Forever source link, in `docs/API_COMPATIBILITY.md`. Don't assume Retail

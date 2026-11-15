@@ -59,11 +59,22 @@ function M:Resolution()
     if Number(width, 320, 32768) and Number(height, 200, 32768) then return width, height end
 end
 
--- Pixel perfect: one UI unit per screen pixel (768 units tall).
-function M:RecommendedScale()
+-- Pixel perfect: a whole number of screen pixels per UI unit, the UI being
+-- 768 units tall. One pixel per unit up to 2159 pixels tall (1080p: 71.11%,
+-- 1440p: 53.33%); two from 2160 (4K: 71.11%, as at 1080p), so the interface
+-- stays a readable size. Returns the scale in percent, the screen's height
+-- and the pixels per unit; nil while the game can't report the screen.
+function M:SuggestedScale()
     local _, height = self:Resolution()
-    if height then return math.max(40, math.min(115, 768 / height * 100)) end
+    if not height then return end
+    local per = math.max(1, math.floor(height / 1080))
+    local scale = 768 * per / height * 100
+    if scale < self.ranges.uiScale[1] or scale > self.ranges.uiScale[2] then
+        scale = math.max(self.ranges.uiScale[1], math.min(self.ranges.uiScale[2], scale))
+    end
+    return scale, height, per
 end
+function M:RecommendedScale() return (self:SuggestedScale()) end
 
 function M:DesiredScale()
     if self.db.scaleMode == "auto" then return self:RecommendedScale() end

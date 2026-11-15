@@ -51,7 +51,8 @@ world.run([[
     assert(not window.backButton:IsShown() and not window.resetButton:IsShown(),'no breadcrumb or Reset on the main panel')
     assert(window.pages.home.cardColumns==4 and window.pages.home.homeProfile and window.pages.home.homeResetWindow,'General cards, four across')
     local cards=window.pages.home.cards
-    assert(#cards==4 and cards[1].frame:GetHeight()==cards[4].frame:GetHeight() and cards[1].top==cards[4].top,'a grid row: one height for every card')
+    assert(#cards==5 and cards[1].frame:GetHeight()==cards[4].frame:GetHeight() and cards[1].top==cards[4].top,'a grid row: one height for every card')
+    assert(cards[5].top>cards[1].top and window.pages.home.homeScaleButton,'Profile, UI Scale, Optimizations, Class Colors; Window below')
     assert(window.navigationButtons.frames.label:GetText()=='INTERFACE' and window.navigationButtons.interface.label:GetText()=='PANELS'
         and window.navigationButtons.global.label:GetText()=='SYSTEM','category captions (uppercase)')
     local function Top(row) return select(5, row:GetPoint(1)) end

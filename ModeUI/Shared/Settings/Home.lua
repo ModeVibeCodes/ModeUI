@@ -31,6 +31,28 @@ local function ButtonRow(page, label, onClick, keywords)
     return button
 end
 
+-- A label on the left and a button on the right (a quick action).
+local function ActionRow(page, label, keywords)
+    local controls = page:Row(label, 30, keywords, true)
+    local row = controls.row
+    controls:ClearAllPoints(); controls:SetAllPoints(row)
+    local button = W.Button(controls, "", 96, 24)
+    button:SetPoint("RIGHT", 0, 0)
+    row.settingsLabel:SetTextColor(unpack(T.text))
+    function row:layoutChildren(width) self.settingsLabel:SetWidth(math.max(40, width - 104)) end
+    return button, row
+end
+local ROWS = { Switch = SwitchRow, Button = ButtonRow, Action = ActionRow }
+
+-- Cards modules add to the General page (module:BuildHomeCard(page, rows)),
+-- in module order; Shared names no module.
+local function ModuleHomeCards(page)
+    for _, id in ipairs(addon.moduleOrder) do
+        local module = addon.modules[id]
+        if module.BuildHomeCard then module:BuildHomeCard(page, ROWS) end
+    end
+end
+
 -- A module's card: on/off and a button that opens its page.
 local function ModuleCard(page, id)
     local module = addon.modules[id]
@@ -61,6 +83,7 @@ function addon:CreateConfigHome(parent)
     end)
     page.refreshers[#page.refreshers + 1] = function() page.homeProfile:Refresh() end
     page.homeProfiles = ButtonRow(page, "Manage profiles", function() addon:SelectConfigPage("profiles") end)
+    ModuleHomeCards(page)
     ModuleCard(page, "optimizations")
     ModuleCard(page, "classColors")
     page:Group("Window")

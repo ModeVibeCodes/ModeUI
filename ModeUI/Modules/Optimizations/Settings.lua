@@ -3,7 +3,8 @@ local M, W, T = addon.Optimizations, addon.ConfigWidgets, addon.InterfaceTheme
 if not M then return end
 
 -- One tab per area: Loot, Error Text, Camera, UI Scale. Each optimization is
--- off until turned on; its status line says what ModeUI did to the game setting.
+-- off until turned on (the UI scale starts on, at Pixel Perfect); its status
+-- line says what ModeUI did to the game setting.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local function Refresh(fn) page.refreshers[#page.refreshers + 1] = fn end
@@ -81,4 +82,21 @@ function M:CreateConfigPage(parent)
 
     W.PinnedSectionTabs(page)
     page:Finish(); return page
+end
+
+-- The General page's UI Scale card (Shared/Settings/Home.lua asks each module
+-- for its cards): the screen ModeUI detected, and one button that sets the
+-- Pixel Perfect scale for it ("Using" once it's in use).
+function M:BuildHomeCard(page, rows)
+    page:Group(addon.L["UI Scale"])
+    local button, row = rows.Action(page, "Screen", { "ui scale", "scale", "pixel perfect", "resolution", "1080p", "1440p" })
+    page.homeScaleButton, page.homeScaleRow = button, row
+    button:SetScript("OnClick", function() M:UseSuggestedScale(); page:Refresh() end)
+    page.refreshers[#page.refreshers + 1] = function()
+        local scale, height = M:SuggestedScale()
+        row.settingsLabel:SetText(height and (height .. "p") or "Screen")
+        local using = M:UsingSuggestedScale()
+        button.label:SetText(not scale and "Unavailable" or string.format(using and "Using %.2f%%" or "Use %.2f%%", scale))
+        button:SetEnabled(scale ~= nil and not using and M:CanConfigure())
+    end
 end

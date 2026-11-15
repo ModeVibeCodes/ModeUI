@@ -228,6 +228,12 @@ A hybrid window built one-to-one from the study:
 - **General** holds only global settings that already work. Each redesign
   phase adds the cards its modules obey (Accent, Text, Textures, Borders,
   Shields, Names, Scale, Combat), never a control that does nothing yet.
+  Modules add their own cards (`module:BuildHomeCard`). **UI Scale** is there
+  now (Optimizations): the screen ModeUI detected ("1440p") and one button,
+  "Use 53.33%", that sets the Pixel Perfect scale ("Using 53.33%" once it's
+  in use). Pixel Perfect is a whole number of screen pixels per UI unit: one up
+  to 2159 pixels tall (1080p 71.11%, 1440p 53.33%), two from 2160 (4K
+  71.11%), so every 1px edge lands on a pixel.
 - **Visual modules** (`layout = "split"`): the sidebar folds into a 48px icon
   rail, settings sit in a 432px column of cards two across, and a live preview
   fills the rest. The header shows "‹ All modules" and a breadcrumb.

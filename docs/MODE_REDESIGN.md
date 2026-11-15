@@ -134,6 +134,11 @@ From the plan's "Decisions for you" (owner's answers):
 
 Owner preferences gathered along the way:
 
+- **UI scale** (November 15): ModeUI fits itself pixel perfect at 1080p and
+  1440p from the screen the game reports. Optimizations' Set UI Scale starts
+  on at Pixel Perfect (version 2 migrates profiles still at the old default,
+  off); **General** › **UI Scale** has a one-click "Use <scale>" button.
+
 - **Probe addons first.** New designs ship as probe addons (`probes/`,
   `/mprobe <name> [tab]`, zips from `tools/build_probes.ps1` into
   `dist/probes/`, gitignored) so the live addon is never broken while the
