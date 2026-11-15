@@ -172,7 +172,13 @@ A hybrid window built one-to-one from the study:
   11px uppercase Ivory title, labels above controls, cards 10px apart. Pages
   not yet rebuilt show their existing cards as tiles two across (one column in
   the split view, which widens to fit them); a rebuilt page sets `cardColumns`
-  (4 on a sidebar or strip page, 2 in the 432px split column). Cards in one grid row share its height.
+  (4 on a sidebar or strip page, 2 in the 432px split column).
+- **Tile packing:** tiles pack in bands, in page order. Each tile goes to the
+  shortest column while that column is at least 48px short of the tallest, so
+  a long tile on one side takes several short ones on the other. When the
+  columns are nearly level the band closes, and the last tile in each column
+  stretches so every column ends on the same line. Order a page's tiles so
+  related short tiles follow the long one they sit beside.
 - **Untitled cards** (a page's status line and quick actions) have no tile:
   they run as a plain strip across the page above the tiles.
 - **Segmented choices** (`W.Exclusive`) sit side by side only while every

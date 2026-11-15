@@ -1,12 +1,14 @@
 local _, addon = ...
 -- Cards side by side (docs/DESIGN_LANGUAGE.md, "Settings window"): a page with
--- cardColumns = n lays its cards n across in grid rows, left to right; every
--- card in a grid row takes that row's height, as in the artifact. Rows stack
--- inside a card; on a card wide enough, two pairable rows (sliders, dropdowns)
--- share a line. Notes wrap to the card. Pages without cardColumns keep one
--- full-width card per row.
+-- cardColumns = n packs its cards n across in bands. In page order, each card
+-- goes to the shortest column while that column is at least FILL_MIN short of
+-- the tallest (a long card on one side takes several short ones on the
+-- other); once the columns are nearly level, the band closes and the last card
+-- in each column stretches so every column ends level. Rows stack inside a card; on a card wide enough,
+-- two pairable rows (sliders, dropdowns) share a line. Notes wrap to the card.
+-- Pages without cardColumns keep one full-width card per row.
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
-local PAIR_GAP, PAIR_MIN = 24, 150
+local PAIR_GAP, PAIR_MIN, FILL_MIN = 24, 150, 48
 
 local function Visible(page, row)
     local show = not row.sectionHeader
@@ -196,22 +198,46 @@ function W.LayoutCardGrid(page, width, left, padding, gap, top)
             cursor = Snap(cursor + height - padding + gap)
         else tiles[#tiles + 1] = entry end
     end
-    laid = tiles
-    for first = 1, #laid, columns do
-        local rowHeight = 0
-        for i = first, math.min(#laid, first + columns - 1) do rowHeight = math.max(rowHeight, laid[i].height) end
-        for i = first, math.min(#laid, first + columns - 1) do
-            local entry = laid[i]
-            local x = left + (i - first) * (cardWidth + gap)
-            entry.card.frame:ClearAllPoints(); entry.card.frame:SetPoint("TOPLEFT", x, -cursor)
-            entry.card.frame:SetSize(cardWidth, rowHeight)
-            entry.card.top, entry.card.bottom = cursor, cursor + rowHeight
+    local heights, last, band = {}, {}, {}
+    local function Reset()
+        for i = 1, columns do heights[i], last[i] = 0, nil end
+        band = {}
+    end
+    local function Close()
+        local tall = 0
+        for i = 1, columns do tall = math.max(tall, heights[i]) end
+        if tall == 0 then return end
+        -- The last card in each column stretches to the band's bottom.
+        for i = 1, columns do if last[i] then last[i].height = last[i].height + tall - heights[i] end end
+        for _, entry in ipairs(band) do
+            local x, y = left + (entry.column - 1) * (cardWidth + gap), cursor + entry.y
+            entry.card.frame:ClearAllPoints(); entry.card.frame:SetPoint("TOPLEFT", x, -y)
+            entry.card.frame:SetSize(cardWidth, entry.height)
+            entry.card.top, entry.card.bottom = y, y + entry.height
             for _, item in ipairs(entry.placed) do
-                item.row:ClearAllPoints(); item.row:SetPoint("TOPLEFT", x + padding + item.x, -(cursor + item.y))
-                item.row.offset = cursor + item.y
+                item.row:ClearAllPoints(); item.row:SetPoint("TOPLEFT", x + padding + item.x, -(y + item.y))
+                item.row.offset = y + item.y
             end
         end
-        cursor = Snap(cursor + rowHeight + gap)
+        cursor = Snap(cursor + tall + gap)
+        Reset()
     end
+    Reset()
+    for _, entry in ipairs(tiles) do
+        local shortest, tallest, filled = 1, 0, true
+        for i = 1, columns do
+            if heights[i] < heights[shortest] then shortest = i end
+            tallest = math.max(tallest, heights[i])
+            filled = filled and heights[i] > 0
+        end
+        -- Columns nearly level: nothing worth filling, so the band closes.
+        if filled and tallest - heights[shortest] < FILL_MIN then Close(); shortest = 1 end
+        entry.column = shortest
+        entry.y = heights[shortest] > 0 and heights[shortest] + gap or 0
+        heights[shortest] = entry.y + entry.height
+        last[shortest] = entry
+        band[#band + 1] = entry
+    end
+    Close()
     return cursor
 end

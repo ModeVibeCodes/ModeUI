@@ -107,6 +107,15 @@ world.run([[
     local status=W.Label(notes:Row('Status',32),'On.',nil,0,0,300)
     notes:Layout()
     assert(not quiet:GetParent().row:IsShown() and tip:GetParent().row:IsShown() and not status:GetParent().row:IsShown(),'only tips show')
+    -- Tiles pack in bands: a long tile on one side takes several short ones on
+    -- the other, and each column's last tile stretches so the band ends level.
+    local packed=W.Page(UIParent);packed.cardColumns=2;packed.scroll.width=774
+    local function Tile(title,rows) packed:Group(title);for i=1,rows do packed:Row(title..i) end end
+    Tile('Long',3);Tile('Short A',1);Tile('Short B',1);Tile('Next',1)
+    packed:Layout()
+    local long,a,b,nextTile=packed.cards[1],packed.cards[2],packed.cards[3],packed.cards[4]
+    assert(a.top==long.top and b.top>a.bottom and math.abs(b.bottom-long.bottom)<1,'two short tiles beside the long one, ending level')
+    assert(nextTile.top>long.bottom,'the next band starts below')
     -- Combat closes the window.
     window:GetScript('OnEvent')(window,'PLAYER_REGEN_DISABLED');assert(not window:IsShown(),'closes when combat starts')
     SlashCmdList.MODEUI();assert(window:IsShown())
