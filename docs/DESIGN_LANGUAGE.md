@@ -183,6 +183,14 @@ A hybrid window built one-to-one from the study:
   (`W.Select`) from the start.
 - **Text in tiles:** notes wrap to the full width of their tile; row labels are
   sized by their row.
+- **Notes are tips only.** No descriptions of what a setting does, how ModeUI
+  works inside, or a module's status. A note is shown only when the player
+  needs it to use something: a hidden interaction ("click a spell in the
+  preview", "/kb"), a syntax (macro conditions), a game option the feature
+  depends on, a conflict with another addon, or why a tab is empty ("This bar
+  is off"). In code, a module's notes go through `W.Note` (hidden) and the
+  keepers through `W.Tip`; rows titled "Status" are hidden. When a module is
+  rebuilt, its hidden notes are deleted rather than carried over.
 - **Combat:** the window closes itself when combat starts.
 - **Controls:** Slide toggle (Celadon ON with dark text; Rosewood Deep OFF with
   bold white text), rail slider (2px rail, Ivory fill, 4 × 14 blade), dropdowns,

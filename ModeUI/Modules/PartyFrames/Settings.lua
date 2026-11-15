@@ -64,7 +64,7 @@ function M:SettingsControls(page)
         local host = page:Row("", height or 40)
         host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
         local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
     function c.Anchor(title, get, set)
         local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })

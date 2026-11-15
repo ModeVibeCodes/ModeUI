@@ -13,6 +13,7 @@ local function Visible(page, row)
     if page.sectionTabs and row.section and row.section ~= page.selectedSection then show = false end
     if row.section and row.section.expanded == false then show = false end
     if row.visibleWhen then show = show and row.visibleWhen() end
+    if row.settingsQuiet then show = false end
     return show and true or false
 end
 
@@ -87,8 +88,14 @@ local function CardRows(page, card, inner, padding, Snap)
         if row.settingsFooterNote and page.modeFooterLayout then FitNote(row, rowWidth)
         else
             ClampText(row, row, rowWidth, 0)
+            -- The control host's own offset in the row (notes fill the row; stacked
+            -- controls sit under the label; others beside it).
             local host = row.settingsHost
-            if host and host ~= row then ClampText(row, host, rowWidth - (row.stacked and 0 or 184), row.stacked and 22 or 4) end
+            if host and host ~= row then
+                local _, _, _, hostLeft, hostTop = host:GetPoint(1)
+                hostLeft, hostTop = Measured(hostLeft, 0), -(type(hostTop) == "number" and hostTop or 0)
+                ClampText(row, host, rowWidth - hostLeft, hostTop)
+            end
         end
     end
     local half, placed, y, index = Snap((inner - PAIR_GAP) / 2), {}, padding, 1

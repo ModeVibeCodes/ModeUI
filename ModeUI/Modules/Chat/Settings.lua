@@ -47,7 +47,7 @@ function M:CreateConfigPage(parent)
             if addon.IsNumber(lines, 1, 400) then self:SetHeight(math.ceil(lines) + 12) end
         end
         page.notes = page.notes or {}; page.notes[#page.notes + 1] = label
-        return label
+        return W.Note(label)
     end
 
     page:Section(L["Window"], nil, false)

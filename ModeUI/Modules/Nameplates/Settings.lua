@@ -76,7 +76,7 @@ function M:CreateConfigPage(parent)
         local host = page:Row("", height or 40)
         host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
         local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
     local function Anchor(title, get, set, center)
         local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })
@@ -101,7 +101,7 @@ function M:CreateConfigPage(parent)
             { { id = "enemy", label = "Enemy" }, { id = "friendly", label = "Friendly" } }, Kind, page.SetEditing, 110)
         if always then always() end
         When(function() return not Shown() end, function()
-            Note("This kind uses Blizzard's own nameplates. Turn on Use ModeUI Plates on the Nameplates tab to style it.")
+            W.Tip(Note("This kind uses Blizzard's own nameplates. Turn on Use ModeUI Plates on the Nameplates tab to style it."))
         end)
         When(Shown, build)
     end
@@ -206,7 +206,7 @@ function M:CreateConfigPage(parent)
             local colors = Columns({ "Interruptible", "Not Interruptible", "Interrupted" })
             Color(colors[1], "castColor"); Color(colors[2], "castLockedColor"); Color(colors[3], "castInterruptedColor")
         end)
-        When(function() return not Plate() end, function() Note("Name Only plates have no cast bar.") end)
+        When(function() return not Plate() end, function() W.Tip(Note("Name Only plates have no cast bar.")) end)
     end)
 
     -- Auras: how every icon looks, then each group's contents and place.
@@ -308,7 +308,7 @@ function M:CreateConfigPage(parent)
             page.focusFadeSlider = Slider(fade[1], "focusFadeOthers", "%")
             Note("Your focus's plate shows the highlight and its own texture. Other Plates Opacity fades every other plate while you have a focus; 100% leaves them alone. A plate that is your target and focus shows the target's border.", 48)
         end)
-        When(function() return not Plate() end, function() Note("Name Only plates have no focus highlight.") end)
+        When(function() return not Plate() end, function() W.Tip(Note("Name Only plates have no focus highlight.")) end)
     end)
 
     Tab("Indicators", function()

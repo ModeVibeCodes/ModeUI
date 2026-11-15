@@ -43,7 +43,7 @@ function M:BuildComboTab(ui)
     local function C() return M.db.comboPoints end
     local function Has() return Resource.Spec() ~= nil end
     local n = Nested(ui, C, function(key, value) M:SetComboOption(key, value) end)
-    local about = ui.Note("Your Class", "", 40)
+    local about = W.Tip(ui.Note("Your Class", "", 40))
     page.unitFrameResourceNote = about
     page.refreshers[#page.refreshers + 1] = function()
         local spec, class = Resource.Spec(), Resource.ClassName()

@@ -83,7 +83,7 @@ function M:CreateConfigPage(parent)
         local host = page:Row("", height or 40)
         host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
         local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
     local function Columns(titles, height)
         local localized = {}
@@ -134,7 +134,7 @@ function M:CreateConfigPage(parent)
     local function Tab(title, build)
         page:Section(L[title], nil, false)
         if title ~= "Bar" and title ~= "Copy & Apply" then
-            When(function() return not db().show end, function() Note("This bar is hidden. Turn on Show Bar on the Bar tab to use it.") end)
+            When(function() return not db().show end, function() W.Tip(Note("This bar is hidden. Turn on Show Bar on the Bar tab to use it.")) end)
         end
         build()
     end
@@ -167,7 +167,7 @@ function M:CreateConfigPage(parent)
             local keys = page:Row(L["Keybind Mode"], 48)
             page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")
             page.keybindButton:SetPoint("LEFT"); page.keybindButton:SetScript("OnClick", function() M:SetKeybindMode(true) end)
-            Note("Or type /kb. Hover a button and press a key to bind it; Escape clears it.", 32)
+            W.Tip(Note("Or type /kb. Hover a button and press a key to bind it; Escape clears it.", 32))
         end)
         When(function() return not Action() end, function()
             Note("Blizzard's own buttons, in the Mode look: the ones the game shows are laid out in order, so a button it hides leaves no gap.", 40)
@@ -184,7 +184,7 @@ function M:CreateConfigPage(parent)
                 Refresh(function() if not box:HasFocus() then box:SetText(db().pageConditions) end end)
                 page.pageConditionsInput = box
             end)
-            Note("Page Conditions pick a page by macro conditions, like \"[mod:shift] 2; [bonusbar:1] 7\" (pages 1-6 are the game's bars, 7-10 stance and form pages). When none match, the bar shows its own page. Action Bar 1 with no conditions follows the game's own paging (stances, forms, vehicles, page keys); with Page Switching off it stays on page 1.", 64)
+            W.Tip(Note("Page Conditions pick a page by macro conditions, like \"[mod:shift] 2; [bonusbar:1] 7\" (pages 1-6 are the game's bars, 7-10 stance and form pages). When none match, the bar shows its own page. Action Bar 1 with no conditions follows the game's own paging (stances, forms, vehicles, page keys); with Page Switching off it stays on page 1.", 64))
         end)
     end)
 
@@ -216,7 +216,7 @@ function M:CreateConfigPage(parent)
 
     -- Text: pick a text, then its place, size and color; the font is shared.
     Tab("Text", function()
-        When(function() return not HasText() end, function() Note("The micro menu has no text.", 32) end)
+        When(function() return not HasText() end, function() W.Tip(Note("The micro menu has no text.", 32)) end)
         When(HasText, function()
             page:Group(L["Text"])
             local parts = {}
@@ -254,7 +254,7 @@ function M:CreateConfigPage(parent)
 
     -- Glows: how buttons react to procs and cooldowns.
     Tab("Glows", function()
-        When(function() return not Action() end, function() Note("Glows are for action bars; the micro menu and bag bar have none.", 32) end)
+        When(function() return not Action() end, function() W.Tip(Note("Glows are for action bars; the micro menu and bag bar have none.", 32)) end)
         When(Action, function()
             page:Group(L["Proc Glow"])
             page.procPills = Pills("Style", M.choices.procGlow, function() return db().procGlow end, Set("procGlow"), 96); Mark("glows")
@@ -291,7 +291,7 @@ function M:CreateConfigPage(parent)
             box.onEnter = function(text) M:SetOption(editing, "customVisibility", text); page:Refresh() end
             Refresh(function() if not box:HasFocus() then box:SetText(db().customVisibility) end end)
             page.conditionsInput = box
-            Note("Macro conditions, like \"[combat][mod:shift] show; hide\". Conditions the game can't read show the bar always.", 32)
+            W.Tip(Note("Macro conditions, like \"[combat][mod:shift] show; hide\". Conditions the game can't read show the bar always.", 32))
         end)
         page:Group(L["Opacity"])
         local opacity = Columns({ "Opacity" })

@@ -73,7 +73,7 @@ function M:CreateConfigPage(parent)
         local host = page:Row("", height or 40)
         host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
         local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
     local function Columns(titles, height)
         local localized = {}
@@ -108,7 +108,7 @@ function M:CreateConfigPage(parent)
         page:Section(L[title], nil, false)
         if title == "Copy & Apply" then build(); return end
         if title ~= "Window" then
-            When(function() return not db().show end, function() Note("This window is off. Turn on Show Window on the Window tab to use it.") end)
+            When(function() return not db().show end, function() W.Tip(Note("This window is off. Turn on Show Window on the Window tab to use it.")) end)
         end
         When(Grouped, function()
             local note = Note("", 32)
@@ -130,7 +130,7 @@ function M:CreateConfigPage(parent)
         page.meterSelect = SelectIn(meter[1], 220, function() return Localized(M.choices.meterType) end,
             function() return db().meterType end, Set("meterType"))
         page.sessionPills = Choice("Fight", "session", 120)
-        Note("Click a window's header for its meter, earlier fights and Reset All Data. Click a row for that player's spells.", 32)
+        W.Tip(Note("Click a window's header for its meter, earlier fights and Reset All Data. Click a row for that player's spells.", 32))
         page:Group(L["Size"])
         local size = Columns({ "Width", "Rows" })
         page.widthSlider = Slider(size[1], "width", "px")
@@ -175,7 +175,7 @@ function M:CreateConfigPage(parent)
         page.resetDataButton:SetPoint("LEFT"); page.resetDataButton:SetScript("OnClick", function() M:ResetData() end)
         page.blizzardToggles = Toggles({ { "Hide Blizzard's Meter", get = function() return M.db.hideBlizzard end,
             set = function(value) M:SetHideBlizzard(value) end } })
-        Note("The numbers come from the game's own damage meter, which must be on in the game's options; ModeUI never changes that option. Hide Blizzard's Meter tucks Blizzard's meter windows away while this module is on; they keep recording, so ModeUI's windows still fill.", 48)
+        W.Tip(Note("The numbers come from the game's own damage meter, which must be on in the game's options; ModeUI never changes that option. Hide Blizzard's Meter tucks Blizzard's meter windows away while this module is on; they keep recording, so ModeUI's windows still fill.", 48))
     end)
 
     Tab("Bars", function()

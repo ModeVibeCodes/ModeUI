@@ -58,7 +58,7 @@ local function Helpers(page)
             local lines = label:GetStringHeight()
             if addon.IsNumber(lines, 1, 400) then self:SetHeight(math.ceil(lines) + 12) end
         end
-        return label
+        return W.Note(label)
     end
     return H
 end

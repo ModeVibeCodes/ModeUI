@@ -58,7 +58,7 @@ function M:CreateConfigPage(parent)
     local function Matched() return editing == "target" and db().matchPlayer end
     local function Note(title, text, height)
         local label = W.Label(page:Row(title, height or 40), text, nil, 0, -4, 420, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
     -- Style settings a Target matching the Player takes from the Player: hidden
     -- while it matches (tabs of the frame's own settings use this per row).
@@ -110,11 +110,11 @@ function M:CreateConfigPage(parent)
         if always then When(function() return db().enabled end, always) end
         if not own then
             When(function() return db().enabled and Matched() end, function()
-                Note("Target Matches Player", "The Target uses the Player frame's look. Turn off Match Player Frame on the Frame tab to customize it here.")
+                W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look. Turn off Match Player Frame on the Frame tab to customize it here."))
             end)
         end
         When(function() return not db().enabled end, function()
-            Note("Frame Off", "This frame is turned off. Use Turn On above the preview, or Show Frame on the Frame tab.")
+            W.Tip(Note("Frame Off", "This frame is turned off. Use Turn On above the preview, or Show Frame on the Frame tab."))
         end)
         When(function() return db().enabled and (own or not Matched()) end, build)
     end
@@ -131,7 +131,7 @@ function M:CreateConfigPage(parent)
         Toggles({ { "Match Player Frame", "matchPlayer" } })
         When(Matched, function()
             Toggles({ { "Mirror Player Text", "mirrorText" } })
-            Note("Target Matches Player", "The Target uses the Player frame's look and text, mirrored to its other side with Mirror Player Text. Its width, fill direction, cast bar, auras, status and placement stay its own.", 52)
+            W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look and text, mirrored to its other side with Mirror Player Text. Its width, fill direction, cast bar, auras, status and placement stay its own.", 52))
         end)
     end)
     When(function() return db().enabled end, function()
@@ -185,7 +185,7 @@ function M:CreateConfigPage(parent)
     -- direction are each frame's own, so a matched Target keeps them.
     Tab("Health Bar", function()
         When(function() return Matched() end, function()
-            Note("Target Matches Player", "The Target uses the Player frame's look; its width and fill direction stay its own. Turn off Match Player Frame on the Frame tab to customize the rest.", 52)
+            W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look; its width and fill direction stay its own. Turn off Match Player Frame on the Frame tab to customize the rest.", 52))
         end)
         page:Group("Size")
         Slider("Frame Width", "barWidth", "px")

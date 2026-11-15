@@ -24,13 +24,13 @@ function M:CreateConfigPage(parent)
     end
     local function Note(title, text, height)
         local label = W.Label(page:Row(title, height or 52), text, nil, 0, -4, 420, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
 
     -- Shown on the Camera and UI Scale tabs while Play The Game Tools is loaded.
     page.otherManagerNotes = {}
     local function OtherNote()
-        local label = Note("Play The Game Tools", "Play The Game Tools is also loaded and has its own Optimizations. If both set the camera distance or UI scale, the last one to apply wins, so turn it on in only one of them.", 56)
+        local label = W.Tip(Note("Play The Game Tools", "Play The Game Tools is also loaded and has its own Optimizations. If both set the camera distance or UI scale, the last one to apply wins, so turn it on in only one of them.", 56))
         label:GetParent().row.visibleWhen = function() return M:OtherManager() ~= nil end
         page.otherManagerNotes[#page.otherManagerNotes + 1] = label
     end

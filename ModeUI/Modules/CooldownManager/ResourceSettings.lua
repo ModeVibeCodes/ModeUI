@@ -67,7 +67,7 @@ function M:CreateResourcePage(parent)
         local host = page:Row("", height or 40)
         host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
         local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
     local function Button(label, width, onClick)
         local host = page:Row("", 40)
@@ -79,7 +79,7 @@ function M:CreateResourcePage(parent)
     local function Tab(title, build)
         page:Section(L[title], nil, false)
         if title ~= "Bar" then
-            When(function() return not db().show end, function() Note("This bar is off. Turn on Show Bar on the Bar tab to use it.") end)
+            When(function() return not db().show end, function() W.Tip(Note("This bar is off. Turn on Show Bar on the Bar tab to use it.")) end)
         end
         build()
     end

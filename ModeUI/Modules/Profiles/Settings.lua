@@ -82,9 +82,10 @@ function M:CreateConfigPage(parent)
         if ok then selected = P:Name(text) end
         return ok
     end)
-    local status = Label(page:Row("Status", 56), T.muted)
+    -- Results of profile actions (created, imported, reload to switch): kept.
+    local status = W.Tip(Label(page:Row("Status", 56), T.muted))
     local note = W.Label(page:Row("About Profiles", 96), "A profile holds all of ModeUI's settings: which modules are on, Unit Frames and their Edit Mode positions, Optimizations and Class Colors. Changes save to the active profile as you make them. Switching applies after a reload, so the frames start cleanly from the new settings; use Reload in the header, or reload when you close the window. Play The Game Tools keeps its own, separate profiles.", nil, 0, -4, 420, T.muted)
-    note:SetWordWrap(true); page:FooterNote(note)
+    note:SetWordWrap(true); page:FooterNote(note); W.Tip(note)
 
     page:Section("Import / Export", nil, false)
     local exportRow = page:Row("Export", 48)

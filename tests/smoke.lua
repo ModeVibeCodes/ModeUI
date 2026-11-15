@@ -100,6 +100,13 @@ world.run([[
     row:layoutChildren(100);assert(box.compact and not box:IsShown() and box.menu:IsShown() and row:GetHeight()==58,'a dropdown when they do not')
     assert(box.menu.label:GetText()=='Alpha Choice','the dropdown shows the choice')
     row:layoutChildren(900);assert(box:IsShown() and not box.menu:IsShown(),'and back')
+    -- Notes are tips only: descriptive notes and Status lines stay hidden; tips show.
+    local notes=W.Page(UIParent);notes:Group('Notes')
+    local quiet=W.Note(W.Label(notes:Row('',32),'How it works inside',nil,0,0,300))
+    local tip=W.Tip(W.Label(notes:Row('',32),'Type /kb to bind keys',nil,0,0,300))
+    local status=W.Label(notes:Row('Status',32),'On.',nil,0,0,300)
+    notes:Layout()
+    assert(not quiet:GetParent().row:IsShown() and tip:GetParent().row:IsShown() and not status:GetParent().row:IsShown(),'only tips show')
     -- Combat closes the window.
     window:GetScript('OnEvent')(window,'PLAYER_REGEN_DISABLED');assert(not window:IsShown(),'closes when combat starts')
     SlashCmdList.MODEUI();assert(window:IsShown())

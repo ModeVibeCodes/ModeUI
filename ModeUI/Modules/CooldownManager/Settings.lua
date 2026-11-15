@@ -91,7 +91,7 @@ function M:CreateConfigPage(parent)
         local host = page:Row("", height or 40)
         host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
         local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        return label
+        return W.Note(label)
     end
     function ui.Columns(titles, height)
         local localized = {}
@@ -111,7 +111,7 @@ function M:CreateConfigPage(parent)
     function ui.Tab(title, build)
         page:Section(L[title], nil, false)
         if title ~= "Bar" and title ~= "Copy & Apply" then
-            ui.When(function() return not db().show end, function() ui.Note("This bar is off. Turn on Show Bar on the Bar tab to use it.") end)
+            ui.When(function() return not db().show end, function() W.Tip(ui.Note("This bar is off. Turn on Show Bar on the Bar tab to use it.")) end)
         end
         build()
     end
@@ -163,7 +163,7 @@ function M:BuildBarTab(ui)
                     or L["%d cooldowns (from Essential and Utility Cooldowns)."], #bar.entries))
             end)
             page.holdsLabel = kind
-            ui.Note("Click + in the preview to add a spell you track in Blizzard's Cooldown Manager (it moves here from its viewer) or, on a Cooldown Bar, any spell by its Spell ID (on an icon of ModeUI's own, shown while you know the spell). Click a spell for its switches, its order, or to send it back.", 64)
+            W.Tip(ui.Note("Click + in the preview to add a spell you track in Blizzard's Cooldown Manager (it moves here from its viewer) or, on a Cooldown Bar, any spell by its Spell ID (on an icon of ModeUI's own, shown while you know the spell). Click a spell for its switches, its order, or to send it back.", 64))
             local delete = page:Row("", 40)
             delete.rowLabel:Hide(); delete:ClearAllPoints(); delete:SetAllPoints(delete.row)
             page.deleteButton = W.Button(delete, L["Delete Bar"], 140, 30, "secondary")
@@ -226,7 +226,7 @@ function M:BuildBarTab(ui)
             page.cooldownSettingsButton:SetPoint("LEFT")
             page.cooldownSettingsButton:SetScript("OnClick", function() M:OpenCooldownSettings() end)
             ui.Refresh(function() page.cooldownSettingsButton:SetEnabled(M:CanOpenCooldownSettings()) end)
-            ui.Note("Which spells each viewer tracks, and their order, are set in Blizzard's Cooldown Manager. Blizzard's Edit Mode options for a viewer still decide Visibility, Hide When Inactive, Show Timer, Show Tooltips and, for bars, Bar Content; its size, padding and icon limit are ModeUI's. On Essential and Utility the + slot in the preview also takes spells from the other viewer or a custom bar, spells by ID and items.", 80)
+            W.Tip(ui.Note("Which spells each viewer tracks, and their order, are set in Blizzard's Cooldown Manager. Blizzard's Edit Mode options for a viewer still decide Visibility, Hide When Inactive, Show Timer, Show Tooltips and, for bars, Bar Content; its size, padding and icon limit are ModeUI's. On Essential and Utility the + slot in the preview also takes spells from the other viewer or a custom bar, spells by ID and items.", 80))
         end)
     end)
 end

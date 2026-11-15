@@ -15,6 +15,25 @@ local STACK_LABEL, STACK_HEIGHT, PAIR_GAP = 22, 58, 24
 -- A card's border reaches 2px outside it; the scroll view keeps that room.
 local EDGE_ROOM = 3
 
+-- Notes are tips only (docs/DESIGN_LANGUAGE.md, "Settings window"): a
+-- module's descriptive note (W.Note) stays hidden; W.Tip keeps the few that
+-- say how to use a feature, a game option it needs, a conflict, or why a tab
+-- is empty. Both take the note's label and return it.
+local function NoteRow(label)
+    local host = label and label.GetParent and label:GetParent()
+    return host and (host.row or (host.settingsHost and host))
+end
+function W.Note(label)
+    local row = NoteRow(label)
+    if row and not row.settingsTip then row.settingsQuiet = true end
+    return label
+end
+function W.Tip(label)
+    local row = NoteRow(label)
+    if row then row.settingsTip, row.settingsQuiet = true, nil end
+    return label
+end
+
 -- The same responsive scrolling and row layout is used on every page.
 function W.Page(parent, minimumWidth)
     local page = CreateFrame("Frame", nil, parent)
@@ -70,6 +89,7 @@ function W.Page(parent, minimumWidth)
             local show = row.sectionHeader or not row.section or row.section.expanded
             if self.sectionTabs then show = not row.sectionHeader and (not row.section or row.section == self.selectedSection) and (not row.section or row.section.expanded) end
             if self.ModeRowVisible then show=self:ModeRowVisible(row,show) end
+            if row.settingsQuiet then show=false end
             if row.visibleWhen then show=show and row.visibleWhen() end
             return show and true or false
         end
@@ -204,6 +224,7 @@ function W.Page(parent, minimumWidth)
         assert(row,"ModeUI: footer notes must belong to a settings row.")
         row.settingsFooterNote=note
         row.settingsFooterInlineWhen=inlineWhen
+        W.Note(note)
         if inlineWhen then
             local function Points(region)
                 local out={};for i=1,region:GetNumPoints() do out[i]={region:GetPoint(i)} end;return out
@@ -306,6 +327,8 @@ function W.Page(parent, minimumWidth)
         self.rows[#self.rows + 1] = row
         row.section = self.activeSection
         row.gapAfter = 0
+        -- A module's Status line is internal reading, not a setting: hidden.
+        if title == "Status" then row.settingsQuiet = true end
         row.card = self:ActiveCard()
         row:SetFrameLevel(content:GetFrameLevel() + 2)
         -- Labels sit over a stacked control, or on the row's middle beside it.
