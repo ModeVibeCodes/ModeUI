@@ -92,7 +92,25 @@ function methods:SetSize(w, h)
 end
 function methods:SetWidth(w) self.width = w end
 function methods:SetHeight(h) self.height = h end
-function methods:GetWidth() return self.width or 1024 end
+-- An explicit width, or the span between a left and a right anchor on the
+-- same frame (as the game resolves it); 1024 otherwise.
+function methods:GetWidth()
+    if self.width then return self.width end
+    local left, right
+    for _, p in ipairs(self.points or {}) do
+        if type(p[3]) == "string" and type(p[2]) == "table" then
+            if p[1]:find("LEFT") and p[3]:find("LEFT") then left = p end
+            if p[1]:find("RIGHT") and p[3]:find("RIGHT") then right = p end
+        end
+    end
+    if left and right and left[2] == right[2] and left[2] ~= self and not self.measuring then
+        self.measuring = true
+        local width = left[2]:GetWidth() - (left[4] or 0) + (right[4] or 0)
+        self.measuring = nil
+        return width
+    end
+    return 1024
+end
 function methods:GetLeft() local x = self:GetCenter(); return x - self:GetWidth() / 2 end
 function methods:GetBottom() local _, y = self:GetCenter(); return y - self:GetHeight() / 2 end
 function methods:SetResizable(value) self.resizable = value end
@@ -122,7 +140,10 @@ function methods:SetPoint(point, relative, relativePoint, x, y)
     end
 end
 function methods:ClearAllPoints() self.points = {} end
-function methods:SetAllPoints() end
+function methods:SetAllPoints(relative)
+    local target = type(relative) == "table" and relative or self.parent
+    self.points = { { "TOPLEFT", target, "TOPLEFT", 0, 0 }, { "BOTTOMRIGHT", target, "BOTTOMRIGHT", 0, 0 } }
+end
 function methods:GetHeight() return self.height or 240 end
 function methods:SetScale(scale) self.scale = scale; self.layoutWrites = (self.layoutWrites or 0) + 1 end
 function methods:GetEffectiveScale() return (self.scale or 1) * (self.parent and self.parent:GetEffectiveScale() or 1) end
@@ -257,9 +278,18 @@ function methods:CreateTexture(_, layer)
     local texture = Object(self)
     texture.kind, texture.layer = "Texture", layer
     textures[#textures + 1] = texture
+    self.regionList = self.regionList or {}; self.regionList[#self.regionList + 1] = texture
     return texture
 end
-function methods:CreateFontString(_, _, template) local text = Object(self); text.kind = "FontString"; text.hasFont = template ~= nil; return text end
+function methods:CreateFontString(_, _, template)
+    local text = Object(self); text.kind = "FontString"; text.hasFont = template ~= nil
+    self.regionList = self.regionList or {}; self.regionList[#self.regionList + 1] = text
+    return text
+end
+-- Children and regions in creation order, as the game returns them.
+function methods:GetChildren() return unpack(self.childList or {}) end
+function methods:GetRegions() return unpack(self.regionList or {}) end
+function methods:CanWordWrap() return self.wordWrap ~= false end
 function methods:GetObjectType() return self.kind end
 UIParent = Object()
 UIParent.width, UIParent.height = 1280, 800
@@ -298,6 +328,7 @@ function methods:Clear() self.cooldownStart=nil;self.cooldownDuration=nil end
 function CreateFrame(kind, name, parent)
     assert(kind == "Frame" or kind == "Button" or kind == "Slider" or kind == "EditBox" or kind == "ScrollFrame" or kind == "Cooldown" or kind == "StatusBar")
     local frame = Object(parent)
+    if parent then parent.childList = parent.childList or {}; parent.childList[#parent.childList + 1] = frame end
     frame.name=name
     frame.kind = kind
     if kind=="EditBox" then

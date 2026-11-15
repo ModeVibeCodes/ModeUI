@@ -307,20 +307,21 @@ function M:CreateConfigPage(parent)
         page:Group(L["Apply To"])
         local targets, items = {}, {}
         for _, window in ipairs(M.windows) do
-            items[#items + 1] = { M.windowLabels[window], "apply",
+            items[#items + 1] = { label = L[M.windowLabels[window]],
                 get = function() return window ~= editing and targets[window] == true end,
                 set = function(on) if window ~= editing then targets[window] = on or nil end end }
         end
         page.applyTargets = targets
-        page.applyToggles = Toggles(items)
-        local apply = page:Row("", 40)
+        -- The windows to copy to, as buttons to tick.
+        page.applyChoices = page:ChoiceGrid(items)
+        local apply = page:Row("", 62)
         apply.rowLabel:Hide(); apply:ClearAllPoints(); apply:SetAllPoints(apply.row)
         page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
-        page.applyButton:SetPoint("LEFT")
+        page.applyButton:SetPoint("TOPLEFT", 0, -2)
         page.applyAllButton = W.Button(apply, L["Apply to All Windows"], 160, 30, "secondary")
         page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
         local result = W.Label(apply, "", nil, 0, 0, 140, T.muted)
-        result:ClearAllPoints(); result:SetPoint("LEFT", page.applyAllButton, "RIGHT", 10, 0)
+        result:ClearAllPoints(); result:SetPoint("TOPLEFT", page.applyButton, "BOTTOMLEFT", 0, -6)
         page.applyResult = result
         local function Report(ok, count)
             result:SetText(ok and string.format(L["Applied to %d windows."], count or 0) or L["Choose windows first."])

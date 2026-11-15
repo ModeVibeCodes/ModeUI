@@ -121,7 +121,16 @@ function W.Exclusive(parent, choices, getter, setter)
     end
     local function Fit(available)
         available = Measure(available) or (x + PADDING)
-        local compact = available >= 40 and Needed() > available
+        -- Each segment's width: its natural width shrunk evenly toward the room,
+        -- never below its label. More than the room in total: compact.
+        local inner, natural = available - 2 * PADDING, x - PADDING
+        local scale = inner < natural and inner / natural or 1
+        local planned, total = {}, 0
+        for index in ipairs(buttons) do
+            planned[index] = math.max(Need(index), math.floor(widths[index] * scale))
+            total = total + planned[index]
+        end
+        local compact = available >= 40 and total > inner
         container.compact = compact
         container:SetShown(not compact)
         if compact then
@@ -130,14 +139,10 @@ function W.Exclusive(parent, choices, getter, setter)
             return
         end
         if menu then menu:Hide() end
-        -- Natural widths, shrunk evenly (never below a label) when short of room.
-        local natural, need = x + PADDING, Needed()
-        local scale = available < natural and math.max(need / natural, available / natural) or 1
         local left = PADDING
         for index, button in ipairs(buttons) do
-            local width = math.max(Need(index), math.floor(widths[index] * scale))
-            button:SetWidth(width); button:ClearAllPoints(); button:SetPoint("LEFT", left, 0)
-            left = left + width
+            button:SetWidth(planned[index]); button:ClearAllPoints(); button:SetPoint("LEFT", left, 0)
+            left = left + planned[index]
         end
         container:SetWidth(left + PADDING)
     end

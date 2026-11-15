@@ -26,9 +26,10 @@ function W.Select(parent,width,choices,getter,setter,options)
     local multi=options and options.multi
     local button=W.Button(parent,"",width or 260,24,"dropdown")
     button:SetPoint("LEFT");W.DropdownLabel(button)
-    -- In a stacked row (Pages.lua) the field spans the row and may share its line.
+    -- In a stacked row or a column cell (Pages.lua) the field spans its host; a
+    -- stacked row may share its line.
     local row=parent.row
-    if row and row.stacked and parent.valueAnchor then button:SetPoint("RIGHT");row.pairable=true end
+    if parent.valueAnchor then button:SetPoint("RIGHT");if row and row.stacked then row.pairable=true end end
     local menu=W.Popup(button,width or 260,240)
     W.Texture(menu,"Window")
     local scroll=CreateFrame("ScrollFrame",nil,menu);scroll:SetPoint("TOPLEFT",6,-6);scroll:SetPoint("BOTTOMRIGHT",-6,6);scroll:EnableMouseWheel(true)

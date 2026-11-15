@@ -38,37 +38,90 @@ local function FitNote(row, width)
     row.settingsFooterMoved = true
 end
 
--- Text a module sized for one wide column wraps inside a narrower card; a row
--- grows to fit text anchored from its top. Each layout starts again from the
--- text's own width and the row's own height, so a later, wider layout undoes a
--- narrow one. host: the row or its control host; hostTop: how far the host
--- sits below the row's top.
-local function ClampText(row, host, width, hostTop)
-    if not (host and host.GetRegions) then return end
-    for _, region in ipairs({ host:GetRegions() }) do
-        -- The row sizes its own label (layoutChildren); leave it alone.
-        if region ~= row.settingsLabel and region:GetObjectType() == "FontString" and region:IsShown() then
-            local point, _, _, x, y = region:GetPoint(1)
-            local room = width - Measured(x, 0)
-            region.gridNaturalWidth = region.gridNaturalWidth or Measured(region:GetWidth(), 0)
-            local natural = region.gridNaturalWidth
-            -- A wrapping note that starts at the left edge uses the whole width.
-            local note = Measured(x, 0) <= 1 and region.CanWordWrap and region:CanWordWrap()
-            if room > 20 then
-                region:SetWidth(note and room or math.min(natural, room))
-                if natural > room then
-                    region:SetWordWrap(true)
-                    if type(point) == "string" and point:find("^TOP") then
-                        local bottom = hostTop - Measured(y, 0) + Measured(region:GetStringHeight(), 0) + 6
-                        if bottom > row:GetHeight() then row:SetHeight(bottom) end
-                    end
-                end
-            end
+-- Fitting a row to its tile. Controls and text a module sized for one wide
+-- column are brought inside: text wraps (a row grows for text anchored from
+-- its top), a fixed-width control shrinks to its room, and frames that fill
+-- their parent pass the room on. Each layout starts again from the natural
+-- sizes, so a later, wider layout undoes a narrow one. Toggles keep their
+-- size; segmented choices are given their room and fit themselves.
+local CONTAINERS = { Frame = true, Button = true }
+
+-- Left edge of a region inside `host`, following LEFT-to-RIGHT chains of siblings.
+local function LeftOf(region, host, depth)
+    local point, relative, relativePoint, x = region:GetPoint(1)
+    if type(point) ~= "string" or not point:find("LEFT") then return nil end
+    if relative == nil or relative == host then
+        if type(relativePoint) == "string" and relativePoint:find("RIGHT") then return nil end
+        return Measured(x, 0)
+    end
+    if depth < 6 and type(relative) == "table" and relative.GetPoint and type(relativePoint) == "string" and relativePoint:find("RIGHT") then
+        local left = LeftOf(relative, host, depth + 1)
+        if left then return left + Measured(relative:GetWidth(), 0) + Measured(x, 0) end
+    end
+end
+
+-- The room a child anchored to both of its parent's sides gets, and its top offset.
+local function Filled(child, available)
+    if child:GetNumPoints() ~= 2 then return nil end
+    local p1, r1, _, x1, y1 = child:GetPoint(1)
+    local p2, r2, _, x2 = child:GetPoint(2)
+    local parent = child:GetParent()
+    if (r1 ~= nil and r1 ~= parent) or (r2 ~= nil and r2 ~= parent) then return nil end
+    if type(p1) ~= "string" or type(p2) ~= "string" or not (p1:find("LEFT") and p2:find("RIGHT")) then return nil end
+    return available - Measured(x1, 0) + (type(x2) == "number" and x2 or 0), -(type(y1) == "number" and y1 or 0)
+end
+
+local function FitText(row, region, host, available, hostTop)
+    -- Text anchored on two sides already spans its host.
+    if region:GetNumPoints() ~= 1 then return end
+    local left = LeftOf(region, host, 0)
+    if not left then return end
+    local room = available - left
+    if room <= 20 then return end
+    region.gridNaturalWidth = region.gridNaturalWidth or Measured(region:GetWidth(), 0)
+    local natural = region.gridNaturalWidth
+    -- A wrapping note that starts at the left edge uses the whole width.
+    local note = left <= 1 and region.CanWordWrap and region:CanWordWrap()
+    region:SetWidth(note and room or math.min(natural, room))
+    if natural > room then
+        region:SetWordWrap(true)
+        local point, _, _, _, y = region:GetPoint(1)
+        if type(point) == "string" and point:find("^TOP") then
+            local below = -(type(y) == "number" and y or 0)
+            local bottom = hostTop + below + Measured(region:GetStringHeight(), 0) + 6
+            if bottom > row:GetHeight() then row:SetHeight(bottom) end
         end
     end
 end
 
-
+local function FitFrame(row, frame, available, hostTop, depth)
+    if depth > 4 or not frame.GetChildren then return end
+    for _, region in ipairs({ frame:GetRegions() }) do
+        if region ~= row.settingsLabel and region:GetObjectType() == "FontString" and region:IsShown() then
+            FitText(row, region, frame, available, hostTop)
+        end
+    end
+    for _, child in ipairs({ frame:GetChildren() }) do
+        if child.FitSegments then
+            local left = LeftOf(child, frame, 0)
+            if left then child.FitSegments(available - left) end
+        elseif child:IsShown() and not child.switchFrame then
+            local container = CONTAINERS[child:GetObjectType()]
+            if child:GetNumPoints() == 1 then
+                local left = LeftOf(child, frame, 0)
+                if left then
+                    child.gridNaturalWidth = child.gridNaturalWidth or Measured(child:GetWidth(), 0)
+                    local room = available - left
+                    if room >= 40 then child:SetWidth(math.min(child.gridNaturalWidth, room)) end
+                end
+                if container then FitFrame(row, child, Measured(child:GetWidth(), 0), hostTop, depth + 1) end
+            elseif container then
+                local room, top = Filled(child, available)
+                if room then FitFrame(row, child, room, hostTop + top, depth + 1) end
+            end
+        end
+    end
+end
 
 -- Lays out one card's rows from `padding` down; returns { row, y, x } entries and the height.
 local function CardRows(page, card, inner, padding, Snap)
@@ -86,17 +139,7 @@ local function CardRows(page, card, inner, padding, Snap)
         row:SetWidth(rowWidth)
         if row.layoutChildren then row:layoutChildren(rowWidth) end
         if row.settingsFooterNote and page.modeFooterLayout then FitNote(row, rowWidth)
-        else
-            ClampText(row, row, rowWidth, 0)
-            -- The control host's own offset in the row (notes fill the row; stacked
-            -- controls sit under the label; others beside it).
-            local host = row.settingsHost
-            if host and host ~= row then
-                local _, _, _, hostLeft, hostTop = host:GetPoint(1)
-                hostLeft, hostTop = Measured(hostLeft, 0), -(type(hostTop) == "number" and hostTop or 0)
-                ClampText(row, host, rowWidth - hostLeft, hostTop)
-            end
-        end
+        else FitFrame(row, row, rowWidth, 0, 0) end
     end
     local half, placed, y, index = Snap((inner - PAIR_GAP) / 2), {}, padding, 1
     while index <= #visible do

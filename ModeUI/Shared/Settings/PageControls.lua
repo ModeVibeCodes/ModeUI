@@ -3,6 +3,7 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 
 -- Multi-cell rows for a settings page (W.Page): labeled columns and toggle
 -- grids. Both keep their own cell layout (plain rows, not stacked).
+local CELL_MIN = 120
 function W.PageControls(page, ROW_HEIGHT)
     local self = page
     -- One row of labeled cells side by side (sliders, choices, colors). Returns
@@ -25,16 +26,52 @@ function W.PageControls(page, ROW_HEIGHT)
             cells[i], hosts[i] = cell, host
             self.searchEntries[#self.searchEntries + 1] = { label = title, section = self.activeSection, row = row, kind = "setting" }
         end
+        -- Cells share a line; when a line can't give each one CELL_MIN, they
+        -- wrap onto more lines (docs/DESIGN_LANGUAGE.md, "Settings window").
+        local lineHeight = row:GetHeight()
         function row:layoutChildren(width)
             local gap = 24
-            local cellWidth = (width - gap * (#cells - 1)) / #cells
+            local perLine = math.max(1, math.min(#cells, math.floor((width + gap) / (CELL_MIN + gap))))
+            local cellWidth = (width - gap * (perLine - 1)) / perLine
             for i, cell in ipairs(cells) do
-                cell:ClearAllPoints(); cell:SetPoint("TOPLEFT", (i - 1) * (cellWidth + gap), 0)
-                cell:SetSize(cellWidth, self:GetHeight()); cell.label:SetWidth(cellWidth)
+                local column, line = (i - 1) % perLine, math.floor((i - 1) / perLine)
+                cell:ClearAllPoints(); cell:SetPoint("TOPLEFT", column * (cellWidth + gap), -line * lineHeight)
+                cell:SetSize(cellWidth, lineHeight); cell.label:SetWidth(cellWidth)
             end
+            self:SetHeight(lineHeight * math.ceil(#cells / perLine))
         end
         row.settingsColumns, row.settingsTitles = cells, titles
         return hosts
+    end
+    -- Things to pick several of (windows, bars), as buttons that stay lit while
+    -- chosen; they wrap to as many per line as fit. items: { label, get, set }.
+    function self:ChoiceGrid(items, options)
+        local controls = self:Row("", ROW_HEIGHT, nil, true)
+        local row = controls.row
+        controls.rowLabel:Hide()
+        controls:ClearAllPoints(); controls:SetAllPoints(row)
+        table.remove(self.searchEntries)
+        local buttons = {}
+        for i, item in ipairs(items) do
+            local button = W.Button(controls, item.label, 120, 26, "choice")
+            button:SetScript("OnClick", function() item.set(not item.get()); self:Refresh() end)
+            self.refreshers[#self.refreshers + 1] = function() button:SetSelected(item.get() == true) end
+            self.searchEntries[#self.searchEntries + 1] = { label = item.label, section = self.activeSection, row = row, kind = "setting" }
+            buttons[i] = button
+        end
+        local minimum, gap, height = options and options.minimumWidth or 110, 6, 26
+        function row:layoutChildren(width)
+            local perLine = math.max(1, math.min(#buttons, math.floor((width + gap) / (minimum + gap))))
+            local cellWidth = math.floor((width - gap * (perLine - 1)) / perLine)
+            for i, button in ipairs(buttons) do
+                local column, line = (i - 1) % perLine, math.floor((i - 1) / perLine)
+                button:ClearAllPoints(); button:SetPoint("TOPLEFT", column * (cellWidth + gap), -4 - line * (height + gap))
+                button:SetWidth(cellWidth)
+            end
+            self:SetHeight(8 + math.ceil(#buttons / perLine) * (height + gap) - gap)
+        end
+        row.settingsChoices = buttons
+        return buttons
     end
     -- Full-cell click targets and per-setting search entries; wraps to 1-3
     -- columns. Each cell is a switch with its label 10 px to the right.

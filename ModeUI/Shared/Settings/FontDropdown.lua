@@ -7,6 +7,8 @@ local function MediaDropdown(parent, timer, border)
     border=border==true
     local button = W.Button(parent, "", 260, 24, "dropdown")
     button:SetPoint("LEFT")
+    -- In a stacked row or a column cell the field spans its host.
+    if parent.valueAnchor then button:SetPoint("RIGHT") end
     W.DropdownLabel(button)
     local menu = W.Popup(button,280,224)
     W.Texture(menu, "Window")

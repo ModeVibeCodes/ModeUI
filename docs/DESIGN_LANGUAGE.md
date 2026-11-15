@@ -183,6 +183,14 @@ A hybrid window built one-to-one from the study:
   (`W.Select`) from the start.
 - **Text in tiles:** notes wrap to the full width of their tile; row labels are
   sized by their row.
+- **Nothing past its tile.** Dropdowns fill their row or column cell. Column
+  cells wrap onto another line when a line can't give each one 120px. A
+  fixed-width control or label shrinks to its room. Things to pick several of
+  (windows, bars to copy to) are buttons that stay lit while chosen
+  (`page:ChoiceGrid`), not on/off toggles. A result line ("Applied to 2
+  windows.") sits under the buttons that produce it. `tests/settings_fit.lua`
+  opens every page and tab at the window's real widths and fails on any control
+  or text past its tile; every new or rebuilt page must pass it.
 - **Notes are tips only.** No descriptions of what a setting does, how ModeUI
   works inside, or a module's status. A note is shown only when the player
   needs it to use something: a hidden interaction ("click a spell in the
