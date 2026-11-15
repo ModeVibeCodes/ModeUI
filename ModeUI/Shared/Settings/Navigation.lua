@@ -1,21 +1,25 @@
 local _, addon = ...
 -- Which page the settings window shows, and in which shape
 -- (docs/DESIGN_LANGUAGE.md, "Settings window"): "home" is the main panel (full
--- sidebar, General page); a module with layout = "split" and a preview gets the
--- icon rail, the 432px settings column and the live preview; any other module
--- keeps the sidebar and the whole page. Pages are built the first time they open.
+-- sidebar, General page); a module with layout = "split" and a tall preview gets
+-- the icon rail, the 432px settings column and the live preview beside it;
+-- layout = "strip" (a small preview) keeps the rail with the preview across the
+-- top and cards below; any other module keeps the sidebar and the whole page.
+-- Pages are built the first time they open.
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- The window's measurements, from the artifact.
 W.SETTINGS_SIZES = { width = 1000, height = 660, header = 40, footer = 40, sidebar = 184, rail = 48, column = 432, pad = 14 }
 local S = W.SETTINGS_SIZES
 
--- The shape a page opens in: "home", "split" or "page".
+-- The shape a page opens in: "home", "split", "strip" or "page".
 function addon:ConfigLayout(id)
     if id == "home" then return "home" end
     local module = self.modules[id]
-    if module and module.layout == "split" and module.CreateConfigPreview then return "split" end
+    if module and (module.layout == "split" or module.layout == "strip") and module.CreateConfigPreview then return module.layout end
     return "page"
 end
+-- Room a page needs beside its content in the split column: padding and the scroll bar.
+local COLUMN_CHROME = 44
 
 function addon:BuildConfigNavigation(window)
     local pages = {}
@@ -25,16 +29,19 @@ function addon:BuildConfigNavigation(window)
     local moduleHeader, pageHost = window.moduleHeader, window.pageHost
     self:BuildConfigSidebar(window)
 
-    local function Arrange(layout)
+    local function Arrange(layout, page)
         local split = layout == "split"
+        local railed = split or layout == "strip"
         window.layout = layout
-        window.sidebar:SetShown(not split); window.rail:SetShown(split)
+        window.sidebar:SetShown(not railed); window.rail:SetShown(railed)
         body:ClearAllPoints()
-        body:SetPoint("TOPLEFT", split and window.rail or window.sidebar, "TOPRIGHT", 0, 0)
+        body:SetPoint("TOPLEFT", railed and window.rail or window.sidebar, "TOPRIGHT", 0, 0)
         body:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", 0, S.footer)
         column:ClearAllPoints()
         column:SetPoint("TOPLEFT"); column:SetPoint("BOTTOMLEFT")
-        if split then column:SetWidth(S.column) else column:SetPoint("BOTTOMRIGHT") end
+        -- 432px, or wider for a page that still needs more (pages not yet rebuilt).
+        if split then column:SetWidth(math.max(S.column, (page and page.minimumWidth or 0) + COLUMN_CHROME))
+        else column:SetPoint("BOTTOMRIGHT") end
         column.line:SetShown(split)
         pane:SetShown(split)
         moduleHeader:ClearAllPoints()
@@ -60,7 +67,11 @@ function addon:BuildConfigNavigation(window)
         if window.RefreshNavigation then window:RefreshNavigation() end
         if window.profileSelect then window.profileSelect:Refresh() end
         local module = self.modules[window.selectedPage]
-        window.resetButton:SetShown(module ~= nil and module.ResetToDefaults ~= nil)
+        local reset = module ~= nil and module.ResetToDefaults ~= nil
+        window.resetButton:SetShown(reset)
+        -- Edit Mode sits beside Reset, or beside Done when there is no Reset.
+        window.editButton:ClearAllPoints()
+        window.editButton:SetPoint("RIGHT", reset and window.resetButton or window.doneButton, "LEFT", -8, 0)
         for _, page in pairs(pages) do page:Refresh() end
     end
 
@@ -95,10 +106,17 @@ function addon:BuildConfigNavigation(window)
         local module = self.modules[id]
         window.selectedPage = id
         window.selectedCategory = module and module.category or nil
-        Arrange(self:ConfigLayout(id))
+        local layout = self:ConfigLayout(id)
+        local page = self:EnsureConfigPage(id)
+        -- Pages not yet rebuilt into small cards show their cards as tiles,
+        -- two across, outside the split column.
+        if page.autoColumns or (page.cardColumns == nil and id ~= "home" and (page.sectionTabs or #page.sections == 0)) then
+            page.autoColumns = true
+            page.cardColumns = layout ~= "split" and 2 or nil
+        end
+        Arrange(layout, page)
         self:UpdateConfigTitle(id)
         moduleHeader:SetModule(module)
-        local page = self:EnsureConfigPage(id)
         if not page.UpdatePreviewLayout then
             page:ClearAllPoints(); page:SetPoint("TOPLEFT"); page:SetPoint("BOTTOMRIGHT")
         end

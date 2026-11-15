@@ -57,12 +57,15 @@ function addon:SearchSettings(query)
             end
         end
     end
+    -- The open page's settings come first.
+    local open = self.configWindow and self.configWindow.selectedPage
+    for _, result in ipairs(results) do if result.module.id == open then result.score = result.score - 0.5 end end
     table.sort(results, function(a, b)
         if a.score ~= b.score then return a.score < b.score end
         if a.kind ~= b.kind then return a.kind == "setting" or (a.kind == "module" and b.kind == "section") end
         return a.label < b.label
     end)
-    while #results > 3 do table.remove(results) end
+    while #results > 5 do table.remove(results) end
     return results
 end
 
@@ -87,14 +90,14 @@ function addon:CreateSettingsSearch()
     local popup = CreateFrame("Frame", nil, input)
     popup:Hide()
     popup:SetPoint("TOPRIGHT", input, "BOTTOMRIGHT", 0, -6)
-    popup:SetSize(340, 124)
+    popup:SetSize(340, 12 + 5 * 37)
     popup:SetFrameStrata("TOOLTIP")
     popup:SetFrameLevel(input:GetFrameLevel() + 40)
     popup:SetClampedToScreen(true)
     W.Texture(popup, "Window")
     W.Texture(popup, "BorderSilver", "BORDER")
     local buttons = {}
-    for index = 1, 3 do
+    for index = 1, 5 do
         local button = W.Button(popup, "", 328, 36, "tab")
         button:SetPoint("TOPLEFT", 6, -6 - (index - 1) * 37)
         button.label:ClearAllPoints()

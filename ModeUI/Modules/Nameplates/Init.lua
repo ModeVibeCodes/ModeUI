@@ -10,7 +10,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Files: Init (this), Migrations, Driver, Plate, Layout, Target, Indicator, Focus,
 -- Combo, SoftTarget, Update, CastBar, Auras, AuraContainers, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
-local M = { title = L["Nameplates"], category = "frames", defaultEnabled = false, layout = "split",
+local M = { title = L["Nameplates"], category = "frames", defaultEnabled = false, layout = "strip",
     configDescription = L["Onyx nameplates with health, names, cast bars, auras and raid markers."],
     modeLayout = { decorateOnly = true } }
 addon.Nameplates = M

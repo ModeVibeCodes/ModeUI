@@ -12,6 +12,8 @@ local ROW_HEIGHT, ROW_INSET, LEGACY_ROW_HEIGHT = 36, 4, 48
 -- design, November 13, 2026); a slider's value sits at the right of the label
 -- line. Two pairable rows in a row (sliders, dropdowns) share one line.
 local STACK_LABEL, STACK_HEIGHT, PAIR_GAP = 22, 58, 24
+-- A card's border reaches 2px outside it; the scroll view keeps that room.
+local EDGE_ROOM = 3
 
 -- The same responsive scrolling and row layout is used on every page.
 function W.Page(parent, minimumWidth)
@@ -20,6 +22,7 @@ function W.Page(parent, minimumWidth)
     page:SetPoint("BOTTOMRIGHT")
     page.rows, page.refreshers, page.sections, page.searchEntries, page.cursor = {}, {}, {}, {}, 0
     page.cards = {}
+    page.minimumWidth = minimumWidth
     local scroll = CreateFrame("ScrollFrame", nil, page)
     scroll:SetPoint("TOPLEFT")
     scroll:SetPoint("BOTTOMRIGHT", -24, 0)
@@ -52,7 +55,8 @@ function W.Page(parent, minimumWidth)
         content:SetWidth(width)
         local leftInset=self.contentInset+(self.layoutInsetLeft or 0)
         width=math.max(1,width-leftInset-self.contentInset)
-        local cursor = self.layoutTopInset or 0
+        -- Room above the first card for its border (gap and rim sit outside it).
+        local cursor = self.layoutTopInset or EDGE_ROOM
         if self.cardColumns then
             cursor = W.LayoutCardGrid(self, width, leftInset, CARD_PADDING, CARD_GAP, cursor)
             self.cursor = cursor
@@ -133,7 +137,7 @@ function W.Page(parent, minimumWidth)
                     if row.card ~= openCard then
                         local wasCard = openCard ~= nil
                         CloseCard(); paired = false
-                        cursor = Snap(cursor + (wasCard and CARD_GAP - CARD_PADDING or (cursor > 0 and CARD_GAP or 0)))
+                        cursor = Snap(cursor + ((wasCard or cursor > EDGE_ROOM) and CARD_GAP or 0))
                         openCard = row.card; openCard.top = cursor; cursor = cursor + CARD_PADDING
                         if row.divider then row.divider:Hide() end
                     elseif not paired then FlushHalf() end

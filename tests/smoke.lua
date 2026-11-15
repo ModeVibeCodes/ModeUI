@@ -59,17 +59,23 @@ world.run([[
     addon:SelectConfigPage('bags')
     assert(window.layout=='page' and window.pages.bags:IsShown() and window.moduleHeader.title:GetText()=='Bags')
     assert(window.backButton:IsShown() and window.crumbTitle:GetText()=='Bags' and window.sidebar:IsShown())
-    assert(window.resetButton:IsShown(),'Bags has a reset to defaults')
-    -- A visual module folds the sidebar into the icon rail, with the preview beside the settings.
+    assert(window.resetButton:IsShown() and select(2,window.editButton:GetPoint(1))==window.resetButton,'Bags has a reset to defaults; Edit Mode beside it')
+    assert(window.pages.bags.cardColumns==2 and window.pages.bags.autoColumns,'existing pages show their cards as tiles, two across')
+    -- Small previews: the icon rail, the preview across the top, tiles below.
     addon:SelectConfigPage('unitFrames')
-    assert(window.layout=='split' and window.rail:IsShown() and not window.sidebar:IsShown() and window.previewPane:IsShown())
-    assert(window.selectedCategory=='frames' and window.pages.unitFrames:IsShown() and window.pages.unitFrames.previewSplit)
-    assert(window.pages.unitFrames.previewArea:GetParent()==window.previewPane and window.pages.unitFrames.previewArea:IsShown(),'live preview in the pane')
+    assert(window.layout=='strip' and window.rail:IsShown() and not window.sidebar:IsShown() and not window.previewPane:IsShown())
+    assert(window.selectedCategory=='frames' and window.pages.unitFrames:IsShown() and not window.pages.unitFrames.previewSplit)
+    assert(window.pages.unitFrames.previewArea:GetParent()==window.pages.unitFrames and window.pages.unitFrames.cardColumns==2,'preview strip and tiles')
     assert(window.railButtons.unitFrames.selected and not window.resetButton:IsShown())
-    for _,id in ipairs({'nameplates','partyFrames','actionBars'}) do
+    assert(select(2,window.editButton:GetPoint(1))==window.doneButton,'without Reset, Edit Mode sits beside Done')
+    addon:SelectConfigPage('nameplates');assert(window.layout=='strip')
+    -- Tall previews: the settings column beside the live preview.
+    for _,id in ipairs({'partyFrames','actionBars'}) do
         addon:SelectConfigPage(id);assert(window.layout=='split' and window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)
+        assert(window.previewPane:IsShown() and window.pages[id].previewArea:GetParent()==window.previewPane and window.pages[id].previewArea:IsShown(),id..' preview in the pane')
+        assert(window.column:GetWidth()>=480+44 and window.pages[id].cardColumns==nil,'the column fits a page not yet rebuilt')
     end
-    assert(not window.pages.unitFrames.previewArea:IsShown(),'one preview at a time')
+    assert(not window.pages.partyFrames.previewArea:IsShown(),'one preview at a time')
     -- Back: the rail's home, "All modules", the wordmark or Esc; Esc on the main panel closes.
     Click(window.railButtons.home);assert(window.selectedPage=='home' and window.sidebar:IsShown())
     addon:SelectConfigPage('chat');Click(window.backButton);assert(window.selectedPage=='home')
@@ -79,6 +85,9 @@ world.run([[
     window.backCatcher:Hide();assert(window:IsShown() and window.selectedPage=='home' and window.backCatcher:IsShown(),'Esc: module to main panel')
     window.backCatcher:Hide();assert(not window:IsShown(),'Esc: main panel to closed')
     SlashCmdList.MODEUI();assert(window:IsShown() and window.selectedPage=='home')
+    -- Combat closes the window.
+    window:GetScript('OnEvent')(window,'PLAYER_REGEN_DISABLED');assert(not window:IsShown(),'closes when combat starts')
+    SlashCmdList.MODEUI();assert(window:IsShown())
     for _,id in ipairs({'minimap','windows','chat','tooltip','bags'}) do
         addon:SelectConfigPage(id);assert(window.layout=='page' and window.pages[id]:IsShown() and window.moduleHeader.title:GetText()==addon.modules[id].title,id)
     end
