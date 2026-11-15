@@ -52,14 +52,14 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
         b.icon = b:CreateTexture(nil, 'BORDER'); b.icon:SetTexture('Interface/Icons/Bag' .. index)
         b.SquareMask = b:CreateMaskTexture(); b.icon:AddMaskTexture(b.SquareMask)
         b.IconBorder, b.SlotHighlightTexture = b:CreateTexture(nil, 'OVERLAY'), b:CreateTexture(nil, 'OVERLAY')
-        b.Count = b:CreateFontString(nil, 'OVERLAY')
+        b.Count = b:CreateFontString(nil, 'OVERLAY', 'NumberFontNormal')
         b.normal = b:CreateTexture(nil, 'ARTWORK')
         function b:GetNormalTexture() return self.normal end
         function b:UpdateTextures() self.normal:SetAtlas('ui-hud-actionbar-iconframe-bags'); self.normal:SetAlpha(1) end
         b:UpdateTextures()
     end
     KeyRingButton:Hide() -- no key ring for this character
-    MainMenuBarBackpackButton.FreeSlots = MainMenuBarBackpackButton:CreateFontString(nil, 'OVERLAY')
+    MainMenuBarBackpackButton.FreeSlots = MainMenuBarBackpackButton:CreateFontString(nil, 'OVERLAY', 'NumberFontNormal')
     MainMenuBarBackpackButton.FreeSlots:SetText('(16)')
     function BagsBar:Layout()
         for index, name in ipairs({ 'MainMenuBarBackpackButton', 'CharacterBag0Slot' }) do

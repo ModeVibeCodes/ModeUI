@@ -9,8 +9,11 @@ local Style = addon.Style
 local HALF, HEIGHT, INSET = 34, 20, 2
 local SWITCH_WIDTH = HALF * 2
 
+-- The font is bound before any text: WoW refuses text on a font string
+-- without one ("Font not set").
 local function Half(frame, text, side)
-    local label = frame:CreateFontString(nil, "OVERLAY")
+    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    addon.Media:BindInterfaceFont(label, GameFontHighlight, T.fontSize.group, nil, "heading")
     label:SetPoint(side, frame, side, 0, 0)
     label:SetSize(HALF, HEIGHT)
     label:SetJustifyH("CENTER")
@@ -28,10 +31,7 @@ function W.Switch(button, text, height, style)
     Style.ApplyAsset(knob, "Knob")
     knob:SetSize(HALF - 2 * INSET, HEIGHT - 2 * INSET)
     local off, on = Half(frame, "OFF", "LEFT"), Half(frame, "ON", "RIGHT")
-    for _, half in ipairs({ off, on }) do
-        addon.Media:BindInterfaceFont(half, GameFontHighlight, T.fontSize.group, nil, "heading")
-        half:SetDrawLayer("OVERLAY", 2)
-    end
+    for _, half in ipairs({ off, on }) do half:SetDrawLayer("OVERLAY", 2) end
     button.switchFrame, button.track, button.fill, button.knob = frame, track, track.fill, knob
     button.offLabel, button.onLabel = off, on
     button.label = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")

@@ -143,6 +143,8 @@ function methods:RegisterForClicks(button) self.clickRegistration = button end
 function methods:StartMoving() self.moving = true end
 function methods:StopMovingOrSizing() self.moving = false; self.sizing = false end
 function methods:SetText(text)
+    -- WoW refuses text on a font string with no font yet (no template, SetFont or SetFontObject).
+    if self.kind == "FontString" and not self.hasFont then error("FontString:SetText(): Font not set", 2) end
     local changed = self.text ~= text
     self.text = text; self.textWrites = (self.textWrites or 0) + 1
     if changed and self.scripts.OnTextChanged then self.scripts.OnTextChanged(self, false) end
@@ -163,6 +165,7 @@ function methods:SetShadowColor(...) self.shadowColor = {...} end
 function methods:SetShadowOffset(...) self.shadowOffset = {...} end
 function methods:SetFont(path, size, flags)
     if testMissingFonts and testMissingFonts[path] then return false end
+    self.hasFont = true
     self.font = {path, size, flags}; self.layoutWrites = (self.layoutWrites or 0) + 1; return true
 end
 function methods:GetFont() return unpack(self.font or {"Fonts/FRIZQT__.TTF", 12, ""}) end
@@ -186,7 +189,7 @@ function methods:SetAutoFocus() end
 function methods:SetMaxLetters() end
 function methods:SetMultiLine(value) self.multiLine = value end
 function methods:GetNumLines() local _, count=(self.text or ""):gsub("\n", ""); return count+1 end
-function methods:SetFontObject() end
+function methods:SetFontObject(font) if font then self.hasFont = true end end
 function methods:SetTextInsets() end
 function methods:HasFocus() return self.focused == true end
 function methods:SetFocus() self.focused = true end
@@ -256,7 +259,7 @@ function methods:CreateTexture(_, layer)
     textures[#textures + 1] = texture
     return texture
 end
-function methods:CreateFontString() local text = Object(self); text.kind = "FontString"; return text end
+function methods:CreateFontString(_, _, template) local text = Object(self); text.kind = "FontString"; text.hasFont = template ~= nil; return text end
 function methods:GetObjectType() return self.kind end
 UIParent = Object()
 UIParent.width, UIParent.height = 1280, 800

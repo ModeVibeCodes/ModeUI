@@ -10,7 +10,7 @@
     function methods:GetTexture() return self.texture end
     function methods:GetCooldownTimes() return (self.realStart or 0) * 1000, (self.realDuration or 0) * 1000 end
     function methods:GetCountdownFontString()
-        self.countdown = self.countdown or self:CreateFontString(nil, 'OVERLAY')
+        self.countdown = self.countdown or self:CreateFontString(nil, 'OVERLAY', 'NumberFontNormal')
         return self.countdown
     end
     -- Secret text makes a FontString's measurements secret too (as in the client).
@@ -96,9 +96,9 @@
         b.NormalTexture:SetAtlas('UI-HUD-ActionBar-IconFrame')
         b.cooldown = CreateFrame('Cooldown', nil, b)
         b.TextOverlayContainer = CreateFrame('Frame', nil, b)
-        b.HotKey = b.TextOverlayContainer:CreateFontString(nil, 'OVERLAY')
-        b.Count = b.TextOverlayContainer:CreateFontString(nil, 'OVERLAY')
-        b.Name = b:CreateFontString(nil, 'OVERLAY')
+        b.HotKey = b.TextOverlayContainer:CreateFontString(nil, 'OVERLAY', 'NumberFontNormal')
+        b.Count = b.TextOverlayContainer:CreateFontString(nil, 'OVERLAY', 'NumberFontNormal')
+        b.Name = b:CreateFontString(nil, 'OVERLAY', 'GameFontHighlightSmall')
         function b:UpdateHotkeys() self.HotKey:SetSize(37, 10); self.HotKey:SetPoint('TOPRIGHT', self, 'TOPRIGHT', -4, -5); self.HotKey:SetText(hotkeyTexts[name] or tostring(index)) end
         function b:UpdateButtonArt() self.NormalTexture:SetAtlas('UI-HUD-ActionBar-IconFrame'); self.NormalTexture:SetAlpha(1) end
         b:UpdateHotkeys()

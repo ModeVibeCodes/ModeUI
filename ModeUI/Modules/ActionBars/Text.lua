@@ -96,6 +96,9 @@ function M:Lift(text)
     local lift = self.lifts[text]
     if lift then return lift end
     lift = text:GetParent():CreateFontString(nil, "ARTWORK")
+    -- A font before any text: WoW refuses text on a font string without one.
+    local path, size, flags = text:GetFont()
+    if not (path and lift:SetFont(path, size, flags)) then lift:SetFontObject(GameFontHighlightSmall) end
     lift:SetWordWrap(false)
     self.lifts[text] = lift
     lift:SetText(text:GetText())

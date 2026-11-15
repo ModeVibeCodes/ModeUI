@@ -62,12 +62,12 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
         frame.editBox = edit
         _G[name .. 'EditBoxLeft'] = edit:CreateTexture(nil, 'BACKGROUND')
         edit.focusLeft, edit.focusMid, edit.focusRight = edit:CreateTexture(), edit:CreateTexture(), edit:CreateTexture()
-        edit.header = edit:CreateFontString()
+        edit.header = edit:CreateFontString(nil, nil, 'ChatFontNormal')
         local tab = CreateFrame('Button', name .. 'Tab', GENERAL_CHAT_DOCK)
         tab:SetID(index)
         for _, key in ipairs({ 'Left', 'Middle', 'Right', 'ActiveLeft', 'ActiveMiddle', 'ActiveRight',
             'HighlightLeft', 'HighlightMiddle', 'HighlightRight' }) do tab[key] = tab:CreateTexture(nil, 'BACKGROUND') end
-        tab.Text = tab:CreateFontString(); tab.Text:SetText(index == 1 and 'General' or 'Combat Log')
+        tab.Text = tab:CreateFontString(nil, nil, 'GameFontNormalSmall'); tab.Text:SetText(index == 1 and 'General' or 'Combat Log')
         tab.glow = tab:CreateTexture(nil, 'BACKGROUND')
     end
     GENERAL_CHAT_DOCK.selected = ChatFrame1
@@ -88,8 +88,8 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
     -- The friends button (QuickJoinToastButton): its own art, the online count.
     local friends = CreateFrame('Button', 'QuickJoinToastButton', UIParent)
     for _, key in ipairs({ 'FriendsButton', 'QueueButton', 'FlashingLayer' }) do friends[key] = friends:CreateTexture(nil, 'BACKGROUND') end
-    friends.FriendCount = friends:CreateFontString(); friends.FriendCount:SetText('5')
-    friends.QueueCount = friends:CreateFontString()
+    friends.FriendCount = friends:CreateFontString(nil, nil, 'GameFontNormalSmall'); friends.FriendCount:SetText('5')
+    friends.QueueCount = friends:CreateFontString(nil, nil, 'GameFontNormalSmall')
     C_VoiceChat = { GetActiveChannelID = function() return voiceChannel end }
 ]==]
 
