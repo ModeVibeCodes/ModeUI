@@ -24,6 +24,7 @@ Style.ASSETS = {
     Gap = { file = "Borders\\Gap", slice = 4 },
     Soft = { file = "Borders\\Soft", slice = 12 },
     RingSheen = { file = "Borders\\RingSheen" },
+    RingLight = { file = "Borders\\RingLight" },
     -- Bars.
     Solid = { file = "Bars\\Solid", lsm = "Mode Solid" },
     Matte = { file = "Bars\\Matte", fill = "MatteBase", lift = "MatteLift", lsm = "Mode Matte" },

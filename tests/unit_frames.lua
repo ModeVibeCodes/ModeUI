@@ -352,8 +352,8 @@ world.run([====[
     local ring=p.portrait
     -- The ring sits above the bars and the border, so its whole circle is drawn over the block's end.
     assert(ring:GetFrameLevel()>p.health:GetFrameLevel() and ring:GetFrameLevel()>p.panel.edge.holder:GetFrameLevel(),'ring over the block end')
-    assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and ring.ring.sheen.texture==addon.Style.AssetPath('RingSheen'),'Steel Sheen ring')
-    assert(Point(ring.icon)[4]==4 and Point(ring.icon)[5]==-4 and ring.ring.mask,'the portrait 4px inside (a 4px ring), cut round, no gap')
+    assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and ring.ring.sheen.texture==addon.Style.AssetPath('RingLight') and ring.ring.shadow.vertexColor[4]==addon.Style.Tone.shadowAlpha,'edge-lit Steel ring with its shadow ring')
+    assert(Point(ring.icon)[4]==3 and Point(ring.icon)[5]==-3 and ring.ring.mask,'the portrait 3px inside (a 3px ring), cut round, no gap')
     assert(p.nameClip==nil and p.nameShine==nil and p.panel.ringBorder==nil)
     assert(p.textLayer:GetFrameLevel()>ring:GetFrameLevel(),'text above the portrait')
     -- On the Border (default): the baseline on the top rim's middle (bottom = 2 - 1 - 3

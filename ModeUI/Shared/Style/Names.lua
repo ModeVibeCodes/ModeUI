@@ -101,8 +101,8 @@ end
 -- side and follows the text's color (secret colors included: SetVertexColor
 -- accepts them) and visibility through hooks.
 Style.GLOW_CHARS = { percent = 4, percentPlain = 3, current = 5, deficit = 5, both = 11 }
-Style.TEXT_GLOW_ALPHA = 0.45
-local GLOW_OUT = 4
+Style.TEXT_GLOW_ALPHA = 0.22
+local GLOW_OUT = 5
 local function SyncGlow(text)
     local glow = text.glow
     if not glow then return end

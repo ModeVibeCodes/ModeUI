@@ -14,6 +14,7 @@
 --   Gap              the 1px black gap inside a window rim (radius 3, sliced at 4)
 --   Soft             a soft drop shadow under frames and windows (sliced at 12)
 --   RingSheen        a disc with a light band, laid over a portrait's metal disc
+--   RingLight        a disc lit from the top, fading by its middle (the edge-lit ring)
 -- Bars/     luminance art multiplied by the bar color (SetVertexColor), and white
 --           "Lift" overlays (alpha only) that add light the multiply can't.
 --   Solid (8x8), MatteBase/MatteLift, BG, ButtonBase/ButtonLift, GlassBase/GlassLift,
@@ -94,6 +95,8 @@ do
 end
 -- Portrait ring light: a disc with a soft horizontal band through its middle.
 Shape("Borders/RingSheen", 128, 128, T.Circle(64, 64, 64), function(_, y) return T.Smooth(1 - math.abs(y - 64) / 64) end)
+-- Edge-lit ring: light from the top, strongest at the top edge, gone by the middle.
+Shape("Borders/RingLight", 128, 128, T.Circle(64, 64, 64), function(_, y) return math.max(0, (64 - y) / 64) ^ 1.5 end)
 
 -- Bars ---------------------------------------------------------------------
 local BW, BH = 256, 32
@@ -177,14 +180,13 @@ Lift("Bars/CometTrail", 64, 16, function(x) return 0.7 * ((x + 0.5) / 64) end)
 Lift("Bars/LineGlow", 16, 64, function(x) return 0.8 * (1 - T.Smooth(math.abs(x + 0.5 - 8) / 8)) end)
 
 -- Glows --------------------------------------------------------------------
--- Text glow: flat through the middle 60% of its width, fading to nothing at the
--- ends, and soft top to bottom; drawn stretched over the digits.
+-- Text glow: a soft capsule, brightest along the middle 40% of its width and
+-- fading round to nothing at every edge (no visible box); drawn stretched.
 Lift("Glows/TextGlow", 128, 32, function(x, y)
-    local t = math.abs(x + 0.5 - 64) / 64
-    local fx = t < 0.6 and 1 or (1 - T.Smooth((t - 0.6) / 0.4))
-    local u = math.abs(y + 0.5 - 16) / 16
-    local fy = u < 0.25 and 1 or (1 - T.Smooth((u - 0.25) / 0.75))
-    return 0.9 * fx * fy
+    local tx = math.max(0, math.abs(x + 0.5 - 64) / 64 - 0.4) / 0.6
+    local ty = math.abs(y + 0.5 - 16) / 16
+    local r = math.min(1, math.sqrt(tx * tx + ty * ty))
+    return 0.85 * (1 - T.Smooth(r)) ^ 2
 end)
 
 -- Icons --------------------------------------------------------------------

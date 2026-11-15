@@ -13,7 +13,7 @@ function M.EdgePreset(unit) return (unit == "player" or unit == "target") and "f
 -- One face for both the secure button and its Edit Mode/preview stand-in
 -- (docs/DESIGN_LANGUAGE.md, "Unit frames"): the bar block (health, a 1px black
 -- line, 3px power) inside its Mode Frame border, which covers its own rounded
--- corners (no masks); the portrait in a Steel Sheen ring centred on the
+-- corners (no masks); the portrait in an edge-lit Steel ring centred on the
 -- block's portrait-side edge, over the bars; Combined shields on health.
 function M:BuildFace(f)
     local panel = CreateFrame("Frame", nil, f)

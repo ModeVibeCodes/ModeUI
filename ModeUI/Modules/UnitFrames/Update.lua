@@ -54,7 +54,7 @@ function M:NameColor(unit, identity)
     return self.nameAccents[mode] or self.ACCENT
 end
 
--- Portrait ring (Style.Ring): Steel Sheen by default, or its metal tinted by
+-- Portrait ring (Style.Ring): edge-lit Steel by default, or its metal tinted by
 -- the class/reaction color or a custom color, keeping its light band.
 function M:PaintRing(f, unit)
     local fdb = self:FrameDB(unit)

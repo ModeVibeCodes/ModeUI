@@ -82,7 +82,7 @@ rims).
 | `window` | Round 4 | 1px Steel | Sheen (light band through the middle) | 1px shadow + soft drop | 1px black | every window and panel, the settings window, popups |
 | `card` | Round 4 | 1px Steel | Sheen | — | 1px black | settings cards (a window border without the shadow) |
 | `control` | Round 4 | 1px Steel | Sheen | 1px shadow | — | buttons, dropdowns, fields, the slide toggle |
-| `ring` | circle | 4px Steel | Sheen | — | — | portraits, badges |
+| `ring` | circle | 3px Steel | Edge-lit (light on the top of the ring, fading by its middle) | 1px shadow | — | portraits, badges |
 | `line` | Round 4 | 1px flat color | — | 1px shadow | — | aura dispel rims, item quality |
 | `empty` | Round 4 | 1px or 2px, any color | Edge-lit, tinted | 1px shadow | — | an element's only border in a custom color: proc ready, aggro, target in group frames |
 
@@ -140,8 +140,8 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
   by health: Rosewood at 30% and under, through Ivory, to Celadon at full
   (the client evaluates a color curve, since the health percent is secret).
 - **Health text glow** (on by default, a module toggle): a soft halo behind
-  the health numbers in the text's own color (added light, 45%), 4px past
-  the digits. Its width comes from the format (characters × 0.62 × size),
+  the health numbers in the text's own color (added light, 22%), fading out
+  round and soft 5px past the digits, with no visible edge. Its width comes from the format (characters × 0.62 × size),
   never from measuring, since health text can be secret; it sits on the
   text's justified side and follows the text's color and visibility.
 - **Placement:** the name sits on the top border, 9px in from the side

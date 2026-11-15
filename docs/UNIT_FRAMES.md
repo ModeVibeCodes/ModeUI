@@ -8,9 +8,11 @@
 ## Lighter Slate, a 4px ring, glowing health numbers
 
 - Empty bars are a lighter Slate (`#575757`), easier to tell from the fill.
-- The portrait ring is 4px of Steel (was 2px); the portrait sits 4px inside.
-- Health texts glow softly in their own color (**Health Text Glow**, Text tab,
-  on by default): `Style.TextGlow`, sized from the format, never measured.
+- The portrait ring is 3px of Steel (was 2px), lit from the top like the frames'
+  edge-lit rims, with a 1px dark shadow ring outside; the portrait sits 3px
+  inside. The Ring choice formerly called Steel Sheen is now Steel.
+- Health texts glow faintly in their own color (**Health Text Glow**, Text tab,
+  on by default; 22%, fading round 5px past the digits): `Style.TextGlow`, sized from the format, never measured.
 - Borders stay one physical pixel even when a frame's scale changes after
   layout: each edge's holder ignores its parents' scale and takes Blizzard's
   pixel factor (this fixed oversized rims on nameplate aura icons).

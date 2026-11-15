@@ -23,7 +23,7 @@ function M:PixelSize(f) return Kit.PixelSize(f) end
 
 -- The Mode frame (docs/DESIGN_LANGUAGE.md, "Unit frames"): the bar block in
 -- its Mode Frame border (2px, 1px on the smaller frames) with the portrait's
--- Steel Sheen ring centred on its portrait-side edge. Pixel perfect: every
+-- edge-lit Steel ring centred on its portrait-side edge. Pixel perfect: every
 -- size is whole physical pixels (the rim, the 1px line between health and
 -- power) and the frame is an even number of pixels each way, so its centre
 -- anchor stays on the grid. The frame keeps the Onyx frame's overall size, so

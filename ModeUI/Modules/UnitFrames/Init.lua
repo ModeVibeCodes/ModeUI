@@ -88,7 +88,7 @@ M.choices = {
     position = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     side = { { id = "left", label = "Left" }, { id = "right", label = "Right" } },
     portraitStyle = { { id = "portrait", label = "Character Portrait" }, { id = "class", label = "Class Icon" } },
-    ring = { { id = "border", label = "Steel Sheen" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
+    ring = { { id = "border", label = "Steel" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     nameColor = { { id = "gradient", label = "Gradient" }, { id = "sky", label = "Sky" }, { id = "champagne", label = "Champagne" }, { id = "lilac", label = "Lilac" },
         { id = "frost", label = "Frost" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     healthColor = { { id = "default", label = "Default" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },

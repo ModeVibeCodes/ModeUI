@@ -1,6 +1,6 @@
 local _, addon = ...
 -- Icons and portraits (docs/DESIGN_LANGUAGE.md, "Sizes"). Square elements are a
--- little wider than tall, cropped evenly; portraits sit in a Steel Sheen ring.
+-- little wider than tall, cropped evenly; portraits sit in an edge-lit Steel ring.
 local Style = addon.Style
 local Tone = Style.Tone
 
@@ -22,9 +22,11 @@ function Style.CropIcon(texture, width, height)
 end
 
 -- A portrait in a ring (the `ring` preset): a metal disc `diameter + 2 * rim`
--- wide with its light band, and the portrait texture cropped to a circle on top.
+-- wide, lit from the top like the frames' edge-lit rims, a 1px dark shadow
+-- ring outside it, and the portrait texture cropped to a circle on top.
 -- Returns { frame, portrait, disc } sized in `host`'s units.
-Style.RING_RIM = 4 -- the `ring` preset's metal, in physical pixels
+Style.RING_RIM = 3 -- the `ring` preset's metal, in physical pixels
+Style.RING_LIGHT_ALPHA = 0.32
 function Style.Ring(host, diameter, rim)
     rim = rim or Style.RING_RIM
     local px = Style.Pixel(host)
@@ -33,6 +35,12 @@ function Style.Ring(host, diameter, rim)
     local frame = CreateFrame("Frame", nil, host)
     frame:SetSize(outer, outer)
     ring.frame = frame
+    -- The 1px shadow ring, one pixel outside the metal (like `frameThin`).
+    local shadow = frame:CreateTexture(nil, "BORDER", nil, -1)
+    Style.ApplyAsset(shadow, "Circle")
+    Style.Paint(shadow, Tone.shadow, Tone.shadowAlpha)
+    shadow:SetPoint("TOPLEFT", frame, "TOPLEFT", -px, px)
+    shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", px, -px)
     local disc = frame:CreateTexture(nil, "BORDER", nil, 0)
     Style.ApplyAsset(disc, "Circle")
     disc:SetAllPoints()
@@ -40,9 +48,9 @@ function Style.Ring(host, diameter, rim)
     local tone = Style.Mix(base, light, 0.5)
     Style.Paint(disc, tone)
     local sheen = frame:CreateTexture(nil, "BORDER", nil, 1)
-    Style.ApplyAsset(sheen, "RingSheen")
+    Style.ApplyAsset(sheen, "RingLight")
     sheen:SetAllPoints()
-    sheen:SetVertexColor(1, 1, 1, 0.22)
+    Style.Paint(sheen, Tone.mono.white, Style.RING_LIGHT_ALPHA)
     -- A dark disc under the portrait: nothing behind shows through its edges.
     local back = frame:CreateTexture(nil, "ARTWORK", nil, -1)
     Style.ApplyAsset(back, "Circle")
@@ -55,7 +63,7 @@ function Style.Ring(host, diameter, rim)
     mask:SetTexture(Style.AssetPath("Circle"), "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:SetAllPoints(portrait)
     portrait:AddMaskTexture(mask)
-    ring.disc, ring.sheen, ring.portrait, ring.mask, ring.back = disc, sheen, portrait, mask, back
+    ring.disc, ring.sheen, ring.portrait, ring.mask, ring.back, ring.shadow = disc, sheen, portrait, mask, back, shadow
     return ring
 end
 
@@ -64,13 +72,16 @@ end
 function Style.LayoutRing(ring, outer, px)
     px = px or Style.Pixel(ring.frame)
     ring.frame:SetSize(outer, outer)
+    ring.shadow:ClearAllPoints()
+    ring.shadow:SetPoint("TOPLEFT", ring.frame, "TOPLEFT", -px, px)
+    ring.shadow:SetPoint("BOTTOMRIGHT", ring.frame, "BOTTOMRIGHT", px, -px)
     local inset = ring.rim * px
     ring.portrait:ClearAllPoints()
     ring.portrait:SetPoint("TOPLEFT", ring.frame, "TOPLEFT", inset, -inset)
     ring.portrait:SetPoint("BOTTOMRIGHT", ring.frame, "BOTTOMRIGHT", -inset, inset)
 end
 
--- The ring's metal: Steel Sheen by default, or tinted (a class color, the
+-- The ring's metal: edge-lit Steel by default, or tinted (a class color, the
 -- combat red) while keeping its light band.
 function Style.PaintRing(ring, color)
     local base = color and Style.Mix(color, Tone.steel.dark, 0.7) or Style.Mix(Tone.steel.dark, Tone.steel.mid, 0.5)

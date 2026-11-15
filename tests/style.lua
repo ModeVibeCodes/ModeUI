@@ -179,7 +179,7 @@ world.run([[
     -- Icons: wider than tall.
     assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
     local ring = Style.Ring(host, 66)
-    assert(ring.portrait and ring.mask and ring.rim == 4, "portrait ring, 4px of metal")
+    assert(ring.portrait and ring.mask and ring.rim == 3 and ring.shadow, "portrait ring, 3px of metal and a shadow ring")
     assert(Style.SameColor(Style.Hex("575757"), Tone.slate), "Slate, a little lighter")
     -- Health text glow: a halo in the text's color, sized from the format and
     -- set on the text's justified side; it follows the color and visibility.
@@ -194,8 +194,8 @@ world.run([[
     Style.TextGlow(text, { size = 10, chars = Style.GLOW_CHARS.percent, justify = "RIGHT", px = 1 })
     local glow = text.glow
     assert(glow and glow.texture == Style.AssetPath("TextGlow") and glow.blendMode == "ADD" and glow.layer == "OVERLAY", "an added-light halo")
-    assert(glow.width == 25 + 8 and glow.height == 10 + 8, "sized from the format: 4 digits x 0.62 x 10, 4px round")
-    assert(glow.points[1][1] == "RIGHT" and glow.points[1][2] == text and glow.points[1][4] == 4, "on the justified side")
+    assert(glow.width == 25 + 10 and glow.height == 10 + 10, "sized from the format: 4 digits x 0.62 x 10, 5px round")
+    assert(glow.points[1][1] == "RIGHT" and glow.points[1][2] == text and glow.points[1][4] == 5, "on the justified side")
     assert(glow.vertexColor[2] == 0.8 and glow.vertexColor[4] == Style.TEXT_GLOW_ALPHA and glow:IsShown(), "the text's color")
     text:SetTextColor(0.9, 0.3, 0.3, 1)
     assert(glow.vertexColor[1] == 0.9, "follows a new color")
