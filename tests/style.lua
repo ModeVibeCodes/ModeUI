@@ -140,6 +140,10 @@ world.run([[
     assert(_G.ModeUIStyleSheet and _G.ModeUIStyleSheet:IsShown(), "sheet opens")
     Style.ToggleSheet()
     assert(not _G.ModeUIStyleSheet:IsShown(), "and closes")
+    -- Companions and probes reach the same Style and Domain through ModeUI-Core.
+    local Core = LibStub("ModeUI-Core", true)
+    assert(Core and Core.Style == Style and Core.Domain == addon.Domain and Core.IsPublic == addon.IsPublic, "ModeUI-Core API")
+    assert(Core.Ready() == (addon.initialized == true))
 ]])
 
 if #failures > 0 then

@@ -53,6 +53,7 @@ Shared\Style\Shield.lua
 Shared\Style\Names.lua
 Shared\Style\Icon.lua
 Shared\Style\Sheet.lua
+Shared\Runtime\API.lua
 Shared\Kit\Color.lua
 Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua
