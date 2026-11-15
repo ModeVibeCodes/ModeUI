@@ -170,11 +170,13 @@ world.run([==[
     local M = addon.PartyFrames
     assert(M and addon.modules.partyFrames == M and M.category == 'frames' and M.defaultEnabled == false)
     assert(not M.enabled and M.header == nil and M.ghost == nil, 'off by default; nothing built')
-    assert(M.db.version == 3 and M.db.fontMedia == 'Expressway' and M.db.foregroundTexture == 'mode' and M.db.backgroundTexture == 'slate')
-    assert(M.db.nameShow and M.db.nameAnchor == 'TOPLEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
+    -- The Mode design language: Geist, Mode Gradient on Mode BG, 150 x 34 + 3, Gradient names.
+    assert(M.db.version == 4 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Gradient' and M.db.backgroundTexture == 'media:Mode BG')
+    assert(M.db.nameShow and M.db.nameAnchor == 'LEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
     assert(M.db.spacing == 1 and M.db.auras.dispellable.show and M.db.auras.magic.filter == 'notMine' and M.db.auras.tracked1.spells[1] == nil)
-    assert(M.db.healthHeight == 52 and M.db.borderStyle == 'mode' and M.db.corner == 7 and M.db.shieldTexture == 'slateHatch' and M.db.overshieldTexture == 'slateHatch')
-    assert(M.db.auras.magic.glow == 'none' and M.db.dispel.Magic.border and not M.db.dispel.Magic.health, 'glows off, borders on by default')
+    assert(M.db.healthHeight == 34 and M.db.width == 150 and M.db.powerHeight == 3 and M.db.borderStyle == nil and M.db.corner == nil)
+    assert(M.db.shieldTexture == nil and M.db.nameColorMode == 'gradient' and M.db.healthTextColor == 'health' and M.db.aggroHighlight and M.db.healthTextShow)
+    assert(M.db.auras.magic.glow == 'none' and M.db.dispel.Magic.gradient and not M.db.dispel.Magic.border and not M.db.dispel.Magic.health, 'glows off, the dispel Gradient by default')
     assert(PartyFrame.parent == UIParent, 'Blizzard untouched while off')
 
     -- Enabling in combat waits; nothing secure is made until combat ends.
@@ -201,15 +203,14 @@ world.run([==[
     local p1 = M.members[2]
     assert(p1.health.value.label == 'p1hp' and p1.health.high.label == 'p1max', 'secret health straight to the bar')
     assert(p1.texts.name.text.label == 'p1name', 'secret name straight to SetText')
-    assert(p1.healPrediction.value.label == 'heals' and p1.absorb.value.label == 'absorbs', 'heals and absorbs ride on health')
-    assert(Point(p1.healPrediction)[2] == p1.health:GetStatusBarTexture() and Point(p1.absorb)[2] == p1.healPrediction:GetStatusBarTexture())
-    assert(p1.overshield:GetAlpha() == 0, 'no calculator: no overshield')
-    -- Shields in Mode Slate Hatch: the bar's own fill is invisible and a tiled hatch follows it in a clip.
-    assert(p1.absorb.hatchClip and Point(p1.absorb.hatchClip)[2] == p1.absorb:GetStatusBarTexture() and p1.absorb.hatch.texture:find('SlateHatch'))
-    assert(p1.absorb.statusBarColor[4] == 0 and p1.overshield.reverseFill == true and p1.health.reverseFill == false, 'overshield fills back from full')
-    -- Box corners: the border's radius is Corner Size, content rounded by the corners it reaches.
-    assert(p1.panel.border.radius == 7 and p1.panel.border.thickness == 2 and #p1.health:GetStatusBarTexture().masks <= 3)
-    assert(p1.alphaFromBoolean and p1.alphaFromBoolean[1].label == 'range' and p1.alphaFromBoolean[3] == 0.45, 'secret range via SetAlphaFromBoolean')
+    assert(p1.healPrediction.value.label == 'heals' and Point(p1.healPrediction)[2] == p1.health:GetStatusBarTexture(), 'heals ride on health')
+    -- Combined shields (Style.Shield): the secret shield on the health's end, the whole one back from max.
+    local shield = p1.health.shield
+    assert(shield and shield.attached.value.label == 'absorbs' and shield.full.reverseFill == true and p1.health.reverseFill == false)
+    -- The group edge round the bars' area: a 1px rim, nothing masked.
+    assert(p1.panel.edge.preset == 'group' and p1.geometry.border == 1 and #(p1.health:GetStatusBarTexture().masks or {}) == 0)
+    assert(Point(p1.health)[2] == p1.panel.inner, 'the bars fill the area inside the rim')
+    assert(p1.alphaFromBoolean and p1.alphaFromBoolean[1].label == 'range' and p1.alphaFromBoolean[3] == 0.55, 'secret range via SetAlphaFromBoolean')
     assert(M.members[1]:GetAlpha() == 1 and M.members[3]:GetAlpha() == 1, 'you and members in range stay opaque')
     -- Class color by default.
     local priest = RAID_CLASS_COLORS and RAID_CLASS_COLORS.PRIEST
@@ -230,10 +231,16 @@ world.run([==[
     units.party2.dead = true; FireEvent('UNIT_HEALTH', 'party2')
     assert(tank.texts.status.text == 'Dead' and tank:GetAlpha() == 0.7 and tank.texts.healthText.text ~= '75%')
     units.party2.dead = false; FireEvent('UNIT_CONNECTION', 'party2'); assert(tank.texts.status.text == '' and tank:GetAlpha() == 1)
-    -- Your target: the border in the highlight color.
+    -- Your target: the rim swapped to Ivory (the size never changes).
     targetUnit = 'party2'; FireEvent('PLAYER_TARGET_CHANGED')
-    assert(tank.isTarget and tank.targetRing.edge:IsShown() and not p1.targetRing.edge:IsShown())
-    targetUnit = nil; FireEvent('PLAYER_TARGET_CHANGED'); assert(not tank.targetRing.edge:IsShown())
+    assert(tank.isTarget and tank.panel.edge.tint == M.db.targetColor and p1.panel.edge.tint == nil)
+    targetUnit = nil; FireEvent('PLAYER_TARGET_CHANGED'); assert(tank.panel.edge.tint == nil)
+    -- Aggro: the rim in the hostile red; your target wins.
+    function UnitThreatSituation(u, mob) if mob == nil then return threat[u] end end
+    threat = { party1 = 3 }; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'party1')
+    assert(p1.hasAggro and p1.panel.edge.tint == addon.Style.Tone.reaction.hostile, 'aggro rim')
+    assert(M:SetOption('aggroHighlight', false) and p1.panel.edge.tint == nil and M:SetOption('aggroHighlight', true))
+    threat = {}; FireEvent('UNIT_THREAT_SITUATION_UPDATE', 'party1'); assert(p1.panel.edge.tint == nil)
 
     -- Healers-only power: the tank's health takes the whole height.
     assert(M:SetOption('powerShown', 'healers') and p1.power:IsShown() and not tank.power:IsShown())
@@ -247,12 +254,10 @@ world.run([==[
     -- Inset: on the health bar, Power Width wide, in its own border.
     assert(M:SetOption('powerShown', 'all') and M:SetOption('powerStyle', 'inset') and M:SetOption('powerWidth', 50))
     local g = p1.geometry
-    assert(p1.health.height == g.innerHeight and math.abs(p1.power.width - g.innerWidth / 2) < 1 and p1.powerBorder.edge:IsShown())
+    assert(p1.health.height == g.innerHeight and math.abs(p1.power.width - g.innerWidth / 2) < 1 and p1.powerEdge.holder:IsShown())
     local pp = Point(p1.power); assert(pp[1] == 'BOTTOM' and pp[3] == 'BOTTOM' and pp[5] == g.border + 3, 'centered, 3px up')
-    assert(M:SetOption('powerStyle', 'below') and not p1.powerBorder.edge:IsShown() and M:SetOption('powerHeight', 10) and p1.power.height == 10)
-    -- The Thin border: one pixel.
-    assert(M:SetOption('borderStyle', 'thin') and p1.panel.border.thickness == 1 and p1.geometry.border == 1 and Point(p1.health)[4] == 1)
-    assert(M:SetOption('borderStyle', 'mode') and M:SetOption('powerHeight', 6))
+    assert(M:SetOption('powerStyle', 'below') and not p1.powerEdge.holder:IsShown() and M:SetOption('powerHeight', 10) and p1.power.height == 10)
+    assert(M:SetOption('powerHeight', 3))
 
     -- Layout: role sort, reverse, growth and spacing through header attributes.
     assert(M:SetOption('sortBy', 'role') and h.attributes.groupBy == 'ASSIGNEDROLE' and h.attributes.groupingOrder == 'TANK,HEALER,DAMAGER,NONE')
@@ -349,11 +354,14 @@ world.run([==[
     assert(M:SetAuraOption('magic', 'borderSize', 3) and not M:SetAuraOption('magic', 'borderSize', 4), 'border size 1-3')
     assert(M:SetAuraOption('heals', 'show', false) and not p1.auraIcons.heals[1]:IsShown())
     assert(not M:SetAuraOption('heals', 'filter', 'nonsense') and not M:SetAuraOption('heals', 'width', 99) and not M:SetAuraOption('heals', 'glow', 'blink'), 'validated')
-    -- Debuff effects by type: border by default, health color and gradient when chosen.
-    assert(p1.dispel.ring.edge:IsShown() and p1.dispel.ring.strips.TOP.vertexColor[3] == M.db.auraMagicColor[3], 'Magic border')
+    -- Debuff effects by type: the Gradient from the top edge by default (72% of
+    -- the health, from 56%), the rim and the health color when chosen.
+    assert(p1.dispel.gradient:IsShown() and p1.dispel.gradient.gradient and p1.panel.edge.tint == nil, 'Magic gradient')
+    assert(math.abs(p1.dispel.gradient.height - p1.health.height * 0.72) < 0.01 and Point(p1.dispel.gradient)[1] == 'TOPLEFT')
+    assert(math.abs(p1.dispel.gradient.gradient[3].a - 0.56) < 1e-9 and p1.dispel.gradient.gradient[2].a == 0, 'fades out downward')
     assert(M:SetDispelEffect('Magic', 'health', true) and p1.dispel.health:IsShown() and p1.dispel.health.vertexColor[3] == M.db.auraMagicColor[3])
-    assert(M:SetDispelEffect('Magic', 'gradient', true) and p1.dispel.gradient:IsShown() and p1.dispel.gradient.gradient)
-    assert(M:SetDispelEffect('Magic', 'border', false) and not p1.dispel.ring.edge:IsShown())
+    assert(M:SetDispelEffect('Magic', 'border', true) and p1.panel.edge.tint == M.db.auraMagicColor, 'the rim in the type color')
+    assert(M:SetDispelEffect('Magic', 'border', false) and p1.panel.edge.tint == nil and M:SetDispelEffect('Magic', 'health', false))
     assert(not M:SetDispelEffect('Magic', 'sparkle', true) and not M:SetDispelEffect('Arcane', 'border', true), 'validated')
     assert(M:CopyAuraGroup('otherDebuffs', 'crowdControl') and M.db.auras.crowdControl.anchor == M.db.auras.otherDebuffs.anchor and M.db.auras.crowdControl.filter == 'all')
     assert(M:ResetSettings('heals') and M.db.auras.heals.show and M.db.auras.heals.place == 'inside')
@@ -362,8 +370,9 @@ world.run([==[
     M:SetEditMode(true)
     local ghost = M.ghost
     assert(ghost:IsShown() and #ghost.faces == 5 and ghost.faces[5].texts.status.text == 'Dead', 'sample party')
-    assert(ghost.faces[1].icons.leader:IsShown() and ghost.faces[3].targetRing.edge:IsShown(), 'sample icons and target')
-    assert(ghost.faces[1].auraIcons.heals[1]:IsShown() and ghost.faces[3].overshield:GetAlpha() == 1, 'sample auras and overshield')
+    assert(ghost.faces[1].icons.leader:IsShown() and ghost.faces[3].panel.edge.tint == M.db.targetColor, 'sample icons and target')
+    assert(ghost.faces[1].panel.edge.tint == addon.Style.Tone.reaction.hostile, 'sample aggro')
+    assert(ghost.faces[1].auraIcons.heals[1]:IsShown() and ghost.faces[3].health.shield.full:GetAlpha() == 1, 'sample auras and overshield')
     assert(math.abs(ghost.height - (5 * ghost.faces[1].geometry.height + 4 * M.db.spacing)) < 1, 'room for five')
     local x1, y1 = M:GhostCorner()
     assert(M:SetOption('width', 180) and M:SetOption('healthHeight', 60))
@@ -417,12 +426,12 @@ world.run([==[
     assert(M:SetDispelEffect('Magic', 'border', true))
     page:SelectSectionTab(page.jumpTargets.dispel.section)
     assert(M:PreviewSection() == 'Highlights and Overlay' and not view.quick:IsShown())
-    assert(view.faces[1].dispel.ring.edge:IsShown() and view.faces[1].dispel.ring.strips.TOP.vertexColor[3] == M.db.auraMagicColor[3], 'dispel overlay previewed')
-    page.SetDispelType('Curse'); assert(view.faces[1].dispel.ring.strips.TOP.vertexColor[1] == M.db.auraCurseColor[1], 'the picked type')
+    assert(view.faces[1].panel.edge.tint == M.db.auraMagicColor and view.faces[1].dispel.gradient:IsShown(), 'dispel overlay previewed')
+    page.SetDispelType('Curse'); assert(view.faces[1].dispel.gradient.gradient[3].r == M.db.auraCurseColor[1] and view.faces[1].panel.edge.tint ~= M.db.auraCurseColor, 'the picked type (Curse: Gradient only)')
     page:SelectSectionTab(page.jumpTargets.health.section)
-    assert(not view.faces[1].dispel.ring.edge:IsShown(), 'gone on another tab')
-    page.SetBarPart('overshield'); assert(view.faces[1].overshield:GetAlpha() == 1 and view.faces[1].overshield.value == 24, 'overshield previewed')
-    assert(page.barPartPills and M:SetOption('overshieldOpacity', 50))
+    assert(view.faces[1].panel.edge.tint ~= M.db.auraCurseColor and not view.faces[1].dispel.gradient:IsShown(), 'gone on another tab')
+    page.SetBarPart('overshield'); assert(view.faces[1].health.shield.full:GetAlpha() == 1 and view.faces[1].health.shield.full.value == 24, 'overshield previewed')
+    assert(page.barPartPills and M:SetOption('showOvershields', false) and view.faces[1].health.shield.full:GetAlpha() == 0 and M:SetOption('showOvershields', true))
     page:SelectSectionTab(page.jumpTargets.element.section); page.SetElement('readyCheck')
     assert(view.faces[1].icons.readyCheck:IsShown(), 'ready check previewed')
     page:SelectSectionTab(page.jumpTargets.power.section)
@@ -530,10 +539,13 @@ H.Load({ before = CONTAINERS }).run([==[
     assert(slots and slots.slots.Magic.filter == 'HARMFUL|RAID' and slots.slots.Magic.options.candidateFilters.includeDispelTypes.Magic)
     assert(slots.unit == 'party1' and slots.enabled and slots.slots.Bleed)
     local sb = slots.slots.Magic.button
-    assert(sb.dispelEffects.ring.edge:IsShown() and sb.dispelEffects.ring.strips.TOP.vertexColor[3] == M.db.auraMagicColor[3])
-    assert(not sb.dispelEffects.health:IsShown() and #(sb.dispelEffects.health.masks or {}) <= 3)
+    assert(sb.dispelEffects.gradient:IsShown() and not sb.dispelEffects.rim.holder:IsShown(), 'the slot holds the Gradient')
+    assert(not sb.dispelEffects.health:IsShown() and #(sb.dispelEffects.health.masks or {}) == 0, 'nothing masked')
+    assert(M:SetDispelEffect('Magic', 'border', true) and p1.dispelContainer.slots.Magic.button.dispelEffects.rim.tint == M.db.auraMagicColor)
     assert(M:SetDispelEffect('Curse', 'health', true) and p1.dispelContainer ~= slots and p1.dispelContainer.slots.Curse.button.dispelEffects.health:IsShown())
-    for _, kind in ipairs(M.dispelTypes) do assert(M:SetDispelEffect(kind, 'border', false) and M:SetDispelEffect(kind, 'health', false)) end
+    for _, kind in ipairs(M.dispelTypes) do
+        assert(M:SetDispelEffect(kind, 'border', false) and M:SetDispelEffect(kind, 'health', false) and M:SetDispelEffect(kind, 'gradient', false))
+    end
     assert(next(p1.dispelContainer.slots) == nil, 'no effects: no slots')
     -- Overshields through the heal prediction calculator: shown when the shield overflows.
     function CreateUnitHealPredictionCalculator()
@@ -547,8 +559,8 @@ H.Load({ before = CONTAINERS }).run([==[
     function UnitGetDetailedHealPrediction(unit, healer, calc) assert(healer == 'player') end
     for _, f in ipairs(M.members) do f.calculator = nil end
     FireEvent('UNIT_ABSORB_AMOUNT_CHANGED', 'party1')
-    assert(p1.absorb.value.label == 'shield' and p1.overshield.value.label == 'total' and p1.healPrediction.value.label == 'heal')
-    assert(p1.overshield.alphaFromBoolean[1].label == 'over', 'overshield shown by the secret overflow flag')
+    local shield = p1.health.shield
+    assert(shield.attached.value.label == 'shield' and shield.full.value.label == 'total' and p1.healPrediction.value.label == 'heal')
     -- Tracked Buffs: kept to their spells by the game; Healing Buffs leaves them out.
     local top = p1.auraContainers['TOPRIGHT|inside']
     assert(not top.groups.tracked11.enabled, 'an empty tracked group shows nothing')
@@ -597,7 +609,7 @@ pf.auras = { buffs = { show = true, filter = 'mine', anchor = 'TOPLEFT', place =
     max = 3, perRow = 3, spacing = 2, shape = 'square', border = 'type', timer = true, timerText = true, count = true, tooltip = true } }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local db = addon.PartyFrames.db
-    assert(db.version == 3 and db.healthHeight == 52 and db.powerHeight == 6 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
+    assert(db.version == 4 and db.healthHeight == 34 and db.powerHeight == 3 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
     local heals = db.auras.heals
     assert(heals.anchor == 'TOPLEFT' and heals.width == 20 and heals.height == 16 and heals.filter == 'mine' and heals.border == 'mode' and heals.size == nil)
     for _, group in ipairs({ 'magic', 'curse', 'disease', 'poison', 'bleed', 'otherDebuffs' }) do
@@ -608,9 +620,30 @@ H.Load({ before = STUBS, saved = v1 }).run([==[
     -- Version 3: Dispellable by You takes the Magic group's place, first in its row.
     local d = db.auras.dispellable
     assert(d.anchor == 'BOTTOMRIGHT' and d.place == 'outside' and d.grow == 'down' and d.width == 16 and d.filter == 'mine' and d.show)
-    assert(db.powerOpacity == 100 and db.powerBackgroundOpacity == 70 and db.auras.tracked1.spells[1] == nil)
+    assert(db.powerOpacity == 100 and db.powerBackgroundOpacity == 100 and db.auras.tracked1.spells[1] == nil)
     assert(db.dispelHighlight == nil and db.dispel.Magic.gradient and not db.dispel.Magic.border, 'fill became the gradient')
 ]==], "party_v1")
+
+-- Version 3 -> 4: values at the version 3 defaults take the Mode ones, the
+-- player's own choices stay, Border, Corner Size and the shield looks retire.
+local v3 = world.saved()
+local p3 = v3.profiles.Default.modules.partyFrames
+p3.version, p3.width, p3.healthHeight, p3.powerHeight, p3.borderStyle, p3.corner = 3, 132, 60, 6, 'thin', 9
+p3.foregroundTexture, p3.backgroundTexture, p3.fontMedia, p3.liftedShadow, p3.nameColorMode = 'mode', 'slate', 'Expressway', true, 'custom'
+p3.shieldTexture, p3.absorbColor, p3.overshieldOpacity, p3.rangeOpacity = 'slateHatch', { 1, 1, 1 }, 80, 45
+p3.nameAnchor, p3.nameX, p3.nameY, p3.nameSize = 'TOPLEFT', 3, -3, 11
+p3.healthTextAnchor, p3.healthTextX, p3.healthTextY, p3.healthTextSize = 'TOP', 0, 0, 10
+p3.dispel = { Magic = { border = true, health = false, gradient = false }, Curse = { border = true, health = true, gradient = false } }
+H.Load({ before = STUBS, saved = v3 }).run([==[
+    local db, M = addon.PartyFrames.db, addon.PartyFrames
+    assert(db.version == 4 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
+    assert(db.borderStyle == nil and db.corner == nil and db.shieldTexture == nil and db.absorbColor == nil and db.overshieldOpacity == nil, 'retired')
+    assert(db.foregroundTexture == 'media:Mode Gradient' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode Geist')
+    assert(db.liftedShadow == false and db.nameColorMode == 'custom' and db.rangeOpacity == 55, 'a picked name color stays')
+    assert(db.nameAnchor == 'LEFT' and db.nameX == 17 and db.healthTextAnchor == 'TOP', 'elements at the old place move; moved ones stay')
+    assert(db.dispel.Magic.gradient and not db.dispel.Magic.border, 'border alone was the default: Gradient now')
+    assert(db.dispel.Curse.border and db.dispel.Curse.health and not db.dispel.Curse.gradient, 'a picked set stays')
+]==], "party_v3")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

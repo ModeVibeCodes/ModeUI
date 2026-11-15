@@ -1,11 +1,13 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Frames > Party Frames: you and your party in the Onyx look, on one secure
--- group header (SecureGroupHeaderTemplate), so members join, leave and sort
--- in combat. Each member is a health bar with an optional power bar inside
--- the ModeUI border (Mode or Thin); texts and icons sit where the settings
--- put them, and an aura manager places healing buffs, group buffs,
+-- Frames > Party Frames: you and your party in the Mode design language
+-- (docs/DESIGN_LANGUAGE.md), on one secure group header
+-- (SecureGroupHeaderTemplate), so members join, leave and sort in combat.
+-- Each member is a health bar with a 3px power bar inside the `group` edge
+-- (1px Gunmetal, members 1px apart), Combined shields on health, a Gradient
+-- name and health text colored by health; texts and icons sit where the
+-- settings put them, and an aura manager places healing buffs, group buffs,
 -- defensives, each debuff type and crowd control in their own groups.
 -- Blizzard's party frames give way while these are on. Unit values can be
 -- secret and only reach widgets documented as accepting them. See
@@ -16,7 +18,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- SettingsAuras. Aura declarations: AuraInit.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Party Frames"], category = "frames", defaultEnabled = false, layout = "split",
-    configDescription = L["You and your party in the Onyx look, with an aura manager. Configure outside combat."],
+    configDescription = L["You and your party in the Mode look, with an aura manager. Configure outside combat."],
     modeLayout = { decorateOnly = true } }
 addon.PartyFrames = M
 -- The ID is also the saved-settings key (ModeUIDB profile modules.partyFrames).
@@ -29,7 +31,11 @@ addon:RegisterModule("partyFrames", M)
 -- Version 3: 8px taller, Spacing 1, the power bar's own opacity, fill and
 -- text, Dispellable by You first among debuffs (the type groups show the rest)
 -- and three Tracked Buffs groups.
-M.VERSION = 3
+-- Version 4: the Mode design language: the group edge (no Border or Corner
+-- Size), 150 x 34 + 3 power, Mode Gradient on Mode BG, Combined shields (the
+-- shield and overshield textures and colors retire), Gradient names, health
+-- text colored by health, the dispel Gradient by default, an aggro rim, Geist.
+M.VERSION = 4
 M.ELEMENT_ID = "partyFrames"
 M.MAX_MEMBERS = 5
 M.defaultPosition = { target = "screen", placement = "center", x = -520, y = 120 }
@@ -53,10 +59,10 @@ local function Element(show, anchor, x, y, size, place)
     return { show = show, anchor = anchor, x = x, y = y, size = size, place = place or "inside" }
 end
 M.elementDefaults = {
-    name = Element(true, "TOPLEFT", 3, -3, 11),
-    healthText = Element(false, "BOTTOMRIGHT", -3, 3, 10),
+    name = Element(true, "LEFT", 17, 0, 12),
+    healthText = Element(true, "RIGHT", -4, 0, 11),
     status = Element(true, "CENTER", 0, 0, 11),
-    role = Element(true, "TOPRIGHT", -2, -2, 12),
+    role = Element(true, "LEFT", 2, 0, 12),
     leader = Element(true, "TOPLEFT", 4, 5, 12, "outside"),
     raidIcon = Element(true, "TOP", 0, 6, 14, "outside"),
     readyCheck = Element(true, "CENTER", 0, 0, 22),
@@ -77,8 +83,7 @@ M.choices = {
     growth = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" },
         { id = "left", label = "Left" } },
     sortBy = { { id = "group", label = "Party Order" }, { id = "role", label = "Role" } },
-    borderStyle = Kit.BORDER_CHOICES,
-    healthColorMode = { { id = "class", label = "Class Color" }, { id = "default", label = "Onyx" }, { id = "custom", label = "Custom" } },
+    healthColorMode = { { id = "class", label = "Class Color" }, { id = "default", label = "Dark" }, { id = "custom", label = "Custom" } },
     powerColorMode = { { id = "type", label = "Power Type" }, { id = "custom", label = "Custom" } },
     powerShown = { { id = "all", label = "Everyone" }, { id = "healers", label = "Healers" }, { id = "mana", label = "Mana Users" },
         { id = "healerMana", label = "Healer Mana" }, { id = "none", label = "No One" } },
@@ -86,7 +91,9 @@ M.choices = {
     powerAlign = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     powerText = { { id = "percent", label = "Percent" }, { id = "percentPlain", label = "Percent, No Sign" }, { id = "current", label = "Current" } },
     arrange = { { id = "vertical", label = "Vertical" }, { id = "horizontal", label = "Horizontal" } },
-    nameColorMode = { { id = "class", label = "Class Color" }, { id = "text", label = "Text Color" }, { id = "custom", label = "Custom" } },
+    nameColorMode = { { id = "gradient", label = "Gradient" }, { id = "class", label = "Soft Class" }, { id = "text", label = "Text Color" },
+        { id = "custom", label = "Custom" } },
+    healthTextColor = { { id = "health", label = "By Health" }, { id = "text", label = "Text Color" } },
     healthText = { { id = "percent", label = "Percent" }, { id = "percentPlain", label = "Percent, No Sign" },
         { id = "current", label = "Current Health" }, { id = "deficit", label = "Missing Health" } },
     fillDirection = { { id = "standard", label = "Left to Right" }, { id = "reverse", label = "Right to Left" } },
@@ -99,36 +106,37 @@ M.choices = {
 }
 
 -- What each debuff type does to a member that has it (Highlights tab).
-local function Effects() return { border = true, health = false, gradient = false } end
+local function Effects() return { border = false, health = false, gradient = true } end
 M.defaults = {
     version = M.VERSION,
     -- Group layout.
     hideBlizzard = true, showSolo = false, showPlayer = true, reverseOrder = false, sortBy = "group", growth = "down", spacing = 1, scale = 100,
-    -- Each member: bars inside the ModeUI border, Mode (2px) or Thin (1px),
-    -- with box corners as round as the chat windows'.
-    width = 132, healthHeight = 52, borderStyle = "mode", corner = 7,
-    foregroundTexture = "mode", backgroundTexture = "slate", healthOpacity = 100, backgroundOpacity = 70,
+    -- Each member: 150 x 34 health and 3px power in the group edge, Mode
+    -- Gradient on Mode BG.
+    width = 150, healthHeight = 34,
+    foregroundTexture = "media:Mode Gradient", backgroundTexture = "media:Mode BG", healthOpacity = 100, backgroundOpacity = 100,
     fillDirection = "standard", fillEdge = true, healthColorMode = "class", healthColor = Copy(P.green),
     -- Power Bars and Resources: who shows it, where, how it looks, its text.
-    powerShown = "all", powerStyle = "below", powerHeight = 6, powerWidth = 70, powerAlign = "CENTER", powerX = 0, powerY = 3,
-    powerForegroundTexture = "mode", powerBackgroundTexture = "slate", powerOpacity = 100, powerBackgroundOpacity = 70,
+    powerShown = "all", powerStyle = "below", powerHeight = 3, powerWidth = 70, powerAlign = "CENTER", powerX = 0, powerY = 3,
+    powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerOpacity = 100, powerBackgroundOpacity = 100,
     powerFillDirection = "standard", powerColorMode = "type", powerColor = Copy(P.mana),
     powerTextShow = false, powerText = "percent", powerTextSize = 9, powerTextAlign = "CENTER", powerTextX = 0, powerTextY = 0,
     -- Out of range, dead and offline members fade.
-    rangeFade = true, rangeOpacity = 45, deadOpacity = 70,
-    -- Incoming heals, shields riding on the health and overshields filling
-    -- back from full health, in Mode Slate Hatch by default.
+    rangeFade = true, rangeOpacity = 55, deadOpacity = 70,
+    -- Incoming heals ride on the health; shields are Combined (Style.Shield):
+    -- on the health's end, and the whole shield back from full health.
     showHealPrediction = true, healTexture = "flat", healPredictionColor = RGB(92, 214, 132), healPredictionOpacity = 45,
-    showAbsorbs = true, shieldTexture = "slateHatch", absorbColor = RGB(214, 236, 255), absorbOpacity = 60,
-    showOvershields = true, overshieldTexture = "slateHatch", overshieldColor = RGB(240, 246, 255), overshieldOpacity = 80,
-    -- Highlights: your target and the mouse.
-    targetHighlight = "border", targetColor = Copy(P.accent), hoverHighlight = true,
-    -- Debuff effects by type: border, health color and a gradient, each per type.
-    dispelFilter = "mine", dispelGradientOpacity = 60,
+    showAbsorbs = true, showOvershields = true,
+    -- Highlights: your target (the rim in Ivory), aggro (the rim in the
+    -- hostile red) and the mouse.
+    targetHighlight = "border", targetColor = Copy(addon.Style.Tone.ivory), hoverHighlight = true, aggroHighlight = true,
+    -- Debuff effects by type: border, health color and a gradient from the
+    -- top edge (56% fading over 72% of the health), each per type.
+    dispelFilter = "mine", dispelGradientOpacity = 56,
     dispel = { Magic = Effects(), Curse = Effects(), Disease = Effects(), Poison = Effects(), Bleed = Effects() },
     -- Text.
-    nameColorMode = "class", nameColor = Copy(P.text), healthText = "percent", nameWidth = 85,
-    font = "game", fontMedia = "Expressway", outline = false, shadow = true, liftedShadow = true, slug = false,
+    nameColorMode = "gradient", nameColor = Copy(P.text), healthText = "percent", healthTextColor = "health", nameWidth = 60,
+    font = "game", fontMedia = "Mode Geist", outline = false, shadow = true, liftedShadow = false, slug = false,
     textColor = Copy(P.text), hideDamagerRole = false,
     -- Aura rims, glows and dispel effects by type (Blizzard's DebuffTypeColor family).
     auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
@@ -142,23 +150,23 @@ for _, element in ipairs(M.elements) do
 end
 
 M.ranges = { spacing = { 0, 40, 1 }, scale = { 50, 200, 1 }, width = { 60, 300, 1 }, healthHeight = { 12, 100, 1 },
-    corner = { 2, 16, 1 }, powerHeight = { 2, 30, 1 }, powerWidth = { 20, 100, 5 }, powerX = { -60, 60, 1 },
+    powerHeight = { 2, 30, 1 }, powerWidth = { 20, 100, 5 }, powerX = { -60, 60, 1 },
     powerY = { -60, 60, 1 }, powerOpacity = { 10, 100, 5 }, powerBackgroundOpacity = { 0, 100, 5 },
     powerTextSize = { 6, 20, 1 }, powerTextX = { -60, 60, 1 }, powerTextY = { -60, 60, 1 }, healthOpacity = { 10, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
     rangeOpacity = { 10, 100, 5 }, deadOpacity = { 10, 100, 5 }, healPredictionOpacity = { 10, 100, 5 },
-    absorbOpacity = { 10, 100, 5 }, overshieldOpacity = { 10, 100, 5 }, dispelGradientOpacity = { 10, 100, 5 },
+    dispelGradientOpacity = { 10, 100, 1 },
     nameWidth = { 30, 100, 5 } }
 for _, element in ipairs(M.elements) do
     local sizes = M.textElements[element] and M.elementSizeRanges.text or M.elementSizeRanges.icon
     M.ranges[element .. "X"], M.ranges[element .. "Y"], M.ranges[element .. "Size"] = M.elementRanges.x, M.elementRanges.y, sizes
 end
-M.colorKeys = { healthColor = true, powerColor = true, healPredictionColor = true, absorbColor = true, overshieldColor = true,
+M.colorKeys = { healthColor = true, powerColor = true, healPredictionColor = true,
     targetColor = true, nameColor = true, textColor = true, auraMagicColor = true, auraCurseColor = true,
     auraDiseaseColor = true, auraPoisonColor = true, auraBleedColor = true, auraNoTypeColor = true, auraTimerColor = true }
 -- Setting key -> its choice list; element anchors and places are checked with them.
-M.choiceKeys = { growth = "growth", sortBy = "sortBy", borderStyle = "borderStyle", healthColorMode = "healthColorMode",
+M.choiceKeys = { growth = "growth", sortBy = "sortBy", healthColorMode = "healthColorMode",
     powerColorMode = "powerColorMode", powerShown = "powerShown", powerStyle = "powerStyle", powerAlign = "powerAlign",
-    nameColorMode = "nameColorMode", healthText = "healthText", fillDirection = "fillDirection", targetHighlight = "highlightStyle",
+    nameColorMode = "nameColorMode", healthText = "healthText", healthTextColor = "healthTextColor", fillDirection = "fillDirection", targetHighlight = "highlightStyle",
     powerFillDirection = "fillDirection", powerText = "powerText", powerTextAlign = "powerAlign" }
 M.groupChoiceKeys = { border = "auraBorder", glow = "auraGlow", glowColor = "auraGlowColor", grow = "growChoices",
     anchor = "anchors", place = "place" }

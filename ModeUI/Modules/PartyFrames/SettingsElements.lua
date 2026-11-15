@@ -43,7 +43,9 @@ function M:BuildElementsTab(page, c, Element)
         c.Color(custom[1], "nameColor", function() return M.db.nameColorMode == "custom" end)
     end)
     c.When(function() return Element() == "healthText" end, function()
-        page.healthTextSelect = c.Select(page:Row(L["Shows"], 48), 200, M.choices.healthText, "healthText")
+        local health = c.Columns({ "Shows", "Health Text Color" })
+        page.healthTextSelect = c.Select(health[1], 200, M.choices.healthText, "healthText")
+        page.healthTextColorSelect = c.Select(health[2], 200, M.choices.healthTextColor, "healthTextColor")
     end)
     c.When(function() return Element() == "role" end, function()
         page.roleToggles = c.Toggles({ { "Hide Damage Role", "hideDamagerRole" } })
@@ -65,7 +67,7 @@ function M:BuildHighlightsTab(page, c, Kind)
     local target = c.Columns({ "Style", "Color" })
     page.targetSelect = c.Select(target[1], 200, M.choices.highlightStyle, "targetHighlight"); c.Mark("target")
     c.Color(target[2], "targetColor")
-    page.hoverToggles = c.Toggles({ { "Mouse Highlight", "hoverHighlight" },
+    page.hoverToggles = c.Toggles({ { "Mouse Highlight", "hoverHighlight" }, { "Aggro Rim", "aggroHighlight" },
         { "Preview as Your Target", "previewTarget", get = function() return page.partyShowTarget == true end,
             set = function(value) page.partyShowTarget = value or nil; page:Refresh() end } })
 

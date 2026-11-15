@@ -6,7 +6,7 @@ if not M then return end
 -- offline, range and your target. Unit values can be secret: they go only to
 -- StatusBar SetMinMaxValues/SetValue, FontString SetText/SetFormattedText and
 -- Region SetAlphaFromBoolean, never compared or used in arithmetic here.
-local Kit, Domain = addon.Kit, addon.Domain
+local Kit, Domain, Style = addon.Kit, addon.Domain, addon.Style
 local Health, Power, Name, UnitColor, Group = Domain.Health, Domain.Power, Domain.Name, Domain.UnitColor, Domain.Group
 local Q = Domain.Query
 
@@ -85,6 +85,7 @@ function M:OnMemberEvent(f, event, unit)
     elseif part == "Range" then self:UpdateRange(f)
     elseif part == "Icons" then self:UpdateIcons(f)
     elseif part == "Status" then self:UpdateStatus(f)
+    elseif part == "Threat" then self:UpdateThreat(f)
     else self:UpdateMember(f) end
 end
 
@@ -95,7 +96,7 @@ function M:UpdateMember(f)
     -- A role or power type change can add or remove the power bar.
     self:UpdatePowerShown(f)
     self:UpdateName(f); self:UpdateHealth(f); self:UpdatePower(f); self:UpdatePrediction(f)
-    self:UpdateStatus(f); self:UpdateIcons(f); self:UpdateTarget(f); self:UpdateAuras(f)
+    self:UpdateStatus(f); self:UpdateIcons(f); self:UpdateThreat(f); self:UpdateTarget(f); self:UpdateAuras(f)
 end
 function M:UpdateAll() for _, f in ipairs(self.members or {}) do self:UpdateMember(f) end end
 function M:UpdateAllIcons() for _, f in ipairs(self.members or {}) do if self:Live(f) then self:UpdateIcons(f) end end end
@@ -109,21 +110,40 @@ end
 function M:HealthColor(unit, class)
     local db = self.db
     if db.healthColorMode == "custom" then return db.healthColor end
-    if db.healthColorMode == "class" then return class or (unit and self:ClassColor(unit)) or Kit.onyx.health end
-    return Kit.onyx.health
+    if db.healthColorMode == "class" then return class or (unit and self:ClassColor(unit)) or Style.Tone.darkFill end
+    return Style.Tone.darkFill
 end
+-- The name's color and its style: Gradient and Soft Class follow the class
+-- (a non-player gets the friendly green), the others are one color.
 function M:NameColor(unit, class)
     local db = self.db
-    if db.nameColorMode == "custom" then return db.nameColor end
-    if db.nameColorMode == "class" then return class or (unit and self:ClassColor(unit)) or db.textColor end
-    return db.textColor
+    if db.nameColorMode == "custom" then return db.nameColor, "white" end
+    if db.nameColorMode == "text" then return db.textColor, "white" end
+    local color = class or (unit and self:ClassColor(unit)) or Style.Tone.reaction.friendly
+    return color, db.nameColorMode == "gradient" and "gradient" or "soft"
+end
+-- Writes a name (possibly secret) in its style; the lift copy gets it plain.
+function M:WriteName(text, name, color, style)
+    if style == "white" then
+        Kit.Write(text, name)
+        text:SetTextColor(color[1], color[2], color[3], 1)
+        return
+    end
+    Style.SetName(text, name, color, style)
+    if text.lift then text.lift:SetText(name) end
 end
 
 function M:UpdateName(f)
     if not self:Live(f) then return end
-    local text, color = f.texts.name, self:NameColor(f.unit)
-    Kit.Write(text, Name.Get(f.unit))
-    text:SetTextColor(color[1], color[2], color[3], 1)
+    local color, style = self:NameColor(f.unit)
+    self:WriteName(f.texts.name, Name.Get(f.unit), color, style)
+end
+
+-- The health fill's color; the shield's tint follows it.
+function M.PaintHealth(bar, color, alpha)
+    bar:SetStatusBarColor(color[1], color[2], color[3], alpha)
+    bar.fillColor = color
+    if bar.shield then bar.shield:Paint() end
 end
 
 function M:UpdateHealth(f)
@@ -131,8 +151,7 @@ function M:UpdateHealth(f)
     local okMax, max, okValue, value = Health.Read(f.unit)
     if okMax then pcall(f.health.SetMinMaxValues, f.health, 0, max) end
     if okValue then pcall(f.health.SetValue, f.health, value) end
-    local color = self:HealthColor(f.unit)
-    f.health:SetStatusBarColor(color[1], color[2], color[3], self.db.healthOpacity / 100)
+    self.PaintHealth(f.health, self:HealthColor(f.unit), self.db.healthOpacity / 100)
     self:UpdateHealthText(f, okValue, value)
 end
 
@@ -152,6 +171,9 @@ function M:UpdateHealthText(f, okValue, value)
         if curve then ok, percent = Health.Percent(f.unit, curve) end
         if not (ok and pcall(Kit.Formatted, text, "%.0f", percent)) then Kit.Write(text, "") end
     else Kit.ValueText(text, db.healthText, Health.Percent, f.unit, okValue, value) end
+    -- By Health: Rosewood at 30% and under, through Ivory, to Celadon (the
+    -- client evaluates the curve; the percent is secret).
+    if db.healthTextColor == "health" and Style.PaintHealthText(text, f.unit) then return end
     local c = db.textColor
     text:SetTextColor(c[1], c[2], c[3], 1)
 end
@@ -192,29 +214,34 @@ function M:UpdatePowerText(f, powerType, okValue, value)
     else Kit.ValueText(text, db.powerText, Percent, f.unit, okValue, value) end
 end
 
--- Heals and shields ride on the health fill with the health range, so the
--- secret amounts draw at the right length straight from SetValue. The
--- overshield fills back from full health with the whole shield, shown only
--- while the shield is bigger than the missing health (SetAlphaFromBoolean).
+-- Heals ride on the health fill with the health range, so the secret
+-- amount draws at the right length straight from SetValue. Shields are
+-- Combined (Style.Shield): attached to the health's end below full health,
+-- the whole shield back from max at full health (Overshields off: never).
 function M:UpdatePrediction(f)
     if not self:Live(f) then return end
     local db = self.db
     if f.calculator == nil then f.calculator = Group.NewCalculator() or false end
     local p = Group.Prediction(f.unit, f.calculator or nil)
-    for _, part in ipairs({ { f.healPrediction, db.showHealPrediction, p.heals }, { f.absorb, db.showAbsorbs, p.shield },
-        { f.overshield, db.showOvershields, p.total } }) do
-        -- Amounts may be secret: never compared, only handed to the bar (a
-        -- missing one makes the call fail, and the bar empties).
-        local bar, shown, amount = part[1], part[2], part[3]
-        pcall(bar.SetMinMaxValues, bar, 0, p.max)
-        if not (shown and pcall(bar.SetValue, bar, amount)) then bar:SetValue(0) end
-        bar:SetShown(shown and true or false)
-    end
-    local over = f.overshield
-    if db.showOvershields and p.calculated then
-        if addon.IsPublic(p.overflow) then over:SetAlpha(p.overflow and 1 or 0)
-        elseif not pcall(over.SetAlphaFromBoolean, over, p.overflow, 1, 0) then over:SetAlpha(0) end
-    else over:SetAlpha(0) end
+    local bar = f.healPrediction
+    -- Amounts may be secret: never compared, only handed to the bar (a
+    -- missing one makes the call fail, and the bar empties).
+    pcall(bar.SetMinMaxValues, bar, 0, p.max)
+    if not (db.showHealPrediction and pcall(bar.SetValue, bar, p.heals)) then bar:SetValue(0) end
+    bar:SetShown(db.showHealPrediction and true or false)
+    local shield = f.health.shield
+    shield:SetShown(db.showAbsorbs)
+    if not db.showAbsorbs then return end
+    shield:Update(f.unit, p)
+    if not db.showOvershields then shield.full:SetAlpha(0) end
+end
+
+-- Aggro: the rim in the hostile red while the member holds a mob's attention
+-- (UnitThreatSituation 2 or 3; unknown or secret counts as none).
+function M:UpdateThreat(f)
+    local status = self:Live(f) and Domain.Threat.Aggro(f.unit)
+    f.hasAggro = status ~= nil and status >= 2 or nil
+    self:PaintRim(f)
 end
 
 -- "Dead", "Ghost" and "Offline" in the status text, and those members fade.
@@ -244,7 +271,7 @@ function M:UpdateRange(f)
     if not (f.SetAlphaFromBoolean and pcall(f.SetAlphaFromBoolean, f, inRange, 1, db.rangeOpacity / 100)) then f:SetAlpha(1) end
 end
 
--- Your target: its border in the highlight color, or a tint over its bars.
+-- Your target: its rim in the highlight color, or a tint over its bars.
 function M:UpdateTarget(f)
     f.isTarget = self:Live(f) and Q.Truthy(UnitIsUnit, f.unit, "target") or false
     self:PaintTarget(f)
@@ -252,6 +279,6 @@ end
 function M:PaintTarget(f)
     local style = self.db.targetHighlight
     local on = f.isTarget == true
-    self.ShowBorder(f.targetRing, on and style == "border")
+    self:PaintRim(f)
     f.targetFill:SetShown(on and style == "fill")
 end

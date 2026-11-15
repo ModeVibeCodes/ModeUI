@@ -40,8 +40,8 @@ local function Sized(old)
     return group
 end
 local function MigrateV1(db)
-    if db.healthHeight == 34 then db.healthHeight = M.defaults.healthHeight end
-    if db.powerHeight == 5 then db.powerHeight = M.defaults.powerHeight end
+    if db.healthHeight == 34 then db.healthHeight = 44 end
+    if db.powerHeight == 5 then db.powerHeight = 6 end
     local old = type(db.auras) == "table" and db.auras or {}
     local auras = {}
     if type(old.buffs) == "table" then
@@ -78,8 +78,8 @@ end
 -- now show the ones you can't dispel, as Dispellable by You comes first in
 -- their row (in the Magic group's place).
 local function MigrateV2(db)
-    if db.healthHeight == 44 then db.healthHeight = M.defaults.healthHeight end
-    if db.spacing == 4 then db.spacing = M.defaults.spacing end
+    if db.healthHeight == 44 then db.healthHeight = 52 end
+    if db.spacing == 4 then db.spacing = 1 end
     if db.powerOpacity == nil and Number(db.healthOpacity, 10, 100) then db.powerOpacity = db.healthOpacity end
     if db.powerBackgroundOpacity == nil and Number(db.backgroundOpacity, 0, 100) then db.powerBackgroundOpacity = db.backgroundOpacity end
     local auras = type(db.auras) == "table" and db.auras or nil
@@ -95,6 +95,42 @@ local function MigrateV2(db)
         end
         auras.dispellable = place
     end
+end
+
+-- Version 3 -> 4: the Mode design language. Values still at the version 3
+-- default take the new one; anything the player picked stays. Border and
+-- Corner Size retire (the group edge has one shape), and so do the shield and
+-- overshield textures, colors and opacities (Combined shields take their tint
+-- from the health bar).
+M.RETIRED_V4 = { "borderStyle", "corner", "shieldTexture", "absorbColor", "absorbOpacity", "overshieldTexture",
+    "overshieldColor", "overshieldOpacity" }
+local V3_DEFAULTS = { width = 132, healthHeight = 52, powerHeight = 6, backgroundOpacity = 70, powerBackgroundOpacity = 70,
+    foregroundTexture = "mode", backgroundTexture = "slate", powerForegroundTexture = "mode", powerBackgroundTexture = "slate",
+    fontMedia = "Expressway", liftedShadow = true, nameColorMode = "class", nameWidth = 85, rangeOpacity = 45,
+    dispelGradientOpacity = 60, healthTextShow = false }
+local V3_ELEMENTS = { name = { "TOPLEFT", 3, -3, 11 }, healthText = { "BOTTOMRIGHT", -3, 3, 10 }, role = { "TOPRIGHT", -2, -2, 12 } }
+local function MigrateV3(db)
+    for key, old in pairs(V3_DEFAULTS) do
+        if db[key] == old then db[key] = Copy(M.defaults[key]) end
+    end
+    -- An element still where version 3 put it moves to its new place.
+    for element, old in pairs(V3_ELEMENTS) do
+        local function K(key) return element .. key end
+        if db[K("Anchor")] == old[1] and db[K("X")] == old[2] and db[K("Y")] == old[3] and db[K("Size")] == old[4] then
+            for _, key in ipairs({ "Anchor", "X", "Y", "Size" }) do db[K(key)] = M.defaults[K(key)] end
+        end
+    end
+    if addon.Style.SameColor(db.targetColor, Kit.palette.accent) then db.targetColor = Copy(M.defaults.targetColor) end
+    -- Debuff effects still at the old default (the border alone) take the Gradient.
+    if type(db.dispel) == "table" then
+        for _, kind in ipairs(M.dispelTypes) do
+            local e = db.dispel[kind]
+            if type(e) == "table" and e.border == true and e.health == false and e.gradient == false then
+                db.dispel[kind] = Copy(M.defaults.dispel[kind])
+            end
+        end
+    end
+    for _, key in ipairs(M.RETIRED_V4) do db[key] = nil end
 end
 
 -- A tracked group's spells: whole spell IDs, each once, at most MAX_TRACKED_SPELLS.
@@ -141,6 +177,7 @@ end
 function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
     if db.version == 2 then MigrateV2(db); db.version = 3 end
+    if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid party frame settings version")
     for key, default in pairs(M.defaults) do
@@ -160,7 +197,7 @@ function M.Initialize(db)
     local valid, fill = Kit.ValidBarTexture, Kit.ValidFillTexture
     assert(valid(db.foregroundTexture, true) and valid(db.backgroundTexture, false)
         and valid(db.powerForegroundTexture, true) and valid(db.powerBackgroundTexture, false), "Invalid party frame texture")
-    assert(fill(db.healTexture) and fill(db.shieldTexture) and fill(db.overshieldTexture), "Invalid party frame fill texture")
+    assert(fill(db.healTexture), "Invalid party frame fill texture")
     ValidateDispel(db)
     for _, group in ipairs(M.auraGroups) do
         if db.auras[group] == nil then db.auras[group] = Copy(M.auraDefaults[group]) end

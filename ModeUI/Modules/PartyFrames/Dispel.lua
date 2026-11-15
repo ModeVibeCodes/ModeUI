@@ -3,9 +3,10 @@ local M = addon.PartyFrames
 if not M then return end
 
 -- What a debuff does to the member that has it, by dispel type (Highlights
--- tab): Border (the member's border in the type's color), Health Color (the
--- health fill in the type's color) and Gradient (the color fading down over
--- the health bar), each on or off per type.
+-- tab): Border (the member's rim in the type's color), Health Color (the
+-- health fill in the type's color) and Gradient (docs/DESIGN_LANGUAGE.md: the
+-- color from the top edge at Gradient Opacity, 56% by default, fading out over
+-- 72% of the health), each on or off per type. Gradient is the default.
 --
 -- In the world each type is one aura slot (AddAuraSlot) on a container, kept
 -- to that type by the game (candidateFilters.includeDispelTypes) and to the
@@ -13,16 +14,18 @@ if not M then return end
 -- type's effects in its color; the game shows the button only while the
 -- member has such a debuff, so this works while auras are secret. Samples and
 -- clients without containers paint the same effects from a public type.
-local Kit = addon.Kit
+local Kit, Style = addon.Kit, addon.Style
 local TEMPLATE = Kit.AURA_CONTAINER_TEMPLATE
+-- The Gradient covers this share of the health bar, from its top edge.
+M.DISPEL_GRADIENT_REACH = 0.72
 
--- Lays an effect set (ring, health overlay, gradient) on `host`.
-local function LayoutEffects(self, f, set, host, color)
-    local g, db = f.geometry, self.db
-    Kit.LayoutModeBoxBorder(set.ring, host, { px = g.px, radius = g.radius, thickness = g.thickness, color = color or Kit.BORDER_COLOR,
-        level = host:GetFrameLevel() + 2 })
+-- Lays the health overlay and the gradient of an effect set.
+local function LayoutEffects(self, f, set, color)
+    local db = self.db
     set.health:ClearAllPoints(); set.health:SetAllPoints(f.health:GetStatusBarTexture())
-    set.gradient:ClearAllPoints(); set.gradient:SetAllPoints(f.health)
+    set.gradient:ClearAllPoints()
+    set.gradient:SetPoint("TOPLEFT", f.health, "TOPLEFT", 0, 0); set.gradient:SetPoint("TOPRIGHT", f.health, "TOPRIGHT", 0, 0)
+    set.gradient:SetHeight(math.max(f.geometry.px, f.health:GetHeight() * M.DISPEL_GRADIENT_REACH))
     if color then
         Kit.Tint(set.health, color, 1)
         Kit.Gradient(set.gradient, { color[1], color[2], color[3], db.dispelGradientOpacity / 100 }, { color[1], color[2], color[3], 0 })
@@ -30,7 +33,7 @@ local function LayoutEffects(self, f, set, host, color)
 end
 
 function M:LayoutDispel(f)
-    LayoutEffects(self, f, f.dispel, f.glowLayer)
+    LayoutEffects(self, f, f.dispel)
     self:PaintDispel(f, f.dispelSample)
 end
 
@@ -39,8 +42,9 @@ function M:PaintDispel(f, dispelType)
     f.dispelSample = dispelType
     local effects = dispelType and self.db.dispel[dispelType]
     local color = effects and self.db[self.dispelColorKeys[dispelType]]
-    if color then LayoutEffects(self, f, f.dispel, f.glowLayer, color) end
-    self.ShowBorder(f.dispel.ring, effects and effects.border)
+    if color then LayoutEffects(self, f, f.dispel, color) end
+    f.dispelRim = effects and effects.border and color or nil
+    self:PaintRim(f)
     f.dispel.health:SetShown(effects and effects.health or false)
     f.dispel.gradient:SetShown(effects and effects.gradient or false)
 end
@@ -48,7 +52,7 @@ end
 -- Everything the slots' buttons bake in when they're made.
 local function SlotKey(self, f)
     local db, g = self.db, f.geometry
-    local parts = { db.dispelFilter, g.width, g.height, g.px, g.radius, g.thickness, db.dispelGradientOpacity }
+    local parts = { db.dispelFilter, g.width, g.height, g.px, g.healthHeight, db.dispelGradientOpacity }
     for _, kind in ipairs(self.dispelTypes) do
         local e, c = db.dispel[kind], db[self.dispelColorKeys[kind]]
         parts[#parts + 1] = string.format("%s%s%s%.3f,%.3f,%.3f", tostring(e.border), tostring(e.health), tostring(e.gradient), c[1], c[2], c[3])
@@ -63,13 +67,17 @@ local function SlotInitializer(self, f, kind)
         button:ClearAllPoints(); button:SetAllPoints(f.panel)
         button:SetFrameLevel(f.glowLayer:GetFrameLevel() + 1)
         if button.EnableMouse then pcall(button.EnableMouse, button, false) end
-        local set = { ring = Kit.ModeBoxBorder(button), health = button:CreateTexture(nil, "ARTWORK", nil, 1),
-            gradient = button:CreateTexture(nil, "ARTWORK", nil, 2) }
-        set.health:SetTexture(Kit.FLAT); set.gradient:SetTexture(Kit.FLAT)
-        LayoutEffects(self, f, set, button, color)
-        -- Rounded by the button's own border masks, never ModeUI's frames' ones.
-        Kit.MaskToBoxBorder(set.ring, { set.health, set.gradient }, f.healthEdges)
-        self.ShowBorder(set.ring, effects.border)
+        local set = { health = button:CreateTexture(nil, "ARTWORK", nil, 1), gradient = button:CreateTexture(nil, "ARTWORK", nil, 2) }
+        Style.ApplyAsset(set.health, "Solid"); Style.ApplyAsset(set.gradient, "Solid")
+        -- Border: a flat rim in the type's color over the member's own,
+        -- on the same band (the button covers the member).
+        set.inner = CreateFrame("Frame", nil, button)
+        local b = f.geometry.border
+        set.inner:SetPoint("TOPLEFT", f.panel, "TOPLEFT", b, -b); set.inner:SetPoint("BOTTOMRIGHT", f.panel, "BOTTOMRIGHT", -b, b)
+        set.rim = Style.Edge(set.inner, "group", { level = 3 })
+        set.rim:SetTint(color)
+        set.rim:SetShown(effects.border)
+        LayoutEffects(self, f, set, color)
         set.health:SetShown(effects.health); set.gradient:SetShown(effects.gradient)
         button.dispelEffects, button.dispelType = set, kind
     end

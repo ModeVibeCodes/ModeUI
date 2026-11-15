@@ -14,7 +14,7 @@ local L = addon.L
 
 -- Five sample members: class, health %, power %, and what each shows.
 M.SAMPLES = {
-    { class = "WARRIOR", health = 82, power = 40, powerToken = "RAGE" },
+    { class = "WARRIOR", health = 82, power = 40, powerToken = "RAGE", aggro = true },
     { class = "PRIEST", health = 64, power = 75, powerToken = "MANA", absorb = 12 },
     { class = "MAGE", health = 100, power = 90, powerToken = "MANA", target = true, overshield = 18 },
     { class = "ROGUE", health = 38, power = 60, powerToken = "ENERGY", heal = 22, faded = true },
@@ -49,7 +49,7 @@ local function Sample(self, index, states)
     if states.target then s.target = true end
     if states.heals then s.heal = 22; s.health = math.min(s.health, 70) end
     if states.shields then s.absorb = 14; s.health = math.min(s.health, 72) end
-    if states.overshield then s.health, s.absorb, s.overshield = 90, 10, 24 end
+    if states.overshield then s.health, s.absorb, s.overshield = 100, nil, 24 end
     -- The Power Bars and Resources tab: a healer with mana, so every Power Bar For choice shows it.
     if states.power then s.powerToken, s.role, s.power = "MANA", "HEALER", 70 end
     return s
@@ -68,30 +68,34 @@ function M:PaintSample(f, index, auraGroup, states)
     local classColor = class and { class.r, class.g, class.b }
     local color = self:HealthColor(nil, classColor)
     f.health:SetMinMaxValues(0, 100); f.health:SetValue(s.health)
-    f.health:SetStatusBarColor(color[1], color[2], color[3], db.healthOpacity / 100)
+    self.PaintHealth(f.health, color, db.healthOpacity / 100)
     local power = db.powerColorMode == "custom" and db.powerColor or addon.Domain.Power.Color(s.powerToken)
     f.power:SetMinMaxValues(0, 100); f.power:SetValue(s.power)
     f.power:SetStatusBarColor(power[1], power[2], power[3], db.powerOpacity / 100)
     local powerTexts = { percent = s.power .. "%", percentPlain = tostring(s.power), current = tostring(s.power * 30) }
     Kit.Write(f.powerText, db.powerTextShow and powerTexts[db.powerText] or "")
-    for _, part in ipairs({ { f.healPrediction, db.showHealPrediction, s.heal }, { f.absorb, db.showAbsorbs, s.absorb },
-        { f.overshield, db.showOvershields, s.overshield } }) do
-        part[1]:SetMinMaxValues(0, 100); part[1]:SetValue(part[3] or 0); part[1]:SetShown(part[2] and true or false)
-    end
-    f.overshield:SetAlpha(s.overshield and 1 or 0)
-    local name = self:NameColor(nil, classColor)
-    Kit.Write(f.texts.name, L[self.SAMPLE_CLASS_NAMES[s.class]])
-    f.texts.name:SetTextColor(name[1], name[2], name[3], 1)
+    local heal = f.healPrediction
+    heal:SetMinMaxValues(0, 100); heal:SetValue(s.heal or 0); heal:SetShown(db.showHealPrediction and true or false)
+    -- Combined shields: attached below full health; the whole shield back
+    -- from max at full health (the overshield state).
+    local shield, amount = f.health.shield, s.overshield or s.absorb or 0
+    shield:SetShown(db.showAbsorbs)
+    shield:Update(nil, { max = 100, shield = math.min(amount, 100 - s.health), total = amount })
+    shield.full:SetAlpha((s.health >= 100 and amount > 0 and db.showOvershields) and 1 or 0)
+    local name, style = self:NameColor(nil, classColor)
+    self:WriteName(f.texts.name, L[self.SAMPLE_CLASS_NAMES[s.class]], name, style)
     local texts = { percent = s.health .. "%", percentPlain = tostring(s.health), current = tostring(s.health * 120),
         deficit = s.health < 100 and ("-" .. (100 - s.health) * 120) or "" }
     Kit.Write(f.texts.healthText, (db.healthTextShow and not s.state) and texts[db.healthText] or "")
     Kit.Write(f.texts.status, s.state and L[s.state] or "")
     for _, key in ipairs({ "healthText", "status" }) do
         local c = db.textColor
+        if key == "healthText" and db.healthTextColor == "health" then c = addon.Style.HealthTextColorAt(s.health / 100) end
         f.texts[key]:SetTextColor(c[1], c[2], c[3], 1)
     end
     f:SetAlpha(s.state and db.deadOpacity / 100 or (s.faded and db.rangeFade) and db.rangeOpacity / 100 or 1)
     f.isTarget = s.target == true
+    f.hasAggro = s.aggro or nil
     self:PaintTarget(f)
     self:PaintIconSample(f, index, states)
     self:PaintAuraSample(f, index, auraGroup)

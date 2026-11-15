@@ -12,3 +12,11 @@ function Threat.Status(unit)
     local status = Q.Plain(UnitThreatSituation, "player", unit)
     if Number(status, 0, 3) then return status end
 end
+
+-- A unit's own threat on whatever it is fighting (UnitThreatSituation with no
+-- mob): 2 or 3 means some mob is attacking it. Same scale and secrecy as
+-- Status; nil when unknown.
+function Threat.Aggro(unit)
+    local status = Q.Plain(UnitThreatSituation, unit)
+    if Number(status, 0, 3) then return status end
+end

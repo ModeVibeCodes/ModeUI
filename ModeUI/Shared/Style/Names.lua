@@ -53,6 +53,7 @@ end
 -- percent is secret, so the client evaluates a color curve
 -- (UnitHealthPercent with a LuaColorCurveObject) and the result only reaches
 -- SetTextColor, which accepts secret values.
+local HEALTH_POINTS = { { 0, Tone.rosewood }, { 0.3, Tone.rosewood }, { 0.65, Tone.ivory }, { 1, Tone.celadon } }
 local healthCurve
 local function HealthCurve()
     if healthCurve ~= nil then return healthCurve or nil end
@@ -62,7 +63,7 @@ local function HealthCurve()
         local ok, curve = pcall(util.CreateColorCurve)
         if ok and curve then
             if curve.SetType and Enum and Enum.LuaCurveType then pcall(curve.SetType, curve, Enum.LuaCurveType.Linear) end
-            for _, point in ipairs({ { 0, Tone.rosewood }, { 0.3, Tone.rosewood }, { 0.65, Tone.ivory }, { 1, Tone.celadon } }) do
+            for _, point in ipairs(HEALTH_POINTS) do
                 local c = point[2]
                 pcall(curve.AddPoint, curve, point[1], CreateColor(c[1], c[2], c[3], 1))
             end
@@ -72,6 +73,16 @@ local function HealthCurve()
     return healthCurve or nil
 end
 Style.HEALTH_TEXT_FULL = Tone.celadon
+-- The same colors for a plain fraction `p` (0-1): samples and previews, whose
+-- health is a known number.
+function Style.HealthTextColorAt(p)
+    p = math.max(0, math.min(1, p or 1))
+    for i = 2, #HEALTH_POINTS do
+        local a, b = HEALTH_POINTS[i - 1], HEALTH_POINTS[i]
+        if p <= b[1] then return Style.Mix(b[2], a[2], (p - a[1]) / math.max(0.0001, b[1] - a[1])) end
+    end
+    return HEALTH_POINTS[#HEALTH_POINTS][2]
+end
 -- Paints `fontString` by `unit`'s health; false when the client can't (then
 -- the caller keeps its own color).
 function Style.PaintHealthText(fontString, unit)

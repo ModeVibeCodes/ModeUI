@@ -17,6 +17,7 @@ M.UNIT_EVENTS = {
     UNIT_NAME_UPDATE = "Name", UNIT_AURA = "Auras", UNIT_HEAL_PREDICTION = "Prediction",
     UNIT_ABSORB_AMOUNT_CHANGED = "Prediction", UNIT_IN_RANGE_UPDATE = "Range", UNIT_PHASE = "Icons",
     UNIT_OTHER_PARTY_CHANGED = "Icons", INCOMING_RESURRECT_CHANGED = "Icons", INCOMING_SUMMON_CHANGED = "Icons",
+    UNIT_THREAT_SITUATION_UPDATE = "Threat",
 }
 -- Range has an event, but it can miss changes; while in a group the members
 -- are also checked on a short timer.

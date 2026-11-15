@@ -2,7 +2,8 @@
 
 November 13, 2026. A **Frames** module, after Nameplates. Off by default (turn it
 on with the switch in the page header). Static/mock validated only; **native
-acceptance is pending**. Settings version 3 (third pass, November 14). APIs and
+acceptance is pending**. Settings version 4 (the Mode design language,
+November 15, from the approved Group Frames probe). APIs and
 their secret-value rules are in
 [API_COMPATIBILITY.md](API_COMPATIBILITY.md#party-frames--november-13-2026).
 
@@ -11,11 +12,11 @@ their secret-value rules are in
 You and your party (not a raid), one member under the next by default. Each
 member is:
 
-- **Bars**: health, plus an optional power bar, inside the ModeUI border in its
-  box form (`Kit.ModeBoxBorder`, the chat windows' corners): **Border** Mode
-  (2px) or Thin (1px) and **Corner Size** (7px). 132 × 52 health by default,
-  **Spacing** 1: every size is whole pixels, so members sit exactly one pixel
-  apart. **Arrange** Vertical or Horizontal, with its **Direction**. Foreground and background
+- **Bars**: health, a 1px black line and a 3px power bar inside the `group`
+  edge (docs/DESIGN_LANGUAGE.md: 1px Gunmetal, Round 4; the rim art covers the
+  bars' corners, so nothing is masked). 150 × 34 health by default, Mode
+  Gradient on Mode BG, **Spacing** 1: every size is whole pixels, so the rims
+  sit exactly one pixel apart. **Arrange** Vertical or Horizontal, with its **Direction**. Foreground and background
   textures, Bar Opacity, Background Opacity, fill direction and the fill end
   line, as on the Unit Frames.
 - **Power Bars and Resources** (its own tab): **Power Bar For** Everyone,
@@ -26,27 +27,36 @@ member is:
   textures, **Bar Opacity**, **Background Opacity** and **Fill**; **Power
   Text** (Percent, Percent No Sign or Current) with alignment, size, offset
   and nudges.
-- **Health color**: Class Color (default), Onyx or Custom. Power: by power
+- **Health color**: Class Color (default), Dark or Custom. Power: by power
   type or Custom.
 - **Heals and Shields** (Bars tab, one clickable **Part** each: Incoming Heals,
-  Shields, Overshields, with Show, Texture, Color and Opacity): incoming heals ride on the end of the
-  health fill, **Shields** ride on the heals, and **Overshields** fill back
-  from full health with the whole shield, shown while it is bigger than the
-  missing health. Each has its own texture (Mode Slate Hatch for shields and
-  overshields by default, drawn with crisp 1px lines at any size), color and
-  opacity.
+  Shields, Overshields): incoming heals ride on the end of the health fill
+  (Show, Texture, Color, Opacity). Shields are Combined (`Style.Shield`):
+  below full health the shield sits on the health's end and stops at the
+  bar's end; at full health the whole shield fills back from max
+  (**Overshields**). They take their tint from the health bar (Mode Shield
+  hairlines and a bright finish line), so they have only a Show switch.
 - **Texts and icons** (Text and Icons tab), each with **Show**, **Anchor**,
   **Place** (Inside on the bars, Outside past their edge), **Offset X/Y**,
   **Nudge** arrows (1px) and **Size**: Name, Health Text (Percent, Percent No
   Sign, Current Health or Missing Health), Dead and Offline, Role, Leader, Raid
-  Marker, Ready Check, and Summon and Resurrect.
-- **Highlights and Overlay**: your target (Border, Tint or None), a mouse highlight, and
-  the **Dispel Overlay**: for each dispel type (Magic, Curse, Disease, Poison,
-  Bleed) **Border** (the member's border in the type color; on by default),
-  **Health Color** (the health fill in the type color) and **Gradient** (the
-  color fading down over the health bar), with **Which Debuffs** and
-  **Gradient Opacity**. Type colors are shared with the aura rims and glows.
-- **Fading**: out-of-range members at Out of Range Opacity (45%), dead and
+  Marker, Ready Check, and Summon and Resurrect. By default the role icon and
+  the name sit on the left, the health text on the right. Names are Geist
+  SemiBold in the **Gradient** (class color toward white; Soft Class, Text
+  Color and Custom are options); health text is Geist Bold, colored **By
+  Health** (Rosewood at 30% and under, through Ivory, to Celadon) or in the
+  Text Color.
+- **Highlights and Overlay**: your target (Border: the rim in Ivory; Tint;
+  or None), **Aggro Rim** (the rim in the hostile red while a mob is on the
+  member), a mouse highlight, and the **Dispel Overlay**: for each dispel type
+  (Magic, Curse, Disease, Poison, Bleed) **Gradient** (the type color from the
+  top edge, 56% fading out over 72% of the health; on by default), **Border**
+  (the rim in the type color) and **Health Color** (the health fill in the
+  type color), with **Which Debuffs** and **Gradient Opacity**. Rims are
+  swapped, never added, so a member's size never changes; a dispel rim wins
+  over your target, which wins over aggro. Type colors are shared with the
+  aura rims and glows.
+- **Fading**: out-of-range members at Out of Range Opacity (55%), dead and
   offline members at Dead and Offline Opacity (70%). You're always in range.
 
 ### The aura manager (Auras tab)
@@ -149,7 +159,7 @@ still show only in a party.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.partyFrames` (version 3) and the position
+`ModeUIDB` profile `modules.partyFrames` (version 4) and the position
 `positions.partyFrames`. Version 1 settings migrate: frames still at the old
 default size (34 health, 5 power) take the new one, Buffs becomes Healing
 Buffs in its place, Debuffs' place goes to every debuff type and Other
@@ -158,13 +168,19 @@ dispel highlight becomes the per-type effects. Version 2 settings migrate:
 frames at 44 health and 4 spacing take 52 and 1, the power bar copies the
 bars' opacities, debuff type groups that showed every debuff of their type
 show the ones you can't dispel, and Dispellable by You takes the Magic
-group's place.
+group's place. Version 3 settings migrate to the Mode design: values still at
+their version 3 default take the new one (132 → 150 wide, 52 → 34 health, 6
+→ 3 power, Mode Gradient on Mode BG at full opacity, Geist with one shadow,
+Gradient names, 55% out of range, Gradient Opacity 56, the name, health text
+and role moved to their new places, and debuff effects that were the Border
+alone become the Gradient). Anything the player picked stays. Border, Corner
+Size and the shield and overshield textures, colors and opacities retire.
 
 ## In-game check
 
 - **Navigation:** type `/modeui`, then pick **Frames** › **Party Frames** in the
   sidebar.
-- **Action:** look at the corners of a frame. In the preview header, click
+- **Action:** look at the edges of the frames. In the preview header, click
   **Party**. Open **Highlights and Overlay** and pick **Curse** under **Type**.
   On **Bars**, pick **Overshields** under **Part**. Open **Power Bars and
   Resources** and pick **Healer Mana** under **Power Bar For**. Open **Auras**,
@@ -172,8 +188,12 @@ group's place.
   click **+**, and click a buff.
 - **Required state:** out of combat; a party (or **Show When Solo**) for live
   members, and a buff on you or a party member for the picker.
-- **Confirmation:** the corners are round and hollow, with the bars rounded
-  inside them (no solid blocks). All five Party samples fit in the preview.
-  The sample shows the purple Curse overlay, then an overshield. Only a healer
+- **Confirmation:** each member has a thin rounded Gunmetal rim, and the
+  rims sit exactly one pixel apart, matching the Group Frames probe. The
+  Warrior sample's rim is red (aggro) and the Mage's is Ivory (your target).
+  Names fade from the class color toward white; the health text is green at
+  full and red under 30%. All five Party samples fit in the preview. The
+  first sample shows a purple Curse gradient from its top edge, then an
+  overshield with hairlines filling back from the right. Only a healer
   with mana shows a power bar. Clicking the aura opens the Auras tab. The
   picked buff shows in Tracked Buffs 1's place on the frames.

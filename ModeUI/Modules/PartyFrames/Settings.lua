@@ -125,13 +125,9 @@ function M:CreateConfigPage(parent)
     local group = c.Columns({ "Spacing", "Scale" })
     page.spacingSlider = c.Slider(group[1], "spacing", "px"); page.scaleSlider = c.Slider(group[2], "scale", "%")
     c.Note("Role sorts tanks, then healers, then damage. Party frames show in a party, not a raid. Move them with Edit Mode in the window header; resizing keeps the corner they grow from in place.", 48)
-    page:Group(L["Size and Border"])
+    page:Group(L["Size"])
     local size = c.Columns({ "Width", "Health Height" })
     page.widthSlider = c.Slider(size[1], "width", "px"); page.healthHeightSlider = c.Slider(size[2], "healthHeight", "px")
-    page.borderPills = c.Pills("Border", M.choices.borderStyle, function() return M.db.borderStyle end, c.Set("borderStyle"), 96)
-    local corner = c.Columns({ "Corner Size" })
-    page.cornerSlider = c.Slider(corner[1], "corner", "px")
-    c.Note("Every size is whole pixels, so with Spacing 1 the members sit exactly one pixel apart. Thin is the ModeUI border one pixel wide.", 32)
     page:Group(L["This Module"])
     local tools = page:Row(L["Settings"], 48)
     page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
@@ -160,9 +156,11 @@ function M:CreateConfigPage(parent)
         local part = M.barParts[id]
         c.When(function() return barPart == id end, function()
             c.Toggles({ { "Show " .. part.label, part.show } })
-            local look = c.Columns({ "Texture", "Color", "Opacity" })
-            c.Texture(look[1], part.texture, M.FillChoices); c.Color(look[2], part.color); c.Slider(look[3], part.opacity, "%")
-            c.Note(part.note, 32)
+            -- Shields take their look from the health bar (Combined, Style.Shield).
+            if part.texture then
+                local look = c.Columns({ "Texture", "Color", "Opacity" })
+                c.Texture(look[1], part.texture, M.FillChoices); c.Color(look[2], part.color); c.Slider(look[3], part.opacity, "%")
+            end
         end)
     end
 
@@ -186,9 +184,7 @@ end
 M.barPartOrder = { "heals", "shields", "overshield" }
 M.barParts = {
     heals = { label = "Incoming Heals", show = "showHealPrediction", texture = "healTexture", color = "healPredictionColor",
-        opacity = "healPredictionOpacity", note = "Heals on their way, riding on the end of the health." },
-    shields = { label = "Shields", show = "showAbsorbs", texture = "shieldTexture", color = "absorbColor", opacity = "absorbOpacity",
-        note = "Absorb shields, riding on the end of the health and any incoming heals." },
-    overshield = { label = "Overshields", show = "showOvershields", texture = "overshieldTexture", color = "overshieldColor",
-        opacity = "overshieldOpacity", note = "The whole shield, filling back from full health, shown while it is bigger than the missing health." },
+        opacity = "healPredictionOpacity" },
+    shields = { label = "Shields", show = "showAbsorbs" },
+    overshield = { label = "Overshields", show = "showOvershields" },
 }
