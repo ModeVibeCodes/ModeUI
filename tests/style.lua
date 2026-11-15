@@ -128,6 +128,13 @@ world.run([[
     local finish = Style.GradientEnd({ 1, 0, 0 })
     assert(math.abs(finish[2] - 0.5) < 1e-6, "gradient ends 50% toward white")
     assert(Style.GradientText(nil, { 1, 0, 0 }) == nil)
+    -- A shield's look: Mode textures only, opacity 10-200%, nil back to standard.
+    local look = Style.Shield(Style.Bar(host))
+    assert(look.look.texture == 'Shield' and look.look.opacity == 1 and look.look.color == nil, 'standard look')
+    look:SetLook({ texture = 'Nope' }); assert(look.look.texture == 'Shield', 'unknown texture falls back')
+    look:SetLook({ texture = 'Glass', opacity = 5, color = Tone.celadon })
+    assert(look.look.opacity == 2 and look.attachedLines.texture:find('Glass') and look.attachedLift.vertexColor[4] == 0.84)
+    look:SetLook(nil); assert(look.look.texture == 'Shield' and look.look.opacity == 1 and look.look.color == nil)
     -- Icons: wider than tall.
     assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
     local ring = Style.Ring(host, 66)

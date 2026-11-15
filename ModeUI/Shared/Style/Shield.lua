@@ -53,10 +53,12 @@ end
 
 local Shield = {}
 Shield.__index = Shield
+-- The standard look: Mode Shield (Hairline), tinted from the bar, 100%.
+local STANDARD = { texture = "Shield", opacity = 1 }
 
 -- Adds a shield to a Style.Bar. The bar must be the unit's health bar.
 function Style.Shield(bar)
-    local shield = setmetatable({ bar = bar }, Shield)
+    local shield = setmetatable({ bar = bar, look = STANDARD }, Shield)
     -- Attached: starts at the health fill's edge, as wide as the whole bar,
     -- inside a clip so nothing passes the bar's end.
     shield.clip = CreateFrame("Frame", nil, bar)
@@ -121,8 +123,11 @@ function Shield:Layout()
     Fit(self.fullLift, fullFill); Fit(self.fullClip, fullFill); Fit(self.fullLight, fullFill)
     -- Hairline tiles 1:1 over the whole bar (a line every 8px along it).
     local w, h = bar:GetWidth(), bar:GetHeight()
-    Style.TileCoords(self.attachedLines, "Shield", w, h, px)
-    Style.TileCoords(self.fullLines, "Shield", w, h, px)
+    -- A tiled texture (Mode Shield) keeps its 1:1 pattern; any other spans the bar.
+    local key = self.look.texture
+    for _, lines in ipairs({ self.attachedLines, self.fullLines }) do
+        if Style.TILE_SIZE[key] then Style.TileCoords(lines, key, w, h, px) else lines:SetTexCoord(0, 1, 0, 1) end
+    end
     for _, pair in ipairs({ { self.finish, attachedFill }, { self.fullFinish, fullFill } }) do
         local line, fill = pair[1], pair[2]
         local edge = (line == self.finish) and side or away
@@ -136,12 +141,29 @@ function Shield:Layout()
     self.finishGlow:SetSize(5 * px, math.max(1, h))
 end
 
+-- The shield's look (docs/DESIGN_LANGUAGE.md, "Bars"): look.texture (a
+-- Style.BAR_TEXTURES key; Mode Shield by default), look.color (a custom color,
+-- or nil to follow the bar) and look.opacity (1 is the standard look, up to
+-- 2, capped at full alpha). nil restores the standard look.
+function Shield:SetLook(look)
+    look = look or STANDARD
+    local key = look.texture
+    if not (Style.ASSETS[key] and Style.ASSETS[key].lsm) then key = "Shield" end
+    self.look = { texture = key, color = look.color, opacity = math.max(0.1, math.min(2, look.opacity or 1)) }
+    for _, lines in ipairs({ self.attachedLines, self.fullLines }) do Style.ApplyAsset(lines, key) end
+    self:Layout()
+    self:Paint()
+end
+
 -- Lift and lines tinted from the bar's own color (lightened), so the shield
--- reads as the same material, a step brighter.
+-- reads as the same material, a step brighter; or from the look's own color.
 function Shield:Paint()
-    local tint = Style.Lighten(self.bar.fillColor or Tone.darkFill, 0.45)
-    for _, lift in ipairs({ self.attachedLift, self.fullLift }) do lift:SetVertexColor(tint[1], tint[2], tint[3], LIFT_ALPHA) end
-    for _, lines in ipairs({ self.attachedLines, self.fullLines }) do lines:SetVertexColor(1, 1, 1, LINE_ALPHA) end
+    local look = self.look
+    local tint = Style.Lighten(look.color or self.bar.fillColor or Tone.darkFill, 0.45)
+    local line = look.color and Style.Lighten(look.color, 0.6) or Tone.mono.white
+    local lift, lines = math.min(1, LIFT_ALPHA * look.opacity), math.min(1, LINE_ALPHA * look.opacity)
+    for _, layer in ipairs({ self.attachedLift, self.fullLift }) do layer:SetVertexColor(tint[1], tint[2], tint[3], lift) end
+    for _, layer in ipairs({ self.attachedLines, self.fullLines }) do layer:SetVertexColor(line[1], line[2], line[3], lines) end
     for _, line in ipairs({ self.finish, self.fullFinish }) do line:SetVertexColor(0.965, 0.973, 0.984, 1) end
 end
 

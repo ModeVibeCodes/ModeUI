@@ -133,6 +133,12 @@ local function MigrateV3(db)
     for _, key in ipairs(M.RETIRED_V4) do db[key] = nil end
 end
 
+-- Version 4 -> 5: Mode Glass health for frames still on Mode Gradient (the
+-- version 4 default); the shield look settings arrive with their defaults.
+local function MigrateV4(db)
+    if db.foregroundTexture == "media:Mode Gradient" then db.foregroundTexture = M.defaults.foregroundTexture end
+end
+
 -- A tracked group's spells: whole spell IDs, each once, at most MAX_TRACKED_SPELLS.
 local function ValidateSpells(spells, group)
     assert(#spells <= M.MAX_TRACKED_SPELLS, "Too many tracked spells: " .. group)
@@ -178,6 +184,7 @@ function M.Initialize(db)
     if db.version == 1 then MigrateV1(db); db.version = 2 end
     if db.version == 2 then MigrateV2(db); db.version = 3 end
     if db.version == 3 then MigrateV3(db); db.version = 4 end
+    if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid party frame settings version")
     for key, default in pairs(M.defaults) do
@@ -198,6 +205,8 @@ function M.Initialize(db)
     assert(valid(db.foregroundTexture, true) and valid(db.backgroundTexture, false)
         and valid(db.powerForegroundTexture, true) and valid(db.powerBackgroundTexture, false), "Invalid party frame texture")
     assert(fill(db.healTexture), "Invalid party frame fill texture")
+    local shield = addon.Style.ASSETS[db.shieldsTexture]
+    assert(shield and shield.lsm, "Invalid party frame shield texture")
     ValidateDispel(db)
     for _, group in ipairs(M.auraGroups) do
         if db.auras[group] == nil then db.auras[group] = Copy(M.auraDefaults[group]) end

@@ -141,7 +141,8 @@ function M:LayoutBars(f)
     Kit.FillTexture(hp, db.healTexture, g.innerWidth, healthHeight, px, db.healPredictionColor, db.healPredictionOpacity / 100)
     h.reverse = reverse
     h.shield:SetShown(db.showAbsorbs)
-    h.shield:Layout()
+    h.shield:SetLook({ texture = db.shieldsTexture, opacity = db.shieldsOpacity / 100,
+        color = db.shieldsColorMode == "custom" and db.shieldsColor or nil })
     self:LayoutPowerText(f)
     self:LayoutDispel(f)
 end

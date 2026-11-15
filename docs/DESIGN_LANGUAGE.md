@@ -106,7 +106,12 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
   health the whole shield fills back from max, 9% lighter. Texture Mode Shield
   (Hairline): a faint lift tinted from the bar's own color (ADD blend) with a
   45° 1px line every 8px along the bar (about 5.7px apart), drawn at 45%
-  alpha. A bright 1px finish line marks the end.
+  alpha. A bright 1px finish line marks the end. A module may offer the
+  shield's look as options (`Shield:SetLook`): its **Texture** (any Mode bar
+  texture; Mode Shield by default), its **Color** (follows the health bar by
+  default, or a custom color for the lift and the lines) and its **Opacity**
+  (100% is the standard look above; up to 200%, capped at full alpha). The
+  finish line stays bright.
 - **Power bars:** 3px on every unit and group frame.
 
 ## Text (`Style.Font`, `Style.SetName`)

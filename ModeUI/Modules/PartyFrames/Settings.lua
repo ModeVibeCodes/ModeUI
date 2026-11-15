@@ -89,18 +89,16 @@ function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     page.jumpTargets = {}
     local c = self:SettingsControls(page)
-    local element, auraGroup, dispelType, barPart = "name", "heals", "Magic", "heals"
+    local element, auraGroup, dispelType = "name", "heals", "Magic"
     page.partyElement = function() return element end
     page.partyAuraGroup = function() return auraGroup end
     page.partyAuraKind = function() return M:AuraKind(auraGroup) end
     page.partyDispelType = function() return dispelType end
-    page.partyBarPart = function() return barPart end
     local function Changed() page:Refresh(); page:Layout() end
     function page.SetElement(id) if M.elementDefaults[id] then element = id; Changed() end end
     function page.SetAuraGroup(id) if M.auraDefaults[id] then auraGroup = id; Changed() end end
     function page.SetAuraKind(kind) page.SetAuraGroup(M:AuraKindGroups(kind)[1]) end
     function page.SetDispelType(id) if M.dispelColorKeys[id] then dispelType = id; Changed() end end
-    function page.SetBarPart(id) if M.barParts[id] then barPart = id; Changed() end end
     page.configPreview = W.Preview(page, M, { contentHeight = 190 })
     if page.UpdatePreviewLayout then
         page.previewHeaderButtons = M:PreviewSampleButtons(page)
@@ -145,24 +143,24 @@ function M:CreateConfigPage(parent)
     page.healthOpacitySlider = c.Slider(fade[1], "healthOpacity", "%"); page.backgroundOpacitySlider = c.Slider(fade[2], "backgroundOpacity", "%")
     page.fillPills = c.Pills("Fill", M.choices.fillDirection, function() return M.db.fillDirection end, c.Set("fillDirection"), 120)
     page.fillToggles = c.Toggles({ { "Fill End Line", "fillEdge" } })
-    -- Heals and Shields: one tab per part, each with its own settings; the
-    -- preview shows the part being edited.
-    page:Group(L["Heals and Shields"])
-    local parts = {}
-    for _, id in ipairs(M.barPartOrder) do parts[#parts + 1] = { id = id, label = M.barParts[id].label } end
-    page.barPartPills = c.Pills("Part", parts, function() return barPart end, page.SetBarPart, 120)
-    c.Mark("heals")
-    for _, id in ipairs(M.barPartOrder) do
-        local part = M.barParts[id]
-        c.When(function() return barPart == id end, function()
-            c.Toggles({ { "Show " .. part.label, part.show } })
-            -- Shields take their look from the health bar (Combined, Style.Shield).
-            if part.texture then
-                local look = c.Columns({ "Texture", "Color", "Opacity" })
-                c.Texture(look[1], part.texture, M.FillChoices); c.Color(look[2], part.color); c.Slider(look[3], part.opacity, "%")
-            end
-        end)
-    end
+    -- Incoming heals ride on the health's end.
+    page:Group(L["Incoming Heals"])
+    page.healToggles = c.Toggles({ { "Show Incoming Heals", "showHealPrediction" } }); c.Mark("heals")
+    local heal = c.Columns({ "Texture", "Color", "Opacity" })
+    c.Texture(heal[1], "healTexture", M.FillChoices); c.Color(heal[2], "healPredictionColor"); c.Slider(heal[3], "healPredictionOpacity", "%")
+
+    -- Shields: Combined (Style.Shield), with their own texture, color and opacity.
+    page:Section(L["Shields"], nil, false)
+    page:Group(L["Shields"])
+    page.shieldToggles = c.Toggles({ { "Show Shields", "showAbsorbs" }, { "Show Overshields", "showOvershields" } }); c.Mark("shields")
+    local shieldTextures = {}
+    for _, key in ipairs(addon.Style.BAR_TEXTURES) do shieldTextures[#shieldTextures + 1] = { id = key, label = key } end
+    local look = c.Columns({ "Texture", "Opacity" })
+    page.shieldTextureSelect = c.Select(look[1], 200, shieldTextures, "shieldsTexture")
+    page.shieldOpacitySlider = c.Slider(look[2], "shieldsOpacity", "%")
+    local tint = c.Columns({ "Color", "Custom Color" })
+    page.shieldColorSelect = c.Select(tint[1], 200, M.choices.shieldsColorMode, "shieldsColorMode")
+    c.Color(tint[2], "shieldsColor", function() return M.db.shieldsColorMode == "custom" end)
 
     self:BuildPowerTab(page, c)
     self:BuildElementsTab(page, c, function() return element end)
@@ -180,11 +178,4 @@ function M:CreateConfigPage(parent)
     page:Finish(); return page
 end
 
--- Heals and Shields parts: their settings keys and what each does.
-M.barPartOrder = { "heals", "shields", "overshield" }
-M.barParts = {
-    heals = { label = "Incoming Heals", show = "showHealPrediction", texture = "healTexture", color = "healPredictionColor",
-        opacity = "healPredictionOpacity" },
-    shields = { label = "Shields", show = "showAbsorbs" },
-    overshield = { label = "Overshields", show = "showOvershields" },
-}
+

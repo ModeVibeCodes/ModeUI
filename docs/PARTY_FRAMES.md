@@ -2,8 +2,9 @@
 
 November 13, 2026. A **Frames** module, after Nameplates. Off by default (turn it
 on with the switch in the page header). Static/mock validated only; **native
-acceptance is pending**. Settings version 4 (the Mode design language,
-November 15, from the approved Group Frames probe). APIs and
+acceptance is pending**. Settings version 5 (the Mode design language,
+November 15, from the approved Group Frames probe; Mode Glass health and the
+Shields tab after the owner's first look). APIs and
 their secret-value rules are in
 [API_COMPATIBILITY.md](API_COMPATIBILITY.md#party-frames--november-13-2026).
 
@@ -15,7 +16,7 @@ member is:
 - **Bars**: health, a 1px black line and a 3px power bar inside the `group`
   edge (docs/DESIGN_LANGUAGE.md: 1px Gunmetal, Round 4; the rim art covers the
   bars' corners, so nothing is masked). 150 × 34 health by default, Mode
-  Gradient on Mode BG, **Spacing** 1: every size is whole pixels, so the rims
+  Glass on Mode BG (the owner's pick), **Spacing** 1: every size is whole pixels, so the rims
   sit exactly one pixel apart. **Arrange** Vertical or Horizontal, with its **Direction**. Foreground and background
   textures, Bar Opacity, Background Opacity, fill direction and the fill end
   line, as on the Unit Frames.
@@ -29,13 +30,15 @@ member is:
   and nudges.
 - **Health color**: Class Color (default), Dark or Custom. Power: by power
   type or Custom.
-- **Heals and Shields** (Bars tab, one clickable **Part** each: Incoming Heals,
-  Shields, Overshields): incoming heals ride on the end of the health fill
-  (Show, Texture, Color, Opacity). Shields are Combined (`Style.Shield`):
-  below full health the shield sits on the health's end and stops at the
-  bar's end; at full health the whole shield fills back from max
-  (**Overshields**). They take their tint from the health bar (Mode Shield
-  hairlines and a bright finish line), so they have only a Show switch.
+- **Incoming Heals** (Bars tab): ride on the end of the health fill, with
+  Show, Texture, Color and Opacity.
+- **Shields** (their own tab): Combined (`Style.Shield`): below full health
+  the shield sits on the health's end and stops at the bar's end; at full
+  health the whole shield fills back from max (**Show Overshields**). Its look
+  (`Shield:SetLook`): **Texture** (any Mode bar texture; Mode Shield
+  hairlines by default), **Opacity** (10-200%; 100% is the standard look) and
+  **Color**: Follow Health (the shield tinted from the health bar) or Custom
+  with its own color. The finish line stays bright.
 - **Texts and icons** (Text and Icons tab), each with **Show**, **Anchor**,
   **Place** (Inside on the bars, Outside past their edge), **Offset X/Y**,
   **Nudge** arrows (1px) and **Size**: Name, Health Text (Percent, Percent No
@@ -159,7 +162,7 @@ still show only in a party.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.partyFrames` (version 4) and the position
+`ModeUIDB` profile `modules.partyFrames` (version 5) and the position
 `positions.partyFrames`. Version 1 settings migrate: frames still at the old
 default size (34 health, 5 power) take the new one, Buffs becomes Healing
 Buffs in its place, Debuffs' place goes to every debuff type and Other
@@ -175,6 +178,8 @@ Gradient names, 55% out of range, Gradient Opacity 56, the name, health text
 and role moved to their new places, and debuff effects that were the Border
 alone become the Gradient). Anything the player picked stays. Border, Corner
 Size and the shield and overshield textures, colors and opacities retire.
+Version 4 settings migrate: health still on Mode Gradient takes Mode Glass,
+and the shield look settings arrive at the standard look.
 
 ## In-game check
 
@@ -182,7 +187,8 @@ Size and the shield and overshield textures, colors and opacities retire.
   sidebar.
 - **Action:** look at the edges of the frames. In the preview header, click
   **Party**. Open **Highlights and Overlay** and pick **Curse** under **Type**.
-  On **Bars**, pick **Overshields** under **Part**. Open **Power Bars and
+  Open **Shields**, pick **Glass** under **Texture**, **Custom** under
+  **Color**, and drag **Opacity** to 150%. Open **Power Bars and
   Resources** and pick **Healer Mana** under **Power Bar For**. Open **Auras**,
   click an aura in the preview, pick **Tracked Buffs 1** in the quick list,
   click **+**, and click a buff.
@@ -193,7 +199,8 @@ Size and the shield and overshield textures, colors and opacities retire.
   Warrior sample's rim is red (aggro) and the Mage's is Ivory (your target).
   Names fade from the class color toward white; the health text is green at
   full and red under 30%. All five Party samples fit in the preview. The
-  first sample shows a purple Curse gradient from its top edge, then an
-  overshield with hairlines filling back from the right. Only a healer
+  first sample shows a purple Curse gradient from its top edge. On Shields,
+  the first sample's shield turns to Glass in the custom color and grows
+  stronger with Opacity. The health bars use Mode Glass. Only a healer
   with mana shows a power bar. Clicking the aura opens the Auras tab. The
   picked buff shows in Tracked Buffs 1's place on the frames.

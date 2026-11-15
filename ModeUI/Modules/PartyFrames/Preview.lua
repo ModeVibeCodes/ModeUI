@@ -73,15 +73,16 @@ function M:PreviewAuraGroup()
     if self:PreviewSection() == L["Auras"] and self.page.partyAuraGroup then return self.page.partyAuraGroup() end
 end
 
--- What the open tab edits, shown on the first sample: the heal, shield or
--- overshield on Bars, the power bar on Power Bars and Resources, the element
+-- What the open tab edits, shown on the first sample: the heal on Bars, a
+-- shield on Shields (the Mage sample shows the overshield), the power bar on Power Bars and Resources, the element
 -- on Text and Icons, the dispel overlay (by type) and your target on
 -- Highlights and Overlay.
 local ELEMENT_STATES = { readyCheck = "readyCheck", incoming = "summon", status = "dead", raidIcon = "raidIcon", leader = "leader" }
 function M:PreviewFocus()
     local page, section = self.page, self:PreviewSection()
     if not page or not section then return {} end
-    if section == L["Bars"] and page.partyBarPart then return { [page.partyBarPart()] = true } end
+    if section == L["Bars"] then return { heals = true } end
+    if section == L["Shields"] then return { shields = true } end
     if section == L["Power Bars and Resources"] then return { power = true } end
     if section == L["Text and Icons"] and page.partyElement then
         local state = ELEMENT_STATES[page.partyElement()]

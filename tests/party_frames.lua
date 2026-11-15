@@ -170,8 +170,9 @@ world.run([==[
     local M = addon.PartyFrames
     assert(M and addon.modules.partyFrames == M and M.category == 'frames' and M.defaultEnabled == false)
     assert(not M.enabled and M.header == nil and M.ghost == nil, 'off by default; nothing built')
-    -- The Mode design language: Geist, Mode Gradient on Mode BG, 150 x 34 + 3, Gradient names.
-    assert(M.db.version == 4 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Gradient' and M.db.backgroundTexture == 'media:Mode BG')
+    -- The Mode design language: Geist, Mode Glass on Mode BG, 150 x 34 + 3, Gradient names.
+    assert(M.db.version == 5 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
+    assert(M.db.shieldsTexture == 'Shield' and M.db.shieldsColorMode == 'health' and M.db.shieldsOpacity == 100, 'the standard shield look')
     assert(M.db.nameShow and M.db.nameAnchor == 'LEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
     assert(M.db.spacing == 1 and M.db.auras.dispellable.show and M.db.auras.magic.filter == 'notMine' and M.db.auras.tracked1.spells[1] == nil)
     assert(M.db.healthHeight == 34 and M.db.width == 150 and M.db.powerHeight == 3 and M.db.borderStyle == nil and M.db.corner == nil)
@@ -430,8 +431,21 @@ world.run([==[
     page.SetDispelType('Curse'); assert(view.faces[1].dispel.gradient.gradient[3].r == M.db.auraCurseColor[1] and view.faces[1].panel.edge.tint ~= M.db.auraCurseColor, 'the picked type (Curse: Gradient only)')
     page:SelectSectionTab(page.jumpTargets.health.section)
     assert(view.faces[1].panel.edge.tint ~= M.db.auraCurseColor and not view.faces[1].dispel.gradient:IsShown(), 'gone on another tab')
-    page.SetBarPart('overshield'); assert(view.faces[1].health.shield.full:GetAlpha() == 1 and view.faces[1].health.shield.full.value == 24, 'overshield previewed')
-    assert(page.barPartPills and M:SetOption('showOvershields', false) and view.faces[1].health.shield.full:GetAlpha() == 0 and M:SetOption('showOvershields', true))
+    -- Shields have their own tab: a shield on the first sample; with the
+    -- Overshield state, the whole shield back from full health.
+    page:SelectSectionTab(page.jumpTargets.shields.section)
+    assert(M:PreviewSection() == 'Shields' and view.faces[1].health.shield.attached.value == 14, 'shield previewed')
+    M.previewStates.overshield = true; page:SelectSectionTab(page.jumpTargets.shields.section)
+    assert(view.faces[1].health.shield.full:GetAlpha() == 1 and view.faces[1].health.shield.full.value == 24, 'overshield previewed')
+    assert(M:SetOption('showOvershields', false) and view.faces[1].health.shield.full:GetAlpha() == 0 and M:SetOption('showOvershields', true))
+    M.previewStates.overshield = nil
+    -- The look reaches the shield: texture, custom color, opacity (10-200%).
+    assert(M:SetOption('shieldsTexture', 'Glass') and view.faces[1].health.shield.look.texture == 'Glass' and not M:SetOption('shieldsTexture', 'Nope'))
+    assert(view.faces[1].health.shield.attachedLines.texture:find('Glass'), 'the lines take the texture')
+    assert(M:SetOption('shieldsColorMode', 'custom') and view.faces[1].health.shield.look.color == M.db.shieldsColor)
+    assert(M:SetOption('shieldsOpacity', 150) and view.faces[1].health.shield.look.opacity == 1.5 and not M:SetOption('shieldsOpacity', 250))
+    assert(math.abs(view.faces[1].health.shield.attachedLift.vertexColor[4] - 0.63) < 1e-6, 'lift at 150% of 42%')
+    assert(M:SetOption('shieldsTexture', 'Shield') and M:SetOption('shieldsColorMode', 'health') and M:SetOption('shieldsOpacity', 100))
     page:SelectSectionTab(page.jumpTargets.element.section); page.SetElement('readyCheck')
     assert(view.faces[1].icons.readyCheck:IsShown(), 'ready check previewed')
     page:SelectSectionTab(page.jumpTargets.power.section)
@@ -609,7 +623,7 @@ pf.auras = { buffs = { show = true, filter = 'mine', anchor = 'TOPLEFT', place =
     max = 3, perRow = 3, spacing = 2, shape = 'square', border = 'type', timer = true, timerText = true, count = true, tooltip = true } }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local db = addon.PartyFrames.db
-    assert(db.version == 4 and db.healthHeight == 34 and db.powerHeight == 3 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
+    assert(db.version == 5 and db.healthHeight == 34 and db.powerHeight == 3 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
     local heals = db.auras.heals
     assert(heals.anchor == 'TOPLEFT' and heals.width == 20 and heals.height == 16 and heals.filter == 'mine' and heals.border == 'mode' and heals.size == nil)
     for _, group in ipairs({ 'magic', 'curse', 'disease', 'poison', 'bleed', 'otherDebuffs' }) do
@@ -636,14 +650,26 @@ p3.healthTextAnchor, p3.healthTextX, p3.healthTextY, p3.healthTextSize = 'TOP', 
 p3.dispel = { Magic = { border = true, health = false, gradient = false }, Curse = { border = true, health = true, gradient = false } }
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local db, M = addon.PartyFrames.db, addon.PartyFrames
-    assert(db.version == 4 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
+    assert(db.version == 5 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
     assert(db.borderStyle == nil and db.corner == nil and db.shieldTexture == nil and db.absorbColor == nil and db.overshieldOpacity == nil, 'retired')
-    assert(db.foregroundTexture == 'media:Mode Gradient' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode Geist')
+    assert(db.foregroundTexture == 'media:Mode Glass' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode Geist')
     assert(db.liftedShadow == false and db.nameColorMode == 'custom' and db.rangeOpacity == 55, 'a picked name color stays')
     assert(db.nameAnchor == 'LEFT' and db.nameX == 17 and db.healthTextAnchor == 'TOP', 'elements at the old place move; moved ones stay')
     assert(db.dispel.Magic.gradient and not db.dispel.Magic.border, 'border alone was the default: Gradient now')
     assert(db.dispel.Curse.border and db.dispel.Curse.health and not db.dispel.Curse.gradient, 'a picked set stays')
 ]==], "party_v3")
+
+-- Version 4 -> 5: Mode Gradient health (the version 4 default) becomes Mode
+-- Glass; another picked texture stays.
+for _, case in ipairs({ { 'media:Mode Gradient', 'media:Mode Glass' }, { 'media:Mode Matte', 'media:Mode Matte' } }) do
+    local v4 = world.saved()
+    local p4 = v4.profiles.Default.modules.partyFrames
+    p4.version, p4.foregroundTexture = 4, case[1]
+    p4.shieldsTexture, p4.shieldsColorMode, p4.shieldsColor, p4.shieldsOpacity = nil, nil, nil, nil
+    local loaded = H.Load({ before = STUBS, saved = v4 })
+    loaded.run("local db = addon.PartyFrames.db; assert(db.version == 5 and db.foregroundTexture == '" .. case[2] ..
+        "' and db.shieldsTexture == 'Shield' and db.shieldsOpacity == 100, 'v4 -> v5: ' .. db.foregroundTexture)", "party_v4")
+end
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()
