@@ -68,9 +68,6 @@ function M:SkinBar(item, style, g, state)
         local c = style.barColor
         bar:SetStatusBarColor(c[1], c[2], c[3], 1)
     end
-    state.sheen:ClearAllPoints()
-    state.sheen:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    state.sheen:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
 end
 
 -- Places the icon on its side and the bar box beside it (or over the whole

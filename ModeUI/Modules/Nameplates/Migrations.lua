@@ -164,6 +164,14 @@ local function MigrateV9(db)
     end
 end
 
+-- Version 10 -> 11: empty bars still solid (100) take the semi-transparent 60.
+local function MigrateV10(db)
+    for _, kind in ipairs(M.kinds) do
+        local style = db[kind]
+        if type(style) == "table" and style.backgroundOpacity == 100 then style.backgroundOpacity = 60 end
+    end
+end
+
 local ValidTexture = Kit.ValidBarTexture
 
 local function Validate(style, kind)
@@ -202,6 +210,7 @@ function M.Initialize(db)
     if db.version == 7 then MigrateV7(db); db.version = 8 end
     if db.version == 8 then MigrateV8(db); db.version = 9 end
     if db.version == 9 then MigrateV9(db); db.version = 10 end
+    if db.version == 10 then MigrateV10(db); db.version = 11 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

@@ -24,7 +24,10 @@ function Style.Bar(parent, opts)
     bar.bg = bar:CreateTexture(nil, "BACKGROUND", nil, -8)
     bar.bg:SetAllPoints()
     Style.ApplyAsset(bar.bg, "BG")
-    Style.Paint(bar.bg, Tone.slate)
+    -- Health and power empty parts are semi-transparent; the rest stay solid.
+    local role = bar.styleRole
+    local see = role == "health" or role == "healthClass" or role == "power"
+    Style.Paint(bar.bg, Tone.slate, see and Tone.emptyAlpha or 1)
     bar.lift = bar:CreateTexture(nil, "ARTWORK", nil, 3)
     bar.lift:SetBlendMode("BLEND")
     bar.endClip = CreateFrame("Frame", nil, bar)
@@ -47,6 +50,42 @@ function Style.Bar(parent, opts)
     bar:SetScript("OnSizeChanged", function(self) self:LayoutStyle() end)
     bar:LayoutStyle()
     return bar
+end
+
+-- A module's StatusBar (with a `sheen` texture) in a Mode texture that has a
+-- lift ("media:Mode Glass" and so on): its base as the fill, multiplied by the
+-- bar color, and the white lift over the fill on the sheen, so the light still
+-- reads on dark fills ("Bars", Light). False for any other choice.
+-- The lift fades with the fill: a module's fill opacity (the alpha it gives
+-- SetStatusBarColor) reaches the lift too.
+local function FollowFillAlpha(bar, _, _, _, alpha)
+    if bar.liftKey and bar.sheen then bar.sheen:SetAlpha(addon.IsNumber(alpha, 0, 1) and alpha or 1) end
+end
+function Style.ApplyBarLook(bar, choice)
+    local asset, key = Style.MediaAsset(choice)
+    if not (asset and asset.lift and asset.fill) then
+        if bar.liftKey and bar.sheen then bar.sheen:SetAlpha(1) end
+        bar.liftKey = nil
+        return false
+    end
+    if not bar.liftFollows and hooksecurefunc and type(bar.SetStatusBarColor) == "function" then
+        bar.liftFollows = true
+        hooksecurefunc(bar, "SetStatusBarColor", FollowFillAlpha)
+    end
+    bar:SetStatusBarTexture(Style.AssetPath(asset.fill))
+    local fill = bar:GetStatusBarTexture()
+    if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
+    local sheen = bar.sheen
+    if fill and Style.ApplyAsset(sheen, asset.lift) then
+        Style.Paint(sheen, Tone.mono.white)
+        sheen:ClearAllPoints()
+        sheen:SetPoint("TOPLEFT", fill, "TOPLEFT"); sheen:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT")
+        sheen:Show()
+    else
+        sheen:Hide()
+    end
+    bar.liftKey = key
+    return true
 end
 
 -- Swaps the fill texture (a Style.BAR_TEXTURES key; unknown keys fall back to Matte).

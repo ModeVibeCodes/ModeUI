@@ -322,6 +322,16 @@ local function MigrateV21(db)
     end
 end
 
+-- Version 22 -> 23: empty bars still solid (100) take the semi-transparent 60.
+local function MigrateV22(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" and Public(frame) then
+            for _, key in ipairs({ "barBackgroundOpacity", "powerBackgroundOpacity" }) do if frame[key] == 100 then frame[key] = 60 end end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -342,7 +352,8 @@ function M.Initialize(db)
     if db.layoutVersion == 18 then MigrateV18(db); db.layoutVersion = 19 end
     if db.layoutVersion == 19 then MigrateV19(db); db.layoutVersion = 20 end
     if db.layoutVersion == 20 then MigrateV20(db); db.layoutVersion = 21 end
-    if db.layoutVersion == 21 then MigrateV21(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 21 then MigrateV21(db); db.layoutVersion = 22 end
+    if db.layoutVersion == 22 then MigrateV22(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

@@ -90,6 +90,8 @@ end
 -- "flat", or "media:<name>" (a SharedMedia status bar texture; Mode Gradient
 -- while it isn't available).
 function Kit.BarForeground(bar, choice, barHeight, px)
+    -- Mode textures with a lift: base plus white lift (Style.ApplyBarLook).
+    if addon.Style.ApplyBarLook(bar, choice) then return end
     local path = choice == "flat" and Kit.FLAT or (choice ~= "mode" and addon.Media:GetStatusBar(choice)) or nil
     if not path then Kit.ModeGradient(bar, barHeight, px); return end
     bar:SetStatusBarTexture(path)
@@ -154,6 +156,7 @@ function Kit.ModeGradient(bar, barHeight, px)
     local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
     bar.sheen:SetTexture(Kit.FLAT)
+    bar.sheen:ClearAllPoints(); bar.sheen:SetPoint("TOPLEFT"); bar.sheen:SetPoint("TOPRIGHT")
     bar.sheen:SetHeight(math.max(px, math.floor(barHeight / (2 * px)) * px))
     Kit.Gradient(bar.sheen, { 1, 1, 1, 0.12 }, { 1, 1, 1, 0 }, 0.06)
     bar.sheen:Show()

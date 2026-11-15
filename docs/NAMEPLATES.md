@@ -31,7 +31,7 @@ frame and fades Blizzard's art. Each plate has:
   about to take it; orange). With no threat, or while the game hides threat, the
   plate keeps its health color.
 - **Health Opacity** (100% by default) fades the health fill without changing
-  its color. **Background Opacity** (100% by default) fades only the empty part
+  its color. **Background Opacity** (60% by default) fades only the empty part
   of the health bar, so the world shows through it; the rim, the fill and the
   text stay solid (the edge draws outside the bar, so nothing sits behind it), and the
   target glow texture is hollow. The cast bar keeps a solid background: a
@@ -199,7 +199,8 @@ frames, never secure, so they also work in combat. Settings change outside comba
 
 ## Settings versions
 
-Version 10. Version 9 settings move to the aura edge: Border Size 2 (the
+Version 11. Version 10 settings with Background Opacity still at 100 take
+the see-through 60. Version 9 settings move to the aura edge: Border Size 2 (the
 old default) takes 1 and 3 takes 2, Corners retire, and the old no-type rim
 takes the Gunmetal one. Version 8 settings still at their defaults take the Mode ones
 per kind (Mode BG on Mode BG at 100%, the Gradient name, Geist with one

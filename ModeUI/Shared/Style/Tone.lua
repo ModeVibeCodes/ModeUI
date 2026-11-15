@@ -28,7 +28,7 @@ local Tone = {
     mono = Ramp({ "000000", "050505", "0E0E0E", "161616", "1E1E1E", "282828", "383838", "555555", "808080", "A6A6A6", "DADADA", "FFFFFF" }),
     -- Windows and panels.
     graphite = Ramp({ "000000", "0A0A0B", "121213", "1A1A1C", "222224", "2C2C2F", "3D3D41", "5A5A5F", "85858B", "A9A9AE", "D8D8DB", "F5F5F6" }),
-    darkFill = Hex("1C1C1C"),
+    darkFill = Hex("1C1D1C"),
     darkFillGraphite = Hex("1D1D1F"),
     slate = Hex("474747"),
     ivory = Hex("EFE6D2"),
@@ -41,6 +41,8 @@ local Tone = {
     shadow = { 0, 0, 0 },
     shadowAlpha = 0.82,
     softAlpha = 0.55,
+    -- Health and power empty parts: Slate, semi-transparent (no plate behind).
+    emptyAlpha = 0.6,
     -- Gameplay meanings, never softened.
     reaction = { hostile = Hex("E5484D"), neutral = Hex("F2C744"), friendly = Hex("46C46B"), tapped = Hex("8C8C8C") },
     cast = { casting = Hex("F2B13C"), channeling = Hex("3FBF7F"), shielded = Hex("7D838C"), interrupted = Hex("E5484D") },

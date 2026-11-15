@@ -58,7 +58,9 @@ function M:ApplyLayout(f)
     panel.inner:ClearAllPoints()
     panel.inner:SetPoint("TOPLEFT", panel, "TOPLEFT", g.border, -g.border)
     panel.inner:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -g.border, g.border)
-    panel.back:ClearAllPoints(); panel.back:SetAllPoints(panel.inner); Style.Paint(panel.back, Tone.shadow)
+    -- The black plate only behind solid empty bars: see-through ones show the world.
+    local solid = db.backgroundOpacity >= 100 and db.powerBackgroundOpacity >= 100
+    panel.back:ClearAllPoints(); panel.back:SetAllPoints(panel.inner); Style.Paint(panel.back, Tone.shadow, solid and 1 or 0)
     local reverse = db.fillDirection == "reverse"
     for _, look in ipairs({ { f.health, db.foregroundTexture, db.backgroundTexture, g.healthHeight, db.backgroundOpacity, reverse },
         { f.power, db.powerForegroundTexture, db.powerBackgroundTexture, g.powerHeight, db.powerBackgroundOpacity,

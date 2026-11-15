@@ -16,10 +16,10 @@
 --   RingSheen        a disc with a light band, laid over a portrait's metal disc
 -- Bars/     luminance art multiplied by the bar color (SetVertexColor), and white
 --           "Lift" overlays (alpha only) that add light the multiply can't.
---   Solid (8x8), Matte, BG, ButtonBase/ButtonLift, GlassBase/GlassLift,
+--   Solid (8x8), MatteBase/MatteLift, BG, ButtonBase/ButtonLift, GlassBase/GlassLift,
 --   CastBase/CastLift, GradientLift, Panel (+PanelLift), Title, and the single
 --   baked files Gradient, Button, Glass, Cast that other addons get through
---   LibSharedMedia. Shield: a 32x32 tile, a 1px 45-degree line every 8 texels.
+--   LibSharedMedia (and Matte). Shield: a 32x32 tile, a 1px 45-degree line every 8 texels.
 --   CometHead, CometTrail, LineGlow: the Comet spark and the shield finish line.
 -- Controls/ Knob (slide toggle block, radius 2), Blade (slider thumb).
 -- Icons/    the module icons for the settings sidebar and icon rail (tools/mode_icons.lua).
@@ -109,8 +109,15 @@ end
 Luma("Bars/Solid", 8, 8, function() return 1 end)
 local matte = Profile({ { 0, 1 }, { 1, 0.78 } })
 local bg = Profile({ { 0, 0.66 }, { 0.38, 1 }, { 1, 1 } })
-Luma("Bars/Matte", BW, BH, matte)
+Luma("Bars/MatteBase", BW, BH, matte)
 Luma("Bars/BG", BW, BH, bg)
+-- Matte's sheen: a faint 1px top line, then a soft band of light that fades
+-- out by the middle; gentle, so the face still reads as matte.
+local matteLift = function(x, y)
+    if y == 0 then return 0.16 end
+    return Profile({ { 0, 0.11 }, { 0.2, 0.08 }, { 0.5, 0.025 }, { 0.62, 0 }, { 1, 0 } })(x, y)
+end
+Lift("Bars/MatteLift", BW, BH, matteLift)
 local gradientLift = Profile({ { 0, 0.20 }, { 0.5, 0 }, { 1, 0 } })
 local buttonBase = function(x, y) if y == BH - 1 then return 0.55 end return Profile({ { 0, 1 }, { 0.55, 1 }, { 1, 0.86 } })(x, y) end
 local buttonLift = function(x, y) if y == 0 then return 0.30 end return Profile({ { 0, 0.10 }, { 0.55, 0 }, { 1, 0 } })(x, y) end
@@ -130,6 +137,7 @@ local function Baked(path, base, lift)
         return math.min(1, (base(x, y) * 0.9) * (1 - a) + a)
     end)
 end
+Baked("Bars/Matte", matte, matteLift)
 Baked("Bars/Gradient", function() return 1 end, gradientLift)
 Baked("Bars/Button", buttonBase, buttonLift)
 Baked("Bars/Glass", glassBase, glassLift)

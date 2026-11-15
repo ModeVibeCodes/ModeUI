@@ -67,7 +67,9 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 21 (owner's in-game check): Portrait Size 140, the single Mode text
 -- shadow (no lifted copy), the cast bar icon on the portrait side.
 -- Version 22: health text colored by health, 22px auras five to a row, 11px cast text.
-M.LAYOUT_VERSION = 22
+-- Version 23: semi-transparent empty bars (Slate at 60%, no black plate behind).
+M.LAYOUT_VERSION = 23
+local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -121,12 +123,12 @@ local function Frame(side, extra)
         -- stands out against the world behind it (owner, November 13, 2026).
         -- Mode Slate at 70% (owner, November 13, 2026): a solid near-neutral gray
         -- behind the fill, strong enough not to feel see-through.
-        -- Mode Matte health over Mode BG on Slate (docs/DESIGN_LANGUAGE.md, "Bars").
-        foregroundTexture = "media:Mode Matte", backgroundTexture = "media:Mode BG", barForegroundOpacity = 100, barBackgroundOpacity = 100,
+        -- Mode Matte health over Mode BG on Slate, semi-transparent (docs/DESIGN_LANGUAGE.md, "Bars").
+        foregroundTexture = "media:Mode Matte", backgroundTexture = "media:Mode BG", barForegroundOpacity = 100, barBackgroundOpacity = EMPTY,
         -- The power bar's own (owner, November 13, 2026: each part of the frame
         -- has its own texture settings); the keys above are the health bar's.
         powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerForegroundOpacity = 100,
-        powerBackgroundOpacity = 100,
+        powerBackgroundOpacity = EMPTY,
         -- Combined shields on the health bar (Style.Shield).
         showShields = true,
         -- A 1px light line where the health fill ends.

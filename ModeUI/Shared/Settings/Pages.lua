@@ -345,13 +345,14 @@ function W.Page(parent, minimumWidth)
         self.cursor = self.cursor + height + 4
         return controls
     end
-    -- A card: a Mode Matte face in the card color inside the `card` border.
+    -- A card: a Mode Matte face (its base, no bar sheen) in the card color
+    -- inside the `card` border.
     function page:NewCard(title)
         local frame = CreateFrame("Frame", nil, content)
         frame:SetFrameLevel(content:GetFrameLevel() + 1)
         local fill = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
         fill:SetAllPoints()
-        addon.Style.ApplyAsset(fill, "Matte")
+        addon.Style.ApplyAsset(fill, "MatteBase")
         fill:SetVertexColor(unpack(T.card))
         local edge = addon.Style.Edge(frame, "card")
         local card = { frame = frame, rim = edge.rimTexture, fill = fill, edge = edge, title = title }

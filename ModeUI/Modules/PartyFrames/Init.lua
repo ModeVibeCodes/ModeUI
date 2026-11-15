@@ -39,7 +39,9 @@ addon:RegisterModule("partyFrames", M)
 -- texture, a color (follow the health or custom) and an opacity.
 -- Version 6: auras wear the frameThin edge (Border Size 1 or 2; Mode is the
 -- Gunmetal metal), and auras without a type take the Gunmetal rim.
-M.VERSION = 6
+-- Version 7: semi-transparent empty bars (Slate at 60%, no black plate behind).
+M.VERSION = 7
+local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 M.ELEMENT_ID = "partyFrames"
 M.MAX_MEMBERS = 5
 M.defaultPosition = { target = "screen", placement = "center", x = -520, y = 120 }
@@ -119,11 +121,11 @@ M.defaults = {
     -- Each member: 150 x 34 health and 3px power in the group edge, Mode
     -- Glass on Mode BG.
     width = 150, healthHeight = 34,
-    foregroundTexture = "media:Mode Glass", backgroundTexture = "media:Mode BG", healthOpacity = 100, backgroundOpacity = 100,
+    foregroundTexture = "media:Mode Glass", backgroundTexture = "media:Mode BG", healthOpacity = 100, backgroundOpacity = EMPTY,
     fillDirection = "standard", fillEdge = true, healthColorMode = "class", healthColor = Copy(P.green),
     -- Power Bars and Resources: who shows it, where, how it looks, its text.
     powerShown = "all", powerStyle = "below", powerHeight = 3, powerWidth = 70, powerAlign = "CENTER", powerX = 0, powerY = 3,
-    powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerOpacity = 100, powerBackgroundOpacity = 100,
+    powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerOpacity = 100, powerBackgroundOpacity = EMPTY,
     powerFillDirection = "standard", powerColorMode = "type", powerColor = Copy(P.mana),
     powerTextShow = false, powerText = "percent", powerTextSize = 9, powerTextAlign = "CENTER", powerTextX = 0, powerTextY = 0,
     -- Out of range, dead and offline members fade.

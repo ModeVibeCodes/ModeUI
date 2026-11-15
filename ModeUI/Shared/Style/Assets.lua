@@ -26,7 +26,9 @@ Style.ASSETS = {
     RingSheen = { file = "Borders\\RingSheen" },
     -- Bars.
     Solid = { file = "Bars\\Solid", lsm = "Mode Solid" },
-    Matte = { file = "Bars\\Matte", lsm = "Mode Matte" },
+    Matte = { file = "Bars\\Matte", fill = "MatteBase", lift = "MatteLift", lsm = "Mode Matte" },
+    MatteBase = { file = "Bars\\MatteBase" },
+    MatteLift = { file = "Bars\\MatteLift" },
     BG = { file = "Bars\\BG", lsm = "Mode BG" },
     Gradient = { file = "Bars\\Gradient", fill = "Solid", lift = "GradientLift", lsm = "Mode Gradient" },
     GradientLift = { file = "Bars\\GradientLift" },
@@ -59,6 +61,18 @@ for _, name in ipairs(Style.ICONS) do Style.ASSETS["Icon" .. name] = { file = "I
 
 -- The bar textures every picker offers, in menu order ("Mode" heading, short names).
 Style.BAR_TEXTURES = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield" }
+
+-- The asset behind a bar texture choice ("media:Mode <Name>"), and its key.
+local byMedia
+function Style.MediaAsset(choice)
+    if type(choice) ~= "string" then return end
+    if not byMedia then
+        byMedia = {}
+        for key, asset in pairs(Style.ASSETS) do if asset.lsm then byMedia["media:" .. asset.lsm] = key end end
+    end
+    local key = byMedia[choice]
+    if key then return Style.ASSETS[key], key end
+end
 
 function Style.AssetPath(key)
     local asset = Style.ASSETS[key]

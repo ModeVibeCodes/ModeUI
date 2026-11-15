@@ -110,6 +110,35 @@ world.run([[
     bar:SetTextureKey("NoSuchTexture"); assert(bar.textureKey == "Matte")
     assert(Style.Bar(host, { role = "power" }).textureKey == "Gradient", "power is Mode Gradient")
     assert(Style.Bar(host, { role = "cast" }).textureKey == "Cast", "cast bars are Mode Cast")
+    -- Matte draws its base with the sheen lift; health and power empty parts are see-through.
+    assert(bar:SetTextureKey("Matte") == nil and bar.lift:IsShown() and bar.lift.texture == Style.AssetPath("MatteLift"), "Matte has a sheen")
+    assert(math.abs(bar.bg.vertexColor[4] - Tone.emptyAlpha) < 1e-9 and Tone.emptyAlpha == 0.6, "see-through health empty part")
+    assert(Style.Bar(host, { role = "cast" }).bg.vertexColor[4] == 1, "cast bars stay solid")
+    assert(Style.SameColor(Tone.darkFill, Style.Hex("1C1D1C")), "the dark fill")
+    -- Module bars (Kit.BarForeground): a Mode texture with a lift draws its base
+    -- and the white lift on the sheen, over the fill; others hide the sheen.
+    assert(Style.MediaAsset("media:Mode Glass") == Style.ASSETS.Glass and select(2, Style.MediaAsset("media:Mode Matte")) == "Matte")
+    assert(Style.MediaAsset("media:Other") == nil and Style.MediaAsset(nil) == nil)
+    local kbar = addon.Kit.Bar(host)
+    addon.Kit.BarForeground(kbar, "media:Mode Glass", 20, 1)
+    assert(kbar.statusBarTexture == Style.AssetPath("GlassBase") and kbar.sheen:IsShown() and kbar.sheen.texture == Style.AssetPath("GlassLift"), "Glass base + lift")
+    assert(kbar.sheen.points[1][2] == kbar:GetStatusBarTexture() and kbar.liftKey == "Glass", "the lift covers the fill")
+    -- The lift fades with the fill's opacity (a hook on SetStatusBarColor).
+    local hooks = {}
+    hooksecurefunc = hooksecurefunc or function(t, name, hook)
+        local old = t[name]; hooks[#hooks + 1] = name
+        t[name] = function(...) old(...); hook(...) end
+    end
+    local fbar = addon.Kit.Bar(host)
+    addon.Kit.BarForeground(fbar, "media:Mode Matte", 20, 1)
+    fbar:SetStatusBarColor(0.1, 0.1, 0.1, 0.4)
+    assert(fbar.sheen:GetAlpha() == 0.4, "the lift fades with the fill")
+    addon.Kit.BarForeground(fbar, "flat", 20, 1)
+    assert(fbar.sheen:GetAlpha() == 1, "a texture without a lift resets the sheen")
+    addon.Kit.BarForeground(kbar, "media:Mode BG", 20, 1)
+    assert(not kbar.sheen:IsShown() and kbar.liftKey == nil, "BG has no lift")
+    addon.Kit.BarForeground(kbar, "mode", 20, 1)
+    assert(kbar.sheen:IsShown() and kbar.sheen.points[1][2] ~= kbar:GetStatusBarTexture(), "the older Mode Gradient sheen anchors back to the bar")
     bar:SetFill(Tone.reaction.hostile)
     bar:SetSpark(true); assert(bar.head:IsShown() and not bar.endLine:IsShown(), "a spark replaces the end line")
     bar:SetSpark(false); assert(not bar.head:IsShown() and bar.endLine:IsShown())

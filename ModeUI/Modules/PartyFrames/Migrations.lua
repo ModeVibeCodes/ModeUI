@@ -150,6 +150,12 @@ local function MigrateV5(db)
     if addon.Style.SameColor(db.auraNoTypeColor, Kit.BORDER_COLOR) then db.auraNoTypeColor = Copy(M.defaults.auraNoTypeColor) end
 end
 
+-- Version 6 -> 7: empty bars still solid (100) take the semi-transparent 60.
+local function MigrateV6(db)
+    if db.backgroundOpacity == 100 then db.backgroundOpacity = 60 end
+    if db.powerBackgroundOpacity == 100 then db.powerBackgroundOpacity = 60 end
+end
+
 -- A tracked group's spells: whole spell IDs, each once, at most MAX_TRACKED_SPELLS.
 local function ValidateSpells(spells, group)
     assert(#spells <= M.MAX_TRACKED_SPELLS, "Too many tracked spells: " .. group)
@@ -197,6 +203,7 @@ function M.Initialize(db)
     if db.version == 3 then MigrateV3(db); db.version = 4 end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
+    if db.version == 6 then MigrateV6(db); db.version = 7 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid party frame settings version")
     for key, default in pairs(M.defaults) do

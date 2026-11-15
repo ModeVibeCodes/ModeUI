@@ -36,7 +36,9 @@ addon:RegisterModule("nameplates", M)
 -- in SemiBold, Bold health text colored by health, Geist with one shadow.
 -- Version 10: auras wear the frameThin edge (Border Size 1 or 2, 1 by
 -- default; Corners retire), and auras without a type keep the Gunmetal metal.
-M.VERSION = 10
+-- Version 11: semi-transparent empty bars (Slate at 60%).
+M.VERSION = 11
+local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
 M.kinds = { "enemy", "friendly" }
@@ -73,7 +75,7 @@ local function Style(kind)
         width = enemy and 140 or 120, healthHeight = enemy and 12 or 8, castHeight = enemy and 12 or 8,
         healthColorMode = "reaction", healthColor = Copy(P.green), threatColors = enemy,
         -- Colors are used as they are; the bar and its background each fade.
-        healthOpacity = 100, backgroundOpacity = 100,
+        healthOpacity = 100, backgroundOpacity = EMPTY,
         -- Bar textures: Mode BG fill on Mode BG (Slate), and Mode Cast for the cast bar.
         foregroundTexture = "media:Mode BG", backgroundTexture = "media:Mode BG", castTexture = "media:Mode Cast",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),

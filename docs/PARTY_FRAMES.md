@@ -28,7 +28,11 @@ member is:
   textures, **Bar Opacity**, **Background Opacity** and **Fill**; **Power
   Text** (Percent, Percent No Sign or Current) with alignment, size, offset
   and nudges.
-- **Health color**: Class Color (default), Dark or Custom. Power: by power
+- **Health color**: Class Color (default), Dark (`#1C1D1C`) or Custom.
+  Mode textures with light (Glass, Matte, Gradient) draw their white lift over
+  the fill, so it reads on dark fills too. Empty bars are Slate at 60%
+  (Background Opacity) with no black plate behind them; the plate returns
+  only when both empty bars are at 100%. Power: by power
   type or Custom.
 - **Incoming Heals** (Bars tab): ride on the end of the health fill, with
   Show, Texture, Color and Opacity.
@@ -164,7 +168,7 @@ still show only in a party.
 
 ## Saved settings
 
-`ModeUIDB` profile `modules.partyFrames` (version 6) and the position
+`ModeUIDB` profile `modules.partyFrames` (version 7) and the position
 `positions.partyFrames`. Version 1 settings migrate: frames still at the old
 default size (34 health, 5 power) take the new one, Buffs becomes Healing
 Buffs in its place, Debuffs' place goes to every debuff type and Other
@@ -183,7 +187,8 @@ Size and the shield and overshield textures, colors and opacities retire.
 Version 4 settings migrate: health still on Mode Gradient takes Mode Glass,
 and the shield look settings arrive at the standard look. Version 5 settings
 migrate to the aura edge: Border Size 3 becomes 2 and the old no-type rim
-takes the Gunmetal one.
+takes the Gunmetal one. Version 6 settings migrate: health and power
+Background Opacity still at 100 takes the see-through 60.
 
 ## In-game check
 

@@ -171,8 +171,9 @@ world.run([==[
     assert(M and addon.modules.partyFrames == M and M.category == 'frames' and M.defaultEnabled == false)
     assert(not M.enabled and M.header == nil and M.ghost == nil, 'off by default; nothing built')
     -- The Mode design language: Geist, Mode Glass on Mode BG, 150 x 34 + 3, Gradient names.
-    assert(M.db.version == 6 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
+    assert(M.db.version == 7 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
     assert(M.db.shieldsTexture == 'Shield' and M.db.shieldsColorMode == 'health' and M.db.shieldsOpacity == 100, 'the standard shield look')
+    assert(M.db.backgroundOpacity == 60 and M.db.powerBackgroundOpacity == 60, 'see-through empty bars')
     assert(M.db.nameShow and M.db.nameAnchor == 'LEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
     assert(M.db.spacing == 1 and M.db.auras.dispellable.show and M.db.auras.magic.filter == 'notMine' and M.db.auras.tracked1.spells[1] == nil)
     assert(M.db.healthHeight == 34 and M.db.width == 150 and M.db.powerHeight == 3 and M.db.borderStyle == nil and M.db.corner == nil)
@@ -211,6 +212,14 @@ world.run([==[
     -- The group edge round the bars' area: a 1px rim, nothing masked.
     assert(p1.panel.edge.preset == 'group' and p1.geometry.border == 1 and #(p1.health:GetStatusBarTexture().masks or {}) == 0)
     assert(Point(p1.health)[2] == p1.panel.inner, 'the bars fill the area inside the rim')
+    -- Mode Glass draws its base with the white lift over the fill; the empty
+    -- part is Slate at 60% with no black plate behind it.
+    local S = addon.Style
+    assert(p1.health.statusBarTexture == S.AssetPath('GlassBase') and p1.health.sheen:IsShown() and p1.health.sheen.texture == S.AssetPath('GlassLift'), 'Glass base + lift')
+    assert(Point(p1.health.sheen)[2] == p1.health:GetStatusBarTexture(), 'the lift follows the fill')
+    assert(math.abs(p1.health.bg.vertexColor[4] - 0.6) < 1e-6 and p1.panel.back.vertexColor[4] == 0, 'see-through, no plate')
+    assert(M:SetOption('healthColorMode', 'default') and p1.health.statusBarColor[1] == S.Tone.darkFill[1] and S.Hex('1C1D1C')[2] == S.Tone.darkFill[2], 'Dark is #1C1D1C')
+    assert(M:SetOption('healthColorMode', 'class'))
     assert(p1.alphaFromBoolean and p1.alphaFromBoolean[1].label == 'range' and p1.alphaFromBoolean[3] == 0.55, 'secret range via SetAlphaFromBoolean')
     assert(M.members[1]:GetAlpha() == 1 and M.members[3]:GetAlpha() == 1, 'you and members in range stay opaque')
     -- Class color by default.
@@ -623,7 +632,7 @@ pf.auras = { buffs = { show = true, filter = 'mine', anchor = 'TOPLEFT', place =
     max = 3, perRow = 3, spacing = 2, shape = 'square', border = 'type', timer = true, timerText = true, count = true, tooltip = true } }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local db = addon.PartyFrames.db
-    assert(db.version == 6 and db.healthHeight == 34 and db.powerHeight == 3 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
+    assert(db.version == 7 and db.healthHeight == 34 and db.powerHeight == 3 and db.width == 150 and db.spacing == 1, 'old defaults move, picked values stay')
     local heals = db.auras.heals
     assert(heals.anchor == 'TOPLEFT' and heals.width == 20 and heals.height == 16 and heals.filter == 'mine' and heals.border == 'mode' and heals.size == nil)
     for _, group in ipairs({ 'magic', 'curse', 'disease', 'poison', 'bleed', 'otherDebuffs' }) do
@@ -634,7 +643,7 @@ H.Load({ before = STUBS, saved = v1 }).run([==[
     -- Version 3: Dispellable by You takes the Magic group's place, first in its row.
     local d = db.auras.dispellable
     assert(d.anchor == 'BOTTOMRIGHT' and d.place == 'outside' and d.grow == 'down' and d.width == 16 and d.filter == 'mine' and d.show)
-    assert(db.powerOpacity == 100 and db.powerBackgroundOpacity == 100 and db.auras.tracked1.spells[1] == nil)
+    assert(db.powerOpacity == 100 and db.powerBackgroundOpacity == 60 and db.auras.tracked1.spells[1] == nil)
     assert(db.dispelHighlight == nil and db.dispel.Magic.gradient and not db.dispel.Magic.border, 'fill became the gradient')
 ]==], "party_v1")
 
@@ -650,7 +659,7 @@ p3.healthTextAnchor, p3.healthTextX, p3.healthTextY, p3.healthTextSize = 'TOP', 
 p3.dispel = { Magic = { border = true, health = false, gradient = false }, Curse = { border = true, health = true, gradient = false } }
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local db, M = addon.PartyFrames.db, addon.PartyFrames
-    assert(db.version == 6 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
+    assert(db.version == 7 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
     assert(db.borderStyle == nil and db.corner == nil and db.shieldTexture == nil and db.absorbColor == nil and db.overshieldOpacity == nil, 'retired')
     assert(db.foregroundTexture == 'media:Mode Glass' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode Geist')
     assert(db.liftedShadow == false and db.nameColorMode == 'custom' and db.rangeOpacity == 55, 'a picked name color stays')
@@ -667,7 +676,7 @@ for _, case in ipairs({ { 'media:Mode Gradient', 'media:Mode Glass' }, { 'media:
     p4.version, p4.foregroundTexture = 4, case[1]
     p4.shieldsTexture, p4.shieldsColorMode, p4.shieldsColor, p4.shieldsOpacity = nil, nil, nil, nil
     local loaded = H.Load({ before = STUBS, saved = v4 })
-    loaded.run("local db = addon.PartyFrames.db; assert(db.version == 6 and db.foregroundTexture == '" .. case[2] ..
+    loaded.run("local db = addon.PartyFrames.db; assert(db.version == 7 and db.foregroundTexture == '" .. case[2] ..
         "' and db.shieldsTexture == 'Shield' and db.shieldsOpacity == 100, 'v4 -> v5: ' .. db.foregroundTexture)", "party_v4")
 end
 
@@ -679,9 +688,18 @@ p5.version, p5.auras.magic.borderSize, p5.auras.curse.borderSize = 5, 3, 1
 p5.auraNoTypeColor = { 64 / 255, 69 / 255, 76 / 255 }
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.PartyFrames.db
-    assert(db.version == 6 and db.auras.magic.borderSize == 2 and db.auras.curse.borderSize == 1, 'size 3 becomes 2')
+    assert(db.version == 7 and db.auras.magic.borderSize == 2 and db.auras.curse.borderSize == 1, 'size 3 becomes 2')
     assert(addon.Style.SameColor(db.auraNoTypeColor, addon.Style.Tone.gunmetal.mid), 'the Gunmetal no-type rim')
 ]==], "party_v5")
+
+-- Version 6 -> 7: solid empty bars (100) take the see-through 60; picked values stay.
+local v6 = world.saved()
+local p6 = v6.profiles.Default.modules.partyFrames
+p6.version, p6.backgroundOpacity, p6.powerBackgroundOpacity = 6, 100, 35
+H.Load({ before = STUBS, saved = v6 }).run([==[
+    local db = addon.PartyFrames.db
+    assert(db.version == 7 and db.backgroundOpacity == 60 and db.powerBackgroundOpacity == 35, '100 becomes 60')
+]==], "party_v6")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

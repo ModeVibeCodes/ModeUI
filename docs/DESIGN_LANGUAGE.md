@@ -44,8 +44,8 @@ Two neutral ramps. Frames and buttons use **Mono**, windows and panels use
 
 | Token | Value | Use |
 |---|---|---|
-| `darkFill` | `#1C1C1C` (Graphite `#1D1D1F`) | dark-mode health fill |
-| `slate` | `#474747` | every empty bar, behind every fill |
+| `darkFill` | `#1C1D1C` (Graphite `#1D1D1F`) | dark-mode health fill (every "Dark"/"Default" health color) |
+| `slate` | `#474747` at 60% (`emptyAlpha`) | every empty bar, behind every fill; semi-transparent |
 | `ivory` | `#EFE6D2` | main accent: highlights, selected tabs, card titles, primary buttons |
 | `celadon` | `#B4CDB6` | specialty accent; ON |
 | `rosewood` | `#CF6A6F` | specialty accent: focus, priority, destructive; OFF |
@@ -94,7 +94,17 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
 
 - **Empty part:** Mode BG on Slate, for every bar (unit, group, nameplates,
   cast, tracked, power, status). Never tinted, class-colored bars included.
-- **Fill textures:** dark-mode health Mode Matte (Mode BG alternate); class
+  Health and power empty parts are semi-transparent (60%, `emptyAlpha`): no
+  black plate sits behind them, so the world shows through the gray. Modules
+  offer the opacity; cast bars stay solid.
+- **Light:** a fill texture with a lift (Matte, Gradient, Button, Glass, Cast,
+  Panel) draws as its base multiplied by the fill color plus the white lift
+  over the fill on its own layer, in every module (not the single baked file,
+  whose light the multiply would darken away on dark fills). The baked files
+  are only for other addons.
+- **Fill textures:** dark-mode health Mode Matte (a soft top-down gradient
+  with a gentle sheen: a faint top line and a light band fading out by the
+  middle; Mode BG alternate); class
   health Mode Gradient; nameplates Mode BG or Mode Gradient; cast bars Mode
   Cast; power Mode Gradient everywhere; meter bars Mode Panel.
 - **Fill end:** a 1px white line at 70% where the fill stops, except on bars
@@ -178,7 +188,7 @@ A hybrid window built one-to-one from the study:
 - **Back:** the rail's home icon, "‹ All modules", the wordmark, or Esc (module
   → main panel → close). Esc works through `UISpecialFrames`, so it also works
   in combat without capturing the keyboard.
-- **Cards:** a Mode Matte face in Graphite raised inside the `card` border, an
+- **Cards:** a Mode Matte face (its base, without the bar sheen) in Graphite raised inside the `card` border, an
   11px uppercase Ivory title, labels above controls, cards 10px apart. Pages
   not yet rebuilt show their existing cards as tiles two across (one column in
   the split view, which widens to fit them); a rebuilt page sets `cardColumns`

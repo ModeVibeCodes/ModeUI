@@ -5,6 +5,23 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Textures that read in game (layout version 23)
+
+- Health in its Default color is the dark fill `#1C1D1C` (`Style.Tone.darkFill`),
+  lighter than the old Onyx `#131212`, so the texture shows.
+- Mode textures with light (Matte, Gradient, Glass, Button, Cast, Panel)
+  draw their base times the bar color plus the white lift over the fill
+  (`Style.ApplyBarLook` through `Kit.BarForeground`), as the previews do,
+  instead of the single baked file whose light the dark color hid.
+- Mode Matte has a soft sheen: a faint top line and a light band fading out
+  by the middle.
+- Empty bars are Slate at 60% (Background Opacity, health and power) with no
+  black plate behind them, so the world shows through the gray; the plate
+  returns only when both empty bars are at 100%.
+
+Version 22 to 23 moves Background Opacity still at 100 to 60, on the health
+and power bars; other values stay.
+
 ## Text by kind, outlined cast text, a whiter Gradient
 
 - The Text tab: Font and Colors, then a tile per kind of text (Name, Level,

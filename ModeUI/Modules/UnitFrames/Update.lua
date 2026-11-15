@@ -40,8 +40,8 @@ function M:HealthColor(unit, identity)
     local fdb = self:FrameDB(unit)
     local mode = fdb.healthColorMode
     if mode == "custom" then return fdb.healthColor end
-    if mode == "class" then return identity or self:IdentityColor(unit) or ONYX.health end
-    return ONYX.health
+    if mode == "class" then return identity or self:IdentityColor(unit) or Style.Tone.darkFill end
+    return Style.Tone.darkFill
 end
 function M:NameColor(unit, identity)
     local fdb = self:FrameDB(unit)

@@ -87,7 +87,9 @@ function M:ApplyLayout(f, unit)
     panel.inner:ClearAllPoints()
     panel.inner:SetPoint("TOPLEFT", panel, "TOPLEFT", g.border, -g.border)
     panel.inner:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -g.border, g.border)
-    panel.back:ClearAllPoints(); panel.back:SetAllPoints(panel.inner); Style.Paint(panel.back, Tone.shadow)
+    -- The black plate only behind solid empty bars: see-through ones show the world.
+    local solid = fdb.barBackgroundOpacity >= 100 and (not fdb.showPower or fdb.powerBackgroundOpacity >= 100)
+    panel.back:ClearAllPoints(); panel.back:SetAllPoints(panel.inner); Style.Paint(panel.back, Tone.shadow, solid and 1 or 0)
     local level = panel:GetFrameLevel()
     local h, pw = f.health, f.power
     h:ClearAllPoints()
