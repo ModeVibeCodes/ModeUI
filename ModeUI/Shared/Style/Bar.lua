@@ -98,9 +98,13 @@ local Comet = {}
 Comet.__index = Comet
 function Style.Comet(statusBar)
     local comet = setmetatable({ bar = statusBar }, Comet)
-    comet.trail = statusBar:CreateTexture(nil, "OVERLAY", nil, 3)
+    -- Clipped to the bar's ends (1px taller each way, for the head), so at a
+    -- cast's start the head never shows outside the bar.
+    comet.clip = CreateFrame("Frame", nil, statusBar)
+    comet.clip:SetClipsChildren(true)
+    comet.trail = comet.clip:CreateTexture(nil, "OVERLAY", nil, 3)
     Style.ApplyAsset(comet.trail, "CometTrail")
-    comet.head = statusBar:CreateTexture(nil, "OVERLAY", nil, 4)
+    comet.head = comet.clip:CreateTexture(nil, "OVERLAY", nil, 4)
     Style.ApplyAsset(comet.head, "CometHead")
     return comet
 end
@@ -108,6 +112,10 @@ function Comet:Layout(reverse, px)
     local fill = self.bar:GetStatusBarTexture()
     if not fill then return end
     px = px or Style.Pixel(self.bar)
+    self.clip:ClearAllPoints()
+    self.clip:SetPoint("TOPLEFT", self.bar, "TOPLEFT", 0, px)
+    self.clip:SetPoint("BOTTOMRIGHT", self.bar, "BOTTOMRIGHT", 0, -px)
+    self.clip:SetFrameLevel(self.bar:GetFrameLevel() + 1)
     local side = reverse and "LEFT" or "RIGHT"
     self.head:ClearAllPoints()
     self.head:SetPoint("TOP", fill, "TOP" .. side, 0, px)
@@ -123,7 +131,7 @@ function Comet:SetColor(color)
     local trail = Style.Lighten(color, 0.45)
     self.trail:SetVertexColor(trail[1], trail[2], trail[3], 1)
 end
-function Comet:SetShown(shown) self.head:SetShown(shown); self.trail:SetShown(shown) end
+function Comet:SetShown(shown) self.clip:SetShown(shown) end
 function Bar:SetEndLine(shown) self.showEndLine = shown and true or false; self:LayoutStyle() end
 
 -- Positions the end line and the spark on the fill's leading edge, in whole pixels.

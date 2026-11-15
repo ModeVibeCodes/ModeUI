@@ -76,12 +76,13 @@ function Style.Shield(bar)
     shield.fullLight = shield.full:CreateTexture(nil, "ARTWORK", nil, 6)
     Style.ApplyAsset(shield.fullLight, "Solid")
     shield.fullLight:SetVertexColor(1, 1, 1, OVERFLOW_LIGHT)
-    -- The finish line on the shield's end, and its glow.
-    shield.finish = shield.attached:CreateTexture(nil, "OVERLAY", nil, 2)
+    -- The finish line on the shield's end, and its glow, inside the clip that
+    -- follows the shield's fill: an empty shield (no width) shows no line.
+    shield.finish = shield.attachedClip:CreateTexture(nil, "OVERLAY", nil, 2)
     Style.ApplyAsset(shield.finish, "Solid")
-    shield.finishGlow = shield.attached:CreateTexture(nil, "OVERLAY", nil, 1)
+    shield.finishGlow = shield.attachedClip:CreateTexture(nil, "OVERLAY", nil, 1)
     Style.ApplyAsset(shield.finishGlow, "LineGlow")
-    shield.fullFinish = shield.full:CreateTexture(nil, "OVERLAY", nil, 2)
+    shield.fullFinish = shield.fullClip:CreateTexture(nil, "OVERLAY", nil, 2)
     Style.ApplyAsset(shield.fullFinish, "Solid")
     for _, frame in ipairs({ shield.attached, shield.full }) do
         frame:SetFrameLevel(bar:GetFrameLevel() + 1)

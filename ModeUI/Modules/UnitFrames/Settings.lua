@@ -228,6 +228,7 @@ function M:CreateConfigPage(parent)
     -- then its look. A matched Target takes Show Portrait from the Player.
     Tab("Portrait", function()
         When(function() return db().showPortrait end, function()
+            page:Group("Portrait")
             Choice("Portrait Style", "portraitStyle"); Choice("Portrait Side", "portraitSide")
             -- A share of the bar block's height, so it grows and shrinks with the bars.
             Slider("Portrait Size", "portraitScale", "%")

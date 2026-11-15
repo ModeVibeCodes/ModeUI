@@ -90,6 +90,21 @@ function M:ResetFrame(unit)
     for key in pairs(self.identityKeys) do frame[key] = self.db[unit][key] end
     return Commit(self, unit, frame)
 end
+-- Every frame, with its cast bar, auras, status and texts, and the class
+-- resource back to the defaults (the settings footer's Reset). Positions stay
+-- with Edit Mode.
+function M:ResetToDefaults()
+    if not self:CanConfigure() then return false end
+    local copy = Copy(self.db)
+    for _, unit in ipairs(self.units) do copy[unit] = Copy(self.frameDefaults[unit]) end
+    copy.comboPoints = Copy(self.comboDefaults)
+    if not pcall(self.Initialize, copy) then return false end
+    for _, unit in ipairs(self.units) do self.db[unit] = copy[unit] end
+    self.db.comboPoints = copy.comboPoints
+    self:Refresh()
+    if self.page then self.page:Refresh(); self.page:Layout() end
+    return true
+end
 function M:CopyStyle(from, to)
     if not self:CanConfigure() or not self.labels[from] or not self.labels[to] or from == to then return false end
     local frame = Copy(self.db[from])

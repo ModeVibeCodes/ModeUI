@@ -68,9 +68,9 @@ world.run([[
     assert(window.layout=='strip' and window.rail:IsShown() and not window.sidebar:IsShown() and not window.previewPane:IsShown())
     assert(window.selectedCategory=='frames' and window.pages.unitFrames:IsShown() and not window.pages.unitFrames.previewSplit)
     assert(window.pages.unitFrames.previewArea:GetParent()==window.pages.unitFrames and window.pages.unitFrames.cardColumns==4,'preview strip and tiles four across')
-    assert(window.railButtons.unitFrames.selected and not window.resetButton:IsShown())
+    assert(window.railButtons.unitFrames.selected and window.resetButton:IsShown(),'Unit Frames resets to its defaults')
+    addon:SelectConfigPage('nameplates');assert(window.layout=='strip' and not window.resetButton:IsShown())
     assert(select(2,window.editButton:GetPoint(1))==window.doneButton,'without Reset, Edit Mode sits beside Done')
-    addon:SelectConfigPage('nameplates');assert(window.layout=='strip')
     addon:SelectConfigPage('actionBars');assert(window.layout=='strip','one bar at a time: a strip')
     -- Tall previews: the settings column beside the live preview.
     for _,id in ipairs({'partyFrames'}) do

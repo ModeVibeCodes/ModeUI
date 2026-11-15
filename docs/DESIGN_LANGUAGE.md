@@ -114,11 +114,12 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
 - **Geist everywhere** (Regular, Medium, SemiBold, Bold; static TTF, OFL),
   numbers included. Inter only for special cases. CJK clients fall back to
   Blizzard's font.
-- Shadow 1px offset (1, −1) at 95% black; OUTLINE only as a player choice.
-- **Names:** subtle Gradient is standard (class or reaction color fading to 74%
-  class + 26% white across the name, one color per letter; names Forever
-  returns as secret fall back to Soft class). Options: Soft class (55% class +
-  45% white), White.
+- One shadow: 1px offset (1, −1) at 95% black (no second, lifted copy);
+  OUTLINE only as a player choice.
+- **Names:** in SemiBold, and the Gradient is standard (class or reaction
+  color fading to 60% class + 40% white across the name, one color per letter;
+  names Forever returns as secret fall back to Soft class). Options: Soft class
+  (55% class + 45% white), White.
 - **Placement:** the name sits on the top border, 9px in from the side
   opposite the portrait, lifted so the rim runs near its baseline. Health is
   right-aligned inside the health bar (padded past a portrait on that side).
@@ -127,7 +128,7 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
 
 | Element | Size |
 |---|---|
-| Player, target | 184 wide; 34 health + 1 + 3 power; portrait 66, overlapping, Steel Sheen ring, no gap |
+| Player, target | 184 wide; 34 health + 1 + 3 power; portrait ring 140% of the bar block (58px), overlapping, Steel Sheen, no gap, the image cropped a little toward the face over a dark disc |
 | Target of target, focus, pet | 22 health + 3 power, 12px text; no portrait by default |
 | Boss | 24 health + 3 power; no portrait by default |
 | Cast bar under a frame | 14px with icon, 1–2px below (default 2), edges on the frame's edges; with a portrait it starts where the ring ends |

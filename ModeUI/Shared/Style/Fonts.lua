@@ -24,6 +24,13 @@ function Style.FontPath(weight)
     return BASE .. (Style.FONT_WEIGHTS[weight or "regular"] or "Regular") .. ".ttf"
 end
 
+-- `path` in another Geist weight when it is one of the Geist files; any other
+-- font is returned unchanged (a player's own font keeps its one weight).
+function Style.Weighted(path, weight)
+    if type(path) == "string" and path:sub(1, #BASE) == BASE then return Style.FontPath(weight) end
+    return path
+end
+
 -- Sets a font string to Geist at `size` (UI units) with `flags` ("" by
 -- default; "OUTLINE" or "THICKOUTLINE" only as a player choice). Falls back
 -- to Blizzard's font if the client refuses the file.

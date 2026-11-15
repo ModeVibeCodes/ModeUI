@@ -42,14 +42,19 @@ function Style.Ring(host, diameter, rim)
     Style.ApplyAsset(sheen, "RingSheen")
     sheen:SetAllPoints()
     sheen:SetVertexColor(1, 1, 1, 0.22)
+    -- A dark disc under the portrait: nothing behind shows through its edges.
+    local back = frame:CreateTexture(nil, "ARTWORK", nil, -1)
+    Style.ApplyAsset(back, "Circle")
+    Style.Paint(back, Tone.mono.panel)
     local portrait = frame:CreateTexture(nil, "ARTWORK")
     portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", rim * px, -rim * px)
     portrait:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -rim * px, rim * px)
+    back:SetAllPoints(portrait)
     local mask = frame:CreateMaskTexture()
     mask:SetTexture(Style.AssetPath("Circle"), "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:SetAllPoints(portrait)
     portrait:AddMaskTexture(mask)
-    ring.disc, ring.sheen, ring.portrait, ring.mask = disc, sheen, portrait, mask
+    ring.disc, ring.sheen, ring.portrait, ring.mask, ring.back = disc, sheen, portrait, mask, back
     return ring
 end
 

@@ -9,6 +9,8 @@ if not M then return end
 -- under its dropdown. The Text tab holds the general text settings (names,
 -- font). Built by CreateConfigPage (Settings.lua) with its helpers in `ui`.
 local ROWS = { { "topLeft", "top", "topRight" }, { "left", "center", "right" }, { "bottomLeft", "bottom", "bottomRight" } }
+-- One tile per row of spots, so the tiles spread across the page's columns.
+local ROW_TITLES = { "Top Text", "Middle Text", "Bottom Text" }
 local CELL_HEIGHT = 92
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -166,12 +168,13 @@ function M:BuildTextSpots(ui, part)
         Spots(M.powerSlots, { M.textSlotLabels.powerLeft, M.textSlotLabels.powerCenter, M.textSlotLabels.powerRight })
         return
     end
-    page:Group("Text")
-    for _, row in ipairs(ROWS) do
+    for index, row in ipairs(ROWS) do
+        page:Group(ROW_TITLES[index])
         local titles = {}
         for i, slot in ipairs(row) do titles[i] = M.textSlotLabels[slot] end
         Spots(row, titles)
     end
+    page:Group("Name on the Border")
     local border = Spots({ "border", false, false }, { M.textSlotLabels.border, "Border Alignment", "" })
     local align = ui.SelectIn(border[2], 200, function() return M.choices.textAlign end, function() return Slots().border.align end,
         function(v) M:SetTextOption(ui.Editing(), "border", "align", v) end)

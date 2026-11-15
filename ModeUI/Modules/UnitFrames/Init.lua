@@ -64,7 +64,9 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 20: the Mode design language (docs/DESIGN_LANGUAGE.md): 3px power,
 -- Mode Matte health, Mode Gradient power, Mode Cast casts, Mode BG empty bars,
 -- Geist, Gradient names, the Steel Sheen ring, 2px cast gap, Combined shields.
-M.LAYOUT_VERSION = 20
+-- Version 21 (owner's in-game check): Portrait Size 140, the single Mode text
+-- shadow (no lifted copy), the cast bar icon on the portrait side.
+M.LAYOUT_VERSION = 21
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -127,7 +129,7 @@ local function Frame(side, extra)
         -- A 1px light line where the health fill ends.
         fillEdge = true,
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
-        portraitScale = 165, -- portrait diameter as a % of the bar block
+        portraitScale = 140, -- portrait diameter as a % of the bar block
         portraitRing = "border", portraitRingColor = Copy(M.ACCENT),
         -- The color of names in text slots (TextSlots.lua places every text).
         nameColorMode = "gradient", nameColor = Copy(M.ACCENT),
@@ -138,7 +140,8 @@ local function Frame(side, extra)
         font = "game", fontMedia = "Mode Geist", outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
         -- a lighter second shadow 2px out (owner, layout version 11).
-        liftedShadow = true, textColor = Copy(M.palette.text),
+        -- The Mode text shadow only: one crisp 1px shadow (docs/DESIGN_LANGUAGE.md).
+        liftedShadow = false, textColor = Copy(M.palette.text),
         -- Target of Target and Target of Focus only: attached to their parent frame.
         attach = false, attachPoint = "bottomright", attachOffsetX = 0, attachOffsetY = -2,
         -- Which way health and power fill (and drain). The Target runs the
@@ -180,7 +183,7 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 -- Each frame's cast bar (owner, November 13, 2026), in db[unit].castBar: a
 -- box with the frame's rim and gap under (or over) the bar block, its bar
 -- lined up with the health bar. On for the Player, Target and Focus.
-M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 2, icon = "far",
+M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 2, icon = "near",
     fullWidth = true, width = 160,
     foregroundTexture = "media:Mode Cast", backgroundTexture = "media:Mode BG",
     showText = true, showTimer = true, fontSize = 10, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }

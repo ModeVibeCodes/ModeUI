@@ -108,7 +108,9 @@ function M:LayoutTexts(f, unit)
         local justify = place.h or align
         text:ClearAllPoints()
         if shown then
-            Font(text, fdb, s.size, path, g.px)
+            -- Names in the font's SemiBold when it is Geist (docs/DESIGN_LANGUAGE.md, "Text").
+            local named = self.contentKind[s.content] == "name" and s.content ~= "level"
+            Font(text, fdb, s.size, named and addon.Style.Weighted(path, "semibold") or path, g.px)
             if place.bar == "border" then self:PlaceOnBorder(f, g, text, s, dx, near, sign)
             else
                 PlaceInBar(f, g, place, text, s, dx, near, sign)
@@ -148,6 +150,8 @@ function M:WriteNames(f, unit, name, level, identity)
         if styled then
             local white = addon.Style.Tone.mono.white
             text:SetTextColor(white[1], white[2], white[3], 1); Write(text, styled)
+            -- The lift is a black copy: color codes would show through it.
+            if text.lift then text.lift:SetText(name) end
         elseif content == "name" then Write(text, name)
         elseif content == "level" then Write(text, level)
         elseif level == "" then Write(text, name)

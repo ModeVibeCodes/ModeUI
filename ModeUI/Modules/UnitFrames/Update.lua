@@ -88,7 +88,11 @@ end
 function M:PaintPortrait(f, unit, sampleUnit)
     local fdb = self:FrameDB(unit)
     if not fdb.showPortrait then return end
-    Portrait.Apply(f.portrait.icon, sampleUnit or unit, fdb.portraitStyle)
+    -- Character portraits: cropped 10% at the sides and bottom, 4% at the top,
+    -- so the face fills the ring a little more.
+    if Portrait.Apply(f.portrait.icon, sampleUnit or unit, fdb.portraitStyle) == "portrait" then
+        f.portrait.icon:SetTexCoord(0.1, 0.9, 0.04, 0.84)
+    end
 end
 
 function M:PaintSample(g, unit)

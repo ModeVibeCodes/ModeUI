@@ -290,6 +290,20 @@ local function MigrateV19(db)
     end
 end
 
+-- Version 20 -> 21, from the owner's in-game check: Portrait Size 165 -> 140,
+-- the lifted second shadow off, the cast bar icon on the portrait side.
+local function MigrateV20(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" and Public(frame) then
+            if frame.portraitScale == 165 then frame.portraitScale = 140 end
+            if frame.liftedShadow == true then frame.liftedShadow = false end
+            local cast = frame.castBar
+            if type(cast) == "table" and Public(cast) and cast.icon == "far" then cast.icon = "near" end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -308,7 +322,8 @@ function M.Initialize(db)
     if db.layoutVersion == 16 then MigrateV16(db); db.layoutVersion = 17 end
     if db.layoutVersion == 17 then MigrateV17(db); db.layoutVersion = 18 end
     if db.layoutVersion == 18 then MigrateV18(db); db.layoutVersion = 19 end
-    if db.layoutVersion == 19 then MigrateV19(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 19 then MigrateV19(db); db.layoutVersion = 20 end
+    if db.layoutVersion == 20 then MigrateV20(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

@@ -68,7 +68,7 @@ end
 function Style.Lighten(color, amount) return Style.Mix({ 1, 1, 1 }, color, amount) end
 
 -- Names: subtle Gradient end (74% color + 26% white) and Soft class (55% + 45%).
-function Style.GradientEnd(color) return Style.Mix(color, { 1, 1, 1 }, 0.74) end
+function Style.GradientEnd(color) return Style.Mix(color, Tone.mono.white, 0.6) end
 function Style.Soft(color) return Style.Mix(color, { 1, 1, 1 }, 0.55) end
 
 -- True when `color` is (within rounding) `reference`: migrations move saved

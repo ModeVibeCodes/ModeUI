@@ -5,6 +5,29 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## After the first in-game check (layout version 21)
+
+- Portrait Size 140 (a 58px ring on the 42px block); the portrait image is
+  cropped a little toward the face (texture coordinates 0.1–0.9 across,
+  0.04–0.84 down) and sits on a dark disc, so nothing behind shows through.
+- One text shadow: the lifted second copy is off by default (it doubled the
+  text); when turned on, its copy of a Gradient name carries no color codes.
+- Names in Geist SemiBold when the frame's font is Geist (`Style.Weighted`);
+  the Gradient runs 40% toward white.
+- The cast bar icon sits on the portrait side; the Comet spark is clipped to
+  the bar, so it never shows past the bar's start.
+- The shield's finish lines live inside the clip that follows the shield's
+  fill, so an empty shield (and full health with no shield) shows no line.
+- Reset in the settings footer returns every frame, its cast bar, auras,
+  status and texts, and the class resource to the defaults
+  (`M:ResetToDefaults`); Edit Mode keeps the positions.
+- Settings: the text spots are four tiles (Top, Middle and Bottom Text, Name
+  on the Border) and the Portrait tab three (Portrait, Status Icons, Combat
+  Ring).
+
+Version 20 to 21 changes Portrait Size 165 to 140, turns the lifted shadow
+off, and moves a far-side cast icon to the portrait side.
+
 ## The Mode look (layout version 20)
 
 November 2026, the Mode design language (`docs/DESIGN_LANGUAGE.md`). The
