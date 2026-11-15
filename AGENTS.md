@@ -1,9 +1,12 @@
 # ModeUI — Forever only
 
 - This repository is the home for Mode's custom interface modules for WoW Forever.
-  Edit the addon in `ModeUI/`; companion addons (`ModeUI_<Name>/`, the first is
-  `ModeUI_CooldownManager`) sit beside it and need it. Play The Game Tools is a
-  separate addon and repo.
+  Edit the addon in `ModeUI/`; companion addons sit beside it and need it. The
+  first is `ModeCDM/` (the Cooldown Manager; the owner named it): its module
+  runs inside ModeUI's addon table (ModeUI-Core `Companion`), keeps its
+  settings in `ModeUIDB` and nests under ModeUI in the AddOn list
+  (`## Group: ModeUI`). See "Companion addons" in `docs/ARCHITECTURE.md`. Play
+  The Game Tools is a separate addon and repo.
 - **Work in progress: the Mode redesign.** Status, the owner's decisions and the
   phase plan are in `docs/MODE_REDESIGN.md`; read it before continuing.
 - **The look is the Mode design language, `docs/DESIGN_LANGUAGE.md`.** Every
@@ -37,7 +40,9 @@
   folder with `<Name>.xml` (listed in the TOC), `Init.lua` loaded first, and
   `Driver.lua`. Code two modules need belongs in `Shared/`; modules never use each
   other's files. Files stay under 400 lines. Settings pages are built only when opened.
-- Keep `ModeUI/ModeUI.toc` load order correct. No placeholder functionality.
+- Keep `ModeUI/ModeUI.toc` and each companion's TOC load order correct (a
+  companion loads `Core.lua` first and `Start.lua` last). No placeholder
+  functionality.
 - Run every test: `lua tests/<name>.lua` for each file in `tests/` except
   `harness.lua`, `wow_mock.lua`, `design_legacy.lua` and the `*_stubs.lua` helpers.
   New modules start from `docs/module-template`. Do not claim native testing without

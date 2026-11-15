@@ -5,11 +5,16 @@ local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "
 local metadata = H.Toc()
 assert(metadata.SavedVariables == "ModeUIDB", "own SavedVariables")
 assert(metadata["X-ModeUI-Edition"] == "Forever" and metadata.Interface == "16001")
+-- ModeCDM, the Cooldown Manager's companion addon: needs ModeUI, sits under it
+-- in the AddOn list (## Group), keeps no saved variables of its own.
+local cdm = H.Toc("ModeCDM")
+assert(cdm.Dependencies == "ModeUI" and cdm.Group == "ModeUI" and cdm.Interface == metadata.Interface, "ModeCDM depends on ModeUI and groups under it")
+assert(cdm.SavedVariables == nil and cdm.Title:find("ModeCDM", 1, true) and cdm.Version == metadata.Version, "ModeCDM: settings in ModeUIDB, same version")
 
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,cooldownManager,tooltip,bags,minimap,unitFrames,nameplates,partyFrames')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,bags,minimap,unitFrames,nameplates,partyFrames,cooldownManager')
     -- Sidebar order and captions (docs/DESIGN_LANGUAGE.md): Interface, Panels, System.
     assert(table.concat(addon.categoryOrder,',')=='frames,interface,global' and addon.categories.frames.title=='Interface'
         and addon.categories.interface.title=='Panels' and addon.categories.global.title=='System')

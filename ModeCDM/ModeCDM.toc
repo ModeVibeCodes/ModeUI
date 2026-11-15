@@ -1,0 +1,14 @@
+## Interface: 16001
+## Title: |cff00f0ffModeCDM|r
+## Notes: The Cooldown Manager for ModeUI: Blizzard's Cooldown Manager in the Mode look, custom bars and resource bars. Its settings live in ModeUI's profiles. /mcdm
+## Author: Mode
+## Version: 0.1.0-beta.1
+## Dependencies: ModeUI
+## Group: ModeUI
+## IconTexture: Interface\AddOns\ModeUI\Media\Textures\Mode\Icons\Cooldowns
+## X-ModeUI-Edition: Forever
+## X-License: MIT
+
+Core.lua
+Modules\CooldownManager\CooldownManager.xml
+Start.lua

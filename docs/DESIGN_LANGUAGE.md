@@ -303,6 +303,7 @@ Menus group them under "Mode" with the short name.
 
 ## Companion addons
 
-Companion addons (the first is `ModeUI_CooldownManager`) need ModeUI, use its
-design system through the `ModeUI-Core` LibStub API, keep their settings in
-`ModeUIDB`, and follow this file exactly like a module does.
+Companion addons (the first is `ModeCDM`, the Cooldown Manager) need ModeUI,
+draw with its design system (their modules run inside ModeUI's addon table),
+keep their settings in `ModeUIDB`, and follow this file exactly like a module
+does.

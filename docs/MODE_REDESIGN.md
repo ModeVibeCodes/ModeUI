@@ -3,8 +3,9 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 15, 2026 (local `main` at
-the Action Bars rebuild, settings v6).
+machine or in a new session. Last updated November 15, 2026 (branch
+`t3/mode-phase-6-cooldown-manager`: the Cooldown Manager rebuild, settings v5,
+and the ModeCDM companion addon; not yet merged or pushed).
 
 ## Goal
 
@@ -30,7 +31,7 @@ before the next starts.
 | 4 | Settings window: hybrid window, widgets, page layouts, tile packing | Done, confirmed |
 | 5 | Frames: Unit Frames, Party Frames, Nameplates | Done, confirmed |
 | 5b | Texture retune after in-game look (see below) | Done, confirmed |
-| 6 | Bars and buttons: **Action Bars** (done, confirmed), then **Cooldown Manager** | Next: Cooldown Manager |
+| 6 | Bars and buttons: **Action Bars** (done, confirmed), then **Cooldown Manager** (built, now the ModeCDM addon) | Waiting on the owner's in-game check of the Cooldown Manager |
 | 7 | Windows and panels: Skin layer + Windows, Chat, Damage Meters, Tooltip, Bags, Minimap | Not started (all probe designs approved) |
 | 8 | Cleanup: delete legacy border systems and palettes | Not started |
 | 9 | Release 0.2.0: notes, notices | Only with the owner's go-ahead |
@@ -55,6 +56,17 @@ before the next starts.
   outside each button, Mode Button face, Ivory hover line, Celadon proc rim,
   Mode icon tints (range, power, unusable), Geist Bold texts. See
   `docs/ACTION_BARS.md`.
+- **Cooldown Manager** (settings version 5, built November 15; in-game check
+  pending): icons 40 x 34 / 32 x 28 in the `frameThin` edge outside the icon
+  (the approved probe), a Mode Button face, Spacing between the shadows,
+  Border glows as a Mode Empty rim swap (Celadon procs and buffs, Ivory active
+  and ready), Rosewood out of range, Geist Bold texts; Tracked Bars 220 x 16 in
+  Mode Gradient on Mode BG with the Comet spark in your class color; Resource
+  Bars in the `frameThin` edge, Mode BG at 60%. Ships as the companion addon
+  **ModeCDM** (`ModeCDM/`), nested under ModeUI in the AddOn list. See
+  `docs/COOLDOWN_MANAGER.md` and "Companion addons" in `docs/ARCHITECTURE.md`.
+  A provenance audit (November 15) found no code from other authors in it;
+  its racial spell list follows Blizzard's `TrackedCooldowns.lua`.
 
 ### Texture retune (owner's in-game feedback, November 15)
 
@@ -78,15 +90,12 @@ The owner may keep tuning textures; expect small edits to
 
 ## Next steps, in order
 
-1. **Cooldown Manager** (rest of Phase 6). The probe design in
-   `probes/ModeUI_ProbeBars/CooldownManager.lua` is approved. Decision 1: the
-   Cooldown Manager keeps its own window (`/mcdm`) and later becomes the
-   companion addon `ModeUI_CooldownManager`, reading the main addon's settings
-   through the `ModeUI-Core` LibStub API. It still uses the legacy slot art
-   (`Shared/Kit/Slot.lua`: `Kit.SlotArt`, `Kit.PaintSlotArt`); move it to the
-   `frame` edge the way Action Bars did (`Modules/ActionBars/Skin.lua`,
-   `Layout.lua`'s `g.reach`). After it, delete
-   `probes/ModeUI_ProbeBars` (its Action Bars half is already built).
+1. **Cooldown Manager in-game gate** (rest of Phase 6). Built and split out
+   as ModeCDM; the owner checks it in game (the manual check is in
+   `docs/COOLDOWN_MANAGER.md`, plus the AddOn list nesting). Once confirmed,
+   delete `probes/ModeUI_ProbeBars` (both halves are built), its
+   `tests/probes.lua` entry and its copy in the game's AddOns folder, then
+   fast-forward `main`.
 2. **Phase 7**, one module per gate, from `probes/ModeUI_ProbePanels`
    (approved): the Skin layer and Windows module, then Chat, Damage Meters,
    Tooltip, Bags, Minimap (each module's current behavior is in its own doc).
@@ -106,8 +115,11 @@ The owner may keep tuning textures; expect small edits to
 
 From the plan's "Decisions for you" (owner's answers):
 
-1. **Cooldown Manager window:** stays a separate window, later a companion
-   addon (`ModeUI_CooldownManager`) reading the main addon's settings.
+1. **Cooldown Manager window:** stays a separate window, and ships as a
+   companion addon. The owner named it **ModeCDM** (November 15): it shows as
+   its own entry nested under ModeUI in the AddOn list, and its options and
+   settings stay linked with ModeUI (`ModeUIDB`, ModeUI's Edit Mode and
+   profiles).
 2. **New coverage** (Pet, Boss, Arena and Raid frames, Buffs and Debuffs, XP and
    reputation, breath timer, Loot, Objective Tracker, Extra Action button):
    recommended after Phases 0-9, one at a time, most wanted first. **Open:**
@@ -204,7 +216,7 @@ Owner preferences gathered along the way:
 2. Read `AGENTS.md`, this file, `docs/DESIGN_LANGUAGE.md` and
    `docs/ARCHITECTURE.md`.
 3. Run the whole test suite; it should pass.
-4. To test in game, link or copy `ModeUI/` into WoW Forever's
+4. To test in game, link or copy `ModeUI/` and `ModeCDM/` into WoW Forever's
    `Interface/AddOns/`. For probes, run `tools/build_probes.ps1` and extract
    the zips from `dist/probes/` into the same folder.
 5. Start the next step above on a new branch.

@@ -129,7 +129,6 @@ Modules\Windows\Windows.xml
 Modules\Chat\Chat.xml
 Modules\DamageMeters\DamageMeters.xml
 Modules\ActionBars\ActionBars.xml
-Modules\CooldownManager\CooldownManager.xml
 Modules\Tooltip\Tooltip.xml
 Modules\Bags\Bags.xml
 Modules\Minimap\Minimap.xml

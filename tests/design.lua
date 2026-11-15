@@ -36,11 +36,18 @@ local function Count(text, rule)
     return total
 end
 
-local files = H.Files()
+-- ModeUI's files, then each companion's as "<Companion>/<path>".
+local files, source = H.Files(), {}
+for _, companion in ipairs(H.COMPANIONS) do
+    for _, path in ipairs(H.Files(companion)) do
+        files[#files + 1] = companion .. "/" .. path
+        source[companion .. "/" .. path] = H.Dir(companion) .. path
+    end
+end
 local found = {}
 for _, path in ipairs(files) do
     if not Exempt(path) then
-        local text = H.Read(H.addonDir .. path)
+        local text = H.Read(source[path] or (H.addonDir .. path))
         for _, rule in ipairs(RULES) do
             local n = Count(text, rule)
             if n > 0 then found[path] = found[path] or {}; found[path][rule.id] = n end

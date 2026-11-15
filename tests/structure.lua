@@ -14,9 +14,10 @@ local ASSET_DIRECTORIES = { Media = true }
 local failures = {}
 local function Fail(message) failures[#failures + 1] = message end
 
--- Every file under the addon folder, relative to it with forward slashes.
-local function ListFiles()
-    local root = H.addonDir:gsub("[/\\]$", "")
+-- Every file under an addon folder (ModeUI's by default), relative to it
+-- with forward slashes.
+local function ListFiles(dir)
+    local root = (dir or H.addonDir):gsub("[/\\]$", "")
     -- The first output line is the folder's absolute path; the listing follows.
     local command
     if package.config:sub(1, 1) == "\\" then
@@ -39,8 +40,8 @@ end
 
 local function TopDirectory(path) return path:match("^([^/]+)/") end
 local function ModuleOf(path) return path:match("^Modules/([^/]+)/") end
-local function CountLines(path)
-    local text = H.Read(H.addonDir .. path)
+local function CountLines(path, dir)
+    local text = H.Read((dir or H.addonDir) .. path)
     local _, count = text:gsub("\n", "")
     if text ~= "" and text:sub(-1) ~= "\n" then count = count + 1 end
     return count
@@ -155,6 +156,50 @@ end
 if firstOther and lastLib > firstOther then Fail("Libs/ files must load before everything else") end
 if position["Shared/Runtime/Boot.lua"] and position["Shared/Runtime/Boot.lua"] ~= #files then
     Fail("Shared/Runtime/Boot.lua must be the last file loaded")
+end
+
+-- Companion addons (docs/ARCHITECTURE.md, "Companion addons"): <Name>.toc
+-- needing ModeUI and grouped under it, Core.lua first (ModeUI's addon table
+-- from ModeUI-Core) and Start.lua last, module folders like ModeUI's, every
+-- file loaded once, the same line budget; ModeUI-Core lists the name.
+local api = H.Read(H.addonDir .. "Shared/Runtime/API.lua")
+for _, companion in ipairs(H.COMPANIONS) do
+    local dir = H.Dir(companion)
+    local meta, entries = H.Toc(companion)
+    if meta.Dependencies ~= "ModeUI" then Fail(companion .. ".toc must list ## Dependencies: ModeUI") end
+    if meta.Group ~= "ModeUI" then Fail(companion .. ".toc must list ## Group: ModeUI (the AddOn list nests it under ModeUI)") end
+    if not api:find("%f[%w]" .. companion .. " = true") then Fail("ModeUI-Core's COMPANIONS must list " .. companion) end
+    local list, by = H.Files(companion)
+    local at = {}
+    for index, file in ipairs(list) do
+        if at[file] then Fail(companion .. "/" .. file .. " is loaded twice") end
+        at[file] = at[file] or index
+    end
+    if list[1] ~= "Core.lua" then Fail(companion .. "/Core.lua must load first") end
+    if list[#list] ~= "Start.lua" then Fail(companion .. "/Start.lua must load last") end
+    local tocSet, folders = {}, {}
+    for _, entry in ipairs(entries) do tocSet[entry] = true end
+    for _, file in ipairs(ListFiles(dir)) do
+        local lua = file:match("%.lua$")
+        if lua and not at[file] then Fail(companion .. "/" .. file .. " is never loaded by its TOC or an XML include") end
+        local name = file:match("^Modules/([^/]+)/")
+        if name then folders[name] = true
+        elseif lua and file ~= "Core.lua" and file ~= "Start.lua" then Fail(companion .. "/" .. file .. ": code belongs in Modules/<Name>/") end
+        if lua and CountLines(file, dir) > LINE_BUDGET then Fail(companion .. "/" .. file .. " is over " .. LINE_BUDGET .. " lines") end
+    end
+    for name in pairs(folders) do
+        local folder = "Modules/" .. name .. "/"
+        if not tocSet[folder .. name .. ".xml"] then Fail(companion .. "/" .. folder .. name .. ".xml must be listed in " .. companion .. ".toc") end
+        if not at[folder .. "Init.lua"] or not at[folder .. "Driver.lua"] then Fail(companion .. "/" .. folder .. " needs Init.lua and Driver.lua") end
+        local first
+        for index, file in ipairs(list) do
+            if file:sub(1, #folder) == folder then
+                first = first or index
+                if by[index]:sub(1, #folder) ~= folder then Fail(companion .. "/" .. file .. " must be loaded by its module's XML") end
+            end
+        end
+        if first and list[first] ~= folder .. "Init.lua" then Fail(companion .. "/" .. folder .. "Init.lua must load first") end
+    end
 end
 
 if #failures > 0 then

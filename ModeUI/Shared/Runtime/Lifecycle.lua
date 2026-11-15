@@ -26,8 +26,14 @@ addon:RegisterCategory("frames", { title = L["Interface"] })
 addon:RegisterCategory("interface", { title = L["Panels"] })
 addon:RegisterCategory("global", { title = L["System"] })
 
+-- A companion addon's module (module.companion, its addon's name) may
+-- register after startup: the client can run a dependent addon's files after
+-- ModeUI's ADDON_LOADED. It waits in lateModules until the companion's last
+-- file calls StartLateModules.
+addon.lateModules = {}
 function addon:RegisterModule(id, module)
-    assert(not self.initialized, "ModeUI: register modules before initialization.")
+    assert(not self.initialized or (type(module) == "table" and type(module.companion) == "string"),
+        "ModeUI: register modules before initialization.")
     assert(type(id) == "string" and id ~= "", "ModeUI: module ID required.")
     assert(type(module) == "table" and type(module.title) == "string", "ModeUI: module title required.")
     assert(not self.modules[id], "ModeUI: duplicate module ID: " .. id)
@@ -41,6 +47,7 @@ function addon:RegisterModule(id, module)
     module.enabled = false
     self.modules[id] = module
     self.moduleOrder[#self.moduleOrder + 1] = id
+    if self.initialized then self.lateModules[#self.lateModules + 1] = id end
 end
 
 local function Transition(module, enabled)
@@ -53,21 +60,43 @@ local function Transition(module, enabled)
     if not enabled and addon.PreviewStates then addon.PreviewStates:Stop(module.id) end
 end
 
+local function Start(self, id)
+    local module = self.modules[id]
+    local settings = self.db.modules[id]
+    if settings == nil then
+        settings = { enabled = module.defaultEnabled ~= false }
+        self.db.modules[id] = settings
+    end
+    assert(type(settings) == "table", "ModeUI: invalid settings for " .. id)
+    if settings.enabled == nil then settings.enabled = module.defaultEnabled ~= false end
+    assert(type(settings.enabled) == "boolean", "ModeUI: invalid enabled setting for " .. id)
+    module.db = settings
+    if module.OnInitialize then module:OnInitialize() end
+    Transition(module, settings.enabled)
+    if self.SyncModuleDisplayModes then self:SyncModuleDisplayModes(module) end
+end
+
 function addon:InitializeModules()
-    for _, id in ipairs(self.moduleOrder) do
+    for _, id in ipairs(self.moduleOrder) do Start(self, id) end
+end
+
+-- Starts the companion modules that registered after startup. Their saved
+-- settings missed the profile check at startup, so they are checked (and
+-- migrated) now, on a copy that replaces them only when it passes, the way
+-- the profile check does. Bad data stops this module, never ModeUI.
+function addon:StartLateModules()
+    if not self.initialized then return end
+    local pending = self.lateModules
+    self.lateModules = {}
+    for _, id in ipairs(pending) do
         local module = self.modules[id]
-        local settings = self.db.modules[id]
-        if settings == nil then
-            settings = { enabled = module.defaultEnabled ~= false }
-            self.db.modules[id] = settings
-        end
-        assert(type(settings) == "table", "ModeUI: invalid settings for " .. id)
+        local saved = self.db.modules[id]
+        assert(saved == nil or type(saved) == "table", "ModeUI: invalid settings for " .. id)
+        local settings = self.ProfileCodec.Copy(saved or {})
         if settings.enabled == nil then settings.enabled = module.defaultEnabled ~= false end
-        assert(type(settings.enabled) == "boolean", "ModeUI: invalid enabled setting for " .. id)
-        module.db = settings
-        if module.OnInitialize then module:OnInitialize() end
-        Transition(module, settings.enabled)
-        if self.SyncModuleDisplayModes then self:SyncModuleDisplayModes(module) end
+        if module.Initialize then module.Initialize(settings) end
+        self.db.modules[id] = settings
+        Start(self, id)
     end
 end
 

@@ -19,3 +19,13 @@ Core.InCombat = addon.InCombat
 
 -- True once ModeUI has finished loading its settings and modules.
 function Core.Ready() return addon.initialized == true end
+
+-- Companion addons (docs/ARCHITECTURE.md, "Companion addons"): a ModeUI
+-- module shipped as an addon of its own gets ModeUI's addon table, so its
+-- files run exactly as they would inside ModeUI and its settings stay in
+-- ModeUIDB. The one exception to "read only" above, for the names listed
+-- here only (each needs ModeUI in its ## Dependencies); anything else gets nil.
+local COMPANIONS = { ModeCDM = true }
+function Core.Companion(name)
+    if type(name) == "string" and COMPANIONS[name] then return addon end
+end

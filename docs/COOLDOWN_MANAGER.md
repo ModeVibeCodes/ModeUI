@@ -1,7 +1,12 @@
 # Cooldown Manager
 
 November 13, 2026. A **standalone** module: it has its own window, opened
-with **`/mcdm`**, and no page in ModeUI's settings window. Off by default (the
+with **`/mcdm`**, and no page in ModeUI's settings window. Since November 15,
+2026 it ships as its own addon, **ModeCDM** (`ModeCDM/Modules/CooldownManager/`;
+see "Companion addons" in [ARCHITECTURE.md](ARCHITECTURE.md#companion-addons)):
+it needs ModeUI, sits under it in the AddOn list, and keeps its settings in
+ModeUI's profiles. Rebuilt in the Mode design language the same day (settings
+version 5; [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md#cooldown-icons)). Off by default (the
 switch in its window's page header). Only checked against the mock client
 (`tests/cooldown_manager.lua`); **native acceptance is pending**. Its APIs and
 their rules are in
@@ -299,6 +304,25 @@ window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
      and in the preview) and only your race's; it moves to Essential, goes
      away with Off and comes back on Utility; in combat it shows its
      cooldown and goes gray while cooling, with no Lua errors.
+7. ModeCDM and the Mode look (November 15, 2026)
+   - **Navigation:** at the character select screen, click **AddOns**; in
+     game, type `/mcdm`.
+   - **Action:** in the AddOn list, find ModeCDM; enter the world and turn
+     the Cooldown Manager on with the switch at the top right of the
+     `/mcdm` window's page; cast a spell from Essential Cooldowns; click a
+     spell in the preview and switch **Proc Glow** on; click **Tracked
+     Bars** in the list.
+   - **Required state:** ModeUI and ModeCDM both enabled (a full client
+     restart after first adding ModeCDM), the game's Cooldown Manager option
+     on, spells tracked in Blizzard's Cooldown Manager.
+   - **Confirmation:** ModeCDM is listed indented under ModeUI with the
+     cooldowns icon; Essential icons are 40 by 34 with a thin lit gunmetal
+     rim and its shadow outside each icon, 2px apart between the shadows;
+     Utility icons are 32 by 28; cooldown numbers in Geist Bold amber; a
+     proc swaps the rim to Celadon without the icon changing size; an
+     out-of-range spell turns Rosewood; tracked bars are thin Mode Gradient
+     bars in your class color with the comet spark; the Power bar under
+     Utility lines up with Utility's edges. Your earlier settings are kept.
 
 ## Resource Bars
 
