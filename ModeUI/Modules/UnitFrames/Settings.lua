@@ -200,7 +200,7 @@ function M:CreateConfigPage(parent)
         Style(function()
             Toggles({ { "Fill End Line", "fillEdge" }, { "Shields", "showShields" } })
             page:Group("Color")
-            -- Default is Onyx #131212; the empty bar stays the background texture.
+            -- Default is the dark fill #1C1D1C; the empty bar stays the background texture.
             Choice("Health Color", "healthColorMode")
             When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
             page.unitFrameForeground, page.unitFrameBackground, page.unitFrameForegroundOpacity, page.unitFrameBackgroundOpacity =
