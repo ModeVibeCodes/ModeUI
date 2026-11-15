@@ -133,6 +133,21 @@ local function ValidateGroup(value, default, label)
     assert(GROWS[value.grow], "Invalid nameplate aura grow direction: " .. label)
 end
 
+-- Version 8 -> 9: the Mode design language. Values still at their version 8
+-- default take the new one, per kind; anything the player picked stays.
+local V8 = { foregroundTexture = "mode", backgroundTexture = "flat", backgroundOpacity = 55, nameColorMode = "text",
+    fontMedia = "Expressway", liftedShadow = true }
+local function MigrateV8(db)
+    for _, kind in ipairs(M.kinds) do
+        local style, defaults = db[kind], M.styleDefaults[kind]
+        if type(style) == "table" then
+            for key, old in pairs(V8) do if style[key] == old then style[key] = Copy(defaults[key]) end end
+            if addon.Style.SameColor(style.targetColor, Kit.palette.accent) then style.targetColor = Copy(defaults.targetColor) end
+            if addon.Style.SameColor(style.focusColor, addon.Style.LEGACY.nameplateFocus) then style.focusColor = Copy(defaults.focusColor) end
+        end
+    end
+end
+
 local ValidTexture = Kit.ValidBarTexture
 
 local function Validate(style, kind)
@@ -152,6 +167,7 @@ local function Validate(style, kind)
     for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid nameplate choice: " .. kind .. "." .. key) end
     assert(ValidTexture(style.foregroundTexture, true) and ValidTexture(style.backgroundTexture, false), "Invalid nameplate texture: " .. kind)
     assert(style.focusTexture == "default" or ValidTexture(style.focusTexture, true), "Invalid nameplate focus texture: " .. kind)
+    assert(ValidTexture(style.castTexture, true), "Invalid nameplate cast texture: " .. kind)
     for _, group in ipairs(M.auraGroups) do
         ValidateGroup(style[group], M.styleDefaults[kind][group], kind .. "." .. group)
         if FILTERS[group] then assert(FILTERS[group][style[group].filter], "Invalid nameplate aura filter: " .. kind .. "." .. group) end
@@ -168,6 +184,7 @@ function M.Initialize(db)
     if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == 6 then MigrateV6(db); db.version = 7 end
     if db.version == 7 then MigrateV7(db); db.version = 8 end
+    if db.version == 8 then MigrateV8(db); db.version = 9 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

@@ -10,12 +10,19 @@ secret-value rules are in [API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-
 On every nameplate the game gives to addons, ModeUI parents its own plain
 frame and fades Blizzard's art. Each plate has:
 
-- **Health and cast boxes**: a 1px near-black rim (#25282C) and a 1px black gap
-  with rounded corners, then the bar in **Mode Gradient** (ModeUI's only bar
-  texture). Both boxes use the same small-radius rim textures, so they round
-  alike at every size. Insets are whole physical pixels; boxes under 8 units stay square.
-- **Name** and **health text** (Percent, Current Health, Current and Percent, None).
-  All text uses the suite's lifted shadow and Expressway by default.
+- **Health and cast boxes** (docs/DESIGN_LANGUAGE.md, settings version 9 from
+  the approved Nameplates probe): the bar inside the `frameThin` edge (1px
+  Gunmetal, edge-lit, a 1px shadow ring). The rim art sits outside the bar and
+  covers its own corners, so nothing is masked. Health fills in **Mode BG**
+  on Mode BG (Slate); the cast bar has its own **Cast Bar** texture (**Mode
+  Cast**) and the **Comet** spark on the fill's leading edge (a channel's on
+  its left), hidden while an interrupted cast is held.
+- **Name** in Geist SemiBold, in the **Gradient** (the class or reaction color
+  toward white) by default; Class or Reaction and Text Color are options.
+  **Health text** (Percent, Current Health, Current and Percent, None) in Geist
+  Bold, colored **By Health** (Rosewood at 30% and under, through Ivory, to
+  Celadon) or in the Text Color. Cast texts are Geist Bold. One shadow, no
+  lifted copy.
 - **Health color**: Reaction and Class, Reaction, Onyx or Custom, used exactly
   as they are (true colors). **Threat Colors** (enemies, on by default) gives
   each threat status its own color: **Has Aggro** (the enemy is attacking you;
@@ -24,10 +31,9 @@ frame and fades Blizzard's art. Each plate has:
   about to take it; orange). With no threat, or while the game hides threat, the
   plate keeps its health color.
 - **Health Opacity** (100% by default) fades the health fill without changing
-  its color. **Background Opacity** (55% by default) fades only the empty part of
-  the health bar, so the world shows through it; the rim, the fill and the text
-  stay solid. To make that possible the health box draws its rim and gap in four
-  clipped bands around the bar rather than as filled shapes behind it, and the
+  its color. **Background Opacity** (100% by default) fades only the empty part
+  of the health bar, so the world shows through it; the rim, the fill and the
+  text stay solid (the edge draws outside the bar, so nothing sits behind it), and the
   target glow texture is hollow. The cast bar keeps a solid background: a
   channel drains by covering the cast color with the track color.
 - **Textures**: **Foreground** (Mode Gradient by default, Flat, or any SharedMedia
@@ -117,10 +123,10 @@ aura filters decide what belongs to each, so secret aura data is never compared.
 
 ## Target indicator
 
-**Style**: Border (the rims turn the target color; **Border Thickness** up to
-3px), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
+**Style**: Border (the edge's outer line in the target color, Ivory by default,
+on the health and cast boxes; **Border Thickness** 2 or 3 tints the rim too), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
 **Arrow Gap**, up to 48 and 60), Border and Arrows, or None, in a **Color** of
-your choice (cyan by default). Arrows always sit outside the raid marker, the
+your choice (Ivory by default). Arrows always sit outside the raid marker, the
 indicator, any aura row and the combo points on their side. Name Only plates color the
 name for Border and Glow. The target is found by comparing nameplate frames.
 
@@ -152,7 +158,7 @@ bar. A class without combo points sees a note saying so and nothing shows.
 ## Focus
 
 The **Focus** tab styles your focus target's plate: **Highlight** (Border, the
-rims in the focus color; Glow; Stripes, diagonal stripes over the health bar at
+edge's outer line in the focus color, Rosewood by default; Glow; Stripes, diagonal stripes over the health bar at
 **Stripe Opacity**; or None), a **Color** (amber by default), **Focus Texture**
 (Same as Foreground, or any foreground texture) and **Other Plates Opacity**,
 which fades every other plate while you have a focus (100% leaves them alone).
@@ -192,7 +198,10 @@ frames, never secure, so they also work in combat. Settings change outside comba
 
 ## Settings versions
 
-Version 8. Version 1 (one shared set) copies into both kinds; version 2 drops the
+Version 9. Version 8 settings still at their defaults take the Mode ones
+per kind (Mode BG on Mode BG at 100%, the Gradient name, Geist with one
+shadow, the Ivory target and the Rosewood focus); picked values stay, and the
+Cast Bar texture and Health Text Color arrive with their defaults. Version 1 (one shared set) copies into both kinds; version 2 drops the
 retired texture choice; version 3's single aura row becomes the three groups;
 version 4's target highlight switch becomes a target style, and each aura group
 grows the way its anchor did; version 5's Color Softness is removed; version 6's single indicator place and

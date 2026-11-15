@@ -8,7 +8,7 @@ if not M then return end
 --   Left / Center / Right            text: inside the bar; the raid marker: beside it
 --   Bottom Left / Bottom / Bottom Right  below the bar (below the cast bar when it's below)
 -- Name Only draws just the name, centered, with no bars.
-local Kit = addon.Kit
+local Kit, Style = addon.Kit, addon.Style
 
 local function Horizontal(anchor) return anchor:find("LEFT") and "LEFT" or anchor:find("RIGHT") and "RIGHT" or "" end
 
@@ -19,7 +19,7 @@ function M:LayoutPlate(plate)
     local nameOnly = db.display == "name"
     local width, gap = Snap(db.width), 2 * px
     local healthHeight = M.LayoutBox(plate.healthBox, width, Snap(db.healthHeight), px, db.backgroundOpacity / 100, db)
-    local castHeight = M.LayoutBox(plate.castBox, width, Snap(db.castHeight), px, nil, db)
+    local castHeight = M.LayoutBox(plate.castBox, width, Snap(db.castHeight), px, nil, db, db.castTexture)
     plate.castBarHeight, plate.px, plate.nameOnly = castHeight, px, nameOnly
     plate:SetSize(width, healthHeight)
     plate.healthBox:ClearAllPoints(); plate.healthBox:SetPoint("TOPLEFT", plate, "TOPLEFT", 0, 0)
@@ -71,18 +71,21 @@ function M:LayoutPlate(plate)
             text:SetPoint(point, plate.health, point, x + Round(dx), Round(dy))
             text:SetWidth(math.max(px, width - 4 * px))
         end
-        Kit.Font(text, db, size, path, px)
+        -- Names in SemiBold, health text in Bold (Geist weights).
+        local weighted = Style.Weighted(path, text == plate.name and "semibold" or "bold")
+        Kit.Font(text, db, size, weighted, px)
         text:SetJustifyH(justify)
-        Kit.LayoutLift(text, db, size, path, px, shown, justify)
+        Kit.LayoutLift(text, db, size, weighted, px, shown, justify)
         text:SetShown(shown)
     end
     if nameOnly then
         plate.name:ClearAllPoints()
         plate.name:SetPoint("CENTER", plate.healthBox, "CENTER", Round(db.nameX), Round(db.nameY))
         plate.name:SetWidth(width)
-        Kit.Font(plate.name, db, db.nameFontSize, path, px)
+        local semibold = Style.Weighted(path, "semibold")
+        Kit.Font(plate.name, db, db.nameFontSize, semibold, px)
         plate.name:SetJustifyH("CENTER")
-        Kit.LayoutLift(plate.name, db, db.nameFontSize, path, px, true, "CENTER")
+        Kit.LayoutLift(plate.name, db, db.nameFontSize, semibold, px, true, "CENTER")
         plate.name:SetShown(true)
     else
         PlaceText(plate.name, db.nameAnchor, db.nameFontSize, db.showName, db.nameX, db.nameY)

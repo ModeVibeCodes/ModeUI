@@ -118,7 +118,11 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'frames' and not M.enabled, 'registered under Frames, off by default')
-    assert(M.db.version == 8 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 9 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    -- The Mode design language: Mode BG on Mode BG, Mode Cast, Gradient names, health text by health, Geist.
+    assert(M.db.enemy.foregroundTexture == 'media:Mode BG' and M.db.enemy.backgroundTexture == 'media:Mode BG' and M.db.enemy.castTexture == 'media:Mode Cast')
+    assert(M.db.enemy.nameColorMode == 'gradient' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode Geist' and not M.db.enemy.liftedShadow)
+    assert(M.db.enemy.targetColor[1] == addon.Style.Tone.ivory[1] and M.db.enemy.focusColor[1] == addon.Style.Tone.rosewood[1], 'Ivory target, Rosewood focus')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
 
@@ -140,26 +144,21 @@ world.run([==[
     -- Colors: the true hostile reaction color; threat wins when known.
     local hostile = P.hostile
     assert(plate.health.statusBarColor[1] == hostile[1] and plate.health.statusBarColor[4] == 1, 'true hostile color, opaque bar')
-    assert(M.db.enemy.softness == nil and M.db.enemy.healthOpacity == 100 and M.db.enemy.backgroundOpacity == 55, 'opacity defaults')
-    assert(math.abs(plate.health.bg.vertexColor[4] - 0.55) < 1e-9, 'see-through background by default')
+    assert(M.db.enemy.softness == nil and M.db.enemy.healthOpacity == 100 and M.db.enemy.backgroundOpacity == 100, 'opacity defaults')
+    assert(plate.health.bg.vertexColor[4] == 1, 'Mode BG on Slate, solid by default')
     assert(M:SetOption('enemy', 'healthOpacity', 60) and math.abs(plate.health.statusBarColor[4] - 0.6) < 1e-9, 'Health Opacity fades the bar')
     assert(plate.health.statusBarColor[1] == hostile[1], 'fading keeps the color')
     assert(M:SetOption('enemy', 'backgroundOpacity', 20) and math.abs(plate.health.bg.vertexColor[4] - 0.2) < 1e-9, 'Background Opacity')
     assert(not M:SetOption('enemy', 'healthOpacity', 5) and not M:SetOption('enemy', 'backgroundOpacity', 120), 'opacity ranges')
     assert(not M:SetOption('enemy', 'softness', 30), 'Color Softness is gone')
-    assert(M:SetOption('enemy', 'healthOpacity', 100) and M:SetOption('enemy', 'backgroundOpacity', 55))
-    -- The rim and gap sit in four clipped bands around the bar, never behind it.
+    assert(M:SetOption('enemy', 'healthOpacity', 100) and M:SetOption('enemy', 'backgroundOpacity', 100))
+    -- The bar inside the frameThin edge: the rim art sits outside the bar, nothing behind it.
     local box = plate.healthBox
-    assert(#box.bands == 4 and #box.rims == 4 and #box.gaps == 4 and #box.outlines == 4, 'four bands')
-    for i, band in ipairs(box.bands) do
-        assert(band.clipsChildren == true and box.rims[i]:GetParent() == band.layer, 'band ' .. i .. ' clips its copy')
-        assert(box.rims[i].vertexColor[4] == 1 and box.gaps[i].vertexColor[4] == 1, 'solid rim and gap')
-    end
-    assert(box.bar:GetFrameLevel() > box.bands[1]:GetFrameLevel(), 'bar above the bands')
-    local leftTop, topBottom = Point(box.bands[3]), nil
-    for i = 1, box.bands[1]:GetNumPoints() do local p = { box.bands[1]:GetPoint(i) }; if p[1] == 'BOTTOMRIGHT' then topBottom = p end end
-    assert(leftTop[5] > topBottom[5], 'side bands overlap the top band so no seam opens')
-    assert(plate.castBox.bands == nil and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
+    assert(box.edge.preset == 'frameThin' and box.edge.host == box.inner and box.rims == nil and box.bands == nil, 'the frameThin edge')
+    assert(box.edge.holder:GetFrameLevel() > box.bar:GetFrameLevel(), 'edge over the bar')
+    assert(math.abs(box:GetHeight() - (M.db.enemy.healthHeight + 2)) < 1e-9 and Point(box.inner)[4] == 1, 'the bar one rim inside the box')
+    assert(plate.castBox.edge.preset == 'frameThin' and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
+    assert(plate.comet and plate.comet.head and plate.comet.trail, 'the Comet spark on the cast bar')
     -- The indicator reads level, classification and quest from the unit.
     local P1 = plate.indicatorParts
     assert(not P1.level:IsShown() and not P1.quest:IsShown() and M:IndicatorRoom(plate, 'LEFT') == 0, 'nothing known, nothing shown')
@@ -235,9 +234,10 @@ world.run([==[
 
     -- Target highlight compares nameplate frames, never secret units.
     nameplates.target = player; FireEvent('PLAYER_TARGET_CHANGED')
-    assert(p2.targeted and p2.healthBox.rim.vertexColor[3] == P.accent[3] and not plate.targeted, 'target rim')
+    assert(p2.targeted and p2.healthBox.edge.highlight == M:Style(p2).targetColor and not plate.targeted, 'target: the outer line in Ivory')
+    assert(p2.castBox.edge.highlight == M:Style(p2).targetColor and p2.healthBox.edge.tint == nil, 'the cast box too; the rim stays metal')
     nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
-    assert(not p2.targeted and p2.healthBox.rim.vertexColor[1] == Kit.onyx.border[1])
+    assert(not p2.targeted and p2.healthBox.edge.highlight == nil)
 
     -- Combo points (Rogue fixture) live on the target, so they follow its plate:
     -- five sockets, the possibly secret count straight to each socket's SetValue.
@@ -289,21 +289,21 @@ world.run([==[
     assert(not cp:IsShown() and M.comboPlate == nil, 'cleared with the target')
 
     -- Focus: found like the target; a border, glow or stripes, its own texture, fading the others.
-    local amber = M.db.enemy.focusColor
+    local rose = M.db.enemy.focusColor
     nameplates.focus = first; FireEvent('PLAYER_FOCUS_CHANGED')
-    assert(plate.focused and not p2.focused and plate.healthBox.rim.vertexColor[1] == amber[1], 'focus border')
+    assert(plate.focused and not p2.focused and plate.healthBox.edge.highlight == rose, 'focus border')
     assert(p2:GetAlpha() == 1, 'others stay at 100% by default')
     nameplates.target = first; FireEvent('PLAYER_TARGET_CHANGED')
-    assert(plate.healthBox.rim.vertexColor[3] == P.accent[3], 'the target border wins')
+    assert(plate.healthBox.edge.highlight == M.db.enemy.targetColor, 'the target border wins')
     nameplates.target = nil; FireEvent('PLAYER_TARGET_CHANGED')
-    assert(plate.healthBox.rim.vertexColor[1] == amber[1], 'focus border back')
+    assert(plate.healthBox.edge.highlight == rose, 'focus border back')
     assert(M:SetOption('enemy', 'focusStyle', 'stripes') and plate.focusStripes:IsShown() and math.abs(plate.focusStripes.vertexColor[4] - 0.4) < 1e-9, 'stripes')
-    assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and plate.focusStripes.texture == addon.Media:GetTexture('NameplateStripes'), 'stripes only')
+    assert(plate.healthBox.edge.highlight == nil and plate.focusStripes.texture == addon.Media:GetTexture('NameplateStripes'), 'stripes only')
     assert(M:SetOption('enemy', 'focusStyle', 'glow') and plate.focusGlow:IsShown() and not plate.focusStripes:IsShown(), 'glow')
     assert(M:SetOption('friendly', 'focusFadeOthers', 50) and p2:GetAlpha() == 0.5, 'other plates fade')
     assert(M:SetOption('enemy', 'focusTexture', 'flat') and plate.health.statusBarTexture == Kit.FLAT, 'focus texture')
     nameplates.focus = nil; FireEvent('PLAYER_FOCUS_CHANGED')
-    assert(not plate.focused and plate.health.sheen:IsShown() and p2:GetAlpha() == 1 and not plate.focusGlow:IsShown(), 'focus cleared')
+    assert(not plate.focused and plate.healthTexture == M.db.enemy.foregroundTexture and p2:GetAlpha() == 1 and not plate.focusGlow:IsShown(), 'focus cleared')
     assert(not M:SetOption('enemy', 'focusStyle', 'pulse') and not M:SetOption('enemy', 'focusTexture', 'rainbow'), 'refused')
     for _, key in ipairs({ 'focusStyle', 'focusTexture' }) do assert(M:SetOption('enemy', key, M.styleDefaults.enemy[key])) end
     assert(M:SetOption('friendly', 'focusFadeOthers', 100))
@@ -411,13 +411,8 @@ world.run([==[
     assert(not icon:IsShown(), 'gone when the soft target moves on')
     cvars.SoftTargetIconEnemy = '1'
 
-    -- Every bar is Mode Gradient; health and cast boxes share the same rounded rims.
-    local rim, gapTexture = addon.Media:GetTexture('NameplateRim'), addon.Media:GetTexture('NameplateGap')
-    assert(plate.health.statusBarTexture == Kit.FLAT and plate.health.sheen:IsShown() and plate.health.sheen.gradient, 'Mode Gradient health')
-    assert(plate.cast.statusBarTexture == Kit.FLAT and plate.cast.sheen:IsShown(), 'Mode Gradient cast bar')
-    assert(plate.healthBox.rim.texture == rim and plate.healthBox.gap.texture == gapTexture, 'rounded health box')
-    assert(plate.castBox.rim.texture == rim and plate.castBox.gap.texture == gapTexture, 'cast box rounded like the health box')
-    assert(plate.healthBox.rim.vertexColor[1] == Kit.onyx.border[1] and Kit.onyx.border[1] < 0.2, 'near-black rim')
+    -- Health and cast boxes share the frameThin edge.
+    assert(plate.healthBox.edge.preset == plate.castBox.edge.preset and plate.healthBox.edge.rim == 1, 'one edge for both boxes')
     assert(not M:SetOption('enemy', 'texture', 'flat'), 'the old texture key is gone')
     -- One Text Shadow choice drives both shadow keys.
     assert(Kit.ShadowMode({ shadow = true, liftedShadow = true }) == 'lifted' and Kit.ShadowMode({ shadow = true }) == 'crisp'
@@ -450,9 +445,10 @@ world.run([==[
     CreateFont, ModeUISlugFont, ModeUISlugFontOutline = nil, nil, nil
     assert(M:SetOption('enemy', 'slug', false) and M:SetOption('enemy', 'slug', true))
     -- Foreground and background textures, for the health and cast bars.
-    assert(M.db.enemy.foregroundTexture == 'mode' and M.db.enemy.backgroundTexture == 'flat', 'texture defaults')
+    assert(M.db.enemy.foregroundTexture == 'media:Mode BG' and M.db.enemy.backgroundTexture == 'media:Mode BG', 'texture defaults')
     assert(M:SetOption('enemy', 'foregroundTexture', 'flat') and plate.health.statusBarTexture == Kit.FLAT and not plate.health.sheen:IsShown(), 'flat foreground')
-    assert(plate.cast.statusBarTexture == Kit.FLAT and not plate.cast.sheen:IsShown(), 'cast bar follows')
+    assert(M:SetOption('enemy', 'castTexture', 'flat') and plate.cast.statusBarTexture == Kit.FLAT, 'the cast bar has its own texture')
+    assert(not M:SetOption('enemy', 'castTexture', 'slate'), 'slate is a background only')
     assert(M:SetOption('enemy', 'foregroundTexture', 'media:Missing') and plate.health.sheen:IsShown(), 'missing media draws Mode Gradient')
     assert(M:SetOption('enemy', 'backgroundTexture', 'media:Missing') and plate.health.bg.texture == Kit.FLAT, 'missing media draws flat')
     assert(not M:SetOption('enemy', 'foregroundTexture', 'rainbow') and not M:SetOption('enemy', 'backgroundTexture', 'mode'), 'bad textures refused')
@@ -464,8 +460,9 @@ world.run([==[
     assert(M:SetOption('enemy', 'backgroundTexture', 'slate') and plate.health.bg.texture == Kit.FLAT and plate.health.bg.vertexColor[1] == Kit.onyx.slate[1])
     assert(M:SetOption('enemy', 'backgroundTexture', 'slateHatch') and plate.health.bg.texture == addon.Media:GetTexture('ModeSlateHatch'))
     assert(not M:SetOption('enemy', 'foregroundTexture', 'slate'), 'slate is a background only')
-    assert(M:SetOption('enemy', 'foregroundTexture', 'mode') and M:SetOption('enemy', 'backgroundTexture', 'flat'))
-    assert(M:SetOption('enemy', 'castHeight', 4) and plate.castBox.rim.texture == rim, 'small cast bars stay rounded')
+    assert(M:SetOption('enemy', 'foregroundTexture', 'media:Mode BG') and M:SetOption('enemy', 'backgroundTexture', 'media:Mode BG')
+        and M:SetOption('enemy', 'castTexture', 'media:Mode Cast'))
+    assert(M:SetOption('enemy', 'castHeight', 4) and math.abs(plate.castBox:GetHeight() - 6) < 1e-9, 'small cast bars keep their rim')
     assert(M:SetOption('enemy', 'castHeight', 8))
 
     -- Auras: three groups (crowd control, debuffs, buffs), each anchored on its own.
@@ -509,7 +506,6 @@ world.run([==[
     assert(cc1.rim.texture == Kit.FLAT and cc1.rim.snapToPixelGrid == true and cc1.gap.snapToPixelGrid == true, 'sharp, snapped rim')
     assert(M:SetOption('enemy', 'auraCorners', 'rounded') and cc1.rim.snapToPixelGrid == false and cc1.rim.texelSnappingBias == 0, 'rounded slices unsnapped')
     assert(M:SetOption('enemy', 'auraCorners', 'sharp'))
-    assert(plate.healthBox.rim.snapToPixelGrid == false, 'plate rims unsnapped')
     -- Crowd control: Blizzard's GCD flash, looping, in the rim color; other groups none.
     assert(cc1.flash:IsShown() and cc1.flash.atlas == Kit.GCD_FLASH_ATLAS and cc1.flashAnim:IsPlaying(), 'GCD flash plays')
     assert(cc1.flashAnim.looping == 'REPEAT' and cc1.flashAnim.anims[1].kind == 'FlipBook' and cc1.flashAnim.anims[1].SetFlipBookFramesArgs[1] == 22, 'flipbook 22 frames')
@@ -524,16 +520,16 @@ world.run([==[
     assert(M:SetOption('enemy', 'auraBorderSize', 1) and Point(cc1.gap)[4] == 1 and Point(cc1.icon)[4] == 2, '1px rim')
     assert(not M:SetOption('enemy', 'auraBorderSize', 4), 'border size range')
     assert(M:SetOption('enemy', 'auraCCGlow', true) and M:SetOption('enemy', 'auraBorderSize', 2) and cc1.flash:IsShown())
-    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -1, 'crowd control left of the marker: ' .. x .. ',' .. y)
-    x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 32, 'debuffs centered above the name: ' .. x .. ',' .. y)
-    x, y = Corner(A.buffs[1]); assert(x == 182 and y == 2, 'buffs right of the bar: ' .. x .. ',' .. y)
+    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -2, 'crowd control left of the marker: ' .. x .. ',' .. y)
+    x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 30, 'debuffs centered above the name: ' .. x .. ',' .. y)
+    x, y = Corner(A.buffs[1]); assert(x == 182 and y == 1, 'buffs right of the bar: ' .. x .. ',' .. y)
     -- Target arrows sit outside the side aura rows (and the marker).
     assert(plate.auraExtent.LEFT == 47 and plate.auraExtent.RIGHT == 22, 'aura rows reach past the bar')
     -- Moving one group: anchor, offsets, size and count, all validated.
     assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
-    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -41, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
+    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -39, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
     assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 165, 'offset X')
-    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -44, 'offset Y')
+    assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -42, 'offset Y')
     assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
     assert(not M:SetOption('enemy', 'grow', 'sideways', 'debuffs'), 'unknown grow refused')
     assert(not M:SetOption('enemy', 'debuffs', {}) and not M:SetOption('enemy', 'filter', 'all', 'crowdControl'), 'one setting at a time')
@@ -550,7 +546,7 @@ world.run([==[
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'debuffs') and M:SetOption('enemy', 'attach', false, 'debuffs') and Point(plate.name)[5] == nameY)
     assert(M:SetOption('enemy', 'anchor', 'TOP', 'buffs'))
     local dx, dy = Corner(A.debuffs[1]); local bx, by = Corner(A.buffs[1])
-    assert(dx == 70 and dy == 32 and bx == 92 and by == 32, 'one centered row: ' .. dx .. ',' .. dy .. ' ' .. bx .. ',' .. by)
+    assert(dx == 70 and dy == 30 and bx == 92 and by == 30, 'one centered row: ' .. dx .. ',' .. dy .. ' ' .. bx .. ',' .. by)
     assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'buffs'))
     -- Grow directions.
     assert(M:SetOption('enemy', 'filter', 'all', 'debuffs') and M:SetOption('enemy', 'anchor', 'TOPLEFT', 'debuffs'))
@@ -672,10 +668,10 @@ world.run([==[
     local _, height = M:GetPreviewSize(view)
     assert(height == 4 + top + sample:GetHeight() + bottom + 6 + 18, 'preview only as tall as the sample')
     assert(math.abs(sample.width - 180) < 1, 'sample size follows the kind')
-    assert(sample.name.text == 'Enemy Nameplate' and sample.healthText.text == '72%' and sample.health.value == 72)
+    assert(sample.name.text:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '') == 'Enemy Nameplate' and sample.name.text:find('|c', 1, true) and sample.healthText.text == '72%' and sample.health.value == 72)
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
     assert(sample.softTarget:IsShown() and sample.softTarget.texture == 'Interface\\Cursor\\Attack' and top >= sample.softTargetTop, 'sword icon sample, inside the preview')
-    assert(sample.targeted and sample.healthBox.rim.vertexColor[3] == P.accent[3], 'sample target rim')
+    assert(sample.targeted and sample.healthBox.edge.highlight == M.db.enemy.targetColor, 'sample target line')
     assert(sample.castBox:IsShown() and sample.cast.value == 0.6 and sample.castText.text == 'Shadow Bolt')
     local function Shown(p, group)
         local n = 0
@@ -704,7 +700,7 @@ world.run([==[
     -- Settings follow into the sample.
     assert(M:SetOption('enemy', 'healthText', 'both') and sample.healthText.text == '8,640 · 72%', 'preview follows settings')
     -- Target styles.
-    assert(M:SetOption('enemy', 'targetStyle', 'glow') and sample.targetGlow:IsShown() and sample.healthBox.rim.vertexColor[1] == Kit.onyx.border[1], 'glow')
+    assert(M:SetOption('enemy', 'targetStyle', 'glow') and sample.targetGlow:IsShown() and sample.healthBox.edge.highlight == nil, 'glow')
     assert(M:SetOption('enemy', 'targetStyle', 'arrows') and sample.arrows.left:IsShown() and sample.arrows.right:IsShown() and not sample.targetGlow:IsShown(), 'arrows')
     assert(sample.arrows.right.texCoord[1] == 1, 'right arrow mirrored')
     local leftArrow, rightArrow = Point(sample.arrows.left), Point(sample.arrows.right)
@@ -712,8 +708,8 @@ world.run([==[
     assert(rightArrow[4] >= sample.auraExtent.RIGHT + M.db.enemy.targetArrowGap and sample.auraExtent.RIGHT > 0, 'right arrow outside the buffs row')
     assert(M:SetOption('enemy', 'targetArrowGap', 60) and M:SetOption('enemy', 'targetArrowSize', 48) and M:SetOption('enemy', 'targetArrowGap', 4)
         and M:SetOption('enemy', 'targetArrowSize', 12), 'wider arrow ranges')
-    assert(M:SetOption('enemy', 'targetStyle', 'borderArrows') and sample.arrows.left:IsShown() and sample.healthBox.rim.vertexColor[3] == P.accent[3])
-    assert(M:SetOption('enemy', 'targetThickness', 3) and sample.targetOutline:IsShown() and Point(sample.targetOutline)[4] == -2, '3px border')
+    assert(M:SetOption('enemy', 'targetStyle', 'borderArrows') and sample.arrows.left:IsShown() and sample.healthBox.edge.highlight == M.db.enemy.targetColor)
+    assert(M:SetOption('enemy', 'targetThickness', 3) and sample.healthBox.edge.tint == M.db.enemy.targetColor, 'a thicker border tints the rim too')
     assert(M:SetOption('enemy', 'targetStyle', 'none') and not sample.targeted and not sample.arrows.left:IsShown())
     assert(M:SetOption('enemy', 'targetStyle', 'border') and M:SetOption('enemy', 'targetThickness', 1))
     -- Element placement: name, health text, raid marker, cast bar.
@@ -780,7 +776,7 @@ world.run([==[
     local selected = page.selectedSection
     page:SelectSectionTab(6)
     assert(page.selectedSection.title == 'Focus' and sample.focused and not sample.targeted, 'focus sample')
-    assert(sample.healthBox.rim.vertexColor[1] == M.db.enemy.focusColor[1], 'focus border in the sample')
+    assert(sample.healthBox.edge.highlight == M.db.enemy.focusColor, 'focus border in the sample')
     page:SelectSectionTab(selected)
     assert(not sample.focused and sample.targeted, 'target sample again')
     local switch = page.nameplateEditButtons[1]
@@ -880,7 +876,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 8 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 9 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -901,7 +897,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 8 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 9 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -916,7 +912,7 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 8 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 9 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
         assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
@@ -937,7 +933,7 @@ end
 np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 8 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.version == 9 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
     assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
     assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
 ]==], "nameplates_v4")
@@ -951,8 +947,8 @@ np.enemy.healthOpacity, np.enemy.backgroundOpacity = nil, nil
 np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 8 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
-    assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 55 and db.friendly.backgroundOpacity == 55, 'opacity defaults')
+    assert(db.version == 9 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
+    assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 100 and db.friendly.backgroundOpacity == 100, 'opacity defaults (55 then the Mode 100)')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v5")
 
@@ -966,7 +962,7 @@ end
 np.enemy.indicatorAnchor, np.enemy.indicatorX, np.enemy.indicatorY, np.enemy.indicatorSize, np.enemy.indicatorFontSize = 'TOPLEFT', 3, -2, 18, 11
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local e = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 8 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 9 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
     assert(e.questAnchor == 'TOPLEFT' and e.levelAnchor == 'TOPLEFT' and e.classificationX == 3 and e.levelY == -2, 'place carried over')
     assert(e.questSize == 18 and e.classificationSize == 18 and e.levelSize == 11, 'sizes carried over')
 ]==], "nameplates_v6")
@@ -1082,9 +1078,30 @@ np.enemy.auraCCNoTypeColor = { 1, 140 / 255, 40 / 255 }
 np.friendly.auraCCNoTypeColor = { 0.2, 0.4, 0.9 }
 H.Load({ before = STUBS, saved = v7 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 8 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
+    assert(db.version == 9 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
     assert(db.friendly.auraCCNoTypeColor[3] == 0.9, 'a picked color stays')
 ]==], "nameplates_v7")
+
+-- Version 8 -> 9: values at the version 8 defaults take the Mode ones, per
+-- kind; the player's own choices stay.
+local v8 = world.saved()
+np = v8.profiles.Default.modules.nameplates
+np.version = 8
+for _, kind in ipairs({ 'enemy', 'friendly' }) do
+    local s = np[kind]
+    s.foregroundTexture, s.backgroundTexture, s.backgroundOpacity, s.nameColorMode, s.fontMedia, s.liftedShadow = 'mode', 'flat', 55, 'text', 'Expressway', true
+    s.castTexture, s.healthTextColor = nil, nil
+    s.targetColor, s.focusColor = { 216 / 255, 196 / 255, 150 / 255 }, { 1, 181 / 255, 71 / 255 }
+end
+np.friendly.backgroundOpacity, np.friendly.nameColorMode = 40, 'class'
+H.Load({ before = STUBS, saved = v8 }).run([==[
+    local db, Tone, P = addon.Nameplates.db, addon.Style.Tone, addon.Kit.palette
+    local e, f = db.enemy, db.friendly
+    assert(db.version == 9 and e.foregroundTexture == 'media:Mode BG' and e.backgroundTexture == 'media:Mode BG' and e.backgroundOpacity == 100)
+    assert(e.nameColorMode == 'gradient' and e.fontMedia == 'Mode Geist' and e.liftedShadow == false and e.castTexture == 'media:Mode Cast')
+    assert(e.healthTextColor == 'health' and e.focusColor[1] == Tone.rosewood[1], 'old focus amber takes Rosewood')
+    assert(f.backgroundOpacity == 40 and f.nameColorMode == 'class', 'picked values stay')
+]==], "nameplates_v8")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()

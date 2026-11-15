@@ -71,6 +71,10 @@ function Style.Lighten(color, amount) return Style.Mix({ 1, 1, 1 }, color, amoun
 function Style.GradientEnd(color) return Style.Mix(color, Tone.mono.white, 0.5) end
 function Style.Soft(color) return Style.Mix(color, { 1, 1, 1 }, 0.55) end
 
+-- Defaults from before the Mode design language, kept only so migrations can
+-- recognize a saved color that was never changed (Style.SameColor).
+Style.LEGACY = { nameplateFocus = Hex("FFB547") }
+
 -- True when `color` is (within rounding) `reference`: migrations move saved
 -- colors that still equal an old default, and keep anything the player chose.
 function Style.SameColor(color, reference)

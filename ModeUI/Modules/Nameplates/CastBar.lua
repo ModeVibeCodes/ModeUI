@@ -20,7 +20,8 @@ if not M then return end
 -- with "Interrupted" for its spell name, then fades: the hold Blizzard's own
 -- cast bars play (CastingBarFrameAnimsTemplate HoldFadeOutAnim, 1s and a 0.3s
 -- fade).
-local Kit, Domain = addon.Kit, addon.Domain
+local Kit, Domain, Style = addon.Kit, addon.Domain, addon.Style
+local RIM = Style.EDGE_PRESETS.frameThin.rim
 local Cast, UnitColor = Domain.Cast, Domain.UnitColor
 local TIMER_STEP = 0.1
 M.CAST_HOLD, M.CAST_HOLD_FADE = 1, 0.3
@@ -61,7 +62,7 @@ end
 -- Icon, bar and texts inside the cast box; called from LayoutPlate.
 function M:LayoutCast(plate)
     local db, px, path = self:Style(plate), plate.px or 1, plate.fontPath
-    local icon, inner, inset = plate.castIcon, Snap(db.castHeight, px), 2 * px
+    local icon, inner, inset = plate.castIcon, Snap(db.castHeight, px), RIM * px
     local side = db.castIcon
     local ix, iy = math.floor(db.castIconX / px + 0.5) * px, math.floor(db.castIconY / px + 0.5) * px
     icon:ClearAllPoints(); icon:SetSize(inner, inner)
@@ -88,11 +89,15 @@ function M:LayoutCast(plate)
         plate.cast:SetPoint("BOTTOMRIGHT", plate.castBox, "BOTTOMRIGHT", -inset, inset)
     end
     icon:SetShown(side ~= "none")
+    -- The Comet spark rides the fill's leading edge (a channel's on its left).
+    plate.comet:Layout(plate.casting == "channel", px)
     local size = db.castFontSize
+    -- Cast texts in Geist Bold (another font keeps its one weight).
+    local bold = Style.Weighted(path, "bold")
     local function Place(text, justify, shown)
-        Kit.Font(text, db, size, path, px)
+        Kit.Font(text, db, size, bold, px)
         text:SetJustifyH(justify)
-        Kit.LayoutLift(text, db, size, path, px, shown, justify)
+        Kit.LayoutLift(text, db, size, bold, px, shown, justify)
         text:SetShown(shown)
     end
     local line, boxWidth = Snap(size + 2, px), plate.castBox:GetWidth()
@@ -142,6 +147,9 @@ function M:PaintCast(plate, style, channel, notInterruptible, text, texture)
     pcall(Kit.Write, plate.castText, style.castShowText and text or "")
     if not pcall(plate.castIcon.SetTexture, plate.castIcon, texture) then plate.castIcon:SetTexture(nil) end
     plate.casting = channel and "channel" or "cast"
+    plate.comet:Layout(channel, plate.px)
+    plate.comet:SetColor(style.castColor)
+    plate.comet:SetShown(true)
     plate.castBox:Show()
 end
 
@@ -188,7 +196,9 @@ function M:HoldCast(plate)
     if bar.SetReverseFill then bar:SetReverseFill(false) end
     bar:SetMinMaxValues(0, 1); bar:SetValue(1)
     Kit.Tint(bar:GetStatusBarTexture(), style.castInterruptedColor, 1)
-    Kit.Tint(bar.bg, Kit.onyx.track, 1)
+    Kit.Tint(bar.bg, Style.Tone.slate, 1)
+    -- A held bar is full: no spark.
+    plate.comet:SetShown(false)
     Kit.Write(plate.castText, style.castShowText and (INTERRUPTED or "Interrupted") or "")
     Kit.Write(plate.castTimer, ""); Kit.Write(plate.castTarget, "")
     HoldAlpha(plate, 1)

@@ -133,8 +133,9 @@ function M:PaintSample(plate, style, sample, progress)
     local class = sample.class and UnitColor.Class(sample.class)
     self:PaintHealthColor(plate, self:ColorFor(style, class, sample.reaction, nil))
     plate.sampleNameColor = class and { class.r, class.g, class.b } or self.reactionColors[sample.reaction]
-    Kit.Write(plate.name, L[sample.name])
+    plate.nameValue = L[sample.name]
     Kit.Write(plate.healthText, HealthText(style.healthText, sample.health))
+    self:PaintHealthText(plate, sample.health / 100)
     if style.showRaidIcon and sample.raid then RaidIcon.ApplyIndex(plate.raidIcon, sample.raid) else plate.raidIcon:Hide() end
     if style.showSoftTarget and sample.softTarget then plate.softTarget:SetTexture(sample.softTarget); plate.softTarget:Show() else plate.softTarget:Hide() end
     self:PaintIndicator(plate, sample.quest, sample.classification, tostring(sample.level), Level.DifficultyColor(sample.level))

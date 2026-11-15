@@ -1,8 +1,8 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Frames > Nameplates: ModeUI's own plates in the Onyx look, drawn on the
--- game's nameplates. The game keeps placing, stacking and clicking its
+-- Frames > Nameplates: ModeUI's own plates in the Mode design language
+-- (docs/DESIGN_LANGUAGE.md), drawn on the game's nameplates. The game keeps placing, stacking and clicking its
 -- nameplates; ModeUI fades Blizzard's art and draws health, name, cast bar,
 -- auras, raid marker and target highlight. Enemy and friendly plates each have
 -- their own settings. Unit values can be secret and only reach widgets
@@ -11,7 +11,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Combo, SoftTarget, Update, CastBar, Auras, AuraContainers, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Nameplates"], category = "frames", defaultEnabled = false, layout = "strip",
-    configDescription = L["Onyx nameplates with health, names, cast bars, auras and raid markers."],
+    configDescription = L["Mode nameplates with health, names, cast bars, auras and raid markers."],
     modeLayout = { decorateOnly = true } }
 addon.Nameplates = M
 addon:RegisterModule("nameplates", M)
@@ -30,7 +30,11 @@ addon:RegisterModule("nameplates", M)
 -- own anchor, offset and size.
 -- Version 8: the no-type crowd control rim's default moves from orange to
 -- #FF5948; profiles still on the old default follow it.
-M.VERSION = 8
+-- Version 9: the Mode design language: the frameThin edge (the target's
+-- outer line in Ivory, focus in Rosewood), Mode BG fills and empty parts,
+-- Mode Cast cast bars with the Comet spark (Cast Texture), Gradient names
+-- in SemiBold, Bold health text colored by health, Geist with one shadow.
+M.VERSION = 9
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
 M.kinds = { "enemy", "friendly" }
@@ -67,14 +71,14 @@ local function Style(kind)
         width = enemy and 140 or 120, healthHeight = enemy and 12 or 8, castHeight = enemy and 12 or 8,
         healthColorMode = "reaction", healthColor = Copy(P.green), threatColors = enemy,
         -- Colors are used as they are; the bar and its background each fade.
-        healthOpacity = 100, backgroundOpacity = 55,
-        -- Bar textures, for the health and cast bars: Mode Gradient and Flat by default.
-        foregroundTexture = "mode", backgroundTexture = "flat",
+        healthOpacity = 100, backgroundOpacity = 100,
+        -- Bar textures: Mode BG fill on Mode BG (Slate), and Mode Cast for the cast bar.
+        foregroundTexture = "media:Mode BG", backgroundTexture = "media:Mode BG", castTexture = "media:Mode Cast",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
         threatPullingColor = Copy(M.threatPalette.warning),
-        healthText = enemy and "percent" or "none", healthFontSize = 9,
+        healthText = enemy and "percent" or "none", healthFontSize = 9, healthTextColor = "health",
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
-        showName = true, nameFontSize = 10, nameColorMode = "text", nameAnchor = "TOP", nameX = 0, nameY = 0,
+        showName = true, nameFontSize = 10, nameColorMode = "gradient", nameAnchor = "TOP", nameX = 0, nameY = 0,
         showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
         castInterruptedColor = Copy(P.hostile),
         castAnchor = "BOTTOM", castX = 0, castY = enemy and -2 or 0,
@@ -91,9 +95,9 @@ local function Style(kind)
         classificationAnchor = "LEFT", classificationX = 0, classificationY = 0, classificationSize = 14,
         levelAnchor = "LEFT", levelX = 0, levelY = 0, levelSize = 9,
         -- Target indicator: border, glow, arrows, border and arrows, or none.
-        targetStyle = "border", targetColor = Copy(P.accent), targetThickness = 1, targetArrowSize = 12, targetArrowGap = 4,
+        targetStyle = "border", targetColor = Copy(addon.Style.Tone.ivory), targetThickness = 1, targetArrowSize = 12, targetArrowGap = 4,
         -- Focus: a highlight, its own health bar texture, and fading other plates.
-        focusStyle = "border", focusColor = RGB(255, 181, 71), focusStripeOpacity = 40, focusTexture = "default",
+        focusStyle = "border", focusColor = Copy(addon.Style.Tone.rosewood), focusStripeOpacity = 40, focusTexture = "default",
         focusFadeOthers = 100,
         -- Combo points on your target's plate (a Rogue's, or a Cat Form Druid's).
         showCombo = enemy, comboAnchor = "BOTTOM", comboX = 0, comboY = 0, comboSize = 8, comboSpacing = 2,
@@ -110,7 +114,7 @@ local function Style(kind)
         crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),
-        font = "game", fontMedia = "Expressway", outline = false, shadow = true, liftedShadow = true, slug = true,
+        font = "game", fontMedia = "Mode Geist", outline = false, shadow = true, liftedShadow = false, slug = true,
         textColor = Copy(P.text),
     }
 end
@@ -160,7 +164,8 @@ M.choices = {
     healthText = { { id = "percent", label = "Percent" }, { id = "current", label = "Current Health" },
         { id = "both", label = "Current and Percent" }, { id = "none", label = "None" } },
     display = { { id = "plate", label = "Plate" }, { id = "name", label = "Name Only" } },
-    nameColorMode = { { id = "text", label = "Text Color" }, { id = "class", label = "Class or Reaction" } },
+    nameColorMode = { { id = "gradient", label = "Gradient" }, { id = "class", label = "Class or Reaction" }, { id = "text", label = "Text Color" } },
+    healthTextColor = { { id = "health", label = "By Health" }, { id = "text", label = "Text Color" } },
     castAnchor = { { id = "BOTTOM", label = "Below" }, { id = "TOP", label = "Above" } },
     castIcon = { { id = "LEFT", label = "Left" }, { id = "RIGHT", label = "Right" }, { id = "OUTLEFT", label = "Outside Left" },
         { id = "OUTRIGHT", label = "Outside Right" }, { id = "none", label = "Hidden" } },

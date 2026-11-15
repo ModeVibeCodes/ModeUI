@@ -2,25 +2,18 @@ local _, addon = ...
 local M = addon.Nameplates
 if not M then return end
 
--- The target indicator: Border (the rims turn the target color, thicker with
--- Border Thickness), Glow (a soft halo), Arrows (pointing in from both sides),
+-- The target indicator: Border (docs/DESIGN_LANGUAGE.md: the edge's outer
+-- line in the target color, Ivory by default; Border Thickness 2 or 3 tints
+-- the rim too), Glow (a soft halo), Arrows (pointing in from both sides),
 -- Border and Arrows, or None. Name Only plates color the name instead of a
 -- border or glow. The target is found by comparing nameplate frames, never by
 -- a secret unit comparison.
-local Kit, Domain = addon.Kit, addon.Domain
-local ONYX = Kit.onyx
+local Kit, Domain, Style = addon.Kit, addon.Domain, addon.Style
 local GLOW_OUTSET = 12 -- the glow texture's hollow core starts 12 texels in
 
 function M:LayoutTarget(plate)
     local db, px = self:Style(plate), plate.px or 1
     local host = plate.nameOnly and plate.name or plate.healthBox
-    local thickness = (db.targetThickness - 1) * px
-    for _, outline in ipairs(plate.targetOutlines) do
-        outline:ClearAllPoints()
-        outline:SetPoint("TOPLEFT", plate.healthBox, "TOPLEFT", -thickness, thickness)
-        outline:SetPoint("BOTTOMRIGHT", plate.healthBox, "BOTTOMRIGHT", thickness, -thickness)
-        M.SkinRounded(outline, "NameplateRim", true)
-    end
     plate.targetGlow:ClearAllPoints()
     plate.targetGlow:SetPoint("TOPLEFT", host, "TOPLEFT", -GLOW_OUTSET, GLOW_OUTSET)
     plate.targetGlow:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", GLOW_OUTSET, -GLOW_OUTSET)
@@ -53,10 +46,10 @@ function M:PlaceArrows(plate)
 end
 
 -- The name's color when it isn't the target: the class or reaction color for
--- Name Only and Class or Reaction names, the text color otherwise.
+-- Name Only, Gradient and Class or Reaction names, the text color otherwise.
 function M:NameColor(plate)
     local db = self:Style(plate)
-    if plate.nameOnly or db.nameColorMode == "class" then
+    if plate.nameOnly or db.nameColorMode ~= "text" then
         local color = plate.sampleNameColor or (plate.unit and self:IdentityColor(plate))
         if color then return color end
     end
@@ -69,13 +62,13 @@ function M:PaintTarget(plate, targeted)
     local border = targeted and (style == "border" or style == "borderArrows")
     local glow = targeted and style == "glow"
     local arrows = targeted and (style == "arrows" or style == "borderArrows")
-    local rim = (border and not plate.nameOnly) and color or self:FocusRimColor(plate) or ONYX.border
-    for _, texture in ipairs(plate.healthBox.rims) do Kit.Tint(texture, rim, 1) end
-    for _, texture in ipairs(plate.castBox.rims) do Kit.Tint(texture, rim, 1) end
-    local outlined = border and not plate.nameOnly and db.targetThickness > 1
-    for _, outline in ipairs(plate.targetOutlines) do
-        outline:SetShown(outlined)
-        Kit.Tint(outline, color, 1)
+    -- The outer line: the target's, else the focus's; a thicker target
+    -- border tints the rim as well.
+    local outer = (border and not plate.nameOnly) and color or self:FocusRimColor(plate)
+    local rim = (border and not plate.nameOnly and db.targetThickness > 1) and color or nil
+    for _, box in ipairs({ plate.healthBox, plate.castBox }) do
+        box.edge:SetHighlight(outer)
+        box.edge:SetTint(rim)
     end
     plate.targetGlow:SetShown(glow and not plate.nameOnly)
     Kit.Tint(plate.targetGlow, color, 0.85)
@@ -83,9 +76,45 @@ function M:PaintTarget(plate, targeted)
         arrow:SetShown(arrows)
         Kit.Tint(arrow, color, 1)
     end
-    local name = (plate.nameOnly and (border or glow)) and color or self:NameColor(plate)
-    plate.name:SetTextColor(name[1], name[2], name[3], 1)
     plate.targeted = targeted
+    plate.nameOverride = (plate.nameOnly and (border or glow)) and color or nil
+    self:PaintName(plate, plate.nameOverride)
+end
+
+-- Writes the name (possibly secret) and paints it: `override` (a Name Only
+-- target), the Gradient in the class or reaction color (SemiBold, one color
+-- per letter), or one color.
+function M:PaintName(plate, override)
+    local text, name = plate.name, plate.nameValue
+    if name == nil then return end
+    local db = self:Style(plate)
+    if not override and db.nameColorMode == "gradient" and not plate.nameOnly then
+        Style.SetName(text, name, self:NameColor(plate), "gradient")
+        if text.lift then text.lift:SetText(name) end
+        return
+    end
+    local color = override or self:NameColor(plate)
+    Kit.Write(text, name)
+    text:SetTextColor(color[1], color[2], color[3], 1)
+end
+function M:WriteName(plate, name)
+    plate.nameValue = name
+    self:PaintName(plate, plate.nameOverride)
+end
+
+-- Health text: By Health (Rosewood at 30% and under, through Ivory, to
+-- Celadon; the client evaluates the curve for a live unit) or the text color.
+-- `fraction` is the sample's plain health.
+function M:PaintHealthText(plate, fraction)
+    local db, text = self:Style(plate), plate.healthText
+    if db.healthTextColor == "health" then
+        if fraction then
+            local c = Style.HealthTextColorAt(fraction)
+            text:SetTextColor(c[1], c[2], c[3], 1); return
+        elseif plate.unit and Style.PaintHealthText(text, plate.unit) then return end
+    end
+    local c = db.textColor
+    text:SetTextColor(c[1], c[2], c[3], 1)
 end
 
 -- The target's nameplate frame is compared directly.

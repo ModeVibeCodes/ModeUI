@@ -33,11 +33,7 @@ end
 function M:UpdateName(plate)
     local db = self:Style(plate)
     if not (db.showName or plate.nameOnly) or not plate.unit then return end
-    Kit.Write(plate.name, Name.Get(plate.unit))
-    if not plate.targeted then
-        local color = self:NameColor(plate)
-        plate.name:SetTextColor(color[1], color[2], color[3], 1)
-    end
+    self:WriteName(plate, Name.Get(plate.unit))
 end
 
 function M:UpdateHealth(plate)
@@ -53,6 +49,7 @@ function M:UpdateHealth(plate)
     local state = Health.State(unit)
     if state then Kit.Write(plate.healthText, state)
     else Kit.ValueText(plate.healthText, mode, Health.Percent, unit, okValue, value) end
+    self:PaintHealthText(plate)
 end
 
 -- The color for a style, given what is known about the unit: its class color
