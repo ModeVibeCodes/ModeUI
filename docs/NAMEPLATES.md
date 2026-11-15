@@ -158,8 +158,8 @@ bar. A class without combo points sees a note saying so and nothing shows.
 ## Focus
 
 The **Focus** tab styles your focus target's plate: **Highlight** (Border, the
-edge's outer line in the focus color, Rosewood by default; Glow; Stripes, diagonal stripes over the health bar at
-**Stripe Opacity**; or None), a **Color** (amber by default), **Focus Texture**
+edge's outer line in the focus color; Glow; Stripes, diagonal stripes over the health bar at
+**Stripe Opacity**; or None), a **Color** (Rosewood by default), **Focus Texture**
 (Same as Foreground, or any foreground texture) and **Other Plates Opacity**,
 which fades every other plate while you have a focus (100% leaves them alone).
 A plate that is both your target and your focus shows the target's border. The
