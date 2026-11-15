@@ -73,6 +73,18 @@ local function Filled(child, available)
     return available - Measured(x1, 0) + (type(x2) == "number" and x2 or 0), -(type(y1) == "number" and y1 or 0)
 end
 
+-- A region's natural width: what it had before this pass first fitted it, or
+-- whatever its owner (a row's layoutChildren) set since the pass last did.
+local function Natural(region)
+    local current = Measured(region:GetWidth(), 0)
+    if region.gridFitWidth == nil or math.abs(current - region.gridFitWidth) > 0.01 then region.gridNaturalWidth = current end
+    return region.gridNaturalWidth
+end
+local function FitWidth(region, width)
+    region:SetWidth(width)
+    region.gridFitWidth = width
+end
+
 local function FitText(row, region, host, available, hostTop)
     -- Text anchored on two sides already spans its host.
     if region:GetNumPoints() ~= 1 then return end
@@ -80,11 +92,10 @@ local function FitText(row, region, host, available, hostTop)
     if not left then return end
     local room = available - left
     if room <= 20 then return end
-    region.gridNaturalWidth = region.gridNaturalWidth or Measured(region:GetWidth(), 0)
-    local natural = region.gridNaturalWidth
+    local natural = Natural(region)
     -- A wrapping note that starts at the left edge uses the whole width.
     local note = left <= 1 and region.CanWordWrap and region:CanWordWrap()
-    region:SetWidth(note and room or math.min(natural, room))
+    FitWidth(region, note and room or math.min(natural, room))
     if natural > room then
         region:SetWordWrap(true)
         local point, _, _, _, y = region:GetPoint(1)
@@ -112,9 +123,8 @@ local function FitFrame(row, frame, available, hostTop, depth)
             if child:GetNumPoints() == 1 then
                 local left = LeftOf(child, frame, 0)
                 if left then
-                    child.gridNaturalWidth = child.gridNaturalWidth or Measured(child:GetWidth(), 0)
-                    local room = available - left
-                    if room >= 40 then child:SetWidth(math.min(child.gridNaturalWidth, room)) end
+                    local natural, room = Natural(child), available - left
+                    if room >= 40 then FitWidth(child, math.min(natural, room)) end
                 end
                 if container then FitFrame(row, child, Measured(child:GetWidth(), 0), hostTop, depth + 1) end
             elseif container then

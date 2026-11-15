@@ -10,6 +10,8 @@ if not M then return end
 -- every tab for this session.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
+    -- Tiles four across under the preview strip (docs/DESIGN_LANGUAGE.md, "Settings window").
+    page.cardColumns = 4
     local editing = "player"
     local function Unit() return editing end
     local function db() return M.db[editing] end
@@ -158,10 +160,14 @@ function M:CreateConfigPage(parent)
             if editing == "target" then return "target", "player", "Copy Style to Player" end
             return "player", editing, "Copy Player Style"
         end
-        local tools = page:Row("Frame Tools", 48)
-        local reset = W.Button(tools, "Reset Frame", 190, 28); reset:SetPoint("LEFT")
+        -- One button per line, the tile's width.
+        local tools = page:Row("Frame Tools")
+        local reset = W.Button(tools, "Reset Frame", 190, 24); reset:SetPoint("LEFT"); reset:SetPoint("RIGHT")
         reset:SetScript("OnClick", function() M:ResetFrame(editing) end)
-        local copy = W.Button(tools, "", 190, 28); copy:SetPoint("LEFT", 198, 0)
+        local copyRow = page:Row("", 30, nil, true)
+        copyRow.rowLabel:Hide(); copyRow:ClearAllPoints(); copyRow:SetAllPoints(copyRow.row)
+        table.remove(page.searchEntries)
+        local copy = W.Button(copyRow, "", 190, 24); copy:SetPoint("LEFT"); copy:SetPoint("RIGHT")
         copy:SetScript("OnClick", function() local from, to = CopyPair(); M:CopyStyle(from, to) end)
         page.refreshers[#page.refreshers + 1] = function() local _, _, text = CopyPair(); copy.label:SetText(text) end
         page.unitFrameReset, page.unitFrameCopy = reset, copy
@@ -192,7 +198,7 @@ function M:CreateConfigPage(parent)
         Style(function() Slider("Health Bar Height", "healthHeight", "px"); Mark("health") end)
         Choice("Fill Direction", "fillDirection")
         Style(function()
-            Toggles({ { "Fill End Line", "fillEdge" } })
+            Toggles({ { "Fill End Line", "fillEdge" }, { "Shields", "showShields" } })
             page:Group("Color")
             -- Default is Onyx #131212; the empty bar stays the background texture.
             Choice("Health Color", "healthColorMode")
@@ -238,8 +244,6 @@ function M:CreateConfigPage(parent)
     M:BuildComboTab(ui)
     M:BuildTextTab(ui)
 
-    local note = W.Label(page:Row("About Unit Frames", 190), "Pick the frame to change with Editing above the preview; every tab changes that frame. Frame turns it on or off and holds its scale, placement and tools; Health Bar, Power Bar, Portrait, Cast Bar and Auras each hold their own size, colors, textures and text spots; Text holds the name colors and the font. Every frame uses the Onyx skin: a round portrait with a full ring caps one rounded bar block inside one crisp, pixel-perfect rim, with a hairline between health and power. The portrait is a share of the bar block's height, so it follows the bars. Each text spot shows one text, once per frame. A Target matching the Player copies its look and text, optionally mirrored to the other side. Class Resource shows your class's points (Combo Points for Rogues and Druids in Cat Form) around the Target's portrait; a class without one shows nothing. Move frames with Edit Mode. Size, visibility and position changes wait until combat ends because Blizzard protects clickable unit frames. Click a part of the preview to open its settings. Hiding a Blizzard frame only fades its main art and bars, so pet frames and other Blizzard parts keep working. The Target of Target and Target of Focus refresh ten times a second, because the game sends no events for them.", nil, 0, -4, 420, T.muted)
-    note:SetWordWrap(true); page:FooterNote(note)
     W.PinnedSectionTabs(page)
     page:Finish(); return page
 end

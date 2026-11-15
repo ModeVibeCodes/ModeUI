@@ -67,7 +67,7 @@ world.run([[
     addon:SelectConfigPage('unitFrames')
     assert(window.layout=='strip' and window.rail:IsShown() and not window.sidebar:IsShown() and not window.previewPane:IsShown())
     assert(window.selectedCategory=='frames' and window.pages.unitFrames:IsShown() and not window.pages.unitFrames.previewSplit)
-    assert(window.pages.unitFrames.previewArea:GetParent()==window.pages.unitFrames and window.pages.unitFrames.cardColumns==2,'preview strip and tiles')
+    assert(window.pages.unitFrames.previewArea:GetParent()==window.pages.unitFrames and window.pages.unitFrames.cardColumns==4,'preview strip and tiles four across')
     assert(window.railButtons.unitFrames.selected and not window.resetButton:IsShown())
     assert(select(2,window.editButton:GetPoint(1))==window.doneButton,'without Reset, Edit Mode sits beside Done')
     addon:SelectConfigPage('nameplates');assert(window.layout=='strip')
@@ -170,7 +170,7 @@ imported.run([[
     local M=addon.UnitFrames
     assert(ModeUIDB.importedFrom=='PlayTheGameTools:Mode','imported from the active PTG profile')
     assert(M.enabled and M.db.player.barWidth==260 and M.db.target.barWidth==210 and M.db.target.matchPlayer==false)
-    assert(M.db.layoutVersion==M.LAYOUT_VERSION and M.db.player.nameColorMode=='sky','migrated to the current layout')
+    assert(M.db.layoutVersion==M.LAYOUT_VERSION and M.db.player.nameColorMode=='gradient','migrated to the current layout')
     local position=addon.PositionManager:GetPosition('unitFramesPlayer')
     assert(position.x==-300 and position.y==-150,'Player frame position imported')
     assert(PTGToolsDB.profiles.Mode.modules.unitFrames.layoutVersion==10,'PTG data left untouched')
@@ -181,7 +181,7 @@ imported.run([[
 local broken = H.Load({ before = STUBS, ptg = { profiles = { Default = { modules = { unitFrames = { player = { barWidth = "wide" } } } } },
     defaultProfile = "Default" } })
 broken.run([[
-    assert(addon.initialized and ModeUIDB.importedFrom=='none' and addon.UnitFrames.db.player.barWidth==180)
+    assert(addon.initialized and ModeUIDB.importedFrom=='none' and addon.UnitFrames.db.player.barWidth==184)
 ]], "import_invalid")
 
 -- The game menu (Esc) and the minimap's addon compartment open ModeUI. The

@@ -3,12 +3,9 @@ local M = addon.UnitFrames
 if not M then return end
 
 -- Pixel-perfect geometry and the placement of every region of a frame face.
-local ONYX = M.onyx
-local Kit = addon.Kit
-local FLAT = Kit.FLAT
-local CIRCLE_MASK = M.CIRCLE_MASK
+local Kit, Style = addon.Kit, addon.Style
+local Tone = Style.Tone
 local Tint, Lighten = Kit.Tint, Kit.Lighten
-local Inset = Kit.Inset
 M.Lighten = Lighten
 
 -- Mirrored by portrait side: the portrait caps the outer end.
@@ -17,28 +14,27 @@ local function Sides(fdb)
     return "LEFT", "RIGHT", 1
 end
 
--- Text font: Expressway (registered by Media from an installed AyijeUI or
--- EllesmereUI copy) falls back to the bundled ModeUI Lato when unavailable.
+-- Text font: Geist ("Mode Geist") by default, or any font the player picks.
 function M:FontPath(fdb) return Kit.FontPath(fdb, self.id) end
 
 -- One physical pixel in this frame's units (Blizzard's PixelUtil factor over
 -- the frame's effective scale); 1 when the client cannot report it.
 function M:PixelSize(f) return Kit.PixelSize(f) end
 
--- The Onyx frame: a round portrait caps the outer end of one rounded bar
--- block. Pixel perfect: every size is whole physical pixels (the ModeUI
--- border's 2px rim, 1px hairline between health and power) and the frame is
--- an even number of pixels each way, so its centre anchor stays on the grid.
--- One crisp border round the whole block (owner, November 13, 2026): no black
--- gap inside the rim (GAP 0), so the bars meet the rim. This border became the
--- standard for every border in ModeUI (Kit.ModeBorder, Shared/Kit/Border.lua).
-M.RIM, M.GAP, M.HAIRLINE = Kit.BORDER_PIXELS, 0, 1
-function M:Geometry(fdb, px)
+-- The Mode frame (docs/DESIGN_LANGUAGE.md, "Unit frames"): the bar block in
+-- its Mode Frame border (2px, 1px on the smaller frames) with the portrait's
+-- Steel Sheen ring centred on its portrait-side edge. Pixel perfect: every
+-- size is whole physical pixels (the rim, the 1px line between health and
+-- power) and the frame is an even number of pixels each way, so its centre
+-- anchor stays on the grid. The frame keeps the Onyx frame's overall size, so
+-- positions and attachments carry over; the bars run under the ring.
+M.RIM, M.GAP, M.HAIRLINE = 2, 0, 1
+function M:Geometry(fdb, px, rim)
     local g, p = {}, px or 1
     local function Snap(v) return math.max(p, math.floor(v / p + 0.5) * p) end
     local function Odd(v) return math.floor(v / p + 0.5) % 2 == 1 end
     g.px = p
-    g.border, g.line, g.gap = self.RIM * p, self.GAP * p, self.HAIRLINE * p
+    g.border, g.line, g.gap = (rim or self.RIM) * p, self.GAP * p, self.HAIRLINE * p
     g.pad = g.border + g.line
     g.healthHeight, g.powerHeight = Snap(fdb.healthHeight), Snap(fdb.powerHeight)
     local bars = g.healthHeight + (fdb.showPower and g.gap + g.powerHeight or 0)
@@ -52,20 +48,21 @@ function M:Geometry(fdb, px)
     g.portraitY = (g.height - g.portrait) / 2
     local r = g.portrait / 2
     g.blockStart = r -- the bar block starts under the portrait's centre
+    -- The frame's width as the Onyx frame measured it (from where the ring's
+    -- inner disc crossed the bars), so frames keep their size.
+    local reach = g.pad
     if g.portrait > 0 then
-        -- Bars start where the portrait's dark inner disc crosses their top
-        -- edge (less 1px), so the circle's curve meets them with no gap.
-        local disc, half = r - g.border, bars / 2
+        local disc, half = r - 2 * p, bars / 2
         local chord = disc > half and math.sqrt(disc * disc - half * half) or 0
-        g.inset = r + math.max(0, math.floor(chord / p) * p - p)
-    else
-        g.inset = g.pad
+        reach = r + math.max(0, math.floor(chord / p) * p - p)
     end
-    -- How far the portrait's inner disc reaches over the bars at their middle;
-    -- text on the portrait side is pushed in by this much.
-    g.tuck = g.portrait > 0 and math.max(0, r + (r - g.border) - g.inset) or 0
-    g.width = g.inset + Snap(fdb.barWidth) + g.pad
+    g.width = reach + Snap(fdb.barWidth) + g.pad
     if Odd(g.width) then g.width = g.width + p end
+    -- The bars start inside the block's rim, under the ring.
+    g.inset = (g.portrait > 0 and r or 0) + g.pad
+    -- How far the ring reaches over the bars at their middle; text on the
+    -- portrait side is pushed in by this much.
+    g.tuck = g.portrait > 0 and math.max(0, 2 * r - g.inset) or 0
     g.barsTop = g.blockY + g.pad
     return g
 end
@@ -77,7 +74,7 @@ function M:ApplyLayout(f, unit)
     local fdb = self:FrameDB(unit)
     -- Scale first: the pixel size depends on the frame's effective scale.
     f:SetScale(fdb.scale / 100 * (f.previewScale or 1))
-    local g = self:Geometry(fdb, self:PixelSize(f))
+    local g = self:Geometry(fdb, self:PixelSize(f), Style.EDGE_PRESETS[M.EdgePreset(unit)].rim)
     f.geometry = g
     local near, far, sign = Sides(fdb)
     f:SetSize(g.width, g.height)
@@ -85,42 +82,29 @@ function M:ApplyLayout(f, unit)
     panel:ClearAllPoints()
     panel:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.blockStart, -g.blockY)
     panel:SetPoint("BOTTOM" .. far, f, "BOTTOM" .. far, 0, g.blockY)
-    -- The ModeUI border: straight edges on whole pixels and a rounded far end
-    -- (the near end too without a portrait). Its end masks round the bars,
-    -- reaching one pixel under the rim, so the rim covers their soft edge and
-    -- no faint seam shows between them.
-    local rounded = { [far] = true, [near] = g.portrait == 0 }
-    local depth = Kit.LayoutModeBorder(panel.border, panel, { px = g.px, height = g.blockHeight, rounded = rounded,
-        color = M.RIM_COLOR, level = panel:GetFrameLevel() + 2 })
-    panel.farMask, panel.nearMask = panel.border.masks[far], panel.border.masks[near]
-    local masks = { panel.farMask, panel.nearMask }
-    panel.depth = depth
-    local start = g.inset - g.blockStart
-    local cap = panel.cap
-    cap:ClearAllPoints()
-    cap:SetPoint("TOP" .. near, panel, "TOP" .. near, sign * g.pad, -g.pad)
-    cap:SetPoint("BOTTOM" .. near, panel, "BOTTOM" .. near, sign * g.pad, g.pad)
-    cap:SetWidth(math.max(g.px, start - g.pad)); Tint(cap, M.RIM_COLOR, 1)
-    cap:SetShown(start > g.pad)
+    -- The bars' area is one rim inside the block; the border's rim fills that
+    -- band and its corners cover the bars' square corners.
+    panel.inner:ClearAllPoints()
+    panel.inner:SetPoint("TOPLEFT", panel, "TOPLEFT", g.border, -g.border)
+    panel.inner:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -g.border, g.border)
+    panel.back:ClearAllPoints(); panel.back:SetAllPoints(panel.inner); Style.Paint(panel.back, Tone.shadow)
     local level = panel:GetFrameLevel()
-
     local h, pw = f.health, f.power
     h:ClearAllPoints()
-    h:SetPoint("TOP" .. near, f, "TOP" .. near, sign * g.inset, -g.barsTop)
-    h:SetPoint("TOP" .. far, f, "TOP" .. far, -sign * g.pad, -g.barsTop)
+    h:SetPoint("TOPLEFT", panel.inner, "TOPLEFT", 0, 0); h:SetPoint("TOPRIGHT", panel.inner, "TOPRIGHT", 0, 0)
     h:SetHeight(g.healthHeight)
     pw:ClearAllPoints()
     pw:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -g.gap); pw:SetPoint("TOPRIGHT", h, "BOTTOMRIGHT", 0, -g.gap)
     pw:SetHeight(g.powerHeight); pw:SetShown(fdb.showPower)
-    -- The 1px black hairline between health and power, solid like the rim.
+    -- The 1px black line between health and power.
     local line = panel.hairline
-    line:SetTexture(FLAT); Tint(line, ONYX.inner, 1)
+    Style.Paint(line, Tone.shadow)
     line:ClearAllPoints(); line:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, 0); line:SetPoint("BOTTOMRIGHT", pw, "TOPRIGHT", 0, 0)
     line:SetShown(fdb.showPower)
-    -- Foreground (Mode Gradient by default) over the background track, which
-    -- shows the world through it at Background Opacity.
+    -- Each bar: its fill texture (Mode Matte health, Mode Gradient power by
+    -- default) over its empty part (Mode BG on Slate).
     local reverse = fdb.fillDirection == "reverse"
-    -- Each bar has its own textures and background opacity.
+    local barWidth = g.width - g.blockStart - 2 * g.border
     local looks = { { h, g.healthHeight, fdb.foregroundTexture, fdb.backgroundTexture, fdb.barBackgroundOpacity },
         { pw, g.powerHeight, fdb.powerForegroundTexture, fdb.powerBackgroundTexture, fdb.powerBackgroundOpacity } }
     for _, look in ipairs(looks) do
@@ -128,33 +112,26 @@ function M:ApplyLayout(f, unit)
         bar:SetFrameLevel(level + 1)
         if bar.SetReverseFill then bar:SetReverseFill(reverse) end
         Kit.BarForeground(bar, fill, barHeight, g.px)
-        Kit.BarBackground(bar, back, g.width - g.inset - g.pad, barHeight, g.px)
+        Kit.BarBackground(bar, back, barWidth, barHeight, g.px)
         Tint(bar.bg, Kit.BarBackgroundColor(back), opacity / 100)
-        Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, masks)
     end
-    -- A 1px light line where the health fill ends (owner, November 13, 2026).
+    -- A 1px light line where the health fill ends.
     Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)
-    Kit.AddMasks({ h.fillEdge, line }, masks)
-    -- Rim over the bars, then the portrait, then text.
-    panel.edge:SetFrameLevel(h:GetFrameLevel() + 1)
-    f.textLayer:SetFrameLevel(h:GetFrameLevel() + 3)
-
-    -- Round portrait above the block: full ring, black gap, dark backing, image.
+    -- Combined shields (Style.Shield) run with the health fill.
+    h.reverse = reverse
+    h.shield:SetShown(fdb.showShields)
+    h.shield:Layout()
+    -- Border over the bars, then the ring, then text.
+    panel.edge.holder:SetFrameLevel(h:GetFrameLevel() + 3)
+    panel.edge:Layout()
     local p = f.portrait
     p:SetShown(g.portrait > 0)
     if g.portrait > 0 then
-        p:ClearAllPoints(); p:SetPoint("TOP" .. near, f, "TOP" .. near, 0, -g.portraitY); p:SetSize(g.portrait, g.portrait)
-        p:SetFrameLevel(h:GetFrameLevel() + 2)
-        p.ring:ClearAllPoints(); p.ring:SetAllPoints(p)
-        Inset(p.innerEdge, p, g.border); Tint(p.innerEdge, ONYX.inner, 1)
-        Inset(p.back, p, g.pad); Tint(p.back, ONYX.track, 1)
-        p.icon:ClearAllPoints(); p.icon:SetPoint("TOPLEFT", g.pad, -g.pad); p.icon:SetPoint("BOTTOMRIGHT", -g.pad, g.pad)
-        if p.mask then
-            p.mask:SetTexture(CIRCLE_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-            p.mask:ClearAllPoints(); p.mask:SetAllPoints(p.icon)
-        end
+        p:ClearAllPoints(); p:SetPoint("TOP" .. near, f, "TOP" .. near, 0, -g.portraitY)
+        Style.LayoutRing(p.ring, g.portrait, g.px)
+        p:SetFrameLevel(panel.edge.holder:GetFrameLevel() + 1)
     end
-    f.textLayer:SetFrameLevel(math.max(h:GetFrameLevel(), p:GetFrameLevel()) + 2)
+    f.textLayer:SetFrameLevel(math.max(panel.edge.holder:GetFrameLevel(), p:GetFrameLevel()) + 2)
     self:LayoutTexts(f, unit)
     self:PaintRing(f, unit)
     if f.combo then self:ResetComboLayout(f) end

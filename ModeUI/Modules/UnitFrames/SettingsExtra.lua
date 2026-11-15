@@ -67,9 +67,6 @@ function M:BuildComboTab(ui)
         page:Group("Colors")
         n.Color("Lit Point Color", "activeColor"); n.Color("Empty Point Color", "emptyColor")
     end)
-    When(Has, function()
-        ui.Note("About Class Resource", "One socket per point rings the Target frame's portrait while you build them. Without a portrait they line up under the bars. Hide Blizzard Class Resource fades the game's own points, which sit where Blizzard's Target frame was.", 64)
-    end)
 end
 
 -- A tab of the frame's own (a matched Target edits its own cast bar).

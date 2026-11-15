@@ -100,7 +100,9 @@ function W.PageControls(page, ROW_HEIGHT)
             cells[i] = {frame=cell,button=toggle,label=label}
         end
         function row:layoutChildren(width)
-            local columns = math.max(1, math.min(options and options.maxColumns or 3, #items, math.floor(width / (options and options.minimumCellWidth or 180))))
+            -- A cell fits the 68px slide toggle and a label beside it (160px at least).
+            local minimum = math.max(160, options and options.minimumCellWidth or 180)
+            local columns = math.max(1, math.min(options and options.maxColumns or 3, #items, math.floor(width / minimum)))
             local cellWidth = width / columns
             self:SetHeight(math.ceil(#items / columns) * ROW_HEIGHT)
             for i, cell in ipairs(cells) do

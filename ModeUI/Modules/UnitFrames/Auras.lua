@@ -76,7 +76,7 @@ function M:AuraOrigin(f, unit, adb)
         return true, g.pad + gap
     end
     local cast = self.db[unit].castBar
-    local below = cast.enabled and cast.position == "below" and Round(cast.gap) + Snap(cast.height) + 2 * g.pad or 0
+    local below = cast.enabled and cast.position == "below" and Round(cast.gap) + 2 * g.px + Snap(cast.height) + 2 * g.px or 0
     return false, g.pad + gap + below
 end
 

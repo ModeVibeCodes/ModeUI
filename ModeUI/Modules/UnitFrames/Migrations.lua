@@ -257,6 +257,39 @@ local function MigrateV18(db)
     if type(cast) == "table" and Public(cast) and cast.gap == 3 then cast.gap = 8 end
 end
 
+-- Version 19 -> 20: the Mode design language (docs/DESIGN_LANGUAGE.md). Each
+-- value still at its old default takes the new one; anything the player
+-- changed stays.
+local V19_FRAME = { foregroundTexture = { "mode", "media:Mode Matte" }, backgroundTexture = { "slate", "media:Mode BG" },
+    barBackgroundOpacity = { 70, 100 }, powerForegroundTexture = { "mode", "media:Mode Gradient" },
+    powerBackgroundTexture = { "slate", "media:Mode BG" }, powerBackgroundOpacity = { 70, 100 },
+    portraitRing = { "class", "border" }, nameColorMode = { "sky", "gradient" }, fontMedia = { "Expressway", "Mode Geist" } }
+local V19_CAST = { foregroundTexture = { "mode", "media:Mode Cast" }, backgroundTexture = { "slate", "media:Mode BG" } }
+local V19_POWER = { player = 10, target = 10, targettarget = 6, focus = 6, focustarget = 6 }
+-- Sizes: { old, new } per frame.
+local V19_SIZES = {
+    player = { barWidth = { 180, 184 }, healthHeight = { 26, 34 }, portraitScale = { 150, 165 } },
+    target = { barWidth = { 180, 184 }, healthHeight = { 26, 34 }, portraitScale = { 150, 165 } },
+    targettarget = { barWidth = { 110, 130 }, healthHeight = { 16, 22 }, portraitScale = { 150, 165 } },
+    focus = { barWidth = { 110, 160 }, healthHeight = { 16, 22 }, portraitScale = { 150, 165 } },
+    focustarget = { barWidth = { 110, 130 }, healthHeight = { 16, 22 }, portraitScale = { 150, 165 } },
+}
+local function MigrateV19(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" and Public(frame) then
+            for key, change in pairs(V19_FRAME) do if frame[key] == change[1] then frame[key] = change[2] end end
+            if frame.powerHeight == V19_POWER[unit] then frame.powerHeight = 3 end
+            for key, change in pairs(V19_SIZES[unit]) do if frame[key] == change[1] then frame[key] = change[2] end end
+            local cast = frame.castBar
+            if type(cast) == "table" and Public(cast) then
+                for key, change in pairs(V19_CAST) do if cast[key] == change[1] then cast[key] = change[2] end end
+                if unit ~= "focus" and cast.gap == 3 then cast.gap = 2 end
+            end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -274,7 +307,8 @@ function M.Initialize(db)
     if db.layoutVersion == 15 then MigrateV15(db); db.layoutVersion = 16 end
     if db.layoutVersion == 16 then MigrateV16(db); db.layoutVersion = 17 end
     if db.layoutVersion == 17 then MigrateV17(db); db.layoutVersion = 18 end
-    if db.layoutVersion == 18 then MigrateV18(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 18 then MigrateV18(db); db.layoutVersion = 19 end
+    if db.layoutVersion == 19 then MigrateV19(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

@@ -135,13 +135,20 @@ end
 -- Names and levels. `name` and `level` may be secret.
 function M:WriteNames(f, unit, name, level, identity)
     local color
+    local gradient = self:FrameDB(unit).nameColorMode == "gradient"
     for _, entry in ipairs(f.textKinds.name) do
         local text, content = entry.text, entry.content
         if not entry.custom and content ~= "level" then
             color = color or self:NameColor(unit, identity)
             text:SetTextColor(color[1], color[2], color[3], 1)
         end
-        if content == "name" then Write(text, name)
+        -- Gradient names run from the color toward white, letter by letter
+        -- (Style.GradientText); a secret name keeps the plain color.
+        local styled = gradient and not entry.custom and content == "name" and addon.Style.GradientText(name, color)
+        if styled then
+            local white = addon.Style.Tone.mono.white
+            text:SetTextColor(white[1], white[2], white[3], 1); Write(text, styled)
+        elseif content == "name" then Write(text, name)
         elseif content == "level" then Write(text, level)
         elseif level == "" then Write(text, name)
         else Kit.Formatted(text, entry.custom and "%s %s" or LEVEL_NAME, level, name) end

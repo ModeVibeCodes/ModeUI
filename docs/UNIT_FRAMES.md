@@ -5,6 +5,46 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## The Mode look (layout version 20)
+
+November 2026, the Mode design language (`docs/DESIGN_LANGUAGE.md`). The
+Onyx skin's masked rim, cap and circle textures are gone; every frame is built
+from `Shared/Style`:
+
+- **Frame:** the bar block (health, a 1px black line, power) inside a
+  `Style.Edge` border, `frame` (2px Gunmetal Edge-lit) on the Player and
+  Target and `frameThin` (1px) on the smaller frames. The border covers its
+  own rounded corners, so nothing is masked. Frames keep the Onyx frame's
+  overall size, so positions and attachments carry over.
+- **Portrait:** a `Style.Ring` (Steel Sheen, no gap) centred on the block's
+  portrait-side edge, drawn over the bars, which run under it. Portrait Ring:
+  Steel Sheen (default), Class Color (the metal tinted) or Custom; the combat
+  ring tints it red.
+- **Bars:** Mode Matte health and Mode Gradient power over Mode BG on Slate at
+  100%; any SharedMedia texture still works. Combined shields
+  (`Style.Shield`) on health, from Blizzard's heal prediction calculator
+  (`UNIT_ABSORB_AMOUNT_CHANGED`, `UNIT_HEAL_PREDICTION`); **Shields** on the
+  Health Bar tab turns them off.
+- **Cast bar:** a `frameThin` block, black inside, Mode Cast over Mode BG, with
+  the Comet spark (`Style.Comet`). Its 2px gap is clear space between the two
+  borders' shadow rings, and with a portrait it starts where the ring ends.
+- **Text:** Geist ("Mode Geist"); names in the subtle Gradient
+  (`Style.GradientText`, a secret name keeps the plain color), the new default
+  Name Color.
+- **Sizes:** Player and Target 184 wide, 34px health, 3px power, a 66px
+  portrait in its 70px ring (Portrait Size 165%); the smaller frames 22px
+  health and 3px power, 130 wide (Focus 160).
+- **Settings:** tiles four across under the preview strip; the descriptive
+  notes are gone.
+
+Version 19 to 20 replaces only values still at their old defaults: power 10
+(6 on the small frames) to 3, health 26 to 34 (16 to 22), width 180 to 184
+(110 to 130, Focus 160), Portrait Size 150 to 165, Mode Gradient health to
+Mode Matte, power to Mode Gradient, cast to Mode Cast, Mode Slate to Mode BG,
+70% backgrounds to 100%, Sky names to Gradient, the Class Gradient ring to
+Steel Sheen, Expressway to Mode Geist, and the 3px cast gap to 2px (the Focus
+keeps its 8px).
+
 ## Texts colored by the unit
 
 November 13, 2026, per the owner: a text spot's color (`texts.<slot>.colorMode`)

@@ -49,7 +49,7 @@ world.run([==[
     assert(table.concat(P:List(),',')=='Default' and P:Active()=='Default')
     assert(not P:Create('','x') and not P:Create('Bad|Name') and not P:Create(string.rep('x',49)),'names validated')
     assert(P:Create('Raid'),'new profile from defaults')
-    assert(ModeUIDB.profiles.Raid.modules.unitFrames.player.barWidth==180,'defaults, not a copy')
+    assert(ModeUIDB.profiles.Raid.modules.unitFrames.player.barWidth==184,'defaults, not a copy')
     assert(not P:Create('raid ') or true)
     assert(not P:Create('Raid'),'duplicate names refused')
     assert(P:Create('Copy',P:Active()) and ModeUIDB.profiles.Copy.modules.unitFrames.player.barWidth==222,'copy of the active profile')
@@ -71,7 +71,7 @@ world.run([==[
 local switched = H.Load({ before = CLIENT, saved = world.saved() })
 switched.run([==[
     assert(ModeUIDB.activeProfile=='Raid' and ModeUIDB.pendingProfile==nil,'switched on reload')
-    assert(addon.UnitFrames.db.player.barWidth==180 and ModeUIDB.profiles.Default.modules.unitFrames.player.barWidth==240)
+    assert(addon.UnitFrames.db.player.barWidth==184 and ModeUIDB.profiles.Default.modules.unitFrames.player.barWidth==240)
     assert(addon.Profiles.status=='Switched to Raid.')
 ]==], "switched")
 

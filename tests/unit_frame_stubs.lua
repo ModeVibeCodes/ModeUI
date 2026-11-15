@@ -153,3 +153,5 @@
     function UnitCanAttack(_,u) return attackable[u]==true end
     function IsResting() return resting end
     function Point(region,i) return {region:GetPoint(i or 1)} end
+-- Text without color codes (Gradient names color each letter).
+function Plain(text) return (tostring(text):gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '')) end

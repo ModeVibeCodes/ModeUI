@@ -3,41 +3,33 @@ local M = addon.UnitFrames
 if not M then return end
 
 -- Frame faces, the secure unit buttons and their Edit Mode stand-ins.
-local Number, Kit = M.Number, addon.Kit
-local CIRCLE_MASK = M.CIRCLE_MASK
-local Bar, Circle = Kit.Bar, Kit.Circle
+local Number, Kit, Style = M.Number, addon.Kit, addon.Style
+local Bar = Kit.Bar
 
--- One face for both the secure button and its Edit Mode/preview stand-in.
--- Bar block: the ModeUI border (Kit.ModeBorder, Shared/Kit/Border.lua), then
--- the bars right inside it. The portrait sits above the block, so its full
--- ring is drawn over the bar's end. The rim is hard-edged flat strips along
--- the straight edges and a rounded end away from the portrait (both ends
--- without one), so nothing sits under the bars (their background can be
--- see-through); its end masks round the bars the same way. A cap in the rim
--- color fills the block under the portrait up to where the bars start, and the
--- hairline between health and power is its own texture.
+-- Player and Target use the 2px Mode Frame border; the smaller frames the 1px
+-- frameThin (docs/DESIGN_LANGUAGE.md, "Borders").
+function M.EdgePreset(unit) return (unit == "player" or unit == "target") and "frame" or "frameThin" end
+
+-- One face for both the secure button and its Edit Mode/preview stand-in
+-- (docs/DESIGN_LANGUAGE.md, "Unit frames"): the bar block (health, a 1px black
+-- line, 3px power) inside its Mode Frame border, which covers its own rounded
+-- corners (no masks); the portrait in a Steel Sheen ring centred on the
+-- block's portrait-side edge, over the bars; Combined shields on health.
 function M:BuildFace(f)
     local panel = CreateFrame("Frame", nil, f)
     f.panel = panel
-    -- The rim draws on its own layer above the bars (and below the portrait),
-    -- so it covers the bars' edge instead of sitting under it.
-    panel.border = Kit.ModeBorder(panel)
-    panel.edge, panel.rim = panel.border.edge, panel.border.ring
-    panel.cap = panel:CreateTexture(nil, "BACKGROUND", nil, 1)
-    panel.cap:SetTexture(Kit.FLAT)
+    -- The bars' area, one rim inside the block; the border sits around it.
+    panel.inner = CreateFrame("Frame", nil, panel)
+    panel.back = panel:CreateTexture(nil, "BACKGROUND", nil, -1)
+    Style.ApplyAsset(panel.back, "Solid")
     panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)
+    Style.ApplyAsset(panel.hairline, "Solid")
     f.health, f.power = Bar(panel), Bar(panel)
-    local p = CreateFrame("Frame", nil, f)
-    f.portrait = p
-    p.ring = Circle(p, "BACKGROUND", 0)
-    p.innerEdge = Circle(p, "BACKGROUND", 1)
-    p.back = Circle(p, "BACKGROUND", 2)
-    p.icon = p:CreateTexture(nil, "ARTWORK")
-    if p.CreateMaskTexture then
-        p.mask = p:CreateMaskTexture()
-        p.mask:SetTexture(CIRCLE_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        p.icon:AddMaskTexture(p.mask)
-    end
+    f.health.shield = Style.Shield(f.health)
+    panel.edge = Style.Edge(panel.inner, M.EdgePreset(f.unit))
+    local ring = Style.Ring(f, 64)
+    f.portrait = ring.frame
+    f.portrait.ring, f.portrait.icon = ring, ring.portrait
     f.textLayer = CreateFrame("Frame", nil, f)
     f.textLayer:SetAllPoints()
     self:BuildTexts(f)

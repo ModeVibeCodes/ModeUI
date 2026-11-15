@@ -142,6 +142,8 @@ end
 -- The color a background texture is tinted: Mode Slate's gray (the hatch tile
 -- is 80% gray, so its tint is a fifth lighter), else the Onyx track.
 function Kit.BarBackgroundColor(choice)
+    -- Mode BG is tinted Slate (docs/DESIGN_LANGUAGE.md, "Bars").
+    if choice == "media:Mode BG" then return addon.Style.Tone.slate end
     if choice == "slate" then return Kit.onyx.slate end
     if choice == "slateHatch" then return Kit.onyx.slateHatch end
     return Kit.onyx.track

@@ -90,6 +90,40 @@ function Bar:SetFillFromBoolean(value, ifTrue, ifFalse)
 end
 
 function Bar:SetSpark(shown) self.showSpark = shown and true or false; self:LayoutStyle() end
+
+-- The Comet spark on any StatusBar (cast bars built outside Style.Bar): a thin
+-- oval head on the fill's leading edge, 1px taller than the bar each way, and
+-- a 21px trail behind it in the bar color lightened 45%.
+local Comet = {}
+Comet.__index = Comet
+function Style.Comet(statusBar)
+    local comet = setmetatable({ bar = statusBar }, Comet)
+    comet.trail = statusBar:CreateTexture(nil, "OVERLAY", nil, 3)
+    Style.ApplyAsset(comet.trail, "CometTrail")
+    comet.head = statusBar:CreateTexture(nil, "OVERLAY", nil, 4)
+    Style.ApplyAsset(comet.head, "CometHead")
+    return comet
+end
+function Comet:Layout(reverse, px)
+    local fill = self.bar:GetStatusBarTexture()
+    if not fill then return end
+    px = px or Style.Pixel(self.bar)
+    local side = reverse and "LEFT" or "RIGHT"
+    self.head:ClearAllPoints()
+    self.head:SetPoint("TOP", fill, "TOP" .. side, 0, px)
+    self.head:SetPoint("BOTTOM", fill, "BOTTOM" .. side, 0, -px)
+    self.head:SetWidth(10 * px)
+    self.trail:ClearAllPoints()
+    self.trail:SetPoint("TOP" .. side, fill, "TOP" .. side, 0, 0)
+    self.trail:SetPoint("BOTTOM" .. side, fill, "BOTTOM" .. side, 0, 0)
+    self.trail:SetWidth(21 * px)
+    if reverse then self.trail:SetTexCoord(1, 0, 0, 1) else self.trail:SetTexCoord(0, 1, 0, 1) end
+end
+function Comet:SetColor(color)
+    local trail = Style.Lighten(color, 0.45)
+    self.trail:SetVertexColor(trail[1], trail[2], trail[3], 1)
+end
+function Comet:SetShown(shown) self.head:SetShown(shown); self.trail:SetShown(shown) end
 function Bar:SetEndLine(shown) self.showEndLine = shown and true or false; self:LayoutStyle() end
 
 -- Positions the end line and the spark on the fill's leading edge, in whole pixels.

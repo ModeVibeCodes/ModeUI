@@ -52,3 +52,21 @@ function Style.Ring(host, diameter, rim)
     ring.disc, ring.sheen, ring.portrait, ring.mask = disc, sheen, portrait, mask
     return ring
 end
+
+-- Resizes a ring to `outer` (its full width in its host's units) and keeps the
+-- portrait `rim` physical pixels inside it.
+function Style.LayoutRing(ring, outer, px)
+    px = px or Style.Pixel(ring.frame)
+    ring.frame:SetSize(outer, outer)
+    local inset = ring.rim * px
+    ring.portrait:ClearAllPoints()
+    ring.portrait:SetPoint("TOPLEFT", ring.frame, "TOPLEFT", inset, -inset)
+    ring.portrait:SetPoint("BOTTOMRIGHT", ring.frame, "BOTTOMRIGHT", -inset, inset)
+end
+
+-- The ring's metal: Steel Sheen by default, or tinted (a class color, the
+-- combat red) while keeping its light band.
+function Style.PaintRing(ring, color)
+    local base = color and Style.Mix(color, Tone.steel.dark, 0.7) or Style.Mix(Tone.steel.dark, Tone.steel.mid, 0.5)
+    Style.Paint(ring.disc, base)
+end

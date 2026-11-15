@@ -194,7 +194,7 @@ function M:BuildTextTab(ui)
         -- Pastel: class-colored names, class health and the class gradient ring all use it.
         ui.Slider("Class Color Softness", "classSoftness", "%")
         page:Group("Font")
-        local _, refresh = W.FontDropdown(page:Row("Font", 42), ui.owner); page.refreshers[#page.refreshers + 1] = refresh
+        local _, refresh = W.FontDropdown(page:Row("Font"), ui.owner); page.refreshers[#page.refreshers + 1] = refresh
         ui.Toggles({ { "Text Outline", "outline" } })
         -- One choice for both shadows: None, Crisp (1px) or Lifted (1px plus a lighter one under it).
         local choices = {}

@@ -2,27 +2,24 @@ local _, addon = ...
 local M = addon.UnitFrames
 if not M then return end
 
--- Each frame's cast bar: a second block in the frame's own skin (the ModeUI
--- border, Kit.ModeBorder, black inside and its bar texture) hanging under the bar block (or
--- sitting over it). Its far end lines up with the bar block's, its bar ends
--- where the health bar does, and its portrait end stops just short of the
--- portrait instead of running under it. Cast values can be secret: see
--- Shared/Kit/Cast.lua and Shared/Domain/Cast.lua.
-local Kit, Cast = addon.Kit, addon.Domain.Cast
-local ONYX, Tint = M.onyx, Kit.Tint
+-- Each frame's cast bar (docs/DESIGN_LANGUAGE.md, "Unit frames"): a block in
+-- the 1px frameThin border, black inside, 2px under the bar block (or over
+-- it). Its far edge lines up with the bar block's and its portrait end starts
+-- where the portrait's ring ends; the Comet spark rides the fill's edge. Cast
+-- values can be secret: see Shared/Kit/Cast.lua and Shared/Domain/Cast.lua.
+local Kit, Cast, Style = addon.Kit, addon.Domain.Cast, addon.Style
 local TIMER_STEP = 0.1
 M.CAST_SAMPLE = { text = "Frostbolt", timer = "1.4", value = 0.6 }
 
 function M:BuildCast(f)
     local box = CreateFrame("Frame", nil, f)
-    -- The rim draws above the bar; its end masks round the bar.
-    box.border = Kit.ModeBorder(box)
-    box.rim, box.barMasks = box.border.ring, box.border.masks
+    -- Black inside the 1px rim; the border covers its own corners.
+    box.inner = CreateFrame("Frame", nil, box)
     box.gap = box:CreateTexture(nil, "BORDER")
-    box.gap:SetTexture(Kit.FLAT)
-    -- Masks rounding both ends of the black inside the rim.
-    box.gapMasks = { LEFT = Kit.EndMask(box), RIGHT = Kit.EndMask(box) }
+    Style.ApplyAsset(box.gap, "Solid")
     box.bar = Kit.Bar(box)
+    box.comet = Style.Comet(box.bar)
+    box.edge = Style.Edge(box.inner, "frameThin")
     box.icon = box:CreateTexture(nil, "ARTWORK")
     box.textLayer = CreateFrame("Frame", nil, box)
     box.textLayer:SetAllPoints(box)
@@ -45,18 +42,14 @@ function M:LayoutCast(f, unit)
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local near, far, sign = Sides(fdb)
     local height, gap = Snap(cdb.height), Round(cdb.gap)
-    -- Under (or over) the bar block, to its far edge. The portrait end stops
-    -- just short of the portrait (owner, November 13, 2026): where the ring's
-    -- circle crosses the box's edge nearest the portrait's centre, plus a
-    -- 2px gap, rounded out to whole pixels.
-    local clear = 0
-    if fdb.showPortrait and g.portrait > 0 then
-        local radius, edge = g.portrait / 2, g.blockHeight / 2 + gap
-        if edge < radius then clear = math.ceil((math.sqrt(radius * radius - edge * edge) + 2 * px) / px) * px end
-    end
+    -- Under (or over) the bar block, to its far edge; with a portrait it
+    -- starts where the ring ends (the ring is centred on the block's edge).
+    local clear = (fdb.showPortrait and g.portrait > 0) and g.portrait / 2 or 0
     box:ClearAllPoints()
-    local edge, toward, dy = "TOP", "BOTTOM", -gap
-    if cdb.position == "above" then edge, toward, dy = "BOTTOM", "TOP", gap end
+    -- The gap is clear space between the two borders' shadow rings (1px each).
+    local away = gap + 2 * px
+    local edge, toward, dy = "TOP", "BOTTOM", -away
+    if cdb.position == "above" then edge, toward, dy = "BOTTOM", "TOP", away end
     if cdb.fullWidth then
         box:SetPoint(edge .. near, f.panel, toward .. near, sign * clear, dy)
         box:SetPoint(edge .. far, f.panel, toward .. far, 0, dy)
@@ -66,20 +59,18 @@ function M:LayoutCast(f, unit)
         box:SetWidth(Snap(cdb.width))
     end
     box.clear = clear
-    box:SetHeight(height + 2 * g.pad)
+    -- One pixel of rim (frameThin) round the bar.
+    local rim = px
+    box:SetHeight(height + 2 * rim)
     box:SetFrameLevel(f.panel:GetFrameLevel())
-    -- Like the bar block: straight edges on whole pixels and half-oval ends,
-    -- here at both ends. Inside the rim the box is black (the cast track is
-    -- opaque); the black and the bar are rounded by end masks.
-    local depth = Kit.LayoutModeBorder(box.border, box, { px = px, height = height + 2 * g.pad, color = M.RIM_COLOR,
-        level = box:GetFrameLevel() + 2 })
-    Kit.Inset(box.gap, box, g.border); Tint(box.gap, ONYX.inner, 1)
-    for side, mask in pairs(box.gapMasks) do Kit.PlaceEndMask(mask, box, side, depth, g.border, true) end
-    Kit.AddMasks({ box.gap }, { box.gapMasks.LEFT, box.gapMasks.RIGHT })
+    box.inner:ClearAllPoints()
+    box.inner:SetPoint("TOPLEFT", box, "TOPLEFT", rim, -rim); box.inner:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -rim, rim)
+    box.gap:ClearAllPoints(); box.gap:SetAllPoints(box.inner); Style.Paint(box.gap, Style.Tone.shadow)
+    local depth = rim
     box.depth = depth
-    -- The bar runs end to end inside the gap, rounded with it; the icon, if
-    -- any, sits where the straight part starts, a hairline of black from the bar.
-    local nearInset, farInset = g.pad, g.pad
+    -- The bar runs end to end inside the rim; the icon, if any, sits at one
+    -- end, a pixel of black from the bar.
+    local nearInset, farInset = rim, rim
     local icon, bar = box.icon, box.bar
     icon:ClearAllPoints(); icon:SetSize(height, height); icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     if cdb.icon == "near" then
@@ -89,14 +80,19 @@ function M:LayoutCast(f, unit)
     end
     icon:SetShown(cdb.icon ~= "none")
     bar:ClearAllPoints()
-    bar:SetPoint("TOP" .. near, box, "TOP" .. near, sign * nearInset, -g.pad)
-    bar:SetPoint("BOTTOM" .. far, box, "BOTTOM" .. far, -sign * farInset, g.pad)
+    bar:SetPoint("TOP" .. near, box, "TOP" .. near, sign * nearInset, -rim)
+    bar:SetPoint("BOTTOM" .. far, box, "BOTTOM" .. far, -sign * farInset, rim)
     bar:SetFrameLevel(box:GetFrameLevel() + 1)
-    -- The cast bar's own textures (Cast Bar tab).
+    -- The cast bar's own textures (Cast Bar tab); the empty part on Slate.
     Kit.BarForeground(bar, cdb.foregroundTexture, height, px)
     Kit.BarBackground(bar, cdb.backgroundTexture)
-    Kit.AddMasks({ bar:GetStatusBarTexture(), bar.bg, bar.sheen }, { box.barMasks.LEFT, box.barMasks.RIGHT })
-    box.textLayer:SetFrameLevel(bar:GetFrameLevel() + 2)
+    Kit.Tint(bar.bg, Kit.BarBackgroundColor(cdb.backgroundTexture), 1)
+    -- The Comet spark, in the cast color lightened.
+    box.comet:Layout(false, px)
+    box.comet:SetColor(cdb.color)
+    box.edge.holder:SetFrameLevel(bar:GetFrameLevel() + 2)
+    box.edge:Layout()
+    box.textLayer:SetFrameLevel(box.edge.holder:GetFrameLevel() + 1)
     -- Spell name from the left, seconds left on the right, in the frame's font.
     local path, size = self:FontPath(fdb), cdb.fontSize
     for _, entry in ipairs({ { box.text, "LEFT", cdb.showText }, { box.timer, "RIGHT", cdb.showTimer } }) do

@@ -11,7 +11,8 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Combo, CastBar, Auras, Status, Preview, Settings, SettingsExtra, SettingsText.
 local L = addon.L
 local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true, layout = "strip",
-    configDescription = L["Player, Target, Target of Target and Focus frames in the Onyx look. Configure outside combat."],
+    configDescription = L["Player, Target, Target of Target and Focus frames in the Mode look. Configure outside combat."],
+    icon = "UnitFrames",
     -- The settings page keeps its own sections; the Mode layer restyles headings.
     modeLayout = { decorateOnly = true } }
 addon.UnitFrames = M
@@ -60,7 +61,10 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- bar its own opacity), copied from the shared bar textures.
 -- Version 19: the Focus cast bar sits 8px from the frame (owner); cast bars
 -- get Full Width and Bar Width.
-M.LAYOUT_VERSION = 19
+-- Version 20: the Mode design language (docs/DESIGN_LANGUAGE.md): 3px power,
+-- Mode Matte health, Mode Gradient power, Mode Cast casts, Mode BG empty bars,
+-- Geist, Gradient names, the Steel Sheen ring, 2px cast gap, Combined shields.
+M.LAYOUT_VERSION = 20
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -79,8 +83,8 @@ M.choices = {
     position = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     side = { { id = "left", label = "Left" }, { id = "right", label = "Right" } },
     portraitStyle = { { id = "portrait", label = "Character Portrait" }, { id = "class", label = "Class Icon" } },
-    ring = { { id = "class", label = "Class Gradient" }, { id = "border", label = "Default" }, { id = "custom", label = "Custom" } },
-    nameColor = { { id = "sky", label = "Sky" }, { id = "champagne", label = "Champagne" }, { id = "lilac", label = "Lilac" },
+    ring = { { id = "border", label = "Steel Sheen" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
+    nameColor = { { id = "gradient", label = "Gradient" }, { id = "sky", label = "Sky" }, { id = "champagne", label = "Champagne" }, { id = "lilac", label = "Lilac" },
         { id = "frost", label = "Frost" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     healthColor = { { id = "default", label = "Default" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     powerColor = { { id = "type", label = "Power Type" }, { id = "custom", label = "Custom" } },
@@ -98,35 +102,40 @@ M.Public = addon.IsPublic
 M.Number = addon.IsNumber
 
 local function Frame(side, extra)
-    local frame = { enabled = true, hideBlizzard = true, scale = 100, barWidth = 180, healthHeight = 26,
+    -- 184 wide, 34px health, a 66px portrait in its 70px ring (docs/DESIGN_LANGUAGE.md, "Sizes").
+    local frame = { enabled = true, hideBlizzard = true, scale = 100, barWidth = 184, healthHeight = 34,
         -- Target only: mirror the Player frame's look (side and visibility stay its own).
         matchPlayer = false,
         -- Target only, while matched: mirror the Player's text alignment and
         -- horizontal offsets to the other side (off: same layout as the Player).
         mirrorText = false,
-        showPower = true, powerHeight = 10,
+        -- 3px power on every frame (docs/DESIGN_LANGUAGE.md, "Bars").
+        showPower = true, powerHeight = 3,
         -- Both bars: fill (foreground) and empty bar (background) textures and
         -- opacity. The background is mostly see-through by default, so the fill
         -- stands out against the world behind it (owner, November 13, 2026).
         -- Mode Slate at 70% (owner, November 13, 2026): a solid near-neutral gray
         -- behind the fill, strong enough not to feel see-through.
-        foregroundTexture = "mode", backgroundTexture = "slate", barForegroundOpacity = 100, barBackgroundOpacity = 70,
+        -- Mode Matte health over Mode BG on Slate (docs/DESIGN_LANGUAGE.md, "Bars").
+        foregroundTexture = "media:Mode Matte", backgroundTexture = "media:Mode BG", barForegroundOpacity = 100, barBackgroundOpacity = 100,
         -- The power bar's own (owner, November 13, 2026: each part of the frame
         -- has its own texture settings); the keys above are the health bar's.
-        powerForegroundTexture = "mode", powerBackgroundTexture = "slate", powerForegroundOpacity = 100,
-        powerBackgroundOpacity = 70,
+        powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerForegroundOpacity = 100,
+        powerBackgroundOpacity = 100,
+        -- Combined shields on the health bar (Style.Shield).
+        showShields = true,
         -- A 1px light line where the health fill ends.
         fillEdge = true,
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
-        portraitScale = 150, -- portrait diameter as a % of the bar block
-        portraitRing = "class", portraitRingColor = Copy(M.ACCENT),
+        portraitScale = 165, -- portrait diameter as a % of the bar block
+        portraitRing = "border", portraitRingColor = Copy(M.ACCENT),
         -- The color of names in text slots (TextSlots.lua places every text).
-        nameColorMode = "sky", nameColor = Copy(M.ACCENT),
+        nameColorMode = "gradient", nameColor = Copy(M.ACCENT),
         -- Class/reaction colors are blended this far toward white (pastel).
         classSoftness = 40,
         healthColorMode = "default", healthColor = Copy(M.palette.green),
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
-        font = "game", fontMedia = "Expressway", outline = false, shadow = true,
+        font = "game", fontMedia = "Mode Geist", outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
         -- a lighter second shadow 2px out (owner, layout version 11).
         liftedShadow = true, textColor = Copy(M.palette.text),
@@ -143,13 +152,14 @@ end
 -- TextSlots.lua), attached under the Target frame's bottom-right corner.
 -- Target of Focus is the same under the Focus frame, and Focus is the same
 -- frame at 90% scale, placed on its own.
-local function Small(scale, attach)
-    return { barWidth = 110, healthHeight = 16, powerHeight = 6, scale = scale, showPortrait = false, attach = attach }
+-- 22px health and 3px power (docs/DESIGN_LANGUAGE.md, "Sizes").
+local function Small(scale, attach, width)
+    return { barWidth = width or 130, healthHeight = 22, powerHeight = 3, scale = scale, showPortrait = false, attach = attach }
 end
 -- The Target mirrors the Player by default: health text on the left, level in
 -- its bottom right corner (owner, November 13, 2026).
 M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse" }),
-    targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false)), focustarget = Frame("left", Small(75, true)) }
+    targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false, 160)), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 },
     barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, powerForegroundOpacity = { 10, 100, 5 },
@@ -170,9 +180,9 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 -- Each frame's cast bar (owner, November 13, 2026), in db[unit].castBar: a
 -- box with the frame's rim and gap under (or over) the bar block, its bar
 -- lined up with the health bar. On for the Player, Target and Focus.
-M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 3, icon = "far",
+M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 2, icon = "far",
     fullWidth = true, width = 160,
-    foregroundTexture = "mode", backgroundTexture = "slate",
+    foregroundTexture = "media:Mode Cast", backgroundTexture = "media:Mode BG",
     showText = true, showTimer = true, fontSize = 10, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
 M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
