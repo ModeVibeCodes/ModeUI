@@ -21,7 +21,7 @@ function M:GetResourcePreviewSize()
     local style = self.db.resources[id]
     local width = self:ResourceWidth(id, 1)
     local scale = Scale(width)
-    local tall = math.max(style.height, style.textSize + 2 * math.abs(style.textY))
+    local tall = math.max(style.height + 2 * self.ResourceReach(style, 1), style.textSize + 2 * math.abs(style.textY))
     return math.max(320, width * scale), tall * scale + 12 + CAPTION_HEIGHT
 end
 

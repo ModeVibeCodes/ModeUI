@@ -1,64 +1,17 @@
 local _, addon = ...
 local Kit = addon.Kit
 
--- The Mode slot: the look of an icon button (Action Bars' buttons, the
--- Cooldown Manager's icons). A hollow border (Border Size, in the Border
--- Color) around the background (Background Color, lightened by the
--- ActionBarSlot texture), then the icon one pixel further in, cropped (never
--- stretched) to the slot's shape. Glows sit over it: a soft glow reaching past
--- the slot, or a colored frame on it. The callers keep their own state;
--- nothing here is stored on the host.
+-- Icon pieces shared by Action Bars and the Cooldown Manager: cropping an
+-- icon to its button's shape, flat overlays, and the glows that sit over a
+-- button (a soft glow reaching past it, or a colored frame on it). The
+-- buttons' face and border are the Mode design language's (Style.Edge,
+-- "Mode Button"); the callers keep their own state, and nothing here is
+-- stored on the host.
 --
--- `style` carries: border ("rounded", "square" or "none"), borderSize,
--- borderColor, backgroundColor and backgroundOpacity. `g` carries: w, h (the
--- slot's size), px (one physical pixel), border (the border's thickness) and
--- inset (border plus a pixel: where the icon starts).
+-- `g` carries: w, h (the button's size), px (one physical pixel) and inset
+-- (where the icon starts).
 local FLAT = Kit.FLAT
 local GLOW_OUTSET = 7 -- how far the soft glow reaches past the slot
-
--- The border's four edges, the background fill and its texture. The border
--- is hollow, so a see-through background never takes on its color.
-function Kit.SlotArt(host)
-    local art = { edges = {}, fill = host:CreateTexture(nil, "BACKGROUND", nil, -7), grain = host:CreateTexture(nil, "BACKGROUND", nil, -6) }
-    for i = 1, 4 do art.edges[i] = host:CreateTexture(nil, "BACKGROUND", nil, -8) end
-    return art
-end
-
-local function Edge(edge, host, point, x1, y1, relative, x2, y2)
-    edge:ClearAllPoints()
-    edge:SetPoint("TOPLEFT", host, point, x1, y1)
-    edge:SetPoint("BOTTOMRIGHT", host, relative, x2, y2)
-end
-
--- Rounded leaves out each corner's outermost pixel, so the edges meet in a
--- soft corner; Square fills it. The slot texture adds its bevel and grain
--- (ADD), so the Background Color stays the base.
-function Kit.PaintSlotArt(art, host, style, g)
-    local on = style.border ~= "none"
-    local t, cut = g.border, (on and style.border == "rounded") and g.px or 0
-    local top, bottom, left, right = art.edges[1], art.edges[2], art.edges[3], art.edges[4]
-    Edge(top, host, "TOPLEFT", cut, 0, "TOPRIGHT", -cut, -t)
-    Edge(bottom, host, "BOTTOMLEFT", cut, t, "BOTTOMRIGHT", -cut, 0)
-    Edge(left, host, "TOPLEFT", 0, -cut, "BOTTOMLEFT", t, cut)
-    Edge(right, host, "TOPRIGHT", -t, -cut, "BOTTOMRIGHT", 0, cut)
-    for _, edge in ipairs(art.edges) do
-        edge:SetTexture(FLAT); Kit.Tint(edge, style.borderColor, 1); edge:SetShown(on)
-    end
-    local alpha = style.backgroundOpacity / 100
-    Kit.Inset(art.fill, host, t)
-    art.fill:SetTexture(FLAT); Kit.Tint(art.fill, style.backgroundColor, alpha)
-    Kit.Inset(art.grain, host, t)
-    if not addon.Media:ApplyTexture(art.grain, "ActionBarSlot") then art.grain:SetTexture(FLAT) end
-    if art.grain.SetBlendMode then art.grain:SetBlendMode("ADD") end
-    art.grain:SetVertexColor(1, 1, 1, alpha)
-end
-
--- The border's thickness and the icon's inset for a style, in px units.
-function Kit.SlotInsets(style, px)
-    if style.border == "none" then return 0, 0 end
-    local border = style.borderSize * px
-    return border, border + px
-end
 
 -- Crops the icon to the slot's shape: 8% off its edges, then the long side
 -- cut to the inner aspect, so a 42 by 36 slot shows the icon unstretched.

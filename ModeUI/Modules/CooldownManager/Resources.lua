@@ -5,24 +5,27 @@ if not M then return end
 -- Building and laying out the Resource Bars. Each bar has a stand-in (its
 -- Edit Mode element, named ModeUIResourcePower and so on) and, on it, the
 -- bar the player sees. A bar is one box, or one box per point for Combo
--- Points; a box is the ModeUI border (Kit.ModeBorder: a crisp 2px rim with
--- rounded ends, on its own frame above the fill) around a status bar: the
--- fill in Bar Texture and Bar Color over Bar Background, rounded by the
--- border's end masks. Values may be secret, so they only ever go to the
--- status bars and text setters (ResourceUpdate.lua). The settings preview
--- draws a bar with these same functions.
-local Kit, L = addon.Kit, addon.L
+-- Points; a box is a status bar (the fill in Bar Texture and Bar Color over
+-- Bar Background) in the `frameThin` edge outside it (docs/DESIGN_LANGUAGE.md,
+-- "Bars"); the bar's frame leaves room for the edges, so its width matches
+-- the cooldown rows' and Spacing counts between the shadows. No masks.
+-- Values may be secret, so they only ever go to the status bars and text
+-- setters (ResourceUpdate.lua). The settings preview draws a bar with these
+-- same functions.
+local Kit, L, Style = addon.Kit, addon.L, addon.Style
 local PM = addon.PositionManager
 local PAD = 4 -- pixels between a text and the end of its bar
 
--- One box: border, status bar (Kit.Bar: fill, background and the Mode
--- Gradient sheen).
+-- One box: a status bar (Kit.Bar: fill, background and the lift) in the
+-- Mode edge.
 local function NewBox(parent)
     local box = CreateFrame("Frame", nil, parent)
-    box.border = Kit.ModeBorder(box)
     box.bar = Kit.Bar(box)
+    box.edge = Style.Edge(box, M.EDGE)
     return box
 end
+-- How far a bar's edges reach past its boxes, in px units.
+function M.ResourceReach(style, px) return style.border == "none" and 0 or M.EDGE_REACH * px end
 
 -- A bar's frame: its boxes (made as they're needed) and a text above them.
 function M:NewResourceFrame(parent)
@@ -62,42 +65,31 @@ function M:ResourceWidth(id, px)
     return math.max(px, math.floor(width / px + 0.5) * px)
 end
 
--- Lays one box out: `w` by `h` at `x` from the frame's left.
-local function LayoutBox(box, frame, style, x, w, h, px, edge)
+-- Lays one box out: `w` by `h` at `x`, `y` from the frame's top left.
+local function LayoutBox(box, frame, style, x, y, w, h, px, edge)
     box:ClearAllPoints()
-    box:SetPoint("TOPLEFT", frame, "TOPLEFT", x, 0)
+    box:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -y)
     box:SetSize(w, h)
-    local border, inset = box.border, 0
-    if style.border == "mode" then
-        local _, thickness = Kit.LayoutModeBorder(border, box, { px = px, height = h, color = style.borderColor,
-            level = box:GetFrameLevel() + 2 })
-        inset = thickness
-    else
-        -- No border: square ends that clip nothing.
-        for side, mask in pairs(border.masks) do Kit.PlaceEndMask(mask, box, side, 0, 0, false) end
-        border.edge:SetFrameLevel(box:GetFrameLevel() + 2)
-    end
-    border.edge:SetShown(style.border == "mode")
+    box.edge:SetShown(style.border ~= "none")
+    box.edge:Layout()
     local bar = box.bar
     bar:ClearAllPoints()
-    bar:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)
-    bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -inset, inset)
+    bar:SetAllPoints(box)
     bar:SetFrameLevel(box:GetFrameLevel() + 1)
-    local inner = math.max(px, h - 2 * inset)
-    Kit.BarForeground(bar, style.barTexture, inner, px)
-    Kit.BarBackground(bar, style.barBackground, math.max(px, w - 2 * inset), inner, px)
+    Kit.BarForeground(bar, style.barTexture, h, px)
+    Kit.BarBackground(bar, style.barBackground, w, h, px)
     Kit.Tint(bar.bg, Kit.BarBackgroundColor(style.barBackground), style.barBackgroundOpacity / 100)
     local fill = bar:GetStatusBarTexture()
     if fill and fill.ClearTextureSlice then fill:ClearTextureSlice() end
-    Kit.AddMasks({ fill, bar.bg, bar.sheen }, { border.masks.LEFT, border.masks.RIGHT })
     if bar.SetReverseFill then bar:SetReverseFill(style.reverse) end
     Kit.FillEdge(bar, edge, style.reverse, px)
     box:Show()
 end
 
--- Lays a bar's frame out at `width` (the frame is sized by the caller).
--- Combo Points split the width into `count` boxes `spacing` apart, on whole
--- pixels, the last one ending exactly at the bar's end.
+-- Lays a bar's frame out at `width` (the frame is sized by the caller,
+-- edges included). Combo Points split the width into `count` boxes with
+-- their edges, `spacing` apart between the shadows, on whole pixels, the last
+-- one ending exactly at the bar's end.
 function M:LayoutResourceFrame(frame, id, width, px, sample)
     local style = self.db.resources[id]
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
@@ -106,13 +98,14 @@ function M:LayoutResourceFrame(frame, id, width, px, sample)
     local segmented = self.resourceSpecs[id].segmented
     local count = self:ResourceBoxCount(id, sample)
     local gap = segmented and Round(style.spacing) or 0
+    local reach = M.ResourceReach(style, px)
     for i = 1, count do
         local box = frame.boxes[i]
         if not box then box = NewBox(frame); frame.boxes[i] = box end
         local left = Round((i - 1) * (width + gap) / count)
         local right = i == count and width or Round(i * (width + gap) / count) - gap
         box:SetFrameLevel(frame:GetFrameLevel() + 1)
-        LayoutBox(box, frame, style, left, math.max(px, right - left), h, px, style.fillEdge and not segmented)
+        LayoutBox(box, frame, style, left + reach, reach, math.max(px, right - left - 2 * reach), h, px, style.fillEdge and not segmented)
         -- A point's box fills from (i - 1) to i: SetValue(count) lights it or
         -- leaves it dark without the count ever being compared.
         if segmented then box.bar:SetMinMaxValues(i - 1, i) end
@@ -120,7 +113,7 @@ function M:LayoutResourceFrame(frame, id, width, px, sample)
     for i = count + 1, #frame.boxes do frame.boxes[i]:Hide() end
     frame.count, frame.px, frame.barHeight = count, px, h
     self:LayoutResourceText(frame, style, width, h, px)
-    return h
+    return h + 2 * reach
 end
 
 -- The text: at Text Anchor on the bar (Left, Center or Right), PAD pixels
@@ -129,10 +122,11 @@ end
 function M:LayoutResourceText(frame, style, width, h, px)
     local text = frame.text
     local look = { outline = style.outline, shadow = style.shadow, slug = style.slug, textColor = style.textColor }
-    local path, size = Kit.FontPath(style, self.id), style.textSize
+    local path, size = Style.Weighted(Kit.FontPath(style, self.id), "bold"), style.textSize
     Kit.Font(text, look, size, path, px)
     local anchor = style.textAnchor
-    local dx = (anchor == "LEFT" and PAD * px) or (anchor == "RIGHT" and -PAD * px) or 0
+    local inset = PAD * px + M.ResourceReach(style, px)
+    local dx = (anchor == "LEFT" and inset) or (anchor == "RIGHT" and -inset) or 0
     local function Snap(v) return math.floor(v / px + 0.5) * px end
     text:ClearAllPoints()
     text:SetPoint(anchor, frame, anchor, dx + Snap(style.textX), Snap(style.textY))
@@ -197,8 +191,9 @@ function M:LayoutResource(id)
     if not frame then return end
     local px = Kit.PixelSize(mover)
     local width = self:ResourceWidth(id, px)
-    local h = math.max(px, math.floor(self.db.resources[id].height / px + 0.5) * px)
-    mover:SetSize(width, h)
+    local style = self.db.resources[id]
+    local h = math.max(px, math.floor(style.height / px + 0.5) * px)
+    mover:SetSize(width, h + 2 * M.ResourceReach(style, px))
     self:LayoutResourceFrame(frame, id, width, px, false)
     self:UpdateResource(id)
 end

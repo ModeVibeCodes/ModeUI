@@ -13,8 +13,10 @@ if not M then return end
 --   spells["1234"].text = { cooldown = { show, size, anchor, x, y, color,
 --       font, fontMedia, outline ("none", "outline", "thick"), shadow } }
 -- starting from the bar's look (the Text tab) when first changed.
+-- Every text is Geist Bold in the chosen face (docs/DESIGN_LANGUAGE.md,
+-- "Cooldown icons"); a font from SharedMedia keeps its own file.
 local Kit = addon.Kit
-local PAD = 1 -- pixels between a text and the edge it sits against
+local PAD = 2 -- pixels between a text and the edge it sits against
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The bar's look for a text, in a spell's own look's shape.
@@ -101,14 +103,14 @@ local function StylePart(self, viewer, item, part, style, g, own)
     local look = own and own[part] or BarLook(style, part)
     local size = look.size
     Kit.Font(text, { outline = look.outline, shadow = look.shadow, slug = style.slug, textColor = look.color },
-        size, Kit.FontPath(look, self.id), g.px)
+        size, addon.Style.Weighted(Kit.FontPath(look, self.id), "bold"), g.px)
     text:SetWordWrap(false)
     -- Icons: the count tucks into the icon's corner. Bars: the name and time
     -- sit inside the bar; the name stops short of the time.
     local room, width = g.inset + PAD * g.px, nil
     if host == item.Bar then
         room = 4 * g.px
-        local inner = math.max(g.px, g.w - g.h - 2 * g.inset)
+        local inner = math.max(g.px, g.w - M.BarIconWidth(g.h, g.px) - 2 * (g.reach or 0) - 2 * g.px)
         if part == "name" then
             local duration = own and own.duration or BarLook(style, "duration")
             width = inner - 2 * room - (duration.show and 4 * duration.size or 0)

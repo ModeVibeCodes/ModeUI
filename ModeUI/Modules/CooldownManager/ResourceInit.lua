@@ -16,7 +16,7 @@ if not M then return end
 -- ResourceUpdate.lua fills them, ResourceSettings.lua is their page.
 local L, Kit = addon.L, addon.Kit
 local Public, Number = addon.IsPublic, addon.IsNumber
-local P = Kit.palette
+local Tone = addon.Style.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 M.resources = { "power", "combo", "mana", "health" }
@@ -66,35 +66,38 @@ M.resourcePositions = {
     mana = Below(M.ResourceElementId("combo")), health = Below(M.ResourceElementId("mana")),
 }
 
--- Combo points in the nameplates' combo red; health in your class color.
-M.COMBO_COLOR = Kit.RGB(240, 84, 84)
+-- The Mode look (docs/DESIGN_LANGUAGE.md, "Bars"): the `frameThin` edge
+-- outside each box, Mode Gradient over Mode BG (Slate at 60%, so the world
+-- shows through), Geist Bold text. Combo points in the hostile red; health in
+-- your class color.
+M.RESOURCE_EMPTY = math.floor(Tone.emptyAlpha * 100 + 0.5)
 local function Style(show, height, colorMode, color, text, size)
     return {
         show = show, width = 300, height = height, matchWidth = true,
-        border = "mode", borderColor = Copy(Kit.BORDER_COLOR),
-        barTexture = "mode", colorMode = colorMode, barColor = Copy(color), barOpacity = 100,
-        barBackground = "slate", barBackgroundOpacity = 70,
+        border = "mode",
+        barTexture = "media:Mode Gradient", colorMode = colorMode, barColor = Copy(color), barOpacity = 100,
+        barBackground = "media:Mode BG", barBackgroundOpacity = M.RESOURCE_EMPTY,
         -- Fill direction, smooth changes (the client eases the bar toward a
         -- new value), the 1px line where the fill ends, and the gap between
         -- combo points.
         reverse = false, smooth = true, fillEdge = true, spacing = 2,
-        text = text, textAnchor = "CENTER", textSize = size, textX = 0, textY = 0, textColor = Copy(P.text),
-        font = "game", fontMedia = "Expressway", outline = true, shadow = true, slug = true,
+        text = text, textAnchor = "CENTER", textSize = size, textX = 0, textY = 0, textColor = Copy(Tone.textBright),
+        font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, slug = true,
         visibility = "always", opacity = 100, fadeOpacity = 0,
     }
 end
 M.resourceDefaults = {
-    power = Style(true, 14, "power", P.mana, "current", 11),
-    combo = Style(true, 10, "custom", M.COMBO_COLOR, "none", 10),
-    mana = Style(true, 8, "power", P.mana, "none", 9),
-    health = Style(false, 14, "class", P.green, "percent", 11),
+    power = Style(true, 14, "power", Tone.power, "current", 11),
+    combo = Style(true, 10, "custom", Tone.reaction.hostile, "none", 10),
+    mana = Style(true, 8, "power", Tone.power, "none", 9),
+    health = Style(false, 14, "class", Tone.reaction.friendly, "percent", 11),
 }
 
 M.resourceRanges = { width = { 40, 600, 1 }, height = { 4, 40, 1 }, spacing = { 0, 12, 1 },
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 },
     textSize = { 6, 32, 1 }, textX = { -60, 60, 1 }, textY = { -40, 40, 1 },
     opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 } }
-M.resourceColorKeys = { borderColor = true, barColor = true, textColor = true }
+M.resourceColorKeys = { barColor = true, textColor = true }
 M.resourceAlphaKeys = { opacity = true, fadeOpacity = true }
 -- Keys Reset to Defaults leaves alone: whether it shows and its size.
 M.resourceIdentityKeys = { show = true, width = true, height = true, matchWidth = true }
@@ -108,7 +111,7 @@ local function List(ids, labels)
     return list
 end
 M.resourceChoices = {
-    border = { { id = "mode", label = "ModeUI" }, { id = "none", label = "None" } },
+    border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
     textAnchor = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     reverse = { { id = false, label = "Left to Right" }, { id = true, label = "Right to Left" } },
     visibility = M.choices.visibility,

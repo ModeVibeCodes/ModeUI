@@ -27,33 +27,40 @@ local Cooldowns = addon.Domain.Cooldowns
 -- the icons' own size that's exactly icon, gap, icon...; matched to a length
 -- it stays pixel perfect, the icons differing by a pixel at most. Centered
 -- lines shift a short line by half a slot per missing icon.
+--
+-- The `frameThin` edge sits outside each icon (docs/DESIGN_LANGUAGE.md,
+-- "Cooldown icons"): every slot is the icon plus the edge's reach on each
+-- side, so the line holds the edges and Spacing counts between their shadows.
+-- The icon fills its slot inside the reach (no inset).
+M.EDGE = "frameThin"
+M.EDGE_REACH = addon.Style.EdgeReach(M.EDGE)
 function M.Geometry(style, count, px, match)
     px = px or 1
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local horizontal = M.horizontalGrowth[style.grow] == true
     local w, h, gap = Snap(style.width), Snap(style.height), Round(style.spacing)
+    local reach = style.border == "none" and 0 or M.EDGE_REACH * px
     count = math.max(0, count)
     local per = math.max(1, style.perLine)
     local alongKey, crossKey = horizontal and "width" or "height", horizontal and "height" or "width"
     local along, cross = horizontal and w or h, horizontal and h or w
-    local long = per * along + (per - 1) * gap
-    if match and match[alongKey] then long = math.max(per * px, Snap(match[alongKey])) end
-    if match and match[crossKey] then cross = Snap(match[crossKey]) end
+    -- Outer sizes: the icon with its edge.
+    local long = per * (along + 2 * reach) + (per - 1) * gap
+    local outer = cross + 2 * reach
+    if match and match[alongKey] then long = math.max(per * (px + 2 * reach), Snap(match[alongKey])) end
+    if match and match[crossKey] then outer = math.max(px + 2 * reach, Snap(match[crossKey])); cross = outer - 2 * reach end
     local slot = (long + gap) / per
-    along = math.max(px, Round(slot - gap))
+    along = math.max(px, Round(slot - gap) - 2 * reach)
     if horizontal then w, h = along, cross else w, h = cross, along end
-    local g = { px = px, w = w, h = h, points = {}, sizes = {} }
-    -- The ModeUI border is 2px; the content starts at its inner edge.
-    if style.border == "mode" then g.border = Kit.BORDER_PIXELS * px; g.inset = g.border
-    else g.border, g.inset = Kit.SlotInsets(style, px) end
-    g.width, g.height = horizontal and long or cross, horizontal and cross or long
+    local g = { px = px, w = w, h = h, reach = reach, border = 0, inset = 0, points = {}, sizes = {} }
+    g.width, g.height = horizontal and long or outer, horizontal and outer or long
     local function Even(v) return math.floor(v / px + 0.5) % 2 == 1 and v + px or v end
     if not (match and match.width) then g.width = Even(g.width) end
     if not (match and match.height) then g.height = Even(g.height) end
     local lines = math.max(1, math.ceil(count / per))
     local back = style.lineGrowth == "up" or style.lineGrowth == "left"
-    local across = (lines - 1) * (cross + gap)
+    local across = (lines - 1) * (outer + gap)
     g.extent = { width = g.width + (horizontal and 0 or across), height = g.height + (horizontal and across or 0),
         x = (not horizontal and back) and across or 0, y = (horizontal and back) and across or 0 }
     local function Start(at) return Round(at * slot) end
@@ -64,8 +71,8 @@ function M.Geometry(style, count, px, match)
         if style.grow == "right" or style.grow == "down" then at = index
         elseif style.grow == "left" or style.grow == "up" then at = per - 1 - index
         else at = index + (per - inLine) / 2 end
-        local offset, size = Start(at), Start(at + 1) - gap - Start(at)
-        local shift = line * (cross + gap) * (back and -1 or 1)
+        local offset, size = Start(at) + reach, Start(at + 1) - gap - Start(at) - 2 * reach
+        local shift = line * (outer + gap) * (back and -1 or 1) + reach
         if horizontal then g.points[i], g.sizes[i] = { "TOPLEFT", offset, -shift }, { size, cross }
         else g.points[i], g.sizes[i] = { "TOPLEFT", shift, -offset }, { cross, size } end
     end

@@ -36,12 +36,26 @@ function M:Glow(item, kind)
 end
 
 -- Paints a glow from a look ({ style, color, pulse, lines, thickness }), at
--- the item's own size (never measured).
+-- the item's own size (never measured). Border is the Mode rim swap
+-- (docs/DESIGN_LANGUAGE.md, "Cooldown icons"): a Mode Empty rim in the glow
+-- color laid exactly over the icon's `frameThin` edge, so the icon keeps its
+-- size. It lives on the glow's frame, so it shows, hides, pulses and takes a
+-- buff's (possibly secret) active state with the glow.
 local function Paint(item, frame, look)
     local state = M.dress[item]
     local g = state and state.g
-    Kit.PaintSlotGlow(frame, item, look.style, look.color, look.pulse, g and g.px or 1,
+    local border = look.style == "border"
+    Kit.PaintSlotGlow(frame, item, border and "none" or look.style, look.color, look.pulse and not border, g and g.px or 1,
         { width = g and g.w, height = g and g.h, lines = look.lines, thickness = look.thickness })
+    if border and not frame.ring then
+        frame.ring = addon.Style.Edge(frame, "empty", { rim = 1, level = 1 })
+        for _, region in ipairs(frame.ring:Regions()) do frame.parts[#frame.parts + 1] = region end
+    end
+    if frame.ring then
+        frame.ring:SetShown(border)
+        if border then frame.ring:Layout(); frame.ring:SetTint(look.color) end
+    end
+    if border and look.pulse and frame.pulse and not frame.pulse:IsPlaying() then frame.pulse:Play() end
 end
 M.PaintGlow = Paint
 

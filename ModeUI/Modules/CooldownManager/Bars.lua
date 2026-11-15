@@ -2,19 +2,28 @@ local _, addon = ...
 local M = addon.CooldownManager
 if not M then return end
 
--- Tracked Bars: each item is an icon beside a status bar. The icon, a
--- square as tall as the bar, gets the bar's border (the ModeUI border by
--- default) and background on the Icon Side; the bar sits in a box of its
--- own beside it, a border around a background (Bar Background at
--- Background Opacity) and the fill in Bar Texture and Bar Color, Mode
--- Gradient by default. Blizzard's bar art (its background and the spark) is
--- faded. Blizzard still fills the bar and writes the name and time left; its
--- Bar Content (icon and name, icon only, name only) still applies: with the
--- icon hidden the bar takes the whole width.
-local Kit = addon.Kit
-local GAP = 2 -- physical pixels between the icon and the bar
+-- Tracked Bars (docs/DESIGN_LANGUAGE.md, "Cooldown icons"): each item is an
+-- icon beside a timer bar. The icon, wider than tall like every Mode icon
+-- (4px wider than the bar is tall; 6px from 36px), takes the Mode Button
+-- face and the `frameThin` edge on the Icon Side; the bar sits in a box of
+-- its own beside it, in the same edge: Bar Background (Mode BG on Slate) at
+-- Background Opacity, the fill in Bar Texture (Mode Gradient: its base and
+-- white lift) in your class color or Bar Color, and the Comet spark.
+-- Blizzard's bar art (its background and its own spark) is faded. Blizzard
+-- still fills the bar and writes the name and time left; its Bar Content
+-- (icon and name, icon only, name only) still applies: with the icon hidden
+-- the bar takes the whole width.
+local Kit, Style = addon.Kit, addon.Style
+local GAP = 2 -- physical pixels between the icon's edge and the bar's
 
 local function Fade(region, shown) if region and region.SetAlpha then region:SetAlpha(shown and 1 or 0) end end
+
+-- The icon's width for a bar `h` tall: 4px wider (6px from 36px).
+function M.BarIconWidth(h, px)
+    local w = h + 4 * px
+    if w >= 36 * px then w = h + 6 * px end
+    return w
+end
 
 -- Kit's bar painters take a table with the bar's methods and its sheen and
 -- background textures; ModeUI's textures live in its own state, not on
@@ -25,54 +34,61 @@ local function Painter(bar, state)
         GetStatusBarTexture = function() return bar:GetStatusBarTexture() end }
 end
 
+-- The fill color: your class color (Class Color), else Bar Color.
+function M:BarFill(style)
+    local class = style.barColorMode == "class" and addon.Domain.UnitColor.PlayerClass("player")
+    if class and addon.IsNumber(class.r, 0, 1) and addon.IsNumber(class.g, 0, 1) and addon.IsNumber(class.b, 0, 1) then
+        return { class.r, class.g, class.b }
+    end
+    return style.barColor
+end
+
 function M:SkinBar(item, style, g, state)
     local iconFrame, bar = item.Icon, item.Bar
     if not iconFrame or not bar then return end
     if not state.stripped then
         state.stripped = true
         self.StripArt(iconFrame, iconFrame.Icon)
-        state.art = Kit.SlotArt(iconFrame)
-        -- The bar's box: border and background, under Blizzard's bar.
+        state.art = self.IconArt(iconFrame)
+        -- The bar's box: its edge and background, under Blizzard's bar.
         state.box = CreateFrame("Frame", nil, item)
-        state.rim = Kit.Rim(state.box, "BORDER")
+        state.boxEdge = Style.Edge(state.box, M.EDGE)
         state.bg = state.box:CreateTexture(nil, "BACKGROUND", nil, -8)
-        -- Mode Gradient's sheen: over the fill (ARTWORK 0), under the texts.
+        -- Mode Gradient's lift: over the fill (ARTWORK 0), under the texts.
         state.sheen = bar:CreateTexture(nil, "ARTWORK", nil, 7)
-        state.iconBorder, state.boxBorder = {}, {}
+        state.comet = Style.Comet(bar)
     end
     item:SetSize(g.w, g.h)
-    -- The icon: a square as tall as the bar, in the bar's border.
-    local ig = { w = g.h, h = g.h, px = g.px, border = g.border, inset = g.inset }
-    iconFrame:SetSize(g.h, g.h)
-    Kit.PaintSlotArt(state.art, iconFrame, self:PaintBorder(iconFrame, style, ig, state.iconBorder), ig)
-    if iconFrame.Icon then Kit.Inset(iconFrame.Icon, iconFrame, g.inset); Kit.CropIcon(iconFrame.Icon, ig) end
+    local iw = M.BarIconWidth(g.h, g.px)
+    iconFrame:SetSize(iw, g.h)
+    self.PaintIconArt(state.art, iconFrame, style)
+    if iconFrame.Icon then
+        Kit.Inset(iconFrame.Icon, iconFrame, 0)
+        Kit.CropIcon(iconFrame.Icon, { w = iw, h = g.h, px = g.px, inset = 0 })
+    end
     Fade(item.DebuffBorder, style.debuffBorder)
     Fade(bar.BarBG, false)
-    Fade(bar.Pip, style.showSpark)
+    Fade(bar.Pip, false)
+    state.boxEdge:SetShown(style.border ~= "none")
     self:LayoutBarParts(item)
-    -- The box: its border (the ModeUI border, or the slot's rim) and the
-    -- bar's background inside it.
-    local box, t = state.box, g.border
-    local cut = (style.border == "rounded") and g.px or 0
-    self:PaintBorder(box, style, g, state.boxBorder)
-    Kit.PlaceRim(state.rim, box, style.border == "mode" and 0 or t, cut, style.borderColor, 1)
-    Kit.Inset(state.bg, box, t)
+    -- The background fills the box; the fill and its lift draw over it.
+    Kit.Inset(state.bg, state.box, 0)
     Kit.BarBackground({ bg = state.bg }, style.barBackground, g.w, g.h, g.px)
     Kit.Tint(state.bg, Kit.BarBackgroundColor(style.barBackground), style.barBackgroundOpacity / 100)
-    -- The fill, inside the border.
-    local inner = math.max(g.px, g.h - 2 * t)
-    Kit.BarForeground(Painter(bar, state), style.barTexture, inner, g.px)
+    Kit.BarForeground(Painter(bar, state), style.barTexture, g.h, g.px)
     local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
     if fill and fill.ClearTextureSlice then fill:ClearTextureSlice() end
-    if bar.SetStatusBarColor then
-        local c = style.barColor
-        bar:SetStatusBarColor(c[1], c[2], c[3], 1)
-    end
+    local color = self:BarFill(style)
+    if bar.SetStatusBarColor then bar:SetStatusBarColor(color[1], color[2], color[3], 1) end
+    state.comet:SetColor(color)
+    state.comet:Layout(false, g.px)
+    state.comet:SetShown(style.showSpark)
 end
 
--- Places the icon on its side and the bar box beside it (or over the whole
--- width while Blizzard hides the icon), the bar inside the box's border.
--- Blizzard's Bar Content re-anchors the bar; this runs after it.
+-- Places the icon on its side and the bar box beside it, past both edges
+-- and GAP (or over the whole width while Blizzard hides the icon), the bar
+-- filling the box. Blizzard's Bar Content re-anchors the bar; this runs
+-- after it.
 function M:LayoutBarParts(item)
     local state = self.dress[item]
     local style = state and self.db[state.viewer]
@@ -85,13 +101,15 @@ function M:LayoutBarParts(item)
     iconFrame:SetPoint(side, item, side, 0, 0)
     local shown = iconFrame:IsShown()
     local withIcon = not addon.IsPublic(shown) or shown == true
-    local room = withIcon and (g.h + GAP * g.px) or 0
+    local reach = style.border == "none" and 0 or g.reach or 0
+    local room = withIcon and (M.BarIconWidth(g.h, g.px) + 2 * reach + GAP * g.px) or 0
     local box = state.box
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", item, "TOPLEFT", right and 0 or room, 0)
     box:SetPoint("BOTTOMRIGHT", item, "BOTTOMRIGHT", right and -room or 0, 0)
     box:SetFrameLevel(math.max(0, bar:GetFrameLevel() - 1))
     bar:ClearAllPoints()
-    bar:SetPoint("TOPLEFT", box, "TOPLEFT", g.border, -g.border)
-    bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -g.border, g.border)
+    bar:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
+    bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
+    state.boxEdge:Layout()
 end

@@ -1197,6 +1197,54 @@ CDM and oUF draw resource bars (their approach, not their code).
   `UPDATE_SHAPESHIFT_FORM` fires on Forever (`UNIT_DISPLAYPOWER` covers form
   changes either way).
 
+### Cooldown Manager, Mode redesign inventory — November 15, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source at 1.60.1 (70938,
+commit `bebcb6b`, November 13, 2026), the same build as above; nothing ModeUI
+uses is missing or changed.
+
+- **Blizzard_CooldownViewer (30 files):** viewers and items in
+  `CooldownViewer.lua`/`.xml`, `CooldownViewerItemData.lua`,
+  `CooldownViewerSecure.lua`, `CooldownViewerUtil.lua`; the settings window
+  (`CooldownViewerSettings*`, `CooldownViewerDraggedItemBase*`); alerts
+  (`CooldownViewerAlert.lua`, `CooldownViewerEditAlertBase*`,
+  `CooldownViewerSettingsAlerts*`, `CooldownViewerSoundAlertData.lua`,
+  `CooldownViewerVisualAlertTarget.lua`, `PandemicAlertAnimation.xml`);
+  `GroupBuffFilter*`; `SlashCommandRegistration.lua`. The TOC has
+  `## AllowLoadGameType: standard, camelot` and no `## Interface` line.
+- **What the redesign relies on:** the item methods ModeUI post-hooks
+  (`UpdateShownState` :314, `SetIsActive` :347, `RefreshSpellCooldownInfo`
+  :1137, `RefreshIconDesaturation` :1195, `RefreshIconColor` :1204 (the
+  Rosewood out-of-range tint goes on after it), `RefreshCooldownInfo`
+  :1412/:1555, `SetBarContent` :1514), the parentKeys `Icon`, `Cooldown`,
+  `ChargeCount`, `Applications`, `DebuffBorder`, `CooldownFlash`,
+  `OutOfRange`, `Bar`, `BarBG`, `Pip`, and `spellOutOfRange` (:737). The
+  Comet spark is a child frame on Blizzard's bar (`Style.Comet`), and the
+  Mode edges are child frames on the items: nothing is written to their
+  tables.
+- **Not used yet, worth knowing:** `Enum.CooldownViewerCategory` also has
+  `GroupBuff` (4), `SpecAgnosticEssential` (5), `SpecAgnosticTracked` (6),
+  `EquipSlotEssential` (7) and `EquipSlotTracked` (8); the
+  `CooldownViewerCooldown` struct has `equipSlot` and `buffSlot` (native
+  trinket tracking); `C_CooldownViewer.GetGroupBuffItems`,
+  `GetValidAlertTypes`, `GetLayoutData`; the events
+  `COOLDOWN_VIEWER_DATA_LOADED`, `COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED`,
+  `COOLDOWN_VIEWER_TABLE_HOTFIXED`. `CooldownViewerSecure.lua` keeps a
+  secure aura map (`secretunwrap`, `settablesecurity(...,
+  DisallowTaintedAccess)`), one more reason ModeUI never writes to the items.
+- **Secret and protection flags:** every `Cooldown` setter is
+  `IsProtectedFunction` with `SecretArguments = "AllowedWhenUntainted"`, and
+  `SetCooldown` adds `SecretAspect.Cooldown`; ModeUI's own icons get duration
+  objects (`GetSpellCooldownDuration` and `GetSpellChargeDuration` accept
+  secrets from addon code) and item cooldowns as plain numbers
+  (`C_Container.GetItemCooldown`, no secret flags). `C_CVar.GetCVarBool` is
+  `SecretArguments = "NotAllowed"`.
+- **The AddOn list (`Blizzard_AddOnList/AddonList.lua` :440-521):** an addon
+  nests under the addon whose name equals its `Group` metadata (the client
+  fills it for similar names and dependencies; `## Group` overrides). Only
+  `## Category` headers collapse. `## IconTexture`/`## IconAtlas` give the
+  icon. This is how `ModeCDM` sits under ModeUI.
+
 ## Party frames — November 13, 2026
 
 Checked against the Forever branch of Gethe/wow-ui-source (1.60.1, build 70938,

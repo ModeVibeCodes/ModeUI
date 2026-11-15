@@ -16,67 +16,69 @@ world.run([==[
     assert(M and not M.enabled and not M.built and M.standalone and M.category == nil, 'standalone, off by default')
     local first = ItemsOf(essential)[1]
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
-    assert(M.db.essential.width == 42 and M.db.essential.height == 34 and M.db.utility.width == 36 and M.db.utility.height == 28, 'icons 8px wider than tall')
-    assert(M.db.version == 4 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    assert(M.db.essential.width == 40 and M.db.essential.height == 34 and M.db.utility.width == 32 and M.db.utility.height == 28, 'icons wider than tall (Mode sizes)')
+    assert(M.db.version == 5 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
     assert(M.db.essential.desaturate and not M.db.essential.auraSwipe and next(M.db.essential.spells) == nil, 'gray on cooldown; glows off on every spell')
-    assert(M.db.essential.procGlow == 'blizzard' and M.db.essential.readyGlow == 'pixel', 'looks a glow starts with')
+    assert(M.db.essential.procGlow == 'border' and M.db.essential.readyGlow == 'mode', 'looks a glow starts with')
+    local Tone = addon.Style.Tone
+    assert(addon.Style.SameColor(M.db.essential.procColor, Tone.celadon) and addon.Style.SameColor(M.db.essential.readyColor, Tone.ivory), 'Celadon procs, Ivory ready')
+    assert(M.db.essential.fontMedia == 'Mode Geist' and not M.db.essential.outline and M.db.essential.backgroundOpacity == 100, 'Geist, no outline, a solid face')
 
     addon:SetModuleEnabled('cooldownManager', true)
     assert(M.built and ModeUICooldownEssential and ModeUICooldownBuffBar, 'a stand-in per viewer')
     assert(PM:GetPosition('cooldownManagerUtility').target == 'cooldownManagerEssential', 'Utility sits under Essential')
     local holder = M.holders.essential
     local items = ItemsOf(essential)
-    -- One line of 12 slots (42x36, 2px apart); five icons centered in it.
-    assert(ModeUICooldownEssential.width == 12 * 42 + 11 * 2 and ModeUICooldownEssential.height == 34, 'stand-in is one full line')
+    -- One line of 12 slots: 40x34 icons, each with the frameThin edge's 2px
+    -- reach, 2px apart between the shadows; five icons centered in it.
+    assert(ModeUICooldownEssential.width == 12 * 44 + 11 * 2 and ModeUICooldownEssential.height == 38, 'stand-in is one full line, edges included')
     local p = Point(items[1])
-    assert(p[1] == 'TOPLEFT' and p[2] == holder and p[4] == 154 and p[5] == 0, 'centered: seven empty slots split either side')
-    assert(Point(items[2])[4] == 198 and items[1].width == 42 and items[1].scale == 1)
+    assert(p[1] == 'TOPLEFT' and p[2] == holder and p[4] == 163 and p[5] == -2, 'centered: seven empty slots split either side, inside the reach')
+    assert(Point(items[2])[4] == 209 and items[1].width == 40 and items[1].scale == 1)
 
-    -- Skin.
+    -- Skin: the Mode Button face, the icon filling the item, the frameThin edge outside it.
     local icon = items[1].Icon
     assert(icon.mask == nil and items[1].overlay.alpha == 0, 'round mask removed, frame art faded')
-    -- The ModeUI border: a 2px rim with round corners above the icon, which
-    -- starts at its inner edge; the slot's own edges hide.
     local dress = M.dress[items[1]]
-    local rim = dress.modeBorder
-    assert(rim and rim.edge:IsShown() and rim.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and rim.radius == 4, 'ModeUI border')
-    assert(rim.edge.frameLevel > items[1]:GetFrameLevel() and not dress.art.edges[1]:IsShown(), 'rim above the icon; no slot edges')
-    assert(dress.art.fill.vertexColor[4] == 0.75 and dress.art.fill.points[1][4] == 2 and icon.points[1][4] == 2, 'background and icon inside the rim')
-    assert(items[1].Cooldown.points[1][4] == 2, 'swipe inside the rim')
-    -- Out of range: Blizzard's shade stays faded (no red block); its red tint on the icon stays.
+    local art = dress.art
+    assert(art.edge.preset == 'frameThin' and art.edge.holder:IsShown() and art.edge.holder.frameLevel > items[1]:GetFrameLevel(), 'frameThin edge above the icon')
+    assert(art.face.texture and art.face.vertexColor[1] == Tone.mono.panel[1] and art.face.vertexColor[4] == 1, 'Mode Button face in Mono panel')
+    assert(icon.points[1][4] == 0 and items[1].Cooldown.points[1][4] == 0, 'icon and swipe fill the item')
+    -- Out of range: Blizzard's shade stays faded (no red block); the icon takes Rosewood.
     assert(items[1].OutOfRange.alpha == 0 and items[1].OutOfRange.atlas == 'UI-CooldownManager-OORshadow', "Blizzard's shade faded, not repainted")
     items[1].spellOutOfRange = true; items[1]:RefreshIconColor()
-    assert(items[1].OutOfRange.alpha == 0 and items[1].Icon.vertexColor[2] == 0.15, 'out of range: the red tint only')
+    assert(items[1].OutOfRange.alpha == 0 and items[1].Icon.vertexColor[2] == Tone.rosewood[2], 'out of range: the Rosewood tint')
     assert(M:SetOption('essential', 'rangeTint', false)); items[1]:RefreshIconColor()
     assert(items[1].Icon.vertexColor[2] == 1, 'Out of Range Tint off: full color')
     assert(M:SetOption('essential', 'rangeTint', true)); items[1].spellOutOfRange = nil; items[1]:RefreshIconColor()
-    -- Rounded keeps the slot's own rim.
-    assert(M:SetOption('essential', 'border', 'rounded') and dress.art.edges[1]:IsShown() and not rim.edge:IsShown() and icon.points[1][4] == 3)
+    -- Border None hides the edge and gives the room back.
+    assert(M:SetOption('essential', 'border', 'none') and not art.edge.holder:IsShown() and Point(items[1])[5] == 0)
+    assert(not M:SetOption('essential', 'border', 'rounded'), 'the slot rims retired')
     assert(M:SetOption('essential', 'border', 'mode'))
     items[1]:RefreshSpellCooldownInfo()
     assert(items[1].Cooldown.drawEdge == false and items[1].Cooldown.swipeColor[4] == 0.7, 'edge off, 70% swipe after the refresh')
     local count = items[1].ChargeCount.Current
-    assert(count.font[2] == 12 and Point(count)[1] == 'BOTTOMRIGHT' and Point(count)[4] == -3, 'count in the corner')
+    assert(count.font[2] == 11 and count.font[1]:find('Geist%-Bold') and Point(count)[1] == 'BOTTOMRIGHT' and Point(count)[4] == -2, 'count in the corner, Geist Bold')
 
-    -- Growth and New Lines.
+    -- Growth and New Lines (slots 46px apart: 44 with the edges, 2 between).
     local function At(item) local q = Point(item); return q[4], q[5] end
-    assert(M:SetOption('essential', 'grow', 'right')); local x = At(items[2]); assert(x == 44, 'Horizontal Right')
-    assert(M:SetOption('essential', 'grow', 'left')); x = At(items[1]); assert(x == 526 - 42 and At(items[2]) == 440, 'Horizontal Left')
+    assert(M:SetOption('essential', 'grow', 'right')); local x = At(items[2]); assert(x == 48, 'Horizontal Right')
+    assert(M:SetOption('essential', 'grow', 'left')); x = At(items[1]); assert(x == 508 and At(items[2]) == 462, 'Horizontal Left')
     assert(M:SetOption('essential', 'grow', 'down') and M.db.essential.lineGrowth == 'right', 'columns: New Lines turns Right')
-    assert(ModeUICooldownEssential.width == 42 and ModeUICooldownEssential.height == 12 * 34 + 11 * 2)
-    local _, y = At(items[2]); assert(y == -36, 'Vertical Down')
-    assert(M:SetOption('essential', 'grow', 'up')); _, y = At(items[1]); assert(y == -(430 - 34), 'Vertical Up')
-    assert(M:SetOption('essential', 'grow', 'centerV')); _, y = At(items[1]); assert(y == -126, 'Centered Vertical')
+    assert(ModeUICooldownEssential.width == 44 and ModeUICooldownEssential.height == 12 * 38 + 11 * 2)
+    local _, y = At(items[2]); assert(y == -42, 'Vertical Down')
+    assert(M:SetOption('essential', 'grow', 'up')); _, y = At(items[1]); assert(y == -442, 'Vertical Up')
+    assert(M:SetOption('essential', 'grow', 'centerV')); _, y = At(items[1]); assert(y == -142, 'Centered Vertical')
     assert(not M:SetOption('essential', 'lineGrowth', 'up'), 'columns add lines right or left')
     assert(M:SetOption('essential', 'grow', 'down') and M:SetOption('essential', 'perLine', 3))
-    x, y = At(items[4]); assert(x == 44 and y == 0, 'second column to the right')
+    x, y = At(items[4]); assert(x == 48 and y == -2, 'second column to the right')
     assert(M:SetOption('essential', 'lineGrowth', 'left')); x = At(items[4]); assert(x == -44, 'New Lines: Left')
     assert(M:SetOption('essential', 'grow', 'centerH') and M.db.essential.lineGrowth == 'down')
-    x, y = At(items[4]); assert(x == 22 and y == -36, 'short second line centered under the first')
-    assert(M:SetOption('essential', 'lineGrowth', 'up')); _, y = At(items[4]); assert(y == 36, 'New Lines: Up')
+    x, y = At(items[4]); assert(x == 25 and y == -42, 'short second line centered under the first')
+    assert(M:SetOption('essential', 'lineGrowth', 'up')); _, y = At(items[4]); assert(y == 38, 'New Lines: Up')
     assert(M:SetOption('essential', 'lineGrowth', 'down') and M:SetOption('essential', 'perLine', 12))
     essential:RefreshLayout(); items = ItemsOf(essential)
-    assert(Point(items[2])[2] == holder and Point(items[2])[4] == 198, "Blizzard's grid undone after its layout")
+    assert(Point(items[2])[2] == holder and Point(items[2])[4] == 209, "Blizzard's grid undone after its layout")
 
     -- Desaturate on Cooldown: gray on a real cooldown, kept after Blizzard's refresh.
     cooling[5001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
@@ -120,9 +122,13 @@ world.run([==[
     assert(not (M.glows[items[2]] and M.glows[items[2]].proc and M.glows[items[2]].proc:IsShown()) and items[2].SpellActivationAlert.alpha == 0, 'no glow until switched on')
     assert(M:SetSpellSwitch('essential', '102', 'proc', true))
     local look = M.db.essential.spells['102'].proc
-    assert(look.style == 'blizzard' and look.lines == 8 and look.thickness == 2, "switched on with the bar's look")
+    assert(look.style == 'border' and look.lines == 8 and look.thickness == 2, "switched on with the bar's look")
     local set = M.glows[items[2]]
-    assert(set.proc:IsShown() and set.proc.flipbook:IsShown() and set.proc.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', "Blizzard: the game's proc loop art")
+    local ring = set.proc.ring
+    assert(set.proc:IsShown() and ring and ring.preset == 'empty' and ring.holder:IsShown() and addon.Style.SameColor(ring.tint, Tone.celadon), 'Border: the Celadon rim over the edge')
+    assert(not set.proc.edges[1]:IsShown() and not set.proc.soft:IsShown(), 'no square glow edges')
+    assert(M:SetSpellGlow('essential', '102', 'proc', 'style', 'blizzard') and not ring.holder:IsShown())
+    assert(set.proc.flipbook:IsShown() and set.proc.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', "Blizzard: the game's proc loop art")
     assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active and not set.active:IsShown(), 'proc wins over active')
     ActionButtonSpellAlertManager:HideAlert(items[2]); assert(set.active:IsShown() and not set.proc:IsShown(), 'active glow while the effect is up')
     assert(M:SetSpellGlow('essential', '102', 'active', 'style', 'pixel') and set.active.pixels and set.active.pixels[1]:IsShown(), 'Pixel: marching lines')
@@ -161,18 +167,24 @@ world.run([==[
 
     -- Tracked Buffs close gaps; a secret shown state keeps its place.
     buffItems[1].activeState = false; buffItems[1]:UpdateShownState()
-    assert(M.placedCount.buffIcon == 1 and Point(buffItems[2])[4] == 209, 'the active buff takes the middle')
+    assert(M.placedCount.buffIcon == 1 and Point(buffItems[2])[4] == 211, 'the active buff takes the middle')
     buffItems[1].secretShown = true; buffItems[1]:UpdateShownState()
     assert(M.placedCount.buffIcon == 2, 'a secret shown state keeps its place')
     buffItems[1].secretShown = nil; buffItems[1].activeState = true; buffItems[1]:UpdateShownState()
 
     -- Tracked Bars.
     local bar = ItemsOf(bars)[1]
-    assert(bar.width == 220 and bar.Icon.width == 22 and Point(M.dress[bar].box)[4] == 24, 'icon square, bar box beside it')
-    assert(bar.Bar.statusBarTexture == Kit.FLAT and bar.Bar.BarBG.alpha == 0, 'Mode Gradient')
-    assert(M.dress[bar].iconBorder.modeBorder.edge:IsShown() and M.dress[bar].boxBorder.modeBorder.edge:IsShown(), 'ModeUI border on the icon and the bar')
-    assert(not M.dress[bar].rim[1]:IsShown() and Point(bar.Bar)[4] == 2, 'no slot rim; the bar inside the ModeUI rim')
-    assert(Point(ItemsOf(bars)[2])[5] == 24, 'Tracked Bars add lines upward')
+    -- 220 x 16: the icon 4px wider than tall, the box past both edges and 2px.
+    local barState = M.dress[bar]
+    assert(bar.width == 220 and bar.Icon.width == 20 and bar.Icon.height == 16 and Point(barState.box)[4] == 26, 'icon wider than tall, bar box beside it')
+    assert(bar.Bar.statusBarTexture ~= Kit.FLAT and barState.sheen:IsShown() and bar.Bar.BarBG.alpha == 0 and bar.Bar.Pip.alpha == 0, 'Mode Gradient: base and lift')
+    assert(barState.bg.vertexColor[1] == Tone.slate[1] and barState.bg.vertexColor[4] == 1, 'Mode BG on Slate, solid')
+    assert(barState.art.edge.holder:IsShown() and barState.boxEdge.preset == 'frameThin' and barState.boxEdge.holder:IsShown(), 'the Mode edge on the icon and the bar')
+    assert(Point(bar.Bar)[4] == 0 and barState.comet.clip:IsShown(), 'the bar fills its box; the Comet spark')
+    assert(M:SetOption('buffBar', 'showSpark', false) and not barState.comet.clip:IsShown() and M:SetOption('buffBar', 'showSpark', true))
+    assert(M:SetOption('buffBar', 'barColorMode', 'custom') and bar.Bar.statusBarColor[1] == Tone.ivory[1], 'Custom: Bar Color (Ivory)')
+    assert(M:SetOption('buffBar', 'barColorMode', 'class'))
+    assert(Point(ItemsOf(bars)[2])[5] == 20, 'Tracked Bars add lines upward')
 
     -- Custom bars: Blizzard's own icons move onto them.
     local c1 = M:AddCustomBar('cooldown')
@@ -183,8 +195,8 @@ world.run([==[
     assert(M:AddEntry(c1, '102') and M:AddEntry(c1, '201'))
     assert(Point(byKey[102])[2] == M.holders.custom1 and Point(byKey[201])[2] == M.holders.custom1, 'icons move onto the custom bar')
     assert(M.placedCount.essential == 4 and M.placedCount.utility == 2, 'their viewers close up (Utility keeps Berserking)')
-    assert(Point(byKey[102])[4] == 132 and Point(byKey[201])[4] == 176, 'in the order added, centered')
-    assert(M:MoveEntry(c1, '201', -1) and Point(byKey[201])[4] == 132, 'Earlier')
+    assert(Point(byKey[102])[4] == 140 and Point(byKey[201])[4] == 186, 'in the order added, centered')
+    assert(M:MoveEntry(c1, '201', -1) and Point(byKey[201])[4] == 140, 'Earlier')
     assert(not M:AddEntry(c1, '301'), 'a Cooldown Bar takes no buffs')
     local c2 = M:AddCustomBar('buff')
     assert(c2 == 'custom2' and M:Custom(c2).name == 'Buff Bar 1' and M:AddEntry(c2, '301') and not M:AddEntry(c2, '101'))
@@ -206,14 +218,14 @@ world.run([==[
     assert(addon:SetEditMode(true) and PM:Nudge('cooldownManagerCustom1', 0, -2) and Point(ModeUICooldownCustom1)[5] == -3, 'nudged from there')
     assert(addon:SetEditMode(false)); ModeUIConfigWindow:Hide()
     -- Match Width: the icons resize to fill the parent's width, pixel perfect.
-    assert(M:SetOption(c1, 'perLine', 5) and ModeUICooldownCustom1.width == 5 * 42 + 4 * 2)
+    assert(M:SetOption(c1, 'perLine', 5) and ModeUICooldownCustom1.width == 5 * 44 + 4 * 2)
     assert(PM:CanMatchSize('cooldownManagerCustom1', 'width') and PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', true) and M.db.custom1.matchWidth)
     PM:RefreshAnchorSize('cooldownManagerCustom1')
     assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width, 'width matched')
-    assert(byKey[201].width == 68 and Point(byKey[201])[4] == 141, 'icons split the width on whole pixels')
+    assert(byKey[201].width == 68 and Point(byKey[201])[4] == 149, 'icons split the width on whole pixels')
     assert(M:SetOption(c3, 'perLine', 6)); PM:RefreshAnchorSize('cooldownManagerCustom1')
-    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width and ModeUICooldownCustom3.width == 6 * 42 + 5 * 2, 'follows the parent')
-    assert(PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', false) and ModeUICooldownCustom1.width == 5 * 42 + 4 * 2)
+    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width and ModeUICooldownCustom3.width == 6 * 44 + 5 * 2, 'follows the parent')
+    assert(PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', false) and ModeUICooldownCustom1.width == 5 * 44 + 4 * 2)
     assert(M:SetOption(c1, 'perLine', 8))
     assert(M:RemoveEntry(c1, '201') and Point(byKey[201])[2] == M.holders.utility, 'Remove from Bar sends it back')
     assert(M:DeleteCustomBar(c3) and Point(byKey[102])[2] == holder and byKey[102].alpha == 1, 'deleting gives the spells back')
@@ -227,9 +239,9 @@ world.run([==[
     assert(not M:AddCustomSpell(c1, '9001') and not M:AddCustomSpell(c2, '9001'), 'once per bar; not on a Buff Bar')
     local own = M.spellIcons[c1].s9001
     assert(own:IsShown() and Point(own)[2] == M.holders.custom1 and M.placedCount.custom1 == 1, 'its own icon, on the bar')
-    assert(own.Icon.texture == 'icon:9001' and M.dress[own].modeBorder.edge:IsShown() and own.Icon.points[1][4] == 2, 'skinned like the rest')
+    assert(own.Icon.texture == 'icon:9001' and M.dress[own].art.edge.holder:IsShown() and own.Icon.points[1][4] == 0, 'skinned like the rest')
     assert(own.Cooldown.durationObject.duration == 'cd:9001', 'cooldown from its duration object')
-    assert(own.Cooldown.countdown.font[2] == 15, 'the cooldown numbers styled')
+    assert(own.Cooldown.countdown.font[2] == 13, 'the cooldown numbers styled')
     cooling[9001] = true; FireEvent('SPELL_UPDATE_COOLDOWN')
     assert(own.Icon.desaturated == true, 'gray while cooling')
     assert(M:SetSpellSwitch(c1, 's9001', 'ready', true) and M:SetSpellGlow(c1, 's9001', 'ready', 'mode', 'always') and not (M.glows[own] and M.glows[own].ready and M.glows[own].ready:IsShown()))
@@ -402,12 +414,12 @@ world.run([==[
     assert(view.icons[1].ChargeCount.Current.text == '2', 'the count shows on the spell')
     text.outlineButtons[3].scripts.OnClick(text.outlineButtons[3])
     local own = M.db.essential.spells['101'].text.count
-    assert(own.outline == 'thick' and own.size == 12 and own.anchor == 'BOTTOMRIGHT', "starts from the bar's look")
+    assert(own.outline == 'thick' and own.size == 11 and own.anchor == 'BOTTOMRIGHT', "starts from the bar's look")
     local live = ItemsOf(essential)[1].ChargeCount.Current
     assert(live.font[3] == 'THICKOUTLINE', 'thick outline on the real icon')
     text.anchorButtons.TOPLEFT.scripts.OnClick(text.anchorButtons.TOPLEFT)
     assert(Point(live)[1] == 'TOPLEFT' and M:SetSpellText('essential', '101', 'count', 'size', 16) and live.font[2] == 16, 'its place and size')
-    assert(ItemsOf(essential)[2].ChargeCount.Current.font[2] == 12, 'the other spells keep the bar look')
+    assert(ItemsOf(essential)[2].ChargeCount.Current.font[2] == 11, 'the other spells keep the bar look')
     assert(menu.textRows.count.label.text:find('own look', 1, true) and text.reset.enabled)
     text.showBox.scripts.OnClick(text.showBox); assert(live.alpha == 0, 'Show This Text off')
     assert(not M:SetSpellText('essential', '101', 'count', 'outline', 'double'), 'refused: not an outline')
@@ -417,7 +429,7 @@ world.run([==[
     menu.textRows.count.more.scripts.OnClick(menu.textRows.count.more)
     assert(text:IsShown() and not M.glowPopout:IsShown())
     text.reset.scripts.OnClick(text.reset)
-    assert(M.db.essential.spells['101'] == nil and live.font[2] == 12 and live.font[3] == 'OUTLINE' and live.alpha == 1, "Use Bar's Look")
+    assert(M.db.essential.spells['101'] == nil and live.font[2] == 11 and live.font[3] ~= 'OUTLINE' and live.font[3] ~= 'THICKOUTLINE' and live.alpha == 1, "Use Bar's Look")
     menu:Hide(); assert(not text:IsShown())
     -- Dragging a spell in the preview moves it on the bar.
     local function Live(id) for _, item in ipairs(ItemsOf(essential)) do if item.cooldownID == id then return item end end end
@@ -488,8 +500,8 @@ world.run([==[
     assert(window:IsShown() and M.selectedBar == 'utility' and page.viewerEditing() == 'utility', 'Open Module Settings lands on the bar')
 
     -- Copy and reset, then the no-writes rule.
-    assert(M:SetOption('essential', 'border', 'square') and M:CopyStyleToAll('essential'))
-    assert(M.db.custom1.border == 'square' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
+    assert(M:SetOption('essential', 'border', 'none') and M:CopyStyleToAll('essential'))
+    assert(M.db.custom1.border == 'none' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
     assert(M:ResetViewer(c1) and M.db.custom1.border == 'mode')
     assert(#blizzardWrites == 0, 'wrote to Blizzard frames: ' .. table.concat(blizzardWrites, ', '))
 
@@ -516,7 +528,7 @@ H.Load({ before = STUBS }).run([==[
 local restored = H.Load({ before = STUBS .. "\nMakeViewers()", saved = world.saved() })
 restored.run([==[
     local M = addon.CooldownManager
-    assert(M.enabled and M.db.essential.border == 'square' and #M.db.customBars == 2 and M.db.nextCustom == 6 and M.db.racials == 'utility', 'settings persist')
+    assert(M.enabled and M.db.essential.border == 'none' and #M.db.customBars == 2 and M.db.nextCustom == 6 and M.db.racials == 'utility', 'settings persist')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
     assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
@@ -530,7 +542,7 @@ v1.profiles.Default.modules.cooldownManager = { enabled = true, version = 1,
     buffIcon = { orientation = "horizontal", start = "BOTTOMLEFT", center = true, readyGlow = false, readyStyle = "glow" } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 4 and db.essential.border == 'mode' and db.essential.borderColor[1] == addon.Kit.BORDER_COLOR[1], 'v1 also takes the ModeUI border')
+    assert(db.version == 5 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'v1 also takes the Mode edge')
     assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
     assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow look kept, as a flash')
     assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 0)
@@ -538,8 +550,8 @@ H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     assert(db.buffIcon.grow == 'centerH' and db.buffIcon.lineGrowth == 'up' and db.buffIcon.readyGlow == 'mode', 'None is no longer a look')
 ]==], "migrate v1")
 
--- Version 2: a Rounded border in the old #101010 becomes the ModeUI border;
--- Square stays.
+-- Version 2: a Rounded border in the old #101010 became the ModeUI border
+-- (version 3), and every slot rim becomes the Mode edge (version 5).
 local v2 = restored.saved()
 local old = v2.profiles.Default.modules.cooldownManager
 old.version = 2
@@ -548,12 +560,12 @@ old.utility.border, old.utility.borderColor = "square", { 1, 0, 0 }
 old.custom1.border = "rounded"
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v2 }).run([==[
     local db, Kit = addon.CooldownManager.db, addon.Kit
-    assert(db.version == 4 and db.essential.border == 'mode' and db.essential.borderColor[1] == Kit.BORDER_COLOR[1], 'old default to the ModeUI border')
-    assert(db.utility.border == 'square' and db.utility.borderColor[1] == 1, 'a chosen Square border and color stay')
+    assert(db.version == 5 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'old default to the Mode edge')
+    assert(db.utility.border == 'mode' and db.utility.borderColor == nil and db.utility.borderSize == nil, 'Square becomes the Mode edge; size and color retire')
     assert(db.custom1.border == 'mode', 'custom bars too')
 ]==], "migrate v2")
 
--- Version 3: default sizes move to 42 by 34 and 36 by 28; Utility's default
+-- Version 3: default sizes move (now to 40 by 34 and 32 by 28); Utility's default
 -- place, 4 units under Essential, sits against it now (the 1px gap is built in).
 local v3 = restored.saved()
 local before = v3.profiles.Default.modules.cooldownManager
@@ -565,10 +577,44 @@ v3.profiles.Default.positions.cooldownManagerUtility = { target = "cooldownManag
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v3 }).run([==[
     local M, PM = addon.CooldownManager, addon.PositionManager
     local db = M.db
-    assert(db.version == 4 and db.essential.width == 42 and db.essential.height == 34 and db.custom2.width == 36 and db.custom2.height == 28, 'default sizes move')
+    assert(db.version == 5 and db.essential.width == 40 and db.essential.height == 34 and db.custom2.width == 32 and db.custom2.height == 28, 'default sizes move')
     assert(db.utility.width == 40 and db.utility.height == 30 and db.movePlaces == nil, 'a chosen size stays')
     assert(PM:GetPosition('cooldownManagerUtility').y == 0 and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
 ]==], "migrate v3")
+
+-- Version 4: the Mode design language. Values at a version 4 default take
+-- the new one; a player's choices stay.
+local v4 = restored.saved()
+local four = v4.profiles.Default.modules.cooldownManager
+four.version = 4
+local E, U, B = four.essential, four.utility, four.buffBar
+E.width, E.height, E.border, E.borderSize, E.borderColor = 42, 34, "square", 3, { 0.25, 0.27, 0.3 }
+E.backgroundColor, E.backgroundOpacity, E.fontMedia, E.outline = { 4 / 255, 4 / 255, 4 / 255 }, 75, "Expressway", true
+E.procGlow, E.procColor, E.readyGlow, E.readyColor = "blizzard", { 1, 210 / 255, 90 / 255 }, "pixel", { 0, 240 / 255, 1 }
+E.cooldownSize, E.countSize, E.countColor = 15, 12, { 212 / 255, 212 / 255, 212 / 255 }
+E.spells = { ["101"] = { proc = { style = "pixel", color = { 1, 210 / 255, 90 / 255 }, pulse = false, lines = 8, thickness = 2 } } }
+U.width, U.height, U.backgroundColor, U.fontMedia = 36, 28, { 1, 0, 0 }, "Friz Quadrata"
+B.width, B.height, B.barTexture, B.barBackground, B.barBackgroundOpacity, B.showSpark = 220, 22, "mode", "slate", 70, false
+B.barColor, B.barColorMode = { 0, 240 / 255, 1 }, nil
+four.custom1.barColor, four.custom1.barColorMode = { 0.2, 0.4, 0.6 }, nil
+four.resources = { power = { barTexture = "mode", barBackground = "slate", barBackgroundOpacity = 70, borderColor = { 0.25, 0.27, 0.3 },
+    fontMedia = "Expressway", outline = true }, combo = { barColor = { 240 / 255, 84 / 255, 84 / 255 } } }
+H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
+    local db, Tone, Same = addon.CooldownManager.db, addon.Style.Tone, addon.Style.SameColor
+    local E, U, B = db.essential, db.utility, db.buffBar
+    assert(db.version == 5 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
+    assert(E.width == 40 and E.height == 34 and U.width == 32 and U.height == 28 and B.height == 16, 'default sizes move')
+    assert(Same(E.backgroundColor, Tone.mono.panel) and E.backgroundOpacity == 100 and E.fontMedia == 'Mode Geist' and not E.outline)
+    assert(E.procGlow == 'border' and Same(E.procColor, Tone.celadon) and E.readyGlow == 'mode' and Same(E.readyColor, Tone.ivory), 'glow looks')
+    assert(Same(E.spells['101'].proc.color, Tone.celadon) and E.spells['101'].proc.style == 'pixel', "a spell's glow takes the new color, keeps its style")
+    assert(E.cooldownSize == 13 and E.countSize == 11 and Same(E.countColor, Tone.textBright), 'text sizes and colors')
+    assert(Same(U.backgroundColor, { 1, 0, 0 }) and U.fontMedia == 'Friz Quadrata', 'chosen values stay')
+    assert(B.barTexture == 'media:Mode Gradient' and B.barBackground == 'media:Mode BG' and B.barBackgroundOpacity == 100 and B.showSpark, 'Mode bars')
+    assert(B.barColorMode == 'class' and db.custom1.barColorMode == 'custom' and Same(db.custom1.barColor, { 0.2, 0.4, 0.6 }), 'cyan becomes class; a chosen color stays, as Custom')
+    local power, combo = db.resources.power, db.resources.combo
+    assert(power.barTexture == 'media:Mode Gradient' and power.barBackground == 'media:Mode BG' and power.barBackgroundOpacity == 60, 'resource bars')
+    assert(power.borderColor == nil and power.fontMedia == 'Mode Geist' and not power.outline and Same(combo.barColor, Tone.reaction.hostile))
+]==], "migrate v4")
 
 -- Bad saved data stops startup rather than being reset.
 local function Refused(change, label)

@@ -109,6 +109,32 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
   numbers centered in Geist Bold 13, the cooldown color; macro names Geist
   Medium. One shadow.
 
+## Cooldown icons
+
+The Cooldown Manager's icons, tracked bars and resource bars (the approved
+Phase 6 probe):
+
+- **Icons:** Essential 40 x 34; Utility, Tracked Buffs and Buff Bars 32 x 28;
+  Cooldown Bars 40 x 34. The icon fills the item (cropped) over a Mode Button
+  face in Mono panel, with the `frameThin` edge outside it (1px Gunmetal,
+  edge-lit, shadow ring). Rows leave room for the edges, so Spacing (2px)
+  counts between the shadows and a matched width includes them. Border None
+  hides the edge and gives its room back.
+- **Glows:** Border swaps the rim (a Mode Empty rim in the glow color over the
+  edge, so the icon keeps its size): Celadon for procs and buffs, Ivory for an
+  active effect and off cooldown (Mode Glow by default). Mode Glow, Pixel,
+  Blizzard and GCD stay options.
+- **Cooldown:** a black swipe at 70%; out of range Rosewood (as on action
+  buttons).
+- **Text:** Geist Bold; cooldown numbers 13 (10 on the small rows) in the
+  cooldown color, counts 11 (10) in Text bright; bar names and times 10.
+- **Tracked bars:** 220 x 16; the icon 4px wider than the bar is tall, in the
+  `frameThin` edge, 2px from the bar's own edge; Mode Gradient (base and lift)
+  in your class color (Custom: Ivory) over solid Mode BG, with the Comet spark.
+- **Resource bars:** each box in the `frameThin` edge, Mode Gradient over Mode
+  BG at 60%, Geist Bold text; combo points in the hostile red, Spacing between
+  the shadows.
+
 ## Bars (`Style.Bar`)
 
 - **Empty part:** Mode BG on Slate, for every bar (unit, group, nameplates,

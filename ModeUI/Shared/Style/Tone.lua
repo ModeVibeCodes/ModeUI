@@ -75,7 +75,10 @@ function Style.Soft(color) return Style.Mix(color, { 1, 1, 1 }, 0.55) end
 
 -- Defaults from before the Mode design language, kept only so migrations can
 -- recognize a saved color that was never changed (Style.SameColor).
-Style.LEGACY = { nameplateFocus = Hex("FFB547") }
+Style.LEGACY = { nameplateFocus = Hex("FFB547"),
+    -- Cooldown Manager before version 5: the Rounded slot rim (version 2), the
+    -- slot background, gold procs and the combo point red.
+    slotRim = Hex("101010"), slotBackground = Hex("040404"), procGold = Hex("FFD25A"), comboRed = Hex("F05454") }
 
 -- True when `color` is (within rounding) `reference`: migrations move saved
 -- colors that still equal an old default, and keep anything the player chose.

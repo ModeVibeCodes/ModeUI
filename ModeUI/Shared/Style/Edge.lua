@@ -184,6 +184,16 @@ function Edge:SetRim(rim)
     self:Paint()
 end
 
+-- The border's textures, for callers that fade them together (from a state
+-- the client may keep secret, through SetAlphaFromBoolean).
+function Edge:Regions()
+    local list = {}
+    for _, key in ipairs({ "shadow", "gap", "rimTexture", "light", "soft" }) do
+        if self[key] then list[#list + 1] = self[key] end
+    end
+    return list
+end
+
 function Edge:SetShown(shown)
     self.holder:SetShown(shown)
     if self.below then self.below:SetShown(shown) end

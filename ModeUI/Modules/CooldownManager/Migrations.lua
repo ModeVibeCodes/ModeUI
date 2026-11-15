@@ -191,7 +191,71 @@ end
 local function SameColor(a, b) return type(a) == "table" and a[1] == b[1] and a[2] == b[2] and a[3] == b[3] end
 local function BorderToV3(style)
     if style.border == "rounded" or style.border == nil then style.border = "mode" end
-    if style.borderColor == nil or SameColor(style.borderColor, M.OLD_BORDER_COLOR) then style.borderColor = Copy(M.BORDER_COLOR) end
+    if style.borderColor == nil or SameColor(style.borderColor, M.OLD.rimColor) then style.borderColor = Copy(M.OLD.borderColor) end
+end
+
+-- Version 4 -> 5: the Mode design language. Values still at a version 4
+-- default take the new one; anything the player picked stays. Rounded and
+-- Square borders become the Mode edge; Border Size and Border Color retire.
+local Same, Tone = addon.Style.SameColor, addon.Style.Tone
+local function Swap(t, key, old, new) if Same(t[key], old) then t[key] = Copy(new) end end
+local function StyleToV5(style, sizeKey, defaults)
+    if type(style) ~= "table" or not Public(style) then return end
+    local O = M.OLD
+    if style.border == "rounded" or style.border == "square" then style.border = "mode" end
+    for _, key in ipairs(M.retiredKeys) do style[key] = nil end
+    local old = M.v4Sizes[sizeKey]
+    if old and style.width == old[1] and style.height == old[2] then style.width, style.height = defaults.width, defaults.height end
+    Swap(style, "backgroundColor", O.background, defaults.backgroundColor)
+    if style.backgroundOpacity == O.backgroundOpacity then style.backgroundOpacity = defaults.backgroundOpacity end
+    if style.fontMedia == "Expressway" then style.fontMedia = defaults.fontMedia end
+    if style.outline == true then style.outline = false end
+    if style.procGlow == "blizzard" then style.procGlow = defaults.procGlow end
+    if style.readyGlow == "pixel" then style.readyGlow = defaults.readyGlow end
+    for kind, color in pairs(O.glows) do Swap(style, kind .. "Color", color, defaults[kind .. "Color"]) end
+    -- A spell's glow switched on kept the old default color as its own.
+    for _, entry in pairs(type(style.spells) == "table" and style.spells or {}) do
+        for kind, color in pairs(O.glows) do
+            if type(entry) == "table" and type(entry[kind]) == "table" then Swap(entry[kind], "color", color, defaults[kind .. "Color"]) end
+        end
+    end
+    local small = defaults.cooldownSize == 10
+    if style.cooldownSize == (small and 12 or 15) then style.cooldownSize = defaults.cooldownSize end
+    if style.countSize == (small and 10 or 12) then style.countSize = defaults.countSize end
+    for _, part in ipairs({ "name", "duration" }) do if style[part .. "Size"] == 11 then style[part .. "Size"] = defaults[part .. "Size"] end end
+    Swap(style, "cooldownColor", O.cooldown, Tone.cooldown)
+    for _, part in ipairs({ "count", "name", "duration" }) do Swap(style, part .. "Color", O.text, Tone.textBright) end
+    if style.barTexture == "mode" then style.barTexture = defaults.barTexture end
+    if style.barBackground == "slate" then style.barBackground = defaults.barBackground end
+    if style.barBackgroundOpacity == 70 then style.barBackgroundOpacity = defaults.barBackgroundOpacity end
+    if style.showSpark == false then style.showSpark = true end
+    -- The cyan bar color becomes your class color; a color you chose stays, as Custom.
+    if style.barColorMode == nil then
+        if style.barColor == nil or Same(style.barColor, O.bar) then style.barColorMode, style.barColor = "class", Copy(M.BAR_COLOR)
+        else style.barColorMode = "custom" end
+    end
+end
+local function ResourceToV5(style)
+    if type(style) ~= "table" or not Public(style) then return end
+    style.borderColor = nil
+    if style.barTexture == "mode" then style.barTexture = "media:Mode Gradient" end
+    if style.barBackground == "slate" then style.barBackground = "media:Mode BG" end
+    if style.barBackgroundOpacity == 70 then style.barBackgroundOpacity = M.RESOURCE_EMPTY end
+    if style.fontMedia == "Expressway" then style.fontMedia = addon.Style.FONT_DEFAULT end
+    if style.outline == true then style.outline = false end
+    Swap(style, "textColor", M.OLD.text, Tone.textBright)
+    Swap(style, "barColor", addon.Style.LEGACY.comboRed, Tone.reaction.hostile)
+    Swap(style, "barColor", addon.Kit.palette.mana, Tone.power)
+    Swap(style, "barColor", addon.Kit.palette.green, Tone.reaction.friendly)
+end
+local function MigrateV4(db)
+    for _, viewer in ipairs(M.viewers) do StyleToV5(db[viewer], viewer, M.styleDefaults[viewer]) end
+    for _, bar in ipairs(type(db.customBars) == "table" and db.customBars or {}) do
+        if type(bar) == "table" and M.customKinds[bar.kind] and type(bar.id) == "string" then
+            StyleToV5(db[bar.id], bar.kind, M.customDefaults[bar.kind])
+        end
+    end
+    for _, style in pairs(type(db.resources) == "table" and db.resources or {}) do ResourceToV5(style) end
 end
 
 function M.Initialize(db)
@@ -238,6 +302,7 @@ function M.Initialize(db)
         db.movePlaces = true
         db.version = 4
     end
+    if db.version == 4 then MigrateV4(db); db.version = 5 end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end

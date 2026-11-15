@@ -1,5 +1,5 @@
 -- Resource Bars in the Cooldown Manager (/mcdm): defaults, Edit Mode stand-ins
--- with Match Width, the ModeUI border and bar textures, power, health and
+-- with Match Width, the Mode edge and bar textures, power, health and
 -- Alternate Mana fills with secret values, combo point boxes, texts, colors,
 -- forms, visibility, the window's Resource Bars list and page, the preview,
 -- settings checks, reset, switching off, persistence and bad saved data.
@@ -21,7 +21,8 @@ world.run([==[
     local db = M.db.resources
     assert(M.db.version == M.VERSION, 'resource bars need no settings version of their own')
     assert(db.power.show and db.combo.show and db.mana.show and not db.health.show, 'Health starts off')
-    assert(db.power.border == 'mode' and db.power.barTexture == 'mode' and db.power.barBackground == 'slate' and db.power.fontMedia == 'Expressway', 'the Mode look')
+    assert(db.power.border == 'mode' and db.power.barTexture == 'media:Mode Gradient' and db.power.barBackground == 'media:Mode BG' and db.power.fontMedia == 'Mode Geist', 'the Mode look')
+    assert(db.power.barBackgroundOpacity == 60 and db.power.borderColor == nil and not db.power.outline, 'Slate at 60%; one edge color; no outline')
     assert(db.power.matchWidth and db.power.colorMode == 'power' and db.power.text == 'current' and db.combo.text == 'none')
     assert(ModeUIResourcePower == nil, 'nothing built while the module is off')
 
@@ -30,19 +31,20 @@ world.run([==[
     assert(ModeUIResourcePower and ModeUIResourceCombo and ModeUIResourceMana and ModeUIResourceHealth, 'a stand-in per bar')
     assert(PM:GetPosition('cooldownManagerResourcePower').target == 'cooldownManagerUtility', 'Power under Utility')
     assert(PM:GetPosition('cooldownManagerResourceCombo').target == 'cooldownManagerResourcePower', 'Combo Points under Power')
-    -- Match Width: Utility's line is 12 icons of 36 with 2px between.
-    assert(ModeUIResourcePower.width == 454 and ModeUIResourcePower.height == 14, 'Power matches the cooldowns above it')
+    -- Match Width: Utility's line is 12 icons of 32 with their 2px edges, 2px between.
+    assert(ModeUIResourcePower.width == 454 and ModeUIResourcePower.height == 18, 'Power matches the cooldowns above it; its edges inside the stand-in')
     assert(PM:GetSizeMatch('cooldownManagerResourcePower', 'width'), "Edit Mode's Match Width is on")
     assert(power:IsShown() and not ModeUIResourcePower:IsShown(), 'bar shown on its hidden stand-in')
 
-    -- Power: the ModeUI border, Mode Gradient over Mode Slate, the fill rounded by the border's ends.
+    -- Power: the frameThin edge outside the box, Mode Gradient over Mode BG, no masks.
     local box = power.boxes[1]
     local bar = box.bar
-    assert(box.border.edge:IsShown() and box.border.edge.frameLevel > bar.frameLevel, 'rim above the bar')
-    assert(bar.points[1][4] == 2 and bar.points[1][5] == -2, 'bar inside the 2px rim')
+    assert(box.edge.preset == 'frameThin' and box.edge.holder:IsShown() and box.edge.holder.frameLevel > box:GetFrameLevel(), 'the Mode edge')
+    assert(Point(box)[4] == 2 and Point(box)[5] == -2 and box.width == 450 and box.height == 14, 'the box inside the edge reach')
+    assert(bar.points[1][4] == 0 and bar.points[2][4] == 0, 'the bar fills its box')
     local fill = bar:GetStatusBarTexture()
-    assert(fill.masks and #fill.masks == 2 and #bar.bg.masks == 2, 'fill and background rounded by the end masks')
-    assert(bar.sheen:IsShown() and bar.bg.vertexColor[4] == 0.7, 'Mode Gradient sheen; Mode Slate at 70%')
+    assert(not (fill.masks and #fill.masks > 0) and not (bar.bg.masks and #bar.bg.masks > 0), 'no masks')
+    assert(bar.sheen:IsShown() and bar.bg.vertexColor[1] == addon.Style.Tone.slate[1] and bar.bg.vertexColor[4] == 0.6, 'Mode Gradient lift; Slate at 60%')
     -- Energy 50 of 100 (units.player), in the energy color, with the current value.
     assert(bar.low == 0 and bar.high == 100 and bar.value == 50 and bar.ease == 1, 'filled, smoothly')
     local energy = Power.colors.ENERGY
@@ -66,16 +68,16 @@ world.run([==[
     assert(combo:IsShown() and combo.count == 5 and ModeUIResourceCombo.width == 454, 'five points, matched to Power')
     for i = 1, 5 do assert(combo.boxes[i].bar.low == i - 1 and combo.boxes[i].bar.high == i) end
     local last = combo.boxes[5]
-    assert(Point(combo.boxes[1])[4] == 0 and Point(last)[4] + last.width == 454, 'the boxes fill the width exactly')
-    assert(Point(combo.boxes[2])[4] - (Point(combo.boxes[1])[4] + combo.boxes[1].width) == 2, 'Spacing apart')
+    assert(Point(combo.boxes[1])[4] == 2 and Point(last)[4] + last.width + 2 == 454, 'the boxes and their edges fill the width exactly')
+    assert(Point(combo.boxes[2])[4] - (Point(combo.boxes[1])[4] + combo.boxes[1].width) == 6, 'Spacing apart between the shadows')
     comboPoints = Secret('cp'); FireEvent('PLAYER_TARGET_CHANGED')
     assert(issecretvalue(combo.boxes[3].bar.value), 'a secret count lights the boxes')
     comboPoints = 3; FireEvent('COMBO_TARGET_CHANGED')
     assert(combo.boxes[1].bar.value == 3 and combo.boxes[5].bar.value == 3)
-    assert(combo.boxes[1].bar.statusBarColor[1] == M.COMBO_COLOR[1], 'combo red')
+    assert(combo.boxes[1].bar.statusBarColor[1] == addon.Style.Tone.reaction.hostile[1], 'combo points in the hostile red')
     assert(M:SetResourceOption('combo', 'text', 'current') and combo.text.text == '3', 'Count text')
     assert(not M:SetResourceOption('combo', 'text', 'percent') and not M:SetResourceOption('combo', 'colorMode', 'power'), 'combo offers its own choices')
-    assert(M:SetResourceOption('combo', 'spacing', 0) and Point(combo.boxes[2])[4] == Point(combo.boxes[1])[4] + combo.boxes[1].width)
+    assert(M:SetResourceOption('combo', 'spacing', 0) and Point(combo.boxes[2])[4] == Point(combo.boxes[1])[4] + combo.boxes[1].width + 4, 'edges touching')
 
     -- Alternate Mana: only a Druid whose shown power isn't mana.
     assert(not mana:IsShown(), 'a Rogue has no alternate mana')
@@ -107,7 +109,7 @@ world.run([==[
     assert(M:SetResourceOption('power', 'matchWidth', false) and ModeUIResourcePower.width == 300, 'Width while Match Width is off')
     assert(not M:SetResourceOption('power', 'height', 100) and not M:SetResourceOption('power', 'visibility', 'sometimes'), 'bad values refused')
     assert(not M:SetResourceOption('power', 'unknown', 1))
-    assert(M:SetResourceOption('power', 'border', 'none') and not box.border.edge:IsShown() and bar.points[1][4] == 0, 'no border')
+    assert(M:SetResourceOption('power', 'border', 'none') and not box.edge.holder:IsShown() and Point(box)[4] == 0 and ModeUIResourcePower.height == 14, 'no border, no reach')
     assert(M:SetResourceOption('power', 'reverse', true) and bar.reverseFill == true)
     assert(M:SetResourceOption('power', 'smooth', false)); FireEvent('UNIT_POWER_FREQUENT', 'player'); assert(bar.ease == nil, 'Smooth off snaps')
     assert(M:SetResourceOption('power', 'textAnchor', 'LEFT') and Point(power.text)[1] == 'LEFT' and Point(power.text)[4] == 4)

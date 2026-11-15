@@ -33,9 +33,17 @@ addon:RegisterModule("cooldownManager", M)
 -- default (42 by 34; 36 by 28 on the smaller bars), and anchored bars sit 1
 -- physical pixel apart (gapPixels) instead of 4; glows start off on every
 -- spell (each switched on in its menu, with its own look).
-M.VERSION = 4
+-- Version 5: the Mode design language (docs/DESIGN_LANGUAGE.md, "Cooldown
+-- icons"): icons 40 by 34 (32 by 28 on the smaller bars) in the `frameThin`
+-- edge outside the icon (Border: Mode or None; Border Size, Border Color and
+-- the slot rims retire), a Mode Button face in Mono panel, Geist Bold text
+-- in the Mode colors, Celadon procs and buffs, Ivory active and ready glows;
+-- Tracked Bars in Mode Gradient on Mode BG with the Comet spark, in your
+-- class color (Bar Color: Class Color or Custom).
+M.VERSION = 5
 M.SLASH = "/mcdm"
-local P = Kit.palette
+local P, Mode = Kit.palette, addon.Style
+local Tone = Mode.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- Blizzard's viewers, in list order. `bar` marks Tracked Bars (a bar beside
@@ -105,23 +113,28 @@ M.glowKinds = { "proc", "active", "ready", "buff" }
 M.glowLabels = { proc = "Proc Glow", active = "Active Glow", ready = "Off Cooldown Glow", buff = "Buff Glow" }
 M.cooldownGlows, M.buffGlows = { "proc", "active", "ready" }, { "buff" }
 
--- Colors: the ModeUI border (Kit.BORDER_COLOR) around the Action Bars'
--- background (#040404 at 75%; Rounded and Square borders were #101010), amber cooldown numbers, a dark swipe; procs gold, active and
--- buff glows green, the off-cooldown glow Mode cyan; bars Mode cyan over
--- Mode Slate.
-M.BORDER_COLOR, M.OLD_BORDER_COLOR = Kit.BORDER_COLOR, Kit.RGB(16, 16, 16)
-M.BACKGROUND_COLOR, M.BACKGROUND_OPACITY = Kit.RGB(4, 4, 4), 75
-M.COOLDOWN_COLOR, M.SWIPE_COLOR = Copy(P.cooldown), Kit.RGB(0, 0, 0)
-M.GLOW_COLORS = { proc = Kit.RGB(255, 210, 90), active = Copy(P.green), ready = Copy(P.accent), buff = Copy(P.green) }
-M.BAR_COLOR = Copy(P.accent)
+-- Colors (docs/DESIGN_LANGUAGE.md): a Mode Button face in Mono panel, the
+-- cooldown color for the numbers, a black swipe; Celadon procs and buffs,
+-- Ivory active and off-cooldown glows; tracked bars in your class color (or
+-- Ivory when Custom).
+M.SWIPE_COLOR = Copy(Tone.shadow)
+M.GLOW_COLORS = { proc = Copy(Tone.celadon), active = Copy(Tone.ivory), ready = Copy(Tone.ivory), buff = Copy(Tone.celadon) }
+M.BAR_COLOR = Copy(Tone.ivory)
+-- Version 2-4 defaults, kept for migrations: the ModeUI border and the old
+-- Rounded rim, the slot background at 75%, gold procs, green active and buff
+-- glows, the cyan ready glow and bars, the old text and cooldown colors.
+M.OLD = { borderColor = Kit.BORDER_COLOR, rimColor = Mode.LEGACY.slotRim, background = Mode.LEGACY.slotBackground,
+    backgroundOpacity = 75, glows = { proc = Mode.LEGACY.procGold, active = P.green, ready = P.accent, buff = P.green },
+    bar = P.accent, text = P.text, cooldown = P.cooldown }
 local function Part(prefix, show, size, anchor, color)
     return { [prefix .. "Show"] = show, [prefix .. "Size"] = size, [prefix .. "Anchor"] = anchor,
         [prefix .. "X"] = 0, [prefix .. "Y"] = 0, [prefix .. "Color"] = Copy(color) }
 end
 
--- One bar's settings. Essential icons are the action buttons' 42 by 36;
--- Utility and Tracked Buffs smaller; Tracked Bars 220 by 22. Lines are
--- centered; Tracked Buffs and Bars add new lines upward.
+-- One bar's settings. Essential icons are the action buttons' 40 by 34;
+-- Utility and Tracked Buffs 32 by 28; Tracked Bars 220 by 16. Lines are
+-- centered; Tracked Buffs and Bars add new lines upward. Spacing counts
+-- between the edges' shadows.
 local function Style(size, perLine, lineGrowth, small)
     local style = {
         show = true,
@@ -129,17 +142,16 @@ local function Style(size, perLine, lineGrowth, small)
         width = size[1], height = size[2], spacing = 2,
         -- Match Width / Match Height (Edit Mode): the size of what it hangs from.
         matchWidth = false, matchHeight = false,
-        border = "mode", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
-        backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = M.BACKGROUND_OPACITY,
+        border = "mode", backgroundColor = Copy(Tone.mono.panel), backgroundOpacity = 100,
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
         -- in Swipe Color at Swipe Opacity; Edge is the bright line on its
         -- rim, Ready Flash Blizzard's flash as it ends.
         desaturate = true, swipeColor = Copy(M.SWIPE_COLOR), swipeOpacity = 70, showEdge = false, showBling = true, showFlash = true,
         rangeTint = true, debuffBorder = false,
-        font = "game", fontMedia = "Expressway", outline = true, shadow = true, slug = true,
+        font = "game", fontMedia = Mode.FONT_DEFAULT, outline = false, shadow = true, slug = true,
         -- Glows start off on every spell (owner, November 13, 2026); a spell's
         -- menu switches one on, starting from these looks.
-        procGlow = "blizzard", activeGlow = "border", readyGlow = "pixel", buffGlow = "mode",
+        procGlow = "border", activeGlow = "border", readyGlow = "mode", buffGlow = "mode",
         procPulse = false, activePulse = false, readyPulse = true, buffPulse = false,
         readyMode = "flash", readyDuration = 2, glowLines = 8, glowThickness = 2,
         -- While a spell's effect is up, Blizzard swaps its cooldown for the
@@ -147,24 +159,30 @@ local function Style(size, perLine, lineGrowth, small)
         -- icon keeps showing its cooldown, gray.
         auraSwipe = false,
         visibility = "always", opacity = 100, fadeOpacity = 0,
-        -- Tracked Bars: the bar's texture and color, its background, the icon's side and the spark.
-        barTexture = "mode", barColor = Copy(M.BAR_COLOR), barBackground = "slate", barBackgroundOpacity = 70,
-        iconSide = "left", showSpark = false,
+        -- Tracked Bars: the bar's texture and color (your class color, or
+        -- Bar Color when Custom), its background, the icon's side and the
+        -- Comet spark.
+        barTexture = "media:Mode Gradient", barColorMode = "class", barColor = Copy(M.BAR_COLOR),
+        barBackground = "media:Mode BG", barBackgroundOpacity = 100, iconSide = "left", showSpark = true,
         -- Spells with their own switches, by cooldown ID: { ["1234"] = { hide = true, proc = false } }.
         spells = {},
     }
     for _, kind in ipairs(M.glowKinds) do style[kind .. "Color"] = Copy(M.GLOW_COLORS[kind]) end
-    for key, value in pairs(Part("cooldown", true, small and 12 or 15, "CENTER", M.COOLDOWN_COLOR)) do style[key] = value end
-    for key, value in pairs(Part("count", true, small and 10 or 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
-    for key, value in pairs(Part("name", true, 11, "LEFT", P.text)) do style[key] = value end
-    for key, value in pairs(Part("duration", true, 11, "RIGHT", P.text)) do style[key] = value end
+    for key, value in pairs(Part("cooldown", true, small and 10 or 13, "CENTER", Tone.cooldown)) do style[key] = value end
+    for key, value in pairs(Part("count", true, small and 10 or 11, "BOTTOMRIGHT", Tone.textBright)) do style[key] = value end
+    for key, value in pairs(Part("name", true, 10, "LEFT", Tone.textBright)) do style[key] = value end
+    for key, value in pairs(Part("duration", true, 10, "RIGHT", Tone.textBright)) do style[key] = value end
     return style
 end
 M.styleDefaults = {
-    essential = Style({ 42, 34 }, 12, "down"), utility = Style({ 36, 28 }, 12, "down", true),
-    buffIcon = Style({ 36, 28 }, 12, "up", true), buffBar = Style({ 220, 22 }, 1, "up", true),
+    essential = Style({ 40, 34 }, 12, "down"), utility = Style({ 32, 28 }, 12, "down", true),
+    buffIcon = Style({ 32, 28 }, 12, "up", true), buffBar = Style({ 220, 16 }, 1, "up", true),
 }
-M.customDefaults = { cooldown = Style({ 42, 34 }, 8, "down"), buff = Style({ 36, 28 }, 8, "up", true) }
+M.customDefaults = { cooldown = Style({ 40, 34 }, 8, "down"), buff = Style({ 32, 28 }, 8, "up", true) }
+-- Version 4's default sizes and text sizes, which move to version 5's.
+M.v4Sizes = { essential = { 42, 34 }, utility = { 36, 28 }, buffIcon = { 36, 28 }, buffBar = { 220, 22 }, cooldown = { 42, 34 }, buff = { 36, 28 } }
+-- Keys version 5 retired (the Mode edge has one size and color).
+M.retiredKeys = { "borderSize", "borderColor" }
 -- Version 3's default sizes, which move to version 4's (sizes chosen by hand stay).
 M.oldSizes = { essential = { 42, 36 }, utility = { 35, 30 }, buffIcon = { 35, 30 }, cooldown = { 42, 36 }, buff = { 35, 30 } }
 -- extras: the spells Essential and Utility took themselves (Custom.lua).
@@ -179,12 +197,12 @@ for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[
 M.identityKeys = { show = true, perLine = true, grow = true, lineGrowth = true, width = true, height = true,
     matchWidth = true, matchHeight = true,
     visibility = true, spells = true }
-M.colorKeys = { borderColor = true, backgroundColor = true, swipeColor = true, barColor = true }
+M.colorKeys = { backgroundColor = true, swipeColor = true, barColor = true }
 for _, kind in ipairs(M.glowKinds) do M.colorKeys[kind .. "Color"] = true end
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
 M.ranges = { perLine = { 1, 20, 1 }, spacing = { 0, 20, 1 }, glowLines = { 2, 16, 1 }, glowThickness = { 1, 4, 1 },
-    borderSize = { 1, 4, 1 }, backgroundOpacity = { 0, 100, 5 }, swipeOpacity = { 0, 100, 5 }, readyDuration = { 1, 10, 1 },
+    backgroundOpacity = { 0, 100, 5 }, swipeOpacity = { 0, 100, 5 }, readyDuration = { 1, 10, 1 },
     opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 } }
 for _, part in ipairs(M.textParts) do
     M.ranges[part .. "Size"] = { 6, 32, 1 }
@@ -213,7 +231,8 @@ M.choices = {
         { id = "right", label = "Horizontal Right" }, { id = "left", label = "Horizontal Left" },
         { id = "down", label = "Vertical Down" }, { id = "up", label = "Vertical Up" } },
     lineGrowth = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" }, { id = "left", label = "Left" } },
-    border = { { id = "mode", label = "ModeUI" }, { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
+    border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
+    barColorMode = { { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     procGlow = GLOW_STYLES, activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,
     readyMode = { { id = "flash", label = "Flash" }, { id = "always", label = "While Ready" } },
     visibility = { { id = "always", label = "Always" }, { id = "combat", label = "In Combat" }, { id = "noCombat", label = "Out of Combat" },
