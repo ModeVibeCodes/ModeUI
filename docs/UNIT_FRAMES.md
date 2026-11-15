@@ -5,6 +5,24 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Match Width and Match Height (November 15, 2026)
+
+Every unit frame offers Edit Mode's **Match Width** and **Match Height**
+(the element panel's Match Size): click one, then the element whose width or
+height the frame should take, on screen (its own Scale is divided out). The
+frame follows it whenever it changes. Width sets the bars' length (the
+portrait stays); height sets the bar block, or with a portrait the ring
+(Portrait Size % of the block). Frame Width and Health Height stay saved for
+when matching stops, and the ranges still apply (a Health Height of 10 to
+60). `matchWidth` and `matchHeight` per frame (identity keys: a Target that
+matches the Player keeps its own); the picks are the profile's
+`sizeMatches`. Each frame's stand-in is a Position target
+(`unitFramesPlayer`, ..., labelled "ModeUI Player Frame" and so on) so
+other elements can pick it, for matching and for anchoring where they take
+any ModeUI element. Unit frames themselves still hang only from the screen
+(or attach to the Target and Focus). Code: `Layout.lua` (`MatchedFrame`),
+`Build.lua` (`RegisterPosition`).
+
 ## Lighter Slate, a 4px ring, glowing health numbers
 
 - Empty bars are a lighter Slate (`#575757`), easier to tell from the fill.

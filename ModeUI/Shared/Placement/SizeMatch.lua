@@ -157,14 +157,17 @@ local function Owner(self, target)
     return frame and self.frames[frame]
 end
 
--- Edit Mode's pick: the axis follows `target` (another element, or a frame
--- the element may hang from) and matching goes on. Two elements following
+-- Edit Mode's pick: the axis follows `target` (any ModeUI element, even for
+-- an element that can't hang from it, or a frame the element may hang from)
+-- and matching goes on. Two elements following
 -- each other on one axis would chase each other, so that's refused.
 function PM:SetSizeMatchTarget(id, axis, target)
     if Combat() then return false, "combat" end
     local element = Lookup(self, id)
     if not element or not self:CanMatchSize(id, axis) then return false, "unavailable" end
-    local allowed = element.allowedTargets[target] or (element.allowedTargets.selected and addon.FrameAnchors:ValidID(target))
+    local listed = false
+    for _, item in ipairs(P.targets) do if item.id == target then listed = true end end
+    local allowed = listed or element.allowedTargets[target] or (element.allowedTargets.selected and addon.FrameAnchors:ValidID(target))
     local frame = type(target) == "string" and target ~= "screen" and allowed and P:Resolve(target)
     if not frame or frame == element.frame then return false, "invalid-target" end
     local owner = Owner(self, target)

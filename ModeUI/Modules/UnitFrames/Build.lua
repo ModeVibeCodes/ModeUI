@@ -86,6 +86,19 @@ function M:RegisterPosition(unit)
         canDrag = function() return self:FrameOn(unit) end,
         onPositionChanged = function() self:SyncPosition(unit) end })
     assert(ok, "ModeUI: unit frame position registration failed: " .. tostring(reason))
+    -- Edit Mode's Match Width and Match Height: the frame takes the size of
+    -- the element picked for each, told on change (Layout.lua, MatchedFrame).
+    local PM, id = addon.PositionManager, self.elementIds[unit]
+    local function Key(axis) return axis == "width" and "matchWidth" or "matchHeight" end
+    PM:SetSizeMatch(id, { axes = { width = true, height = true },
+        get = function(axis) return self.db[unit][Key(axis)] == true end,
+        set = function(axis, on) return self:SetFrameOption(unit, Key(axis), on == true) end })
+    PM:SetAnchorSizeListener(id, function(_, width, height)
+        local Number = addon.IsNumber
+        self.matchSizes = self.matchSizes or {}
+        self.matchSizes[unit] = { width = Number(width, 1, 10000) and width or nil, height = Number(height, 1, 10000) and height or nil }
+        if self.db[unit].matchWidth or self.db[unit].matchHeight then self:Refresh() end
+    end)
     g:SetShown(shown)
 end
 

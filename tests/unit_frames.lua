@@ -650,6 +650,28 @@ world.run([====[
     assert(addon.PositionManager:SetOffsets('unitFramesPlayer',-300,-150))
     local point,gp=Point(p),Point(ghost)
     assert(point[1]==gp[1] and point[3]==gp[3] and point[4]==gp[4] and point[5]==gp[5] and p.scale==ghost.scale,'secure button copies the stand-in anchor at the same scale')
+    -- Match Width / Match Height: any unit frame can take another element's
+    -- size, though it can't hang from it. The Target takes the Player's width.
+    local PM,E,A,panel=addon.PositionManager,addon.EditMode,addon.EditAnchor,addon.editWindow
+    assert(M:SetFrameOption('target','barWidth',150) and M.ghosts.target.width<ghost.width,'a narrower Target')
+    assert(E:Select('unitFramesTarget'),'the Target selected');addon:RefreshEditWindow()
+    assert(panel.matchWidthButton:IsEnabled() and panel.matchHeightButton:IsEnabled() and not panel.matchWidthButton.selected,'offered on unit frames')
+    panel.matchWidthButton.scripts.OnClick(panel.matchWidthButton);assert(A:Matching()=='width','picking the width')
+    local cursor=GetCursorPosition;GetCursorPosition=function() return ghost:GetCenter() end;A.overlay.scripts.OnEvent(A.overlay,'GLOBAL_MOUSE_DOWN','LeftButton');GetCursorPosition=cursor
+    assert(M.db.target.matchWidth and PM:GetSizeMatchTarget('unitFramesTarget','width')=='unitFramesPlayer','the Player picked')
+    -- On screen: the Player is at 120% here, so the Target (100%) is wider in its own units.
+    local function Screen(f) return f.width*f:GetEffectiveScale()/UIParent:GetEffectiveScale() end
+    assert(math.abs(Screen(M.ghosts.target)-Screen(ghost))<=1 and M.frames.target.width==M.ghosts.target.width and M.db.target.barWidth==150,"the Player's width on screen; its own Frame Width kept")
+    assert(panel.matchedLabel:GetText()=='Width: ModeUI Player Frame\nHeight: off')
+    -- Height: the Focus frame (no portrait) takes the Player's: its bar block that tall on screen.
+    local tot=M.ghosts.focus
+    local function Tall(f) return f.height*f:GetEffectiveScale()/UIParent:GetEffectiveScale() end
+    local focusScale=M.db.focus.scale;assert(M:SetFrameOption('focus','scale',150))
+    assert(PM:SetSizeMatchTarget('unitFramesFocus','height','unitFramesPlayer') and M.db.focus.matchHeight)
+    assert(math.abs(Tall(tot)-Tall(ghost))<=2 and M.db.focus.healthHeight==22,"the Player's height on screen; its own Health Height kept")
+    panel.matchWidthButton.scripts.OnClick(panel.matchWidthButton)
+    assert(not M.db.target.matchWidth and M.ghosts.target.width<ghost.width,'off: its own width again')
+    assert(PM:SetSizeMatchValue('unitFramesFocus','height',false) and M:SetFrameOption('focus','scale',focusScale) and M:SetFrameOption('target','barWidth',184))
     assert(addon:SetEditMode(false) and not ghost:IsShown())
 
     -- Hiding a frame or disabling in combat waits, then restores natives.

@@ -70,8 +70,35 @@ end
 -- The suite's text style (see Shared/Kit/Text.lua).
 M.LIFT_PIXELS, M.LIFT_ALPHA = Kit.LIFT_PIXELS, Kit.LIFT_ALPHA
 
+-- Edit Mode's Match Width and Match Height (owner, November 15, 2026): the
+-- frame takes the width (or height) of the element picked for it, in its
+-- own units (its Scale divides it out). Width sets the bars' length, so the
+-- portrait stays; height sets the bar block, or with a portrait the ring
+-- (Portrait Size % of the block). The saved Frame Width and Health Height
+-- stay as they are for when matching stops. Sizes come from the Position
+-- Manager's size listener (Build.lua) in self.matchSizes.
+function M:MatchedFrame(unit, fdb)
+    local own, size = self.db[unit], self.matchSizes and self.matchSizes[unit]
+    local wide, tall = own.matchWidth and size and size.width, own.matchHeight and size and size.height
+    if not (wide or tall) then return fdb end
+    local out = setmetatable({}, { __index = fdb })
+    local scale, rim = fdb.scale / 100, Style.EDGE_PRESETS[M.EdgePreset(unit)].rim
+    local function Clamp(v, r) return math.max(r[1], math.min(r[2], math.floor(v + 0.5))) end
+    local g = self:Geometry(fdb, 1, rim)
+    if tall then
+        local block = tall / scale * (fdb.showPortrait and 100 / fdb.portraitScale or 1)
+        out.healthHeight = Clamp(block - 2 * g.pad - (fdb.showPower and g.gap + g.powerHeight or 0), self.frameRanges.healthHeight)
+        g = self:Geometry(out, 1, rim)
+    end
+    if wide then
+        local reach = g.width - math.floor(fdb.barWidth + 0.5) - g.pad
+        out.barWidth = Clamp(wide / scale - reach - g.pad, self.frameRanges.barWidth)
+    end
+    return out
+end
+
 function M:ApplyLayout(f, unit)
-    local fdb = self:FrameDB(unit)
+    local fdb = self:MatchedFrame(unit, self:FrameDB(unit))
     -- Scale first: the pixel size depends on the frame's effective scale.
     f:SetScale(fdb.scale / 100 * (f.previewScale or 1))
     local g = self:Geometry(fdb, self:PixelSize(f), Style.EDGE_PRESETS[M.EdgePreset(unit)].rim)

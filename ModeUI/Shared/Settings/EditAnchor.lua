@@ -60,9 +60,9 @@ end
 -- match, to follow on that axis).
 function A:CanPick(element, mode)
     if not element then return false end
-    if mode == "width" or mode == "height" then
-        if not PM:CanMatchSize(element.id, mode) then return false end
-    elseif not element.supportsAnchoring then return false end
+    -- A match may follow any ModeUI element, whatever this one can hang from.
+    if mode == "width" or mode == "height" then return PM:CanMatchSize(element.id, mode) end
+    if not element.supportsAnchoring then return false end
     if element.allowedTargets.selected then return true end
     for id in pairs(element.allowedTargets) do if id ~= "screen" and id ~= "selected" then return true end end
     return false
@@ -99,7 +99,7 @@ function A:Candidate(element, matching)
     end
     local best, frame, area, looped
     for _, item in ipairs(P.targets) do
-        if item.id ~= "screen" and element.allowedTargets[item.id] then
+        if item.id ~= "screen" and (matching or element.allowedTargets[item.id]) then
             local target = P:Resolve(item.id)
             local owner = target and PM.frames[target]
             local handle = owner and PM.elements[owner].decoration and PM.elements[owner].decoration.handle

@@ -36,6 +36,13 @@ M.titles = { player = "Player Frame", target = "Target Frame", targettarget = "T
 M.frameNames = { player = "Player", target = "Target", targettarget = "TargetTarget", focus = "Focus", focustarget = "FocusTarget" }
 M.elementIds = { player = "unitFramesPlayer", target = "unitFramesTarget", targettarget = "unitFramesTargetTarget",
     focus = "unitFramesFocus", focustarget = "unitFramesFocusTarget" }
+-- Each frame's stand-in (the same size as the frame, laid out with it) is a
+-- target other elements can pick, for Match Width and Match Height and for
+-- anchoring where an element takes any ModeUI element. "ModeUI" tells them
+-- from Blizzard's own frames in the lists.
+for _, unit in ipairs({ "player", "target", "targettarget", "focus", "focustarget" }) do
+    addon.Positioning:AddTarget(M.elementIds[unit], addon.L["ModeUI " .. M.titles[unit]], "ModeUI" .. M.frameNames[unit] .. "UnitFramePreview")
+end
 M.defaultPositions = {
     player = { target = "screen", placement = "center", x = -280, y = -200 },
     target = { target = "screen", placement = "center", x = 280, y = -200 },
@@ -113,6 +120,9 @@ local function Frame(side, extra)
     local frame = { enabled = true, hideBlizzard = true, scale = 100, barWidth = 184, healthHeight = 34,
         -- Target only: mirror the Player frame's look (side and visibility stay its own).
         matchPlayer = false,
+        -- Edit Mode's Match Width and Match Height (Layout.lua, MatchedFrame):
+        -- the frame takes the size of the element picked for each.
+        matchWidth = false, matchHeight = false,
         -- Target only, while matched: mirror the Player's text alignment and
         -- horizontal offsets to the other side (off: same layout as the Player).
         mirrorText = false,
@@ -178,7 +188,8 @@ M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeig
     powerBackgroundOpacity = { 0, 100, 5 }, attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
 -- Keys that describe placement/identity rather than style; Copy Style skips them.
 M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true,
-    attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true, fillDirection = true }
+    attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true, fillDirection = true,
+    matchWidth = true, matchHeight = true }
 -- Combo points around the Target frame's portrait (owner, November 13, 2026).
 -- Their own table, not per frame, so they stay editable while the Target
 -- matches the Player. Sizes are in the Target frame's units.

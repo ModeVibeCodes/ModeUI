@@ -347,7 +347,7 @@ values (every class sees every bar; Animated runs the fill):
 
 | Tab | Settings |
 |---|---|
-| Bar | **Show Bar**, Status (whether it shows for this character now), **Width**, **Height**, **Match Width** (the width of what it's attached to in Edit Mode, followed when that changes; also in Edit Mode's window), Combo Points' **Spacing**, **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
+| Bar | **Show Bar**, Status (whether it shows for this character now), **Width**, **Height** (Match Width lives only in Edit Mode's element panel since November 15, 2026: click it, then the element to take the width of), Combo Points' **Spacing**, **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
 | Look | **Border** (Mode or None); **Bar Texture** (Mode Gradient by default, Flat or SharedMedia), **Bar Color** (Power Type, Class Color or Custom; Combo Points: Custom or Class Color), **Bar Opacity**, **Bar Background** (Mode BG by default) and **Background Opacity**; **Fill Direction**, **Smooth** and **Fill End Line** |
 | Text | **Text** (None, Current, Percent, Current and Percent, Current / Max; Combo Points: None or Count), **Anchor** (Left, Center, Right), **Size**, **Offset X/Y**, **Text Color**; **Font**, **Outline**, **Text Shadow**, **Slug Text** |
 | Visibility | **Show** (Always, In Combat, Out of Combat, In Combat or With a Target, Mouseover, Hidden), **Opacity**, **Faded Opacity** |
