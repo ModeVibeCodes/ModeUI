@@ -45,13 +45,16 @@ end
 local function ClampText(row, host, width, hostTop)
     if not (host and host.GetRegions) then return end
     for _, region in ipairs({ host:GetRegions() }) do
-        if region:GetObjectType() == "FontString" and region:IsShown() then
+        -- The row sizes its own label (layoutChildren); leave it alone.
+        if region ~= row.settingsLabel and region:GetObjectType() == "FontString" and region:IsShown() then
             local point, _, _, x, y = region:GetPoint(1)
             local room = width - Measured(x, 0)
             region.gridNaturalWidth = region.gridNaturalWidth or Measured(region:GetWidth(), 0)
             local natural = region.gridNaturalWidth
+            -- A wrapping note that starts at the left edge uses the whole width.
+            local note = Measured(x, 0) <= 1 and region.CanWordWrap and region:CanWordWrap()
             if room > 20 then
-                region:SetWidth(math.min(natural, room))
+                region:SetWidth(note and room or math.min(natural, room))
                 if natural > room then
                     region:SetWordWrap(true)
                     if type(point) == "string" and point:find("^TOP") then
@@ -64,11 +67,7 @@ local function ClampText(row, host, width, hostTop)
     end
 end
 
--- Whether a row's segmented choices fit a shared (half) line.
-local function PairFits(row, half)
-    for _, need in ipairs(row.segmentNeeds or {}) do if need() > half then return false end end
-    return true
-end
+
 
 -- Lays out one card's rows from `padding` down; returns { row, y, x } entries and the height.
 local function CardRows(page, card, inner, padding, Snap)
@@ -96,7 +95,7 @@ local function CardRows(page, card, inner, padding, Snap)
     while index <= #visible do
         local row, partner = visible[index], visible[index + 1]
         if half >= PAIR_MIN and row.stacked and row.pairable and partner and partner.stacked and partner.pairable
-            and PairFits(row, half) and PairFits(partner, half) then
+ then
             Fit(row, half); Fit(partner, half)
             placed[#placed + 1] = { row = row, y = y, x = 0 }
             placed[#placed + 1] = { row = partner, y = y, x = half + PAIR_GAP }
