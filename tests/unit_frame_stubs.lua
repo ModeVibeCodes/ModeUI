@@ -91,7 +91,20 @@
     function UnitIsGhost() return false end
     function UnitIsDeadOrGhost(u) return units[u].dead==true end
     CurveConstants={ScaleTo100={}}
+    C_CurveUtil=C_CurveUtil or {}
+    function C_CurveUtil.CreateColorCurve()
+        local curve={colorPoints={}}
+        function curve:SetType(t) self.type=t end
+        function curve:AddPoint(x,color) self.colorPoints[#self.colorPoints+1]={x=x,color=color} end
+        return curve
+    end
     function UnitHealthPercent(u,_,curve)
+        if type(curve)=='table' and curve.colorPoints then
+            local d=units[u];if issecretvalue(d.health) then error('secret color') end
+            local share,best=d.health/d.max,nil
+            for _,p in ipairs(curve.colorPoints) do if share>=p.x-1e-9 then best=p.color end end
+            local c=best;return {GetRGB=function() return c.r,c.g,c.b end}
+        end
         assert(curve==CurveConstants.ScaleTo100,'percent uses the 0-100 curve')
         local d=units[u];if issecretvalue(d.health) then return Secret('pct') end
         return d.health/d.max*100

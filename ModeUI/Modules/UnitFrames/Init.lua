@@ -66,7 +66,8 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Geist, Gradient names, the Steel Sheen ring, 2px cast gap, Combined shields.
 -- Version 21 (owner's in-game check): Portrait Size 140, the single Mode text
 -- shadow (no lifted copy), the cast bar icon on the portrait side.
-M.LAYOUT_VERSION = 21
+-- Version 22: health text colored by health, 22px auras five to a row, 11px cast text.
+M.LAYOUT_VERSION = 22
 
 local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
@@ -89,13 +90,15 @@ M.choices = {
     nameColor = { { id = "gradient", label = "Gradient" }, { id = "sky", label = "Sky" }, { id = "champagne", label = "Champagne" }, { id = "lilac", label = "Lilac" },
         { id = "frost", label = "Frost" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     healthColor = { { id = "default", label = "Default" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
+    -- Health texts: by health (Rosewood low, Ivory, Celadon full) or the Text Color.
+    healthText = { { id = "health", label = "By Health" }, { id = "text", label = "Text Color" } },
     powerColor = { { id = "type", label = "Power Type" }, { id = "custom", label = "Custom" } },
     attachPoint = { { id = "bottomright", label = "Below, Right Edges" }, { id = "bottomleft", label = "Below, Left Edges" },
         { id = "right", label = "Right Side" }, { id = "left", label = "Left Side" }, { id = "topright", label = "Above, Right Edges" } },
     fill = { { id = "standard", label = "Left to Right" }, { id = "reverse", label = "Right to Left" } },
 }
 -- Setting key -> choice list.
-M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring",
+M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring", healthTextColor = "healthText",
     nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
     fillDirection = "fill" }
 
@@ -136,6 +139,8 @@ local function Frame(side, extra)
         -- Class/reaction colors are blended this far toward white (pastel).
         classSoftness = 40,
         healthColorMode = "default", healthColor = Copy(M.palette.green),
+        -- Health texts in the bars: colored by health (Style.PaintHealthText).
+        healthTextColor = "health",
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
         font = "game", fontMedia = "Mode Geist", outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
@@ -186,7 +191,7 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 2, icon = "near",
     fullWidth = true, width = 160,
     foregroundTexture = "media:Mode Cast", backgroundTexture = "media:Mode BG",
-    showText = true, showTimer = true, fontSize = 10, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
+    showText = true, showTimer = true, fontSize = 11, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
 M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
 M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "Hidden" } }
@@ -206,8 +211,9 @@ end
 -- under the frame.
 M.auraGroups = { "buffs", "debuffs" }
 M.auraGroupLabels = { buffs = "Buffs", debuffs = "Debuffs" }
-M.auraDefaults = { enabled = false, filter = "all", anchor = "TOPRIGHT", grow = "left", size = 20, spacing = 2, max = 8,
-    perRow = 8, x = 0, y = 0, shape = "cropped", border = "type", timer = true, count = true }
+-- 22px icons, five to a row, so a row on the border ends before the name.
+M.auraDefaults = { enabled = false, filter = "all", anchor = "TOPRIGHT", grow = "left", size = 22, spacing = 2, max = 8,
+    perRow = 5, x = 0, y = 0, shape = "cropped", border = "type", timer = true, count = true }
 M.auraRanges = { size = { 10, 40, 1 }, spacing = { 0, 10, 1 }, max = { 1, 16, 1 }, perRow = { 1, 16, 1 },
     x = { -100, 100, 1 }, y = { -100, 100, 1 } }
 M.choices.auraAnchor = { { id = "TOPRIGHT", label = "Top Right" }, { id = "TOPLEFT", label = "Top Left" },

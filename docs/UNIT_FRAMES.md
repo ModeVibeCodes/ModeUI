@@ -5,6 +5,23 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Bold bar text, health by color, auras clear of the ring (layout version 22)
+
+- Text in the bars and the cast bar in Geist Bold; names on the border stay
+  SemiBold. Cast text 11px.
+- Health texts in their Default color follow **Health Text Color** (Text tab):
+  By Health (default: Rosewood at 30% and under, Ivory, Celadon at full,
+  through `Style.PaintHealthText`'s color curve on `UnitHealthPercent`) or the
+  Text Color. Dead, ghost, offline and objects keep the Text Color.
+- Auras: a row starting on the portrait's side starts past the ring (the
+  frame's `tuck` plus 2px); 22px icons, five to a row, so the Target's buffs
+  sit on its border and end before the name.
+- Settings: every text spot (Top, Middle and Bottom Text, Name on the Border,
+  Power Text) moved to the Text tab, which the preview's texts now open.
+
+Version 21 to 22 changes 20px auras to 22, eight to a row to five, and 10px
+cast text to 11.
+
 ## After the first in-game check (layout version 21)
 
 - Portrait Size 140 (a 58px ring on the 42px block); the portrait image is

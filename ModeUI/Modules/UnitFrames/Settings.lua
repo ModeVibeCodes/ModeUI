@@ -205,7 +205,6 @@ function M:CreateConfigPage(parent)
             When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
             page.unitFrameForeground, page.unitFrameBackground, page.unitFrameForegroundOpacity, page.unitFrameBackgroundOpacity =
                 Textures("foregroundTexture", "backgroundTexture", "barForegroundOpacity", "barBackgroundOpacity")
-            M:BuildTextSpots(ui, "health")
         end)
     end, true)
 
@@ -220,7 +219,6 @@ function M:CreateConfigPage(parent)
             page.unitFramePowerForeground, page.unitFramePowerBackground, page.unitFramePowerForegroundOpacity,
                 page.unitFramePowerBackgroundOpacity = Textures("powerForegroundTexture", "powerBackgroundTexture",
                 "powerForegroundOpacity", "powerBackgroundOpacity")
-            M:BuildTextSpots(ui, "power")
         end)
     end)
 

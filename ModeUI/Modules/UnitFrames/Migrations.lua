@@ -304,6 +304,24 @@ local function MigrateV20(db)
     end
 end
 
+-- Version 21 -> 22: 22px auras five to a row (from 20px, eight), 11px cast text.
+local function MigrateV21(db)
+    for _, unit in ipairs(M.units) do
+        local frame = db[unit]
+        if type(frame) == "table" and Public(frame) then
+            for _, group in ipairs(M.auraGroups) do
+                local adb = frame[group]
+                if type(adb) == "table" and Public(adb) then
+                    if adb.size == 20 then adb.size = 22 end
+                    if adb.perRow == 8 then adb.perRow = 5 end
+                end
+            end
+            local cast = frame.castBar
+            if type(cast) == "table" and Public(cast) and cast.fontSize == 10 then cast.fontSize = 11 end
+        end
+    end
+end
+
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -323,7 +341,8 @@ function M.Initialize(db)
     if db.layoutVersion == 17 then MigrateV17(db); db.layoutVersion = 18 end
     if db.layoutVersion == 18 then MigrateV18(db); db.layoutVersion = 19 end
     if db.layoutVersion == 19 then MigrateV19(db); db.layoutVersion = 20 end
-    if db.layoutVersion == 20 then MigrateV20(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 20 then MigrateV20(db); db.layoutVersion = 21 end
+    if db.layoutVersion == 21 then MigrateV21(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

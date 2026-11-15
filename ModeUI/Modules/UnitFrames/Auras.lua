@@ -96,6 +96,10 @@ function M:LayoutAuras(f, unit)
         local spacing = math.floor(adb.spacing + 0.5) * px
         local direction = adb.grow == "left" and -1 or 1
         local dx, dy = math.floor(adb.x + 0.5) * px, math.floor(adb.y + 0.5) * px
+        -- A row starting on the portrait's side starts past the ring, which
+        -- covers the bars' first `tuck` pixels, plus 2px.
+        local near = fdb.portraitSide == "right" and "RIGHT" or "LEFT"
+        if side == near and g.portrait > 0 then dx = dx + (side == "RIGHT" and -1 or 1) * (g.tuck + 2 * px) end
         for index = 1, count do
             local icon = f.auraIcons[group][index]
             Kit.LayoutAuraIcon(icon, width, height, px, fdb, path)

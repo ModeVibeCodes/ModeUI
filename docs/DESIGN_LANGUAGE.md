@@ -120,6 +120,9 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
   color fading to 60% class + 40% white across the name, one color per letter;
   names Forever returns as secret fall back to Soft class). Options: Soft class
   (55% class + 45% white), White.
+- **Text in bars** (health, power, cast) in Geist Bold. Health text is colored
+  by health: Rosewood at 30% and under, through Ivory, to Celadon at full
+  (the client evaluates a color curve, since the health percent is secret).
 - **Placement:** the name sits on the top border, 9px in from the side
   opposite the portrait, lifted so the rim runs near its baseline. Health is
   right-aligned inside the health bar (padded past a portrait on that side).

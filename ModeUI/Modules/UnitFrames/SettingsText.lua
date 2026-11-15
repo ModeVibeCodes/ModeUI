@@ -164,7 +164,7 @@ function M:BuildTextSpots(ui, part)
     end
 
     if part == "power" then
-        page:Group("Text")
+        page:Group("Power Text")
         Spots(M.powerSlots, { M.textSlotLabels.powerLeft, M.textSlotLabels.powerCenter, M.textSlotLabels.powerRight })
         return
     end
@@ -210,5 +210,10 @@ function M:BuildTextTab(ui)
         page.refreshers[#page.refreshers + 1] = shadow
         -- Default for numbers; names keep the Name Color and the level stays muted.
         ui.Color("Text Color", "textColor")
+        -- Health texts: by health (Rosewood low, Ivory, Celadon full) or the Text Color.
+        ui.Choice("Health Text Color", "healthTextColor")
+        -- Every text spot on the bars and the border, a tile per row.
+        M:BuildTextSpots(ui, "health")
+        When(function() return ui.db().showPower end, function() M:BuildTextSpots(ui, "power") end)
     end)
 end

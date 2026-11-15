@@ -109,8 +109,9 @@ function M:LayoutTexts(f, unit)
         text:ClearAllPoints()
         if shown then
             -- Names in the font's SemiBold when it is Geist (docs/DESIGN_LANGUAGE.md, "Text").
-            local named = self.contentKind[s.content] == "name" and s.content ~= "level"
-            Font(text, fdb, s.size, named and addon.Style.Weighted(path, "semibold") or path, g.px)
+            -- Names on the border in SemiBold, text in the bars in Bold, when the font is Geist.
+            local weight = place.bar == "border" and "semibold" or "bold"
+            Font(text, fdb, s.size, addon.Style.Weighted(path, weight), g.px)
             if place.bar == "border" then self:PlaceOnBorder(f, g, text, s, dx, near, sign)
             else
                 PlaceInBar(f, g, place, text, s, dx, near, sign)
@@ -212,7 +213,18 @@ function M:UpdateHealthTexts(f, unit, okValue, value)
             local ok, deficit = Health.Deficit(unit)
             Write(text, ok and deficit or "")
         else Kit.ValueText(text, VALUE_MODE[entry.content], Health.Percent, unit, okValue, value) end
+        self:PaintHealthText(entry, unit, state or object)
     end
+end
+
+-- A health text in its slot's Default color: by health (the frame's Health
+-- Text Color), else the Text Color. `plain`: dead, ghost, offline or an object.
+function M:PaintHealthText(entry, unit, plain)
+    if entry.mode ~= "default" then return end
+    local fdb = self:FrameDB(unit)
+    if fdb.healthTextColor == "health" and not plain and addon.Style.PaintHealthText(entry.text, unit) then return end
+    local c = fdb.textColor
+    entry.text:SetTextColor(c[1], c[2], c[3], 1)
 end
 
 function M:UpdatePowerTexts(f, unit, powerType, okValue, value)
@@ -234,5 +246,13 @@ function M:PaintTextSample(g, unit, identity)
     self:PaintUnitColoredTexts(g, unit)
     for _, kind in ipairs({ "health", "power" }) do
         for _, entry in ipairs(g.textKinds[kind]) do Write(entry.text, SAMPLE[entry.content]) end
+    end
+    -- Sample health reads as full health: Celadon when colored by health.
+    local fdb = self:FrameDB(unit)
+    for _, entry in ipairs(g.textKinds.health) do
+        if entry.mode == "default" then
+            local c = fdb.healthTextColor == "health" and addon.Style.HEALTH_TEXT_FULL or fdb.textColor
+            entry.text:SetTextColor(c[1], c[2], c[3], 1)
+        end
     end
 end

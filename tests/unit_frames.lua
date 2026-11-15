@@ -13,7 +13,7 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='frames' and M.defaultEnabled==true)
     assert(addon.categories.frames.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==21 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.layoutVersion==22 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     -- The Mode look (docs/DESIGN_LANGUAGE.md): Geist, Mode Matte health, Mode
     -- Gradient power, Mode BG empty bars, 3px power, Combined shields.
     assert(M.db.player.fontMedia=='Mode Geist' and M.db.player.texture==nil)
@@ -217,16 +217,18 @@ world.run([====[
     b1.scripts.OnEnter(b1);assert(GameTooltip:IsShown() and GameTooltip.owner==b1 and GameTooltip.aura[1]=='target' and GameTooltip.aura[2]==1 and GameTooltip.aura[3]=='buff')
     b1.scripts.OnLeave(b1);assert(not GameTooltip:IsShown())
     b1.auraID=Secret('id');b1.scripts.OnEnter(b1);assert(not GameTooltip:IsShown(),'no empty tooltip for a hidden aura');b1.auraID=1
-    -- Top right: the first icon's right edge on the health bar's right edge (clear of
-    -- the portrait), cropped icons growing left. The mirrored Target's name is on its
-    -- left, so the row sits right on the bar block.
-    assert(Point(b1)[1]=='BOTTOMRIGHT' and Point(b1)[2]==t.health and Point(b1)[3]=='TOPRIGHT' and Point(b1)[4]==0 and Point(b1)[5]==2+2,'right on the bar block')
+    -- Top right, the Target's portrait side: the row starts past the ring (its 33px
+    -- tuck over the bars, plus 2), 22px cropped icons growing left. The mirrored
+    -- Target's name is on its left, so the row sits right on the bar block.
+    local clear=-(33+2)
+    assert(Point(b1)[1]=='BOTTOMRIGHT' and Point(b1)[2]==t.health and Point(b1)[3]=='TOPRIGHT' and Point(b1)[4]==clear and Point(b1)[5]==2+2,'on the bar block, clear of the ring')
     -- With the name on the right too, the row sits over the name instead of on it.
     assert(M:SetTextOption('player','border','align','LEFT'))
     local q=Point(b1);assert(q[5]==(2-1-3)+14+2,'over the name on the border')
-    assert(b1.width==20 and b1.height==16 and Point(b2)[4]==-(20+2) and Point(b2)[5]==q[5],'cropped, growing left')
-    assert(M:SetAuraOption('target','buffs','perRow',1) and Point(b2)[4]==0 and Point(b2)[5]==q[5]+16+2,'a new row above')
-    assert(M:SetAuraOption('target','buffs','shape','square') and b1.height==20 and M:SetAuraOption('target','buffs','perRow',8))
+    local h=b1.height
+    assert(b1.width==22 and h<22 and Point(b2)[4]==clear-(22+2) and Point(b2)[5]==q[5],'cropped, growing left')
+    assert(M:SetAuraOption('target','buffs','perRow',1) and Point(b2)[4]==clear and Point(b2)[5]==q[5]+h+2,'a new row above')
+    assert(M:SetAuraOption('target','buffs','shape','square') and b1.height==22 and M:SetAuraOption('target','buffs','perRow',5))
     assert(M:SetAuraOption('target','buffs','filter','mine') and auraFilters[#auraFilters]=='HELPFUL|PLAYER')
     assert(M:SetAuraOption('target','buffs','max',1) and not b2:IsShown() and M:ResetFrame('target') and b2:IsShown(),'reset restores the auras')
     assert(M:SetTextOption('player','border','align','RIGHT'))
@@ -351,7 +353,7 @@ world.run([====[
     -- On the Border (default): the baseline on the top rim's middle (bottom = 2 - 1 - 3
     -- descent = -2), clear of the ring at its height (31 in from the bars' start).
     local np=Point(p.texts.border);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==31 and np[5]==-2 and p.texts.border.justifyH=='RIGHT','name sitting on the border')
-    assert(p.texts.border.font[1]:find('Geist%-SemiBold') and p.texts.right.font[1]:find('Geist%-Regular'),'Geist: names in SemiBold')
+    assert(p.texts.border.font[1]:find('Geist%-SemiBold') and p.texts.right.font[1]:find('Geist%-Bold'),'Geist: names on the border in SemiBold, text in the bars in Bold')
     assert(t.texts.border.justifyH=='LEFT','the mirrored Target has its name on the left')
     -- Mirror Player Text off: the Player's slots as they are, each clear of the Target's own portrait.
     assert(M:SetFrameOption('target','mirrorText',false) and t.texts.border.justifyH=='RIGHT' and not t.texts.left:IsShown())
@@ -669,7 +671,7 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==21 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.texts.bottomLeft.content=='none')
+    assert(v1.layoutVersion==22 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.texts.bottomLeft.content=='none')
     assert(v1.player.texts.right.content=='healthBoth' and v1.player.texts.right.size==14 and v1.player.texts.border.size==14 and v1.player.healthColorMode=='default')
     assert(v1.player.healthText==nil and v1.player.levelStyle==nil and v1.player.nameFontSize==nil,'old text keys removed')
     assert(v1.player.fontMedia=='Mode Geist' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
@@ -682,7 +684,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==21 and v5.player.healthHeight==34 and v5.player.texts.border.align=='RIGHT' and v5.player.fontMedia=='Mode Geist')
+    assert(v5.layoutVersion==22 and v5.player.healthHeight==34 and v5.player.texts.border.align=='RIGHT' and v5.player.fontMedia=='Mode Geist')
     assert(v5.player.texts.bottomLeft.size==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -695,7 +697,7 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==21 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==22 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='gradient' and v8.target.nameColorMode=='gradient','names adopt the default color')
     assert(v8.player.portraitRing=='border' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'Steel Sheen ring unless custom')
@@ -706,7 +708,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==21 and v9.player.nameColorMode=='gradient' and v9.player.liftedShadow==false and v9.player.nameLift==nil,'the lifted shadow came in at 10 and left at 21')
+    assert(v9.layoutVersion==22 and v9.player.nameColorMode=='gradient' and v9.player.liftedShadow==false and v9.player.nameLift==nil,'the lifted shadow came in at 10 and left at 21')
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -714,30 +716,30 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==21 and v10.player.nameColorMode=='gradient' and v10.target.nameColorMode=='class','presets move to Sky, then Gradient; Class Color kept')
+    assert(v10.layoutVersion==22 and v10.player.nameColorMode=='gradient' and v10.target.nameColorMode=='class','presets move to Sky, then Gradient; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==false and v10.player.nameLift==nil and v10.target.nameLift==nil,'the lift carried over at 11, then version 21 turns it off (true was the default)')
     assert(v10.target.mirrorText==true,'matched Target copies the Player text layout, mirrored since version 15')
     local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
-    assert(v11.layoutVersion==21 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    assert(v11.layoutVersion==22 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
     -- Version 12 -> 13: new small-frame defaults, but a changed setting stays.
     local v12={layoutVersion=12,targettarget={scale=100,showPortrait=true,namePosition='above',nameAlign='CENTER',barWidth=110},
         focus={scale=120,showPortrait=true,barWidth=150,healthHeight=22,levelStyle='badge',nameFontSize=12}}
     M.Initialize(v12)
-    assert(v12.layoutVersion==21 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.texts.border.content=='none')
+    assert(v12.layoutVersion==22 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.texts.border.content=='none')
     assert(v12.targettarget.texts.center.content=='name' and v12.focus.scale==120,'user changes kept: a centred name in the bar')
     local fs=v12.focus.texts;assert(v12.focus.barWidth==160 and v12.focus.healthHeight==22 and fs.bottomRight.content=='none' and fs.left.content=='name' and fs.left.size==11)
     assert(v12.targettarget.attach==true and v12.focustarget.attach==true and v12.focus.attach==false,'new keys take defaults')
     -- Version 13 -> 14: Mode Slate at 70% for frames still on the old Flat / 25%.
     local v13={layoutVersion=13,player={backgroundTexture='flat',barBackgroundOpacity=25},target={backgroundTexture='media:Smooth',barBackgroundOpacity=40}}
     M.Initialize(v13)
-    assert(v13.layoutVersion==21 and v13.player.backgroundTexture=='media:Mode BG' and v13.player.barBackgroundOpacity==100)
+    assert(v13.layoutVersion==22 and v13.player.backgroundTexture=='media:Mode BG' and v13.player.barBackgroundOpacity==100)
     assert(v13.target.backgroundTexture=='media:Smooth' and v13.target.barBackgroundOpacity==40,'chosen backgrounds stay')
     local v15={layoutVersion=15,player={namePosition='above'},target={namePosition='bar'}};M.Initialize(v15)
-    assert(v15.layoutVersion==21 and v15.player.texts.border.content=='name' and v15.player.texts.border.y==0,'version 16: names above sit on the border')
+    assert(v15.layoutVersion==22 and v15.player.texts.border.content=='name' and v15.player.texts.border.y==0,'version 16: names above sit on the border')
     assert(v15.target.texts.right.content=='name' and v15.target.texts.topRight.content=='healthPercent','a taken spot moves to its top row')
     local v14={layoutVersion=14,player={levelStyle='badge'},target={matchPlayer=true,mirrorText=false}};M.Initialize(v14)
-    assert(v14.layoutVersion==21 and v14.target.mirrorText==true and v14.player.texts.bottomLeft.content=='level','version 15: corner level, mirrored Target')
+    assert(v14.layoutVersion==22 and v14.target.mirrorText==true and v14.player.texts.bottomLeft.content=='level','version 15: corner level, mirrored Target')
     -- Version 16 -> 17: text slots. Every text moves to its matching slot, so nothing moves.
     local v16={layoutVersion=16,player={namePosition='above',nameOffsetY=2,nameOffsetX=-3,nameAlign='CENTER',levelPosition='health',levelOffsetY=1,
         healthText='current',healthTextPosition='LEFT',healthTextOffsetX=3,healthFontSize=13,powerText='both',powerTextPosition='RIGHT',powerFontSize=10},
@@ -745,7 +747,7 @@ world.run([====[
         focus={namePosition='bar',nameAlign='RIGHT',healthText='percent',healthTextPosition='RIGHT'}}
     M.Initialize(v16)
     local s=v16.player.texts
-    assert(v16.layoutVersion==21 and s.border.content=='name' and s.border.align=='CENTER' and s.border.x==-3 and s.border.y==2+4+3,'Above Frame: on the border, raised by the difference')
+    assert(v16.layoutVersion==22 and s.border.content=='name' and s.border.align=='CENTER' and s.border.x==-3 and s.border.y==2+4+3,'Above Frame: on the border, raised by the difference')
     assert(s.left.content=='healthCurrent' and s.left.x==3 and s.left.size==13 and s.right.content=='none','health text in its side slot')
     assert(s.bottomLeft.content=='level' and s.bottomLeft.y==1 and s.bottomLeft.colorMode=='default','a level beside the health text goes to the bottom corner')
     assert(s.powerRight.content=='powerBoth' and s.powerRight.size==10 and s.powerCenter.size==10)
@@ -756,12 +758,12 @@ world.run([====[
     -- Version 17 -> 18: the power and cast bars start with the textures they showed.
     local v17={layoutVersion=17,player={foregroundTexture='flat',backgroundTexture='slateHatch',barForegroundOpacity=80,barBackgroundOpacity=40,castBar={height=14}}}
     M.Initialize(v17)
-    local q17=v17.player;assert(v17.layoutVersion==21 and q17.powerForegroundTexture=='flat' and q17.powerBackgroundTexture=='slateHatch' and q17.powerForegroundOpacity==80 and q17.powerBackgroundOpacity==40)
+    local q17=v17.player;assert(v17.layoutVersion==22 and q17.powerForegroundTexture=='flat' and q17.powerBackgroundTexture=='slateHatch' and q17.powerForegroundOpacity==80 and q17.powerBackgroundOpacity==40)
     assert(q17.castBar.foregroundTexture=='flat' and q17.castBar.backgroundTexture=='slateHatch' and q17.castBar.height==14,'nothing changes on screen')
     assert(v17.target.powerForegroundTexture=='media:Mode Gradient' and v17.target.castBar.backgroundTexture=='media:Mode BG','new frames take the defaults')
     -- Version 18 -> 19: the Focus cast bar at the old 3px moves to 8px; a chosen gap stays.
     local v18={layoutVersion=18,focus={castBar={gap=3}},player={castBar={gap=3}}};M.Initialize(v18)
-    assert(v18.layoutVersion==21 and v18.focus.castBar.gap==8 and v18.player.castBar.gap==2 and v18.focus.castBar.fullWidth==true)
+    assert(v18.layoutVersion==22 and v18.focus.castBar.gap==8 and v18.player.castBar.gap==2 and v18.focus.castBar.fullWidth==true)
     local v18b={layoutVersion=18,focus={castBar={gap=5}}};M.Initialize(v18b);assert(v18b.focus.castBar.gap==5)
     -- Version 19 -> 20: the Mode design language. Values still at the old defaults
     -- take the new ones; anything chosen stays.
@@ -773,7 +775,7 @@ world.run([====[
         targettarget={powerHeight=6,healthHeight=16,barWidth=110}}
     M.Initialize(v19)
     local a,b,c=v19.player,v19.target,v19.targettarget
-    assert(v19.layoutVersion==21 and a.powerHeight==3 and a.foregroundTexture=='media:Mode Matte' and a.backgroundTexture=='media:Mode BG' and a.barBackgroundOpacity==100)
+    assert(v19.layoutVersion==22 and a.powerHeight==3 and a.foregroundTexture=='media:Mode Matte' and a.backgroundTexture=='media:Mode BG' and a.barBackgroundOpacity==100)
     assert(a.powerForegroundTexture=='media:Mode Gradient' and a.nameColorMode=='gradient' and a.portraitRing=='border' and a.fontMedia=='Mode Geist')
     assert(a.barWidth==184 and a.healthHeight==34 and a.portraitScale==140 and a.castBar.gap==2 and a.castBar.foregroundTexture=='media:Mode Cast' and a.castBar.backgroundTexture=='media:Mode BG')
     assert(b.powerHeight==12 and b.foregroundTexture=='media:Smooth' and b.nameColorMode=='class' and b.portraitRing=='custom' and b.fontMedia=='Friz' and b.barWidth==200,'choices kept')
@@ -781,8 +783,23 @@ world.run([====[
     -- Version 20 -> 21: Portrait Size 140, no lifted shadow, cast icons on the portrait side; choices kept.
     local v20={layoutVersion=20,player={portraitScale=165,liftedShadow=true,castBar={icon='far'}},target={portraitScale=180,castBar={icon='none'}}}
     M.Initialize(v20)
-    assert(v20.layoutVersion==21 and v20.player.portraitScale==140 and v20.player.liftedShadow==false and v20.player.castBar.icon=='near')
+    assert(v20.layoutVersion==22 and v20.player.portraitScale==140 and v20.player.liftedShadow==false and v20.player.castBar.icon=='near')
     assert(v20.target.portraitScale==180 and v20.target.castBar.icon=='none','choices kept')
+    -- Version 21 -> 22: 22px auras five to a row, 11px cast text; choices kept.
+    local v21={layoutVersion=21,player={buffs={size=20,perRow=8},debuffs={size=30,perRow=3},castBar={fontSize=10}}}
+    M.Initialize(v21)
+    assert(v21.layoutVersion==22 and v21.player.buffs.size==22 and v21.player.buffs.perRow==5 and v21.player.castBar.fontSize==11)
+    assert(v21.player.debuffs.size==30 and v21.player.debuffs.perRow==3 and v21.player.healthTextColor=='health')
+    -- Health text by health (Style.PaintHealthText): Celadon at full, Rosewood at 30% and under.
+    local S=addon.Style
+    local function Is(c,token) return math.abs(c[1]-token[1])<1e-9 and math.abs(c[2]-token[2])<1e-9 end
+    local wasOn=M.enabled;addon:SetModuleEnabled('unitFrames',true)
+    units.player.health=1000;FireEvent('UNIT_HEALTH','player');local ht=assert(p.textKinds.health[1],'a health text').text;assert(Is(ht.color,S.Tone.celadon),'full health: Celadon')
+    units.player.health=250;FireEvent('UNIT_HEALTH','player');assert(Is(ht.color,S.Tone.rosewood),'under 30%: Rosewood')
+    assert(M:SetFrameOption('player','healthTextColor','text') and Is(p.textKinds.health[1].text.color,M.db.player.textColor),'or the Text Color')
+    assert(M:SetFrameOption('player','healthTextColor','health'));units.player.health=900;FireEvent('UNIT_HEALTH','player')
+    assert(p.castBox.text.font[1]:find('Geist%-Bold') and M.db.player.castBar.fontSize==11,'cast text in Bold, 11px')
+    addon:SetModuleEnabled('unitFrames',wasOn)
     -- Reset (the settings footer): every frame back to the defaults.
     local before=addon.ProfileCodec.Copy(M.db)
     assert(M:SetFrameOption('player','barWidth',300) and M:SetFrameOption('target','matchPlayer',false) and M.ResetToDefaults)
@@ -875,7 +892,7 @@ restored.run([====[
     local function Cells(slot) return S[slot]:GetParent():GetParent():GetParent().row end
     for _,line in ipairs({{'topLeft','top','topRight'},{'left','center','right'},{'bottomLeft','bottom','bottomRight'},{'powerLeft','powerCenter','powerRight'}}) do
         local row=Cells(line[1]);assert(Cells(line[2])==row and Cells(line[3])==row and row.settingsTitles[2]==M.textSlotLabels[line[2]],'one line: '..line[1])
-        assert(row.section.title==(line[1]=='powerLeft' and 'Power Bar' or 'Health Bar'),'in the tab of its bar')
+        assert(row.section.title=='Text','every text spot on the Text tab')
         assert(Visible(row) and Point(S[line[1]])[1]=='TOPLEFT' and Point(S[line[1]],2)[1]=='TOPRIGHT','stretched across its cell')
     end
     assert(Cells('topLeft').settingsTitles[1]=='Top Left' and Cells('topLeft').settingsTitles[3]=='Top Right')
@@ -973,7 +990,7 @@ restored.run([====[
     page.SetEditing('player');local pf=view.faces.player;local hit
     for _,child in ipairs(frames) do if child.jump and child.jump.target=='text:bottomLeft' and child:GetParent()==pf.textLayer then hit=child end end
     assert(hit,'every text is clickable')
-    hit.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Health Bar' and page.jumpTargets['text:bottomLeft'].section.title=='Health Bar')
+    hit.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Text' and page.jumpTargets['text:bottomLeft'].section.title=='Text','a text in the preview opens the Text tab')
     assert(pf.scale==M.PREVIEW_SCALE and M.PREVIEW_HEIGHT==150,'the sample draws at 80%')
     page.SetEditing('target')
     page.SetEditing('targettarget');local small=view.faces.targettarget

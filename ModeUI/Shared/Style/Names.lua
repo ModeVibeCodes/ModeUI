@@ -47,6 +47,42 @@ function Style.SetName(fontString, name, color, style)
     fontString:SetText(name)
 end
 
+-- Health text by the unit's health (docs/DESIGN_LANGUAGE.md, "Text"):
+-- Rosewood at 30% and under, through Ivory, to Celadon at full. The health
+-- percent is secret, so the client evaluates a color curve
+-- (UnitHealthPercent with a LuaColorCurveObject) and the result only reaches
+-- SetTextColor, which accepts secret values.
+local healthCurve
+local function HealthCurve()
+    if healthCurve ~= nil then return healthCurve or nil end
+    healthCurve = false
+    local util = C_CurveUtil
+    if type(util) == "table" and type(util.CreateColorCurve) == "function" and type(CreateColor) == "function" then
+        local ok, curve = pcall(util.CreateColorCurve)
+        if ok and curve then
+            if curve.SetType and Enum and Enum.LuaCurveType then pcall(curve.SetType, curve, Enum.LuaCurveType.Linear) end
+            for _, point in ipairs({ { 0, Tone.rosewood }, { 0.3, Tone.rosewood }, { 0.65, Tone.ivory }, { 1, Tone.celadon } }) do
+                local c = point[2]
+                pcall(curve.AddPoint, curve, point[1], CreateColor(c[1], c[2], c[3], 1))
+            end
+            healthCurve = curve
+        end
+    end
+    return healthCurve or nil
+end
+Style.HEALTH_TEXT_FULL = Tone.celadon
+-- Paints `fontString` by `unit`'s health; false when the client can't (then
+-- the caller keeps its own color).
+function Style.PaintHealthText(fontString, unit)
+    local curve = HealthCurve()
+    if not curve or not unit then return false end
+    local ok = pcall(function()
+        local color = UnitHealthPercent(unit, false, curve)
+        fontString:SetTextColor(color:GetRGB())
+    end)
+    return ok
+end
+
 -- The Mode text shadow: 1px offset (1, -1) at 95% black.
 function Style.Shadow(fontString, px)
     local shadow = Tone.textShadow

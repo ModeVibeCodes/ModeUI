@@ -94,7 +94,8 @@ function M:LayoutCast(f, unit)
     box.edge:Layout()
     box.textLayer:SetFrameLevel(box.edge.holder:GetFrameLevel() + 1)
     -- Spell name from the left, seconds left on the right, in the frame's font.
-    local path, size = self:FontPath(fdb), cdb.fontSize
+    -- Cast text in Bold when the font is Geist.
+    local path, size = addon.Style.Weighted(self:FontPath(fdb), "bold"), cdb.fontSize
     for _, entry in ipairs({ { box.text, "LEFT", cdb.showText }, { box.timer, "RIGHT", cdb.showTimer } }) do
         local text, side, shown = entry[1], entry[2], entry[3]
         Kit.Font(text, fdb, size, path, px)
