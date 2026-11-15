@@ -10,7 +10,6 @@ time.
 | Addon | Phase | Opens with | Tabs |
 |---|---|---|---|
 | `ModeUI_ProbeFrames` | 5 | `/mprobe frames` | Group Frames, Nameplates |
-| `ModeUI_ProbeBars` | 6 | `/mprobe bars` | Action Bars, Cooldown Manager |
 | `ModeUI_ProbePanels` | 7 | `/mprobe panels` | Windows, Chat, Damage Meters, Tooltip, Bags, Minimap |
 
 `/mprobe` lists the loaded probes; `/mprobe <name> <tab>` opens one on a tab

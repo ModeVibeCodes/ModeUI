@@ -4,7 +4,7 @@
 -- never touch ModeUI's settings or Blizzard's frames. Not native rendering.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 
-local PROBES = { "ModeUI_ProbeFrames", "ModeUI_ProbeBars", "ModeUI_ProbePanels" }
+local PROBES = { "ModeUI_ProbeFrames", "ModeUI_ProbePanels" }
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local EXTRA = H.Read(H.root .. "tests/probe_stubs.lua")
 
@@ -60,7 +60,7 @@ end
 world.run([====[
     local reg=assert(ModeUIProbes,'probe registry')
     assert(SlashCmdList.MODEUIPROBE and SLASH_MODEUIPROBE1=='/mprobe','one /mprobe command')
-    for _,id in ipairs({'frames','bars','panels'}) do assert(reg.list[id],'registered: '..id) end
+    for _,id in ipairs({'frames','panels'}) do assert(reg.list[id],'registered: '..id) end
     -- /mprobe alone lists the probes.
     local before=#messages;SlashCmdList.MODEUIPROBE('');assert(#messages>before,'lists probes')
     -- Live units: secret health, power and casts reach only widgets that accept them.
@@ -117,16 +117,6 @@ world.run([====[
     assert(Find(body,function(f) return f.kind=='StatusBar' and f.value==27 end),'sample at 27%')
     frames:Hide()
     local function Has(parent,test) return Find(parent,test)~=nil end
-    -- Action bar: slot 1's picture, its secret count only through SetText, the short keybind.
-    local bars=reg.list.bars.window();bars:Select('action');bars:Show();Advance(0.3)
-    local action=bars.pages.action
-    assert(Has(action,function(f) return f.texture==135000 end),'slot 1 picture')
-    assert(Has(action,function(f) return f.GetText and f:GetText()=='S-1' end),'short keybind')
-    -- Cooldown Manager: your class's rows; the unlearned one grey.
-    bars:Select('cooldowns');Advance(0.3)
-    local cds=bars.pages.cooldowns
-    assert(Has(cds,function(f) return f.texture=='spell:1100' end) and Has(cds,function(f) return f.texture=='spell:1200' and f.desaturated end),'live essential row')
-    bars:Hide()
     -- Bags: live items, the epic's rim in its quality; money; the secret zone only reaches SetText.
     local panels=reg.list.panels.window();panels:Select('bags');panels:Show();Advance(1.1)
     assert(Has(panels.pages.bags,function(f) return f.texture==1002 end),'epic item shown')

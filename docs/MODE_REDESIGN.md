@@ -3,9 +3,10 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 15, 2026 (branch
-`t3/mode-phase-6-cooldown-manager`: the Cooldown Manager rebuild, settings v5,
-and the ModeCDM companion addon; not yet merged or pushed).
+machine or in a new session. Last updated November 15, 2026 (Phase 6
+closed: the Cooldown Manager rebuild and ModeCDM confirmed in game, the UI
+scale default, the Edit Mode strip and panel, Match Size for any element;
+`main` fast-forwarded locally, not pushed).
 
 ## Goal
 
@@ -31,8 +32,8 @@ before the next starts.
 | 4 | Settings window: hybrid window, widgets, page layouts, tile packing | Done, confirmed |
 | 5 | Frames: Unit Frames, Party Frames, Nameplates | Done, confirmed |
 | 5b | Texture retune after in-game look (see below) | Done, confirmed |
-| 6 | Bars and buttons: **Action Bars** (done, confirmed), then **Cooldown Manager** (built, now the ModeCDM addon) | Waiting on the owner's in-game check of the Cooldown Manager |
-| 7 | Windows and panels: Skin layer + Windows, Chat, Damage Meters, Tooltip, Bags, Minimap | Not started (all probe designs approved) |
+| 6 | Bars and buttons: **Action Bars**, then **Cooldown Manager** (the ModeCDM addon) | Done, confirmed (November 15) |
+| 7 | Windows and panels: Skin layer + Windows, Chat, Damage Meters, Tooltip, Bags, Minimap | Next: Skin layer + Windows (all probe designs approved) |
 | 8 | Cleanup: delete legacy border systems and palettes | Not started |
 | 9 | Release 0.2.0: notes, notices | Only with the owner's go-ahead |
 | 10 | New coverage (optional) | Waits on decision 2 |
@@ -56,8 +57,7 @@ before the next starts.
   outside each button, Mode Button face, Ivory hover line, Celadon proc rim,
   Mode icon tints (range, power, unusable), Geist Bold texts. See
   `docs/ACTION_BARS.md`.
-- **Cooldown Manager** (settings version 5, built November 15; in-game check
-  pending): icons 40 x 34 / 32 x 28 in the `frameThin` edge outside the icon
+- **Cooldown Manager** (settings version 5, built and confirmed November 15): icons 40 x 34 / 32 x 28 in the `frameThin` edge outside the icon
   (the approved probe), a Mode Button face, Spacing between the shadows,
   Border glows as a Mode Empty rim swap (Celadon procs and buffs, Ivory active
   and ready), Rosewood out of range, Geist Bold texts; Tracked Bars 220 x 16 in
@@ -90,12 +90,8 @@ The owner may keep tuning textures; expect small edits to
 
 ## Next steps, in order
 
-1. **Cooldown Manager in-game gate** (rest of Phase 6). Built and split out
-   as ModeCDM; the owner checks it in game (the manual check is in
-   `docs/COOLDOWN_MANAGER.md`, plus the AddOn list nesting). Once confirmed,
-   delete `probes/ModeUI_ProbeBars` (both halves are built), its
-   `tests/probes.lua` entry and its copy in the game's AddOns folder, then
-   fast-forward `main`.
+1. ~~Cooldown Manager in-game gate~~: confirmed November 15;
+   `probes/ModeUI_ProbeBars` is deleted.
 2. **Phase 7**, one module per gate, from `probes/ModeUI_ProbePanels`
    (approved): the Skin layer and Windows module, then Chat, Damage Meters,
    Tooltip, Bags, Minimap (each module's current behavior is in its own doc).
