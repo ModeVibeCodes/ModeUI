@@ -77,7 +77,7 @@ rims).
 | Preset | Shape | Rim | Lighting | Outer | Inner gap | Use |
 |---|---|---|---|---|---|---|
 | `frame` | Round 4 | 2px Gunmetal | Edge-lit (top 1px catches light) | 1px shadow + soft drop | — | player, target, cast bars, action buttons |
-| `frameThin` | Round 4 | 1px Gunmetal | Edge-lit | 1px shadow | — | minor and boss frames, nameplates, icons, auras |
+| `frameThin` | Round 4 | 1px Gunmetal | Edge-lit (half strength on 1px, so the top keeps the sides' weight) | 1px shadow | — | minor and boss frames, nameplates, icons, auras |
 | `group` | Round 4 or Round 2 | 1px Gunmetal | Solid | — | — | party and raid frames (1px apart), bag slots |
 | `window` | Round 4 | 1px Steel | Sheen (light band through the middle) | 1px shadow + soft drop | 1px black | every window and panel, settings window and cards |
 | `ring` | circle | 2px Steel | Sheen | — | — | portraits, badges |

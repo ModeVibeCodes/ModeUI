@@ -25,6 +25,9 @@ Style.EDGE_PRESETS = {
 }
 
 local EDGE_LIGHT_ALPHA = 0.28
+-- A 1px rim has no second row for the light to fade into, so its whole top
+-- edge would read heavier than the sides; it takes half the light.
+local THIN_LIGHT = 0.5
 
 -- The sheen's base tone and the strength of its band, so the band peaks at
 -- mix(light, mid, 0.7) over a base of mix(dark, mid, 0.5).
@@ -109,11 +112,11 @@ function Edge:Paint()
     local rimColor, lightAlpha
     if def.flat or self.tint then
         rimColor = self.tint or self.color or Tone.mono.rimStrong
-        lightAlpha = def.light == "edge" and 0.3 or 0
+        lightAlpha = def.light == "edge" and 0.3 * (self.rim == 1 and THIN_LIGHT or 1) or 0
     else
         local metal = Tone[def.metal]
         if def.light == "sheen" then rimColor, lightAlpha = Sheen(metal)
-        else rimColor, lightAlpha = metal.mid, def.light == "edge" and EDGE_LIGHT_ALPHA or 0 end
+        else rimColor, lightAlpha = metal.mid, def.light == "edge" and EDGE_LIGHT_ALPHA * (self.rim == 1 and THIN_LIGHT or 1) or 0 end
     end
     Style.Paint(self.rimTexture, rimColor)
     if self.light then
