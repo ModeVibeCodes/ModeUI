@@ -158,9 +158,9 @@ end)
 Save("Bars/CometHead", 32, 64, function(x, y)
     local nx, ny = (x + 0.5 - 16) / 6.4, (y + 0.5 - 32) / 32
     local r = math.sqrt(nx * nx + ny * ny)
-    local core = r <= 0.3 and 1 or r <= 0.5 and T.Lerp(1, 0.75, (r - 0.3) / 0.2) or r <= 0.72 and T.Lerp(0.75, 0, (r - 0.5) / 0.22) or 0
+    local core = r <= 0.78 and 1 or r <= 1 and T.Lerp(1, 0, (r - 0.78) / 0.22) or 0
     local gx = math.abs(x + 0.5 - 16) / 16
-    local glow = (1 - T.Smooth(gx)) * (1 - T.Smooth(math.abs(ny))) * 0.45
+    local glow = (1 - T.Smooth(gx)) * (1 - T.Smooth(math.abs(ny))) * 0.35
     return 1, 1, 1, math.max(core, glow)
 end)
 Lift("Bars/CometTrail", 64, 16, function(x) return 0.7 * ((x + 0.5) / 64) end)

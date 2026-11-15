@@ -98,7 +98,7 @@ local function Build()
     iconTexture:SetAllPoints()
     iconTexture:SetTexture([[Interface\Icons\Spell_Fire_FireBolt02]])
     Style.CropIcon(iconTexture, 40, Style.IconHeight(40))
-    Label(frame, "icon 40 x 35", 396, -180, 10)
+    Label(frame, "icon 40 x " .. Style.IconHeight(40), 396, -180, 10)
 
     -- Bars and shields.
     Label(frame, "Bars", 16, -216, 12, "semibold", Tone.graphite.text)

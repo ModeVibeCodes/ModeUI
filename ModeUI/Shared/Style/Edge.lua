@@ -3,8 +3,10 @@ local _, addon = ...
 -- outside its host: an optional 1px black gap, the rim, then an optional 1px
 -- shadow ring (or the accent highlight), and an optional soft drop below the
 -- host. Every piece is sliced Round 4 art on a holder frame scaled to one
--- physical pixel per unit, so offsets and slice margins land on whole pixels at
--- any UI scale. The rim covers its own inner corner: no masks.
+-- physical pixel per unit, so offsets and slice margins are whole pixels at any
+-- UI scale; the pieces keep the client's default pixel snapping, so a host on a
+-- fractional pixel still gets crisp 1px rims. The rim covers its own inner
+-- corner: no masks.
 local Style = addon.Style
 local Tone = Style.Tone
 
@@ -34,14 +36,9 @@ local function Sheen(metal)
     return base, math.max(0, math.min(1, alpha / 3))
 end
 
-local function Unsnap(texture)
-    if texture.SetSnapToPixelGrid then texture:SetSnapToPixelGrid(false) end
-    if texture.SetTexelSnappingBias then texture:SetTexelSnappingBias(0) end
-end
 local function Piece(frame, layer, sublevel, key)
     local texture = frame:CreateTexture(nil, layer, nil, sublevel)
     Style.ApplyAsset(texture, key)
-    Unsnap(texture)
     return texture
 end
 -- Anchors a piece `out` pixels outside the holder on every side (holder units

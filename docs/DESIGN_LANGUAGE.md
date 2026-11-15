@@ -134,7 +134,7 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
 | Raid, standard / healer | 74 × 34 / 92 × 48 + 3 |
 | Party, vertical fill | 62 × 66 + 3 |
 | Group spacing | exactly 1px, no shadow |
-| Icons (buttons, auras, cooldowns, slots) | wider than tall: 4px shorter up to 35px wide, 5px up to 43px, 6px from 44px |
+| Icons (buttons, auras, cooldowns, slots) | wider than tall: 4px shorter up to 35px wide, 6px from 36px (40 x 34) |
 | Auras inside group frames | flush in the corner by default (the frame's rim is their outer border) |
 
 ## Windows and panels

@@ -4,11 +4,9 @@ local _, addon = ...
 local Style = addon.Style
 local Tone = Style.Tone
 
--- Height for an icon `width` pixels wide: 4px shorter up to 35, 5px up to 43,
--- 6px from 44.
+-- Height for an icon `width` pixels wide: 4px shorter up to 35, 6px from 36.
 function Style.IconHeight(width)
-    if width >= 44 then return width - 6 end
-    if width >= 36 then return width - 5 end
+    if width >= 36 then return width - 6 end
     return width - 4
 end
 

@@ -116,6 +116,12 @@ world.run([[
     local shield = Style.Shield(bar)
     shield:Update(nil, { max = 100, shield = 15, total = 30 })
     shield:Update("player", { max = 100, shield = 0, total = 25 })
+    -- The Hairline spans the whole bar (tiled 1:1) and is clipped to the fill, so it never stretches.
+    for _, lines in ipairs({ shield.attachedLines, shield.fullLines }) do
+        local first = lines.points and lines.points[1]
+        assert(first and first[2] == bar, "hairline lines anchor to the bar, not the fill")
+    end
+    assert(shield.attachedClip.points[1][2] == shield.attached:GetStatusBarTexture(), "and clip to the shield fill")
     -- Names: Gradient is per letter from the color to 74% color + 26% white.
     local text = Style.GradientText("Mode", { 1, 0, 0 })
     assert(text:sub(1, 10) == "|cffff0000" and text:find("|r$"), "gradient starts at the color")
@@ -123,7 +129,7 @@ world.run([[
     assert(math.abs(finish[2] - 0.26) < 1e-6, "gradient ends 26% toward white")
     assert(Style.GradientText(nil, { 1, 0, 0 }) == nil)
     -- Icons: wider than tall.
-    assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 35 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
+    assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
     local ring = Style.Ring(host, 66)
     assert(ring.portrait and ring.mask, "portrait ring")
     assert(Style.SameColor({ 0x47 / 255, 0x47 / 255, 0x47 / 255 }, Tone.slate))

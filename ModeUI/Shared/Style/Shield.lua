@@ -34,14 +34,21 @@ end
 
 local function Layer(bar, frame, sublevel)
     -- The faint lift: the bar's own color added (ADD), so the shield keeps the
-    -- bar's hue instead of washing it white; then the 1px lines.
+    -- bar's hue instead of washing it white; it stretches with the fill.
     local lift = frame:CreateTexture(nil, "ARTWORK", nil, sublevel)
     Style.ApplyAsset(lift, "Solid")
     lift:SetBlendMode("ADD")
-    local lines = frame:CreateTexture(nil, "ARTWORK", nil, sublevel + 1)
+    -- The Hairline lines span the whole bar, tiled 1:1, inside a clip that
+    -- follows the fill: the pattern stays put on the bar (and lines up between
+    -- the attached and full shields) instead of stretching with the amount.
+    local clip = CreateFrame("Frame", nil, frame)
+    clip:SetClipsChildren(true)
+    local lines = clip:CreateTexture(nil, "ARTWORK", nil, sublevel + 1)
     Style.ApplyAsset(lines, "Shield")
     lines:SetBlendMode("ADD")
-    return lift, lines
+    lines:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+    lines:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    return lift, lines, clip
 end
 
 local Shield = {}
@@ -58,14 +65,14 @@ function Style.Shield(bar)
     shield.attached = CreateFrame("StatusBar", nil, shield.clip)
     shield.attached:SetStatusBarTexture(Style.AssetPath("Solid"))
     shield.attached:GetStatusBarTexture():SetAlpha(0)
-    shield.attachedLift, shield.attachedLines = Layer(bar, shield.attached, 4)
+    shield.attachedLift, shield.attachedLines, shield.attachedClip = Layer(bar, shield.attached, 4)
     -- From max: right to left, full width.
     shield.full = CreateFrame("StatusBar", nil, bar)
     shield.full:SetAllPoints(bar)
     shield.full:SetReverseFill(not bar.reverse)
     shield.full:SetStatusBarTexture(Style.AssetPath("Solid"))
     shield.full:GetStatusBarTexture():SetAlpha(0)
-    shield.fullLift, shield.fullLines = Layer(bar, shield.full, 4)
+    shield.fullLift, shield.fullLines, shield.fullClip = Layer(bar, shield.full, 4)
     shield.fullLight = shield.full:CreateTexture(nil, "ARTWORK", nil, 6)
     Style.ApplyAsset(shield.fullLight, "Solid")
     shield.fullLight:SetVertexColor(1, 1, 1, OVERFLOW_LIGHT)
@@ -87,11 +94,11 @@ function Style.Shield(bar)
     return shield
 end
 
--- Fits a layer's textures to a StatusBar's fill.
+-- Fits a texture or clip frame to a StatusBar's fill.
 local function Fit(texture, fill)
     texture:ClearAllPoints()
-    texture:SetPoint("TOPLEFT", fill, "TOPLEFT")
-    texture:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT")
+    texture:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
+    texture:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
 end
 
 function Shield:Layout()
@@ -105,9 +112,9 @@ function Shield:Layout()
     self.attached:SetWidth(math.max(1, bar:GetWidth()))
     self.attached:SetReverseFill(bar.reverse)
     local attachedFill, fullFill = self.attached:GetStatusBarTexture(), self.full:GetStatusBarTexture()
-    Fit(self.attachedLift, attachedFill); Fit(self.attachedLines, attachedFill)
-    Fit(self.fullLift, fullFill); Fit(self.fullLines, fullFill); Fit(self.fullLight, fullFill)
-    -- Hairline tiles 1:1 (a line about every 5.7px).
+    Fit(self.attachedLift, attachedFill); Fit(self.attachedClip, attachedFill)
+    Fit(self.fullLift, fullFill); Fit(self.fullClip, fullFill); Fit(self.fullLight, fullFill)
+    -- Hairline tiles 1:1 over the whole bar (a line every 8px along it).
     local w, h = bar:GetWidth(), bar:GetHeight()
     Style.TileCoords(self.attachedLines, "Shield", w, h, px)
     Style.TileCoords(self.fullLines, "Shield", w, h, px)

@@ -10,10 +10,6 @@ local Tone = Style.Tone
 Style.BAR_ROLES = { health = "Matte", healthClass = "Gradient", power = "Gradient", cast = "Cast",
     nameplate = "BG", meter = "Panel", resource = "Button", status = "Matte", timer = "Gradient", aura = "Solid" }
 
-local function Unsnap(texture)
-    if texture.SetSnapToPixelGrid then texture:SetSnapToPixelGrid(false) end
-    if texture.SetTexelSnappingBias then texture:SetTexelSnappingBias(0) end
-end
 
 local Bar = {}
 
@@ -40,7 +36,6 @@ function Style.Bar(parent, opts)
     Style.ApplyAsset(bar.trail, "CometTrail")
     bar.head = bar:CreateTexture(nil, "OVERLAY", nil, 4)
     Style.ApplyAsset(bar.head, "CometHead")
-    for _, texture in ipairs({ bar.bg, bar.lift, bar.endLine, bar.trail, bar.head }) do Unsnap(texture) end
     bar.fillColor = Tone.darkFill
     bar.reverse = opts.reverse and true or false
     bar:SetReverseFill(bar.reverse)
@@ -62,7 +57,8 @@ function Bar:SetTextureKey(key)
     local fillKey = asset.fill or key
     self:SetStatusBarTexture(Style.AssetPath(fillKey))
     local fill = self:GetStatusBarTexture()
-    if fill then Unsnap(fill) end
+    -- Like Blizzard's health bars: no texel bias on the fill, pixel snapping kept.
+    if fill and fill.SetTexelSnappingBias then fill:SetTexelSnappingBias(0) end
     if asset.lift then
         Style.ApplyAsset(self.lift, asset.lift)
         self.lift:ClearAllPoints()
