@@ -120,6 +120,13 @@ function Edge:Layout()
     return gap + rim
 end
 
+-- How far a preset's border reaches outside its host, in physical pixels
+-- (gap, rim and shadow ring; the soft drop is left out).
+function Style.EdgeReach(preset)
+    local def = assert(Style.EDGE_PRESETS[preset], "Style.EdgeReach: unknown preset " .. tostring(preset))
+    return (def.gap and 1 or 0) + def.rim + (def.shadow and 1 or 0)
+end
+
 -- How far the border reaches outside the host, in the host's UI units.
 function Edge:Outset()
     local gap = self.def.gap and 1 or 0

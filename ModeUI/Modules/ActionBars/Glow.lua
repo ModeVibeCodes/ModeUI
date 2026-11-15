@@ -6,8 +6,9 @@ if not M then return end
 --
 -- Procs: Blizzard shows a spell alert on a button when its spell lights up
 -- (ActionButtonSpellAlertManager:ShowAlert/HideAlert). Proc Glow picks the
--- look: Mode Glow (a soft glow around the button), Border (a colored frame on
--- it), Blizzard (the game's own animation) or None. ModeUI hooks the manager
+-- look: Mode Glow (a soft glow around the button), Border (the button's edge
+-- takes the glow color: the Celadon rim by default), Blizzard (the game's own
+-- animation) or None. ModeUI hooks the manager
 -- and fades Blizzard's alert frame when it draws its own.
 --
 -- Cooldowns: on SPELL_UPDATE_COOLDOWN, C_ActionBar.GetActionCooldown tells
@@ -31,9 +32,26 @@ function M:Glow(button, kind)
     return set[kind]
 end
 
+-- A Border glow draws nothing of its own: while it shows, the button's edge
+-- takes its color (PaintRim, from ResolveGlows).
 local function Paint(frame, button, style, color, pulse)
     local state = M.skinState[button]
-    Kit.PaintSlotGlow(frame, button, style, color, pulse, state and state.g.px or 1)
+    local rim = style == "border"
+    frame.rimColor = rim and color or nil
+    Kit.PaintSlotGlow(frame, button, rim and "none" or style, color, pulse and not rim, state and state.g.px or 1)
+end
+
+-- The edge's rim: a shown Border proc glow's color, else a shown Border ready
+-- glow's, else the Gunmetal metal.
+function M:PaintRim(button)
+    local art, set = self.art[button], self.glows[button]
+    if not art then return end
+    local color
+    for _, kind in ipairs({ "proc", "ready" }) do
+        local frame = set and set[kind]
+        if not color and frame and frame.rimColor and frame:IsShown() then color = frame.rimColor end
+    end
+    art.edge:SetTint(color)
 end
 
 M.PaintGlow = Paint
@@ -51,6 +69,7 @@ function M:ResolveGlows(button)
     local readyWins = p and r and ready.isSoft and not (set.blizzard or proc.isSoft)
     if proc then proc:SetShown(proc.wanted == true and not readyWins) end
     if ready then ready:SetShown(r and (not p or readyWins)) end
+    self:PaintRim(button)
 end
 
 -- Whether a glow kind ("proc" or "ready") is on for the button at `index`

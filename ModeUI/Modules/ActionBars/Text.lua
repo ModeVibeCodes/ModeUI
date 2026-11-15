@@ -47,7 +47,7 @@ function M:ShortenHotkey(button, style)
         if update then pcall(update, button, button.buttonType) end
     end
 end
-local PAD = 1 -- pixels between a text and the icon's edge
+local PAD = 2 -- pixels between a text and the icon's edge
 M.lifts = setmetatable({}, { __mode = "k" })
 M.textState = setmetatable({}, { __mode = "k" })
 
@@ -73,10 +73,14 @@ local function Red(r, g, b)
 end
 
 local guard = false
+-- Out of range (Blizzard's red) the keybind turns Rosewood and the icon takes
+-- the Rosewood tint (Skin.lua); otherwise the keybind keeps its color.
 local function KeepColor(text, r, g, b)
     local state = M.textState[text]
-    if guard or not state or not (Public(r) and Public(g) and Public(b)) or Red(r, g, b) then return end
-    local c = state.color
+    if guard or not state or not (Public(r) and Public(g) and Public(b)) then return end
+    local red = Red(r, g, b)
+    if state.button then M:SetOutOfRange(state.button, red) end
+    local c = red and addon.Style.Tone.rosewood or state.color
     guard = true; text:SetVertexColor(c[1], c[2], c[3], 1); guard = false
 end
 
@@ -135,10 +139,12 @@ local function StylePart(self, button, part, style, g, sample)
     local hotkey = part == "hotkey" and not sample
     local look = { outline = style.outline, shadow = style.shadow, liftedShadow = style.liftedShadow, slug = style.slug,
         textColor = hotkey and { 1, 1, 1 } or color }
-    local path = Kit.FontPath(style, self.id)
+    -- Geist Bold for keybinds, counts and cooldowns; Medium for macro names.
+    local path = addon.Style.Weighted(Kit.FontPath(style, self.id), part == "macro" and "medium" or "bold")
     Kit.Font(text, look, size, path, g.px)
     local state = self.textState[text] or {}
     self.textState[text] = state
+    if hotkey then state.button = button end
     state.color, state.lifted = color, shown and style.shadow and style.liftedShadow
     if hotkey then
         guard = true; text:SetVertexColor(color[1], color[2], color[3], 1); guard = false

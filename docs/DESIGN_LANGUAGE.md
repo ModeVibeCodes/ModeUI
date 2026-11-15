@@ -90,6 +90,25 @@ Highlight: the outer shadow ring takes the accent (1px), so the metal rim keeps
 its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
 `empty` instead, so their size never changes.
 
+## Action buttons
+
+- **Shape:** 40 x 34 by default (icons are wider than tall), the icon filling
+  the button, cropped, over a Mode Button face in Mono panel (Background
+  Color and Opacity; it shows in empty slots).
+- **Border:** the `frame` edge outside the button (2px Gunmetal, edge-lit,
+  1px shadow and the soft drop); buttons sit 4px apart outside their shadows
+  (Spacing counts from the shadow). Border None hides it.
+- **States:** hover lights the outer line Ivory (the edge highlight). A proc
+  swaps the rim for Celadon (Mode Empty, 2px; Proc Glow: Border); Mode Glow,
+  Blizzard and None stay options, and a Border ready glow swaps the rim for a
+  moment the same way. Pushed darkens the icon, checked tints it Ivory.
+- **Icon tints:** out of range Rosewood, not enough power the power blue
+  mixed 70% toward white, unusable Graphite muted; usable keeps full color.
+- **Text:** keybind top right in Geist Bold 10, Graphite secondary (Rosewood
+  out of range); count bottom right in Geist Bold 11, Text bright; cooldown
+  numbers centered in Geist Bold 13, the cooldown color; macro names Geist
+  Medium. One shadow.
+
 ## Bars (`Style.Bar`)
 
 - **Empty part:** Mode BG on Slate, for every bar (unit, group, nameplates,

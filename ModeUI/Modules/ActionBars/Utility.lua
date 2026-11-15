@@ -119,13 +119,14 @@ function M:RestyleUtility(button)
             Texture(button, "DisabledTexture", "GetDisabledTexture"), Texture(button, "HighlightTexture", "GetHighlightTexture"),
             button.FlashContent, button.QuickKeybindHighlightTexture, button.Portrait }
         for i = 1, 7 do Inset(regions[i], button, inset) end
-        Overlay(button.FlashBorder, button, inset, Kit.palette.accent, 0.35)
+        Overlay(button.FlashBorder, button, inset, addon.Style.Tone.ivory, 0.35)
     else
         Fade(Texture(button, "NormalTexture", "GetNormalTexture")); Fade(button.IconBorder)
-        Overlay(Texture(button, "PushedTexture", "GetPushedTexture"), button, inset, Kit.onyx.inner, 0.45)
-        Overlay(Texture(button, "HighlightTexture", "GetHighlightTexture"), button, inset, { 1, 1, 1 }, 0.16)
+        local Tone = addon.Style.Tone
+        Overlay(Texture(button, "PushedTexture", "GetPushedTexture"), button, inset, Tone.shadow, 0.45)
+        Overlay(Texture(button, "HighlightTexture", "GetHighlightTexture"), button, inset, Tone.mono.white, 0.16)
         -- Lit while that bag is open.
-        Overlay(button.SlotHighlightTexture, button, inset, Kit.palette.accent, 0.28)
+        Overlay(button.SlotHighlightTexture, button, inset, Tone.ivory, 0.28)
     end
 end
 

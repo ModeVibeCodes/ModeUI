@@ -51,30 +51,34 @@ weak tables keyed by the button. Its only hooks are `hooksecurefunc` on:
 
 ## The look
 
-- **Buttons are 42 by 36** by default (Width and Height on the **Bar** tab).
-  Sizes are whole physical pixels, and each bar is an even number of pixels each
-  way, so a centered bar stays on the pixel grid.
-- **Border:** Rounded (by default), Square or None, **Border Size** 1-4px (2px
-  by default), in the **Border Color** (#101010 by default). The border is a
-  hollow frame of four edges, so it never shows through a see-through
-  background. Rounded leaves out each corner's outermost pixel.
-- **Background:** inside the border, the **Background Color** (#040404 by
-  default) with a ModeUI texture laid over it to lighten it
-  (`Media/Textures/ActionBars/Slot.tga`, made by `tools/build_shape_textures.lua`):
-  a dark slot, lighter in the middle, with a soft highlight along the top,
-  darker edges and fine grain, after Blizzard's own recessed slots. It shows at
-  **Background Opacity** (75% by default) everywhere: in ModeUI's empty slots,
-  in Blizzard's own empty buttons (which the game shows with its Always Show
-  Buttons option, or while a spell is dragged), and as the 1px line between
-  border and icon. So every bar looks alike.
-- **Icon:** placed 1px inside the border. It's cropped, never stretched: 8% comes off
-  the edges, then the long side is cut to the button's shape. Blizzard's rounded
-  icon mask is removed.
-- **States:** highlight, pushed, checked, attack flash, new-spell and
-  spell-highlight are flat overlays on the icon. Blizzard's slot art, frame and
-  equipped-item border are faded.
-- **Empty slots:** with **Show Empty Slots** on, the background marks each place
-  without an action. Dragging a spell shows every button so it can be dropped.
+The Mode design language (`docs/DESIGN_LANGUAGE.md`, "Action buttons"):
+
+- **Buttons are 40 by 34** by default (Width and Height on the **Bar** tab):
+  icons are wider than tall. Sizes are whole physical pixels, and each bar is
+  an even number of pixels each way, so a centered bar stays on the pixel grid.
+- **Border:** **Mode** (by default) is the `frame` edge outside the button:
+  a 2px Gunmetal rim lit along its top, a 1px shadow ring and a soft drop.
+  **None** hides it. Each bar leaves room for its buttons' edges, and
+  **Spacing** (4px by default) counts between the edges' shadows.
+- **Background:** the **Mode Button** face behind the icon, in the
+  **Background Color** (Mono panel, #0E0E0E, by default) at **Background
+  Opacity** (100% by default). It shows in ModeUI's empty slots and in
+  Blizzard's own empty buttons (the game's Always Show Buttons option, or
+  while a spell is dragged), so every bar looks alike.
+- **Icon:** fills the button, cropped, never stretched: 8% comes off the edges,
+  then the long side is cut to the button's shape. Blizzard's rounded icon mask
+  is removed.
+- **Icon tints:** Blizzard colors the icon for not enough power and unusable,
+  and tints the keybind red out of range; ModeUI paints the Mode tints instead:
+  out of range Rosewood (the keybind too), not enough power the power blue
+  mixed 70% toward white, unusable Graphite muted.
+- **States:** hover lights the edge's outer line Ivory. Pushed darkens the
+  icon, checked tints it Ivory, the attack flash is Rosewood, and new-spell and
+  spell-highlight overlays are Ivory. Blizzard's slot art, frame, highlight
+  and equipped-item border are faded.
+- **Empty slots:** with **Show Empty Slots** on, the face in its edge marks
+  each place without an action. Dragging a spell shows every button so it can
+  be dropped.
 
 ## Text
 
@@ -83,16 +87,17 @@ Four texts, each with **Show This Text**, **Anchor** (a compass with Center),
 
 | Text | Default |
 |---|---|
-| Keybind | shown, Top Right, 9, short |
-| Count (stacks and charges) | shown, Bottom Right, 12 |
+| Keybind | shown, Top Right, 10, Graphite secondary (#A9A9AE), short |
+| Count (stacks and charges) | shown, Bottom Right, 11, Text bright (#F2F2F2) |
 | Macro Name | hidden, Bottom, 10, #69A5B9 |
-| Cooldown (the countdown numbers) | shown, Center, 14, amber #FFB12F |
+| Cooldown (the countdown numbers) | shown, Center, 13, the cooldown color #FFB12F |
 
-Each text's box hugs its letters, 1 pixel inside the icon, and is justified to
+Each text's box hugs its letters, 2 pixels inside the icon, and is justified to
 its anchor's side, top or bottom. So the keybind sits right in the top-right
-corner. Every bar shares one font setup: **Font** (Expressway by default),
-**Outline** (on), **Slug Text** (on) and **Text Shadow** (None, Crisp by
-default, or Lifted).
+corner. Keybinds, counts and cooldown numbers are Geist Bold, macro names Geist
+Medium (another font keeps its one weight). Every bar shares one font setup:
+**Font** (Mode Geist by default), **Outline** (off), **Slug Text** (on) and
+**Text Shadow** (None, Crisp by default, or Lifted).
 
 - Blizzard shows and hides these texts itself, so a hidden text is faded rather
   than hidden.
@@ -102,8 +107,8 @@ default, or Lifted).
   Wheel Up `WU`, Num Pad 5 `N5`, Spacebar `Spc`). ModeUI rewrites Blizzard's
   keybind text after Blizzard writes it; turned off, Blizzard writes it again.
   Keybind Mode labels use the same short form.
-- The keybind keeps its color, except that Blizzard's out-of-range red still
-  shows.
+- The keybind keeps its color, except out of range, when it turns Rosewood
+  (with the icon).
 - A lifted shadow copies its text as Blizzard writes it. The copy accepts secret
   values.
 - The game draws the cooldown numbers itself, so they get the crisp shadow only.
@@ -327,14 +332,14 @@ snippet in the game's secure environment sets it on each button
 How buttons react, on the **Glows** tab (per bar):
 
 - **Proc Glow**: how a proc (the game lighting up a spell to use now) shows.
-  **Mode Glow** (by default) is a soft glow around the button; **Border** is a
-  2px frame on it; **Blizzard** keeps the game's own animation; **None** shows
-  nothing. **Proc Color** (gold, #FFD25A, by default) and **Pulse** apply to Mode
-  Glow and Border. ModeUI hooks `ActionButtonSpellAlertManager:ShowAlert` and
+  **Border** (by default) swaps the button's edge rim to the **Proc Color**
+  (Celadon, #B4CDB6, by default: Mode Empty); **Mode Glow** is a soft glow
+  around the button; **Blizzard** keeps the game's own animation; **None**
+  shows nothing. **Pulse** applies to Mode Glow. ModeUI hooks `ActionButtonSpellAlertManager:ShowAlert` and
   `HideAlert` and fades Blizzard's alert frame unless Blizzard is chosen.
 - **Glow When Ready** (on by default): when a cooldown longer than the global
   cooldown ends, the button lights for **Glow Time** (2 seconds by default), as a
-  **Glow** or **Border** in **Glow Color** (Mode cyan by default). ModeUI checks
+  **Glow** or **Border** (the edge's rim) in **Glow Color** (Ivory by default). ModeUI checks
   `C_ActionBar.GetActionCooldown` on `SPELL_UPDATE_COOLDOWN`; its `isActive` and
   `isOnGCD` fields are never secret, so this works in combat and ignores the
   global cooldown.
@@ -382,6 +387,20 @@ so ModeUI offers a reload. Turning the module back on needs no reload.
 `ModeUIDB.modules.actionBars` holds one table per bar: `bar1`-`bar8`, `pet`,
 `stance`. Positions are saved under `positions.actionBarsBar1` to
 `actionBarsBar8`, `actionBarsPet` and `actionBarsStance`.
+
+Version 6 changed these from version 5 (the Mode design language); a value
+still at its version 5 default takes the new one, anything picked stays:
+
+- Action buttons 42 by 36 become 40 by 34; Spacing 1 becomes 4 (now between
+  the edges' shadows).
+- Rounded and Square borders become **Mode** (the `frame` edge); **Border
+  Size** and **Border Color** retire.
+- Background #040404 becomes Mono panel, 75% becomes 100%.
+- Expressway becomes Mode Geist and Outline turns off; keybind 9 becomes 10
+  (Graphite secondary from the old text color), count 12 becomes 11 (Text
+  bright), cooldown 14 becomes 13.
+- Proc Glow Mode Glow becomes **Border**, gold becomes Celadon; the cyan ready
+  glow becomes Ivory.
 
 Version 5 changed these from version 4:
 
@@ -478,8 +497,12 @@ Shared additions:
     **Bag Bar** and pick up an item from a bag.
 - **Required state:** out of combat; spells on your bars.
 - **Confirmation:**
-  - Buttons are 42 by 36, with a faint textured background in empty slots.
-  - Keybinds sit tight in the top-right corner. Cooldown numbers are amber.
+  - Buttons are 40 by 34 in the Mode edge (Gunmetal rim lit on top, a shadow
+    ring and a soft drop), 4px apart; empty slots show the dark face in its edge.
+  - Hovering a button lights an Ivory line round its edge; a proc swaps the rim
+    to Celadon. Out of range the icon and keybind turn Rosewood.
+  - Keybinds (Geist Bold) sit tight in the top-right corner. Cooldown numbers
+    are amber.
   - In Edit Mode, each bar is highlighted, its name in volt green on the handle
     centered above it, and moves with the mouse without lag.
   - A cyan line appears near the center, and the bar snaps onto it.

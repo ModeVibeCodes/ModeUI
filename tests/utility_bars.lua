@@ -82,13 +82,13 @@ world.run([==[
     assert(CharacterMicroButton:GetParent() == micro and HelpMicroButton:GetParent() == micro, 'every micro button moves')
     local shown = M:UtilityButtons('micro')
     assert(#shown == 4 and shown[1] == CharacterMicroButton and shown[2] == SpellbookMicroButton and shown[3] == StoreMicroButton, 'shown ones, in order')
-    assert(M:ButtonCount('micro') == 4 and micro:IsShown() and micro.width == 4 * 32 + 3 + 1, 'four 32 by 40 buttons, 1px apart (an even width)')
+    assert(M:ButtonCount('micro') == 4 and micro:IsShown() and micro.width == 4 * 42 - 4, 'four 32 by 40 buttons in their edges, 4px apart')
     assert(CharacterMicroButton.width == 32 and CharacterMicroButton.height == 40)
     assert(MicroMenu:GetAlpha() == 0 and BagsBar:GetAlpha() == 0, "Blizzard's empty bars fade out")
     -- The Mode skin: Blizzard's button background and portrait frame faded, the glyph inside the border.
     assert(SpellbookMicroButton.Background:GetAlpha() == 0 and CharacterMicroButton.PortraitMask:GetAlpha() == 0
         and CharacterMicroButton.Shadow:GetAlpha() == 0 and MainMenuMicroButton.MainMenuBarPerformanceBar:GetAlpha() == 0)
-    assert(M.art[SpellbookMicroButton] and M.art[SpellbookMicroButton].edges[1]:IsShown(), 'a Mode border')
+    assert(M.art[SpellbookMicroButton] and M.art[SpellbookMicroButton].edge.holder:IsShown(), 'the Mode edge')
     local inset = M.skinState[SpellbookMicroButton].g.inset
     local function Inset(region, host) local p = region.points and region.points[1]; return p and p[1] == 'TOPLEFT' and p[2] == host and p[4] == inset end
     assert(Inset(SpellbookMicroButton.normal, SpellbookMicroButton) and Inset(CharacterMicroButton.Portrait, CharacterMicroButton), 'glyph and portrait inside the border')
@@ -98,14 +98,14 @@ world.run([==[
     assert(SpellbookMicroButton.Background:GetAlpha() == 0 and Inset(SpellbookMicroButton.highlight, SpellbookMicroButton), 'restyled after SetPushed')
     -- Blizzard shows Help: the bar lays out five.
     HelpMicroButton:Show()
-    assert(M:ButtonCount('micro') == 5 and M:UtilityButtons('micro')[3] == HelpMicroButton and micro.width == 5 * 32 + 4, 'a shown button joins in order')
+    assert(M:ButtonCount('micro') == 5 and M:UtilityButtons('micro')[3] == HelpMicroButton and micro.width == 5 * 42 - 4, 'a shown button joins in order')
     HelpMicroButton:Hide()
     assert(M:ButtonCount('micro') == 4)
 
     -- Bag bar: left to right as Blizzard shows it, the key ring left out while hidden.
     local order = M:UtilityButtons('bags')
     assert(#order == 6 and order[1] == CharacterReagentBag0Slot and order[6] == MainMenuBarBackpackButton, 'reagent bag first, backpack last')
-    assert(MainMenuBarBackpackButton:GetParent() == bags and KeyRingButton:GetParent() == bags and bags.width == 6 * 36 + 5 + 1)
+    assert(MainMenuBarBackpackButton:GetParent() == bags and KeyRingButton:GetParent() == bags and bags.width == 6 * 46 - 4)
     assert(MainMenuBarBackpackButton.normal:GetAlpha() == 0 and MainMenuBarBackpackButton.IconBorder:GetAlpha() == 0, 'frame art faded')
     assert(MainMenuBarBackpackButton.icon.mask == nil, 'square mask off, so the icon crops')
     assert(MainMenuBarBackpackButton.SlotHighlightTexture.texture == Kit.FLAT, 'open-bag highlight in the Mode look')

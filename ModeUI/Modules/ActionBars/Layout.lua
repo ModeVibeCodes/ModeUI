@@ -5,11 +5,14 @@ if not M then return end
 -- Pixel-perfect bar geometry: where each button sits and how big the bar is.
 -- Buttons fill lines (rows, or columns) of Buttons per Line from the First
 -- Button corner. Every size is whole physical pixels and the bar is an even
--- number of pixels each way, so a centered bar stays on the pixel grid.
+-- number of pixels each way, so a centered bar stays on the pixel grid. The
+-- `frame` edge sits outside each button: the bar leaves room for it, and
+-- Spacing counts between the edges' shadows (docs/DESIGN_LANGUAGE.md).
 local Kit = addon.Kit
+M.EDGE_REACH = addon.Style.EdgeReach("frame")
 
 -- style: a bar's settings; count: buttons to place; px: one physical pixel.
--- Returns { width, height, button = { w, h }, inset, px, points = { { point, x, y } } }.
+-- Returns { width, height, w, h, reach, inset, px, points = { { point, x, y } } }.
 function M.Geometry(style, count, px)
     px = px or 1
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
@@ -21,12 +24,12 @@ function M.Geometry(style, count, px)
     local horizontal = style.orientation == "horizontal"
     local columns, rows = horizontal and perLine or lines, horizontal and lines or perLine
     local g = { px = px, w = w, h = h, points = {}, columns = columns, rows = rows }
-    -- The border (Border Size) and a 1px gap in the background color sit inside
-    -- the button; the icon fills the rest.
-    g.border = style.border == "none" and 0 or style.borderSize * px
-    g.inset = style.border == "none" and 0 or g.border + px
-    g.width = columns * w + (columns - 1) * gap
-    g.height = rows * h + (rows - 1) * gap
+    -- The icon fills the button; the edge (when shown) reaches past it.
+    g.border, g.inset = 0, 0
+    g.reach = style.border == "none" and 0 or M.EDGE_REACH * px
+    local stepX, stepY = w + gap + 2 * g.reach, h + gap + 2 * g.reach
+    g.width = columns * stepX - gap
+    g.height = rows * stepY - gap
     local function Odd(v) return math.floor(v / px + 0.5) % 2 == 1 end
     if Odd(g.width) then g.width = g.width + px end
     if Odd(g.height) then g.height = g.height + px end
@@ -36,7 +39,7 @@ function M.Geometry(style, count, px)
     for i = 1, count do
         local along, across = (i - 1) % perLine, math.floor((i - 1) / perLine)
         local column, row = horizontal and along or across, horizontal and across or along
-        g.points[i] = { point, sx * column * (w + gap), sy * row * (h + gap) }
+        g.points[i] = { point, sx * (g.reach + column * stepX), sy * (g.reach + row * stepY) }
     end
     return g
 end

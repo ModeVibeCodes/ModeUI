@@ -30,8 +30,13 @@ addon:RegisterModule("actionBars", M)
 -- ready glow, icon opacity on cooldown).
 -- Version 5: icons desaturate on cooldown (Desaturate Icon); keybinds 2px
 -- smaller and shortened ("sE" for Shift-E); per-button glow switches.
-M.VERSION = 5
-local P = Kit.palette
+-- Version 6: the Mode design language (docs/DESIGN_LANGUAGE.md, "Action
+-- buttons"): 40 by 34 buttons in the `frame` edge (Border: Mode or None;
+-- Border Size and Border Color retire), 4px apart outside their shadows, a
+-- Mode Button face in Mono panel, Geist Bold text in the Mode colors, the
+-- Celadon rim for procs and Ivory ready glows.
+M.VERSION = 6
+local P, Tone = Kit.palette, addon.Style.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The bars, in sidebar order. `prefix` names Blizzard's buttons (prefix..1
@@ -102,12 +107,12 @@ M.oldDefaultPositions = { bar2 = At("BOTTOM", 0, 58), bar3 = At("BOTTOM", 0, 100
 M.textParts = { "hotkey", "count", "macro", "cooldown" }
 M.textPartLabels = { hotkey = "Keybind", count = "Count", macro = "Macro Name", cooldown = "Cooldown" }
 
--- Cooldown numbers are amber (#FFB12F) by default.
+-- Cooldown numbers are amber (#FFB12F, the cooldown color) by default.
 M.COOLDOWN_COLOR = Kit.RGB(255, 177, 47)
--- The border (#404542), the background inside it (#040404) and macro names (#69A5B9).
+-- Version 2-5 defaults, kept for migrations: the border (#101010), the
+-- background (#040404) at 75%, gold procs and the cyan ready glow.
 M.BORDER_COLOR, M.BACKGROUND_COLOR, M.MACRO_COLOR = Kit.RGB(16, 16, 16), Kit.RGB(4, 4, 4), Kit.RGB(105, 165, 185)
 M.BACKGROUND_OPACITY = 75
--- Proc glows are gold by default; the ready glow is the Mode cyan.
 M.PROC_COLOR, M.READY_COLOR = Kit.RGB(255, 210, 90), Kit.palette.accent
 local function Part(prefix, show, size, anchor, color)
     return { [prefix .. "Show"] = show, [prefix .. "Size"] = size, [prefix .. "Anchor"] = anchor,
@@ -115,36 +120,35 @@ local function Part(prefix, show, size, anchor, color)
 end
 
 -- One bar's settings. Bars 4 and 5 stand upright at the right edge; 6 to 8
--- start hidden. Every action button is 42 by 36 by default; micro buttons
+-- start hidden. Every action button is 40 by 34 by default; micro buttons
 -- 32 by 40 (Blizzard's shape) and bag buttons 36 square.
 local SIZES = { micro = { 32, 40 }, bags = { 36, 36 } }
 local function Style(bar)
     local spec = M.barSpecs[bar]
     local upright = bar == "bar4" or bar == "bar5"
-    local size = SIZES[spec.utility] or { 42, 36 }
+    local size = SIZES[spec.utility] or { 40, 34 }
     local style = {
         show = bar ~= "bar6" and bar ~= "bar7" and bar ~= "bar8",
         buttons = spec.count, perLine = spec.count, orientation = upright and "vertical" or "horizontal", start = "TOPLEFT",
-        width = size[1], height = size[2], spacing = 1,
-        border = "rounded", borderSize = 2, borderColor = Copy(M.BORDER_COLOR),
-        backgroundColor = Copy(M.BACKGROUND_COLOR), showEmpty = true, backgroundOpacity = M.BACKGROUND_OPACITY,
+        width = size[1], height = size[2], spacing = 4,
+        border = "mode", backgroundColor = Copy(Tone.mono.panel), showEmpty = true, backgroundOpacity = 100,
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
-        font = "game", fontMedia = "Expressway", outline = true, shadow = true, liftedShadow = false, slug = true,
+        font = "game", fontMedia = "Mode Geist", outline = false, shadow = true, liftedShadow = false, slug = true,
         -- Paging: Action Bar 1 follows the game's own paging (stances, forms,
         -- vehicles, page keys) unless it has Page Conditions; other bars keep
         -- their page until Page Switching is on.
         paging = bar == "bar1", pageConditions = bar == "bar1" and "" or "[mod:shift] 2; [mod:ctrl] 3; [mod:alt] 4",
-        procGlow = "mode", procColor = Copy(M.PROC_COLOR), procPulse = true,
-        readyGlow = true, readyStyle = "glow", readyColor = Copy(M.READY_COLOR), readyDuration = 2, cooldownOpacity = 100,
+        procGlow = "border", procColor = Copy(Tone.celadon), procPulse = true,
+        readyGlow = true, readyStyle = "glow", readyColor = Copy(Tone.ivory), readyDuration = 2, cooldownOpacity = 100,
         cooldownDesaturate = true, hotkeyShort = true,
         -- Buttons whose proc glow or ready glow is off, by place: { ["3"] = { ready = false } }.
         buttonGlows = {},
     }
-    for key, value in pairs(Part("hotkey", true, 9, "TOPRIGHT", P.text)) do style[key] = value end
+    for key, value in pairs(Part("hotkey", true, 10, "TOPRIGHT", Tone.graphite.secondary)) do style[key] = value end
     -- On the bag bar, Count is the backpack's free slots.
-    for key, value in pairs(Part("count", true, spec.utility and 10 or 12, "BOTTOMRIGHT", P.text)) do style[key] = value end
+    for key, value in pairs(Part("count", true, spec.utility and 10 or 11, "BOTTOMRIGHT", Tone.textBright)) do style[key] = value end
     for key, value in pairs(Part("macro", false, 10, "BOTTOM", M.MACRO_COLOR)) do style[key] = value end
-    for key, value in pairs(Part("cooldown", true, 14, "CENTER", M.COOLDOWN_COLOR)) do style[key] = value end
+    for key, value in pairs(Part("cooldown", true, 13, "CENTER", Tone.cooldown)) do style[key] = value end
     return style
 end
 M.styleDefaults = {}
@@ -156,11 +160,13 @@ for _, bar in ipairs(M.bars) do M.defaults[bar] = Copy(M.styleDefaults[bar]) end
 -- buttons it has in what shape.
 M.identityKeys = { show = true, buttons = true, perLine = true, orientation = true, start = true,
     visibility = true, customVisibility = true, buttonGlows = true, paging = true, pageConditions = true }
-M.colorKeys = { borderColor = true, backgroundColor = true, procColor = true, readyColor = true }
+M.colorKeys = { backgroundColor = true, procColor = true, readyColor = true }
+-- Keys version 6 retired (the Mode edge has one size and color).
+M.retiredKeys = { "borderSize", "borderColor" }
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
 M.ranges = { buttons = { 1, 16, 1 }, perLine = { 1, 16, 1 }, width = { 16, 80, 1 }, height = { 16, 80, 1 },
-    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 }, borderSize = { 1, 4, 1 },
+    spacing = { 0, 20, 1 }, opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
     readyDuration = { 1, 10, 1 }, cooldownOpacity = { 20, 100, 5 } }
 for _, part in ipairs(M.textParts) do
     M.ranges[part .. "Size"] = { 6, 32, 1 }
@@ -180,7 +186,7 @@ M.choices = {
     orientation = { { id = "horizontal", label = "Rows" }, { id = "vertical", label = "Columns" } },
     start = { { id = "TOPLEFT", label = "Top Left" }, { id = "TOPRIGHT", label = "Top Right" },
         { id = "BOTTOMLEFT", label = "Bottom Left" }, { id = "BOTTOMRIGHT", label = "Bottom Right" } },
-    border = { { id = "rounded", label = "Rounded" }, { id = "square", label = "Square" }, { id = "none", label = "None" } },
+    border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
     procGlow = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "blizzard", label = "Blizzard" },
         { id = "none", label = "None" } },
     readyStyle = { { id = "glow", label = "Glow" }, { id = "border", label = "Border" } },
