@@ -103,7 +103,8 @@ its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
   health and stops at the end of the bar (no finish line when cut off); at full
   health the whole shield fills back from max, 9% lighter. Texture Mode Shield
   (Hairline): a faint lift tinted from the bar's own color (ADD blend) with a
-  1px line every 5px at 45%. A bright 1px finish line marks the end.
+  45° 1px line every 8px along the bar (about 5.7px apart), drawn at 45%
+  alpha. A bright 1px finish line marks the end.
 - **Power bars:** 3px on every unit and group frame.
 
 ## Text (`Style.Font`, `Style.SetName`)

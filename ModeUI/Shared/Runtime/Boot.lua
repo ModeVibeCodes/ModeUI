@@ -35,6 +35,9 @@ addon.Events:On(addon, "ADDON_LOADED", function(_, loadedName)
         if type(text) == "string" and text:lower():match("^%s*resetwindow%s*$") then
             addon:ResetConfigWindowPosition(); return
         end
+        if type(text) == "string" and text:lower():match("^%s*style%s*$") and addon.Style.ToggleSheet then
+            addon.Style.ToggleSheet(); return
+        end
         addon:ToggleConfig()
     end
 end)

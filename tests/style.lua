@@ -85,6 +85,57 @@ world.run([[
     assert(addon.Style.FontPath("semibold"):find("Geist%-SemiBold%.ttf$"))
 ]])
 
+-- The core: every edge preset lays out on whole pixels with no masks, takes a
+-- highlight and a tint; bars swap textures and carry the spark and a shield;
+-- names, icons and rings follow the design.
+world.run([[
+    local Style, Tone = addon.Style, addon.Style.Tone
+    local host = CreateFrame("Frame", nil, UIParent)
+    host:SetSize(184, 46)
+    for preset, def in pairs(Style.EDGE_PRESETS) do
+        local edge = Style.Edge(host, preset, { color = Tone.celadon })
+        assert(edge.rimTexture and edge.holder, preset .. ": rim and holder")
+        assert((edge.shadow ~= nil) == (def.shadow == true), preset .. ": shadow ring matches the preset")
+        assert((edge.gap ~= nil) == (def.gap == true), preset .. ": gap matches the preset")
+        assert(edge:Layout() == (def.gap and 1 or 0) + def.rim, preset .. ": outset in pixels")
+        edge:SetHighlight("accent")
+        edge:SetHighlight(nil)
+        edge:SetTint(Tone.dispel.Magic)
+        edge:SetTint(nil)
+    end
+    -- Bars: every picker texture applies; unknown keys fall back to Matte.
+    local bar = Style.Bar(host, { role = "health" })
+    assert(bar.textureKey == "Matte", "health bars default to Mode Matte")
+    for _, key in ipairs(Style.BAR_TEXTURES) do bar:SetTextureKey(key); assert(bar.textureKey == key) end
+    bar:SetTextureKey("NoSuchTexture"); assert(bar.textureKey == "Matte")
+    assert(Style.Bar(host, { role = "power" }).textureKey == "Gradient", "power is Mode Gradient")
+    assert(Style.Bar(host, { role = "cast" }).textureKey == "Cast", "cast bars are Mode Cast")
+    bar:SetFill(Tone.reaction.hostile)
+    bar:SetSpark(true); assert(bar.head:IsShown() and not bar.endLine:IsShown(), "a spark replaces the end line")
+    bar:SetSpark(false); assert(not bar.head:IsShown() and bar.endLine:IsShown())
+    local shield = Style.Shield(bar)
+    shield:Update(nil, { max = 100, shield = 15, total = 30 })
+    shield:Update("player", { max = 100, shield = 0, total = 25 })
+    -- Names: Gradient is per letter from the color to 74% color + 26% white.
+    local text = Style.GradientText("Mode", { 1, 0, 0 })
+    assert(text:sub(1, 10) == "|cffff0000" and text:find("|r$"), "gradient starts at the color")
+    local finish = Style.GradientEnd({ 1, 0, 0 })
+    assert(math.abs(finish[2] - 0.26) < 1e-6, "gradient ends 26% toward white")
+    assert(Style.GradientText(nil, { 1, 0, 0 }) == nil)
+    -- Icons: wider than tall.
+    assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 35 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
+    local ring = Style.Ring(host, 66)
+    assert(ring.portrait and ring.mask, "portrait ring")
+    assert(Style.SameColor({ 0x47 / 255, 0x47 / 255, 0x47 / 255 }, Tone.slate))
+    assert(Style.Accent("specialty") == Tone.rosewood and Style.Accent() == Tone.ivory)
+    -- The style sheet builds on demand.
+    assert(_G.ModeUIStyleSheet == nil, "no sheet before /modeui style")
+    Style.ToggleSheet()
+    assert(_G.ModeUIStyleSheet and _G.ModeUIStyleSheet:IsShown(), "sheet opens")
+    Style.ToggleSheet()
+    assert(not _G.ModeUIStyleSheet:IsShown(), "and closes")
+]])
+
 if #failures > 0 then
     table.sort(failures)
     error("style: " .. #failures .. " problem(s)\n  " .. table.concat(failures, "\n  "), 0)

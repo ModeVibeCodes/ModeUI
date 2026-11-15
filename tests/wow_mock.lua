@@ -116,8 +116,8 @@ function methods:SetPoint(point, relative, relativePoint, x, y)
         v.TOPLEFT,v.TOPRIGHT,v.BOTTOMLEFT,v.BOTTOMRIGHT={-0.5,0.5},{0.5,0.5},{-0.5,-0.5},{0.5,-0.5}
         local a, b = v[point], v[relativePoint]
         if a and b then
-            self.centerX = (px + b[1] * relative:GetWidth()) * ratio + x - a[1] * self:GetWidth()
-            self.centerY = (py + b[2] * relative:GetHeight()) * ratio + y - a[2] * self:GetHeight()
+            self.centerX = (px + b[1] * relative:GetWidth()) * ratio + (x or 0) - a[1] * self:GetWidth()
+            self.centerY = (py + b[2] * relative:GetHeight()) * ratio + (y or 0) - a[2] * self:GetHeight()
         end
     end
 end
