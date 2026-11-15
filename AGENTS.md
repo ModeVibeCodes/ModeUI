@@ -4,6 +4,8 @@
   Edit the addon in `ModeUI/`; companion addons (`ModeUI_<Name>/`, the first is
   `ModeUI_CooldownManager`) sit beside it and need it. Play The Game Tools is a
   separate addon and repo.
+- **Work in progress: the Mode redesign.** Status, the owner's decisions and the
+  phase plan are in `docs/MODE_REDESIGN.md`; read it before continuing.
 - **The look is the Mode design language, `docs/DESIGN_LANGUAGE.md`.** Every
   color comes from `Style.Tone`, every border from a `Style.Edge` preset, every
   bar from `Style.Bar` (Mode BG empty part, Comet spark, Combined shields),
