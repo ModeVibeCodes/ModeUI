@@ -44,6 +44,8 @@ Shared\Domain\Containers.lua
 Shared\Domain\Items.lua
 Shared\Domain\Cooldowns.lua
 Shared\Domain\Location.lua
+Shared\Style\Assets.lua
+Shared\Style\Fonts.lua
 Shared\Kit\Color.lua
 Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua

@@ -18,6 +18,14 @@ Because of the LGPL library, the bundled distribution is licensed GPL-3.0-only
 
 ## Fonts
 
+Geist-Regular.ttf, Geist-Medium.ttf, Geist-SemiBold.ttf and Geist-Bold.ttf (ModeUI/Media/Fonts/Geist)
+are unmodified static Geist font software v1.9.2, Copyright 2026 The Geist Project
+Authors (https://github.com/vercel/geist-font), SIL Open Font License 1.1, with
+no reserved font name. Full terms: LICENSES/Geist-OFL.txt, also next to the fonts.
+Source: https://github.com/vercel/geist-font/releases/download/v1.9.2/geist-font-v1.9.2.zip.
+SHA-256: Geist-Regular.ttf 2c460a7a71063e53491f343d44b382267bc0cf496e31db64865f962af3152e68; Geist-Medium.ttf e9099e006d4934cae4a8c7d14a1ca2ea724ee2f69f9bdd5b2ffe715baf5524fc; Geist-SemiBold.ttf 01923aa148e5202ae70a2e11b2ab4dc41b80bcc374aedccc913d47bb2f591c06; Geist-Bold.ttf 1c24df313b8ddc9550e060cfe5321c6374997f2892880af303b5ded45fed2582; 
+Geist is the Mode design language's typeface (docs/DESIGN_LANGUAGE.md).
+
 Lato-Regular.ttf and Lato-Bold.ttf are unmodified Lato font software, Copyright
 (c) 2010–2014 tyPoland Lukasz Dziedzic, SIL Open Font License 1.1, reserved font
 name Lato. Full terms: LICENSES/Lato-OFL.txt. Pinned source, hashes and Figma
