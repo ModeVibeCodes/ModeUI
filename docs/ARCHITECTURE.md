@@ -37,7 +37,7 @@ ModeUI/
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Border/                   pixel borders
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
-    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors
+    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors, size matching (SizeMatch.lua: Match Width/Height follow a picked element, saved in the profile's sizeMatches)
     Skin/                     re-skinning Blizzard frames (Skin, Controls, Extras, Frame): Chat and Windows
     Settings/                 settings window framework (window, pages, search, tabs) and its launchers (game menu, minimap addon compartment)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker, Nudge: `W.Nudge(parent, getX, getY, setX, setY, range)`, four 1px arrows)

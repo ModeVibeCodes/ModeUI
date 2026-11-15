@@ -124,8 +124,10 @@ function M:EnsureBarFrames(id)
         label = custom and custom.name or L[self.viewerSpecs[id].label] })
     assert(ok, "ModeUI: cooldown manager position registration failed: " .. tostring(reason))
     -- Match Width / Match Height in the Edit Mode window: the bar takes the
-    -- size of what it hangs from (its icons resize to fill it) and follows
-    -- it when that changes size (the target's own OnSizeChanged, no polling).
+    -- width (or height) of the element picked for it (by default, what it
+    -- hangs from), its icons resizing to fill it, and follows it when that
+    -- changes size (the target's own OnSizeChanged, no polling). Each axis is
+    -- told on its own.
     local function Key(axis) return axis == "width" and "matchWidth" or "matchHeight" end
     PM:SetSizeMatch(eid, { axes = { width = true, height = true },
         get = function(axis) return self:HasBar(id) and self.db[id][Key(axis)] == true end,
@@ -133,7 +135,8 @@ function M:EnsureBarFrames(id)
     PM:SetAnchorSizeListener(eid, function(_, width, height)
         if not self:HasBar(id) then return end
         local Number = addon.IsNumber
-        self.anchorSizes[id] = Number(width, 1, 10000) and Number(height, 1, 10000) and { width = width, height = height } or nil
+        local size = { width = Number(width, 1, 10000) and width or nil, height = Number(height, 1, 10000) and height or nil }
+        self.anchorSizes[id] = (size.width or size.height) and size or nil
         if self.active and (self.db[id].matchWidth or self.db[id].matchHeight) then self:LayoutViewer(id) end
     end)
     mover:Hide()

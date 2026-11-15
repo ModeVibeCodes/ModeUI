@@ -74,6 +74,7 @@ Shared\Placement\EditMode.lua
 Shared\Placement\Positioning.lua
 Shared\Placement\PositionManager.lua
 Shared\Placement\PositionAnchors.lua
+Shared\Placement\SizeMatch.lua
 Shared\Placement\PositionDrag.lua
 Shared\Placement\PositionGuides.lua
 Shared\Placement\FrameAnchors.lua
@@ -121,6 +122,7 @@ Shared\Settings\Home.lua
 Shared\Settings\Window.lua
 Shared\Settings\Launchers.lua
 Shared\Settings\EditAnchor.lua
+Shared\Settings\EditPanel.lua
 Shared\Settings\EditMode.lua
 Modules\Profiles\Profiles.xml
 Modules\Optimizations\Optimizations.xml

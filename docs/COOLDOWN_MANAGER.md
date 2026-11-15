@@ -256,7 +256,8 @@ window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
 3. Anchoring and matching
    - **Navigation:** click **Edit Mode** in the window's header.
    - **Action:** select your custom bar's stand-in, anchor it below
-     Essential Cooldowns, tick **Match Width**, click a nudge button; then
+     Essential Cooldowns, click **Match Width** in Edit Mode's element panel
+     and then Essential's stand-in, click a nudge button; then
      change Essential's **Icons per Line** in `/mcdm` (Bar tab).
    - **Required state:** out of combat.
    - **Confirmation:** the bar sits 1 px under Essential, the nudge moves it,

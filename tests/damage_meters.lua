@@ -451,17 +451,30 @@ world.run([==[
     local rows2 = M.db.window2.rows
     assert(M:SetOption('window1', 'width', 280) and M.db.window2.width == 280 and M.db.window3.width == 280 and w2.width == 280, 'a settings change carries down the stack')
     assert(M.db.window2.rows == rows2 and M:Matching('window2', 'Width') == 'damageMetersWindow1' and not M:Matching('window2', 'Height'), 'rows kept')
+    -- Edit Mode's Match Width and Match Height: click one, then the element
+    -- whose width (height) to take; a match made before picking follows the anchor.
     local mw, mh = addon.editWindow.matchWidthButton, addon.editWindow.matchHeightButton
     assert(E:Select(id2)); addon:RefreshEditWindow()
     assert(mw:IsEnabled() and mw.selected and mh:IsEnabled() and not mh.selected, 'Match Width on, Match Height off')
+    assert(addon.editWindow.matchedLabel:GetText() == 'Width: Window 1\nHeight: off', 'what each axis follows')
+    local function PickAt(frame) cursorX, cursorY = frame:GetCenter(); A.overlay.scripts.OnEvent(A.overlay, 'GLOBAL_MOUSE_DOWN', 'LeftButton') end
     mh.scripts.OnClick(mh)
-    assert(M.db.window2.matchHeight and M.db.window2.rows == M.db.window1.rows and mh.selected, 'Match Height fits its rows to the height')
-    mh.scripts.OnClick(mh); assert(not M.db.window2.matchHeight and M:SetOption('window2', 'rows', rows2))
+    assert(A:Matching() == 'height' and mh.label.text == 'Cancel' and mh.selected and A.overlay.text.text:find('Match Height', 1, true), 'waiting for the element to match')
+    PickAt(ModeUIDamageMeter1Mover)
+    local target, picked = PM:GetSizeMatchTarget(id2, 'height')
+    assert(not A:Active() and target == 'damageMetersWindow1' and picked and ModeUIDB.profiles.Default.sizeMatches[id2].height == target, 'the pick is saved')
+    assert(M.db.window2.matchHeight and M.db.window2.rows == M.db.window1.rows and mh.selected and mh.label.text == 'Match Height', 'Match Height fits its rows to the picked height')
+    mh.scripts.OnClick(mh); assert(not M.db.window2.matchHeight and not select(2, PM:GetSizeMatchTarget(id2, 'height')) and M:SetOption('window2', 'rows', rows2), 'off forgets the pick')
     mw.scripts.OnClick(mw)
     assert(not M.db.window2.matchWidth and M:SetOption('window1', 'width', 300) and M.db.window2.width == 280, 'Match Width off: its own width')
-    mw.scripts.OnClick(mw); assert(M.db.window2.width == 300, 'on again: matched')
+    mw.scripts.OnClick(mw); assert(A:Matching() == 'width'); mw.scripts.OnClick(mw); assert(not A:Active() and not M.db.window2.matchWidth, 'Cancel')
+    mw.scripts.OnClick(mw); PickAt(ModeUIDamageMeter1Mover); assert(M.db.window2.width == 300, 'on again: matched')
+    -- A window on the screen can match too; two windows can't follow each other.
     assert(E:Select('damageMetersWindow1')); addon:RefreshEditWindow()
-    assert(not mw:IsEnabled() and not mh:IsEnabled(), 'nothing to match on the screen')
+    assert(mw:IsEnabled() and mh:IsEnabled(), 'anything can be matched, anchored or not')
+    mw.scripts.OnClick(mw); PickAt(ModeUIDamageMeter2Mover)
+    assert(not M.db.window1.matchWidth and not A:Active(), 'window 2 already takes its width: refused')
+    assert(PM:SetSizeMatchTarget(id2, 'width', 'damageMetersWindow1'))
     assert(addon:SetEditMode(false) and not mover2:IsShown() and not w2:IsShown() and not w1.rows[4]:IsShown())
 
     -- Groups: window 2 follows window 1, matching it but keeping its own meter and rows.

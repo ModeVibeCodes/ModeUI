@@ -225,7 +225,18 @@ world.run([==[
     assert(byKey[201].width == 68 and Point(byKey[201])[4] == 149, 'icons split the width on whole pixels')
     assert(M:SetOption(c3, 'perLine', 6)); PM:RefreshAnchorSize('cooldownManagerCustom1')
     assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width and ModeUICooldownCustom3.width == 6 * 44 + 5 * 2, 'follows the parent')
+    -- A picked element, not what it hangs from: anchored to Cooldown Bar 2, it
+    -- takes Essential's width and follows it.
+    assert(PM:SetSizeMatchTarget('cooldownManagerCustom1', 'width', 'cooldownManagerEssential'))
+    assert(Point(ModeUICooldownCustom1)[2] == ModeUICooldownCustom3 and ModeUICooldownCustom1.width == ModeUICooldownEssential.width, "Essential's width, still anchored to Cooldown Bar 2")
+    -- (the mock passes no size change through anchors: the observer's OnSizeChanged is run by hand)
+    assert(M:SetOption('essential', 'perLine', 10)); PM:RefreshAnchorSize('cooldownManagerCustom1')
+    assert(ModeUICooldownCustom1.width == 10 * 44 + 9 * 2, 'follows Essential')
+    assert(M:SetOption('essential', 'perLine', 12)); PM:RefreshAnchorSize('cooldownManagerCustom1')
+    assert(ModeUICooldownCustom1.width == ModeUICooldownEssential.width)
+    assert(not PM:SetSizeMatchTarget('cooldownManagerCustom1', 'width', 'cooldownManagerCustom1') and not PM:SetSizeMatchTarget('cooldownManagerCustom1', 'width', 'screen'), 'not itself, not the screen')
     assert(PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', false) and ModeUICooldownCustom1.width == 5 * 44 + 4 * 2)
+    assert(PM:GetSizeMatchTarget('cooldownManagerCustom1', 'width') == 'cooldownManagerCustom3' and addon.db.sizeMatches.cooldownManagerCustom1 == nil, 'off forgets the pick')
     assert(M:SetOption(c1, 'perLine', 8))
     assert(M:RemoveEntry(c1, '201') and Point(byKey[201])[2] == M.holders.utility, 'Remove from Bar sends it back')
     assert(M:DeleteCustomBar(c3) and Point(byKey[102])[2] == holder and byKey[102].alpha == 1, 'deleting gives the spells back')

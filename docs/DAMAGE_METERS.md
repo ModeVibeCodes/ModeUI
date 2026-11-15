@@ -237,10 +237,14 @@ anchors never loop (`PositionManager:WouldLoop`). Code:
 `PositionManager:AnchorTo` (`Shared/Placement/PositionAnchors.lua`) and
 `Shared/Settings/EditAnchor.lua`.
 
-**Match Width** and **Match Height** (Edit Mode window, under the sides) size
-an anchored element to what it hangs from. A module offers them for its
-elements (`PositionManager:SetSizeMatch`); they're dimmed on the screen and
-for elements that don't. Damage meter windows have both. **Match Width** is on
+**Match Width** and **Match Height** (Edit Mode's element panel, Match Size)
+size an element to the element picked for each: click one, then the element
+to take the width (or height) of. Since November 15, 2026 that's any
+element, whatever the window hangs from (saved in the profile's
+`sizeMatches`, `Shared/Placement/SizeMatch.lua`); a match without a pick
+follows the window's anchor, as before. Clicking it again stops matching. A
+module offers them for its elements (`PositionManager:SetSizeMatch`); they're
+dimmed for elements that don't, and two windows can't follow each other. Damage meter windows have both. **Match Width** is on
 by default: the window takes its anchor's width whenever that changes (its
 grip, its Width setting, Copy & Apply, or a different frame changing size),
 and its Rows stay its own. Before, only the grip passed the width on, so the
@@ -507,10 +511,11 @@ concatenation or measurement, and the stub refuses secret arguments.
     - **Action:**
       - With Window 2 shown and anchored on Window 1 (its default), select
         Window 2's stand-in.
-      - In the ModeUI Edit Mode window, check that **Match Width** is ticked,
-        then leave Edit Mode.
+      - In Edit Mode's element panel, check that **Match Width** is lit
+        (the line under it reads "Width: Window 1"), then leave Edit Mode.
       - Change Window 1's **Width** on the Window tab, then drag its grip.
-      - Tick **Match Height** for Window 2 in Edit Mode.
+      - In Edit Mode, click **Match Height** for Window 2, then click
+        Window 1's stand-in.
     - **Required state:** out of combat; Window 2 not grouped.
     - **Confirmation:**
       - Window 2 stays exactly as wide as Window 1 both ways, keeps its own

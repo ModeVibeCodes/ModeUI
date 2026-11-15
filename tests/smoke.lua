@@ -148,6 +148,17 @@ world.run([[
     -- Edit Mode opens the ModeUI edit panel with the frames as movable elements.
     assert(addon:SetEditMode(true) and addon.editWindow:IsShown() and not window:IsShown())
     assert(addon.PositionManager.elements.unitFramesPlayer and addon.PositionManager.elements.unitFramesTarget)
+    -- A slim strip at the top (switches and Exit), the element's panel under it.
+    local strip,panel=addon.editWindow,addon.editPanel
+    assert(strip:GetHeight()==44 and strip:GetWidth()<600 and panel:IsShown() and select(2,panel:GetPoint(1))==strip,'strip on top, panel under it')
+    assert(panel:GetWidth()<=300 and panel:GetHeight()<=300,'a small panel')
+    -- Every button's text fits inside it (nothing clipped at any size).
+    for _,name in ipairs({'highlightButton','centerLinesButton','gridButton','exitButton','settingsButton','anchorToButton','resetOffset','matchWidthButton','matchHeightButton'}) do
+        local button=strip[name];assert(button and button.label:GetStringWidth()<=button:GetWidth()-8,name..' text fits')
+    end
+    local width=strip.matchWidthButton;assert(width.label:GetText()=='Match Width' and width:GetParent()==panel,'Match Size on the panel')
+    -- Match picks are saved in the profile and checked like the rest of it.
+    assert(addon.Database:ValidateProfile({sizeMatches={a={width='b'}}}) and not addon.Database:ValidateProfile({sizeMatches={a={depth='b'}}}) and not addon.Database:ValidateProfile({sizeMatches={a={width=5}}}),'size matches checked')
     assert(addon:SetEditMode(false) and window:IsShown())
     window:Hide()
     addon.root.window.x=123;addon.root.window.y=45

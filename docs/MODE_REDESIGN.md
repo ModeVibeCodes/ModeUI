@@ -134,6 +134,12 @@ From the plan's "Decisions for you" (owner's answers):
 
 Owner preferences gathered along the way:
 
+- **Edit Mode** (November 15): a slim strip across the top (Highlights,
+  Center Lines, Grid, Exit) and a small element panel under it (Position,
+  Snap To, Match Size, a small Settings button), replacing the tall window
+  whose toggle labels clipped. Match Width and Match Height follow an element
+  you click, independent of the anchor.
+
 - **UI scale** (November 15): ModeUI fits itself pixel perfect at 1080p and
   1440p from the screen the game reports. Optimizations' Set UI Scale starts
   on at Pixel Perfect (version 2 migrates profiles still at the old default,

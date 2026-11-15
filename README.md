@@ -44,9 +44,15 @@ theme ModeUI has.
 - **Edit Mode** in the window header lets you drag every unit frame, the party frames and each
   action bar and damage meter window. Cyan guides show when an element nears the center or an
   offset of 0, and it snaps there. The arrows beside the selected element (or the
-  arrow keys) move it one pixel. **Anchor To...** in the Edit Mode window hangs the selected
-  element from the next one you click, then offers its sides; anchoring always starts at X and Y 0. **Match Width** and **Match Height** size an
-  anchored element to what it hangs from, where its module offers them (damage meter windows do).
+  arrow keys) move it one pixel. Edit Mode shows a slim strip at the top of the screen
+  (**Highlights**, **Center Lines**, **Grid**, **Exit**) and, under it, a small panel for the
+  selected element: **Position** (X and Y), **Snap To** (what it hangs from, **Anchor To...**,
+  its side, **Reset Offset**), **Match Size** and a **Settings** button for its page. **Anchor
+  To...** hangs the selected element from the next one you click, then offers its sides;
+  anchoring always starts at X and Y 0. **Match Width** and **Match Height**: click one, then the
+  element whose width (or height) to take; it keeps that size whenever the element changes,
+  whatever it hangs from. Click it again to stop matching. Offered where the module can size an
+  element (damage meter windows, Cooldown Manager bars, resource bars).
   **Preview** shows sample frames.
 - `/kb` opens Keybind Mode for the action bars: hover a button and press a key.
 - Size, visibility and position changes made in combat are applied once combat ends,

@@ -12,6 +12,9 @@ local PM, P, F = addon.PositionManager, addon.Positioning, addon.FrameAnchors
 -- (and its name handle) still takes the mouse, so the click picks it and
 -- never reaches what's under it, like a bar's buttons. Escape or a
 -- right-click cancels, and so does combat.
+-- Match Width and Match Height pick the same way (A:Start(id, "width")): the
+-- clicked element becomes what that axis follows (PM:SetSizeMatchTarget),
+-- with no sides window.
 local A = {}
 addon.EditAnchor = A
 local Combat, Plain = addon.InCombat, addon.IsPublic
@@ -53,9 +56,13 @@ function A:TargetLabel(target)
     return tostring(target)
 end
 
--- Whether the element has anything but the screen to hang from.
-function A:CanPick(element)
-    if not element or not element.supportsAnchoring then return false end
+-- Whether the element has anything but the screen to hang from (or, for a
+-- match, to follow on that axis).
+function A:CanPick(element, mode)
+    if not element then return false end
+    if mode == "width" or mode == "height" then
+        if not PM:CanMatchSize(element.id, mode) then return false end
+    elseif not element.supportsAnchoring then return false end
     if element.allowedTargets.selected then return true end
     for id in pairs(element.allowedTargets) do if id ~= "screen" and id ~= "selected" then return true end end
     return false
@@ -84,10 +91,12 @@ end
 -- through the Edit Mode window. Another element's name handle picks it too
 -- (and first). The third result, when nothing can be picked, is the label of
 -- a listed frame under the cursor that would close a loop.
-function A:Candidate(element)
+function A:Candidate(element, matching)
     local cx, cy = Cursor()
     if not cx or not element then return end
-    if addon.editWindow and Visible(addon.editWindow) and Under(addon.editWindow, cx, cy) then return end
+    for _, window in ipairs({ addon.editWindow, addon.editPanel }) do
+        if window and Visible(window) and Under(window, cx, cy) then return end
+    end
     local best, frame, area, looped
     for _, item in ipairs(P.targets) do
         if item.id ~= "screen" and element.allowedTargets[item.id] then
@@ -96,7 +105,7 @@ function A:Candidate(element)
             local handle = owner and PM.elements[owner].decoration and PM.elements[owner].decoration.handle
             local size = target and target ~= element.frame and Visible(target)
                 and (handle and Visible(handle) and Under(handle, cx, cy) and 0 or Under(target, cx, cy))
-            if size and PM:WouldLoop(element.id, item.id) then looped = looped or item.label
+            if size and not matching and PM:WouldLoop(element.id, item.id) then looped = looped or item.label
             elseif size and (not area or size < area) then best, frame, area = item.id, target, size end
         end
     end
@@ -131,7 +140,7 @@ function A:BuildOverlay()
     overlay:SetScript("OnEvent", function(_, event, button)
         if event == "PLAYER_REGEN_DISABLED" or button == "RightButton" then self:Stop(); return end
         if button ~= "LeftButton" then return end
-        local target = self:Candidate(PM:Element(self.elementId))
+        local target = self:Candidate(PM:Element(self.elementId), self:Matching())
         if target then self:Pick(self.elementId, target) end
     end)
     local elapsed = 0
@@ -149,14 +158,19 @@ function A:Track()
     local element = PM:Element(self.elementId)
     if Combat() or not element or not addon.editMode then self:Stop(); return end
     local overlay = self.overlay
-    local target, frame, looped = self:Candidate(element)
+    local target, frame, looped = self:Candidate(element, self:Matching())
     overlay.outline:Hide()
     local name = element.label or element.module.title
-    if looped then
+    local axis = self:Matching()
+    if axis then
+        overlay.text:SetText(target and (name .. " takes the " .. axis .. " of " .. self:TargetLabel(target) .. ": click to choose it. Escape cancels.")
+            or ("Match " .. (axis == "width" and "Width" or "Height") .. " for " .. name .. ": click the element to match. Escape cancels."))
+    elseif looped then
         overlay.text:SetText(looped .. " already hangs from " .. name .. ", so it can't hold it. Escape cancels.")
         return
     end
-    if not target then overlay.text:SetText("Anchor " .. name .. ": click the element to anchor it to. Escape cancels."); return end
+    if not axis and not target then overlay.text:SetText("Anchor " .. name .. ": click the element to anchor it to. Escape cancels."); return end
+    if not target then return end
     local x, y, width, height = P:Geometry(frame)
     if x then
         local cx, cy = UIParent:GetCenter()
@@ -164,18 +178,21 @@ function A:Track()
         overlay.outline:SetPoint("CENTER", UIParent, "CENTER", x - cx, y - cy)
         overlay.outline:SetSize(width, height); overlay.outline:Show()
     end
-    overlay.text:SetText("Anchor " .. name .. " to " .. self:TargetLabel(target) .. ": click to choose it. Escape cancels.")
+    if not axis then overlay.text:SetText("Anchor " .. name .. " to " .. self:TargetLabel(target) .. ": click to choose it. Escape cancels.") end
 end
 
 function A:Active() return self.elementId ~= nil end
+-- The axis being picked for ("width" or "height"), or nil for Anchor To.
+function A:Matching() return self.elementId ~= nil and (self.mode == "width" or self.mode == "height") and self.mode or nil end
 
-function A:Start(id)
+-- mode: nil (Anchor To), "width" or "height" (Match Width, Match Height).
+function A:Start(id, mode)
     local element = PM:Element(id)
-    if Combat() or not addon.editMode or not self:CanPick(element) then return false, "unavailable" end
+    if Combat() or not addon.editMode or not self:CanPick(element, mode) then return false, "unavailable" end
     self:Stop(); self:CloseSides()
     PM:FinishDrags()
     if not self.overlay then self:BuildOverlay() end
-    self.elementId = id
+    self.elementId, self.mode = id, mode
     PM.picking = true
     PM:RefreshSelection()
     self.overlay:SetPropagateKeyboardInput(true)
@@ -188,15 +205,24 @@ end
 
 function A:Stop()
     if not self.elementId then return end
-    self.elementId = nil
+    self.elementId, self.mode = nil, nil
     local overlay = self.overlay
     overlay:UnregisterAllEvents(); overlay:Hide(); overlay.outline:Hide()
     PM.picking = false
     PM:RefreshSelection()
+    if addon.RefreshEditWindow then addon:RefreshEditWindow() end
 end
 
 -- Anchors the element to the side of the clicked target it sits on, then offers the sides.
 function A:Pick(id, target)
+    local axis = self:Matching()
+    if axis then
+        local ok, reason = PM:SetSizeMatchTarget(id, axis, target)
+        self:Stop()
+        if not ok then print("ModeUI: that can't be matched (" .. tostring(reason) .. ").") end
+        if addon.RefreshEditWindow then addon:RefreshEditWindow() end
+        return ok, reason
+    end
     local before = PM:GetPosition(id)
     local ok, reason = PM:AnchorNear(id, target)
     self:Stop()

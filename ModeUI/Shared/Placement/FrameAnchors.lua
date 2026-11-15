@@ -21,7 +21,7 @@ function F:SafeFrame(frame)
         if not Plain(node) or depth>16 then return false end
         if visited[node] then return true end
         visited[node]=true;count=count+1
-        if count>64 or PM.frames[node] or node==addon.configWindow or node==addon.editWindow or node==self.picker then return false end
+        if count>64 or PM.frames[node] or node==addon.configWindow or node==addon.editWindow or node==addon.editPanel or node==self.picker then return false end
         if not Geometry(node) then return false end
         if node==UIParent then return true end
         local ok,parent=pcall(function() return node:GetParent() end)

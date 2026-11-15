@@ -62,10 +62,12 @@ function M:GroupChoices(window)
     return list
 end
 
--- Edit Mode's Match Width and Match Height. A window anchored (not grouped)
--- on another element takes its width, or as many rows as fit its height, so
--- a stack keeps together however the window under it changes: by its grip,
--- its settings or Copy & Apply. Rows never change for Match Width alone.
+-- Edit Mode's Match Width and Match Height. A window (not grouped) takes the
+-- width of the element picked for Match Width, or as many rows as fit the
+-- height of the one picked for Match Height (without a pick, what it's
+-- anchored on: PositionManager:GetSizeMatchTarget), so a stack keeps together
+-- however the window it follows changes: by its grip, its settings or Copy &
+-- Apply. Rows never change for Match Width alone.
 -- On another meter window it reads that window's settings, so the change
 -- lands on the same refresh; on anything else, its size on screen (outside
 -- combat), watched through Position Manager's anchor size listener.
@@ -75,8 +77,7 @@ local PM, P, Kit = addon.PositionManager, addon.Positioning, addon.Kit
 function M:Matching(window, axis)
     local own = self.db[window]
     if self:IsGrouped(window) or not own["match" .. axis] then return end
-    local position = PM:GetPosition(self.elementIds[window])
-    if position and position.target ~= "screen" then return position.target end
+    return (PM:GetSizeMatchTarget(self.elementIds[window], axis:lower()))
 end
 
 local function TargetSize(self, target, px)
@@ -98,10 +99,11 @@ function M:MatchAnchored()
     local changed = false
     for _, window in ipairs(self.windows) do
         local own = self.db[window]
-        local target = self:Matching(window, "Width") or self:Matching(window, "Height")
+        local wide, tall = self:Matching(window, "Width"), self:Matching(window, "Height")
         local px = Kit.PixelSize(self.frames[window] or UIParent)
         local width, height
-        if target then width, height = TargetSize(self, target, px) end
+        if wide then width = TargetSize(self, wide, px) end
+        if tall then local _, h = TargetSize(self, tall, px); height = h end
         if width and self:Matching(window, "Width") then
             local range = self.ranges.width
             local fit = math.max(range[1], math.min(range[2], math.floor(width + 0.5)))

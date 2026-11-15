@@ -19,9 +19,11 @@ D.profileDefaults = {
     globalMedia = { font = "game", texture = "default", border = "thin", overrides = {} },
     modules = {},
     positions = {},
+    -- Edit Mode's Match Width and Match Height picks (Placement/SizeMatch.lua).
+    sizeMatches = {},
 }
 -- The keys a profile may contain (import/export accept nothing else).
-D.profileKeys = { globalMedia = true, modules = true, positions = true }
+D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true }
 D.DEFAULT_PROFILE = "Default"
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -56,6 +58,7 @@ function D:ValidateProfile(source)
             if module.Initialize then module.Initialize(db) end
         end
         assert(type(profile.positions) == "table", "Invalid positions.")
+        assert(addon.PositionManager.ValidSizeMatches(profile.sizeMatches), "Invalid size matches.")
         return profile
     end)
     if ok then return result end
