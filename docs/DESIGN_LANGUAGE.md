@@ -235,7 +235,10 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   Ivory bar on its window side, the others Graphite muted. **Side tabs:**
   `control` boxes, the chosen tone (Graphite track) and an Ivory line when
   checked.
-- **Insets:** a Mode Matte face on the Graphite base inside the `card` edge.
+- **Insets:** cards: a Mode Matte face in Graphite raised (a step lighter than
+  the window) inside the `card` edge. Faces with a lift (Panel, Button, Matte)
+  draw their base times the color plus the white lift, as bars do, never the
+  baked file (its light vanishes on Graphite).
   **Scroll bars:** a 4px Graphite track and thumb (rimStrong).
 - **Item quality:** the `line` edge in the quality color, inside the slot.
 

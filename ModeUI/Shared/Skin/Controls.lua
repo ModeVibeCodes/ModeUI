@@ -4,7 +4,8 @@ local Skin, Kit = addon.Skin, addon.Kit
 -- Blizzard's shared controls in the Mode look, each recognised by the keys
 -- its template gives it (Forever's SharedUIPanelTemplates, TabSystem,
 -- MinimalScrollBar and WowTrimScrollBar):
---   Button       Left/Middle/Right art (UIPanelButtonTemplate): a Mode
+--   Button       Left/Middle/Right art (UIPanelButtonTemplate; Left/Center/Right
+--                in ThreeSliceButtonTemplate, the Game Menu's): a Mode
 --                Button face in the `control` edge, Ivory on hover
 --   Field        an edit box with Left/Middle/Right art (InputBoxTemplate,
 --                SearchBoxTemplate): a Graphite base in the `control` edge,
@@ -28,7 +29,8 @@ local Skin, Kit = addon.Skin, addon.Kit
 -- { path, size, outline, shadow, tabSize }; the colors are Skin.mode's.
 local M, Style = Skin.mode, addon.Style
 local Snap, Fade = Skin.Snap, Skin.Fade
-local BUTTON_ART = { "Left", "Middle", "Right", "LeftDisabled", "MiddleDisabled", "RightDisabled" }
+-- (ThreeSliceButtonTemplate, the Game Menu's buttons, names its middle Center.)
+local BUTTON_ART = { "Left", "Middle", "Center", "Right", "LeftDisabled", "MiddleDisabled", "RightDisabled" }
 local TAB_ART = { "Left", "Middle", "Right", "LeftActive", "MiddleActive", "RightActive",
     "LeftHighlight", "MiddleHighlight", "RightHighlight", "LeftDisabled", "MiddleDisabled", "RightDisabled" }
 local NINE = { "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner",
@@ -74,7 +76,7 @@ function Skin.Kind(frame)
         if frame.SelectedTexture and frame.Icon and frame.Background then return "SideTab" end
         if kind == "CheckButton" and frame.Icon and not frame.Background and frame.GetCheckedTexture
             and frame:GetCheckedTexture() then return "RightSideTab" end
-        if frame.Left and frame.Middle and frame.Right and Text(frame) then return "Button" end
+        if frame.Left and (frame.Middle or frame.Center) and frame.Right and Text(frame) then return "Button" end
     end
     return nil
 end
@@ -276,8 +278,9 @@ function Skin.ScrollBar(bar)
     Style.Paint(own.thumb, M.thumb)
 end
 
--- An inset: Blizzard's inset border and background faded; a Mode Matte face
--- on a Graphite base inside the `card` edge. Some insets sit ABOVE the
+-- An inset: Blizzard's inset border and background faded; a card: a Mode
+-- Matte face in Graphite raised (a step lighter than the window) inside the
+-- `card` edge. Some insets sit ABOVE the
 -- content they frame (the Guild roster's InsetFrame is raised to level 100
 -- over its rows), so the face is drawn on the inset's parent, under the
 -- content; the edge (on its own frame) only frames it.
@@ -285,5 +288,5 @@ function Skin.Inset(inset)
     Skin.FadeNineSlice(inset.NineSlice); Fade(inset.Bg)
     local host = inset:GetParent() or inset
     local parts = Skin.Box(inset, "card", { faceHost = host, sublevel = -7 })
-    Skin.PaintBox(parts, inset, "Matte", M.field, 1, true)
+    Skin.PaintBox(parts, inset, "Matte", M.card, 1, true)
 end

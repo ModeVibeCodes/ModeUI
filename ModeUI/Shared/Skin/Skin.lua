@@ -221,14 +221,37 @@ end
 -- in the Mode texture `key` (Solid, Button, Matte, Panel, Title...) and
 -- `color` at `alpha`; the edge shown unless `edge` is false, its outer line
 -- lit with `highlight` ("accent", a color, or nil).
+-- A texture with a lift draws as its base multiplied by the color plus the
+-- white lift on its own texture above it (docs/DESIGN_LANGUAGE.md, "Bars",
+-- Light): the single baked file would multiply its light away on Graphite.
 function Skin.PaintBox(parts, box, key, color, alpha, edge, highlight)
     local face = parts.face
-    if parts.faceKey ~= key then Style.ApplyAsset(face, key); parts.faceKey = key end
+    local asset = Style.ASSETS[key] or {}
+    local base = asset.fill or key
+    if parts.faceKey ~= key then
+        Style.ApplyAsset(face, base)
+        parts.faceKey = key
+        if asset.lift and not parts.lift then
+            local layer, sublevel = face:GetDrawLayer()
+            parts.lift = face:GetParent():CreateTexture(nil, layer, nil, math.min(7, (sublevel or 0) + 1))
+            parts.regions[parts.lift] = true
+            local owner = Skin.parts[face:GetParent()]
+            if owner and owner ~= parts then owner.regions[parts.lift] = true end
+        end
+        if parts.lift then
+            if asset.lift then Style.ApplyAsset(parts.lift, asset.lift) end
+            parts.lift:SetShown(asset.lift ~= nil)
+        end
+    end
     face:ClearAllPoints(); face:SetAllPoints(box)
     Style.Paint(face, color, alpha)
-    if TILED[key] and box.GetSize then
+    if parts.lift and asset.lift then
+        parts.lift:ClearAllPoints(); parts.lift:SetAllPoints(box)
+        Style.Paint(parts.lift, Tone.mono.white, alpha)
+    end
+    if TILED[base] and box.GetSize then
         local width, height = box:GetSize()
-        if addon.IsNumber(width, 1) and addon.IsNumber(height, 1) then Style.TileCoords(face, key, width, height, Kit.PixelSize(box)) end
+        if addon.IsNumber(width, 1) and addon.IsNumber(height, 1) then Style.TileCoords(face, base, width, height, Kit.PixelSize(box)) end
     elseif face.SetTexCoord then
         face:SetTexCoord(0, 1, 0, 1)
     end

@@ -41,6 +41,10 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
         local button = CreateFrame('Button', nil, frame.Inset)
         Textures(button, { 'Left', 'Middle', 'Right' }); button.Text = button:CreateFontString(); States(button)
         frame.testButton = button
+        local slice = CreateFrame('Button', nil, frame)
+        Textures(slice, { 'Left', 'Center', 'Right' }); slice.Text = slice:CreateFontString(); States(slice)
+        function slice:GetFontString() return self.Text end
+        frame.testSlice = slice
         local edit = CreateFrame('EditBox', nil, frame); Textures(edit, { 'Left', 'Middle', 'Right' }); frame.testField = edit
         local bar = CreateFrame('Frame', nil, frame)
         bar.Track = CreateFrame('Frame', nil, bar); Textures(bar.Track, { 'Begin', 'Middle', 'End' })
@@ -222,6 +226,13 @@ world.run([==[
     local button = FriendsFrame.testButton
     assert(button.Left.alpha == 0 and Skin.parts[button].faceKey == 'Button' and Skin.parts[button].modeEdge.preset == 'control', 'a Mode Button')
     button.scripts.OnEnter(button); assert(Lit(Skin.parts[button]), 'Ivory line on hover')
+    -- The face is the base times Graphite, its light on its own texture (not the baked file).
+    local bp = Skin.parts[button]
+    assert(bp.face.texture:find('ButtonBase', 1, true) and bp.lift and bp.lift.texture:find('ButtonLift', 1, true) and bp.lift.vertexColor[1] == 1, 'Mode Button: base and lift')
+    assert(parts.face.texture:find('Panel', 1, true) and parts.lift.texture:find('PanelLift', 1, true), 'the window panel has its lift too')
+    local slice = FriendsFrame.testSlice
+    assert(slice.Center.alpha == 0 and slice.Left.alpha == 0 and Skin.parts[slice].faceKey == 'Button', 'three-slice buttons (the Game Menu) too')
+    assert(Skin.parts[FriendsFrame.Inset].face.vertexColor[1] == Tone.graphite.raised[1], 'insets: a card, a step lighter than the window')
     assert(FriendsFrame.testField.Middle.alpha == 0 and Skin.parts[FriendsFrame.testField].box, 'edit field')
     local bar = FriendsFrame.testBar
     assert(bar.Track.Middle.alpha == 0 and bar.Track.Thumb.Begin.alpha == 0 and bar.Back.Texture.alpha == 0 and Skin.parts[bar].thumb:GetWidth() == 4)
