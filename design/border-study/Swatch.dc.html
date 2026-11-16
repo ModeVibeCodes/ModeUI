@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Border family swatch</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#EFE6D2}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 420px; height: 480px; box-sizing: border-box; padding: 20px; background: #24282C; font-family: Geist, system-ui, sans-serif; color: #D8D8DB; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 5px">
+<div style="font-size: 16px; font-weight: 600; color: #EFE6D2">{{f.name}}</div>
+<div style="font-size: 12px; line-height: 17px; color: #B9B9BE">{{f.idea}}</div>
+<div style="font-size: 11px; line-height: 15px; color: #9C9CA2">{{f.recipe}}</div>
+</div>
+<div style="display: flex; gap: 16px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 16px; flex-grow: 1">
+<div style="{{pf.box}}">
+<div style="{{pf.r0}}"><div style="{{pf.r1}}"><div style="{{pf.r2}}"><div style="{{pf.r3}}"><div style="{{pf.r4}}"><div style="{{pf.face}}">
+<div style="height: 100%; display: flex; flex-direction: column; gap: 1px; background: #000000">
+<div style="flex-grow: 1; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: linear-gradient(180deg, #2C2D2C, #1C1D1C 55%, #151615)"></div>
+<span style="position: absolute; left: 8px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: #F48CBA">Mode</span>
+<span style="position: absolute; right: 8px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: #DADADA">78%</span>
+</div>
+<div style="height: 9px; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(180deg, #6FB0FF, #4096FF 50%, #2C6FC4)"></div>
+</div>
+</div>
+</div></div></div></div></div></div>
+<span style="{{pf.tl}}"></span><span style="{{pf.tr}}"></span><span style="{{pf.bl}}"></span><span style="{{pf.br}}"></span>
+</div>
+<div style="display: flex; gap: 2px">
+<sc-for list="{{icons}}" as="ic" hint-placeholder-count="4">
+<div style="{{btn.box}}">
+<div style="{{btn.r0}}"><div style="{{btn.r1}}"><div style="{{btn.r2}}"><div style="{{btn.r3}}"><div style="{{btn.r4}}"><div style="{{btn.face}}">
+<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: {{ic.bg}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,244,228,0.9)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="{{ic.d}}"></path></svg>
+</div>
+</div></div></div></div></div></div>
+<span style="{{btn.tl}}"></span><span style="{{btn.tr}}"></span><span style="{{btn.bl}}"></span><span style="{{btn.br}}"></span>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start">
+<div style="display: flex; gap: 2px">
+<sc-for list="{{auras}}" as="au" hint-placeholder-count="3">
+<div style="{{aura.box}}">
+<div style="{{aura.r0}}"><div style="{{aura.r1}}"><div style="{{aura.r2}}"><div style="{{aura.r3}}"><div style="{{aura.r4}}"><div style="{{aura.face}}">
+<div style="width: 100%; height: 100%; background: {{au.bg}}"></div>
+</div></div></div></div></div></div>
+<span style="{{aura.tl}}"></span><span style="{{aura.tr}}"></span><span style="{{aura.bl}}"></span><span style="{{aura.br}}"></span>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 11px; font-weight: 600; color: #F5F5F6; text-shadow: 0 1px 1px #000000">Ironjaw Brute</span>
+<div style="{{np.box}}">
+<div style="{{np.r0}}"><div style="{{np.r1}}"><div style="{{np.r2}}"><div style="{{np.r3}}"><div style="{{np.r4}}"><div style="{{np.face}}">
+<div style="width: 100%; height: 100%; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 70%; background: linear-gradient(180deg, #F0686C, #E5484D 50%, #B83236)"></div>
+</div>
+</div></div></div></div></div></div>
+<span style="{{np.tl}}"></span><span style="{{np.tr}}"></span><span style="{{np.bl}}"></span><span style="{{np.br}}"></span>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center">
+<div style="width: 120px; height: 120px; position: relative; overflow: hidden; background: #24282C; border-radius: 4px; box-shadow: 0 0 0 1px #3D3D41">
+<div style="position: absolute; left: 6px; top: 6px; transform: scale(6); transform-origin: 0 0">
+<div style="{{zoom.box}}">
+<div style="{{zoom.r0}}"><div style="{{zoom.r1}}"><div style="{{zoom.r2}}"><div style="{{zoom.r3}}"><div style="{{zoom.r4}}"><div style="{{zoom.face}}">
+<div style="width: 100%; height: 100%; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: linear-gradient(180deg, #2C2D2C, #1C1D1C 55%, #151615)"></div>
+</div>
+</div></div></div></div></div></div>
+<span style="{{zoom.tl}}"></span><span style="{{zoom.tr}}"></span><span style="{{zoom.bl}}"></span><span style="{{zoom.br}}"></span>
+</div>
+</div>
+<div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: linear-gradient(to right, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.07) 1px, transparent 1px); background-size: 6px 6px; pointer-events: none"></div>
+</div>
+<div style="font-size: 11px; color: #9C9CA2">Corner at 6×</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"family":{"editor":"enum","options":["current","bevel","rail","caps","cut","gilded"],"default":"current"},"$preview":{"width":420,"height":480}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var SH = 'rgba(0,0,0,0.85)';
+    function lit(top, mid) { return 'linear-gradient(180deg,' + top + ' 0px,' + top + ' 1px,' + mid + ' 1px)'; }
+    function grad(a, b, c) { return 'linear-gradient(180deg,' + a + ',' + b + (c ? ',' + c : '') + ')'; }
+    var nowHeavy = [{ w: 1, bg: SH }, { w: 2, bg: lit('#7A7C7F', '#46494D') }];
+    var nowThin = [{ w: 1, bg: SH }, { w: 1, bg: lit('#606266', '#46494D') }];
+    var FAM = {
+      current: {
+        name: 'Today · Mode Edge',
+        idea: 'The shipping edge: a 2px Gunmetal rim whose top row catches the light, inside a 1px shadow.',
+        recipe: '1px shadow · 2px Gunmetal, top row lit · reach 3px (thin: 2px)',
+        heavy: { radius: 5, rings: nowHeavy },
+        thin: { radius: 4, rings: nowThin }
+      },
+      bevel: {
+        name: 'A · Forged Bevel',
+        idea: 'Blizzard-style beveled metal in three 1px rows: a bright outer lip, mid metal, a dark groove, then black.',
+        recipe: '1px shadow · 1px lit Steel lip · 1px Gunmetal · 1px groove · 1px black · reach 5px (thin: 3px)',
+        heavy: { radius: 6, rings: [{ w: 1, bg: SH }, { w: 1, bg: grad('#BFC2C7', '#7C7F85 45%', '#55585D') }, { w: 1, bg: grad('#6A6D72', '#46494D') }, { w: 1, bg: grad('#2C2E31', '#1D1F21') }, { w: 1, bg: '#000000' }] },
+        thin: { radius: 4, rings: [{ w: 1, bg: SH }, { w: 1, bg: grad('#A9ACB1', '#5B5E63') }, { w: 1, bg: '#16171A' }] }
+      },
+      rail: {
+        name: 'B · Twin Rail',
+        idea: 'Two thin metal rails with a black channel between them, like the trim on Blizzard dialogs and tooltips.',
+        recipe: '1px shadow · 1px Steel rail · 1px channel · 1px Gunmetal rail · 1px black · reach 5px (thin: 3px)',
+        heavy: { radius: 6, rings: [{ w: 1, bg: SH }, { w: 1, bg: grad('#A9ACB1', '#6E7176') }, { w: 1, bg: '#0A0A0B' }, { w: 1, bg: grad('#5E6166', '#3A3D41') }, { w: 1, bg: '#000000' }] },
+        thin: { radius: 4, rings: [{ w: 1, bg: SH }, { w: 1, bg: grad('#8C8F95', '#5B5E63') }, { w: 1, bg: '#0A0A0B' }] }
+      },
+      caps: {
+        name: 'C · Corner Caps',
+        idea: 'Today’s rim, with brighter Steel brackets on each corner: detail only where the eye lands.',
+        recipe: '1px shadow · 2px Gunmetal, top lit · 2px Steel caps, 10px arms · reach 3px (thin: 2px, 6px arms)',
+        heavy: { radius: 5, rings: nowHeavy, caps: { len: 10, w: 2, top: '#A9ACB1', bot: '#7C7F85' } },
+        thin: { radius: 4, rings: nowThin, caps: { len: 6, w: 1, top: '#9A9DA2', bot: '#74777D' } }
+      },
+      cut: {
+        name: 'D · Cut Steel',
+        idea: 'Chamfered corners instead of round ones, around a 2px Steel band lit from the top: the silhouette of Blizzard’s metal frames.',
+        recipe: '1px shadow · 2px Steel, lit top to bottom · 1px black · 45° corners, 5px cut · reach 4px (thin: 2px)',
+        heavy: { radius: 5, chamfer: true, rings: [{ w: 1, bg: SH }, { w: 2, bg: grad('#A3A6AB', '#6E7176 45%', '#3D4044') }, { w: 1, bg: '#000000' }] },
+        thin: { radius: 3, chamfer: true, rings: [{ w: 1, bg: SH }, { w: 1, bg: grad('#8C8F95', '#4A4D51') }] }
+      },
+      gilded: {
+        name: 'E · Gilded Edge',
+        idea: 'A lit Steel rim over a warm gold hairline that fades toward the bottom: Blizzard gold, kept quiet.',
+        recipe: '1px shadow · 2px Steel, lit top to bottom · 1px gold (brand) fading down · reach 4px (thin: 2px)',
+        heavy: { radius: 5, rings: [{ w: 1, bg: SH }, { w: 2, bg: grad('#A3A6AB', '#74777D 40%', '#4A4D51') }, { w: 1, bg: grad('#CBA65C', '#6A5530 55%', '#2A2213') }] },
+        thin: { radius: 4, rings: [{ w: 1, bg: SH }, { w: 1, bg: grad('#C9A866', '#6A6D72 60%', '#4A4D51') }] }
+      }
+    };
+    function cut(c) {
+      c = Math.max(0, c).toFixed(2);
+      return 'polygon(' + c + 'px 0,calc(100% - ' + c + 'px) 0,100% ' + c + 'px,100% calc(100% - ' + c + 'px),calc(100% - ' + c + 'px) 100%,' + c + 'px 100%,0 calc(100% - ' + c + 'px),0 ' + c + 'px)';
+    }
+    function shape(v, r) { return v.chamfer ? 'clip-path:' + cut(r) + ';' : 'border-radius:' + Math.max(0, r) + 'px;'; }
+    function build(id, variant, cw, ch, drop) {
+      var fam = FAM[id] || FAM.current;
+      var v = fam[variant];
+      var o = {};
+      var r = v.radius;
+      var reach = 0;
+      for (var i = 0; i < 5; i++) {
+        var g = v.rings[i];
+        var s = 'box-sizing:border-box;width:100%;height:100%;';
+        if (g) {
+          s += 'padding:' + g.w + 'px;background:' + g.bg + ';' + shape(v, r);
+          r -= v.chamfer ? g.w * 0.586 : g.w;
+          reach += g.w;
+        }
+        o['r' + i] = s;
+      }
+      o.face = 'box-sizing:border-box;width:100%;height:100%;position:relative;overflow:hidden;' + shape(v, r);
+      o.box = 'position:relative;flex-shrink:0;width:' + (cw + 2 * reach) + 'px;height:' + (ch + 2 * reach) + 'px;' + (drop ? 'filter:drop-shadow(0 2px 5px rgba(0,0,0,0.55));' : '');
+      var none = 'display:none';
+      o.tl = none; o.tr = none; o.bl = none; o.br = none;
+      if (v.caps) {
+        var c = v.caps;
+        var rr = Math.max(0, v.radius - 1) + 'px;';
+        var base = 'position:absolute;box-sizing:border-box;width:' + c.len + 'px;height:' + c.len + 'px;pointer-events:none;';
+        var top = c.w + 'px solid ' + c.top + ';';
+        var bot = c.w + 'px solid ' + c.bot + ';';
+        o.tl = base + 'left:1px;top:1px;border-top:' + top + 'border-left:' + top + 'border-top-left-radius:' + rr;
+        o.tr = base + 'right:1px;top:1px;border-top:' + top + 'border-right:' + top + 'border-top-right-radius:' + rr;
+        o.bl = base + 'left:1px;bottom:1px;border-bottom:' + bot + 'border-left:' + bot + 'border-bottom-left-radius:' + rr;
+        o.br = base + 'right:1px;bottom:1px;border-bottom:' + bot + 'border-right:' + bot + 'border-bottom-right-radius:' + rr;
+      }
+      return o;
+    }
+    var id = this.props.family ?? 'current';
+    if (!FAM[id]) id = 'current';
+    var icons = [
+      { bg: 'radial-gradient(circle at 35% 30%, #C77A3F, #5A2D14 78%)', d: 'M12 3 C13 7 17 8.5 17 13.5 A5 5 0 0 1 7 13.5 C7 10.5 9 9 9.5 7 C10.5 9 11.5 9.5 12 9.5 C12 7.5 11.5 5 12 3 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #5D8FB8, #1E3A55 78%)', d: 'M13 3 L6 13 H11.5 L10.5 21 L18 10.5 H12.5 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #9A8A5C, #3E3420 78%)', d: 'M12 3 L19 6 V11.5 C19 15.5 16 18.8 12 20.5 C8 18.8 5 15.5 5 11.5 V6 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #6FA86F, #22442A 78%)', d: 'M10 4 H14 V10 H20 V14 H14 V20 H10 V14 H4 V10 H10 Z' }
+    ];
+    var auras = [
+      { bg: 'radial-gradient(circle at 35% 30%, #B57BD6, #3E1F52 80%)' },
+      { bg: 'radial-gradient(circle at 35% 30%, #D6B45C, #4E3A14 80%)' },
+      { bg: 'radial-gradient(circle at 35% 30%, #6CB7C9, #1B4450 80%)' }
+    ];
+    return {
+      f: FAM[id],
+      pf: build(id, 'heavy', 232, 44, true),
+      btn: build(id, 'heavy', 40, 34, true),
+      np: build(id, 'thin', 130, 10, false),
+      aura: build(id, 'thin', 22, 18, false),
+      zoom: build(id, 'heavy', 48, 40, true),
+      icons: icons,
+      auras: auras
+    };
+  }
+}
+</script>
+</body>
+</html>

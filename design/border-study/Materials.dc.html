@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Metal and lighting grid</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#EFE6D2}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1520px; height: 940px; box-sizing: border-box; padding: 36px 30px; background: #121213; font-family: Geist, system-ui, sans-serif; color: #D8D8DB; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 8px; max-width: 1000px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 600; color: #F5F5F6">Every metal under every light</h1>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #B9B9BE">Each cell shows D (cut corners) above Soft round, both in the full frame border: 1px shadow, the 2px metal band, 1px black. Steel under Top lit is today’s border.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; gap: 12px; align-items: center">
+<div style="width: 150px; flex-shrink: 0"></div>
+<sc-for list="{{metals}}" as="m" hint-placeholder-count="7">
+<div style="width: 172px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #D8D8DB"><span style="{{m.sw}}"></span>{{m.name}}</div>
+</sc-for>
+</div>
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="6">
+<div style="display: flex; gap: 12px; align-items: stretch">
+<div style="width: 150px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px">
+<span style="font-size: 14px; font-weight: 600; color: #EFE6D2">{{row.name}}</span>
+<span style="font-size: 11px; line-height: 14px; color: #A9A9AE">{{row.short}}</span>
+</div>
+<sc-for list="{{row.cells}}" as="c" hint-placeholder-count="7">
+<div style="{{c.cell}}">
+<div style="{{c.d.box}}">
+<div style="{{c.d.r0}}"><div style="{{c.d.r1}}"><div style="{{c.d.r2}}"><div style="{{c.d.r3}}"><div style="{{c.d.face}}">
+<div style="width: 100%; height: 100%; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: linear-gradient(180deg, #2C2D2C, #1C1D1C 55%, #151615)"></div>
+<span style="position: absolute; left: 8px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 11px; font-weight: 600; color: #F48CBA">Mode</span>
+</div>
+</div></div></div></div></div>
+</div>
+<div style="{{c.r.box}}">
+<div style="{{c.r.r0}}"><div style="{{c.r.r1}}"><div style="{{c.r.r2}}"><div style="{{c.r.r3}}"><div style="{{c.r.face}}">
+<div style="width: 100%; height: 100%; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(180deg, #F0686C, #E5484D 50%, #B83236)"></div>
+<span style="position: absolute; left: 11px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 11px; font-weight: 600; color: #F5F5F6; text-shadow: 0 1px 1px #000000">Brute</span>
+</div>
+</div></div></div></div></div>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1520,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var SH = 'rgba(0,0,0,0.85)';
+    function lg(stops) { return 'linear-gradient(180deg,' + stops.join(',') + ')'; }
+    var METALS = [
+      { id: 'steel', name: 'Steel (today)', hi: '#D4D7DC', light: '#A3A6AB', mid: '#6E7176', dark: '#3D4044', deep: '#26282B' },
+      { id: 'gunmetal', name: 'Gunmetal', hi: '#A5A9AF', light: '#7C8086', mid: '#4E5156', dark: '#2C2E31', deep: '#1A1B1D' },
+      { id: 'silver', name: 'Silver', hi: '#F2F4F6', light: '#D9DCE0', mid: '#9A9EA4', dark: '#5C6066', deep: '#3A3D41' },
+      { id: 'iron', name: 'Dark Iron', hi: '#B3AAA2', light: '#8A817A', mid: '#55504B', dark: '#2E2B28', deep: '#1B1917' },
+      { id: 'cobalt', name: 'Cobalt', hi: '#CCD9E8', light: '#9FB2C8', mid: '#5F7288', dark: '#313D4A', deep: '#1C232B' },
+      { id: 'bronze', name: 'Bronze', hi: '#E8C9A2', light: '#C9A27A', mid: '#8A6440', dark: '#4A3420', deep: '#2A1D12' },
+      { id: 'gold', name: 'Gold', hi: '#FFF0B8', light: '#E8C978', mid: '#A8843E', dark: '#5C4620', deep: '#33270F' }
+    ];
+    var LIGHTS = [
+      { name: 'Top lit', short: 'Today: light at the top, fading down.', heavy: function (m) { return [{ w: 2, bg: lg([m.light, m.mid + ' 45%', m.dark]) }, { w: 1, bg: '#000000' }]; } },
+      { name: 'Polished', short: 'Bright top, dark middle, reflected light low.', heavy: function (m) { return [{ w: 2, bg: lg([m.hi, m.light + ' 10%', m.dark + ' 45%', m.deep + ' 60%', m.mid + ' 85%', m.dark]) }, { w: 1, bg: '#000000' }]; } },
+      { name: 'Bevel', short: 'Lit outer lip over a shaded inner row.', heavy: function (m) { return [{ w: 1, bg: lg([m.hi, m.light + ' 40%', m.mid]) }, { w: 1, bg: lg([m.mid, m.dark + ' 50%', m.deep]) }, { w: 1, bg: '#000000' }]; } },
+      { name: 'Specular band', short: 'A narrow highlight near the top.', heavy: function (m) { return [{ w: 2, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 32%', m.dark + ' 70%', m.deep]) }, { w: 1, bg: '#000000' }]; } },
+      { name: 'Edge catch', short: 'Only the top row catches the light.', heavy: function (m) { return [{ w: 2, bg: 'linear-gradient(180deg,' + m.hi + ' 0px,' + m.hi + ' 1px,' + m.light + ' 1px,' + m.mid + ' 40%,' + m.dark + ')' }, { w: 1, bg: '#000000' }]; } },
+      { name: 'Two-tone', short: 'A hard horizon halfway down.', heavy: function (m) { return [{ w: 2, bg: lg([m.light, m.mid + ' 48%', m.deep + ' 52%', m.dark]) }, { w: 1, bg: '#000000' }]; } }
+    ];
+    function poly(c) {
+      c = Math.max(0, c).toFixed(2);
+      return 'polygon(' + c + 'px 0,calc(100% - ' + c + 'px) 0,100% ' + c + 'px,100% calc(100% - ' + c + 'px),calc(100% - ' + c + 'px) 100%,' + c + 'px 100%,0 calc(100% - ' + c + 'px),0 ' + c + 'px)';
+    }
+    function shapeCss(sh, H) {
+      if (sh.kind === 'cut') return 'clip-path:' + poly(Math.min(sh.c, H / 2)) + ';';
+      return 'border-radius:' + Math.max(0, Math.min(sh.r, H / 2)) + 'px;';
+    }
+    function build(sh, inner, cw, ch) {
+      var rings = [{ w: 1, bg: SH }].concat(inner);
+      var reach = 0;
+      rings.forEach(function (g) { reach += g.w; });
+      var H = ch + 2 * reach;
+      var cur = { kind: sh.kind, c: sh.c, r: sh.r };
+      var off = 0;
+      var o = {};
+      for (var i = 0; i < 4; i++) {
+        var g = rings[i];
+        var s = 'box-sizing:border-box;width:100%;height:100%;';
+        if (g) {
+          s += 'padding:' + g.w + 'px;background:' + g.bg + ';' + shapeCss(cur, H - 2 * off);
+          off += g.w;
+          if (cur.kind === 'cut') cur.c -= 0.586 * g.w; else cur.r -= g.w;
+        }
+        o['r' + i] = s;
+      }
+      o.face = 'box-sizing:border-box;width:100%;height:100%;position:relative;overflow:hidden;' + shapeCss(cur, H - 2 * off);
+      o.box = 'position:relative;flex-shrink:0;width:' + (cw + 2 * reach) + 'px;height:' + H + 'px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));';
+      return o;
+    }
+    var cellStyle = 'width:172px;flex-shrink:0;box-sizing:border-box;padding:12px 8px;border-radius:4px;background:radial-gradient(ellipse at 50% 35%, #3A4045 0%, #272B2F 75%);display:flex;flex-direction:column;gap:10px;align-items:center';
+    var metals = METALS.map(function (m) {
+      return { name: m.name, sw: 'display:inline-block;width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 1px #000000;background:' + lg([m.hi, m.light + ' 25%', m.mid + ' 55%', m.dark]) + ';' };
+    });
+    var rows = LIGHTS.map(function (l) {
+      return {
+        name: l.name,
+        short: l.short,
+        cells: METALS.map(function (m) {
+          var inner = l.heavy(m);
+          return { cell: cellStyle, d: build({ kind: 'cut', c: 5 }, inner, 140, 26), r: build({ kind: 'round', r: 12 }, inner, 140, 26) };
+        })
+      };
+    });
+    return { metals: metals, rows: rows };
+  }
+}
+</script>
+</body>
+</html>

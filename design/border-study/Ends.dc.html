@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rounded ends for unit frames</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#EFE6D2}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1400px; height: 1180px; box-sizing: border-box; padding: 40px 30px; background: #121213; font-family: Geist, system-ui, sans-serif; color: #D8D8DB; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 8px; max-width: 940px">
+<h1 style="margin: 0; font-size: 30px; font-weight: 600; color: #F5F5F6">Rounded ends for unit frames</h1>
+<p style="margin: 0; font-size: 15px; line-height: 22px; color: #B9B9BE">Cut Steel (D) is the material on every card: 1px shadow, a 2px Steel band lit from the top, 1px black. Only the ends change, from D’s cut corners to fully rounded and oval ends like a nameplate’s. Each card shows a unit frame, the matching thin nameplate, and the left end at 4×.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px">
+<sc-for list="{{shapes}}" as="s" hint-placeholder-count="6">
+<div style="height: 300px; box-sizing: border-box; padding: 20px; background: #24282C; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 5px">
+<div style="font-size: 16px; font-weight: 600; color: #EFE6D2">{{s.name}}</div>
+<div style="font-size: 12px; line-height: 17px; color: #B9B9BE">{{s.note}}</div>
+</div>
+<div style="display: flex; gap: 16px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 18px; flex-grow: 1">
+<div style="{{s.pf.box}}">
+<div style="{{s.pf.r0}}"><div style="{{s.pf.r1}}"><div style="{{s.pf.r2}}"><div style="{{s.pf.r3}}"><div style="{{s.pf.face}}">
+<div style="height: 100%; display: flex; flex-direction: column; gap: 1px; background: #000000">
+<div style="flex-grow: 1; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: linear-gradient(180deg, #2C2D2C, #1C1D1C 55%, #151615)"></div>
+<span style="position: absolute; left: {{s.pad}}px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: #F48CBA">Mode</span>
+<span style="position: absolute; right: {{s.pad}}px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: #DADADA">78%</span>
+</div>
+<div style="height: 9px; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(180deg, #6FB0FF, #4096FF 50%, #2C6FC4)"></div>
+</div>
+</div>
+</div></div></div></div></div>
+<span style="{{s.pf.capL}}"></span><span style="{{s.pf.capR}}"></span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start">
+<span style="font-size: 11px; font-weight: 600; color: #F5F5F6; text-shadow: 0 1px 1px #000000">Ironjaw Brute</span>
+<div style="{{s.np.box}}">
+<div style="{{s.np.r0}}"><div style="{{s.np.r1}}"><div style="{{s.np.r2}}"><div style="{{s.np.r3}}"><div style="{{s.np.face}}">
+<div style="width: 100%; height: 100%; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 70%; background: linear-gradient(180deg, #F0686C, #E5484D 50%, #B83236)"></div>
+</div>
+</div></div></div></div></div>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center">
+<div style="width: 120px; height: 120px; position: relative; overflow: hidden; background: #24282C; border-radius: 4px; box-shadow: 0 0 0 1px #3D3D41">
+<div style="position: absolute; left: 4px; top: 4px; transform: scale(4); transform-origin: 0 0">
+<div style="{{s.pf.box}}">
+<div style="{{s.pf.r0}}"><div style="{{s.pf.r1}}"><div style="{{s.pf.r2}}"><div style="{{s.pf.r3}}"><div style="{{s.pf.face}}">
+<div style="width: 100%; height: 100%; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: linear-gradient(180deg, #2C2D2C, #1C1D1C 55%, #151615)"></div>
+</div>
+</div></div></div></div></div>
+<span style="{{s.pf.capL}}"></span><span style="{{s.pf.capR}}"></span>
+</div>
+</div>
+<div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: linear-gradient(to right, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.07) 1px, transparent 1px); background-size: 4px 4px; pointer-events: none"></div>
+</div>
+<div style="font-size: 11px; color: #9C9CA2">Left end at 4×</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 18px; font-weight: 600; color: #F5F5F6">With a portrait</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px">
+<sc-for list="{{portraits}}" as="p" hint-placeholder-count="3">
+<div style="height: 200px; box-sizing: border-box; padding: 20px; background: #24282C; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; flex-direction: column; gap: 5px">
+<div style="font-size: 16px; font-weight: 600; color: #EFE6D2">{{p.name}}</div>
+<div style="font-size: 12px; line-height: 17px; color: #B9B9BE">{{p.note}}</div>
+</div>
+<div style="position: relative; width: {{p.groupW}}px; height: 66px">
+<div style="position: absolute; left: 30px; top: {{p.frameTop}}px">
+<div style="{{p.pf.box}}">
+<div style="{{p.pf.r0}}"><div style="{{p.pf.r1}}"><div style="{{p.pf.r2}}"><div style="{{p.pf.r3}}"><div style="{{p.pf.face}}">
+<div style="height: 100%; display: flex; flex-direction: column; gap: 1px; background: #000000">
+<div style="flex-grow: 1; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: linear-gradient(180deg, #2C2D2C, #1C1D1C 55%, #151615)"></div>
+<span style="position: absolute; left: 42px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: #F48CBA">Mode</span>
+<span style="position: absolute; right: {{p.pad}}px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: #DADADA">78%</span>
+</div>
+<div style="height: 9px; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(180deg, #6FB0FF, #4096FF 50%, #2C6FC4)"></div>
+</div>
+</div>
+</div></div></div></div></div>
+<span style="{{p.pf.capL}}"></span><span style="{{p.pf.capR}}"></span>
+</div>
+</div>
+<div style="position: absolute; left: 0; top: 0">
+<div style="{{ring.box}}">
+<div style="{{ring.r0}}"><div style="{{ring.r1}}"><div style="{{ring.r2}}"><div style="{{ring.r3}}"><div style="{{ring.face}}">
+<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 40% 30%, #4A5A6A, #1A2027 80%)">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(239,230,210,0.75)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12 A4 4 0 1 0 12 4 A4 4 0 1 0 12 12 M4.5 21 C5.5 16.5 8.5 14.5 12 14.5 C15.5 14.5 18.5 16.5 19.5 21"></path></svg>
+</div>
+</div></div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var SH = 'rgba(0,0,0,0.85)';
+    function grad(a, b, c) { return 'linear-gradient(180deg,' + a + ',' + b + (c ? ',' + c : '') + ')'; }
+    var HEAVY = [{ w: 1, bg: SH }, { w: 2, bg: grad('#A3A6AB', '#6E7176 45%', '#3D4044') }, { w: 1, bg: '#000000' }];
+    var THIN = [{ w: 1, bg: SH }, { w: 1, bg: grad('#8C8F95', '#4A4D51') }];
+    var RING = [{ w: 1, bg: SH }, { w: 3, bg: grad('#A3A6AB', '#6E7176 45%', '#3D4044') }, { w: 1, bg: '#000000' }];
+    function polygon(c) {
+      c = Math.max(0, c).toFixed(2);
+      return 'polygon(' + c + 'px 0,calc(100% - ' + c + 'px) 0,100% ' + c + 'px,100% calc(100% - ' + c + 'px),calc(100% - ' + c + 'px) 100%,' + c + 'px 100%,0 calc(100% - ' + c + 'px),0 ' + c + 'px)';
+    }
+    function shapeCss(sh, W, H) {
+      if (sh.kind === 'cut') return 'clip-path:' + polygon(Math.min(sh.c, H / 2)) + ';';
+      if (sh.kind === 'hex') return 'clip-path:' + polygon(H / 2) + ';';
+      if (sh.kind === 'round') return 'border-radius:' + Math.max(0, Math.min(sh.r, H / 2)) + 'px;';
+      if (sh.kind === 'circle') return 'border-radius:50%;';
+      var ry = H / 2;
+      var rx = Math.min(W / 2, ry * sh.k);
+      return 'border-radius:' + rx.toFixed(2) + 'px / ' + ry.toFixed(2) + 'px;';
+    }
+    function build(sh, rings, cw, ch, drop, caps) {
+      var reach = 0;
+      rings.forEach(function (g) { reach += g.w; });
+      var W = cw + 2 * reach;
+      var H = ch + 2 * reach;
+      var cur = { kind: sh.kind, c: sh.c, r: sh.r, k: sh.k };
+      var off = 0;
+      var o = {};
+      for (var i = 0; i < 4; i++) {
+        var g = rings[i];
+        var s = 'box-sizing:border-box;width:100%;height:100%;';
+        if (g) {
+          s += 'padding:' + g.w + 'px;background:' + g.bg + ';' + shapeCss(cur, W - 2 * off, H - 2 * off);
+          off += g.w;
+          if (cur.kind === 'cut') cur.c -= 0.586 * g.w;
+          if (cur.kind === 'round') cur.r -= g.w;
+        }
+        o['r' + i] = s;
+      }
+      o.face = 'box-sizing:border-box;width:100%;height:100%;position:relative;overflow:hidden;' + shapeCss(cur, W - 2 * off, H - 2 * off);
+      o.box = 'position:relative;flex-shrink:0;width:' + W + 'px;height:' + H + 'px;' + (drop ? 'filter:drop-shadow(0 2px 5px rgba(0,0,0,0.55));' : '');
+      o.capL = 'display:none';
+      o.capR = 'display:none';
+      if (caps) {
+        var ry = (H - 2) / 2;
+        var rx = ry * sh.k;
+        var len = Math.round(rx + 8);
+        var base = 'position:absolute;box-sizing:border-box;top:1px;bottom:1px;width:' + len + 'px;pointer-events:none;border-style:solid;border-width:2px;border-top-color:#C2C5CA;border-bottom-color:#6E7176;';
+        o.capL = base + 'left:1px;border-right-width:0;border-left-color:#A3A6AB;border-radius:' + rx + 'px 0 0 ' + rx + 'px / ' + ry + 'px 0 0 ' + ry + 'px;';
+        o.capR = base + 'right:1px;border-left-width:0;border-right-color:#A3A6AB;border-radius:0 ' + rx + 'px ' + rx + 'px 0 / 0 ' + ry + 'px ' + ry + 'px 0;';
+      }
+      o.H = H;
+      o.W = W;
+      return o;
+    }
+    var defs = [
+      { name: 'D · Cut corners', note: 'The reference: D as it stands, 5px 45° cuts on each corner.', heavy: { kind: 'cut', c: 5 }, thin: { kind: 'cut', c: 3 }, pad: 8 },
+      { name: 'Cut ends', note: 'The cuts run to the middle, so each end comes to a point: D’s own version of a rounded end.', heavy: { kind: 'hex' }, thin: { kind: 'hex' }, pad: 16 },
+      { name: 'Soft round', note: 'A 12px radius (6px on nameplates): rounder than today, the sides still straight.', heavy: { kind: 'round', r: 12 }, thin: { kind: 'round', r: 6 }, pad: 12 },
+      { name: 'Capsule', note: 'Half-circle ends: the nameplate shape at unit-frame size.', heavy: { kind: 'half', k: 1 }, thin: { kind: 'half', k: 1 }, pad: 18 },
+      { name: 'Oval', note: 'Each end is half an ellipse, 1.8× wider than tall: a longer, softer taper.', heavy: { kind: 'half', k: 1.8 }, thin: { kind: 'half', k: 1.8 }, pad: 26 },
+      { name: 'Capsule with end caps (C)', note: 'The capsule with C’s brighter Steel caps wrapped around each end.', heavy: { kind: 'half', k: 1 }, thin: { kind: 'half', k: 1 }, pad: 18, caps: true }
+    ];
+    var shapes = defs.map(function (d) {
+      return { name: d.name, note: d.note, pad: d.pad, pf: build(d.heavy, HEAVY, 232, 44, true, d.caps), np: build(d.thin, THIN, 130, 10, false, false) };
+    });
+    var pdefs = [
+      { name: 'Capsule + portrait', note: 'The ring sits in the round end, centred on the curve.', sh: { kind: 'half', k: 1 }, pad: 18 },
+      { name: 'Oval + portrait', note: 'The longer taper tucks behind the ring.', sh: { kind: 'half', k: 1.8 }, pad: 26 },
+      { name: 'Cut ends + portrait', note: 'The pointed end meets the ring; the far end stays cut.', sh: { kind: 'hex' }, pad: 16 }
+    ];
+    var portraits = pdefs.map(function (d) {
+      var pf = build(d.sh, HEAVY, 232, 44, true, false);
+      return { name: d.name, note: d.note, pad: d.pad, pf: pf, frameTop: Math.round((66 - pf.H) / 2), groupW: 30 + pf.W };
+    });
+    return {
+      shapes: shapes,
+      portraits: portraits,
+      ring: build({ kind: 'circle' }, RING, 56, 56, true, false)
+    };
+  }
+}
+</script>
+</body>
+</html>

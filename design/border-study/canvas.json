@@ -1,0 +1,69 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Main.dc.html": {
+      "h": 1200,
+      "title": "Overview: today vs. five border families",
+      "w": 1400,
+      "x": 0,
+      "y": 0
+    },
+    "Scene.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "In context: switch families",
+      "w": 1280,
+      "x": 1480,
+      "y": 0
+    },
+    "Swatch.dc.html": {
+      "h": 480,
+      "title": "Swatch (one family, used by the overview)",
+      "w": 420,
+      "x": 1480,
+      "y": 920
+    },
+    "Ends.dc.html": {
+      "h": 1180,
+      "title": "Rounded ends for unit frames (Cut Steel material)",
+      "w": 1400,
+      "x": 0,
+      "y": 1320
+    },
+    "Lab.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Metal and lighting lab: D vs. Soft round",
+      "w": 1400,
+      "x": 0,
+      "y": 2620
+    },
+    "Materials.dc.html": {
+      "h": 940,
+      "title": "Every metal under every light",
+      "w": 1520,
+      "x": 1480,
+      "y": 2620
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-16T14:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "Scene.dc.html",
+    "Swatch.dc.html",
+    "Ends.dc.html",
+    "Lab.dc.html",
+    "Materials.dc.html"
+  ],
+  "pages": [],
+  "title": "ModeUI Border Study"
+}

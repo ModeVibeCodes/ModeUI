@@ -3,12 +3,11 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 15, 2026 (Phases 7
-and 8 closed: every Blizzard window, Chat, Damage Meters, Tooltip, Bags and
-the Minimap confirmed in game in the Mode look; the legacy border systems,
-palettes, art and Lato removed; `tests/design_legacy.lua` empty; `main`
-fast-forwarded and pushed with the owner's go-ahead). Next: the owner's
-revisions and tweaks phase.
+machine or in a new session. Last updated November 16, 2026 (Phases 0-8
+built and confirmed November 15. The revisions and tweaks phase has started:
+the first revision, a more detailed border, is in design study; see
+"Revision 1: borders" below). Next: the owner picks the border's metal and
+lighting from the study.
 
 ## Goal
 
@@ -153,12 +152,48 @@ The owner may keep tuning textures; expect small edits to
 
 ## Next steps, in order
 
-1. **Revisions and tweaks** (the owner, at a later date): adjustments to
+1. **Revisions and tweaks** (started November 16): adjustments to
    finished elements from play. Keep each one focused, tested and gated in
-   game; follow the design doc first, then Style, then the module.
+   game; follow the design doc first, then Style, then the module. In
+   progress: Revision 1, borders (below).
 2. **Phase 9 release** 0.2.0: release notes and notices. Only when the owner
    says so.
 3. **Phase 10** (new coverage) only after decision 2 (below).
+
+### Revision 1: borders (checkpoint, November 16)
+
+The owner felt the shipping Mode edge (Round 4, 2px Gunmetal, top row lit)
+"isn't quite what I wanted" and asked for a border with more detail that
+still reads clean and Blizzard-like. Study: `design/border-study/` (its README
+holds every recipe, the metals, the lighting models and the research notes)
+and the live canvas https://claude.ai/artifact/2g21nREnhBy9fkDph2nUkY.
+
+Decided so far (owner):
+
+- **D · Cut Steel is the base border**: 45° cut corners (5px; 3px thin), a
+  2px Steel band lit from the top, 1px black inside, 1px shadow outside
+  (reach 4px). "D looks the most Blizzard like."
+- **C · Corner Caps on some elements**: brighter Steel brackets on the
+  corners. Which elements is still open.
+- **Soft round is liked too**: D's material with a 12px radius (8px buttons,
+  6px controls and nameplates). Whether it is an option, or the shape for
+  certain elements, is still open.
+- Capsule and oval ends were looked at; not chosen (they would need shape
+  masks on the bars).
+
+Open, for the owner to go through in the canvas's Lab and Materials boards:
+
+- The metal (Steel, Gunmetal, Silver, Dark Iron, Cobalt, Bronze, Gold) and
+  the lighting model (Top lit, Polished, Bevel, Specular band, Edge catch,
+  Two-tone), possibly one per element type; and the inner glint.
+- Where C's caps and Soft round apply.
+
+Nothing is built yet: `ModeUI/` is unchanged. When the owner decides: write
+the new `Style.Edge` presets into `docs/DESIGN_LANGUAGE.md` ("Borders"),
+then the art in `tools/build_mode_assets.lua` and the presets in
+`Shared/Style/Edge.lua`, then check each module (the 4px reach is 1px more
+than `frame` today and 2px more than `frameThin`: spacing and "edges inside
+boxes" layouts move). Work on branch `t3/mode-revisions-borders`.
 
 ## Decisions
 

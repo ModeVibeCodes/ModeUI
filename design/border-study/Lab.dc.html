@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Metal and lighting lab</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#EFE6D2}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1400px; height: 800px; box-sizing: border-box; padding: 32px 30px; background: #121213; font-family: Geist, system-ui, sans-serif; color: #D8D8DB; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 16px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 600; color: #F5F5F6">Metal and lighting lab</h1>
+<span style="font-size: 14px; color: #B9B9BE">D (cut corners) beside Soft round, the same material on both. Pick a metal and a lighting model.</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="width: 72px; font-size: 13px; font-weight: 600; color: #B9B9BE">Metal</span>
+<sc-for list="{{metalOpts}}" as="o" hint-placeholder-count="7">
+<button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="{{o.style}}"><span style="{{o.sw}}"></span>{{o.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="width: 72px; font-size: 13px; font-weight: 600; color: #B9B9BE">Lighting</span>
+<sc-for list="{{lightOpts}}" as="o" hint-placeholder-count="6">
+<button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button>
+</sc-for>
+<button type="button" aria-pressed="{{glintOn}}" onClick="{{toggleGlint}}" style="{{glintStyle}}">Inner glint: {{glintLabel}}</button>
+</div>
+<div style="font-size: 12px; line-height: 17px; color: #A9A9AE">{{note}}</div>
+</div>
+<div style="display: flex; gap: 40px">
+<sc-for list="{{cols}}" as="col" hint-placeholder-count="2">
+<div style="flex-grow: 1; flex-basis: 0; min-width: 0; height: 520px; box-sizing: border-box; padding: 24px; border-radius: 6px; background: radial-gradient(ellipse at 50% 35%, #3A4045 0%, #272B2F 60%, #1A1C1F 100%); display: flex; flex-direction: column; gap: 22px">
+<div style="font-size: 15px; font-weight: 600; color: #EFE6D2">{{col.title}}</div>
+<div style="display: flex; gap: 24px">
+<div style="{{col.uf.box}}">
+<div style="{{col.uf.r0}}"><div style="{{col.uf.r1}}"><div style="{{col.uf.r2}}"><div style="{{col.uf.r3}}"><div style="{{col.uf.face}}">
+<div style="height: 100%; display: flex; flex-direction: column; gap: 1px; background: #000000">
+<div style="flex-grow: 1; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: linear-gradient(180deg, #2C2D2C, #1C1D1C 55%, #151615)"></div>
+<span style="position: absolute; left: {{col.pad}}px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: #F48CBA">Mode</span>
+<span style="position: absolute; right: {{col.pad}}px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: #DADADA">78%</span>
+</div>
+<div style="height: 9px; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(180deg, #6FB0FF, #4096FF 50%, #2C6FC4)"></div>
+</div>
+</div>
+<span style="{{col.uf.glint}}"></span>
+</div></div></div></div></div>
+</div>
+<div style="{{col.uf.box}}">
+<div style="{{col.uf.r0}}"><div style="{{col.uf.r1}}"><div style="{{col.uf.r2}}"><div style="{{col.uf.r3}}"><div style="{{col.uf.face}}">
+<div style="height: 100%; display: flex; flex-direction: column; gap: 1px; background: #000000">
+<div style="flex-grow: 1; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(180deg, #F0686C, #E5484D 50%, #B83236)"></div>
+<span style="position: absolute; left: {{col.pad}}px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: #F5F5F6; text-shadow: 0 1px 1px #000000">Ironjaw Brute</span>
+<span style="position: absolute; right: {{col.pad}}px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: #F5F5F6; text-shadow: 0 1px 1px #000000">64%</span>
+</div>
+<div style="height: 9px; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(180deg, #FF7A6E, #E0443A 50%, #A8302A)"></div>
+</div>
+</div>
+<span style="{{col.uf.glint}}"></span>
+</div></div></div></div></div>
+</div>
+</div>
+<div style="display: flex; gap: 2px">
+<sc-for list="{{col.icons}}" as="ic" hint-placeholder-count="8">
+<div style="{{ic.b.box}}">
+<div style="{{ic.b.r0}}"><div style="{{ic.b.r1}}"><div style="{{ic.b.r2}}"><div style="{{ic.b.r3}}"><div style="{{ic.b.face}}">
+<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: {{ic.bg}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,244,228,0.9)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="{{ic.d}}"></path></svg>
+</div>
+<span style="{{ic.b.glint}}"></span>
+</div></div></div></div></div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 24px; align-items: flex-start">
+<div style="{{col.win.box}}">
+<div style="{{col.win.r0}}"><div style="{{col.win.r1}}"><div style="{{col.win.r2}}"><div style="{{col.win.r3}}"><div style="{{col.win.face}}">
+<div style="width: 100%; height: 100%; display: flex; flex-direction: column; background: #121213">
+<div style="height: 26px; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{col.pad}}px; background: linear-gradient(180deg, #232326, #1A1A1C); box-shadow: 0 1px 0 #000000; font-size: 13px; font-weight: 600; color: #D8D8DB">Character</div>
+<div style="flex-grow: 1; padding: 12px 14px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; row-gap: 9px; align-content: start; font-size: 12px">
+<div style="display: flex; justify-content: space-between"><span style="color: #A9A9AE">Health</span><span style="color: #F5F5F6; font-weight: 600">4,820</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #A9A9AE">Mana</span><span style="color: #4096FF; font-weight: 600">3,115</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #A9A9AE">Strength</span><span style="color: #E85C50; font-weight: 600">142</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #A9A9AE">Agility</span><span style="color: #FFD140; font-weight: 600">58</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #A9A9AE">Stamina</span><span style="color: #E8B04B; font-weight: 600">188</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #A9A9AE">Armor</span><span style="color: #B9B9B9; font-weight: 600">2,440</span></div>
+</div>
+<div style="display: flex; justify-content: flex-end; padding: 0 12px 12px">
+<div style="{{col.ctl.box}}">
+<div style="{{col.ctl.r0}}"><div style="{{col.ctl.r1}}"><div style="{{col.ctl.r2}}"><div style="{{col.ctl.r3}}"><div style="{{col.ctl.face}}">
+<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #26262A, #1A1A1C); font-size: 12px; font-weight: 600; color: #D8D8DB">Close</div>
+<span style="{{col.ctl.glint}}"></span>
+</div></div></div></div></div>
+</div>
+</div>
+</div>
+<span style="{{col.win.glint}}"></span>
+</div></div></div></div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 22px">
+<div style="{{col.tip.box}}">
+<div style="{{col.tip.r0}}"><div style="{{col.tip.r1}}"><div style="{{col.tip.r2}}"><div style="{{col.tip.r3}}"><div style="{{col.tip.face}}">
+<div style="width: 100%; height: 100%; box-sizing: border-box; padding: 8px {{col.pad}}px; display: flex; flex-direction: column; gap: 2px; background: #0E0E0F; font-size: 12px; line-height: 15px">
+<span style="font-size: 14px; font-weight: 600; color: #B65CF5">Edge of the Forge</span>
+<span style="color: #F2C744">Item Level 60</span>
+<span style="color: #F5F5F6">+18 Strength</span>
+<span style="color: #46C46B">Equip: Improves critical strike.</span>
+</div>
+<span style="{{col.tip.glint}}"></span>
+</div></div></div></div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start">
+<div style="display: flex; gap: 2px">
+<sc-for list="{{col.auras}}" as="au" hint-placeholder-count="3">
+<div style="{{au.b.box}}">
+<div style="{{au.b.r0}}"><div style="{{au.b.r1}}"><div style="{{au.b.r2}}"><div style="{{au.b.r3}}"><div style="{{au.b.face}}">
+<div style="width: 100%; height: 100%; background: {{au.bg}}"></div>
+</div></div></div></div></div>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 11px; font-weight: 600; color: #F5F5F6; text-shadow: 0 1px 1px #000000">Ironjaw Brute</span>
+<div style="{{col.np.box}}">
+<div style="{{col.np.r0}}"><div style="{{col.np.r1}}"><div style="{{col.np.r2}}"><div style="{{col.np.r3}}"><div style="{{col.np.face}}">
+<div style="width: 100%; height: 100%; position: relative; background: #3E4143">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 70%; background: linear-gradient(180deg, #F0686C, #E5484D 50%, #B83236)"></div>
+</div>
+</div></div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"metal":{"editor":"enum","options":["steel","gunmetal","silver","iron","cobalt","bronze","gold"],"default":"steel"},"light":{"editor":"enum","options":["top","polished","bevel","specular","edge","horizon"],"default":"top"},"$preview":{"width":1400,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var SH = 'rgba(0,0,0,0.85)';
+    function lg(stops) { return 'linear-gradient(180deg,' + stops.join(',') + ')'; }
+    var METALS = [
+      { id: 'steel', name: 'Steel (today)', hi: '#D4D7DC', light: '#A3A6AB', mid: '#6E7176', dark: '#3D4044', deep: '#26282B' },
+      { id: 'gunmetal', name: 'Gunmetal', hi: '#A5A9AF', light: '#7C8086', mid: '#4E5156', dark: '#2C2E31', deep: '#1A1B1D' },
+      { id: 'silver', name: 'Silver', hi: '#F2F4F6', light: '#D9DCE0', mid: '#9A9EA4', dark: '#5C6066', deep: '#3A3D41' },
+      { id: 'iron', name: 'Dark Iron', hi: '#B3AAA2', light: '#8A817A', mid: '#55504B', dark: '#2E2B28', deep: '#1B1917' },
+      { id: 'cobalt', name: 'Cobalt', hi: '#CCD9E8', light: '#9FB2C8', mid: '#5F7288', dark: '#313D4A', deep: '#1C232B' },
+      { id: 'bronze', name: 'Bronze', hi: '#E8C9A2', light: '#C9A27A', mid: '#8A6440', dark: '#4A3420', deep: '#2A1D12' },
+      { id: 'gold', name: 'Gold', hi: '#FFF0B8', light: '#E8C978', mid: '#A8843E', dark: '#5C4620', deep: '#33270F' }
+    ];
+    var LIGHTS = [
+      { id: 'top', name: 'Top lit (today)', note: 'Top lit (today): one gradient across the 2px band, light at the top of the frame fading to dark at the bottom, then 1px black.',
+        heavy: function (m) { return [{ w: 2, bg: lg([m.light, m.mid + ' 45%', m.dark]) }, { w: 1, bg: '#000000' }]; },
+        thin: function (m) { return [{ w: 1, bg: lg([m.light, m.dark]) }]; } },
+      { id: 'polished', name: 'Polished', note: 'Polished: a bright top, a dark middle, then a softer second light near the bottom (reflected light): the chrome look.',
+        heavy: function (m) { return [{ w: 2, bg: lg([m.hi, m.light + ' 10%', m.dark + ' 45%', m.deep + ' 60%', m.mid + ' 85%', m.dark]) }, { w: 1, bg: '#000000' }]; },
+        thin: function (m) { return [{ w: 1, bg: lg([m.hi, m.dark + ' 50%', m.mid + ' 85%', m.dark]) }]; } },
+      { id: 'bevel', name: 'Bevel', note: 'Bevel: the 2px band split in two, a lit outer lip over a shaded inner row, so the rim reads raised.',
+        heavy: function (m) { return [{ w: 1, bg: lg([m.hi, m.light + ' 40%', m.mid]) }, { w: 1, bg: lg([m.mid, m.dark + ' 50%', m.deep]) }, { w: 1, bg: '#000000' }]; },
+        thin: function (m) { return [{ w: 1, bg: lg([m.hi, m.mid]) }]; } },
+      { id: 'specular', name: 'Specular band', note: 'Specular band: a narrow highlight a fifth of the way down, as if lit from above and in front.',
+        heavy: function (m) { return [{ w: 2, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 32%', m.dark + ' 70%', m.deep]) }, { w: 1, bg: '#000000' }]; },
+        thin: function (m) { return [{ w: 1, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 34%', m.dark]) }]; } },
+      { id: 'edge', name: 'Edge catch', note: 'Edge catch: only the very top row catches the light; the rest of the band is mid metal fading dark.',
+        heavy: function (m) { return [{ w: 2, bg: 'linear-gradient(180deg,' + m.hi + ' 0px,' + m.hi + ' 1px,' + m.light + ' 1px,' + m.mid + ' 40%,' + m.dark + ')' }, { w: 1, bg: '#000000' }]; },
+        thin: function (m) { return [{ w: 1, bg: 'linear-gradient(180deg,' + m.hi + ' 0px,' + m.hi + ' 1px,' + m.mid + ' 1px,' + m.dark + ')' }]; } },
+      { id: 'horizon', name: 'Two-tone', note: 'Two-tone: a hard horizon halfway down, light above and dark below, like polished metal reflecting sky and ground.',
+        heavy: function (m) { return [{ w: 2, bg: lg([m.light, m.mid + ' 48%', m.deep + ' 52%', m.dark]) }, { w: 1, bg: '#000000' }]; },
+        thin: function (m) { return [{ w: 1, bg: lg([m.light, m.mid + ' 48%', m.deep + ' 52%', m.dark]) }]; } }
+    ];
+    function find(list, id) { for (var i = 0; i < list.length; i++) { if (list[i].id === id) return list[i]; } return list[0]; }
+    function poly(c) {
+      c = Math.max(0, c).toFixed(2);
+      return 'polygon(' + c + 'px 0,calc(100% - ' + c + 'px) 0,100% ' + c + 'px,100% calc(100% - ' + c + 'px),calc(100% - ' + c + 'px) 100%,' + c + 'px 100%,0 calc(100% - ' + c + 'px),0 ' + c + 'px)';
+    }
+    function shapeCss(sh, H) {
+      if (sh.kind === 'cut') return 'clip-path:' + poly(Math.min(sh.c, H / 2)) + ';';
+      return 'border-radius:' + Math.max(0, Math.min(sh.r, H / 2)) + 'px;';
+    }
+    function build(sh, inner, cw, ch, drop, glint) {
+      var rings = [{ w: 1, bg: SH }].concat(inner);
+      var reach = 0;
+      rings.forEach(function (g) { reach += g.w; });
+      var W = cw + 2 * reach;
+      var H = ch + 2 * reach;
+      var cur = { kind: sh.kind, c: sh.c, r: sh.r };
+      var off = 0;
+      var o = {};
+      for (var i = 0; i < 4; i++) {
+        var g = rings[i];
+        var s = 'box-sizing:border-box;width:100%;height:100%;';
+        if (g) {
+          s += 'padding:' + g.w + 'px;background:' + g.bg + ';' + shapeCss(cur, H - 2 * off);
+          off += g.w;
+          if (cur.kind === 'cut') cur.c -= 0.586 * g.w; else cur.r -= g.w;
+        }
+        o['r' + i] = s;
+      }
+      o.face = 'box-sizing:border-box;width:100%;height:100%;position:relative;overflow:hidden;' + shapeCss(cur, H - 2 * off);
+      o.box = 'position:relative;flex-shrink:0;width:' + W + 'px;height:' + H + 'px;' + (drop ? 'filter:drop-shadow(0 2px 5px rgba(0,0,0,0.55));' : '');
+      o.glint = glint ? 'position:absolute;left:0;right:0;top:0;height:1px;background:rgba(255,255,255,0.16);pointer-events:none' : 'display:none';
+      return o;
+    }
+    var st = this.state || {};
+    var metal = find(METALS, st.metal || this.props.metal || 'steel');
+    var light = find(LIGHTS, st.light || this.props.light || 'top');
+    var glint = !!st.glint;
+    var self = this;
+    function pill(on) {
+      return 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:4px;cursor:pointer;font:inherit;font-size:13px;font-weight:' + (on ? '600' : '500') + ';color:' + (on ? '#EFE6D2' : '#B9B9BE') + ';background:' + (on ? '#26262A' : '#1A1A1C') + ';border:1px solid ' + (on ? '#EFE6D2' : '#3D3D41') + ';';
+    }
+    var metalOpts = METALS.map(function (m) {
+      var on = m.id === metal.id;
+      return { label: m.name, on: on, style: pill(on), sw: 'display:inline-block;width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 1px #000000;background:' + lg([m.hi, m.light + ' 25%', m.mid + ' 55%', m.dark]) + ';', pick: function () { self.setState({ metal: m.id }); } };
+    });
+    var lightOpts = LIGHTS.map(function (l) {
+      var on = l.id === light.id;
+      return { label: l.name, on: on, style: pill(on), pick: function () { self.setState({ light: l.id }); } };
+    });
+    var heavy = light.heavy(metal);
+    var thin = light.thin(metal);
+    var iconDefs = [
+      { bg: 'radial-gradient(circle at 35% 30%, #C77A3F, #5A2D14 78%)', d: 'M12 3 C13 7 17 8.5 17 13.5 A5 5 0 0 1 7 13.5 C7 10.5 9 9 9.5 7 C10.5 9 11.5 9.5 12 9.5 C12 7.5 11.5 5 12 3 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #5D8FB8, #1E3A55 78%)', d: 'M13 3 L6 13 H11.5 L10.5 21 L18 10.5 H12.5 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #9A8A5C, #3E3420 78%)', d: 'M12 3 L19 6 V11.5 C19 15.5 16 18.8 12 20.5 C8 18.8 5 15.5 5 11.5 V6 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #6FA86F, #22442A 78%)', d: 'M10 4 H14 V10 H20 V14 H14 V20 H10 V14 H4 V10 H10 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #B86A8E, #4A1E33 78%)', d: 'M12 3.5 L14.6 9 L20.5 9.6 L16 13.6 L17.3 19.5 L12 16.5 L6.7 19.5 L8 13.6 L3.5 9.6 L9.4 9 Z' },
+      { bg: 'radial-gradient(circle at 35% 30%, #8A8F98, #2E3238 78%)', d: 'M19 5 L9.5 14.5 M19 5 L19 8 L10.5 16.5 M19 5 L16 5 L7.5 13.5 M7 13 L11 17 M8.5 15.5 L5 19' },
+      { bg: 'radial-gradient(circle at 35% 30%, #C9A14A, #4E3A14 78%)', d: 'M12 4 A8 8 0 1 0 12 20 A8 8 0 1 0 12 4 M12 8 V12 L15 14' },
+      { bg: 'radial-gradient(circle at 35% 30%, #6CB7C9, #1B4450 78%)', d: 'M6 18 C6 10 10 6 18 6 C18 14 14 18 6 18 Z M6 18 L13 11' }
+    ];
+    var auraDefs = [
+      { bg: 'radial-gradient(circle at 35% 30%, #B57BD6, #3E1F52 80%)' },
+      { bg: 'radial-gradient(circle at 35% 30%, #D6B45C, #4E3A14 80%)' },
+      { bg: 'radial-gradient(circle at 35% 30%, #6CB7C9, #1B4450 80%)' }
+    ];
+    function column(title, s, pad) {
+      var btn = build(s.button, heavy, 40, 34, true, glint);
+      var aura = build(s.aura, thin, 22, 18, false, false);
+      return {
+        title: title,
+        pad: pad,
+        uf: build(s.frame, heavy, 232, 44, true, glint),
+        win: build(s.window, heavy, 260, 168, true, glint),
+        ctl: build(s.control, thin, 72, 22, false, glint),
+        tip: build(s.tooltip, heavy, 224, 76, true, glint),
+        np: build(s.thin, thin, 150, 10, false, false),
+        icons: iconDefs.map(function (ic) { return { bg: ic.bg, d: ic.d, b: btn }; }),
+        auras: auraDefs.map(function (au) { return { bg: au.bg, b: aura }; })
+      };
+    }
+    var CUT = { frame: { kind: 'cut', c: 5 }, button: { kind: 'cut', c: 5 }, window: { kind: 'cut', c: 5 }, tooltip: { kind: 'cut', c: 5 }, control: { kind: 'cut', c: 3 }, thin: { kind: 'cut', c: 3 }, aura: { kind: 'cut', c: 3 } };
+    var ROUND = { frame: { kind: 'round', r: 12 }, button: { kind: 'round', r: 8 }, window: { kind: 'round', r: 12 }, tooltip: { kind: 'round', r: 10 }, control: { kind: 'round', r: 6 }, thin: { kind: 'round', r: 6 }, aura: { kind: 'round', r: 5 } };
+    return {
+      metalOpts: metalOpts,
+      lightOpts: lightOpts,
+      glintOn: glint,
+      glintLabel: glint ? 'On' : 'Off',
+      glintStyle: pill(glint),
+      toggleGlint: function () { self.setState({ glint: !glint }); },
+      note: metal.name + ' · ' + light.note,
+      cols: [
+        column('D · Cut corners (today)', CUT, 8),
+        column('Soft round (12px frames, 8px buttons, 6px controls and nameplates)', ROUND, 12)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

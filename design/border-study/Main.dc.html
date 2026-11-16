@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mode border study overview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#EFE6D2}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1400px; height: 1200px; box-sizing: border-box; padding: 40px 30px; background: #121213; font-family: Geist, system-ui, sans-serif; color: #D8D8DB; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 8px; max-width: 920px">
+<h1 style="margin: 0; font-size: 30px; font-weight: 600; color: #F5F5F6">Mode border study</h1>
+<p style="margin: 0; font-size: 15px; line-height: 22px; color: #B9B9BE">Today’s edge beside five ways to give it more detail while staying clean and Blizzard-plain. Every card shows the same unit frame, action buttons, nameplate with auras, and the top-left corner at 6×. Content sizes never change; only the border does, so a border that reaches further makes the frame larger by that much.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px">
+<sc-for list="{{fams}}" as="f" hint-placeholder-count="6">
+<dc-import name="Swatch" family="{{f}}" hint-size="420px,480px"></dc-import>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { fams: ['current', 'bevel', 'rail', 'caps', 'cut', 'gilded'] };
+  }
+}
+</script>
+</body>
+</html>
