@@ -1,57 +1,12 @@
 local _, ns = ...
 local Kit = ns.Kit
 if not Kit.ok then return end
--- Tooltip, Bags and Minimap probes (Phase 7). Tooltips: the `window` look,
--- the name in Gradient SemiBold, a Mode Gradient health bar; item tooltips
--- take the item quality on their rim. Bags: slots 36 x 30 in the `group` edge
+-- Bags and Minimap probes (Phase 7; the Tooltip tab retired once ModeUI's
+-- module was built and confirmed). Bags: slots 36 x 30 in the `group` edge
 -- 1px apart, quality on the rim, read live from your bags. Minimap: the frame
 -- around the game's map (200 x 184, the map itself stays the game's).
 local S, T, D = Kit.S, Kit.T, Kit.D
 local C = D.Containers
-
-local function Line(parent, text, size, weight, color, y, x)
-    local line = Kit.Text(parent, size, weight, color)
-    line:SetPoint("TOPLEFT", x or 9, y)
-    line:SetText(text)
-    return line
-end
-
-function ns.BuildTooltip(body)
-    -- A unit tooltip: you, live where the game allows.
-    local unit = ns.Panel(body, nil, 220, 92)
-    unit:SetPoint("TOPLEFT", 6, -6)
-    local c = D.UnitColor.PlayerClass("player")
-    local name = Kit.Text(unit, 14, "semibold")
-    name:SetPoint("TOPLEFT", 9, -9)
-    S.SetName(name, D.Name.Get("player"), c and { c.r, c.g, c.b } or T.reaction.friendly, "gradient")
-    Line(unit, "<Mode>", 11, "medium", T.graphite.secondary, -30)
-    local level = D.Level.Text("player")
-    local _, class = D.Query.Plain(UnitClass, "player")
-    Line(unit, "Level " .. (level ~= "" and level or "60") .. "  " .. (class and class:sub(1, 1) .. class:sub(2):lower() or ""), 11,
-        "medium", T.graphite.text, -46)
-    local holder = CreateFrame("Frame", nil, unit)
-    holder:SetPoint("BOTTOMLEFT", 9, 10); holder:SetPoint("BOTTOMRIGHT", -9, 10); holder:SetHeight(4)
-    local bar = S.Bar(holder, { role = "healthClass" })
-    bar:SetAllPoints()
-    bar:SetFill(c and { c.r, c.g, c.b } or T.reaction.friendly)
-    local okMax, max, okValue, value = D.Health.Read("player")
-    bar:SetMinMaxValues(0, okMax and max or 1); bar:SetValue(okValue and value or 1)
-    Kit.Caption(body, "Unit: window look, Gradient name, Mode Gradient health under the lines.", unit, 0, -10)
-    -- An item tooltip: the rim in the item quality.
-    local item = ns.Panel(body, nil, 240, 150)
-    item:SetPoint("TOPLEFT", unit, "TOPRIGHT", 30, 0)
-    item.edge:SetTint(T.quality[4])
-    Line(item, "Blade of Hidden Paths", 13, "semibold", T.quality[4], -9)
-    Line(item, "Binds when picked up", 11, "medium", T.graphite.text, -30)
-    Line(item, "One-Hand", 11, "medium", T.graphite.text, -46)
-    Line(item, "Dagger", 11, "medium", T.graphite.text, -46, 180)
-    Line(item, "41 - 77 Damage", 11, "medium", T.graphite.text, -62)
-    Line(item, "+12 Agility", 11, "medium", T.quality[2], -78)
-    Line(item, "+9 Stamina", 11, "medium", T.quality[2], -94)
-    Line(item, "Durability 75 / 75", 11, "medium", T.graphite.text, -110)
-    Line(item, "Requires Level 58", 11, "medium", T.graphite.secondary, -126)
-    Kit.Caption(body, "Item: the rim takes the item quality (epic here).", item, 0, -10)
-end
 
 -- Money as text: gold, silver and copper in the game's own coin art when it
 -- offers it.
