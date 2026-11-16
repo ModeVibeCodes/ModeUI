@@ -20,7 +20,7 @@ if not M then return end
 -- The stats display is CharacterStats.lua.
 local L, Kit, Skin, Events = addon.L, addon.Kit, addon.Skin, addon.Events
 local Public, Number = addon.IsPublic, addon.IsNumber
-local C = Skin.colors
+local C, Style = Skin.mode, addon.Style
 local TEXT_WIDTH, TEXT_GAP = 110, 6
 
 -- Slot name (CharacterXSlot), its column, and for weapons the Enum.WeaponSlot.
@@ -142,7 +142,11 @@ local function SlotParts(slot)
     local holder = CreateFrame("Frame", nil, slot)
     holder:EnableMouse(false)
     holder:SetAllPoints(slot)
-    parts = { holder = holder, rim = Kit.Rim(holder, "OVERLAY", 7),
+    -- The rarity border: the `line` edge (a flat rim in the item's quality
+    -- color with its shadow) on a frame inset so it stays inside the slot.
+    local inner = CreateFrame("Frame", nil, holder)
+    inner:EnableMouse(false)
+    parts = { holder = holder, inner = inner, edge = Style.Edge(inner, "line", { level = 7 }),
         name = holder:CreateFontString(nil, "OVERLAY"), stat = holder:CreateFontString(nil, "OVERLAY") }
     M.slotParts[slot] = parts
     return parts
@@ -189,8 +193,15 @@ function M:PaintSlot(slot, entry)
     local slotID = SlotID(slot, entry[1])
     -- Rarity border.
     local color = slotID and QualityColor(slotID)
-    local thickness = Skin.Snap(db.charBorderSize, px)
-    Kit.PlaceRim(parts.rim, parts.holder, db.charBorders and thickness or 0, 0, color or db.borderColor, 1)
+    local rim = db.charBorderSize >= 2 and 2 or 1
+    parts.edge:SetRim(rim)
+    local reach = (rim + 1) * px
+    parts.inner:ClearAllPoints()
+    parts.inner:SetPoint("TOPLEFT", parts.holder, "TOPLEFT", reach, -reach)
+    parts.inner:SetPoint("BOTTOMRIGHT", parts.holder, "BOTTOMRIGHT", -reach, reach)
+    parts.edge:Layout()
+    parts.edge:SetTint(color or Style.Tone.gunmetal.mid)
+    parts.edge:SetShown(db.charBorders)
     if db.charBorders then Skin.Fade(slot.IconBorder) elseif slot.IconBorder then slot.IconBorder:SetAlpha(1) end
     if self:IsModeUI(self.byId.character) and slot.BorderFrame then Skin.FadeTextures(slot.BorderFrame) end
     -- Enchant text.
@@ -198,7 +209,7 @@ function M:PaintSlot(slot, entry)
     local path, size = Kit.FontPath(db, self.id), db.charEnchantSize
     Skin.Font(parts.name, path, size, db.outline, true, px)
     Skin.Font(parts.stat, path, math.max(8, size - 1), db.outline, true, px)
-    local accent = enchant and enchant.kind == "temporary" and Kit.palette.green or C.accent
+    local accent = enchant and enchant.kind == "temporary" and Style.Tone.celadon or C.accent
     parts.name:SetTextColor(accent[1], accent[2], accent[3], 1)
     parts.stat:SetTextColor(C.label[1], C.label[2], C.label[3], 1)
     parts.name:SetText(enchant and enchant.name or "")

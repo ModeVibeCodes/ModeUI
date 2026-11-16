@@ -19,9 +19,9 @@ if not M then return end
 -- Rows are made by Blizzard's ScrollBox as the pane scrolls; each one is
 -- styled when Blizzard fills it (Skin.WatchList).
 local Kit, Skin = addon.Kit, addon.Skin
-local C = Skin.colors
+local C = Skin.mode
 local Fade = Skin.Fade
-local STRIPE = { 0.32, 0.34, 0.38 }
+local STRIPE = Skin.mode.thumb
 
 local function Line(host, key, layer)
     local parts = Skin.parts[host] or { regions = {} }
@@ -39,7 +39,7 @@ function M:SkinStatRow(row)
     local px = Kit.PixelSize(row)
     if row.Title then
         Fade(row.Background)
-        local parts = Skin.Panel(row, "BACKGROUND", -8)
+        local parts = Skin.Box(row, "card")
         local box = parts.box
         if not box then
             box = row:CreateTexture(nil, "BACKGROUND", nil, -8)
@@ -49,7 +49,7 @@ function M:SkinStatRow(row)
         box:ClearAllPoints()
         box:SetPoint("TOPLEFT", row, "TOPLEFT", 0, -Skin.Snap(8, px))
         box:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, Skin.Snap(6, px))
-        Skin.PaintPanel(parts, box, C.card, 0.95, C.cardRim, px)
+        Skin.PaintBox(parts, box, "Matte", C.card, 1, true)
         row.Title:SetTextColor(C.heading[1], C.heading[2], C.heading[3], 1)
     elseif row.Label then
         local stripe = row.Background

@@ -48,18 +48,6 @@ local function Helpers(page)
         return buttons
     end
     function H.Color(host, key, enabled) W.ColorRow(page, M:AppearanceOwner(), host.rowLabel and host.rowLabel:GetText() or key, key, enabled, host) end
-    -- A muted note as wide as its card and as tall as its lines.
-    function H.Note(text)
-        local host = page:Row("", 32)
-        host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
-        local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        function host.row:layoutChildren(width)
-            label:SetWidth(math.max(40, width))
-            local lines = label:GetStringHeight()
-            if addon.IsNumber(lines, 1, 400) then self:SetHeight(math.ceil(lines) + 12) end
-        end
-        return W.Note(label)
-    end
     return H
 end
 
@@ -128,28 +116,20 @@ function M:CreateConfigPage(parent)
     page.statusLabel = status
     page:Group(L["Window Style"])
     page.stylePills = H.Pills("Style", M.choices.style, function() return M.db.style end, H.Set("style"), 120)
-    H.Note("ModeUI restyles every window below; Blizzard leaves them all in Blizzard's own look (after a reload). Each window can also be kept Blizzard's on the Windows tab.")
     page:Group(L["Frame"])
     local background = H.Columns({ "Background Color", "Background Opacity" })
     H.Color(background[1], "backgroundColor")
     page.backgroundSlider = H.Slider(background[2], "backgroundOpacity", "%")
     page.frameToggles = H.Toggles({ { "Border", "border" }, { "Title Bar", "titleBar" } }, 2)
-    H.When(function() return M.db.border end, function()
-        local border = H.Columns({ "Border Color", "Border Size" })
-        H.Color(border[1], "borderColor")
-        page.borderSizeSlider = H.Slider(border[2], "borderSize", "px")
-    end)
     page:Group(L["Text"])
     local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); H.Refresh(fontRefresh)
     local sizes = H.Columns({ "Title Size", "Tab Text Size" })
     page.titleSizeSlider = H.Slider(sizes[1], "titleSize")
     page.tabSizeSlider = H.Slider(sizes[2], "tabSize")
     page.textToggles = H.Toggles({ { "Window Text", "bodyFont" }, { "Outline", "outline" }, { "Text Shadow", "shadow" } })
-    H.Note("Window Text puts every text in a window in the font, at the game's own sizes; titles and tabs use the sizes above.")
     page:Group(L["Controls"])
     page.controlToggles = H.Toggles({ { "Tabs", "tabs" }, { "Buttons", "buttons" }, { "Fields", "fields" },
         { "Dropdowns", "dropdowns" }, { "Scroll Bars", "scrollBars" }, { "Insets", "insets" } })
-    H.Note("Turning a control or window off brings back Blizzard's look after a reload.")
     page:Group(L["Defaults"])
     local tools = page:Row(L["Window Look"], 48)
     page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
@@ -157,14 +137,12 @@ function M:CreateConfigPage(parent)
 
     page:Section(L["Windows"], nil, false)
     page:Group(L["Windows"])
-    H.Note("The switch keeps a window in the ModeUI look; off leaves it Blizzard's. Open a window's row for its Scale and its own look.")
     local expanded = {}
     page.windowRows, page.windowLooks, page.expandedWindows = {}, {}, expanded
     for _, entry in ipairs(M.registry) do
         page.windowRows[entry.id] = WindowHeader(page, H, entry, expanded)
         page.windowLooks[entry.id] = WindowLook(page, H, entry, expanded)
     end
-    H.Note("Windows from Blizzard addons that load on demand (Collections, Achievements, Professions and others) are skinned when they first open.")
 
     page:Section(L["Character"], nil, false)
     M:CreateCharacterSettings(page, H)

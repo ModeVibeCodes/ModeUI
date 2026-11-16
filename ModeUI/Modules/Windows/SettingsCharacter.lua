@@ -13,7 +13,6 @@ function M:CreateCharacterSettings(page, H)
     page:Group(L["Character Window"])
     page.characterStylePills = H.Pills("Style", { { id = true, label = "ModeUI" }, { id = false, label = "Blizzard" } },
         function() return M.db.windows.character end, function(value) M:SetWindow("character", value) end, 120)
-    H.Note("ModeUI gives the Character window the Mode look; Blizzard keeps its own (after a reload). The stats display, borders and enchant text below work with either.")
 
     page:Group(L["Stats Display"])
     page.statsToggles = H.Toggles({ { "Show Stats", "charStats" }, { "Stats Background", "charStatsBackground" } }, 2)
@@ -25,7 +24,6 @@ function M:CreateCharacterSettings(page, H)
                 set = function(value) M:SetStat(id, value) end }
         end
         page.statToggles = H.Toggles(items, 3)
-        H.Note("Main Stat is your specialization's primary stat (or your highest of Strength, Agility and Intellect), in cyan.")
         local labels = setmetatable({}, { __index = function(_, key) return L[ANCHOR_LABELS[key] or key] end })
         local buttons, refresh = W.AnchorPicker(page:Row(L["Stats Anchor"], W.ANCHOR_PICKER_HEIGHT + 16),
             function() return M.db.charStatsAnchor end, function(value) M:SetOption("charStatsAnchor", value); page:Refresh() end,
@@ -54,7 +52,6 @@ function M:CreateCharacterSettings(page, H)
         page.statsSizeSlider = H.Slider(size[1], "charStatsSize")
         -- Stat Colors: a row for each stat shown (Main Stat uses its attribute's).
         page:Group(L["Stat Colors"])
-        H.Note("Each stat's label color. Main Stat takes its attribute's color: Strength, Agility or Intellect.")
         local owner = { db = { appearance = setmetatable({}, { __index = function(_, key) return M.db.charStatColors[key] end }) } }
         function owner.CanConfigure() return true end
         function owner.SetAppearance(_, key, value) return M:SetStatColor(key, value) end
@@ -77,7 +74,6 @@ function M:CreateCharacterSettings(page, H)
         local size = H.Columns({ "Border Size" })
         page.charBorderSlider = H.Slider(size[1], "charBorderSize", "px")
     end)
-    H.Note("A crisp border round each equipment slot in the item's quality color, from Uncommon up.")
 
     page:Group(L["Enchant Text"])
     page.enchantToggles = H.Toggles({ { "Enchant Text", "charEnchants" } }, 2)
@@ -85,5 +81,4 @@ function M:CreateCharacterSettings(page, H)
         local size = H.Columns({ "Enchant Text Size" })
         page.enchantSizeSlider = H.Slider(size[1], "charEnchantSize")
     end)
-    H.Note("Beside each slot, over the model: the enchant's name in cyan, or a weapon's temporary enhancement (a poison, oil or stone) in green, with the stat it gives under it. Permanent enchants come first.")
 end

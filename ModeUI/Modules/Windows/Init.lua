@@ -3,9 +3,10 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
 -- Interface > Windows: Blizzard's UI windows in the Mode look. Each window's
 -- border, parchment, portrait, filigree and title art is faded and replaced
--- by a near-black fill inside a crisp 2px border (as the unit frames'), a
--- title strip, Expressway text, and Mode tabs, buttons, fields, dropdowns,
--- scroll bars and window buttons (Shared/Skin). Window Style swaps every
+-- by the Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): a
+-- Graphite panel in Mode Panel inside the `window` edge, a Mode Title strip,
+-- Geist text, and Mode tabs, buttons, fields, dropdowns, scroll bars and
+-- window buttons (Shared/Skin). Window Style swaps every
 -- window between ModeUI and Blizzard's own look; each window can also be
 -- left Blizzard's, given its own look and a scale. The Character window adds
 -- a stats display, rarity borders and enchant text (Character*.lua).
@@ -16,12 +17,14 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- CharacterPanel, Settings, SettingsCharacter.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Windows"], category = "interface", defaultEnabled = false,
-    configDescription = L["Blizzard's windows in the Mode look: dark fill, pixel rim, Expressway titles and Mode controls."],
+    configDescription = L["Blizzard's windows in the Mode look: Graphite panels, the Mode window edge, Geist titles and Mode controls."],
     modeLayout = { decorateOnly = true } }
 addon.Windows = M
 addon:RegisterModule("windows", M)
 
-M.VERSION = 2
+-- Version 3: the Mode design language (Graphite panel at 100%, the `window`
+-- edge: Border Color and Border Size retire; Geist).
+M.VERSION = 3
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows on Forever (checked against its interface source; see
@@ -60,14 +63,15 @@ M.registry = {
 M.byId = {}
 for _, entry in ipairs(M.registry) do M.byId[entry.id] = entry end
 
--- Colors: the window fill (#0B0B0D) and its border (the unit frames' rim,
--- #40454C). Version 1's border was the Onyx rim, #25282C (for migration).
-M.BACKGROUND_COLOR, M.BORDER_COLOR = Kit.RGB(11, 11, 13), Copy(Kit.onyx.frameRim)
-M.OLD_BORDER_COLOR = Copy(Kit.onyx.border)
+-- Colors: the Graphite panel. Version 1-2 defaults, kept for migrations:
+-- the #0B0B0D fill at 94%, the border (#40454C; version 1's #25282C).
+local Tone = addon.Style.Tone
+M.BACKGROUND_COLOR = Copy(Tone.graphite.panel)
+M.OLD = { background = addon.Style.LEGACY.windowFill, opacity = 94, border = Copy(Kit.onyx.frameRim), borderV1 = Copy(Kit.onyx.border) }
 
 -- A window's own look (the Windows tab, each window expanded): used instead
 -- of the Look tab's when `custom` is on. `scale` applies either way.
-M.LOOK = { custom = false, backgroundOpacity = 94, border = true, titleBar = true, scale = 100 }
+M.LOOK = { custom = false, backgroundOpacity = 100, border = true, titleBar = true, scale = 100 }
 M.lookRanges = { backgroundOpacity = { 0, 100, 5 }, scale = { 50, 150, 5 } }
 
 -- The Character window's stats display: every stat it can show, in order
@@ -111,11 +115,12 @@ M.defaults = {
     -- Which windows are in the Mode look, and each one's own look.
     windows = windows, looks = looks,
     -- Frame
-    backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 94,
-    border = true, borderColor = Copy(M.BORDER_COLOR), borderSize = 2, titleBar = true,
+    backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 100,
+    -- Border: the Mode `window` edge, on or off.
+    border = true, titleBar = true,
     -- Text: titles and tabs at their sizes; Window Text puts every other
     -- text in the window in the font too, at the game's sizes.
-    font = "game", fontMedia = "Expressway", titleSize = 13, tabSize = 12, outline = false, shadow = true,
+    font = "game", fontMedia = addon.Style.FONT_DEFAULT, titleSize = 13, tabSize = 12, outline = false, shadow = true,
     bodyFont = true,
     -- Controls
     tabs = true, buttons = true, fields = true, scrollBars = true, insets = true, dropdowns = true,
@@ -125,8 +130,10 @@ M.defaults = {
     charStatColors = Copy(M.STAT_COLORS),
     charBorders = true, charBorderSize = 2, charEnchants = true, charEnchantSize = 10,
 }
-M.colorKeys = { backgroundColor = true, borderColor = true }
-M.ranges = { backgroundOpacity = { 0, 100, 5 }, titleSize = { 8, 24, 1 }, tabSize = { 8, 20, 1 }, borderSize = { 1, 4, 1 },
+M.colorKeys = { backgroundColor = true }
+-- Keys version 3 retired (the Mode edge has one size and color).
+M.retiredKeys = { "borderColor", "borderSize" }
+M.ranges = { backgroundOpacity = { 0, 100, 5 }, titleSize = { 8, 24, 1 }, tabSize = { 8, 20, 1 },
     charStatsX = { -300, 300, 1 }, charStatsY = { -300, 300, 1 }, charStatsSize = { 8, 20, 1 },
     charBorderSize = { 1, 4, 1 }, charEnchantSize = { 8, 16, 1 } }
 M.choices = {

@@ -1,6 +1,6 @@
 -- Windows: Blizzard windows (stubbed with Forever's template keys) skinned in
--- the Mode look: faded art, fill, the 2px border on its own layer, title
--- strip, title font, close and maximize/minimize buttons, insets (field under
+-- the Mode look: faded art, the Graphite panel, the `window` edge on its own
+-- layer, the Mode Title strip, title font, close and maximize/minimize buttons, insets (field under
 -- the content), tabs, buttons, fields, dropdowns and their menus, side tabs,
 -- right side tabs, scroll bars, list rows and window text; the Guild window's
 -- portrait overlay, filigree and roster; load-on-demand windows, secure
@@ -175,58 +175,62 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
 
 local world = H.Load({ before = STUBS })
 world.run([==[
-    local M, Skin, C, Kit = addon.Windows, addon.Skin, addon.Skin.colors, addon.Kit
+    local M, Skin, C, Kit = addon.Windows, addon.Skin, addon.Skin.mode, addon.Kit
+    local Tone = addon.Style.Tone
+    local function Lit(parts) return parts.modeEdge.highlight ~= nil and parts.modeEdge.highlight[1] == Tone.ivory[1] end
     assert(M and addon.modules.windows == M and not M.enabled, 'registered, off by default')
-    assert(M.db.windows.social and M.db.windows.collections and M.db.backgroundOpacity == 94 and M.db.style == 'modeui')
-    assert(M.db.borderSize == 2 and M.db.borderColor[1] == Kit.onyx.frameRim[1] and M.db.looks.social.scale == 100)
+    assert(M.db.windows.social and M.db.windows.collections and M.db.backgroundOpacity == 100 and M.db.style == 'modeui')
+    assert(M.db.borderSize == nil and M.db.borderColor == nil and M.db.fontMedia == 'Mode Geist' and M.db.looks.social.scale == 100)
+    assert(addon.Style.SameColor(M.db.backgroundColor, Tone.graphite.panel), 'the Graphite panel')
     assert(Skin.parts[FriendsFrame] == nil, 'nothing skinned while off')
 
     addon:SetModuleEnabled('windows', true)
-    -- Frame: art faded, Mode fill, a 2px border above the window, title strip.
+    -- Frame: art faded, the Graphite panel, the window edge above the window, the title strip.
     assert(FriendsFrame.NineSlice.TopEdge.alpha == 0 and FriendsFrame.NineSlice.Center.alpha == 0 and FriendsFrame.Bg.alpha == 0)
     assert(FriendsFrame.PortraitContainer.alpha == 0 and FriendsFrame.TopTileStreaks.alpha == 0, 'portrait and streaks faded')
     local parts = Skin.parts[FriendsFrame]
-    assert(parts.fill.vertexColor[4] == 0.94 and not parts.rim[1]:IsShown(), 'fill to the edge; the thin panel rim unused')
-    assert(parts.edge and parts.edgeRim[1]:IsShown() and parts.edgeRim[1].vertexColor[1] == Kit.onyx.frameRim[1], 'border in the rim color')
-    assert(parts.edge:GetFrameLevel() == FriendsFrame:GetFrameLevel() + 520, 'border above the window\'s children')
-    assert(Point(parts.edgeRim[1])[5] == 0 and Point(parts.edgeRim[1], 2)[5] == -2, 'two pixels thick')
+    assert(parts.faceKey == 'Panel' and parts.face.vertexColor[1] == Tone.graphite.panel[1] and parts.face.vertexColor[4] == 1, 'Mode Panel in Graphite, to the edge')
+    assert(parts.modeEdge.preset == 'window' and parts.modeEdge.holder:IsShown(), 'the window edge')
+    assert(parts.edgeFrame:GetFrameLevel() == FriendsFrame:GetFrameLevel() + 520, 'the edge above the window\'s children')
     assert(parts.strip:IsShown() and parts.strip:GetHeight() == 22 and parts.divider:GetHeight() == 1, 'title strip and divider')
-    local s = Point(parts.strip); assert(s[4] == 2 and s[5] == -2, 'strip inside the border')
+    local s = Point(parts.strip); assert(s[4] == 0 and s[5] == 0 and parts.strip.vertexColor[1] == Tone.graphite.raised[1], 'Mode Title strip at the top (the edge is outside)')
     local title = FriendsFrame.TitleContainer.TitleText
     local path = Kit.FontPath(M.db, 'windows')
-    assert(title.font[1] == path and title.font[2] == 13 and title.color[1] == C.heading[1])
+    assert(title.font[1] == addon.Style.Weighted(path, 'semibold') and title.font[2] == 13 and title.color[1] == C.heading[1], 'Geist SemiBold title')
     -- Window Text: every text in the face, at its own size and outline.
     local note = FriendsFrame.Inset.note
     assert(note.font[1] == path and note.font[2] == 11 and note.font[3] == 'OUTLINE', 'window text in the Mode face, game size kept')
-    -- Close: field with a cross, 18 px, inside the border's corner.
+    -- Close: a control box with a cross, 18 px, in the window's corner.
     local close = Skin.parts[FriendsFrameCloseButton]
     assert(FriendsFrameCloseButton.normal.alpha == 0 and close.icon.texture:find('Close') and FriendsFrameCloseButton:GetWidth() == 18)
-    local p = Point(FriendsFrameCloseButton); assert(p[1] == 'TOPRIGHT' and p[4] == -4 and p[5] == -4)
+    local p = Point(FriendsFrameCloseButton); assert(p[1] == 'TOPRIGHT' and p[4] == -2 and p[5] == -2)
+    assert(close.modeEdge.preset == 'control')
     FriendsFrameCloseButton.scripts.OnEnter(FriendsFrameCloseButton)
-    assert(close.icon.vertexColor[2] == 240 / 255, 'cyan cross on hover')
-    -- Inset: its field sits on its parent, under the content; only the rim on it.
+    assert(close.icon.vertexColor[1] == Tone.ivory[1] and Lit(close), 'Ivory cross and line on hover')
+    -- Inset: its face sits on its parent, under the content; the card edge frames it.
     local inset = Skin.parts[FriendsFrame.Inset]
-    assert(FriendsFrame.Inset.Bg.alpha == 0 and FriendsFrame.Inset.NineSlice.Center.alpha == 0 and inset.fill)
-    assert(inset.fill.parent == FriendsFrame and inset.rim[1].parent == FriendsFrame.Inset, 'inset field under the content')
+    assert(FriendsFrame.Inset.Bg.alpha == 0 and FriendsFrame.Inset.NineSlice.Center.alpha == 0 and inset.face)
+    assert(inset.face.parent == FriendsFrame and inset.edgeFrame.parent == FriendsFrame.Inset and inset.modeEdge.preset == 'card', 'inset face under the content')
     -- Tabs, buttons, fields, side tab and scroll bar.
     local t1, t2 = Skin.parts[FriendsFrameTab1], Skin.parts[FriendsFrameTab2]
     assert(FriendsFrameTab1.Left.alpha == 0 and FriendsFrameTab1.LeftActive.alpha == 0)
-    assert(t1.bar:IsShown() and not t2.bar:IsShown() and t1.fill.vertexColor[1] == C.selected[1], 'selected tab: lighter, cyan bar')
+    assert(t1.bar:IsShown() and not t2.bar:IsShown() and t1.bar.vertexColor[1] == Tone.ivory[1] and FriendsFrameTab1.Text.color[1] == Tone.ivory[1]
+        and FriendsFrameTab2.Text.color[1] == Tone.graphite.muted[1] and not t1.face, 'text tabs: the chosen one Ivory with its bar')
     PanelTemplates_DeselectTab(FriendsFrameTab1); PanelTemplates_SelectTab(FriendsFrameTab2)
-    assert(t2.bar:IsShown() and not t1.bar:IsShown() and FriendsFrameTab2.Text.color[1] == C.heading[1], 'follows Blizzard picking a tab')
+    assert(t2.bar:IsShown() and not t1.bar:IsShown() and FriendsFrameTab2.Text.color[1] == Tone.ivory[1], 'follows Blizzard picking a tab')
     assert(Point(t2.bar)[1] == 'TOPLEFT', 'tabs under the window: bar on the window side')
     local button = FriendsFrame.testButton
-    assert(button.Left.alpha == 0 and Skin.parts[button].fill, 'button field')
-    button.scripts.OnEnter(button); assert(Skin.parts[button].rim[1].vertexColor[2] == 240 / 255, 'cyan rim on hover')
+    assert(button.Left.alpha == 0 and Skin.parts[button].faceKey == 'Button' and Skin.parts[button].modeEdge.preset == 'control', 'a Mode Button')
+    button.scripts.OnEnter(button); assert(Lit(Skin.parts[button]), 'Ivory line on hover')
     assert(FriendsFrame.testField.Middle.alpha == 0 and Skin.parts[FriendsFrame.testField].box, 'edit field')
     local bar = FriendsFrame.testBar
     assert(bar.Track.Middle.alpha == 0 and bar.Track.Thumb.Begin.alpha == 0 and bar.Back.Texture.alpha == 0 and Skin.parts[bar].thumb:GetWidth() == 4)
     assert(bar.Background.alpha == 0, 'a scroll bar\'s marble background goes')
     local side = FriendsFrame.testSide
     assert(side.Background.alpha == 0 and side.SelectedTexture.alpha == 0)
-    side:SetChecked(true); assert(Skin.parts[side].rim[1].vertexColor[2] == 240 / 255, 'checked side tab: cyan rim')
+    side:SetChecked(true); assert(Lit(Skin.parts[side]), 'checked side tab: Ivory line')
     -- The World Map draws under its border frame: border and strip, no fill.
-    assert(Skin.parts[WorldMapFrame.BorderFrame].fill.vertexColor[4] == 0, 'World Map keeps its map visible')
+    assert(Skin.parts[WorldMapFrame.BorderFrame].face.vertexColor[4] == 0, 'World Map keeps its map visible')
 
     -- Guild and Communities.
     local guild = CommunitiesFrame
@@ -237,12 +241,12 @@ world.run([==[
     assert(holder.MinimizeButton:GetWidth() == 18 and Point(holder)[1] == 'RIGHT' and Point(holder)[2] == CommunitiesFrameCloseButton
         and Point(holder)[4] == -2, 'beside the close button, the same size')
     holder.MinimizeButton.scripts.OnEnter(holder.MinimizeButton)
-    assert(minimize.icon.vertexColor[2] == 240 / 255, 'cyan glyph on hover')
+    assert(minimize.icon.vertexColor[1] == Tone.ivory[1], 'Ivory glyph on hover')
     local list = guild.CommunitiesList
     assert(list.Bg.alpha == 0 and list.TopFiligree.alpha == 0 and list.FilligreeOverlay.TopBar.alpha == 0, 'blue menu and filigree faded')
     local roster = guild.MemberList
     local rosterInset = Skin.parts[roster.InsetFrame]
-    assert(rosterInset.fill.parent == roster and roster.InsetFrame.Bg.alpha == 0, 'the roster\'s raised inset draws nothing over its rows')
+    assert(rosterInset.face.parent == roster and roster.InsetFrame.Bg.alpha == 0, 'the roster\'s raised inset draws nothing over its rows')
     local row = roster.ScrollBox.rows[1]
     assert(row.normal.alpha == 0 and row.Name.font[1] == path and row.Name.font[2] == 12, 'rows: strip faded, Mode face')
     local late = MakeRow()
@@ -250,7 +254,7 @@ world.run([==[
     assert(late.normal.alpha == 0 and late.Name.font[1] == path, 'rows Blizzard fills later as well')
     local tab = guild.ChatTab
     assert(tab.art.alpha == 0 and tab.checked.alpha == 0 and tab.Icon.alpha ~= 0 and tab.Icon.texCoord[1] == 0.08, 'right side tab')
-    tab:SetChecked(true); assert(Skin.parts[tab].rim[1].vertexColor[2] == 240 / 255, 'checked: cyan rim')
+    tab:SetChecked(true); assert(Lit(Skin.parts[tab]), 'checked: Ivory line')
     -- The stream dropdown and its menu.
     local dropdown = guild.StreamDropdown
     local dd = Skin.parts[dropdown]
@@ -262,20 +266,20 @@ world.run([==[
     dropdown.callbacks.OnMenuOpen.fn(dropdown.callbacks.OnMenuOpen.owner, dropdown)
     assert(background.alpha == 0, 'Blizzard\'s menu background faded')
     local panel = select(1, menu:GetChildren())
-    assert(panel and panel:IsShown() and Skin.parts[panel].fill, 'a Mode panel lent to the menu')
-    assert(dd.rim[1].vertexColor[2] == 240 / 255, 'open dropdown: cyan rim')
+    assert(panel and panel:IsShown() and Skin.parts[panel].faceKey == 'Panel' and Skin.parts[panel].modeEdge.preset == 'window', 'a Mode window lent to the menu')
+    assert(Lit(dd), 'open dropdown: Ivory line')
     dropdown.menu = nil
     dropdown.callbacks.OnMenuClose.fn(dropdown.callbacks.OnMenuClose.owner, dropdown, menu)
     assert(not panel:IsShown() and panel:GetParent() == UIParent, 'taken back when the menu closes')
 
     assert(guild.ChatEditBox.Mid.alpha == 0 and Skin.parts[guild.ChatEditBox].box, 'the Guild chat box: a field')
     assert(guild.ListDropdown.Arrow.alpha == 0 and Skin.parts[guild.ListDropdown].chevron, 'a dropdown that answers Button')
-    -- Character window: the stats pane in Onyx.
+    -- Character window: the stats pane in Graphite.
     local right = CharacterFrame.RightPaneHost
     assert(right.art.alpha == 0 and CharacterStatsPaneScrollBox.ClassBackground.alpha == 0 and CharacterStatsPaneScrollBox.Border.alpha == 0)
     assert(Skin.parts[right].field and Skin.parts[right].divider:GetWidth() == 1, 'an Onyx field and a divider')
     local header, statRow = unpack(CharacterStatsPaneScrollBox.ScrollBox.rows)
-    assert(header.Background.alpha == 0 and Skin.parts[header].fill and header.Title.color[1] == C.heading[1], 'category: Onyx strip')
+    assert(header.Background.alpha == 0 and Skin.parts[header].faceKey == 'Matte' and header.Title.color[1] == C.heading[1], 'category: a card')
     assert(statRow.Background.desaturated and statRow.Background.vertexColor[4] == 0.35 and statRow.Label.color[1] == C.label[1], 'rows: gray stripe')
     local strip = PaperDollFrame.TopBackgroundStripHost
     assert(strip.TopBackgroundStrip.alpha == 0 and Skin.parts[strip].divider, 'the rock strip goes')
@@ -288,13 +292,13 @@ world.run([==[
     assert(Skin.parts[CollectionsJournal] == nil, 'secure window waits for combat to end')
     testCombat = false
     FireEvent('PLAYER_REGEN_ENABLED')
-    assert(Skin.parts[CollectionsJournal].fill and CollectionsJournal.NineSlice.TopEdge.alpha == 0, 'skinned after combat')
+    assert(Skin.parts[CollectionsJournal].face and CollectionsJournal.NineSlice.TopEdge.alpha == 0, 'skinned after combat')
     -- A new control made later is skinned the next time the window shows.
     local lateButton = CreateFrame('Button', nil, FriendsFrame)
     lateButton.Left, lateButton.Middle, lateButton.Right = lateButton:CreateTexture(), lateButton:CreateTexture(), lateButton:CreateTexture()
     lateButton.Text = lateButton:CreateFontString()
     FriendsFrame:Hide(); FriendsFrame:Show()
-    assert(lateButton.Left.alpha == 0 and Skin.parts[lateButton].fill, 'reskinned on show')
+    assert(lateButton.Left.alpha == 0 and Skin.parts[lateButton].face, 'reskinned on show')
 
     -- Character window: stats display.
     local statsFrame = ModeUICharacterStats
@@ -333,56 +337,57 @@ world.run([==[
     assert(M:SetOption('charStats', true) and statsFrame:IsShown())
     -- Rarity borders and enchant text.
     local head, hands, weapon = M.slotParts[CharacterHeadSlot], M.slotParts[CharacterHandsSlot], M.slotParts[CharacterMainHandSlot]
-    assert(head.rim[1]:IsShown() and head.rim[1].vertexColor[1] == 0.4 and head.rim[1].vertexColor[3] == 0.9, 'Epic: quality color')
-    assert(hands.rim[1].vertexColor[1] == M.db.borderColor[1], 'Common: the rim color')
+    assert(head.edge.preset == 'line' and head.edge.holder:IsShown() and head.edge.tint[1] == 0.4 and head.edge.tint[3] == 0.9, 'Epic: the line edge in its quality color')
+    assert(hands.edge.tint[1] == Tone.gunmetal.mid[1], 'Common: Gunmetal')
+    assert(Point(head.inner)[4] == 3, 'inside the slot (rim and shadow)')
     assert(CharacterHeadSlot.IconBorder.alpha == 0 and CharacterHeadSlot.BorderFrame.Art.alpha == 0, 'Blizzard\'s rings faded')
     assert(head.name:IsShown() and head.name.text == '+8 Sta' and not head.stat:IsShown(), 'a stat enchant: one short line')
     local n = Point(head.name); assert(n[1] == 'LEFT' and n[2] == CharacterHeadSlot and n[3] == 'RIGHT' and n[4] == 6, 'left column: text to the right')
-    assert(head.name.color[2] == 240 / 255 and head.name.font[2] == 10)
+    assert(head.name.color[2] == Tone.ivory[2] and head.name.font[2] == 10, 'enchants in Ivory')
     assert(not hands.name:IsShown(), 'no enchant, no text')
     assert(weapon.name.text == 'Instant Poison VI' and weapon.stat.text == 'Nature damage proc', 'a poison and what it does')
-    assert(weapon.name.color[1] == Kit.palette.green[1], 'temporary enhancements in green')
+    assert(weapon.name.color[1] == Tone.celadon[1], 'temporary enhancements in Celadon')
     assert(Point(weapon.stat)[1] == 'BOTTOM' and Point(weapon.stat)[3] == 'TOP' and Point(weapon.name)[2] == weapon.stat, 'weapons: above the slot')
     tooltips[16][3] = { type = 15, leftText = 'Enchanted: Crusader' }
     M:CharacterRefresh()
-    assert(weapon.name.text == 'Crusader' and weapon.stat.text == '+100 Str proc, heals' and weapon.name.color[2] == 240 / 255,
+    assert(weapon.name.text == 'Crusader' and weapon.stat.text == '+100 Str proc, heals' and weapon.name.color[2] == Tone.ivory[2],
         'a permanent enchant comes first, with its stat')
     local name, stat = M.SummarizeEnchant('Sharpened (+8 Damage)'); assert(name == 'Sharpened' and stat == '+8 Dmg')
-    assert(M:SetOption('charBorders', false) and not head.rim[1]:IsShown() and CharacterHeadSlot.IconBorder.alpha == 1)
+    assert(M:SetOption('charBorders', false) and not head.edge.holder:IsShown() and CharacterHeadSlot.IconBorder.alpha == 1)
     assert(M:SetOption('charEnchants', false) and not weapon.name:IsShown())
     M:SetOption('charBorders', true); M:SetOption('charEnchants', true)
 
     -- Settings: validated on a copy; look changes repaint at once.
     assert(not M:SetOption('backgroundOpacity', 140) and not M:SetOption('windows', {}) and not M:SetOption('looks', {}))
     assert(not M:SetOption('nope', true) and not M:SetOption('style', 'retro') and not M:SetOption('borderSize', 9))
-    assert(M:SetOption('backgroundOpacity', 60) and parts.fill.vertexColor[4] == 0.6)
-    assert(M:SetOption('borderSize', 3) and Point(parts.edgeRim[1], 2)[5] == -3, 'Border Size')
+    assert(M:SetOption('backgroundOpacity', 60) and parts.face.vertexColor[4] == 0.6)
+    assert(not M:SetOption('borderSize', 3) and not M:SetOption('borderColor', { 1, 0, 0 }), 'Border Size and Border Color retired')
     assert(M:SetOption('titleBar', false) and not parts.strip:IsShown())
     assert(M:SetOption('titleSize', 15) and title.font[2] == 15)
-    assert(M:SetOption('border', false) and not parts.edgeRim[1]:IsShown())
+    assert(M:SetOption('border', false) and not parts.modeEdge.holder:IsShown())
     assert(M:SetOption('buttons', false) and addon.ReloadManager.requests.windows, 'turning a control off asks for a reload')
     addon.ReloadManager:Clear('windows')
     -- A window's own look and scale.
     assert(M:SetLook('social', 'custom', true) and M:SetLook('social', 'backgroundOpacity', 40) and M:SetLook('social', 'border', true))
-    assert(parts.fill.vertexColor[4] == 0.4 and parts.edgeRim[1]:IsShown(), 'its own look wins')
-    assert(Skin.parts[MerchantFrame].fill.vertexColor[4] == 0.6, 'others keep the Look tab\'s')
+    assert(parts.face.vertexColor[4] == 0.4 and parts.modeEdge.holder:IsShown(), 'its own look wins')
+    assert(Skin.parts[MerchantFrame].face.vertexColor[4] == 0.6, 'others keep the Look tab\'s')
     assert(M:SetLook('social', 'scale', 120) and FriendsFrame.scale == 1.2, 'Scale')
     assert(not M:SetLook('social', 'scale', 300) and not M:SetLook('social', 'nope', 1) and not M:SetLook('nope', 'scale', 100))
     assert(not M:SetLook('worldMap', 'scale', 'big'))
     -- A window switched off is left alone from then on.
     assert(M:SetWindow('merchant', false) and addon.ReloadManager.requests.windows)
     M:SetOption('backgroundOpacity', 30)
-    assert(Skin.parts[MerchantFrame].fill.vertexColor[4] == 30 / 100, 'repainted, not reskinned, until reload')
+    assert(Skin.parts[MerchantFrame].face.vertexColor[4] == 30 / 100, 'repainted, not reskinned, until reload')
     assert(not M:SetWindow('nope', true))
     -- Window Style Blizzard: nothing new is skinned; ModeUI brings it back.
     addon.ReloadManager:Clear('windows')
     assert(M:SetOption('style', 'blizzard') and addon.ReloadManager.requests.windows, 'Blizzard asks for a reload')
     local mail = MakeWindow('MailFrame')
     FireEvent('ADDON_LOADED', 'nothing'); M:SkinAll()
-    assert(Skin.parts[MailFrame] == nil or Skin.parts[MailFrame].fill == nil, 'Blizzard style: left alone')
-    assert(M:SetOption('style', 'modeui') and Skin.parts[MailFrame].fill, 'ModeUI again: skinned')
+    assert(Skin.parts[MailFrame] == nil or Skin.parts[MailFrame].face == nil, 'Blizzard style: left alone')
+    assert(M:SetOption('style', 'modeui') and Skin.parts[MailFrame].face, 'ModeUI again: skinned')
     M:ResetToDefaults()
-    assert(M.db.backgroundOpacity == 94 and M.db.windows.merchant == false and M.db.looks.social.scale == 120, 'reset keeps switches and looks')
+    assert(M.db.backgroundOpacity == 100 and M.db.windows.merchant == false and M.db.looks.social.scale == 120, 'reset keeps switches and looks')
 
     -- The page: pinned tabs, every window collapsed, expanding shows its settings.
     SlashCmdList.MODEUI()
@@ -412,14 +417,21 @@ world.run([==[
     assert(addon.ReloadManager.requests.windows, 'off asks for a reload')
     assert(not statsFrame:IsShown(), 'the stats display goes with the module')
 
-    -- Version 1 settings: an untouched border color follows; picks stay.
+    -- Version 1 settings: picks stay; the border color retires (version 3).
     local old = { version = 1, borderColor = { Kit.onyx.border[1], Kit.onyx.border[2], Kit.onyx.border[3] },
         windows = { social = false }, backgroundOpacity = 80 }
     M.Initialize(old)
-    assert(old.version == 2 and old.borderColor[1] == Kit.onyx.frameRim[1] and old.windows.social == false and old.backgroundOpacity == 80)
+    assert(old.version == 3 and old.borderColor == nil and old.windows.social == false and old.backgroundOpacity == 80)
     assert(old.looks.social.scale == 100 and old.style == 'modeui' and old.charStatList.mainStat, 'new settings filled in')
-    local picked = { version = 1, borderColor = { 1, 0, 0 } }
-    M.Initialize(picked); assert(picked.borderColor[1] == 1, 'a picked color stays')
+    -- Version 2: values at their old defaults take the Mode ones; picks stay.
+    local two = { version = 2, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 94, fontMedia = 'Expressway',
+        borderColor = { 1, 0, 0 }, borderSize = 3, looks = { social = { custom = true, backgroundOpacity = 94, border = true, titleBar = true, scale = 110 } } }
+    M.Initialize(two)
+    assert(two.version == 3 and addon.Style.SameColor(two.backgroundColor, Tone.graphite.panel) and two.backgroundOpacity == 100 and two.fontMedia == 'Mode Geist')
+    assert(two.borderColor == nil and two.borderSize == nil and two.looks.social.backgroundOpacity == 100 and two.looks.social.scale == 110, 'Mode defaults; size and color retire')
+    local mine = { version = 2, backgroundColor = { 0.2, 0.1, 0.1 }, backgroundOpacity = 70, fontMedia = 'Friz Quadrata' }
+    M.Initialize(mine)
+    assert(mine.backgroundColor[1] == 0.2 and mine.backgroundOpacity == 70 and mine.fontMedia == 'Friz Quadrata', 'picks stay')
 ]==], "windows")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

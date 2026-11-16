@@ -215,6 +215,30 @@ Graphite panel `#121213` with the Mode Panel texture, title bar `#1A1A1C` with
 Mode Title (Solid as an option), `window` border. Dispel indicators: Gradient
 from the top edge (56% → 0 over 72%) by default, Rim and Inner glow as options.
 
+Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
+`Skin.PaintBox`; the approved Phase 7 probe):
+
+- **Window:** the Graphite panel in Mode Panel to the window's edges (at its
+  Background Opacity, 100% by default), the `window` edge outside them on a
+  layer above everything the window stacks, a 22px Mode Title strip in
+  Graphite raised over a 1px Graphite line; the title in Geist SemiBold 13,
+  Graphite white, centered on the strip clear of the window buttons.
+- **Window buttons:** 18px `control` boxes (Mode Button face, Graphite
+  raised) 2px inside the window's top-right corner, the glyph in Graphite
+  secondary; hover lights the glyph and the outer line Ivory.
+- **Buttons:** Mode Button faces in Graphite raised inside the `control`
+  edge, Geist SemiBold; hover lights the outer line Ivory; disabled text is
+  muted. **Fields** and **dropdowns:** a Graphite base inside the `control`
+  edge, Ivory with focus, hover or an open menu; a dropdown's menu is a Mode
+  window.
+- **Tabs:** text tabs in Geist SemiBold: the chosen one Ivory with a 2px
+  Ivory bar on its window side, the others Graphite muted. **Side tabs:**
+  `control` boxes, the chosen tone (Graphite track) and an Ivory line when
+  checked.
+- **Insets:** a Mode Matte face on the Graphite base inside the `card` edge.
+  **Scroll bars:** a 4px Graphite track and thumb (rimStrong).
+- **Item quality:** the `line` edge in the quality color, inside the slot.
+
 ## Settings window
 
 A hybrid window built one-to-one from the study:

@@ -17,18 +17,18 @@ Blizzard's own look; each window can also be kept Blizzard's on its own.
 
 | Part | Look |
 |---|---|
-| Frame | NineSlice pieces (one by one, so the Settings panel's title survives), parchment (`Bg`), `TopTileStreaks`, portrait (`PortraitContainer`, and the Guild window's `PortraitOverlay`), glow and the older corner and edge textures are faded. A fill (#0B0B0D at Background Opacity, 94%) to the window's edge, and a crisp square border, Border Size thick (2 px, the unit frames' rim color #40454C), on its own frame above everything the window stacks (NineSlice at 500, buttons at 510). |
-| Title | A 22 px strip (#121316) over a one-pixel divider (#1E2024), inside the border. Portrait-window titles are centered on the strip, clear of the window buttons; the title is Expressway 13 in #F2F2F2. Header and dialog titles (Game Menu, Settings) keep their place. |
-| Window buttons | Close: an 18 px field with a thin cross, 2 px inside the border's top-right corner. Maximize/minimize (`MaximizeMinimizeButtonFrameTemplate`, the Guild window's): the same field with a corner arrow, just left of Close. Rims and glyphs turn cyan on hover. |
+| Frame | NineSlice pieces (one by one, so the Settings panel's title survives), parchment (`Bg`), `TopTileStreaks`, portrait (`PortraitContainer`, and the Guild window's `PortraitOverlay`), glow and the older corner and edge textures are faded. The Mode window (since November 15, 2026; docs/DESIGN_LANGUAGE.md, "Windows and panels"): the Graphite panel (Background Color, `#121213`) in Mode Panel at Background Opacity (100%) to the window's edges, and the `window` edge outside them (1px Steel Sheen, a black gap, shadow and drop) on its own frame 520 levels up, above everything the window stacks (NineSlice at 500, buttons at 510). **Border** switches the edge. |
+| Title | A 22 px Mode Title strip in Graphite raised over a 1px Graphite line, at the window's top. Portrait-window titles are centered on the strip, clear of the window buttons; the title is Geist SemiBold 13 in Graphite white. Header and dialog titles (Game Menu, Settings) keep their place. |
+| Window buttons | Close: an 18 px `control` box (Mode Button face) with a thin cross, 2 px inside the window's top-right corner. Maximize/minimize (`MaximizeMinimizeButtonFrameTemplate`, the Guild window's): the same box with a corner arrow, just left of Close. Glyphs in Graphite secondary; hover lights the glyph and the outer line Ivory. |
 | Window text | With **Window Text** on, every font string in the window (and in list rows Blizzard fills later) gets the Mode face at the game's own size and outline. Titles and tabs use Title Size and Tab Text Size. |
 | Decoration | Found anywhere inside a window: gold filigree (`FilligreeOverlay`, `TopFiligree`, `BottomFiligree`), inset border pieces, tiled list backgrounds (`Bg`), column header backgrounds, a scroll bar's marble `Background`. |
-| Insets | A darker field (#0E0F11) drawn on the inset's **parent**, under the content, with a thin #1E2024 rim on the inset. (The Guild roster's inset is raised over its rows at level 100; a fill on it tinted every name.) |
+| Insets | A Mode Matte face on the Graphite base, drawn on the inset's **parent** under the content, inside the `card` edge on the inset. (The Guild roster's inset is raised over its rows at level 100; a fill on it tinted every name.) |
 | List rows | Rows in a ScrollBox get the Mode face when Blizzard fills them (`ScrollUtil.AddInitializedFrameCallback`); the Guild roster's row strips are faded so the window shows through. |
-| Tabs | A 24 px field across each tab; the selected tab is the lighter segment (#22262B) with a 2 px cyan bar on its window side. Follows `PanelTemplates_SelectTab`/`DeselectTab` and TabSystem's `SetTabSelected`. Side tabs (Character, Collections, ...) and right side tabs (the Guild window's Chat, Roster, Benefits and Info) get a field with a cyan rim when checked; the right side tabs' icons are cropped inside it. |
-| Dropdowns | `WowStyle1/2DropdownTemplate` (the Guild window's channel picker) and the legacy `UIDropDownMenuTemplate`: a field with a chevron, cyan while hovered or open. The menu a WowStyle dropdown opens gets a Mode panel under its entries (its own background faded), lent from ModeUI and taken back when it closes, since Blizzard reuses menu frames for every menu. |
-| Buttons | Fields whose rim turns cyan on hover. |
-| Fields | Edit boxes (`InputBoxTemplate`, search boxes): fields whose rim turns cyan with focus. |
-| Scroll bars | `MinimalScrollBar` and `WowTrimScrollBar`: a 4 px track (#16181B) and thumb (#4A4F56); the arrows stay clickable but invisible. |
+| Tabs | Text tabs in Geist SemiBold: the chosen tab Ivory with a 2 px Ivory bar on its window side, the others Graphite muted. Follows `PanelTemplates_SelectTab`/`DeselectTab` and TabSystem's `SetTabSelected`. Side tabs (Character, Collections, ...) and right side tabs (the Guild window's Chat, Roster, Benefits and Info) are `control` boxes, in the chosen tone with an Ivory line when checked; the right side tabs' icons are cropped inside them. |
+| Dropdowns | `WowStyle1/2DropdownTemplate` (the Guild window's channel picker) and the legacy `UIDropDownMenuTemplate`: a Graphite field in the `control` edge with a chevron, Ivory while hovered or open. The menu a WowStyle dropdown opens gets a Mode window under its entries (its own background faded), lent from ModeUI and taken back when it closes, since Blizzard reuses menu frames for every menu. |
+| Buttons | Mode Button faces in Graphite raised inside the `control` edge, Geist SemiBold text; hover lights the outer line Ivory; disabled text is muted. |
+| Fields | Edit boxes (`InputBoxTemplate`, search boxes): a Graphite base inside the `control` edge, Ivory with focus. |
+| Scroll bars | `MinimalScrollBar` and `WowTrimScrollBar`: a 4 px Graphite track and thumb; the arrows stay clickable but invisible. (Chat's scroll bar shares it.) |
 
 Controls are recognised by the keys their templates give them
 (`Shared/Skin/Controls.lua`, `Skin.Kind`), six levels into each window, and
@@ -111,16 +111,24 @@ Window Text or the module off, or picking Blizzard, brings Blizzard's look
 back on the next reload; ModeUI asks for one. Reset to Defaults resets the
 Look tab only.
 
-Saved under `modules.windows` (version 2): `style` (`modeui` or `blizzard`),
+Saved under `modules.windows` (version 3): `style` (`modeui` or `blizzard`),
 `windows` (window ID → on), `looks` (window ID → `custom`,
 `backgroundOpacity`, `border`, `titleBar`, `scale`), `backgroundColor`,
-`backgroundOpacity`, `border`, `borderColor`, `borderSize`, `titleBar`,
+`backgroundOpacity`, `border`, `titleBar`,
 `font`, `fontMedia`, `titleSize`, `tabSize`, `outline`, `shadow`, `bodyFont`,
 `tabs`, `buttons`, `fields`, `dropdowns`, `scrollBars`, `insets`,
 `charStats`, `charStatsBackground`, `charStatsAnchor`, `charStatsX`,
 `charStatsY`, `charStatsSize`, `charStatList` (stat ID → on), `charStatColors`
 (stat ID → color), `charBorders`,
 `charBorderSize`, `charEnchants`, `charEnchantSize`.
+
+Version 3 (November 15, 2026): the Mode design language. Values still at a
+version 2 default take the new one (the #0B0B0D fill: the Graphite panel;
+94%: 100%, also in each window's own look; Expressway: Geist); Border Color
+and Border Size retire (the `window` edge); anything chosen stays. Rarity
+borders are the `line` edge inside the slot (Border Size 2 or more: a 2px
+rim), Gunmetal on Common and empty slots; enchant names Ivory, temporary
+enhancements Celadon.
 
 Version 2 (November 13, 2026, per the owner): a border still at version 1's
 default color (#25282C) moves to the unit frames' rim color; everything new
@@ -154,12 +162,14 @@ The skinning itself is shared: `Shared/Skin/Frame.lua` (windows),
   click the chevron on the Social row, then open the **Character** tab and
   click **Up** under Nudge.
 - **Required state:** out of combat, in a guild, wearing some enchanted gear.
-- **Confirmation:** the Guild window has a dark fill with a crisp 2px border,
-  no round portrait, gold corners or blue filigree; the minimize button is a
-  small square with a thin arrow beside the close button; the dropdown is a
-  dark field with a chevron and its menu opens on a dark panel; roster names
-  are in full color (offline members in Blizzard's gray), without a gray
-  film over them; all text is Expressway. The Character window shows the
+- **Confirmation:** the Guild window is a Graphite panel with the thin lit
+  Steel window edge and its soft shadow, a slightly lighter title strip with
+  a hairline under it, no round portrait, gold corners or blue filigree; the
+  minimize and close buttons are small boxes whose glyph and outline turn
+  Ivory on hover; tabs are plain text, the chosen one Ivory with a short
+  Ivory bar; the dropdown is a dark field with a chevron and its menu opens
+  on a Graphite window; roster names are in full color (offline members in
+  Blizzard's gray), without a gray film over them; all text is Geist. The Character window shows the
   stats block on the model, colored borders round your gear and short enchant
   names beside enchanted slots. Every window row starts collapsed and the
   Social row opens to Scale and Own Look; the stats block moves up one pixel.

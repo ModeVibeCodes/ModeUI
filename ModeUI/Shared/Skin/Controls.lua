@@ -4,27 +4,29 @@ local Skin, Kit = addon.Skin, addon.Kit
 -- Blizzard's shared controls in the Mode look, each recognised by the keys
 -- its template gives it (Forever's SharedUIPanelTemplates, TabSystem,
 -- MinimalScrollBar and WowTrimScrollBar):
---   Button       Left/Middle/Right art (UIPanelButtonTemplate): a field whose
---                rim turns cyan on hover
+--   Button       Left/Middle/Right art (UIPanelButtonTemplate): a Mode
+--                Button face in the `control` edge, Ivory on hover
 --   Field        an edit box with Left/Middle/Right art (InputBoxTemplate,
---                SearchBoxTemplate): a field whose rim turns cyan with focus
+--                SearchBoxTemplate): a Graphite base in the `control` edge,
+--                Ivory with focus
 --   Tab          LeftActive/MiddleActive/RightActive (PanelTabButtonTemplate,
---                TabSystemButtonTemplate): a field; the selected tab is the
---                lighter segment with a two-pixel cyan bar on its window side
+--                TabSystemButtonTemplate): text; the chosen tab Ivory with a
+--                two-pixel Ivory bar on its window side
 --   SideTab      SelectedTexture + Icon + Background (LargeSideTabButton):
---                a field around the icon, cyan rim when checked
+--                a Mode Button face in the `control` edge, Ivory when checked
 --   RightSideTab Icon + a checked texture, no Background (RightSideTabTemplate:
 --                Guild's Chat, Roster, Benefits and Info tabs): as SideTab
 --   Dropdown     WowStyle1/2DropdownTemplate (Background + Arrow) or the legacy
 --                UIDropDownMenuTemplate (Left/Middle/Right + Button): a field
 --                with a chevron (Extras.lua)
---   Close        the close button: a field with a thin cross
---   ScrollBar    Track.Thumb + Back/Forward: a slim track and thumb
---   Inset        an inset frame's NineSlice and Bg: a darker field
+--   Close        the close button: a `control` box with a thin cross
+--   ScrollBar    Track.Thumb + Back/Forward: a slim Graphite track and thumb
+--   Inset        an inset frame's NineSlice and Bg: a Graphite base in the
+--                `card` edge
 -- Blizzard re-sets these textures' atlases on state changes but never their
--- alpha, so faded art stays faded. `style` carries the colors and font:
--- { path, size, outline, shadow } plus Skin.colors.
-local C = Skin.colors
+-- alpha, so faded art stays faded. `style` carries the font:
+-- { path, size, outline, shadow, tabSize }; the colors are Skin.mode's.
+local M, Style = Skin.mode, addon.Style
 local Snap, Fade = Skin.Snap, Skin.Fade
 local BUTTON_ART = { "Left", "Middle", "Right", "LeftDisabled", "MiddleDisabled", "RightDisabled" }
 local TAB_ART = { "Left", "Middle", "Right", "LeftActive", "MiddleActive", "RightActive",
@@ -77,28 +79,31 @@ function Skin.Kind(frame)
     return nil
 end
 
-local function Parts(frame) return Skin.Panel(frame, "BACKGROUND", -8) end
+local function Parts(frame, preset) return Skin.Box(frame, preset) end
 
+-- Buttons: a Mode Button face in Graphite raised inside the `control` edge;
+-- hover lights its outer line Ivory. Disabled, the text goes muted.
 function Skin.Button(button, style)
     for _, key in ipairs(BUTTON_ART) do Fade(button[key]) end
     FadeStates(button)
-    local parts = Parts(button)
-    local px = Kit.PixelSize(button)
-    parts.px, parts.hoverRim = px, true
+    local parts = Parts(button, "control")
+    parts.px, parts.style = Kit.PixelSize(button), style
     Skin.Once(button, "buttonHover", function()
         button:HookScript("OnEnter", function() parts.hovered = true; Skin.PaintField(button) end)
         button:HookScript("OnLeave", function() parts.hovered = false; Skin.PaintField(button) end)
     end)
     local text = Text(button)
-    if text then Skin.Font(text, style.path, nil, style.outline, style.shadow, px) end
+    if text then Skin.Font(text, Style.Weighted(style.path, "semibold"), nil, style.outline, style.shadow, parts.px) end
     Skin.PaintField(button)
 end
 
+-- Fields: an edit box on a Graphite base inside the `control` edge; focus
+-- lights its outer line Ivory.
 function Skin.Field(edit, style)
     for _, key in ipairs({ "Left", "Middle", "Mid", "Right" }) do Fade(edit[key]) end
-    local parts = Parts(edit)
+    local parts = Parts(edit, "control")
     local px = Kit.PixelSize(edit)
-    parts.px = px
+    parts.px, parts.field = px, true
     -- InputBoxTemplate's art reaches 5 px left of the text; so does the field.
     if not parts.box then
         parts.box = edit:CreateTexture(nil, "BACKGROUND", nil, -8)
@@ -116,38 +121,35 @@ function Skin.Field(edit, style)
     Skin.PaintField(edit)
 end
 
--- A field's colors: cyan rim when hovered (buttons) or focused (edit boxes).
+-- A button's or field's look now: Ivory outer line while hovered or focused.
 function Skin.PaintField(frame)
     local parts = Skin.parts[frame]
-    if not parts or not parts.fill then return end
+    if not parts or not parts.face then return end
     local focused = frame.HasFocus and frame:HasFocus() == true
-    local lit = focused or parts.hovered
     local enabled = not frame.IsEnabled or frame:IsEnabled() ~= false
-    local rim = lit and enabled and C.accent or (enabled and C.fieldRim or C.cardRim)
-    Skin.PaintPanel(parts, parts.box or frame, C.field, 0.95, rim, parts.px or 1)
+    local lit = enabled and (focused or parts.hovered)
+    if parts.field then
+        Skin.PaintBox(parts, parts.box or frame, "Solid", M.field, 1, true, lit and "accent" or nil)
+    else
+        Skin.PaintBox(parts, frame, "Button", M.face, 1, true, lit and "accent" or nil)
+        Skin.Ink(Text(frame), enabled and M.text or M.muted)
+    end
 end
 
--- Tabs: a 24 px field across the tab (Blizzard's 32 px tab, its text 2 px
--- above the middle); the selected one is the lighter segment with the cyan
--- bar. `side` is "top" for tabs hanging under a window (bar on top) or
--- "bottom" for tabs sitting above one.
+-- Tabs: text tabs; the chosen one in Ivory with a 2px Ivory bar on its
+-- window side, the others muted. `side` is "top" for tabs hanging under a
+-- window (bar on top) or "bottom" for tabs sitting above one.
 function Skin.Tab(tab, style, side)
     for _, key in ipairs(TAB_ART) do Fade(tab[key]) end
-    local parts = Parts(tab)
+    local parts = Skin.parts[tab] or { regions = {} }
+    Skin.parts[tab] = parts
     local px = Kit.PixelSize(tab)
-    parts.px, parts.side = px, side or "top"
-    if not parts.box then
-        parts.box = tab:CreateTexture(nil, "BACKGROUND", nil, -8)
-        parts.box:SetAlpha(0)
+    parts.px, parts.side, parts.style = px, side or "top", style
+    if not parts.bar then
         parts.bar = tab:CreateTexture(nil, "ARTWORK", nil, 7)
-        parts.bar:SetTexture(Kit.FLAT)
-        parts.regions[parts.box], parts.regions[parts.bar] = true, true
+        Style.ApplyAsset(parts.bar, "Solid")
+        parts.regions[parts.bar] = true
     end
-    local gap = Snap(1, px)
-    parts.box:ClearAllPoints()
-    parts.box:SetPoint("TOPLEFT", tab, "TOPLEFT", gap, -Snap(2, px))
-    parts.box:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", -gap, Snap(6, px))
-    parts.style = style
     -- Blizzard shows and hides the active art (and resets the font) when a
     -- tab is picked; the Mode look follows right after.
     Skin.Once(Skin, "panelTabs", function()
@@ -165,29 +167,33 @@ end
 
 function Skin.PaintTab(tab)
     local parts = Skin.parts[tab]
-    if not parts or not parts.box then return end
+    if not parts or not parts.bar then return end
     local selected = Shown(tab.LeftActive) or Shown(tab.MiddleActive)
     local px = parts.px or 1
-    Skin.PaintPanel(parts, parts.box, selected and C.selected or C.field, 0.95, C.fieldRim, px)
-    local bar = parts.bar
+    local bar, inset = parts.bar, Snap(8, px)
     bar:ClearAllPoints()
+    -- Blizzard's tab is 32px with its text 2px above the middle: the bar
+    -- sits on its window-side edge, clear of the text.
     local edge = parts.side == "bottom" and "BOTTOM" or "TOP"
-    bar:SetPoint(edge .. "LEFT", parts.box, edge .. "LEFT", px, parts.side == "bottom" and px or -px)
-    bar:SetPoint(edge .. "RIGHT", parts.box, edge .. "RIGHT", -px, parts.side == "bottom" and px or -px)
+    local y = parts.side == "bottom" and Snap(6, px) or -Snap(4, px)
+    bar:SetPoint(edge .. "LEFT", tab, edge .. "LEFT", inset, y)
+    bar:SetPoint(edge .. "RIGHT", tab, edge .. "RIGHT", -inset, y)
     bar:SetHeight(Snap(2, px))
-    Kit.Tint(bar, C.accent, 1)
+    Style.Paint(bar, M.accent)
     bar:SetShown(selected)
     local text, style = Text(tab), parts.style
     if text and style then
-        Skin.Font(text, style.path, style.tabSize, style.outline, style.shadow, px)
-        local color = selected and C.heading or C.muted
-        text:SetTextColor(color[1], color[2], color[3], 1)
+        Skin.Font(text, Style.Weighted(style.path, "semibold"), style.tabSize, style.outline, style.shadow, px)
+        Skin.Ink(text, selected and M.accent or M.muted)
     end
 end
 
+-- Side tabs (and right side tabs, Extras.lua): a Mode Button face inside the
+-- `control` edge; checked, the face is the chosen tone; hovered or checked,
+-- the outer line is Ivory.
 function Skin.SideTab(tab, style)
     Fade(tab.Background); Fade(tab.SelectedTexture); Fade(tab.HighlightTexture); Fade(tab.TabGlow)
-    local parts = Parts(tab)
+    local parts = Parts(tab, "control")
     parts.px = Kit.PixelSize(tab)
     Skin.Once(tab, "sideTab", function()
         if tab.SetChecked then hooksecurefunc(tab, "SetChecked", function() Skin.PaintSideTab(tab) end) end
@@ -199,22 +205,21 @@ end
 
 function Skin.PaintSideTab(tab)
     local parts = Skin.parts[tab]
-    if not parts or not parts.fill then return end
+    if not parts or not parts.face then return end
     -- SidePanelTabButtonMixin shows SelectedTexture when checked (it may
     -- have no GetChecked); the texture is faded, but its shown state stays.
     local checked = (tab.GetChecked and Public(tab:GetChecked()) == true) or Shown(tab.SelectedTexture)
-    local rim = (checked or parts.hovered) and C.accent or C.fieldRim
-    Skin.PaintPanel(parts, tab, checked and C.selected or C.field, 0.95, rim, parts.px or 1)
+    Skin.PaintBox(parts, tab, "Button", checked and M.chosen or M.face, 1, true, (checked or parts.hovered) and "accent" or nil)
 end
 
--- A window button with a Mode glyph: Blizzard's art faded, a field with
--- the glyph (ModeClose, ModeMinimize, ModeMaximize) whose rim and glyph
--- turn cyan on hover. Placing it is anchoring, so the caller does it
--- outside combat.
+-- A window button with a Mode glyph (ModeClose, ModeMinimize, ModeMaximize):
+-- Blizzard's art faded, a Mode Button face inside the `control` edge, the
+-- glyph in Graphite secondary; hover lights the glyph and the outer line
+-- Ivory. Placing it is anchoring, so the caller does it outside combat.
 function Skin.GlyphButton(button, glyph)
     FadeStates(button)
     Fade(button.Border)
-    local parts = Parts(button)
+    local parts = Parts(button, "control")
     local px = Kit.PixelSize(button)
     parts.px = px
     if not parts.icon then
@@ -232,12 +237,12 @@ function Skin.Close(button) Skin.GlyphButton(button, "ModeClose") end
 function Skin.PaintClose(button)
     local parts = Skin.parts[button]
     if not parts or not parts.icon then return end
-    Skin.PaintPanel(parts, button, C.field, 0.95, parts.hovered and C.accent or C.fieldRim, parts.px or 1)
-    Kit.Tint(parts.icon, parts.hovered and C.accent or C.label, 1)
+    Skin.PaintBox(parts, button, "Button", M.face, 1, true, parts.hovered and "accent" or nil)
+    Style.Paint(parts.icon, parts.hovered and M.accent or M.label)
 end
 
--- Scroll bars: Blizzard's track, thumb and arrows faded; a 4 px track and
--- thumb down the middle. The arrows stay clickable.
+-- Scroll bars: Blizzard's track, thumb and arrows faded; a 4 px Graphite
+-- track and thumb down the middle. The arrows stay clickable.
 function Skin.ScrollBar(bar)
     Fade(bar.Backplate)
     -- A plain Background texture (the Guild roster's marble strip) goes too.
@@ -259,38 +264,26 @@ function Skin.ScrollBar(bar)
     if not own.track then
         own.track = track:CreateTexture(nil, "BACKGROUND", nil, -8)
         own.thumb = thumb:CreateTexture(nil, "ARTWORK", nil, 7)
-        own.track:SetTexture(Kit.FLAT); own.thumb:SetTexture(Kit.FLAT)
+        Style.ApplyAsset(own.track, "Solid"); Style.ApplyAsset(own.thumb, "Solid")
     end
     own.track:ClearAllPoints()
     own.track:SetPoint("TOP", track, "TOP", 0, 0); own.track:SetPoint("BOTTOM", track, "BOTTOM", 0, 0)
     own.track:SetWidth(width)
-    Kit.Tint(own.track, C.track, 1)
+    Style.Paint(own.track, M.track)
     own.thumb:ClearAllPoints()
     own.thumb:SetPoint("TOP", thumb, "TOP", 0, 0); own.thumb:SetPoint("BOTTOM", thumb, "BOTTOM", 0, 0)
     own.thumb:SetWidth(width)
-    Kit.Tint(own.thumb, C.thumb, 1)
+    Style.Paint(own.thumb, M.thumb)
 end
 
--- An inset: Blizzard's inset border and background faded, a darker field
--- inside a one-pixel rim. Some insets sit ABOVE the content they frame (the
--- Guild roster's InsetFrame is raised to level 100 over its rows), so the
--- field is drawn on the inset's parent, under the content, and only the
--- thin rim on the inset itself; the rows keep their full color.
+-- An inset: Blizzard's inset border and background faded; a Mode Matte face
+-- on a Graphite base inside the `card` edge. Some insets sit ABOVE the
+-- content they frame (the Guild roster's InsetFrame is raised to level 100
+-- over its rows), so the face is drawn on the inset's parent, under the
+-- content; the edge (on its own frame) only frames it.
 function Skin.Inset(inset)
     Skin.FadeNineSlice(inset.NineSlice); Fade(inset.Bg)
     local host = inset:GetParent() or inset
-    local parts = Skin.parts[inset] or { regions = {} }
-    Skin.parts[inset] = parts
-    if not parts.fill then
-        parts.fill = host:CreateTexture(nil, "BACKGROUND", nil, -7)
-        parts.fill:SetTexture(Kit.FLAT)
-        parts.rim = Kit.Rim(inset, "BACKGROUND", -7)
-        for _, edge in ipairs(parts.rim) do parts.regions[edge] = true end
-        -- The field belongs to the host's textures too, so fading the host's
-        -- own art (fadeOwn) never takes it.
-        local own = Skin.parts[host] or { regions = {} }
-        Skin.parts[host] = own
-        own.regions[parts.fill] = true
-    end
-    Skin.PaintPanel(parts, inset, C.field, 0.6, C.cardRim, Kit.PixelSize(inset))
+    local parts = Skin.Box(inset, "card", { faceHost = host, sublevel = -7 })
+    Skin.PaintBox(parts, inset, "Matte", M.field, 1, true)
 end

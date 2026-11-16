@@ -78,7 +78,9 @@ function Style.Soft(color) return Style.Mix(color, { 1, 1, 1 }, 0.55) end
 Style.LEGACY = { nameplateFocus = Hex("FFB547"),
     -- Cooldown Manager before version 5: the Rounded slot rim (version 2), the
     -- slot background, gold procs and the combo point red.
-    slotRim = Hex("101010"), slotBackground = Hex("040404"), procGold = Hex("FFD25A"), comboRed = Hex("F05454") }
+    slotRim = Hex("101010"), slotBackground = Hex("040404"), procGold = Hex("FFD25A"), comboRed = Hex("F05454"),
+    -- Windows before version 3: the near-black window fill.
+    windowFill = Hex("0B0B0D") }
 
 -- True when `color` is (within rounding) `reference`: migrations move saved
 -- colors that still equal an old default, and keep anything the player chose.

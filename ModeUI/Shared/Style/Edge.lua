@@ -184,6 +184,15 @@ function Edge:SetRim(rim)
     self:Paint()
 end
 
+-- Moves the border to `level` frame levels above its host (a host whose own
+-- level changes, or whose children stack high, like Blizzard's windows).
+function Edge:SetLevel(level)
+    local base = self.host:GetFrameLevel()
+    if not addon.IsNumber(base) then return end
+    self.holder:SetFrameLevel(math.min(9000, base + level))
+    if self.below then self.below:SetFrameLevel(math.max(0, base - 1)) end
+end
+
 -- The border's textures, for callers that fade them together (from a state
 -- the client may keep secret, through SetAlphaFromBoolean).
 function Edge:Regions()

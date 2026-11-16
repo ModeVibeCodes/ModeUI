@@ -31,8 +31,7 @@ return {
     ["Modules/Tooltip/Driver.lua"] = { color = 1 },
     ["Modules/Tooltip/Init.lua"] = { color = 3 },
     ["Modules/UnitFrames/Init.lua"] = { color = 11 },
-    ["Modules/Windows/Character.lua"] = { border = 2 },
-    ["Modules/Windows/Init.lua"] = { color = 23 },
+    ["Modules/Windows/Init.lua"] = { color = 22 },
     ["Shared/Border/Border.lua"] = { border = 1 },
     ["Shared/Domain/Power.lua"] = { color = 2 },
     ["Shared/Kit/Border.lua"] = { border = 4, mask = 3 },
@@ -49,6 +48,5 @@ return {
     ["Shared/Runtime/Feedback.lua"] = { color = 2 },
     ["Shared/Settings/Launchers.lua"] = { color = 2 },
     ["Shared/Settings/Widgets/Core.lua"] = { color = 6 },
-    ["Shared/Skin/Controls.lua"] = { border = 1 },
     ["Shared/Skin/Skin.lua"] = { color = 14, border = 4 },
 }

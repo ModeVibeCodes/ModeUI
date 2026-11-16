@@ -171,3 +171,79 @@ function Skin.PaintEdge(parts, thickness, color, alpha)
     Kit.PlaceRim(parts.edgeRim, parts.edge, thickness, 0, color, alpha or 1)
     parts.edge:SetShown(thickness > 0)
 end
+
+-- The Mode design language ---------------------------------------------------
+-- Windows and their controls (docs/DESIGN_LANGUAGE.md, "Windows and panels"):
+-- Graphite surfaces with Mode textures, Style.Edge borders (`window` on a
+-- window, `control` on its buttons and fields, `card` on insets), Ivory for
+-- hover, focus and the chosen tab. Every color is a Style.Tone token.
+-- (Skin.colors and Skin.Panel above stay for the modules not rebuilt yet.)
+local Style = addon.Style
+local Tone = Style.Tone
+local G = Tone.graphite
+Skin.mode = {
+    panel = G.panel, title = G.raised, line = G.line, field = G.base, face = G.raised, chosen = G.track,
+    track = G.track, thumb = G.rimStrong, heading = G.white, text = G.text, label = G.secondary, muted = G.muted,
+    disabled = G.rim, accent = Tone.ivory, card = G.raised, cardRim = G.line, fieldRim = G.rim,
+}
+local TILED = { Panel = true, Title = true }
+
+-- A Mode box for `host`: a face texture (on `opts.faceHost`, default the
+-- host, at `opts.layer`/`opts.sublevel`) and, with `preset`, a Style.Edge on
+-- a frame of its own that follows the painted box (`opts.level` levels above
+-- the host). Made once; returns the host's parts.
+function Skin.Box(host, preset, opts)
+    opts = opts or {}
+    local parts = Skin.parts[host] or { regions = {} }
+    Skin.parts[host] = parts
+    if not parts.face then
+        local on = opts.faceHost or host
+        parts.face = on:CreateTexture(nil, opts.layer or "BACKGROUND", nil, opts.sublevel or -8)
+        parts.regions[parts.face] = true
+        if on ~= host then
+            local other = Skin.parts[on] or { regions = {} }
+            Skin.parts[on] = other
+            other.regions[parts.face] = true
+        end
+    end
+    if preset and not parts.modeEdge then
+        local frame = CreateFrame("Frame", nil, host)
+        frame:EnableMouse(false)
+        frame:SetAllPoints(host)
+        parts.edgeFrame = frame
+        parts.edgeLevel = opts.level or 1
+        parts.modeEdge = Style.Edge(frame, preset, { level = 1 })
+    end
+    return parts
+end
+
+-- Paints a box over `box` (a region or frame; the host by default): the face
+-- in the Mode texture `key` (Solid, Button, Matte, Panel, Title...) and
+-- `color` at `alpha`; the edge shown unless `edge` is false, its outer line
+-- lit with `highlight` ("accent", a color, or nil).
+function Skin.PaintBox(parts, box, key, color, alpha, edge, highlight)
+    local face = parts.face
+    if parts.faceKey ~= key then Style.ApplyAsset(face, key); parts.faceKey = key end
+    face:ClearAllPoints(); face:SetAllPoints(box)
+    Style.Paint(face, color, alpha)
+    if TILED[key] and box.GetSize then
+        local width, height = box:GetSize()
+        if addon.IsNumber(width, 1) and addon.IsNumber(height, 1) then Style.TileCoords(face, key, width, height, Kit.PixelSize(box)) end
+    elseif face.SetTexCoord then
+        face:SetTexCoord(0, 1, 0, 1)
+    end
+    if parts.modeEdge then
+        local frame = parts.edgeFrame
+        frame:ClearAllPoints(); frame:SetAllPoints(box)
+        local level = frame:GetParent():GetFrameLevel()
+        if addon.IsNumber(level) then frame:SetFrameLevel(math.min(9000, level + parts.edgeLevel)); parts.modeEdge:SetLevel(1) end
+        parts.modeEdge:SetShown(edge ~= false)
+        parts.modeEdge:Layout()
+        parts.modeEdge:SetHighlight(highlight)
+    end
+end
+
+-- Text in the Mode colors: `color` a Skin.mode token.
+function Skin.Ink(text, color)
+    if text and text.SetTextColor then text:SetTextColor(color[1], color[2], color[3], 1) end
+end

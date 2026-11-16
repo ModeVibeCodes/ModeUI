@@ -8,7 +8,7 @@ if not M then return end
 -- later is filled in as skinned with the default look; unknown window IDs
 -- and stats (from a newer version) are kept.
 -- Version 2 (November 13, 2026, per the owner): a 2px border in the unit
--- frames' rim color; a border still at version 1's default color follows.
+-- frames' rim color. Version 3: the Mode design language (MigrateV2).
 -- Everything else new is filled in from the defaults.
 local Public, Number = addon.IsPublic, addon.IsNumber
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -26,12 +26,24 @@ for key, list in pairs(M.choices) do
     ALLOWED[key] = set
 end
 
+-- Version 2 -> 3 (November 15, 2026): the Mode design language. Values
+-- still at their version 2 default take the new one; anything the player
+-- chose stays. Border Color and Border Size retire (the `window` edge).
+local function MigrateV2(db)
+    if Same(db.backgroundColor, M.OLD.background) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+    if db.backgroundOpacity == M.OLD.opacity then db.backgroundOpacity = M.defaults.backgroundOpacity end
+    if db.fontMedia == "Expressway" then db.fontMedia = M.defaults.fontMedia end
+    for _, key in ipairs(M.retiredKeys) do db[key] = nil end
+    for _, look in pairs(type(db.looks) == "table" and db.looks or {}) do
+        if type(look) == "table" and look.backgroundOpacity == M.OLD.opacity then look.backgroundOpacity = M.LOOK.backgroundOpacity end
+    end
+end
+
 function M.Initialize(db)
     if db.version == nil then db.version = M.VERSION end
-    if db.version == 1 then
-        if Same(db.borderColor, M.OLD_BORDER_COLOR) then db.borderColor = Copy(M.BORDER_COLOR) end
-        db.version = 2
-    end
+    -- Version 1's border color moved to version 2's; version 3 retires it.
+    if db.version == 1 then db.version = 2 end
+    if db.version == 2 then MigrateV2(db); db.version = 3 end
     assert(db.version == M.VERSION, "Invalid window settings version")
     for key, default in pairs(M.defaults) do
         if db[key] == nil then db[key] = Copy(default) end

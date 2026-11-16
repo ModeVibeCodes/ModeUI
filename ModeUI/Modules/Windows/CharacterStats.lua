@@ -17,7 +17,7 @@ if not M then return end
 -- secret or missing value shows a dash.
 local L, Kit, Skin = addon.L, addon.Kit, addon.Skin
 local Number = addon.IsNumber
-local C = Skin.colors
+local C = Skin.mode
 local WIDTH, PADDING, GAP, VALUE_WIDTH = 150, 6, 2, 64
 local DASH = "-"
 -- UnitStat indexes (LE_UNIT_STAT_*).
@@ -135,7 +135,7 @@ function M:BuildStats()
     if not parent then return nil end
     local frame = CreateFrame("Frame", "ModeUICharacterStats", parent)
     frame:EnableMouse(false)
-    frame.parts = Skin.Panel(frame, "BACKGROUND", -8)
+    frame.parts = Skin.Box(frame, "card")
     frame.lines = {}
     self.statsFrame = frame
     return frame
@@ -221,6 +221,6 @@ function M:PaintStats()
     local host = CharacterModelScene or area
     local level = host:GetFrameLevel()
     if Number(level) then frame:SetFrameLevel(level + 60) end
-    Skin.PaintPanel(frame.parts, frame, C.field, db.charStatsBackground and 0.7 or 0, C.fieldRim, db.charStatsBackground and px or 0)
+    Skin.PaintBox(frame.parts, frame, "Matte", C.field, db.charStatsBackground and 0.7 or 0, db.charStatsBackground)
     frame:SetShown(count > 0)
 end

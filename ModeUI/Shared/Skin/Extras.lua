@@ -4,13 +4,13 @@ local Skin, Kit = addon.Skin, addon.Kit
 -- More of Blizzard's shared pieces in the Mode look (Forever's
 -- Blizzard_Menu, SharedUIPanelTemplates and ScrollBox):
 --   Dropdown      WowStyle1/2DropdownTemplate: its Background and Arrow
---                 faded; a field with a chevron, cyan rim on hover. The
+--                 faded; a Graphite field in the `control` edge with a chevron, Ivory on hover. The
 --                 legacy UIDropDownMenuTemplate gets the same field over its
 --                 Left/Middle/Right art. The menu a WowStyle dropdown opens is
 --                 dressed too (Skin.Menu).
 --   RightSideTab  RightSideTabTemplate (the Guild window's Chat, Roster,
 --                 Benefits and Info tabs): its art faded, the icon cropped
---                 on a field whose rim turns cyan when checked.
+--                 on a `control` box, Ivory when checked.
 --   MaxMin        MaximizeMinimizeButtonFrameTemplate: both buttons as Mode
 --                 glyph buttons beside the close button.
 --   Lists         rows in a ScrollBox are made and filled by Blizzard as you
@@ -20,7 +20,7 @@ local Skin, Kit = addon.Skin, addon.Kit
 --                 game's own sizes and outlines.
 -- All plain widget calls, post-hooks and callback registrations; nothing is
 -- written to Blizzard's tables.
-local C = Skin.colors
+local M, Style = Skin.mode, addon.Style
 local Snap, Fade = Skin.Snap, Skin.Fade
 local TEXT_DEPTH = 8
 
@@ -42,7 +42,7 @@ function Skin.Dropdown(dropdown, style)
     else
         Fade(dropdown.Background); Fade(dropdown.Arrow)
     end
-    local parts = Skin.Panel(dropdown, "BACKGROUND", -8)
+    local parts = Skin.Box(dropdown, "control")
     local px = Kit.PixelSize(dropdown)
     parts.px = px
     if not parts.box then
@@ -74,8 +74,8 @@ function Skin.PaintDropdown(dropdown)
     if not parts or not parts.box then return end
     local open = dropdown.IsMenuOpen and Public(dropdown:IsMenuOpen()) == true
     local lit = parts.hovered or open
-    Skin.PaintPanel(parts, parts.box, C.field, 0.95, lit and C.accent or C.fieldRim, parts.px or 1)
-    Kit.Tint(parts.chevron, lit and C.accent or C.label, 1)
+    Skin.PaintBox(parts, parts.box, "Solid", M.field, 1, true, lit and "accent" or nil)
+    Style.Paint(parts.chevron, lit and M.accent or M.label)
 end
 
 -- The menu a skinned WowStyle dropdown opens: its one background texture is
@@ -87,7 +87,7 @@ local function MenuPanel()
     if menuPanel then return menuPanel end
     menuPanel = CreateFrame("Frame")
     menuPanel:EnableMouse(false)
-    menuPanel.parts = Skin.Panel(menuPanel, "BACKGROUND", -8)
+    menuPanel.parts = Skin.Box(menuPanel, "window")
     menuPanel:Hide()
     return menuPanel
 end
@@ -107,7 +107,8 @@ function Skin.Menu(menu)
     panel:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", Snap(4, px), -Snap(3, px))
     local level = menu:GetFrameLevel()
     if Public(level) then panel:SetFrameLevel(level + 1) end
-    Skin.PaintPanel(panel.parts, panel, C.card, 0.97, C.fieldRim, px)
+    -- A Mode window: Graphite panel in the `window` edge.
+    Skin.PaintBox(panel.parts, panel, "Panel", M.panel, 1, true)
     panel.menu = menu
     panel:Show()
 end
@@ -139,7 +140,7 @@ function Skin.RightSideTab(tab)
     if tab.IconOverlay then keep[tab.IconOverlay] = true end
     Skin.FadeTextures(tab, keep)
     FadeStates(tab)
-    local parts = Skin.Panel(tab, "BACKGROUND", -8)
+    local parts = Skin.Box(tab, "control")
     local px = Kit.PixelSize(tab)
     parts.px = px
     if tab.Icon then

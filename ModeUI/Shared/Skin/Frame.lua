@@ -3,21 +3,22 @@ local Skin, Kit = addon.Skin, addon.Kit
 
 -- A Blizzard window in the Mode look: its border (NineSlice pieces, or the
 -- older corner and edge textures), parchment, portrait, title art and glow
--- are faded; ModeUI draws a fill, a crisp square border on its own layer
--- above the window's children (as the unit frames' rim sits above their
--- bars), a title strip with a divider, and restyles the title, close and
--- maximize/minimize buttons, insets, list rows, text and the controls inside
--- (Controls.lua, Extras.lua). Works for PortraitFrameTemplate,
--- ButtonFrameTemplate(Minimizable), DefaultPanelTemplate, BasicFrameTemplate
--- and Forever's Character frame, by their keys. `style`:
---   fill, alpha, rim, border (bool), borderSize, titleBar (bool), path,
+-- are faded; ModeUI draws the Mode window (docs/DESIGN_LANGUAGE.md,
+-- "Windows and panels"): a Graphite panel in Mode Panel, the `window` edge
+-- on its own layer above the window's children, a Mode Title strip over a
+-- line, and restyles the title, close and maximize/minimize buttons, insets,
+-- list rows, text and the controls inside (Controls.lua, Extras.lua). Works
+-- for PortraitFrameTemplate, ButtonFrameTemplate(Minimizable),
+-- DefaultPanelTemplate, BasicFrameTemplate and Forever's Character frame, by
+-- their keys. `style`:
+--   alpha (the panel's opacity), border (bool: the edge), titleBar (bool), path,
 --   titleSize, tabSize, outline, shadow, bodyFont (bool),
 --   controls = { Button, Field, Tab, SideTab, RightSideTab, Dropdown,
 --   ScrollBar, Inset = bool }
 -- `options` (per window): noFill (the World Map draws under its border
 -- frame), fade (extra frames whose own textures are faded), fadeOwn (fade
 -- every texture directly on the window), fadeRows (fade list rows' strips).
-local C = Skin.colors
+local M, Style = Skin.mode, addon.Style
 local Snap, Fade = Skin.Snap, Skin.Fade
 Skin.TITLE_HEIGHT, Skin.CLOSE_SIZE, Skin.CLOSE_INSET = 22, 18, 2
 local ART = { "Bg", "TopTileStreaks", "PortraitContainer", "portrait", "FrameGlow", "TitleBg",
@@ -82,35 +83,38 @@ local function FadeArt(frame, options)
     end
 end
 
--- Fill, border and title strip. Called again whenever the look changes.
+-- Panel, edge and title strip (docs/DESIGN_LANGUAGE.md, "Windows and
+-- panels"): the Graphite panel in Mode Panel to the window's edges (at the
+-- window's Background Opacity), the `window` edge outside them (1px Steel
+-- Sheen, a black gap, shadow and drop) on its own frame above everything the
+-- window stacks, and a Mode Title strip in Graphite raised over a 1px line.
+-- Called again whenever the look changes.
 function Skin.PaintWindow(frame, style)
     local parts = Skin.parts[frame]
-    if not parts or not parts.fill then return end
+    if not parts or not parts.face then return end
     local px = Kit.PixelSize(frame)
     local options = parts.options or {}
-    local rim = style.border and Snap(style.borderSize or 1, px) or 0
-    -- The fill runs to the window's edge, under the border; the panel's own
-    -- one-pixel rim isn't used (the border frame replaces it).
-    Skin.PaintPanel(parts, frame, style.fill, options.noFill and 0 or style.alpha, style.rim, 0)
-    if parts.edge then Skin.PaintEdge(parts, rim, style.rim, 1) end
+    Skin.PaintBox(parts, frame, "Panel", style.fill or M.panel, options.noFill and 0 or style.alpha, style.border ~= false)
     local title = Skin.TitleOf(frame)
     local strip, divider = parts.strip, parts.divider
     local showStrip = style.titleBar and title ~= nil
     local height = Snap(Skin.TITLE_HEIGHT, px)
     strip:ClearAllPoints()
-    strip:SetPoint("TOPLEFT", frame, "TOPLEFT", rim, -rim)
-    strip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -rim, -rim)
+    strip:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    strip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
     strip:SetHeight(height)
-    Kit.Tint(strip, C.card, options.noFill and style.alpha or 1)
+    Style.Paint(strip, M.title, options.noFill and style.alpha or 1)
+    local width = frame:GetWidth()
+    if addon.IsNumber(width, 1) then Style.TileCoords(strip, "Title", width, height, px) end
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", strip, "BOTTOMLEFT", 0, 0)
     divider:SetPoint("TOPRIGHT", strip, "BOTTOMRIGHT", 0, 0)
     divider:SetHeight(px)
-    Kit.Tint(divider, C.cardRim, 1)
+    Style.Paint(divider, M.line)
     strip:SetShown(showStrip); divider:SetShown(showStrip)
     if title then
-        Skin.Font(title, style.path, style.titleSize, style.outline, style.shadow, px)
-        title:SetTextColor(C.heading[1], C.heading[2], C.heading[3], 1)
+        Skin.Font(title, Style.Weighted(style.path, "semibold"), style.titleSize, style.outline, style.shadow, px)
+        Skin.Ink(title, M.heading)
         -- A portrait window's title sits 5 px under its container's top, off
         -- center for the portrait. With the strip it's centered on the strip,
         -- clear of the window buttons on both sides. (Blizzard's SetTitle only
@@ -127,14 +131,14 @@ function Skin.PaintWindow(frame, style)
     end
 end
 
--- The close button sits Close Inset inside the border's top-right corner,
--- centered on the title strip; the maximize/minimize pair just left of it.
--- Anchoring: outside combat only for protected windows.
-function Skin.PlaceClose(frame, close, style)
+-- The close button sits Close Inset inside the window's top-right corner,
+-- centered on the title strip (the edge is outside the window); the
+-- maximize/minimize pair just left of it. Anchoring: outside combat only for
+-- protected windows.
+function Skin.PlaceClose(frame, close)
     if addon.InCombat() and frame.IsProtected and frame:IsProtected() then return false end
     local px = Kit.PixelSize(frame)
-    local rim = style and style.border and Snap(style.borderSize or 1, px) or px
-    local size, inset = Snap(Skin.CLOSE_SIZE, px), Snap(Skin.CLOSE_INSET, px) + rim
+    local size, inset = Snap(Skin.CLOSE_SIZE, px), Snap(Skin.CLOSE_INSET, px)
     close:ClearAllPoints()
     close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -inset, -inset)
     close:SetSize(size, size)
@@ -149,19 +153,18 @@ end
 function Skin.Window(frame, style, options)
     options = options or {}
     FadeArt(frame, options)
-    local parts = Skin.Panel(frame, "BACKGROUND", -8)
+    local parts = Skin.Box(frame, "window", { level = EDGE_LIFT })
     parts.options = options
     if not parts.strip then
         parts.strip = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
         parts.divider = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
-        parts.strip:SetTexture(Kit.FLAT); parts.divider:SetTexture(Kit.FLAT)
+        Style.ApplyAsset(parts.strip, "Title"); Style.ApplyAsset(parts.divider, "Solid")
         parts.regions[parts.strip], parts.regions[parts.divider] = true, true
     end
-    Skin.Edge(frame, EDGE_LIFT)
     Skin.PaintWindow(frame, style)
     if frame.Inset and style.controls.Inset then Skin.Inset(frame.Inset) end
     local close = Skin.CloseOf(frame)
-    if close then Skin.Close(close); Skin.PlaceClose(frame, close, style) end
+    if close then Skin.Close(close); Skin.PlaceClose(frame, close) end
     Skin.Scan(frame, frame, style, 0)
     -- A window's own extra parts (the Character window's stats pane).
     if options.after then options.after(frame, style) end

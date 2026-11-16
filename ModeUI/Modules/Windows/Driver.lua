@@ -71,8 +71,8 @@ function M:Style(entry)
     local custom = look and look.custom
     local alpha, border, titleBar = db.backgroundOpacity, db.border, db.titleBar
     if custom then alpha, border, titleBar = look.backgroundOpacity, look.border, look.titleBar end
-    return { fill = db.backgroundColor, alpha = alpha / 100, rim = db.borderColor, border = border,
-        borderSize = db.borderSize, titleBar = titleBar, path = Kit.FontPath(db, self.id), titleSize = db.titleSize,
+    return { fill = db.backgroundColor, alpha = alpha / 100, border = border,
+        titleBar = titleBar, path = Kit.FontPath(db, self.id), titleSize = db.titleSize,
         tabSize = db.tabSize, outline = db.outline, shadow = db.shadow, bodyFont = db.bodyFont,
         controls = { Button = db.buttons, Field = db.fields, Tab = db.tabs, SideTab = db.tabs, RightSideTab = db.tabs,
             Dropdown = db.dropdowns, ScrollBar = db.scrollBars, Inset = db.insets } }
