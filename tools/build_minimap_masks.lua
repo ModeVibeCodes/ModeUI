@@ -5,8 +5,9 @@
 -- The game draws the minimap square and stretches its mask (Minimap:
 -- SetMaskTexture) over that square, so a mask's shape is a fraction of the
 -- map's side. To keep the difference between width and height, and the
--- corner radius, in exact pixels at every size, there is one mask per size,
--- difference and corner choice (the same lists as Modules/Minimap/Init.lua):
+-- corner radius, in exact pixels at every size, there is one mask per size
+-- and difference (the same lists as Modules/Minimap/Init.lua; the radius is
+-- 0 since the map sits in the Mode edge, whose rim covers the corners):
 --   Minimap/Mask-<size>-<difference>-<radius>.tga
 -- Each is 256x256, white with matching alpha (so it works whichever channel
 -- the client reads): a rounded rectangle as wide as the map, `difference`
@@ -15,7 +16,7 @@
 -- mask's soft edge lies under the border and nothing shows outside it.
 -- Files are run-length encoded 32-bit TGAs (type 10), the format other
 -- minimap addons ship their masks in.
-local SIZES, DIFFERENCES, RADII = {}, { 0, 8, 16 }, { 0, 4, 8, 12 }
+local SIZES, DIFFERENCES, RADII = {}, { 0, 8, 16, 24, 32, 40, 48 }, { 0 }
 for size = 140, 280, 4 do SIZES[#SIZES + 1] = size end
 local RES, INSET, SAMPLES = 256, 0.5, 8
 local ROOT = "ModeUI/Media/Textures/Minimap/"

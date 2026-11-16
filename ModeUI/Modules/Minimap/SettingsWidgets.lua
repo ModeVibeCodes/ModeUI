@@ -7,7 +7,7 @@ if not M then return end
 -- Blizzard button row (switch and corner picker). Defined here, built only
 -- when the page is opened.
 local SWATCH, SWATCH_GAP = 26, 6
-local CORNER_ROTATION = { TOPLEFT = -3 * math.pi / 4, TOPRIGHT = 3 * math.pi / 4, BOTTOMLEFT = -math.pi / 4, BOTTOMRIGHT = math.pi / 4 }
+local CORNER_LABELS = { TOPLEFT = "Top Left", TOPRIGHT = "Top Right", BOTTOMLEFT = "Bottom Left", BOTTOMRIGHT = "Bottom Right" }
 local ROW_HEIGHT = 36
 
 M.SettingsUI = {}
@@ -63,20 +63,13 @@ function UI.Swatches(page, host)
     return swatches
 end
 
--- The corner picker: four segments, each an arrow toward its corner.
+-- The corner picker: the four corners by name (side by side when they fit,
+-- else a dropdown, as every Mode segmented control).
 function UI.CornerPicker(page, host, name)
     local choices = {}
-    for _, corner in ipairs(M.CORNERS) do choices[#choices + 1] = { label = "", value = corner, width = 40 } end
+    for _, corner in ipairs(M.CORNERS) do choices[#choices + 1] = { label = L[CORNER_LABELS[corner]], value = corner, width = 96 } end
     local buttons, refresh = W.Exclusive(host, choices, function() return M.db.buttons[name].corner end,
         function(value) M:SetButton(name, "corner", value); page:Refresh() end)
-    for index, button in ipairs(buttons) do
-        local arrow = button:CreateTexture(nil, "OVERLAY")
-        arrow:SetPoint("CENTER", button, "CENTER", 0, 0); arrow:SetSize(12, 12)
-        addon.Media:ApplyTexture(arrow, "ModeChevron")
-        arrow:SetVertexColor(T.text[1], T.text[2], T.text[3], 1)
-        if arrow.SetRotation then arrow:SetRotation(CORNER_ROTATION[M.CORNERS[index]]) end
-        button.arrow = arrow
-    end
     page.refreshers[#page.refreshers + 1] = refresh
     return buttons
 end

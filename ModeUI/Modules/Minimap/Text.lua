@@ -6,7 +6,8 @@ if not M then return end
 -- the bottom of the map, coordinates centered at the top (owner, November
 -- 14, 2026). Bar Below: a Mode strip (a Mode Button face in Mono raised, in
 -- the same `frame` edge as the map) under the map, its edge 1 px from the
--- map's, zone at the left, coordinates in the middle, clock at the right.
+-- map's: clock at the right, coordinates just left of it, the zone from the
+-- left up to them (cut short when it doesn't fit, never under them).
 -- The clock is Bold, the zone SemiBold. On
 -- Hover: the On Map layout, shown while the pointer is over the map. Text is
 -- in the module's font with ModeUI's lifted shadow. The zone name goes
@@ -14,6 +15,7 @@ if not M then return end
 -- game gives plain numbers.
 local Kit, Location, Skin, Style = addon.Kit, addon.Domain.Location, addon.Skin, addon.Style
 local BAR_HEIGHT, BAR_PADDING = 22, 8
+local Snap = Skin.Snap
 
 local function NewText(parent)
     local text = Kit.Text(parent, "OVERLAY")
@@ -74,7 +76,14 @@ function M:LayoutText(width, height)
     Place(t.coords, "TOP", self.map, 0, -(inset + 2), "CENTER", not onBar and db.coords)
     Place(b.zone, "LEFT", bar, BAR_PADDING, 0, "LEFT", onBar, "semibold")
     Place(b.clock, "RIGHT", bar, -BAR_PADDING, 0, "RIGHT", onBar and db.clock, "bold")
-    Place(b.coords, "CENTER", bar, 0, 0, "CENTER", onBar and db.coords)
+    Place(b.coords, "RIGHT", bar, -BAR_PADDING, 0, "RIGHT", onBar and db.coords)
+    local gap = Snap(BAR_PADDING, px)
+    if onBar and db.clock then
+        b.coords:ClearAllPoints(); b.coords:SetPoint("RIGHT", b.clock, "LEFT", -gap, 0)
+    end
+    local limit = (onBar and db.coords and b.coords) or (onBar and db.clock and b.clock) or nil
+    b.zone:SetPoint("RIGHT", limit or bar, limit and "LEFT" or "RIGHT", limit and -gap or -BAR_PADDING, 0)
+    for _, text in ipairs({ b.zone, b.zone.lift }) do text:SetWordWrap(false) end
     for _, text in ipairs({ t.clock, b.clock }) do Skin.Ink(text, Style.Tone.textBright) end
     self:UpdateZone(); self:UpdateClock(true); self:UpdateCoords()
     return extra

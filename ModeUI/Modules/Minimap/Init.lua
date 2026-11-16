@@ -33,7 +33,8 @@ local Public, Number = addon.IsPublic, addon.IsNumber
 -- Mask lists; tools/build_minimap_masks.lua makes a file for every
 -- combination.
 M.SIZE_MIN, M.SIZE_MAX, M.SIZE_STEP = 140, 280, 4
-M.RADII = { square = 0, small = 4, medium = 8, large = 12 }
+-- (Square only: the Mode edge's rim covers the map's corners.)
+M.RADII = { square = 0 }
 function M.MaskPath(size, difference, corners)
     return string.format("%sMinimap\\Mask-%d-%d-%d", addon.Media.textureBase, size, difference, M.RADII[corners])
 end
@@ -96,7 +97,10 @@ M.defaults = {
 M.ranges = { size = { M.SIZE_MIN, M.SIZE_MAX, M.SIZE_STEP }, textSize = { 10, 18, 1 }, buttonSize = { 16, 32, 1 },
     buttonSpacing = { 1, 6, 1 }, opacity = { 20, 100, 5 }, combatOpacity = { 20, 100, 5 } }
 M.choices = {
-    difference = { { id = 0, label = "0" }, { id = 8, label = "8 px" }, { id = 16, label = "16 px" } },
+    -- Wider Than Tall By: 16 px by default; up to 48 px for a more
+    -- rectangular map (owner, November 15, 2026).
+    difference = { { id = 0, label = "0" }, { id = 8, label = "8 px" }, { id = 16, label = "16 px" }, { id = 24, label = "24 px" },
+        { id = 32, label = "32 px" }, { id = 40, label = "40 px" }, { id = 48, label = "48 px" } },
     border = { { id = "thin", label = "Thin" }, { id = "mode", label = "Mode" } },
     buttonBorder = { { id = "thin", label = "Thin" }, { id = "mode", label = "Mode" } },
     borderColor = { { id = "rim", label = "Gunmetal" }, { id = "black", label = "Black" }, { id = "slate", label = "Slate" },

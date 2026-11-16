@@ -8,12 +8,12 @@
 -- rendering, mouse or taint.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 
--- Every size, difference and corner choice has its mask.
+-- Every size and difference has its mask (square: the Mode edge covers the corners).
 do
     local missing = {}
     for size = 140, 280, 4 do
-        for _, difference in ipairs({ 0, 8, 16 }) do
-            for _, radius in ipairs({ 0, 4, 8, 12 }) do
+        for _, difference in ipairs({ 0, 8, 16, 24, 32, 40, 48 }) do
+            for _, radius in ipairs({ 0 }) do
                 local path = string.format("%sModeUI/Media/Textures/Minimap/Mask-%d-%d-%d.tga", H.root, size, difference, radius)
                 local file = io.open(path, "rb")
                 if file then
@@ -164,6 +164,12 @@ world.run([==[
     -- The bar: a Mode strip in the same frame edge, the two edges 1 px apart (3 + 1 + 3).
     assert(M.mover:GetHeight() == 184 + 7 + 22 and M.barTexts.zone:IsShown(), 'the bar under the map, edges 1 px apart')
     assert(M.bar.parts.modeEdge.preset == 'frame' and M.bar.parts.faceKey == 'Button', 'a Mode strip')
+    -- On the bar: clock at the right, coordinates just left of it, the zone
+    -- from the left up to them, cut short rather than run under them.
+    local bt = M.barTexts
+    assert(Point(bt.clock)[1] == 'RIGHT' and bt.coords.points[1][2] == bt.clock and bt.coords.points[1][3] == 'LEFT', 'coordinates beside the clock')
+    assert(bt.zone.points[1][1] == 'LEFT' and bt.zone.points[2][1] == 'RIGHT' and bt.zone.points[2][2] == bt.coords, 'the zone up to the coordinates')
+    assert(bt.zone.wordWrap == false, 'cut short, one line')
     assert(M:SetOption('textLayout', 'hover') and not M.bar:IsShown())
     M.holder.mouseOver = false; Advance(0.2); assert(t.zone.alpha == 0, 'hidden until hovered')
     M.holder.mouseOver = true; Advance(0.2); assert(t.zone.alpha == 1, 'shown while hovered')
@@ -207,8 +213,10 @@ world.run([==[
 
     -- Shape settings: masks follow; bad values are refused.
     assert(M:SetOption('size', 220) and Minimap.mask:find('Mask%-220%-16%-0$') and M.map:GetHeight() == 204)
+    -- More rectangular: up to 48 px wider than tall.
+    assert(M:SetOption('difference', 40) and Minimap.mask:find('Mask%-220%-40%-0$') and M.map:GetHeight() == 180 and Minimap.hitInsets[3] == 20)
     assert(M:SetOption('difference', 0) and Minimap.mask:find('Mask%-220%-0%-0$') and Minimap.hitInsets[3] == 0)
-    assert(not M:SetOption('size', 222) and not M:SetOption('size', 300) and not M:SetOption('difference', 4))
+    assert(not M:SetOption('size', 222) and not M:SetOption('size', 300) and not M:SetOption('difference', 4) and not M:SetOption('difference', 56))
     assert(not M:SetOption('corners', 'square') and not M:SetOption('border', 'bold'), 'no corners; Thin or Mode only')
     assert(M:SetOption('border', 'thin') and M.edge.rim == 1, 'Thin: a 1px rim')
     assert(M:SetOption('borderColor', 'accent') and M.edge.tint[1] == Tone.ivory[1] and tiles.tracking.parts.modeEdge.tint[1] == Tone.ivory[1], 'Ivory rims')
@@ -233,10 +241,12 @@ world.run([==[
     local tabs = {}
     for _, section in ipairs(page.sections) do tabs[#tabs + 1] = section.title end
     assert(table.concat(tabs, ',') == 'Shape,Text,Buttons,Behavior', 'four tabs')
-    assert(page.sizeSlider and #page.differenceButtons == 3 and page.cornerButtons == nil and #page.borderButtons == 2)
+    assert(page.sizeSlider and #page.differenceButtons == 7 and page.cornerButtons == nil and #page.borderButtons == 2)
     assert(#page.swatches == 5 and page.textToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
     page.differenceButtons[2]:GetScript('OnClick')(); assert(M.db.difference == 8 and Minimap.mask:find('Mask%-200%-8%-0$'))
-    page.buttonRows.mail.picker[1]:GetScript('OnClick')(); assert(M.db.buttons.mail.corner == 'TOPLEFT')
+    local picker = page.buttonRows.mail.picker
+    assert(picker[1].label:GetText() == 'Top Left' and picker[4].label:GetText() == 'Bottom Right', 'the corners by name (never blank in the dropdown)')
+    picker[1]:GetScript('OnClick')(); assert(M.db.buttons.mail.corner == 'TOPLEFT')
     page.swatches[2]:GetScript('OnClick')(); assert(M.db.borderColor == 'black')
     window:Hide()
 

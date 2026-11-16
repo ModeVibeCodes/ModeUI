@@ -27,6 +27,9 @@ November 15 (owner: "Mode edge, keep what fits"):
   **Button Border** Thin or Mode, the same Border Color); the Expansion
   Button off by default. The group-finder eye on its own tile in the
   bottom-left corner.
+- **Bar Below** (Text Layout): the clock at the right, the coordinates just
+  left of it, the zone from the left up to them, cut short rather than run
+  under them.
 - Other addons' minimap buttons in an **Addon Buttons** tray under the map
   (the approved probe): Mode tiles Button Size wide (26 px) and a little
   shorter, Spacing (3 px) apart, as wide as the map, with Blizzard's addon
@@ -42,13 +45,13 @@ November 15 (owner: "Mode edge, keep what fits"):
   difference above and below the map frame; the mask crops those bands, and
   `SetHitRectInsets` trims the click area to the visible map.
 - **Masks.** A mask stretches over the square map, so its shape is a
-  fraction of the map's side. To keep the difference and the corners in
-  exact pixels there is one mask per size (140-280 in 4 px steps),
-  difference (0, 8, 16) and corner choice (0, 4, 8, 12 px): 432 files in
+  fraction of the map's side. To keep the difference in exact pixels there
+  is one mask per size (140-280 in 4 px steps) and difference (0-48 in 8 px
+  steps), square (the Mode edge's rim covers the corners): 252 files in
   `Media/Textures/Minimap/`, 256×256, run-length encoded TGAs (the format
   other minimap addons ship), made by `tools/build_minimap_masks.lua`. The
   shape sits half a pixel inside the map's edge, so the mask's soft edge
-  lies under the border.
+  lies under the edge.
 - **Blizzard puts its mask back.** `MinimapCluster:UpdateMinimapConfig`
   (Forever's `Camelot/Minimap.lua`) sets the round mask at load and whenever
   Rotate Minimap changes; a post-hook sets ModeUI's again. The hybrid
@@ -84,7 +87,7 @@ November 15 (owner: "Mode edge, keep what fits"):
 
 | Tab | Card | Settings |
 |---|---|---|
-| Shape | Minimap | Size (140-280), Wider Than Tall By (0, 8 px, 16 px) |
+| Shape | Minimap | Size (140-280), Wider Than Tall By (0 to 48 px in 8 px steps; 16 by default) |
 | Shape | Border | Map Border (Thin, Mode), Button Border (Thin, Mode), Border Color (Gunmetal, Black, Slate, Ivory, Class Color) |
 | Text | Zone and Clock | Text Layout (On Map, Bar Below, On Hover), Zone Color (PvP Status, White), Clock, Coordinates, Clock Format (24 Hour, 12 Hour), Text Size |
 | Buttons | Blizzard Buttons | Tracking, Calendar, New Mail, Expansion Button: a switch and a corner each |
