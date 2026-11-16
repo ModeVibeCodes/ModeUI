@@ -247,7 +247,9 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
 - **Insets:** cards: a Mode Matte face in Graphite raised (a step lighter than
   the window) inside the `card` edge. Faces with a lift (Panel, Button, Matte)
   draw their base times the color plus the white lift, as bars do, never the
-  baked file (its light vanishes on Graphite).
+  baked file (its light vanishes on Graphite). When the edge sits inside a
+  box, the face stops where the edge starts (the rim covers its own inner
+  corner), so no square corner shows past the round one.
   **Scroll bars:** a 4px Graphite track and thumb (rimStrong).
 - **Item quality:** the `line` edge in the quality color, inside the slot.
 - **Text on Graphite:** dark parchment text (quest, gossip, books) takes the

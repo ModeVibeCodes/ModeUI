@@ -166,6 +166,8 @@ world.run([==[
     assert(t1.face.vertexColor[1] == G.track[1] and t2.face.vertexColor[1] == G.raised[1], 'the selected tab in the chosen tone')
     assert(t1.modeEdge.preset == 'control' and t1.modeEdge.highlight[1] == Tone.ivory[1] and t2.modeEdge.highlight == nil, 'Ivory line on the selected tab only')
     assert(Point(t1.edgeFrame)[2] == t1.pane and Point(t1.edgeFrame)[4] == 2, 'the edge inside the pane')
+    local tf = Point(t1.face)
+    assert(tf[2] == t1.pane and tf[4] == 2 and tf[5] == -2 and Point(t1.lift)[4] == 2, 'the face stops under the rim: no square corners past the round ones')
     assert(Point(ChatFrame1Tab.Text)[2] == t1.pane, 'text on the pane\'s middle')
     -- Tab width: sized to the text in the Mode face (7 letters at 13).
     assert(ChatFrame1Tab:GetWidth() == math.ceil(7 * 13 * 0.6) + 20, 'General fits')

@@ -246,15 +246,24 @@ function Skin.PaintBox(parts, box, key, color, alpha, edge, highlight)
             parts.lift:SetShown(asset.lift ~= nil)
         end
     end
-    face:ClearAllPoints(); face:SetAllPoints(box)
-    Style.Paint(face, color, alpha)
-    if parts.lift and asset.lift then
-        parts.lift:ClearAllPoints(); parts.lift:SetAllPoints(box)
-        Style.Paint(parts.lift, Tone.mono.white, alpha)
+    -- With its edge inside the box, the face stops where the edge starts: the
+    -- rim covers its own inner corner, so nothing of the face's square corners
+    -- shows past the round ones (a see-through face showed them as a faint
+    -- rectangle round the edge, owner, November 15, 2026).
+    local px = Kit.PixelSize(box)
+    local inset = (parts.modeEdge and edge ~= false) and (parts.edgeInset or 0) * px or 0
+    for _, texture in ipairs({ face, parts.lift }) do
+        texture:ClearAllPoints()
+        texture:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)
+        texture:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -inset, inset)
     end
+    Style.Paint(face, color, alpha)
+    if parts.lift and asset.lift then Style.Paint(parts.lift, Tone.mono.white, alpha) end
     if TILED[base] and box.GetSize then
         local width, height = box:GetSize()
-        if addon.IsNumber(width, 1) and addon.IsNumber(height, 1) then Style.TileCoords(face, base, width, height, Kit.PixelSize(box)) end
+        if addon.IsNumber(width, 1) and addon.IsNumber(height, 1) then
+            Style.TileCoords(face, base, math.max(px, width - 2 * inset), math.max(px, height - 2 * inset), px)
+        end
     elseif face.SetTexCoord then
         face:SetTexCoord(0, 1, 0, 1)
     end
