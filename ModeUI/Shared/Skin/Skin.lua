@@ -212,6 +212,9 @@ function Skin.Box(host, preset, opts)
         frame:SetAllPoints(host)
         parts.edgeFrame = frame
         parts.edgeLevel = opts.level or 1
+        -- `opts.inset`: pixels the edge sits inside the box (its reach puts
+        -- the whole border within the box).
+        parts.edgeInset = opts.inset or 0
         parts.modeEdge = Style.Edge(frame, preset, { level = 1 })
     end
     return parts
@@ -257,7 +260,10 @@ function Skin.PaintBox(parts, box, key, color, alpha, edge, highlight)
     end
     if parts.modeEdge then
         local frame = parts.edgeFrame
-        frame:ClearAllPoints(); frame:SetAllPoints(box)
+        frame:ClearAllPoints()
+        local inset = (parts.edgeInset or 0) * Kit.PixelSize(box)
+        frame:SetPoint("TOPLEFT", box, "TOPLEFT", inset, -inset)
+        frame:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -inset, inset)
         local host = frame:GetParent()
         local level = host:GetFrameLevel()
         -- The rim rides above the host's children; its soft drop stays under the host.

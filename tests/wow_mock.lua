@@ -275,6 +275,12 @@ end
 function methods:SetTextureSliceMargins(...) self.slice = {...} end
 function methods:ClearTextureSlice() self.slice = nil end
 function methods:SetTexCoord(...) self.texCoord = {...} end
+-- The eight corner values, as the client answers (from 4-value SetTexCoord too).
+function methods:GetTexCoord()
+    local c = self.texCoord or { 0, 1, 0, 1 }
+    if #c == 4 then return c[1], c[3], c[1], c[4], c[2], c[3], c[2], c[4] end
+    return unpack(c)
+end
 function methods:SetBlendMode(value) self.blendMode = value end
 function methods:SetAlpha(value) self.alpha = value end
 

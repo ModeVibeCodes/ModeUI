@@ -46,7 +46,6 @@ return {
     ["Shared/Media/Textures.lua"] = { path = 1 },
     ["Shared/Placement/PositionHighlights.lua"] = { color = 4 },
     ["Shared/Runtime/Feedback.lua"] = { color = 2 },
-    ["Shared/Settings/Launchers.lua"] = { color = 2 },
     ["Shared/Settings/Widgets/Core.lua"] = { color = 6 },
     ["Shared/Skin/Skin.lua"] = { color = 14, border = 4 },
 }

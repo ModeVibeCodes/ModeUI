@@ -85,11 +85,24 @@ local function Parts(frame, preset) return Skin.Box(frame, preset) end
 
 -- Buttons: a Mode Button face in Graphite raised inside the `control` edge;
 -- hover lights its outer line Ivory. Disabled, the text goes muted.
-function Skin.Button(button, style)
+-- `stack`: buttons Blizzard stacks with no space between them (the Game
+-- Menu's): each box is inset so their edges sit 1px apart.
+local REACH = Style.EdgeReach("control")
+function Skin.Button(button, style, stack)
     for _, key in ipairs(BUTTON_ART) do Fade(button[key]) end
     FadeStates(button)
     local parts = Parts(button, "control")
     parts.px, parts.style = Kit.PixelSize(button), style
+    if stack and not parts.box then
+        parts.box = button:CreateTexture(nil, "BACKGROUND", nil, -8)
+        parts.box:SetAlpha(0)
+        parts.regions[parts.box] = true
+    end
+    if parts.box then
+        parts.box:ClearAllPoints()
+        parts.box:SetPoint("TOPLEFT", button, "TOPLEFT", 0, -(REACH + 1) * parts.px)
+        parts.box:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, REACH * parts.px)
+    end
     Skin.Once(button, "buttonHover", function()
         button:HookScript("OnEnter", function() parts.hovered = true; Skin.PaintField(button) end)
         button:HookScript("OnLeave", function() parts.hovered = false; Skin.PaintField(button) end)
@@ -113,8 +126,17 @@ function Skin.Field(edit, style)
         parts.regions[parts.box] = true
     end
     parts.box:ClearAllPoints()
-    parts.box:SetPoint("TOPLEFT", edit, "TOPLEFT", -Snap(5, px), 0)
-    parts.box:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", 0, 0)
+    -- The box is where Blizzard drew the field: from its Left piece to its
+    -- Right piece (InputBoxTemplate's art is 20px tall, 5px left of the text;
+    -- a taller edit box, the Guild chat's, keeps its art's size and place).
+    local left, right = edit.Left, edit.Right
+    if left and right and left.GetPoint and left:GetNumPoints() > 0 and right:GetNumPoints() > 0 then
+        parts.box:SetPoint("TOPLEFT", left, "TOPLEFT", 0, 0)
+        parts.box:SetPoint("BOTTOMRIGHT", right, "BOTTOMRIGHT", 0, 0)
+    else
+        parts.box:SetPoint("TOPLEFT", edit, "TOPLEFT", -Snap(5, px), 0)
+        parts.box:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", 0, 0)
+    end
     Skin.Once(edit, "fieldFocus", function()
         edit:HookScript("OnEditFocusGained", function() Skin.PaintField(edit) end)
         edit:HookScript("OnEditFocusLost", function() Skin.PaintField(edit) end)
@@ -133,7 +155,7 @@ function Skin.PaintField(frame)
     if parts.field then
         Skin.PaintBox(parts, parts.box or frame, "Solid", M.field, 1, true, lit and "accent" or nil)
     else
-        Skin.PaintBox(parts, frame, "Button", M.face, 1, true, lit and "accent" or nil)
+        Skin.PaintBox(parts, parts.box or frame, "Button", M.face, 1, true, lit and "accent" or nil)
         Skin.Ink(Text(frame), enabled and M.text or M.muted)
     end
 end
@@ -287,9 +309,9 @@ function Skin.ScrollBar(bar)
     Style.Paint(own.thumb, M.thumb)
 end
 
--- An inset: Blizzard's inset border and background faded; a card: a Mode
--- Matte face in Graphite raised (a step lighter than the window) inside the
--- `card` edge. Some insets sit ABOVE the
+-- An inset: Blizzard's inset border and background faded; a well: Mode
+-- Grain (the even Title texture) in Graphite base, a step darker than the
+-- window so lists and chat stand apart from it, inside the `card` edge. Some insets sit ABOVE the
 -- content they frame (the Guild roster's InsetFrame is raised to level 100
 -- over its rows), so the face is drawn on the inset's parent, under the
 -- content; the edge (on its own frame) only frames it.
@@ -297,5 +319,5 @@ function Skin.Inset(inset)
     Skin.FadeNineSlice(inset.NineSlice); Fade(inset.Bg)
     local host = inset:GetParent() or inset
     local parts = Skin.Box(inset, "card", { faceHost = host, sublevel = -7 })
-    Skin.PaintBox(parts, inset, "Matte", M.card, 1, true)
+    Skin.PaintBox(parts, inset, "Title", M.field, 1, true)
 end

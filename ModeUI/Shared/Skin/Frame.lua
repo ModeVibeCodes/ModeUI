@@ -37,6 +37,10 @@ local SCAN_DEPTH = 6
 -- The border's frame sits above everything Blizzard stacks on a window (its
 -- NineSlice at 500, tabs and buttons at 510).
 local EDGE_LIFT = 520
+-- The window edge sits just inside the window (its reach, 3px), so side tabs
+-- and icons Blizzard puts against the window's sides never run into it.
+local REACH = addon.Style.EdgeReach("window")
+Skin.WINDOW_INSET = REACH
 
 -- The window's title text, by template.
 function Skin.TitleOf(frame)
@@ -111,8 +115,9 @@ function Skin.PaintWindow(frame, style)
     local showStrip = style.titleBar and title ~= nil
     local height = Snap(Skin.TITLE_HEIGHT, px)
     strip:ClearAllPoints()
-    strip:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-    strip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    local inside = REACH * px
+    strip:SetPoint("TOPLEFT", frame, "TOPLEFT", inside, -inside)
+    strip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -inside, -inside)
     strip:SetHeight(height)
     Style.Paint(strip, M.title, options.noFill and style.alpha or 1)
     local width = frame:GetWidth()
@@ -142,14 +147,14 @@ function Skin.PaintWindow(frame, style)
     end
 end
 
--- The close button sits Close Inset inside the window's top-right corner,
--- centered on the title strip (the edge is outside the window); the
+-- The close button sits Close Inset inside the window edge's top-right
+-- corner, centered on the title strip; the
 -- maximize/minimize pair just left of it. Anchoring: outside combat only for
 -- protected windows.
 function Skin.PlaceClose(frame, close)
     if addon.InCombat() and frame.IsProtected and frame:IsProtected() then return false end
     local px = Kit.PixelSize(frame)
-    local size, inset = Snap(Skin.CLOSE_SIZE, px), Snap(Skin.CLOSE_INSET, px)
+    local size, inset = Snap(Skin.CLOSE_SIZE, px), Snap(Skin.CLOSE_INSET, px) + REACH * px
     close:ClearAllPoints()
     close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -inset, -inset)
     close:SetSize(size, size)
@@ -164,7 +169,7 @@ end
 function Skin.Window(frame, style, options)
     options = options or {}
     FadeArt(frame, options)
-    local parts = Skin.Box(frame, "window", { level = EDGE_LIFT })
+    local parts = Skin.Box(frame, "window", { level = EDGE_LIFT, inset = REACH })
     parts.options = options
     if not parts.strip then
         parts.strip = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
@@ -226,7 +231,8 @@ local function TabSide(window, tab)
 end
 
 function Skin.Control(window, control, kind, style)
-    if kind == "Button" then Skin.Button(control, style)
+    local options = (Skin.parts[window] and Skin.parts[window].options) or {}
+    if kind == "Button" then Skin.Button(control, style, options.stackButtons)
     elseif kind == "Field" then Skin.Field(control, style)
     elseif kind == "Tab" then Skin.Tab(control, style, TabSide(window, control))
     elseif kind == "SideTab" then Skin.SideTab(control, style)

@@ -57,7 +57,7 @@ M.registry = {
     { id = "raid", label = "Raid", frames = { "RaidParentFrame" } },
     { id = "macros", label = "Macros", frames = { "MacroFrame" }, addon = "Blizzard_MacroUI" },
     { id = "addonList", label = "AddOn List", frames = { "AddonList" } },
-    { id = "gameMenu", label = "Game Menu", frames = { "GameMenuFrame" } },
+    { id = "gameMenu", label = "Game Menu", frames = { "GameMenuFrame" }, options = { stackButtons = true } },
     { id = "settings", label = "Game Settings", frames = { "SettingsPanel" } },
 }
 M.byId = {}

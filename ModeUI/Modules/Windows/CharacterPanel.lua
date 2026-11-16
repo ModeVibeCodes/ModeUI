@@ -72,7 +72,20 @@ local function PaintToggle(button)
     parts.icon:SetRotation(open and -math.pi / 2 or math.pi / 2)
 end
 
+-- The level line ("Level 37 Rogue") in the Ivory accent; the class name keeps
+-- the class color Blizzard writes into the text. Painted again after each
+-- PaperDollFrame_SetLevel (it only sets the text, but a reload of the font
+-- object would bring Blizzard's gold back).
+local function InkLevel()
+    local text = _G.CharacterLevelText
+    if text and M.active and M:IsModeUI(M.byId.character) then Skin.Ink(text, addon.Style.Tone.ivory) end
+end
+
 function M:SkinCharacterPanel(frame)
+    InkLevel()
+    Skin.Once(Skin, "characterLevel", function()
+        if type(_G.PaperDollFrame_SetLevel) == "function" then hooksecurefunc("PaperDollFrame_SetLevel", InkLevel) end
+    end)
     local right = frame.RightPaneHost
     if right then
         -- Every texture on the pane and its own frames (the stats box's class

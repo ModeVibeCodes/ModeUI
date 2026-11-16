@@ -148,7 +148,14 @@ function Skin.RightSideTab(tab)
         tab.Icon:ClearAllPoints()
         tab.Icon:SetPoint("TOPLEFT", tab, "TOPLEFT", inset, -inset)
         tab.Icon:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", -inset, inset)
-        tab.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        if not parts.iconCoords then
+            local ulx, uly, llx, lly, urx, ury, lrx, lry = tab.Icon:GetTexCoord()
+            local ok = addon.IsNumber(ulx) and addon.IsNumber(uly) and addon.IsNumber(lry) and addon.IsNumber(urx)
+            parts.iconCoords = ok and { ulx, urx, uly, lly or lry } or { 0, 1, 0, 1 }
+        end
+        local c = parts.iconCoords
+        local dx, dy = (c[2] - c[1]) * 0.08, (c[4] - c[3]) * 0.08
+        tab.Icon:SetTexCoord(c[1] + dx, c[2] - dx, c[3] + dy, c[4] - dy)
     end
     Skin.Once(tab, "rightSideTab", function()
         if tab.SetChecked then hooksecurefunc(tab, "SetChecked", function() Skin.PaintSideTab(tab) end) end

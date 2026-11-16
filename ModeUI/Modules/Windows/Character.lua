@@ -146,7 +146,7 @@ local function SlotParts(slot)
     -- color with its shadow) on a frame inset so it stays inside the slot.
     local inner = CreateFrame("Frame", nil, holder)
     inner:EnableMouse(false)
-    parts = { holder = holder, inner = inner, edge = Style.Edge(inner, "line", { level = 7 }),
+    parts = { holder = holder, inner = inner, edge = Style.Edge(inner, "line", { level = 1 }),
         name = holder:CreateFontString(nil, "OVERLAY"), stat = holder:CreateFontString(nil, "OVERLAY") }
     M.slotParts[slot] = parts
     return parts

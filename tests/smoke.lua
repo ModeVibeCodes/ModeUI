@@ -238,11 +238,11 @@ local MENU = STUBS .. [==[
     function GameTooltip:AddLine(text) tooltipLines[#tooltipLines+1]=text end
     compartment={};AddonCompartmentFrame={RegisterAddon=function(self,data) compartment[#compartment+1]=data end}
 ]==]
-local BRAND = "|cff00f0ffMode|r|cffffffffUI|r"
+local BRAND = "|cffefe6d2Mode|r|cffffffffUI|r"
 local menuWorld = H.Load({ before = MENU .. "\nGameMenuFrame=MakeGameMenu()\n" })
 menuWorld.run(([[
     local BRAND=%q
-    assert(addon.Launchers.BRAND_TEXT==BRAND,'Mode in cyan, UI in white')
+    assert(addon.Launchers.BRAND_TEXT==BRAND,'Mode in Ivory, UI in white')
     GameMenuFrame:InitButtons()
     assert(MenuLabels(GameMenuFrame)=='Options,Shop,'..BRAND..'+,AddOns+,Edit Mode,Log Out+,Return to Game+',
         'ModeUI has its own section between Shop and AddOns: '..MenuLabels(GameMenuFrame))

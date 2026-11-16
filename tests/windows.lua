@@ -62,6 +62,18 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
     end
     MakeWindow('FriendsFrame')
     MakeWindow('MerchantFrame')
+    local menu = MakeWindow('GameMenuFrame')
+    for i = 1, 2 do
+        local item = CreateFrame('Button', nil, menu)
+        Textures(item, { 'Left', 'Center', 'Right' }); item.Text = item:CreateFontString(); States(item)
+        function item:GetFontString() return self.Text end
+        menu['item' .. i] = item
+    end
+    local placed = CreateFrame('EditBox', nil, menu); Textures(placed, { 'Left', 'Middle', 'Right' })
+    placed.Left:SetPoint('LEFT', placed, 'LEFT', -5, 0); placed.Right:SetPoint('RIGHT', placed, 'RIGHT', 0, 0)
+    menu.placedField = placed
+    CharacterLevelText = UIParent:CreateFontString()
+    function PaperDollFrame_SetLevel() end
     -- The Gossip window: its parchment on the window's own Background, the
     -- greeting panel's material pieces (one keyed, the others named).
     local gossip = MakeWindow('GossipFrame')
@@ -206,7 +218,8 @@ world.run([==[
     assert(parts.edgeFrame:GetFrameLevel() == FriendsFrame:GetFrameLevel() + 520, 'the edge above the window\'s children')
     assert(parts.modeEdge.below:GetFrameLevel() < FriendsFrame:GetFrameLevel(), 'its soft drop under the window, never over its content')
     assert(parts.strip:IsShown() and parts.strip:GetHeight() == 22 and parts.divider:GetHeight() == 1, 'title strip and divider')
-    local s = Point(parts.strip); assert(s[4] == 0 and s[5] == 0 and parts.strip.vertexColor[1] == Tone.graphite.raised[1], 'Mode Title strip at the top (the edge is outside)')
+    local s = Point(parts.strip); assert(s[4] == 3 and s[5] == -3 and parts.strip.vertexColor[1] == Tone.graphite.raised[1], 'Mode Title strip inside the edge')
+    local e = Point(parts.edgeFrame); assert(e[4] == 3 and e[5] == -3, 'the window edge sits inside the window, clear of side tabs')
     local title = FriendsFrame.TitleContainer.TitleText
     local path = Kit.FontPath(M.db, 'windows')
     assert(title.font[1] == addon.Style.Weighted(path, 'semibold') and title.font[2] == 13 and title.color[1] == C.heading[1], 'Geist SemiBold title')
@@ -216,7 +229,7 @@ world.run([==[
     -- Close: a control box with a cross, 18 px, in the window's corner.
     local close = Skin.parts[FriendsFrameCloseButton]
     assert(FriendsFrameCloseButton.normal.alpha == 0 and close.icon.texture:find('Close') and FriendsFrameCloseButton:GetWidth() == 18)
-    local p = Point(FriendsFrameCloseButton); assert(p[1] == 'TOPRIGHT' and p[4] == -2 and p[5] == -2)
+    local p = Point(FriendsFrameCloseButton); assert(p[1] == 'TOPRIGHT' and p[4] == -5 and p[5] == -5, '2px inside the edge')
     assert(close.modeEdge.preset == 'control')
     FriendsFrameCloseButton.scripts.OnEnter(FriendsFrameCloseButton)
     assert(close.icon.vertexColor[1] == Tone.ivory[1] and Lit(close), 'Ivory cross and line on hover')
@@ -242,7 +255,17 @@ world.run([==[
     assert(parts.face.texture:find('Panel', 1, true) and parts.lift.texture:find('PanelLift', 1, true), 'the window panel has its lift too')
     local slice = FriendsFrame.testSlice
     assert(slice.Center.alpha == 0 and slice.Left.alpha == 0 and Skin.parts[slice].faceKey == 'Button', 'three-slice buttons (the Game Menu) too')
-    assert(Skin.parts[FriendsFrame.Inset].face.vertexColor[1] == Tone.graphite.raised[1], 'insets: a card, a step lighter than the window')
+    local well = Skin.parts[FriendsFrame.Inset]
+    assert(well.face.texture:find('Title', 1, true) and well.face.vertexColor[1] == Tone.graphite.base[1], 'insets: a well in Mode Grain, a step darker than the window')
+    -- The Game Menu: Mode Buttons whose edges sit 1px apart.
+    local m1 = Skin.parts[GameMenuFrame.item1]
+    local top, bottom = Point(m1.box), Point(m1.box, 2)
+    assert(GameMenuFrame.item1.Center.alpha == 0 and top[5] == -3 and bottom[5] == 2 and Point(m1.edgeFrame)[2] == m1.box, 'stacked: 1px between edges')
+    assert(Skin.parts[FriendsFrame.testButton].box == nil, 'other buttons keep their full size')
+    -- A field's box is Blizzard's own art rect.
+    local fp = Skin.parts[GameMenuFrame.placedField]
+    assert(Point(fp.box)[2] == GameMenuFrame.placedField.Left and Point(fp.box, 2)[2] == GameMenuFrame.placedField.Right, 'the field where Blizzard drew it')
+    assert(CharacterLevelText.color[1] == Tone.ivory[1], 'the level line in Ivory')
     assert(FriendsFrame.testField.Middle.alpha == 0 and Skin.parts[FriendsFrame.testField].box, 'edit field')
     local bar = FriendsFrame.testBar
     assert(bar.Track.Middle.alpha == 0 and bar.Track.Thumb.Begin.alpha == 0 and bar.Back.Texture.alpha == 0 and Skin.parts[bar].thumb:GetWidth() == 4)
@@ -279,6 +302,13 @@ world.run([==[
     assert(late.normal.alpha == 0 and late.Name.font[1] == path, 'rows Blizzard fills later as well')
     local tab = guild.ChatTab
     assert(tab.art.alpha == 0 and tab.checked.alpha == 0 and tab.Icon.alpha ~= 0 and tab.Icon.texCoord[1] == 0.08, 'right side tab')
+    -- A sheet icon (the Character sidebar's) is cropped within its own coordinates.
+    local sheet = CreateFrame('CheckButton', nil, guild)
+    sheet.art = sheet:CreateTexture(nil, 'BORDER'); sheet.Icon = sheet:CreateTexture(nil, 'BACKGROUND'); sheet.Icon:SetTexCoord(0.5, 0.75, 0, 0.25)
+    sheet.checked = sheet:CreateTexture(nil, 'ARTWORK'); function sheet:GetCheckedTexture() return self.checked end
+    Skin.RightSideTab(sheet)
+    local c = sheet.Icon.texCoord
+    assert(math.abs(c[1] - 0.52) < 1e-9 and math.abs(c[2] - 0.73) < 1e-9 and math.abs(c[4] - 0.23) < 1e-9, 'its own glyph, not the whole sheet')
     tab:SetChecked(true); assert(Lit(Skin.parts[tab]), 'checked: Ivory line')
     -- The stream dropdown and its menu.
     local dropdown = guild.StreamDropdown

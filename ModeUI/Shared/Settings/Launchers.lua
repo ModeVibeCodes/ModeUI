@@ -4,7 +4,7 @@ local _, addon = ...
 -- 2026): a ModeUI button in the game menu (Esc), in its own section between
 -- Shop and AddOns, and an entry in the minimap's addon compartment, the menu
 -- that holds every addon's minimap button. Both use the brand colors: "Mode"
--- in the ModeUI cyan, "UI" in white.
+-- in the Ivory accent, "UI" in white.
 -- Forever source (wow-ui-source, forever branch):
 --   Blizzard_GameMenu/Shared/GameMenuFrame.lua (GameMenuFrameMixin:InitButtons,
 --   :AddButton, .buttons, :SetupGamepadButtons) and
@@ -16,7 +16,8 @@ local L = addon.L
 local Launchers = {}
 addon.Launchers = Launchers
 
-Launchers.BRAND_TEXT = "|cff00f0ffMode|r|cffffffffUI|r"
+local function Hex(color) return string.format("%02x%02x%02x", math.floor(color[1] * 255 + 0.5), math.floor(color[2] * 255 + 0.5), math.floor(color[3] * 255 + 0.5)) end
+Launchers.BRAND_TEXT = "|cff" .. Hex(addon.Style.Tone.ivory) .. "Mode|r|cff" .. Hex(addon.Style.Tone.mono.white) .. "UI|r"
 -- The gap Blizzard's AddSection leaves between groups of game menu buttons.
 local SECTION_SPACING = 20
 
