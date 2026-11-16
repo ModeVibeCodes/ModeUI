@@ -2,8 +2,8 @@
 
 November 13, 2026; rebuilt in the Mode design language November 15, 2026
 (Phase 7, settings version 6). Fifth module of the **Interface** category.
-Off by default (turn it on with the switch in the page header). Static/mock
-validated only; **native acceptance of the Mode rebuild is pending**. APIs and their rules are in
+Off by default (turn it on with the switch in the page header). Mock tested, and
+**confirmed in game by the owner, November 15, 2026**. APIs and their rules are in
 [API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-chat-and-windows--november-13-2026).
 Design canvas: https://claude.ai/artifact/E9m1Krqr6LXYaJJvjAUAPL (Chat artboard).
 

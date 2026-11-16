@@ -1,8 +1,9 @@
 local _, ns = ...
 local Kit = ns.Kit
 if not Kit.ok then return end
--- Chat and Damage Meters probes (Phase 7; the Windows tab retired once ModeUI's
--- Windows module was built and confirmed): panels in the Mode design
+-- Damage Meters probe (Phase 7; the Windows and Chat tabs retired once
+-- ModeUI's modules were built and confirmed) and the Panel and Field helpers
+-- the other tabs share: panels in the Mode design
 -- language (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Graphite panel
 -- with Mode Panel, Mode Title bar, the `window` edge (1px Steel Sheen, black
 -- gap, shadow and drop), cards in the `card` edge, controls in `control`.
@@ -40,43 +41,6 @@ function ns.Field(parent, width, placeholder)
     text:SetText(placeholder)
     field.text = text
     return field
-end
-
--- Chat: tabs, lines in the game's own channel colors, the edit box.
-local CHAT = {
-    { "GUILD", "[Guild] [Brannoc]: pulling in 10" },
-    { "PARTY", "[Party] [Isolde]: mana break after this pack" },
-    { "WHISPER", "[Kestrel] whispers: lfm Deadmines?" },
-    { "SAY", "[Vayle] says: Anyone have a spare Linen Cloth?" },
-    { "CHANNEL1", "[1. General] [Aldric]: WTS Copper Bars" },
-    { "SYSTEM", "You have received a new item." },
-    { "YELL", "[Harrow] yells: Help! Gnolls by the river!" },
-}
-function ns.BuildChat(body)
-    local chat = ns.Panel(body, nil, 440, 230)
-    chat:SetPoint("TOPLEFT", 6, -34)
-    local x = 6
-    for i, label in ipairs({ "General", "Combat Log", "Trade" }) do
-        local tab = Kit.Button(body, label, 86, 22)
-        tab:SetPoint("BOTTOMLEFT", chat, "TOPLEFT", x, 6)
-        x = x + 92
-        if i == 1 then
-            tab.label:SetTextColor(T.ivory[1], T.ivory[2], T.ivory[3])
-            tab.edge:SetHighlight("accent")
-            tab:SetScript("OnLeave", nil)
-        end
-    end
-    for i, line in ipairs(CHAT) do
-        local info = ChatTypeInfo and ChatTypeInfo[line[1]]
-        local text = Kit.Text(chat, 12, "regular", T.graphite.text)
-        if info and Kit.IsNumber(info.r) then text:SetTextColor(info.r, info.g, info.b) end
-        text:SetPoint("TOPLEFT", 8, -8 - (i - 1) * 18)
-        text:SetText(line[2])
-    end
-    local edit = ns.Field(chat, 424, "Say:")
-    edit:SetPoint("BOTTOMLEFT", 8, 8)
-    edit.text:SetTextColor(T.graphite.secondary[1], T.graphite.secondary[2], T.graphite.secondary[3])
-    Kit.Caption(body, "Geist Regular 12 with the Mode shadow; channel colors are the game's own (your settings). Tabs use the control look, the open one lit.", chat, 0, -12):SetWidth(700)
 end
 
 -- Damage Meters: Mode Panel bars in class colors, 1px apart.
