@@ -28,7 +28,8 @@ function addon:PrintAction(message,key)
     key=key or message
     if not Plain(key) or type(key)~="string" then return false end
     if F.last[key] and now-F.last[key]<2 then return false end
-    local sent=pcall(print,"|cff00f0ff[ModeUI]|r |cffdde3ed"..message:gsub("|","||").."|r")
+    local Style=addon.Style
+    local sent=pcall(print,Style.ColorText("[ModeUI]",Style.Tone.brand).." "..Style.ColorText((message:gsub("|","||")),Style.Tone.graphite.text))
     if sent then F.last[key]=now end
     return sent
 end

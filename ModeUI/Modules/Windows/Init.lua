@@ -96,15 +96,8 @@ for _, stat in ipairs(M.STATS) do M.statsById[stat.id] = stat end
 -- rest by family: physical power orange, spell power violet, healing and
 -- regen green, crit red, hit amber, haste light blue, avoidance pale blue.
 -- Main Stat takes its attribute's color.
-local RGB = Kit.RGB
-M.STAT_COLORS = {
-    strength = RGB(232, 92, 80), agility = RGB(255, 209, 64), stamina = RGB(232, 176, 75), intellect = RGB(64, 150, 255),
-    spirit = RGB(127, 219, 151), armor = RGB(185, 185, 185), attackPower = RGB(255, 138, 61),
-    rangedAttackPower = RGB(255, 138, 61), spellPower = RGB(176, 124, 255), healing = RGB(127, 219, 151),
-    crit = RGB(255, 107, 107), spellCrit = RGB(255, 107, 107), rangedCrit = RGB(255, 107, 107), hit = RGB(255, 177, 47),
-    spellHit = RGB(255, 177, 47), haste = RGB(127, 219, 255), spellHaste = RGB(127, 219, 255), expertise = RGB(232, 176, 75),
-    dodge = RGB(154, 208, 236), parry = RGB(154, 208, 236), block = RGB(154, 208, 236), manaRegen = RGB(64, 150, 255),
-}
+-- (Style.Tone.stat.)
+M.STAT_COLORS = addon.Style.Tone.stat
 
 local windows, looks = {}, {}
 for _, entry in ipairs(M.registry) do windows[entry.id] = true; looks[entry.id] = Copy(M.LOOK) end

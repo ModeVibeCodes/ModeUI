@@ -108,12 +108,15 @@ M.textParts = { "hotkey", "count", "macro", "cooldown" }
 M.textPartLabels = { hotkey = "Keybind", count = "Count", macro = "Macro Name", cooldown = "Cooldown" }
 
 -- Cooldown numbers are amber (#FFB12F, the cooldown color) by default.
-M.COOLDOWN_COLOR = Kit.RGB(255, 177, 47)
--- Version 2-5 defaults, kept for migrations: the border (#101010), the
--- background (#040404) at 75%, gold procs and the cyan ready glow.
-M.BORDER_COLOR, M.BACKGROUND_COLOR, M.MACRO_COLOR = Kit.RGB(16, 16, 16), Kit.RGB(4, 4, 4), Kit.RGB(105, 165, 185)
+local Tone, LEGACY = addon.Style.Tone, addon.Style.LEGACY
+M.COOLDOWN_COLOR = Tone.cooldown
+-- Macro names in their own blue (Tone.macro). Version 2-5 defaults, kept for
+-- migrations: the border (#101010), the background (#040404) at 75%, gold
+-- procs and the cyan ready glow (Style.LEGACY).
+M.MACRO_COLOR = Tone.macro
+M.BORDER_COLOR, M.BACKGROUND_COLOR = LEGACY.slotRim, LEGACY.slotBackground
 M.BACKGROUND_OPACITY = 75
-M.PROC_COLOR, M.READY_COLOR = Kit.RGB(255, 210, 90), Kit.palette.accent
+M.PROC_COLOR, M.READY_COLOR = LEGACY.procGold, LEGACY.palette.accent
 local function Part(prefix, show, size, anchor, color)
     return { [prefix .. "Show"] = show, [prefix .. "Size"] = size, [prefix .. "Anchor"] = anchor,
         [prefix .. "X"] = 0, [prefix .. "Y"] = 0, [prefix .. "Color"] = Copy(color) }

@@ -31,7 +31,7 @@ end
 -- Blizzard's bar.
 local function Painter(bar, state)
     return { sheen = state.sheen, bg = state.bg,
-        SetStatusBarTexture = function(_, path) bar:SetStatusBarTexture(path) end,
+        SetStatusBarTexture = function(_, path) addon.Style.SetBarTexture(bar, path) end,
         GetStatusBarTexture = function() return bar:GetStatusBarTexture() end }
 end
 

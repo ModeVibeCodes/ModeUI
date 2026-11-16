@@ -101,7 +101,7 @@ function M:CreateConfigPage(parent)
     end
     function ui.ViewerLabel(id)
         local label = M:Label(id)
-        return M.db[id].show and label or (label .. "  |cff8c8c8c" .. L["Off"] .. "|r")
+        return M.db[id].show and label or (label .. "  " .. addon.Style.ColorText(L["Off"], addon.Style.Tone.graphite.muted))
     end
     function ui.ViewerChoices()
         local list = {}

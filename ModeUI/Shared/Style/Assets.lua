@@ -5,7 +5,10 @@ local _, addon = ...
 local Style = addon.Style or {}
 addon.Style = Style
 
-local BASE = "Interface\\AddOns\\ModeUI\\Media\\Textures\\Mode\\"
+-- ModeUI's texture folder (Media.Textures' keys sit under it), and the Mode
+-- art's folder inside it.
+Style.TEXTURE_ROOT = "Interface\\AddOns\\ModeUI\\Media\\Textures\\"
+local BASE = Style.TEXTURE_ROOT .. "Mode\\"
 Style.ASSET_BASE = BASE
 
 -- file: path under BASE. slice: nine-slice margins in source pixels. tile: drawn

@@ -45,12 +45,12 @@ M.kinds = { "enemy", "friendly" }
 M.kindLabels = { enemy = "Enemy", friendly = "Friendly" }
 M.auraGroups = { "crowdControl", "debuffs", "buffs" }
 M.auraGroupLabels = { crowdControl = "Crowd Control", debuffs = "Debuffs", buffs = "Buffs" }
-local P, RGB = Kit.palette, Kit.RGB
+local P, Tone = Kit.palette, addon.Style.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- Default threat colors: the enemy is attacking you (red), or you're losing
 -- it or close to pulling it (orange).
-M.threatPalette = { aggro = RGB(255, 72, 72), warning = RGB(255, 160, 64) }
+M.threatPalette = Tone.threat
 -- The setting holding each threat status's color (UnitThreatSituation 1-3).
 M.threatColorKeys = { [3] = "threatAggroColor", [2] = "threatLosingColor", [1] = "threatPullingColor" }
 
@@ -105,16 +105,17 @@ local function Style(kind)
         focusFadeOthers = 100,
         -- Combo points on your target's plate (a Rogue's, or a Cat Form Druid's).
         showCombo = enemy, comboAnchor = "BOTTOM", comboX = 0, comboY = 0, comboSize = 8, comboSpacing = 2,
-        comboActiveColor = RGB(240, 84, 84), comboEmptyColor = Copy(Kit.onyx.track),
+        comboActiveColor = Copy(Tone.comboPoint), comboEmptyColor = Copy(Kit.onyx.track),
         -- Auras: settings for every group, then each group on its own.
         showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
         auraBorderSize = 1, auraCCGlow = true, auraGlowStyle = "gcd",
         auraTimerColor = Copy(P.cooldown),
-        auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
-        auraPoisonColor = RGB(85, 187, 85), auraEnrageColor = RGB(255, 85, 85), auraBleedColor = RGB(200, 45, 45),
+        auraMagicColor = Copy(Tone.debuffType.Magic), auraCurseColor = Copy(Tone.debuffType.Curse),
+        auraDiseaseColor = Copy(Tone.debuffType.Disease), auraPoisonColor = Copy(Tone.debuffType.Poison),
+        auraEnrageColor = Copy(Tone.debuffType.Enrage), auraBleedColor = Copy(Tone.debuffType.Bleed),
         -- Auras without a dispel type (Cheap Shot, most crowd control): #FF5948 for
         -- crowd control, the Gunmetal rim for the rest.
-        auraNoTypeColor = Copy(addon.Style.Tone.gunmetal.mid), auraCCNoTypeColor = RGB(255, 89, 72),
+        auraNoTypeColor = Copy(addon.Style.Tone.gunmetal.mid), auraCCNoTypeColor = Copy(Tone.debuffType.crowdControl),
         crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),

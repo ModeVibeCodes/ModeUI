@@ -27,7 +27,7 @@ function Kit.LayoutResourcePoint(point, size, px, emptyColor, activeColor)
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", point, "TOPLEFT", 2 * px, -2 * px)
     bar:SetPoint("BOTTOMRIGHT", point, "BOTTOMRIGHT", -2 * px, 2 * px)
-    bar:SetStatusBarTexture(addon.Media:GetTexture("UnitFrameCircle"))
+    addon.Style.SetBarTexture(bar, addon.Media:GetTexture("UnitFrameCircle"))
     bar:SetStatusBarColor(activeColor[1], activeColor[2], activeColor[3], 1)
 end
 

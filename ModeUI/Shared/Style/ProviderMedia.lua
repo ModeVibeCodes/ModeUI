@@ -1,7 +1,10 @@
 local _,addon=...
--- Generated path/name facts only; no provider code or assets are bundled.
--- Refresh: python tools/index_installed_media.py --addons <Forever AddOns directory>
-addon.Media.providerCatalog={
+-- Other addons' media, by reference only (like Style.PROVIDER_FONTS): kind,
+-- the name ModeUI shows, and the path inside that addon. Media registers an
+-- entry only when the client knows the file (the addon is installed); no
+-- provider code or asset is bundled.
+-- (Generated once from installed EllesmereUI and AyijeUI folders.)
+addon.Style.PROVIDER_MEDIA={
     {"border","AyijeUI: Ayije_Empty","Interface\\AddOns\\AyijeUI\\Media\\Borders\\Ayije_Empty.tga"},
     {"border","AyijeUI: Ayije_Thin","Interface\\AddOns\\AyijeUI\\Media\\Borders\\Ayije_Thin.tga"},
     {"font","AyijeUI: Expressway","Interface\\AddOns\\AyijeUI\\Media\\Fonts\\Expressway.ttf"},

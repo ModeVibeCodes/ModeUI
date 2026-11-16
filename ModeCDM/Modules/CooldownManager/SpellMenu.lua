@@ -179,7 +179,7 @@ function M:RefreshSpellMenu()
         row.label:SetShown(shown); row.more:SetShown(shown)
         if shown then
             local own = self:SpellText(id, menu.key, part) ~= nil
-            row.label:SetText(string.format(L["%s Text"], L[self.textPartLabels[part]]) .. (own and ("  |cff8c8c8c" .. L["own look"] .. "|r") or ""))
+            row.label:SetText(string.format(L["%s Text"], L[self.textPartLabels[part]]) .. (own and ("  " .. addon.Style.ColorText(L["own look"], addon.Style.Tone.graphite.muted)) or ""))
             row.label:ClearAllPoints(); row.label:SetPoint("TOPLEFT", PAD, y - 4)
             row.more:ClearAllPoints(); row.more:SetPoint("TOPRIGHT", -PAD, y)
             row.more:SetSelected(textOpen == part)

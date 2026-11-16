@@ -8,7 +8,6 @@ if not M then return end
 -- secret aura field is compared) and where, with its own icon look. Groups on
 -- the same anchor and place continue in one row, in M.auraGroups' order.
 local Kit = addon.Kit
-local RGB = Kit.RGB
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- Buffs, then debuffs: Dispellable by You first, then Blizzard's own
@@ -88,7 +87,7 @@ local function Group(show, filter, anchor, place, grow, width, height, max)
     return { show = show, filter = filter, anchor = anchor, place = place, grow = grow, x = 0, y = 0, width = width,
         height = height, max = max, perRow = max, spacing = 1, border = "type", borderSize = 1,
         borderColor = Copy(Kit.BORDER_COLOR), timer = true, timerText = false, count = true, tooltip = true,
-        glow = "none", glowColor = "type", glowCustomColor = RGB(255, 209, 92) }
+        glow = "none", glowColor = "type", glowCustomColor = Copy(addon.Style.Tone.auraGlow) }
 end
 M.auraDefaults = {
     heals = Group(true, "all", "BOTTOMRIGHT", "inside", "left", 16, 12, 3),

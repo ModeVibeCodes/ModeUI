@@ -93,7 +93,13 @@ The composed preview remains editable text, instances and frames. It uses Lato
 Regular/Bold, verified in the Figma font catalog. No flattened UI image is embedded
 as a substitute for the editable preview or runtime UI.
 
-## Lato
+## Lato (retired)
+
+Lato was the settings window's typeface before the Mode design language. It
+was kept registered for one version and removed in Phase 8 (November 15,
+2026, decision 4): the font files, `LICENSES/Lato-OFL.txt` and its notice are
+gone, and saved Lato choices moved to the Mode typeface. The provenance below
+is kept for the record.
 
 Unmodified Lato Regular/Bold from the official Google Fonts repository:
 https://github.com/google/fonts/tree/15e8fc68b03a0214ace8b52ca0153e1b597345ec/ofl/lato

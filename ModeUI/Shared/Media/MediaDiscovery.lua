@@ -61,7 +61,7 @@ function M:DiscoverMedia()
             pcall(self.library.Register,self.library,kind,name,path)
         end
     end
-    for _,entry in ipairs(self.providerCatalog or {}) do Register(entry[1],entry[2],entry[3]) end
+    for _,entry in ipairs(addon.Style.PROVIDER_MEDIA or {}) do Register(entry[1],entry[2],entry[3]) end
     local root=addon.root
     local cache=root and root.mediaRegistry
     if type(cache)=="table" then

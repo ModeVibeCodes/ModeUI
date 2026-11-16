@@ -64,7 +64,7 @@ function Kit.BarForeground(bar, choice, barHeight, px)
     if addon.Style.ApplyBarLook(bar, choice) then return end
     local path = choice == "flat" and Kit.FLAT or (choice ~= "mode" and addon.Media:GetStatusBar(choice)) or nil
     if not path then Kit.ModeGradient(bar, barHeight, px); return end
-    bar:SetStatusBarTexture(path)
+    addon.Style.SetBarTexture(bar, path)
     local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
     bar.sheen:Hide()
@@ -122,7 +122,7 @@ function Kit.BarBackgroundColor(choice)
 end
 
 function Kit.ModeGradient(bar, barHeight, px)
-    bar:SetStatusBarTexture(Kit.FLAT)
+    addon.Style.SetBarTexture(bar, Kit.FLAT)
     local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
     bar.sheen:SetTexture(Kit.FLAT)
@@ -144,13 +144,13 @@ function Kit.FillTexture(bar, choice, width, height, px, color, alpha)
     if choice ~= "slateHatch" then
         if bar.hatchClip then bar.hatchClip:Hide() end
         if choice == "slate" then
-            bar:SetStatusBarTexture(Kit.FLAT)
+            addon.Style.SetBarTexture(bar, Kit.FLAT)
             if bar.sheen then bar.sheen:Hide() end
         else Kit.BarForeground(bar, choice, height, px) end
         bar:SetStatusBarColor(color[1], color[2], color[3], alpha)
         return bar:GetStatusBarTexture()
     end
-    bar:SetStatusBarTexture(Kit.FLAT)
+    addon.Style.SetBarTexture(bar, Kit.FLAT)
     bar:SetStatusBarColor(color[1], color[2], color[3], 0)
     if bar.sheen then bar.sheen:Hide() end
     local fill = bar:GetStatusBarTexture()

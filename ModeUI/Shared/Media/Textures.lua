@@ -4,7 +4,7 @@ local M = addon.Media
 -- slicing metadata, applied to textures by key.
 
 -- Source originals and runtime cutouts share one bundled asset registry.
-M.textureBase = "Interface\\AddOns\\ModeUI\\Media\\Textures\\"
+M.textureBase = addon.Style.TEXTURE_ROOT
 M.Textures = {
     ModeSurface = { file = "Mode/Surface.tga", slice = 12, rounded = true },
     ModePageDetail = { file = "Mode/PageAbstract.tga", transparent = true },
@@ -36,10 +36,10 @@ M.Textures = {
     AuraGlow = { file = "Nameplates/AuraGlow.tga", slice = 6, rounded = true },
     NameplateArrow = { file = "Nameplates/Arrow.tga", transparent = true },
     NameplateStripes = { file = "Nameplates/Stripes.tga", transparent = true },
-    -- Skins (Shared/Skin): the frosted chat tab, feathered at its sides and
-    -- top, and the close button's cross.
+    -- Skins (Shared/Skin): the close button's cross.
     ModeClose = { file = "Mode/Close.tga", transparent = true },
-    -- Window shrink and expand glyphs, and the glass tabs' diagonal glint.
+    -- Window shrink and expand glyphs, and a soft diagonal glint (the Cooldown
+    -- Manager's window).
     ModeMinimize = { file = "Mode/Minimize.tga", transparent = true },
     ModeMaximize = { file = "Mode/Maximize.tga", transparent = true },
     ModeSheen = { file = "Mode/Sheen.tga", transparent = true },

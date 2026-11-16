@@ -78,7 +78,7 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 M.LAYOUT_VERSION = 23
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 
-local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
+local Tone = addon.Style.Tone
 -- Mode text and gameplay colors, and the locked Onyx skin (Shared/Kit/Palette.lua).
 M.palette, M.onyx = addon.Kit.palette, addon.Kit.onyx
 -- Every unit frame rim (bar block, cast bar, badges, combo points, the
@@ -87,8 +87,7 @@ M.palette, M.onyx = addon.Kit.palette, addon.Kit.onyx
 M.RIM_COLOR = addon.Kit.BORDER_COLOR
 -- Plain-text name colors that contrast the cool Onyx/slate skin (owner's
 -- picks). Sky, the owner's own color (layout version 11), is the default.
-M.nameAccents = { sky = RGB(145, 198, 255), champagne = RGB(242, 223, 184), lilac = RGB(201, 187, 255),
-    frost = RGB(234, 241, 248) }
+M.nameAccents = Tone.nameAccent
 M.ACCENT = M.nameAccents.sky
 
 M.choices = {
@@ -194,7 +193,7 @@ M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, mat
 -- Their own table, not per frame, so they stay editable while the Target
 -- matches the Player. Sizes are in the Target frame's units.
 M.comboDefaults = { enabled = true, hideBlizzard = true, arc = "topOuter", size = 10, spacing = 3, distance = 3,
-    activeColor = RGB(240, 84, 84), emptyColor = Copy(M.onyx.track) }
+    activeColor = Copy(Tone.comboPoint), emptyColor = Copy(M.onyx.track) }
 M.comboRanges = { size = { 6, 24, 1 }, spacing = { 0, 12, 1 }, distance = { 0, 20, 1 } }
 -- Where the arc sits around the portrait. "outer" is the side away from the
 -- bars; without a portrait the points line up under the bars.
@@ -241,7 +240,7 @@ M.choices.buffsFilter = { { id = "all", label = "All" }, { id = "mine", label = 
 M.choices.debuffsFilter = { { id = "all", label = "All" }, { id = "mine", label = "Yours" },
     { id = "dispellable", label = "Ones You Can Dispel" } }
 -- Rim colors by the game's dispel type name, as Blizzard's DebuffTypeColor.
-M.dispelColors = { Magic = RGB(51, 153, 255), Curse = RGB(153, 0, 255), Disease = RGB(153, 102, 0), Poison = RGB(0, 153, 0) }
+M.dispelColors = Tone.dispel
 function M.AuraDefaults(unit, group)
     local defaults = Copy(M.auraDefaults)
     if group == "buffs" then defaults.enabled = unit == "target"
@@ -259,7 +258,7 @@ end
 -- ring in combat, and on the Player a pulse while something you haven't
 -- targeted has pulled you. Corners swap sides on a right-hand portrait.
 M.statusDefaults = { restIcon = true, restCorner = "topLeft", combatIcon = true, combatCorner = "bottomLeft", badgeSize = 20,
-    mirror = true, combatRing = true, ringColor = RGB(255, 107, 107), pulse = true }
+    mirror = true, combatRing = true, ringColor = Copy(Tone.combatRing), pulse = true }
 M.statusRanges = { badgeSize = { 12, 32, 1 } }
 M.choices.statusCorner = { { id = "topLeft", label = "Top Left" }, { id = "topRight", label = "Top Right" },
     { id = "bottomLeft", label = "Bottom Left" }, { id = "bottomRight", label = "Bottom Right" } }

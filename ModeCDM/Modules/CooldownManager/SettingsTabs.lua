@@ -151,7 +151,7 @@ function M:BuildCopyTab(ui)
             local list = {}
             for _, viewer in ipairs(M:BarIds()) do
                 local source = viewer == ui.Viewer()
-                list[#list + 1] = { id = viewer, label = source and (M:Label(viewer) .. "  |cff8c8c8c" .. L["Source"] .. "|r")
+                list[#list + 1] = { id = viewer, label = source and (M:Label(viewer) .. "  " .. addon.Style.ColorText(L["Source"], addon.Style.Tone.graphite.muted))
                     or ui.ViewerLabel(viewer), selected = not source and targets[viewer] == true, disabled = source }
             end
             return list

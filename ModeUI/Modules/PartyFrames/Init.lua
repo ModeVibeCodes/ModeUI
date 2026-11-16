@@ -45,7 +45,7 @@ local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 M.ELEMENT_ID = "partyFrames"
 M.MAX_MEMBERS = 5
 M.defaultPosition = { target = "screen", placement = "center", x = -520, y = 120 }
-local P, RGB = Kit.palette, Kit.RGB
+local P, Tone = Kit.palette, addon.Style.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- Points around (and inside) a member's bars, read like a compass.
@@ -132,7 +132,7 @@ M.defaults = {
     rangeFade = true, rangeOpacity = 55, deadOpacity = 70,
     -- Incoming heals ride on the health; shields are Combined (Style.Shield):
     -- on the health's end, and the whole shield back from full health.
-    showHealPrediction = true, healTexture = "flat", healPredictionColor = RGB(92, 214, 132), healPredictionOpacity = 45,
+    showHealPrediction = true, healTexture = "flat", healPredictionColor = Copy(Tone.healPrediction), healPredictionOpacity = 45,
     showAbsorbs = true, showOvershields = true,
     -- The shields' look (Shields tab, Shield:SetLook): Mode Shield, tinted
     -- from the health, at the standard strength.
@@ -149,8 +149,9 @@ M.defaults = {
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = false,
     textColor = Copy(P.text), hideDamagerRole = false,
     -- Aura rims, glows and dispel effects by type (Blizzard's DebuffTypeColor family).
-    auraMagicColor = RGB(51, 153, 255), auraCurseColor = RGB(170, 85, 255), auraDiseaseColor = RGB(204, 136, 51),
-    auraPoisonColor = RGB(85, 187, 85), auraBleedColor = RGB(200, 45, 45), auraNoTypeColor = Copy(addon.Style.Tone.gunmetal.mid),
+    auraMagicColor = Copy(Tone.debuffType.Magic), auraCurseColor = Copy(Tone.debuffType.Curse),
+    auraDiseaseColor = Copy(Tone.debuffType.Disease), auraPoisonColor = Copy(Tone.debuffType.Poison),
+    auraBleedColor = Copy(Tone.debuffType.Bleed), auraNoTypeColor = Copy(Tone.gunmetal.mid),
     auraTimerColor = Copy(P.cooldown),
 }
 for _, element in ipairs(M.elements) do

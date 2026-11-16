@@ -95,7 +95,8 @@ function Kit.LayoutLift(text, style, size, path, px, shown, justify, lift)
     if not on then return end
     local flags = Kit.OutlineFlags(style)
     ApplyFont(lift, style, path, size, flags)
-    lift:SetTextColor(0, 0, 0, Kit.LIFT_ALPHA)
+    local shadow = addon.Style.Tone.shadow
+    lift:SetTextColor(shadow[1], shadow[2], shadow[3], Kit.LIFT_ALPHA)
     lift:SetShadowColor(0, 0, 0, 0); lift:SetShadowOffset(0, 0)
     lift:SetJustifyH(justify)
     local d = Kit.LIFT_PIXELS * px

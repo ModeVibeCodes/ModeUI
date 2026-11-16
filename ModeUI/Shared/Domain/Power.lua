@@ -6,11 +6,10 @@ local Q = addon.Domain.Query
 local Power = {}
 addon.Domain.Power = Power
 
-local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
--- Mode-toned power colors; no dependency on Blizzard's PowerBarColor table.
-Power.colors = { MANA = RGB(64, 150, 255), RAGE = { 0.86, 0.30, 0.30 }, ENERGY = { 0.95, 0.82, 0.35 },
-    FOCUS = { 0.95, 0.58, 0.30 }, HAPPINESS = { 0.35, 0.80, 0.70 } }
-Power.defaultColor = { 0.55, 0.55, 0.60 }
+-- Mode-toned power colors (Style.Tone.powerType; Tone loads before Domain);
+-- no dependency on Blizzard's PowerBarColor table.
+Power.colors = addon.Style.Tone.powerType
+Power.defaultColor = addon.Style.Tone.powerType.default
 
 -- powerType, token (public or nil), okMax, max, okValue, value.
 function Power.Read(unit)

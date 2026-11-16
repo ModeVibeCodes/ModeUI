@@ -53,6 +53,39 @@ local Tone = {
     cooldown = Hex("FFB12F"),
     -- Quest titles and objectives in tooltips.
     quest = Hex("FFB12F"),
+    -- Power bars by power type (Domain.Power; no dependency on Blizzard's
+    -- PowerBarColor), and the color for any other type.
+    powerType = { MANA = Hex("4096FF"), RAGE = { 0.86, 0.30, 0.30 }, ENERGY = { 0.95, 0.82, 0.35 },
+        FOCUS = { 0.95, 0.58, 0.30 }, HAPPINESS = { 0.35, 0.80, 0.70 }, default = { 0.55, 0.55, 0.60 } },
+    -- Threat on nameplates: the enemy is on you, or you're losing or about to
+    -- pull it.
+    threat = { aggro = Hex("FF4848"), warning = Hex("FFA040") },
+    -- Lit combo points (nameplates, the Target frame).
+    comboPoint = Hex("F05454"),
+    -- Aura rims and glows by debuff type on nameplates and group frames (a
+    -- brighter cut of Blizzard's family; Tone.dispel is Blizzard's own), and
+    -- crowd control without a type.
+    debuffType = { Magic = Hex("3399FF"), Curse = Hex("AA55FF"), Disease = Hex("CC8833"), Poison = Hex("55BB55"),
+        Enrage = Hex("FF5555"), Bleed = Hex("C82D2D"), crowdControl = Hex("FF5948") },
+    -- A custom aura glow (group frames).
+    auraGlow = Hex("FFD15C"),
+    -- Incoming heals on group frames.
+    healPrediction = Hex("5CD684"),
+    -- The unit frames' plain-text name colors (owner's picks; Sky the default).
+    nameAccent = { sky = Hex("91C6FF"), champagne = Hex("F2DFB8"), lilac = Hex("C9BBFF"), frost = Hex("EAF1F8") },
+    -- The portrait's combat ring.
+    combatRing = Hex("FF6B6B"),
+    -- Macro names on action buttons.
+    macro = Hex("69A5B9"),
+    -- Character stats by stat (Windows): the attributes in their usual colors,
+    -- the rest by family (physical orange, spell violet, healing and regen
+    -- green, crit red, hit amber, haste light blue, avoidance pale blue).
+    stat = { strength = Hex("E85C50"), agility = Hex("FFD140"), stamina = Hex("E8B04B"), intellect = Hex("4096FF"),
+        spirit = Hex("7FDB97"), armor = Hex("B9B9B9"), attackPower = Hex("FF8A3D"), rangedAttackPower = Hex("FF8A3D"),
+        spellPower = Hex("B07CFF"), healing = Hex("7FDB97"), crit = Hex("FF6B6B"), spellCrit = Hex("FF6B6B"),
+        rangedCrit = Hex("FF6B6B"), hit = Hex("FFB12F"), spellHit = Hex("FFB12F"), haste = Hex("7FDBFF"),
+        spellHaste = Hex("7FDBFF"), expertise = Hex("E8B04B"), dodge = Hex("9AD0EC"), parry = Hex("9AD0EC"),
+        block = Hex("9AD0EC"), manaRegen = Hex("4096FF") },
     power = Hex("3A6FB8"),
     -- Text.
     text = Hex("DADADA"),
@@ -91,7 +124,21 @@ Style.LEGACY = { nameplateFocus = Hex("FFB547"),
     -- Tooltip before version 5: the neutral reaction yellow.
     tooltipNeutral = Hex("FFD140"),
     -- Bags before version 3: the near-black slot fill.
-    bagSlot = Hex("040404") }
+    bagSlot = Hex("040404"),
+    -- The pre-Mode palettes (Kit.palette and Kit.onyx alias these): defaults
+    -- that saved settings still hold or that migrations recognize. The Onyx
+    -- health fill was #1C1E21 until November 13, 2026 (oldOnyxHealth).
+    palette = { text = Hex("D4D4D4"), accent = Hex("00F0FF"), green = Hex("7FDB97"), hostile = Hex("E06666"),
+        neutral = Hex("E8B04B"), tapped = Hex("8C8C8C"), mana = Hex("4096FF"), muted = Hex("B9B9B9"), cooldown = Hex("FFB12F") },
+    onyx = { health = Hex("131212"), track = Hex("0A0B0C"), border = Hex("25282C"),
+        slate = Hex("44464A"), slateHatch = Hex("55585D"), frameRim = Hex("40454C") },
+    oldOnyxHealth = Hex("1C1E21") }
+
+-- "|cffRRGGBB<text>|r": text in a token's color, for strings (menus, labels).
+function Style.ColorText(text, color)
+    return string.format("|cff%02x%02x%02x%s|r", math.floor(color[1] * 255 + 0.5), math.floor(color[2] * 255 + 0.5),
+        math.floor(color[3] * 255 + 0.5), text)
+end
 
 -- True when `color` is (within rounding) `reference`: migrations move saved
 -- colors that still equal an old default, and keep anything the player chose.

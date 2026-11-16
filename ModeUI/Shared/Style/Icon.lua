@@ -21,6 +21,13 @@ function Style.CropIcon(texture, width, height)
     texture:SetTexCoord(trim, 1 - trim, trim + cut, 1 - trim - cut)
 end
 
+-- A frame's shape mask: the game's own SetMaskTexture on a frame that draws
+-- its content square (the Minimap; its rectangle is cropped this way). Mode
+-- borders never use masks; this is the frame's shape, not a border.
+function Style.SetShapeMask(frame, path)
+    if frame and frame.SetMaskTexture then frame:SetMaskTexture(path) end
+end
+
 -- A portrait in a ring (the `ring` preset): a metal disc `diameter + 2 * rim`
 -- wide, lit from the top like the frames' edge-lit rims, a 1px dark shadow
 -- ring outside it, and the portrait texture cropped to a circle on top.

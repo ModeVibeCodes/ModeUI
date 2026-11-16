@@ -105,7 +105,7 @@ end
 function M:ApplyMask()
     local db = self.db
     local path = self.MaskPath(db.size, db.difference, "square")
-    Minimap:SetMaskTexture(path)
+    Style.SetShapeMask(Minimap, path)
     for _, method in ipairs(RINGS) do
         if Minimap[method] then pcall(Minimap[method], Minimap, 0) end
     end

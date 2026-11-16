@@ -47,6 +47,11 @@ function W.CrispText(region)
     end
 end
 
+-- A fully transparent texture (missing art must never show as a rectangle).
+local function Clear(texture)
+    local shadow = addon.Style.Tone.shadow
+    texture:SetColorTexture(shadow[1], shadow[2], shadow[3], 0)
+end
 local function Paint(texture, color, alpha)
     if texture.modeAsset then
         local usable=texture.appliedModeAsset==texture.modeAsset or addon.Media:ApplyTexture(texture,texture.modeAsset,color)
@@ -58,7 +63,7 @@ local function Paint(texture, color, alpha)
         if texture.modeAsset=="ModePillSurface" then
             if addon.Media:ApplyTexture(texture,"ModeToggleSurface",color) then
                 texture:SetVertexColor(color[1],color[2],color[3],alpha or color[4] or 1)
-            else texture:SetColorTexture(0,0,0,0) end
+            else Clear(texture) end
             return
         end
         if texture.modeAsset=="ModeCheckSurface" or texture.modeAsset=="ModeCheckMark" or texture.modeAsset=="ModeToggleSurface" then
@@ -66,11 +71,11 @@ local function Paint(texture, color, alpha)
             -- while a new small-control file is unavailable to this client.
             if addon.Media:ApplyTexture(texture,"ModeThumb",color) then
                 texture:SetVertexColor(color[1],color[2],color[3],alpha or color[4] or 1)
-            else texture:SetColorTexture(0,0,0,0) end
+            else Clear(texture) end
             return
         end
         -- Missing borders must never become opaque rectangles over controls.
-        if texture.modeAsset:find("Border",1,true) then texture:SetColorTexture(0,0,0,0);return end
+        if texture.modeAsset:find("Border",1,true) then Clear(texture);return end
     end
     texture:SetColorTexture(color[1], color[2], color[3], alpha or color[4] or 1)
 end
@@ -83,9 +88,10 @@ function W.ModeSheen(frame,inset)
     inset=inset or 0
     texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
     texture.modeAsset="ModeSurface";Paint(texture,{1,1,1,1})
-    if texture.SetGradient and CreateColor then
-        texture:SetGradient("VERTICAL",CreateColor(1,1,1,0.018),CreateColor(1,1,1,0))
-    else texture:SetAlpha(0.008) end
+    local white = addon.Style.Tone.mono.white
+    if not addon.Kit.Gradient(texture, { white[1], white[2], white[3], 0 }, { white[1], white[2], white[3], 0.018 }) then
+        texture:SetAlpha(0.008)
+    end
     return texture
 end
 
@@ -97,8 +103,9 @@ function W.ModePageDetail(frame,inset)
     texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
     texture.modeAsset="ModePageDetail"
     if addon.Media:ApplyTexture(texture,"ModePageDetail") then
-        texture:SetVertexColor(1,1,1,0.18)
-    else texture:SetColorTexture(0,0,0,0) end
+        local white = addon.Style.Tone.mono.white
+        texture:SetVertexColor(white[1], white[2], white[3], 0.18)
+    else Clear(texture) end
     return texture
 end
 

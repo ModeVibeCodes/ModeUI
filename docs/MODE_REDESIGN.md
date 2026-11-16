@@ -3,17 +3,19 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 15, 2026 (Phase 6
-closed: the Cooldown Manager rebuild and ModeCDM confirmed in game, the UI
-scale default, the Edit Mode strip and panel, Match Size for any element;
-`main` fast-forwarded locally, not pushed).
+machine or in a new session. Last updated November 15, 2026 (Phases 7
+and 8 closed: every Blizzard window, Chat, Damage Meters, Tooltip, Bags and
+the Minimap confirmed in game in the Mode look; the legacy border systems,
+palettes, art and Lato removed; `tests/design_legacy.lua` empty; `main`
+fast-forwarded and pushed with the owner's go-ahead). Next: the owner's
+revisions and tweaks phase.
 
 ## Goal
 
 Rebuild every ModeUI module in the Mode design language
 (`docs/DESIGN_LANGUAGE.md`): one set of color tokens (`Style.Tone`), border
-presets (`Style.Edge`), bar textures ("Mode <Name>" in `Style.Asset`), Geist
-fonts and the `Style.Bar` / `Style.Shield` / `Style.Comet` factories, all in
+presets (`Style.Edge`), bar textures ("Mode <Name>" in `Style.Asset`), the
+Mode typeface (Expressway when installed, else Geist) and the `Style.Bar` / `Style.Shield` / `Style.Comet` factories, all in
 `ModeUI/Shared/Style/`. Modules never hard-code colors, borders, masks,
 texture paths or font files; `tests/design.lua` enforces it.
 
@@ -33,8 +35,8 @@ before the next starts.
 | 5 | Frames: Unit Frames, Party Frames, Nameplates | Done, confirmed |
 | 5b | Texture retune after in-game look (see below) | Done, confirmed |
 | 6 | Bars and buttons: **Action Bars**, then **Cooldown Manager** (the ModeCDM addon) | Done, confirmed (November 15) |
-| 7 | Windows and panels: Skin layer + Windows, Chat, Damage Meters, Tooltip, Bags, Minimap | Skin layer + Windows done, confirmed (November 15); Chat done, confirmed (November 15); Damage Meters done, confirmed (November 15); Tooltip done, confirmed (November 15); Bags done, confirmed (November 15); Minimap done on the Mode edge, confirmed (November 15). **Phase 7 complete.** |
-| 8 | Cleanup: delete legacy border systems and palettes | Not started |
+| 7 | Windows and panels: Skin layer + Windows, Chat, Damage Meters, Tooltip, Bags, Minimap | Done, confirmed (November 15), one gate per module |
+| 8 | Cleanup: delete legacy border systems and palettes | Done (November 15): legacy list empty, probes retired |
 | 9 | Release 0.2.0: notes, notices | Only with the owner's go-ahead |
 | 10 | New coverage (optional) | Waits on decision 2 |
 
@@ -68,6 +70,67 @@ before the next starts.
   A provenance audit (November 15) found no code from other authors in it;
   its racial spell list follows Blizzard's `TrackedCooldowns.lua`.
 
+- **Windows** (settings version 3): every Blizzard window a Mode window
+  (Graphite panel in Mode Panel, the `window` edge, a Mode Title strip),
+  controls by template (Mode buttons, one-line fields, text tabs with an Ivory
+  bar, side tabs, glyph buttons, faint scroll tracks), insets in Mode Grain,
+  item quality on slot edges, readable parchment text. See `docs/WINDOWS.md`.
+- **Chat** (settings version 6): each window a Mode window on its box (no drop
+  while see-through), Mode tabs on the edge (open one Ivory), a Graphite edit
+  band with an Ivory line while typing, the button compartment as a Mode
+  control; Blizzard's Edit Mode selection laid over the Mode box so it snaps
+  flush to a corner. See `docs/CHAT.md`.
+- **Damage Meters** (settings version 9): Mode windows with a Mode Title
+  header, Mode Panel bars on Mode BG, Ivory accents, the menu a Mode window.
+  See `docs/DAMAGE_METERS.md`.
+- **Tooltip** (settings version 5): Mode windows, the rim in the item's
+  quality, the first line SemiBold, reactions in the gameplay tones. See
+  `docs/TOOLTIP.md`.
+- **Bags** (settings version 3): a Mode window, Mode slots (wider than tall,
+  `group` edge colored by quality), the Clean Up broom, quest marks, Bold
+  cooldown numbers, and a footer with the Bag Bar (equip bags there), a free
+  count over a capacity bar and the money. See `docs/BAGS.md`.
+- **Minimap** (settings version 2): the owner's design on the Mode `frame`
+  edge ("keep what fits": Thin or Mode rim, Border Color as its tint, fixed
+  corners), up to 48 px wider than tall, Mode tiles for Blizzard's buttons and
+  the addon tray. See `docs/MINIMAP.md`.
+
+### Phase 7 decisions and preferences (owner, November 15)
+
+- **Typeface:** Expressway when the client has it (an installed addon's
+  copy; ModeUI ships none), Geist otherwise; "Mode" names whichever it is.
+- **Brand:** "Mode" in the wordmark in warm gold (`brand`, #E2B866), "UI"
+  white, wherever ModeUI's name shows (Game Menu, addon menu, AddOn list,
+  chat messages).
+- **Edges inside boxes** where boxes sit side by side or must sit flush
+  (windows, controls, chat, tooltips, bags), and a box's face stops where an
+  inside edge starts (a see-through face showed its square corners).
+- **No soft drop under anything see-through.**
+- **Rebuilt modules drop border settings** the Mode edge can't honor (border
+  color, size, corners, rounded); the Minimap keeps Thin/Mode and its color.
+- **Bags:** slots wider than tall as the probe; a Bag Bar in the footer;
+  the free count as a number over a capacity bar; a broom for Clean Up; a
+  quest mark on quest items.
+- **Minimap:** wider shapes up to 48 px; the corner pickers name corners.
+
+### Phase 8 cleanup (November 15)
+
+- Deleted: `Shared/Kit/Border.lua` (Kit.ModeBorder, ModeBoxBorder, BoxFill,
+  the corner masks), `Shared/Kit/Capsule.lua`, `Kit.Rim`/`Kit.PlaceRim`,
+  Skin's pre-Mode palette and panels, `Shared/Border` (the LSM backdrop
+  border) and `Media:ApplyBackdrop`; 36 unused textures and their generator
+  entries; Lato (typeface step 3 moves saved Lato choices to "Mode").
+- Moved into Style: every color a module held (new Tone tokens: power types,
+  threat, debuff types, stats, combo points, heal prediction, aura glow,
+  name accents, combat ring, macro; the pre-Mode palettes into
+  `Style.LEGACY`, which `Kit.palette`/`Kit.onyx` alias), the texture root,
+  other addons' media (`Style.PROVIDER_MEDIA`), bar fill files
+  (`Style.SetBarTexture`), the minimap's shape mask (`Style.SetShapeMask`)
+  and colored text (`Style.ColorText`). `Style/Tone.lua` loads before
+  `Shared/Domain`.
+- The probe addons are deleted (every design built); the probe kit, build
+  script and test stay for the next redesign.
+
 ### Texture retune (owner's in-game feedback, November 15)
 
 - Module bars draw a Mode texture's **base plus its white lift** over the fill
@@ -90,22 +153,12 @@ The owner may keep tuning textures; expect small edits to
 
 ## Next steps, in order
 
-1. ~~Cooldown Manager in-game gate~~: confirmed November 15;
-   `probes/ModeUI_ProbeBars` is deleted.
-2. **Phase 7**, one module per gate, from `probes/ModeUI_ProbePanels`
-   (approved): the Skin layer and Windows module, then Chat, Damage Meters,
-   Tooltip, Bags, Minimap (each module's current behavior is in its own doc).
-   Retire each probe tab as its module ships; delete the probe addon (and
-   `ModeUI_ProbeFrames`, whose designs are all built) when empty, along with
-   their `tests/probes.lua` entries and `tools/build_probes.ps1` targets.
-3. **Phase 8 cleanup**: delete the legacy border systems (`Kit.ModeBorder`,
-   `Kit.Rim`, `Kit.PlaceRim`, `Shared/Kit/Border.lua`, the masked rounded
-   rims), the old palettes (`Kit.onyx`, `Kit.palette` where unused), the
-   legacy slot art, and Lato (decision 4). `tests/design_legacy.lua` should end
-   empty. Keep every saved key working (migrate, never reset).
-4. **Phase 9 release** 0.2.0: release notes and notices. Only when the owner
+1. **Revisions and tweaks** (the owner, at a later date): adjustments to
+   finished elements from play. Keep each one focused, tested and gated in
+   game; follow the design doc first, then Style, then the module.
+2. **Phase 9 release** 0.2.0: release notes and notices. Only when the owner
    says so.
-5. **Phase 10** only after decision 2 (below).
+3. **Phase 10** (new coverage) only after decision 2 (below).
 
 ## Decisions
 
@@ -127,7 +180,7 @@ From the plan's "Decisions for you" (owner's answers):
    Geist as the fallback. The font name "Mode" points at whichever the client
    has; profile typeface step 2 (`Shared/Runtime/DB.lua`) moves every saved
    "Mode Geist" to "Mode"; anyone who picked a different font keeps it.
-4. **Lato:** kept registered for one version, removed in Phase 8.
+4. **Lato:** kept registered for one version, removed in Phase 8 (done).
 5. **Options → AddOns entry:** none.
 6. **Branches and releases:** one branch per phase (`t3/mode-phase-N-<name>`),
    fast-forwarded into `main`; version 0.2.0 at the end; pushes and releases
@@ -212,7 +265,7 @@ Owner preferences gathered along the way:
   at that moment goes stale. Hence the edge holders' own pixel grid.
 - **LibSharedMedia vs Mode looks:** modules must draw lifted textures in two
   layers (base + lift); see Texture retune above.
-- **Masks:** a texture holds at most 3 masks; a 4th errors and stops ModeUI
+- **Masks** (none left in ModeUI but the minimap's shape): a texture holds at most 3 masks; a 4th errors and stops ModeUI
   loading. Mode borders need no masks.
 - **Line endings:** the repository has `* -text`; most files are LF but
   `tests/wow_mock.lua` is CRLF (with some LF lines) and `docs/UNIT_FRAMES.md`

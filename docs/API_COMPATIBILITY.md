@@ -1088,8 +1088,9 @@ local mainline 12.1.5 copy and the Forever files from the first pass.
   `ITEM_NOT_IN_RANGE_COLOR` (0.64, 0.15, 0.15) from `self.spellOutOfRange`;
   Out of Range Tint off resets the vertex color after it when that field is
   public and `true`.
-- **Border.** `Kit.ModeBoxBorder` draws on a child frame of the item; its
-  masks are ModeUI's own regions and are not applied to Blizzard's
+- **Border.** (Historical: `Kit.ModeBoxBorder`, removed in Phase 8; Mode
+  edges are `Style.Edge` frames with no masks.) It drew on a child frame of
+  the item; its masks were ModeUI's own regions, never applied to Blizzard's
   textures. No new client API.
 
 ### Cooldown Manager, custom spells by ID — November 13, 2026
@@ -1408,8 +1409,10 @@ Same source. Native confirmation pending.
   apply, and in game the masks behaved as if they used the whole cap. Every
   corner is now a whole 64×64 texture (`Mode/CornerTopLeft` … and
   `Mode/CornerHole*`, built by `tools/build_shape_textures.lua`), so no mask
-  needs texture coordinates. This affects every `Kit.ModeBoxBorder` (chat,
-  damage meters, bags, Cooldown Manager, party frames).
+  needs texture coordinates. This affected every `Kit.ModeBoxBorder` (chat,
+  damage meters, bags, Cooldown Manager, party frames). (Historical: the box
+  border, its corner art and masks were removed in Phase 8, November 15,
+  2026; Mode edges need no masks.)
 - **Tracked Buffs.** `candidateFilters.includeSpellIDs` / `excludeSpellIDs`
   (maps of spell ID → true; `ValidateCandidateFilters`). The game applies spell
   matching to helpful auras on group members

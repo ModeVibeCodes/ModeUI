@@ -23,6 +23,7 @@ Shared\Runtime\DB.lua
 Shared\Runtime\Profiles.lua
 Shared\Runtime\Reload.lua
 Shared\Runtime\Lifecycle.lua
+Shared\Style\Tone.lua
 Shared\Domain\Query.lua
 Shared\Domain\Health.lua
 Shared\Domain\Power.lua
@@ -44,9 +45,9 @@ Shared\Domain\Containers.lua
 Shared\Domain\Items.lua
 Shared\Domain\Cooldowns.lua
 Shared\Domain\Location.lua
-Shared\Style\Tone.lua
 Shared\Style\Assets.lua
 Shared\Style\Fonts.lua
+Shared\Style\ProviderMedia.lua
 Shared\Style\Edge.lua
 Shared\Style\Bar.lua
 Shared\Style\Shield.lua
@@ -79,7 +80,6 @@ Shared\Placement\FrameAnchors.lua
 Shared\Media\Media.lua
 Shared\Media\Textures.lua
 Shared\Media\Styles.lua
-Shared\Media\MediaCatalog.lua
 Shared\Media\MediaDiscovery.lua
 Shared\Placement\PreviewStates.lua
 Shared\Placement\PositionHighlights.lua

@@ -6,7 +6,6 @@ if not M then return end
 -- listed in Init.lua beside M.VERSION). Profile validation runs Initialize on
 -- detached copies, so nothing here touches frames.
 local Kit = addon.Kit
-local RGB = Kit.RGB
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 local Public, Number = addon.IsPublic, addon.IsNumber
@@ -114,7 +113,7 @@ local function MigrateV7(db)
         local c = type(style) == "table" and style.auraCCNoTypeColor
         if type(c) == "table" and Number(c[1]) and Number(c[2]) and Number(c[3])
             and Near(c[1], 1) and Near(c[2], 140 / 255) and Near(c[3], 40 / 255) then
-            style.auraCCNoTypeColor = RGB(255, 89, 72)
+            style.auraCCNoTypeColor = Copy(addon.Style.Tone.debuffType.crowdControl)
         end
     end
 end

@@ -97,7 +97,7 @@ function M:CreateConfigPage(parent)
     local function BarLabel(bar)
         local state = M:BarState(bar)
         local label = L[M.barSpecs[bar].label]
-        return state and (label .. "  |cff8c8c8c" .. L[STATE[state]] .. "|r") or label
+        return state and (label .. "  " .. addon.Style.ColorText(L[STATE[state]], addon.Style.Tone.graphite.muted)) or label
     end
     local function BarChoices()
         local list = {}
@@ -319,7 +319,7 @@ function M:CreateConfigPage(parent)
             local list = {}
             for _, bar in ipairs(M.bars) do
                 local source = bar == editing
-                list[#list + 1] = { id = bar, label = source and (L[M.barSpecs[bar].label] .. "  |cff8c8c8c" .. L["Source"] .. "|r") or BarLabel(bar),
+                list[#list + 1] = { id = bar, label = source and (L[M.barSpecs[bar].label] .. "  " .. addon.Style.ColorText(L["Source"], addon.Style.Tone.graphite.muted)) or BarLabel(bar),
                     selected = not source and targets[bar] == true, disabled = source }
             end
             return list

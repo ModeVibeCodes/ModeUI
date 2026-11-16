@@ -20,7 +20,21 @@ texture paths or font files outside `Shared/Style/`) and `tests/style.lua`
 - **Pixel perfect.** Sizes and offsets land on whole physical pixels
   (`Kit.PixelSize`). Every border is one even ring.
 - **No masks for borders.** Rim art covers its own inner corner, so content
-  under a border is never masked.
+  under a border is never masked. (A frame's own shape, the minimap's
+  rectangle, is the one mask, through `Style.SetShapeMask`.)
+- **Edges inside boxes.** A window, control or card whose edge must stay
+  inside its rect (side by side with others, or flush to a screen edge) lays
+  the edge inside (`Skin.Box` with `inset` = the preset's reach), and its
+  face stops where the edge starts, so no square corner shows past the round
+  one.
+- **No soft drop under see-through.** A window or panel below 100% opacity
+  (or a tooltip, a chat window, a meter) has no soft drop: it would only
+  darken what shows through.
+- **Every color is a token.** A color a module needs (a gameplay meaning, a
+  stat, a default) is a `Style.Tone` token; an old default kept for saved
+  settings or migrations is a `Style.LEGACY` entry. Colored text goes through
+  `Style.ColorText(text, color)`. `tests/design.lua` checks every file
+  outside `Shared/Style/` and `Libs/`; none is exempt (Phase 8).
 
 ## Color tokens (`Style.Tone`)
 
@@ -62,7 +76,16 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Cast | casting `#F2B13C`, channeling `#3FBF7F`, not interruptible `#7D838C`, interrupted `#E5484D` |
 | Dispel (Blizzard) | Magic `#3399FF`, Curse `#9900FF`, Disease `#996600`, Poison `#009900` |
 | Item quality | common `#9D9D9D`, uncommon `#1EFF00`, rare `#0070DD`, epic `#A335EE`, legendary `#FF8000` |
-| Other | cooldown text `#FFB12F`; quest lines in tooltips `#FFB12F` (`quest`); class colors come from `Domain.UnitColor` (Class Colors may override) |
+| Debuff type (`debuffType`) | aura rims and glows on nameplates and group frames: Magic `#3399FF`, Curse `#AA55FF`, Disease `#CC8833`, Poison `#55BB55`, Enrage `#FF5555`, Bleed `#C82D2D`; crowd control without a type `#FF5948` |
+| Power (`powerType`) | Mana `#4096FF`, Rage, Energy, Focus, Happiness (Mode-toned), any other type a neutral gray |
+| Threat (`threat`) | aggro `#FF4848`, losing or pulling `#FFA040` |
+| Stats (`stat`) | the Character window's stats: Strength `#E85C50`, Agility `#FFD140`, Stamina `#E8B04B`, Intellect and mana regen `#4096FF`, Spirit and healing `#7FDB97`, physical power `#FF8A3D`, spell power `#B07CFF`, crit `#FF6B6B`, hit `#FFB12F`, haste `#7FDBFF`, avoidance `#9AD0EC`, armor `#B9B9B9` |
+| Other | cooldown text `#FFB12F`; quest lines in tooltips `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
+
+`Style.LEGACY` holds the pre-Mode defaults that saved settings still hold or
+migrations recognize (the Onyx palette `Kit.palette` / `Kit.onyx` alias it,
+old window, meter, bag, slot and tooltip defaults). New code never reads it
+except to recognize an old value.
 
 Changing a token's value is a migration: saved colors that still equal the old
 value move to the new one; anything the player chose stays.
@@ -382,6 +405,17 @@ Menus group them under "Mode" with the short name.
 | Spark | Comet head and trail; shield finish line |
 | Text Glow | the health text halo |
 | Light, Empty | border art |
+
+Module icons (`Style.ICONS`, the settings sidebar and icon rail) and control
+glyphs (`Style.GLYPHS`: Clean Up's broom, the quest mark) are white line art
+from `tools/mode_icons.lua`, 32x32 under `Icons/`, tinted in game; keys
+`Icon<Name>`. Older glyphs and masks (chat compartment, damage meter header,
+close and window buttons, nameplate glows, minimap masks) come from
+`tools/build_shape_textures.lua` and `tools/build_minimap_masks.lua` under
+`Media.Textures`. Other addons' media is used only by reference
+(`Style.PROVIDER_FONTS`, `Style.PROVIDER_MEDIA`) when installed; ModeUI ships
+none of it. The pre-Mode art (box corners, caps, rings, the round box, the
+glass tab, the old slot and control art) was removed in Phase 8.
 
 ## Companion addons
 

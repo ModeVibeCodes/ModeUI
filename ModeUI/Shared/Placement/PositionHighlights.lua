@@ -1,6 +1,16 @@
 local _, addon = ...
 local PM = addon.PositionManager
 local Combat = addon.InCombat
+-- The handle, coordinates and nudge buttons: Graphite panel; a white lift
+-- under the mouse.
+local function PaintPanel(texture)
+    local c = addon.Style.Tone.graphite.panel
+    texture:SetColorTexture(c[1], c[2], c[3], 0.94)
+end
+local function PaintHover(texture)
+    local c = addon.Style.Tone.mono.white
+    texture:SetColorTexture(c[1], c[2], c[3], 0.12)
+end
 
 -- Decoration is attached to actual owned bounds, including module icon/layout bounds.
 -- Only the visible handle intercepts input; no invisible full-frame input overlay.
@@ -24,7 +34,7 @@ function PM:UpdateEditDecoration(element, selected, show)
         handle:SetPoint("BOTTOM",frame,"TOP",0,3)
         handle:SetSize(math.min(200,math.max(88,#name*7+18)),20)
         handle:EnableMouse(true);handle:RegisterForClicks("LeftButtonUp");handle:RegisterForDrag("LeftButton")
-        local background=handle:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();background:SetColorTexture(0.08,0.1,0.12,0.94)
+        local background=handle:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();PaintPanel(background)
         local label=handle:CreateFontString(nil,"OVERLAY","GameFontHighlight")
         label:SetPoint("CENTER");label:SetText(name)
         addon.Media:BindInterfaceFont(label,GameFontHighlight,11)
@@ -69,7 +79,7 @@ end
 function PM:Coordinates(frame,handle,element)
     local box=CreateFrame("Frame",nil,frame)
     box:SetSize(112,20);box:SetPoint("RIGHT",handle,"LEFT",-4,0);box:EnableMouse(false);box:Hide()
-    local background=box:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();background:SetColorTexture(0.08,0.1,0.12,0.94)
+    local background=box:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();PaintPanel(background)
     local text=box:CreateFontString(nil,"OVERLAY","GameFontHighlight")
     text:SetPoint("CENTER");addon.Media:BindInterfaceFont(text,GameFontHighlight,11)
     text:SetTextColor(unpack(addon.Theme.text))
@@ -97,11 +107,11 @@ function PM:NudgeButtons(frame,handle,element)
         local button=CreateFrame("Button",nil,frame)
         button:SetSize(20,20);button:SetPoint("LEFT",handle,"RIGHT",4+(i-1)*22,0)
         button:RegisterForClicks("LeftButtonUp")
-        local background=button:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();background:SetColorTexture(0.08,0.1,0.12,0.94)
+        local background=button:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();PaintPanel(background)
         local arrow=button:CreateTexture(nil,"ARTWORK");arrow:SetPoint("CENTER");arrow:SetSize(16,16)
         addon.Media:ApplyTexture(arrow,"ModeChevron");arrow:SetVertexColor(unpack(addon.Theme.text))
         if arrow.SetRotation then arrow:SetRotation(nudge[3]) end
-        local hover=button:CreateTexture(nil,"HIGHLIGHT");hover:SetAllPoints();hover:SetColorTexture(1,1,1,0.12)
+        local hover=button:CreateTexture(nil,"HIGHLIGHT");hover:SetAllPoints();PaintHover(hover)
         button:SetScript("OnClick",function() self:Nudge(element.id,nudge[1],nudge[2]) end)
         button.nudge=nudge
         buttons[i]=button

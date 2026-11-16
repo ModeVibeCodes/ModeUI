@@ -91,7 +91,8 @@ function M:PaintCatcher(catcher)
     Kit.Tint(catcher.fill, T.primary, hovered and 0.35 or 0.12)
     local keys = Keys(catcher.command)
     catcher.key:SetText(keys[1] and Short(keys[1]) or "")
-    catcher.key:SetTextColor(1, 1, 1, 1)
+    local white = addon.Style.Tone.mono.white
+    catcher.key:SetTextColor(white[1], white[2], white[3], 1)
 end
 
 -- Lays the catchers over every shown bar's places.

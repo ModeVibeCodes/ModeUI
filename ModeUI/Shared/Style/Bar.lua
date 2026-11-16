@@ -52,6 +52,16 @@ function Style.Bar(parent, opts)
     return bar
 end
 
+-- Sets a module StatusBar's fill file (a SharedMedia or flat choice, or the
+-- unit frames' round point): the one place outside Style.Bar a bar's
+-- texture is set, so it draws on the ARTWORK layer under the lift.
+function Style.SetBarTexture(bar, path)
+    bar:SetStatusBarTexture(path)
+    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
+    return fill
+end
+
 -- A module's StatusBar (with a `sheen` texture) in a Mode texture that has a
 -- lift ("media:Mode Glass" and so on): its base as the fill, multiplied by the
 -- bar color, and the white lift over the fill on the sheen, so the light still

@@ -28,7 +28,7 @@ world.run([====[
     for _,key in ipairs(M.retiredKeys) do assert(M.frameDefaults.player[key]==nil and M.db.player[key]==nil,'retired: '..key) end
     -- The locked Onyx skin and the Sky, Champagne, Lilac and Frost name colors.
     local function Hex(c) return string.format('%02X%02X%02X',math.floor(c[1]*255+0.5),math.floor(c[2]*255+0.5),math.floor(c[3]*255+0.5)) end
-    assert(Hex(O.health)=='131212' and Hex(O.track)=='0A0B0C' and Hex(O.border)=='25282C' and Hex(O.inner)=='000000')
+    assert(Hex(O.health)=='131212' and Hex(O.track)=='0A0B0C' and Hex(O.border)=='25282C')
     assert(Hex(M.ACCENT)=='91C6FF' and Hex(M.nameAccents.sky)=='91C6FF' and Hex(M.nameAccents.champagne)=='F2DFB8' and Hex(M.nameAccents.lilac)=='C9BBFF' and Hex(M.nameAccents.frost)=='EAF1F8')
     local ids={};for _,c in ipairs(M.choices.nameColor) do ids[#ids+1]=c.id end
     assert(table.concat(ids,',')=='gradient,sky,champagne,lilac,frost,class,custom')
@@ -338,7 +338,7 @@ world.run([====[
     local clip=p.health.fillEdgeClip;assert(clip.clipsChildren and fe:GetParent()==clip and Point(clip,2)[1]=='BOTTOMRIGHT' and Point(clip,2)[4]==-1)
     assert(Point(t.health.fillEdgeClip)[4]==1 and Point(t.health.fillEdgeClip,2)[4]==0,'reverse: 1px short on the left')
     assert(M:SetFrameOption('player','fillEdge',false) and not fe:IsShown() and M:SetFrameOption('player','fillEdge',true) and fe:IsShown())
-    local hl=p.panel.hairline;assert(hl:IsShown() and hl.vertexColor[1]==O.inner[1] and hl.vertexColor[4]==1 and Point(hl)[2]==p.health and Point(hl,2)[2]==p.power,'solid hairline')
+    local hl=p.panel.hairline;assert(hl:IsShown() and hl.vertexColor[1]==addon.Style.Tone.shadow[1] and hl.vertexColor[4]==1 and Point(hl)[2]==p.health and Point(hl,2)[2]==p.power,'solid hairline')
     local mhp=Point(p.health);assert(mhp[1]=='TOPLEFT' and mhp[2]==p.panel.inner and mhp[4]==0 and mhp[5]==0 and p.health.height==34)
     -- Fill direction: the Target fills and drains the other way from the Player, even while matched.
     assert(M.db.player.fillDirection=='standard' and M.db.target.fillDirection=='reverse' and M.identityKeys.fillDirection)
