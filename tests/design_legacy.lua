@@ -9,10 +9,7 @@ return {
     ["ModeCDM/Modules/CooldownManager/Settings.lua"] = { color = 1 },
     ["ModeCDM/Modules/CooldownManager/SettingsTabs.lua"] = { color = 1 },
     ["ModeCDM/Modules/CooldownManager/SpellMenu.lua"] = { color = 1 },
-    ["Modules/Minimap/Container.lua"] = { border = 2 },
-    ["Modules/Minimap/Shape.lua"] = { border = 2, mask = 1 },
-    ["Modules/Minimap/Text.lua"] = { border = 2 },
-    ["Modules/Minimap/Tiles.lua"] = { border = 2 },
+    ["Modules/Minimap/Shape.lua"] = { mask = 1 }, -- Minimap:SetMaskTexture, the map's own shape
     ["Modules/Nameplates/Init.lua"] = { color = 10 },
     ["Modules/Nameplates/Migrations.lua"] = { color = 1 },
     ["Modules/PartyFrames/AuraInit.lua"] = { color = 1 },

@@ -93,10 +93,12 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
 local world = H.Load({ before = STUBS })
 world.run([==[
     local M, Kit = addon.Minimap, addon.Kit
+    local Tone = addon.Style.Tone
     local function Point(frame) return frame.points and frame.points[#frame.points] end
     assert(M and addon.modules.minimap == M and not M.enabled, 'registered, off by default')
-    assert(M.db.size == 200 and M.db.difference == 16 and M.db.corners == 'medium', 'the approved shape')
-    assert(M.db.border == 'bold' and M.db.buttonBorder == 'thin' and M.db.textLayout == 'map', 'the approved borders and text')
+    assert(M.db.size == 200 and M.db.difference == 16 and M.db.corners == nil, 'the approved shape; the edge has fixed corners')
+    assert(M.db.border == 'mode' and M.db.buttonBorder == 'thin' and M.db.textLayout == 'map', 'the Mode edge, Thin tiles, text on the map')
+    assert(M.db.fontMedia == 'Mode' and M.db.buttonSize == 26 and M.db.buttonSpacing == 3, 'the Mode typeface; the probe\'s tray')
     assert(Minimap:GetParent() == MinimapCluster.MinimapContainer and M.holder == nil, 'nothing moved while off')
 
     addon:SetModuleEnabled('minimap', true)
@@ -106,7 +108,7 @@ world.run([==[
     assert(M.map:GetWidth() == 200 and M.map:GetHeight() == 184, '16 px wider than tall')
     local p = Point(Minimap)
     assert(p[1] == 'TOPLEFT' and p[2] == M.map and p[5] == 8, 'half the difference above the map frame')
-    assert(Minimap.mask:find('Minimap\\Mask%-200%-16%-8$'), 'the 200 x 184 mask with 8 px corners')
+    assert(Minimap.mask:find('Minimap\\Mask%-200%-16%-0$'), 'the 200 x 184 mask, square (the edge covers the corners)')
     assert(Minimap.hitInsets[3] == 8 and Minimap.hitInsets[4] == 8 and Minimap.hitInsets[1] == 0, 'clicks only on the visible map')
     assert(Minimap.rings.SetQuestBlobRingScalar == 0 and Minimap.rings.SetArchBlobRingAlpha == 0, 'no round quest rings')
     -- Blizzard's art waits under a hidden frame; the cluster is hidden.
@@ -115,15 +117,16 @@ world.run([==[
     assert(not MinimapBackdrop:IsVisible() and not Minimap.ZoomIn:IsVisible() and not Minimap.ZoomHitArea:IsVisible(), 'round art and zoom buttons')
     -- Blizzard puts its round mask back; ModeUI sets its own again.
     MinimapCluster:UpdateMinimapConfig()
-    assert(Minimap.mask:find('Mask%-200%-16%-8$'), 'mask set again after Blizzard\'s')
+    assert(Minimap.mask:find('Mask%-200%-16%-0$'), 'mask set again after Blizzard\'s')
     -- Blizzard re-anchors the minimap; it comes back.
     Minimap:ClearAllPoints(); Minimap:SetPoint('CENTER', UIParent, 'CENTER', 0, 0)
     assert(Point(Minimap)[2] == M.map and Minimap:GetParent() == M.map, 'kept on the map frame')
     Minimap:SetParent(UIParent); assert(Minimap:GetParent() == M.map, 'reparenting is undone')
-    -- The border: Bold (3 px) in the Mode rim, above the map.
-    assert(M.border.strips.TOP.height == 3 and M.border.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1], 'Bold Mode rim')
-    assert(M.border.edge:GetFrameLevel() > Minimap:GetFrameLevel(), 'border above the map')
-    assert(M.border.corners.TOPLEFT.cap:IsShown(), 'rounded corners')
+    -- The Mode `frame` edge round the map: a 2px Gunmetal rim (Map Border
+    -- Mode), above the map, its soft drop under it.
+    assert(M.edge.preset == 'frame' and M.edge.rim == 2 and M.edge.tint == nil, 'the Mode frame edge in its own Gunmetal')
+    assert(M.edge.holder:GetFrameLevel() > Minimap:GetFrameLevel() and M.edge.below:GetFrameLevel() < M.map:GetFrameLevel(), 'above the map; drop under it')
+    assert(M.border == nil, 'no legacy border')
 
     -- Tiles: tracking top left, calendar top right, mail only with mail.
     local tiles = M.tiles
@@ -132,7 +135,8 @@ world.run([==[
     assert(not tiles.mail:IsShown(), 'no mail, no tile')
     MinimapCluster.IndicatorFrame.MailFrame:Show(); assert(tiles.mail:IsShown() and Point(tiles.mail)[1] == 'BOTTOMRIGHT', 'new mail')
     assert(not tiles.expansion:IsShown() and ExpansionLandingPageMinimapButton:GetParent() == tiles.expansion, 'expansion button off by default')
-    assert(tiles.tracking.border.strips.TOP.height == 1, 'Thin borders on tiles')
+    local tp = tiles.tracking.parts
+    assert(tp.modeEdge.preset == 'group' and tp.modeEdge.rim == 1 and tp.faceKey == 'Button' and tp.face.vertexColor[1] == Tone.mono.raised[1], 'Mode tiles, Thin')
     assert(M:SetButton('mail', 'corner', 'TOPLEFT') and Point(tiles.mail)[1] == 'TOPLEFT' and Point(tiles.mail)[5] == -(5 + 20 + 4), 'stacked under tracking')
     assert(not M:SetButton('mail', 'corner', 'MIDDLE') and M:SetButton('mail', 'corner', 'BOTTOMRIGHT'))
     assert(M:SetButton('calendar', 'shown', false) and not tiles.calendar:IsShown())
@@ -147,15 +151,19 @@ world.run([==[
 
     -- Text: clock above zone at the bottom, coordinates at the top.
     local t = M.texts
-    assert(t.zone.text == 'Northshire Valley' and t.zone.color[1] == Kit.palette.green[1], 'friendly zone in Mode green')
+    assert(t.zone.text == 'Northshire Valley' and t.zone.color[1] == Tone.reaction.friendly[1], 'friendly zone in the friendly tone')
+    local path = Kit.FontPath(M.db, 'minimap')
+    assert(t.clock.font[1] == addon.Style.Weighted(path, 'bold') and t.zone.font[1] == addon.Style.Weighted(path, 'semibold'), 'clock Bold, zone SemiBold')
     assert(t.clock.text:match('^%d%d:%d%d$'), '24 hour clock')
     assert(t.coords.text == '42.6, 65.1', 'coordinates')
     assert(Point(t.zone)[1] == 'BOTTOM' and Point(t.clock)[5] > Point(t.zone)[5] and Point(t.coords)[1] == 'TOP', 'clock above zone')
-    pvp = 'hostile'; FireEvent('ZONE_CHANGED_NEW_AREA'); assert(t.zone.color[1] == Kit.palette.hostile[1], 'hostile zone')
+    pvp = 'hostile'; FireEvent('ZONE_CHANGED_NEW_AREA'); assert(t.zone.color[1] == Tone.reaction.hostile[1], 'hostile zone')
     assert(M:SetOption('zoneColor', 'white') and t.zone.color[1] == M.WHITE[1])
     assert(M:SetOption('clockFormat', '12') and t.clock.text:match('[AP]M$'))
     assert(M:SetOption('textLayout', 'bar') and M.bar:IsShown() and not t.zone:IsShown(), 'Bar Below')
-    assert(M.mover:GetHeight() == 184 + 1 + 22 and M.barTexts.zone:IsShown(), 'the bar 1 px under the map')
+    -- The bar: a Mode strip in the same frame edge, the two edges 1 px apart (3 + 1 + 3).
+    assert(M.mover:GetHeight() == 184 + 7 + 22 and M.barTexts.zone:IsShown(), 'the bar under the map, edges 1 px apart')
+    assert(M.bar.parts.modeEdge.preset == 'frame' and M.bar.parts.faceKey == 'Button', 'a Mode strip')
     assert(M:SetOption('textLayout', 'hover') and not M.bar:IsShown())
     M.holder.mouseOver = false; Advance(0.2); assert(t.zone.alpha == 0, 'hidden until hovered')
     M.holder.mouseOver = true; Advance(0.2); assert(t.zone.alpha == 1, 'shown while hovered')
@@ -168,6 +176,10 @@ world.run([==[
     assert(M.cells[HandyNotesPin1] == nil and HandyNotesPin1:GetParent() == Minimap, 'map pins stay on the map')
     assert(AddonCompartmentFrame:GetParent() == M.cells[AddonCompartmentFrame], 'Blizzard\'s addon menu (ModeUI\'s entry) first')
     assert(M.container:GetWidth() == 200 and M.container:IsShown(), 'matches the minimap\'s width')
+    local cell = M.cells[AddonCompartmentFrame]
+    assert(cell.width == 26 and cell.height == 22 and cell.parts.modeEdge.preset == 'group' and Point(cell)[4] == 1, 'a tray of Mode tiles, inside it')
+    assert(Point(M.cells[LibDBIcon10_Test])[4] == 1 + 26 + 3, '3 px apart')
+    assert(M.container.fill == nil and M.container.border == nil, 'no box round them')
     local buttons = addon.db.positions.modeMinimapButtons
     assert(buttons.target == 'modeMinimap' and buttons.placement == 'below', 'under the map, in Edit Mode')
     assert(M:SetOption('addonButtons', 'mouseover'))
@@ -194,14 +206,15 @@ world.run([==[
     M:OnCombatStateChanged(false); M:SetOption('opacity', 100)
 
     -- Shape settings: masks follow; bad values are refused.
-    assert(M:SetOption('size', 220) and Minimap.mask:find('Mask%-220%-16%-8$') and M.map:GetHeight() == 204)
-    assert(M:SetOption('difference', 0) and Minimap.mask:find('Mask%-220%-0%-8$') and Minimap.hitInsets[3] == 0)
-    assert(M:SetOption('corners', 'square') and Minimap.mask:find('Mask%-220%-0%-0$') and not M.border.corners.TOPLEFT.cap:IsShown())
-    assert(not M:SetOption('size', 222) and not M:SetOption('size', 300) and not M:SetOption('difference', 4) and not M:SetOption('corners', 'round'))
-    assert(M:SetOption('border', 'thin') and M.border.strips.TOP.height == 1)
-    assert(M:SetOption('borderColor', 'accent') and M.border.strips.TOP.vertexColor[3] == Kit.palette.accent[3])
-    M:SetOption('size', 200); M:SetOption('difference', 16); M:SetOption('corners', 'medium'); M:SetOption('border', 'bold')
-    M:SetOption('borderColor', 'rim')
+    assert(M:SetOption('size', 220) and Minimap.mask:find('Mask%-220%-16%-0$') and M.map:GetHeight() == 204)
+    assert(M:SetOption('difference', 0) and Minimap.mask:find('Mask%-220%-0%-0$') and Minimap.hitInsets[3] == 0)
+    assert(not M:SetOption('size', 222) and not M:SetOption('size', 300) and not M:SetOption('difference', 4))
+    assert(not M:SetOption('corners', 'square') and not M:SetOption('border', 'bold'), 'no corners; Thin or Mode only')
+    assert(M:SetOption('border', 'thin') and M.edge.rim == 1, 'Thin: a 1px rim')
+    assert(M:SetOption('borderColor', 'accent') and M.edge.tint[1] == Tone.ivory[1] and tiles.tracking.parts.modeEdge.tint[1] == Tone.ivory[1], 'Ivory rims')
+    assert(M:SetOption('borderColor', 'class') and M.edge.tint ~= nil, 'the class color')
+    M:SetOption('size', 200); M:SetOption('difference', 16); M:SetOption('border', 'mode')
+    M:SetOption('borderColor', 'rim'); assert(M.edge.tint == nil and M.edge.rim == 2, 'Gunmetal again')
 
     -- Edit Mode: three stand-ins; the eye shows to be moved.
     QueueStatusButton:Hide()
@@ -220,26 +233,35 @@ world.run([==[
     local tabs = {}
     for _, section in ipairs(page.sections) do tabs[#tabs + 1] = section.title end
     assert(table.concat(tabs, ',') == 'Shape,Text,Buttons,Behavior', 'four tabs')
-    assert(page.sizeSlider and #page.differenceButtons == 3 and #page.cornerButtons == 4 and #page.borderButtons == 4)
-    assert(#page.swatches == 6 and page.textToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
-    page.differenceButtons[2]:GetScript('OnClick')(); assert(M.db.difference == 8 and Minimap.mask:find('Mask%-200%-8%-8$'))
+    assert(page.sizeSlider and #page.differenceButtons == 3 and page.cornerButtons == nil and #page.borderButtons == 2)
+    assert(#page.swatches == 5 and page.textToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
+    page.differenceButtons[2]:GetScript('OnClick')(); assert(M.db.difference == 8 and Minimap.mask:find('Mask%-200%-8%-0$'))
     page.buttonRows.mail.picker[1]:GetScript('OnClick')(); assert(M.db.buttons.mail.corner == 'TOPLEFT')
-    page.swatches[2]:GetScript('OnClick')(); assert(M.db.borderColor == 'onyx')
+    page.swatches[2]:GetScript('OnClick')(); assert(M.db.borderColor == 'black')
     window:Hide()
 
     addon:SetModuleEnabled('minimap', false)
     assert(addon.ReloadManager.requests.minimap, 'off asks for a reload')
 
     -- Validation never resets: bad data errors.
-    assert(not pcall(M.Initialize, { version = 1, corners = 'round' }))
+    assert(not pcall(M.Initialize, { version = 2, border = 'bold' }))
     assert(not pcall(M.Initialize, { version = 1, buttons = { mail = { shown = true, corner = 'LEFT' } } }))
-    assert(not pcall(M.Initialize, { version = 2 }))
+    assert(not pcall(M.Initialize, { version = 3 }))
+    -- Version 1 -> 2 (Phase 7): the Mode edge. Bold and Heavy become Mode,
+    -- Onyx the edge's own Gunmetal, Corners goes; defaults still at version
+    -- 1's follow, picked values stay.
+    local one = { version = 1, corners = 'large', border = 'heavy', borderColor = 'onyx', fontMedia = 'Expressway', buttonSize = 22, buttonSpacing = 5 }
+    M.Initialize(one)
+    assert(one.version == 2 and one.corners == nil and one.border == 'mode' and one.borderColor == 'rim', 'the Mode edge')
+    assert(one.fontMedia == 'Mode' and one.buttonSize == 26 and one.buttonSpacing == 5, 'defaults follow; a picked spacing stays')
+    local thin = { version = 1, border = 'thin', borderColor = 'class' }
+    M.Initialize(thin); assert(thin.border == 'thin' and thin.borderColor == 'class', 'Thin and Class Color stay')
 ]==], "minimap")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })
 restored.run([==[
     local M = addon.Minimap
-    assert(not M.enabled and M.db.difference == 8 and M.db.buttons.mail.corner == 'TOPLEFT' and M.db.borderColor == 'onyx', 'settings persist')
+    assert(not M.enabled and M.db.difference == 8 and M.db.buttons.mail.corner == 'TOPLEFT' and M.db.borderColor == 'black', 'settings persist')
     assert(Minimap:GetParent() == MinimapCluster.MinimapContainer, 'nothing moved while off')
 ]==], "minimap_restore")
 print("minimap: all checks passed")

@@ -4,14 +4,16 @@ if not M then return end
 
 -- The map: an Edit Mode stand-in (the mover), the holder that follows it,
 -- and inside it the map frame that carries Blizzard's Minimap, the mask and
--- the border. The game draws the minimap square, so Minimap stays as wide as
--- it is tall and hangs half the difference above and below the map frame;
+-- the Mode `frame` edge round it (Map Border: a 1 or 2px rim; Border Color
+-- tints it). The mask is square: the edge's rim covers the map's corners.
+-- The game draws the minimap square, so Minimap stays as wide as it is tall
+-- and hangs half the difference above and below the map frame;
 -- the mask crops those bands and the click area is trimmed to match.
 -- Blizzard puts its round mask back in MinimapCluster:UpdateMinimapConfig
 -- (at load and whenever Rotate Minimap changes), so a post-hook sets ModeUI's
 -- again; the hybrid minimap (some indoor maps) has a round mask of its own,
 -- swapped when it loads.
-local Kit, Skin, L = addon.Kit, addon.Skin, addon.L
+local Kit, Skin, L, Style = addon.Kit, addon.Skin, addon.L, addon.Style
 local RINGS = { "SetArchBlobRingScalar", "SetArchBlobRingAlpha", "SetQuestBlobRingScalar", "SetQuestBlobRingAlpha",
     "SetTaskBlobRingScalar", "SetTaskBlobRingAlpha" }
 
@@ -25,6 +27,17 @@ function M.BorderColorFor(key)
     return M.BORDER_COLORS[key]
 end
 function M:BorderColor() return M.BorderColorFor(self.db.borderColor) end
+-- The rim's tint: nil for Gunmetal (the edge's own metal).
+function M:RimTint()
+    if self.db.borderColor == "rim" then return nil end
+    return self:BorderColor()
+end
+-- Paints a Mode edge with the Map Border or Button Border rim and Border Color.
+function M:PaintEdge(edge, choice)
+    edge:SetRim(self.BORDER_PIXELS[choice] or 2)
+    edge:SetTint(self:RimTint())
+    edge:Layout()
+end
 
 function M:BuildShape()
     local mover = CreateFrame("Frame", "ModeUIMinimapMover", UIParent)
@@ -41,7 +54,7 @@ function M:BuildShape()
     local map = CreateFrame("Frame", "ModeUIMinimapMap", holder)
     map:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, 0)
     self.holder, self.map = holder, map
-    self.border = Kit.ModeBoxBorder(map)
+    self.edge = Style.Edge(map, "frame")
     -- Text and tiles draw above the map and its border.
     self.overlay = CreateFrame("Frame", nil, map)
     self.overlay:SetAllPoints(map)
@@ -91,7 +104,7 @@ end
 -- The mask for the current size, difference and corners; the hybrid map's too.
 function M:ApplyMask()
     local db = self.db
-    local path = self.MaskPath(db.size, db.difference, db.corners)
+    local path = self.MaskPath(db.size, db.difference, "square")
     Minimap:SetMaskTexture(path)
     for _, method in ipairs(RINGS) do
         if Minimap[method] then pcall(Minimap[method], Minimap, 0) end
@@ -104,7 +117,7 @@ function M:SkinHybrid(path)
     if not (hybrid and hybrid.MapCanvas and hybrid.CircleMask) then return end
     local canvas, mask = hybrid.MapCanvas, hybrid.CircleMask
     if canvas.SetUseMaskTexture then canvas:SetUseMaskTexture(false) end
-    mask:SetTexture(path or self.MaskPath(self.db.size, self.db.difference, self.db.corners), "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetTexture(path or self.MaskPath(self.db.size, self.db.difference, "square"), "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:ClearAllPoints(); mask:SetAllPoints(Minimap)
     if canvas.SetUseMaskTexture then canvas:SetUseMaskTexture(true) end
 end
@@ -136,23 +149,14 @@ function M:LayoutShape()
     return size, height
 end
 
--- ModeUI's border round the map, on a frame above the Minimap and anything
--- Blizzard draws on it. Square corners: plain strips, no corner art.
+-- The Mode edge round the map, above the Minimap and anything Blizzard
+-- draws on it (its soft drop stays under the map).
 function M:LayoutBorder()
-    local db, px, map = self.db, self.px, self.map
+    local map = self.map
     local level = Minimap:GetFrameLevel() + 6
-    local radius = self.RADII[db.corners]
-    local _, thickness = Kit.LayoutModeBoxBorder(self.border, map, { px = px, radius = radius > 0 and radius or px,
-        thickness = self.BORDER_PIXELS[db.border], color = self:BorderColor(), level = level })
-    for _, corner in pairs(self.border.corners) do corner.cap:SetShown(radius > 0) end
-    if radius == 0 then
-        local s = self.border.strips
-        for _, strip in pairs(s) do strip:ClearAllPoints() end
-        s.TOP:SetPoint("TOPLEFT", map, "TOPLEFT", 0, 0); s.TOP:SetPoint("TOPRIGHT", map, "TOPRIGHT", 0, 0)
-        s.BOTTOM:SetPoint("BOTTOMLEFT", map, "BOTTOMLEFT", 0, 0); s.BOTTOM:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", 0, 0)
-        s.LEFT:SetPoint("TOPLEFT", map, "TOPLEFT", 0, -thickness); s.LEFT:SetPoint("BOTTOMLEFT", map, "BOTTOMLEFT", 0, thickness)
-        s.RIGHT:SetPoint("TOPRIGHT", map, "TOPRIGHT", 0, -thickness); s.RIGHT:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", 0, thickness)
-    end
+    local base = map:GetFrameLevel()
+    if addon.IsNumber(base) and addon.IsNumber(level) then self.edge:SetLevel(level - base) end
+    self:PaintEdge(self.edge, self.db.border)
     self.overlay:SetFrameLevel(level + 2)
 end
 

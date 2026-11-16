@@ -1,29 +1,36 @@
 # Interface: Minimap
 
-November 14, 2026. A module in the **Interface** category, after Bags. Off by
+November 14, 2026; on the Mode edge November 15, 2026 (Phase 7, settings
+version 2). A module in the **Interface** category, after Bags. Off by
 default (turn it on with the switch in the page header). Static/mock
-validated only; **native acceptance is pending**. APIs and their rules are in
+validated only; **native acceptance of the Mode rebuild is pending**. APIs and their rules are in
 [API_COMPATIBILITY.md](API_COMPATIBILITY.md#minimap--november-14-2026). The
 look was approved in the plan canvas
 (https://claude.ai/artifact/MRLooaetaRKR4UBbqbysEQ) before any code.
 
-## The look (owner's design)
+## The look (owner's design, on the Mode edge)
 
-- A rounded rectangle, **16 px wider than tall** (200 × 184 by default), with
-  **8 px corners** (Medium).
-- The ModeUI border round the map in **Bold** (3 physical pixels) and **Thin**
-  (1 px) borders round the button tiles inside it, in the Mode rim color
-  (#40454C) unless another Border Color is picked.
-- The clock above the zone, centered at the bottom of the map; coordinates
-  centered at the top. Expressway with ModeUI's lifted shadow. Zone text in
-  Mode tones by PvP status (green friendly, amber contested, red hostile,
-  cyan sanctuary) or white.
+The owner's November 14 design, rebuilt in the Mode design language on
+November 15 (owner: "Mode edge, keep what fits"):
+
+- A rectangle **16 px wider than tall** (200 × 184 by default) in the Mode
+  `frame` edge (Gunmetal, edge-lit, a shadow ring and the soft drop; the
+  edge's own round corners). **Map Border** sets its rim: **Mode** (2px, the
+  default) or **Thin** (1px). **Border Color** tints the rim: Gunmetal (the
+  edge's own), Black, Slate, Ivory or the player's Class Color.
+- The clock (Bold) above the zone (SemiBold), centered at the bottom of the
+  map; coordinates centered at the top. The Mode typeface with ModeUI's
+  lifted shadow. Zone text by PvP status in the gameplay reaction tones
+  (friendly, contested, hostile; sanctuaries Ivory) or white.
 - Tracking (top left), Calendar (top right) and New Mail (bottom right) on
-  small Onyx tiles; the Expansion Button off by default. The group-finder
-  eye on its own tile in the bottom-left corner.
-- Other addons' minimap buttons in an **Addon Buttons** box under the map,
-  as wide as the map, with Blizzard's addon menu (which holds ModeUI's own
-  entry) first.
+  small Mode tiles (a Mode Button face in Mono raised, in the `group` edge,
+  **Button Border** Thin or Mode, the same Border Color); the Expansion
+  Button off by default. The group-finder eye on its own tile in the
+  bottom-left corner.
+- Other addons' minimap buttons in an **Addon Buttons** tray under the map
+  (the approved probe): Mode tiles Button Size wide (26 px) and a little
+  shorter, Spacing (3 px) apart, as wide as the map, with Blizzard's addon
+  menu (which holds ModeUI's own entry) first.
 - Forever's day and night ring is hidden (owner, for now).
 
 ## How it works
@@ -77,15 +84,20 @@ look was approved in the plan canvas
 
 | Tab | Card | Settings |
 |---|---|---|
-| Shape | Minimap | Size (140-280), Wider Than Tall By (0, 8 px, 16 px), Corners (Square, Small, Medium, Large) |
-| Shape | Border | Map Border (Thin, Mode, Bold, Heavy), Button Border (Thin, Mode), Border Color (Mode Rim, Onyx, Black, Mode Slate, Accent, Class Color) |
+| Shape | Minimap | Size (140-280), Wider Than Tall By (0, 8 px, 16 px) |
+| Shape | Border | Map Border (Thin, Mode), Button Border (Thin, Mode), Border Color (Gunmetal, Black, Slate, Ivory, Class Color) |
 | Text | Zone and Clock | Text Layout (On Map, Bar Below, On Hover), Zone Color (PvP Status, White), Clock, Coordinates, Clock Format (24 Hour, 12 Hour), Text Size |
 | Buttons | Blizzard Buttons | Tracking, Calendar, New Mail, Expansion Button: a switch and a corner each |
 | Buttons | Addon Buttons | Show (Always, Mouseover, Hidden), Match Minimap Width, Button Size, Spacing |
 | Behavior | Zoom | Mouse Wheel Zoom, Zoom Out After (Off, 10 s, 30 s) |
 | Behavior | Visibility | Combat Opacity, Opacity |
 
-Saved under `modules.minimap` (version 1). Positions are ModeUI Edit Mode
+Saved under `modules.minimap` (version 2). Version 2 (November 15, 2026,
+Phase 7): the Mode edge. `corners` is removed (the edge's corners are fixed;
+the mask is the square one); Map Border Bold and Heavy become Mode; Border
+Color Onyx becomes Gunmetal (`rim`); values still at version 1's defaults
+follow (Expressway → the Mode typeface, Button Size 22 → 26, Spacing 2 → 3).
+Picked values stay. Positions are ModeUI Edit Mode
 positions: `modeMinimap`, `modeMinimapQueue`, `modeMinimapButtons`.
 
 ## Manual checks (in game)
@@ -96,23 +108,23 @@ New texture files need a full client restart, not just `/reload`.
    - **Navigation:** type `/modeui`, then pick **Interface** › **Minimap** in the sidebar.
    - **Action:** turn the module on with the switch in the page header.
    - **Required state:** out of combat, outdoors.
-   - **Confirmation:** the minimap is a rounded rectangle a little wider than
-     tall, with a 3 px rim and no round Blizzard frame, zone text or zoom
-     buttons; terrain fills every corner up to the rim with nothing showing
-     outside it.
+   - **Confirmation:** the minimap is a rectangle a little wider than tall in
+     the thin steel Mode edge (round corners, a soft shadow under it), with
+     no round Blizzard frame, zone text or zoom buttons; terrain fills every
+     corner up to the edge with nothing showing outside it.
 2. **The mask stays**
    - **Navigation:** the chat box.
    - **Action:** type `/console rotateMinimap 1`, then `/console rotateMinimap 0`
      (Blizzard's Rotate Minimap setting, which re-applies its round mask).
    - **Required state:** the module on.
-   - **Confirmation:** the map stays a rounded rectangle both times.
+   - **Confirmation:** the map keeps its shape and edge both times.
 3. **Text and tiles**
    - **Navigation:** the minimap itself.
    - **Action:** look at the bottom of the map; hover Tracking (top left) and
      Calendar (top right) and click each; get mail.
    - **Required state:** the module on.
-   - **Confirmation:** the clock sits above the zone name at the bottom
-     center; the zone is colored by PvP status; coordinates show at the top
+   - **Confirmation:** the clock (bold) sits above the zone name at the
+     bottom center; the zone is colored by PvP status; coordinates show at the top
      and change as you move; the tiles open Blizzard's tracking menu and
      calendar; a mail tile appears at the bottom right with new mail.
 4. **The eye and addon buttons**
@@ -121,8 +133,8 @@ New texture files need a full client restart, not just `/reload`.
      Finder** box and the **Addon Buttons** box, then leave Edit Mode.
    - **Required state:** at least one addon with a minimap button (most use LibDBIcon).
    - **Confirmation:** the eye sits on a tile in the map's bottom-left corner
-     and moves where you dragged it; addon buttons sit in a box under the
-     map, clickable, without their round frames.
+     and moves where you dragged it; addon buttons sit in a row of small Mode
+     tiles under the map, clickable, without their round frames.
 5. **Corners ping**
    - **Navigation:** the minimap itself.
    - **Action:** click near a corner, outside where the old round map was.

@@ -3,15 +3,15 @@ local M = addon.Minimap
 if not M then return end
 
 -- Blizzard's minimap buttons on small Mode tiles in the map's corners: a
--- rounded Onyx tile in the Button Border (Thin by default), with Blizzard's
--- own button scaled into it, so clicking works as before. A tile shows while
+-- Mode Button face in Mono raised in the `group` edge (Button Border: a 1 or
+-- 2px rim, in Border Color), with Blizzard's own button scaled into it, so
+-- clicking works as before. A tile shows while
 -- its setting is on and Blizzard shows the button (mail only with new mail,
 -- the expansion button only when the game offers it). Two tiles in one
 -- corner stack away from it. The group-finder eye gets a tile too, placed in
 -- ModeUI's Edit Mode (bottom left of the map by default); Blizzard's Edit
 -- Mode position for it doesn't apply while the module is on.
-local Kit, L = addon.Kit, addon.L
-local TILE_RADIUS = 4
+local Kit, L, Skin = addon.Kit, addon.L, addon.Skin
 local QUEUE_SIZE = 45 -- QueueStatusButton's own size (Blizzard_QueueStatusFrame)
 
 -- Blizzard's frame for each tile, and the frame whose Show/Hide says
@@ -29,20 +29,20 @@ end
 
 function M:NewTile(parent)
     local tile = CreateFrame("Frame", nil, parent)
-    tile.fill = Kit.BoxFill(tile)
-    tile.border = Kit.ModeBoxBorder(tile)
+    tile.parts = Skin.Box(tile, "group", { level = 3 })
     return tile
 end
 
--- size defaults to TILE_SIZE (UI units, snapped here).
-function M:LayoutTile(tile, size)
+-- size defaults to TILE_SIZE (UI units, snapped here); height to the size
+-- (square map tiles; the addon tray's are a little shorter).
+function M:LayoutTile(tile, size, height)
     local px = self.px
-    size = addon.Skin.Snap(size or self.TILE_SIZE, px)
-    tile:SetSize(size, size)
-    Kit.LayoutModeBoxBorder(tile.border, tile, { px = px, radius = TILE_RADIUS,
-        thickness = self.BORDER_PIXELS[self.db.buttonBorder], color = self:BorderColor(), level = tile:GetFrameLevel() + 3 })
-    Kit.LayoutBoxFill(tile.fill, tile.border, tile, 0, self.TILE_FILL, self.TILE_ALPHA)
-    return size
+    size = Skin.Snap(size or self.TILE_SIZE, px)
+    height = height or size
+    tile:SetSize(size, height)
+    Skin.PaintBox(tile.parts, tile, "Button", self.TILE_FILL, 1, true)
+    self:PaintEdge(tile.parts.modeEdge, self.db.buttonBorder)
+    return size, height
 end
 
 -- Scale that fits a Blizzard frame into a tile.

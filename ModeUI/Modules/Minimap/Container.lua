@@ -2,9 +2,10 @@ local _, addon = ...
 local M = addon.Minimap
 if not M then return end
 
--- Addon Buttons: other addons' minimap buttons in a Mode box of their own,
--- placed in ModeUI's Edit Mode (under the map by default). Each button sits
--- on a Mode cell, scaled into it, with LibDBIcon's round frame art faded, so
+-- Addon Buttons: other addons' minimap buttons in a tray of Mode tiles (the
+-- approved probe), placed in ModeUI's Edit Mode (under the map by default).
+-- Each button sits on a tile (Button Size wide, a little shorter, Spacing
+-- apart, in the `group` edge), scaled into it, with LibDBIcon's round frame art faded, so
 -- its clicks and menus are its own. Buttons are found the way button
 -- collector addons find them: LibDBIcon's list, then named children of the
 -- Minimap that look like buttons, skipping map pins (gathering and note
@@ -12,8 +13,7 @@ if not M then return end
 -- addon compartment (which holds ModeUI's entry) is the first cell. Moving
 -- is done with Adopt (reparent and re-place after the addon moves its
 -- button); no addon function is replaced.
-local Kit, L = addon.Kit, addon.L
-local PADDING, RADIUS = 3, 4
+local Kit, L, Style = addon.Kit, addon.L, addon.Style
 -- LibDBIcon's round border and background art (file IDs and paths).
 local ROUND_ART = { [136430] = true, [136467] = true }
 local ROUND_PATHS = { "TrackingBorder", "Minimap%-Background" }
@@ -52,8 +52,6 @@ function M:BuildContainer()
     local box = CreateFrame("Frame", "ModeUIMinimapButtons", UIParent)
     box:SetFrameStrata("LOW")
     box:SetPoint("TOPLEFT", mover, "TOPLEFT", 0, 0)
-    box.fill = Kit.BoxFill(box)
-    box.border = Kit.ModeBoxBorder(box)
     self.container, self.cells, self.collected, self.collectedList = box, {}, {}, {}
     local ok, reason = addon.PositionManager:RegisterElement(self.BUTTONS_ID, mover, { moduleId = self.id,
         defaultPosition = self.BUTTONS_POSITION, label = L["Addon Buttons"], anyTarget = true,
@@ -126,10 +124,10 @@ function M:LayoutContainer()
     if not box or not self.px then return end
     local db, px = self.db, self.px
     local size = addon.Skin.Snap(db.buttonSize, px)
+    local tall = Style.IconHeight(math.floor(size / px + 0.5)) * px
     local gap = addon.Skin.Snap(db.buttonSpacing, px)
-    local pad = addon.Skin.Snap(PADDING, px)
-    local thickness = self.BORDER_PIXELS[db.border] * px
-    local inner = pad + thickness
+    -- The tiles' edges stay inside the tray (and line up with the map's sides).
+    local inner = (self.BORDER_PIXELS[db.buttonBorder] or 1) * px
     local shown = {}
     for _, button in ipairs(self.collectedList) do
         local cell = self.cells[button]
@@ -146,20 +144,17 @@ function M:LayoutContainer()
     columns = math.min(columns, count)
     local rows = math.ceil(count / columns)
     local width = db.matchWidth and self.mapWidth or (2 * inner + columns * size + (columns - 1) * gap)
-    local height = 2 * inner + rows * size + (rows - 1) * gap
+    local height = 2 * inner + rows * tall + (rows - 1) * gap
     box:SetSize(width, height)
     self.buttonsMover:SetSize(width, height)
-    Kit.LayoutModeBoxBorder(box.border, box, { px = px, radius = RADIUS, thickness = self.BORDER_PIXELS[db.border],
-        color = self:BorderColor(), level = box:GetFrameLevel() + 2 })
-    Kit.LayoutBoxFill(box.fill, box.border, box, 0, Kit.onyx.health, 1)
     for index, button in ipairs(shown) do
         local cell = self.cells[button]
         cell:SetFrameLevel(box:GetFrameLevel() + 4)
-        self:LayoutTile(cell, size)
+        self:LayoutTile(cell, size, tall)
         local column, row = (index - 1) % columns, math.floor((index - 1) / columns)
         cell:ClearAllPoints()
-        cell:SetPoint("TOPLEFT", box, "TOPLEFT", inner + column * (size + gap), -(inner + row * (size + gap)))
-        self:Replace(button, nil, Scale(button, size))
+        cell:SetPoint("TOPLEFT", box, "TOPLEFT", inner + column * (size + gap), -(inner + row * (tall + gap)))
+        self:Replace(button, nil, Scale(button, tall))
     end
     self:UpdateContainerShown()
 end

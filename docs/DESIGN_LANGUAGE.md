@@ -285,6 +285,11 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   Mode slots for the equipped bags with their free slots), the free count in
   Bold over a thin capacity bar (Celadon, Ivory near full, Rosewood full)
   and the money. The Sort menu is a Mode window.
+- **Minimap:** the map in the `frame` edge (rim 2px, or 1px with Map Border
+  Thin; Border Color may tint it), its mask square (the rim covers the
+  corners); Blizzard's buttons and the addon buttons on Mode tiles (a Mode
+  Button face in Mono raised, in the `group` edge); clock Bold above the zone
+  SemiBold; zone colors are the gameplay reaction tones.
 
 ## Settings window
 

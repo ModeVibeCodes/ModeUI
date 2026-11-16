@@ -5,8 +5,8 @@ if not M then return end
 -- Only defines the page; ModeUI builds it the first time it's opened. The
 -- layout is the owner's approved design (November 14, 2026): four tabs
 -- pinned above the cards, two controls per line, no description text.
---   Shape     Minimap (Size, Wider Than Tall By, Corners); Border (Map
---             Border, Button Border, Border Color)
+--   Shape     Minimap (Size, Wider Than Tall By); Border (Map Border,
+--             Button Border: Thin or Mode; Border Color: the edges' rim)
 --   Text      Zone and Clock (Text Layout, Zone Color, Clock, Coordinates,
 --             Clock Format, Text Size)
 --   Buttons   Blizzard Buttons (a switch and a corner each); Addon Buttons
@@ -41,10 +41,9 @@ function M:CreateConfigPage(parent)
     local shape = Columns({ "Size", "Wider Than Tall By" })
     page.sizeSlider = Slider(shape[1], "size", "px")
     page.differenceButtons = UI.Segments(page, shape[2], "difference", 60)
-    page.cornerButtons = UI.Segments(page, Columns({ "Corners" })[1], "corners", 80)
     page:Group(L["Border"])
     local border = Columns({ "Map Border", "Button Border" })
-    page.borderButtons = UI.Segments(page, border[1], "border", 48)
+    page.borderButtons = UI.Segments(page, border[1], "border", 80)
     page.buttonBorderButtons = UI.Segments(page, border[2], "buttonBorder", 80)
     page.swatches = UI.Swatches(page, Columns({ "Border Color" })[1])
 
