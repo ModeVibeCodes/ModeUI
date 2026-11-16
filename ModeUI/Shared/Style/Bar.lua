@@ -63,7 +63,8 @@ local function FollowFillAlpha(bar, _, _, _, alpha)
 end
 function Style.ApplyBarLook(bar, choice)
     local asset, key = Style.MediaAsset(choice)
-    if not (asset and asset.lift and asset.fill) then
+    -- Mode Panel's own file is its base (it has no separate fill).
+    if not (asset and asset.lift) then
         if bar.liftKey and bar.sheen then bar.sheen:SetAlpha(1) end
         bar.liftKey = nil
         return false
@@ -72,7 +73,7 @@ function Style.ApplyBarLook(bar, choice)
         bar.liftFollows = true
         hooksecurefunc(bar, "SetStatusBarColor", FollowFillAlpha)
     end
-    bar:SetStatusBarTexture(Style.AssetPath(asset.fill))
+    bar:SetStatusBarTexture(Style.AssetPath(asset.fill or key))
     local fill = bar:GetStatusBarTexture()
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("ARTWORK", 0) end
     local sheen = bar.sheen

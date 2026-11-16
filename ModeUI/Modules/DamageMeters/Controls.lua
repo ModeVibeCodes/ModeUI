@@ -4,7 +4,7 @@ if not M then return end
 
 -- The header buttons and arranging windows by hand.
 --   Fight button: C (Current Fight), O (Overall) or an earlier fight's number,
---     just the character, in the Mode cyan.
+--     just the character, in Ivory (the Mode accent).
 --     Click switches Current and Overall; right-click opens the menu.
 --   Reset: Reset All Data.   Lock: Lock Window on and off.
 -- Unlocked, dragging a header moves the window (a group moves together) and
@@ -13,6 +13,7 @@ if not M then return end
 -- what Edit Mode would. The glyphs are 16 physical pixels when the header
 -- has room, so they draw one to one at any UI scale.
 local Kit, L, T = addon.Kit, addon.L, addon.InterfaceTheme
+local Tone = addon.Style.Tone
 local DM, Number = addon.Domain.DamageMeter, addon.IsNumber
 local PM, P = addon.PositionManager, addon.Positioning
 local GLYPH, GAP = 16, 2
@@ -119,21 +120,21 @@ function M:LayoutControls(frame, style, g, window)
     self:PaintButtons(frame)
 end
 
--- Colors and the lock glyph: text color, the accent under the mouse.
+-- Colors and the lock glyph: the timer's color, Ivory under the mouse.
 function M:PaintButtons(frame)
     local buttons = frame and frame.buttons
     if not buttons or not frame.style then return end
     local style = frame.style
-    local function Color(button) return button.hovered and Kit.palette.accent or style.timerColor end
+    local function Color(button) return button.hovered and Tone.ivory or style.timerColor end
     local lockKey = style.locked and "DamageMeterLock" or "DamageMeterUnlock"
     if buttons.lock.glyph ~= lockKey then addon.Media:ApplyTexture(buttons.lock.icon, lockKey); buttons.lock.glyph = lockKey end
     for _, key in ipairs({ "lock", "reset" }) do
         local button = buttons[key]
         Kit.Tint(button.icon, Color(button), button.hovered and 1 or 0.8)
     end
-    -- The fight letter is Mode cyan; white under the mouse.
+    -- The fight letter is Ivory; white under the mouse.
     local session = buttons.session
-    local c = session.hovered and { 1, 1, 1 } or Kit.palette.accent
+    local c = session.hovered and Tone.graphite.white or Tone.ivory
     session.text:SetTextColor(c[1], c[2], c[3], 1)
 end
 

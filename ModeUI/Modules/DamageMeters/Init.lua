@@ -1,7 +1,8 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Interface > Damage Meters: up to three meter windows in the Mode look. The
+-- Interface > Damage Meters: up to three meter windows in the Mode design
+-- language (docs/DESIGN_LANGUAGE.md, "Windows and panels"). The
 -- numbers come from the game's own damage meter (C_DamageMeter); ModeUI only
 -- draws them. Each window has its own meter (Damage Done, DPS, Healing...),
 -- fight (Current, Overall or an earlier one), size, bars, text and when it
@@ -30,7 +31,11 @@ addon:RegisterModule("damageMeters", M)
 -- Border Size and Border Color are retired.
 -- Version 7: the title keeps the meter's own capitals (owner: not every
 -- letter capitalized) and takes Title Position, Title X and Title Y.
-M.VERSION = 8
+-- Version 9 (November 15, 2026, Phase 7): the Mode design language: a
+-- Graphite window in the `window` edge, a Mode Title header, Mode Panel bars
+-- on Mode BG, Ivory accents and the Mode typeface. Values still at version
+-- 8's defaults follow.
+M.VERSION = 9
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- The windows, in sidebar order, with their Edit Mode element (and saved
@@ -59,18 +64,15 @@ M.defaultPositions = {
     window3 = { target = M.elementIds.window2, placement = "above", x = 0, y = 4 },
 }
 
--- Colors: the window rim (#101010), the background inside it (the Unit
--- Frames' default health color, Onyx #131212, as the chat and tooltips;
--- #040404 until version 5, #1C1E21 until version 8), bars for anything without a class (#78808C). The
--- header is an Onyx bar: the same health fill in Mode Gradient.
--- The border is ModeUI's standard border (Kit.ModeBoxBorder): locked, like
--- the unit frames' rim, so it has no settings.
-M.BORDER_COLOR, M.BACKGROUND_COLOR = Kit.BORDER_COLOR, Copy(Kit.onyx.health)
-M.OLD_BACKGROUND_COLOR = Kit.RGB(4, 4, 4)
-M.HEADER_COLOR, M.OTHER_COLOR = Kit.onyx.health, Kit.RGB(120, 128, 140)
-M.TRACK_COLOR = Kit.onyx.track
--- Names and values are pure white and outlined, so they read on any bar color.
-M.TEXT_COLOR = { 1, 1, 1 }
+-- Colors: the window in Graphite panel, the header a Mode Title strip in
+-- Graphite raised, bars for anything without a class in Graphite muted. The
+-- edge is the Mode `window` edge, so it has no settings. Names and values are
+-- pure white (owner) and outlined, so they read on any bar color. Earlier
+-- defaults, for migrations, are in Migrations.lua and Style.LEGACY.
+local Tone = addon.Style.Tone
+local G = Tone.graphite
+M.BACKGROUND_COLOR, M.HEADER_COLOR = Copy(G.panel), Copy(G.raised)
+M.OTHER_COLOR, M.TEXT_COLOR = Copy(G.muted), Copy(Tone.mono.white)
 
 -- The texts, each with its own font, size, outline, shadow, slug and color
 -- (keys prefixed with the part: nameFont, valueOutline, timerColor...).
@@ -80,7 +82,7 @@ M.textPartLabels = { name = "Name", value = "Value", title = "Title", timer = "T
 M.classColorParts = { name = true, value = true }
 M.textPartKeys = { "Font", "FontMedia", "Size", "Outline", "Shadow", "Lifted", "Slug", "Color" }
 local function TextPart(style, prefix, size, color, mode)
-    style[prefix .. "Font"], style[prefix .. "FontMedia"], style[prefix .. "Size"] = "game", "Expressway", size
+    style[prefix .. "Font"], style[prefix .. "FontMedia"], style[prefix .. "Size"] = "game", addon.Style.FONT_DEFAULT, size
     style[prefix .. "Outline"], style[prefix .. "Shadow"], style[prefix .. "Lifted"], style[prefix .. "Slug"] = true, true, false, true
     style[prefix .. "Color"] = Copy(color)
     if mode then style[prefix .. "ColorMode"] = mode end
@@ -102,14 +104,15 @@ local function Style(window)
         -- Frame
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 75,
         -- Header
-        header = true, headerHeight = 20, headerTexture = "mode", headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
+        header = true, headerHeight = 20, headerTexture = "media:Mode Title", headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
         titleUpper = false, showSession = false, showTimer = true, headerButtons = true,
         -- The title's place: Left, Center or Right in the room the timer and
         -- buttons leave, moved by Title X and Title Y (interface units).
         titleAlign = "left", titleOffsetX = 0, titleOffsetY = 0,
         -- Bars
-        barTexture = "mode", barBackground = "flat", barOpacity = 100, barBackgroundOpacity = 25,
-        barColorMode = "class", barColor = Copy(Kit.palette.accent), otherColor = Copy(M.OTHER_COLOR),
+        -- Mode Panel bars on Mode BG (tinted Slate), as the approved probe.
+        barTexture = "media:Mode Panel", barBackground = "media:Mode BG", barOpacity = 100, barBackgroundOpacity = 100,
+        barColorMode = "class", barColor = Copy(Tone.ivory), otherColor = Copy(M.OTHER_COLOR),
         icon = "class", alwaysShowMe = true,
         -- Text: numbers are whole by default (Decimals 0-3); Separator joins
         -- the amount, per second and percent.
@@ -117,8 +120,8 @@ local function Style(window)
     }
     TextPart(style, "name", 12, M.TEXT_COLOR, "custom")
     TextPart(style, "value", 12, M.TEXT_COLOR, "custom")
-    TextPart(style, "title", 11, Kit.palette.accent)
-    TextPart(style, "timer", 11, Kit.palette.muted)
+    TextPart(style, "title", 11, G.text)
+    TextPart(style, "timer", 11, G.muted)
     return style
 end
 M.styleDefaults = {}

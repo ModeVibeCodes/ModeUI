@@ -94,14 +94,18 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
 local world = H.Load({ before = STUBS })
 world.run([==[
     local M, PM, Kit, DM = addon.DamageMeters, addon.PositionManager, addon.Kit, addon.Domain.DamageMeter
+    local Tone = addon.Style.Tone
+    local G = Tone.graphite
     assert(M and not M.enabled and not M.built, 'Damage Meters start off and build nothing')
     assert(M.db.window1.show and not M.db.window2.show and not M.db.window3.show, 'one window on by default')
     assert(M.db.window1.meterType == 'damageDone' and M.db.window2.meterType == 'healingDone' and M.db.window3.meterType == 'damageTaken')
-    assert(M.db.window1.barTexture == 'mode' and M.db.window1.nameFontMedia == 'Expressway' and M.db.window1.titleFontMedia == 'Expressway', 'Mode Gradient and Expressway')
+    assert(M.db.window1.barTexture == 'media:Mode Panel' and M.db.window1.barBackground == 'media:Mode BG' and M.db.window1.barBackgroundOpacity == 100, 'Mode Panel on Mode BG')
+    assert(M.db.window1.nameFontMedia == 'Mode' and M.db.window1.titleFontMedia == 'Mode', 'the Mode typeface')
+    assert(M.db.window1.backgroundColor[1] == G.panel[1] and M.db.window1.titleColor[1] == G.text[1] and M.db.window1.barColor[1] == Tone.ivory[1], 'Graphite, Ivory')
     assert(M.db.window1.decimals == 0 and not M.db.window1.locked and M.db.window1.group == 'none', 'whole numbers, unlocked, on its own')
     for _, part in ipairs(M.textParts) do assert(M.db.window1[part .. 'Outline'], part .. ' outlined') end
     assert(M.db.window1.nameColor[1] == 1 and M.db.window1.nameColor[2] == 1 and M.db.window1.nameColor[3] == 1, 'pure white names')
-    assert(M.db.window1.headerTexture == 'mode' and M.db.window1.headerColor[1] == Kit.onyx.health[1], 'an Onyx header bar')
+    assert(M.db.window1.headerTexture == 'media:Mode Title' and M.db.window1.headerColor[1] == G.raised[1], 'a Mode Title header')
     assert(DM.Clock(65) == '1:05' and DM.Clock(Secret('t')) == '' and DM.Clock(nil) == '', 'clock text')
     assert(#DM.types == 10 and DM.typeById.dps.perSecond and DM.typeById.interrupts.count, 'the meters Blizzard offers')
     local ok, short = Kit.ShortNumber(165.71428571429, 1)
@@ -122,39 +126,28 @@ world.run([==[
     assert(w1:IsShown() and not w2:IsShown(), 'only switched-on windows show')
     assert(not w1.secure and not (w1.IsProtected and w1:IsProtected()), 'plain frames: they update in combat')
 
-    -- Geometry: the 2px ModeUI border, 20px header, 1px hairline, 1px padding, 8 rows of 18 one pixel apart.
-    assert(w1.width == 240 and w1.height == 2 + 20 + 1 + 1 + 8 * 18 + 7 + 1 + 2, 'exact height for the rows')
+    -- Geometry: the 3px window edge, 20px header, 1px line, 1px padding, 8 rows of 18 one pixel apart.
+    assert(w1.width == 240 and w1.height == 3 + 20 + 1 + 1 + 8 * 18 + 7 + 1 + 3, 'exact height for the rows')
     assert(w1.height % 2 == 0 and w1.width % 2 == 0, 'even size stays on the pixel grid')
     assert(ModeUIDamageMeter1Mover.width == w1.width and Point(w1)[2] == ModeUIDamageMeter1Mover, 'hangs from its stand-in')
     local row1, row2, row3 = w1.rows[1], w1.rows[2], w1.rows[3]
     local p = Point(row1)
-    assert(p[1] == 'TOPLEFT' and p[4] == 3 and p[5] == -24 and row1.width == 234 and row1.height == 18, 'first row inside rim, header, hairline and padding')
-    assert(Point(row2)[5] == -43, 'next row one row and one pixel down')
+    assert(p[1] == 'TOPLEFT' and p[4] == 4 and p[5] == -25 and row1.width == 232 and row1.height == 18, 'first row inside the edge, header, line and padding')
+    assert(Point(row2)[5] == -44, 'next row one row and one pixel down')
     assert(row1.icon.width == 18 and Point(row1.bar)[4] == 19, 'square icon, a pixel gap, then the bar')
-    -- The border: ModeUI's standard rim (as on the unit frames' health bar) as a
-    -- rounded rectangle, its corners as deep as a bar the header's height would round.
-    local border = w1.border
-    assert(M.BORDER_COLOR == Kit.BORDER_COLOR and border.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and border.strips.TOP.height == 2, 'the standard rim, 2px')
-    assert(w1.g.corner == Kit.CapDepth(24, 1) and border.radius == 6 and Point(border.strips.TOP)[4] == 6 and border.corners.TOPLEFT.cap.width == 6, 'round corners')
-    assert(border.corners.BOTTOMRIGHT.cap.texture:find('CornerBottomRight', 1, true) and border.corners.BOTTOMRIGHT.hole.texture:find('CornerHoleBottomRight', 1, true), 'a whole corner texture and its hole')
-    -- Content rounds with it, taking only the corners it reaches: the client
-    -- holds at most 3 masks on a texture (the stubs error on a 4th, as it does).
-    local function Masks(region, ...)
-        local n = 0
-        for _ in pairs(region.capMasks or {}) do n = n + 1 end
-        if n ~= select('#', ...) then return false end
-        for i = 1, select('#', ...) do if not region.capMasks[select(i, ...)] then return false end end
-        return true
-    end
-    local m = border.masks
-    assert(Masks(w1.fill.top, m.TOPLEFT, m.TOPRIGHT) and Masks(w1.fill.middle) and Masks(w1.fill.bottom, m.BOTTOMLEFT, m.BOTTOMRIGHT), 'background in three bands')
-    assert(Point(w1.fill.top)[4] == 1 and w1.fill.top.height == 5 and Point(w1.fill.middle)[5] == -6 and w1.fill.bottom.height == 5, 'bands meet at the corner depth')
-    assert(Masks(w1.header.bar:GetStatusBarTexture(), m.TOPLEFT, m.TOPRIGHT) and Masks(w1.divider), 'the header rounds with the top corners')
-    local last = w1.rows[8]
-    assert(Masks(row1.bar:GetStatusBarTexture()) and Masks(last.bar:GetStatusBarTexture(), m.BOTTOMRIGHT) and Masks(last.icon, m.BOTTOMLEFT), 'the last row with the bottom corners')
-    assert(border.edge:GetFrameLevel() > w1.header:GetFrameLevel(), 'drawn above what it holds')
-    assert(w1.fill.middle.vertexColor[4] == 0.75 and w1.fill.top.vertexColor[4] == 0.75, 'background 1px under the rim; 75%')
-    assert(w1.divider:IsShown() and Point(w1.divider)[5] == -22 and w1.divider.vertexColor[1] == 0, 'a black hairline under the header')
+    -- The Mode window: Mode Panel in Graphite at 75% with its lift, the
+    -- `window` edge inside it above what it holds; no masks; no soft drop
+    -- under a see-through window.
+    local wp = w1.parts
+    assert(wp.faceKey == 'Panel' and wp.face.vertexColor[1] == G.panel[1] and wp.face.vertexColor[4] == 0.75 and wp.lift, 'Mode Panel at 75%')
+    assert(wp.modeEdge.preset == 'window' and wp.modeEdge.holder:IsShown() and Point(wp.edgeFrame)[4] == 3, 'the window edge inside it')
+    assert(wp.edgeFrame:GetFrameLevel() > w1.rows[1].bar:GetFrameLevel(), 'drawn above the rows')
+    assert(not wp.modeEdge.below:IsShown(), 'no drop under a see-through window')
+    assert(w1.border == nil and w1.fill == nil and row1.bar:GetStatusBarTexture().capMasks == nil, 'no masks')
+    assert(w1.divider:IsShown() and Point(w1.divider)[5] == -23 and w1.divider.vertexColor[1] == G.line[1], 'a Graphite line under the header')
+    -- Bars: Mode Panel (its base and lift) on Mode BG tinted Slate.
+    assert(row1.bar.statusBarTexture:find('Panel', 1, true) and row1.bar.sheen.texture:find('PanelLift', 1, true) and row1.bar.sheen:IsShown(), 'Mode Panel with its lift')
+    assert(row1.bar.bg.texture and row1.bar.bg.vertexColor[1] == Tone.slate[1] and row1.bar.bg.vertexColor[4] == 1, 'on Mode BG in Slate')
 
     -- Header (owner): the timer at the right edge, then the fight letter, Reset
     -- and the lock to its left; 16px glyphs, 2px apart, centered in the header.
@@ -165,12 +158,13 @@ world.run([==[
     assert(Point(b.reset)[2] == b.session and Point(b.reset)[4] == -2 and Point(b.lock)[2] == b.reset and Point(b.lock)[4] == -2 and b.lock:IsShown(), 'then Reset and the lock')
     assert(Point(title)[1] == 'LEFT' and Point(title)[4] == 4 and title.points[2][2] == b.lock and title.points[2][4] == -4 and title.justifyH == 'LEFT', 'the title in the room left of them')
     assert(b.session.text.text == 'C', 'C for Current Fight')
-    assert(b.session.rim == nil and b.session.text.color[2] == Kit.palette.accent[2] and b.session.text.color[1] == Kit.palette.accent[1], 'just the letter, in Mode cyan')
-    local hb = w1.header.bar
-    assert(hb.statusBarColor[1] == Kit.onyx.health[1] and hb.sheen:IsShown() and hb.value == 1, 'the header is a full Onyx bar in Mode Gradient')
-    assert(M:SetOption('window1', 'headerTexture', 'flat') and not hb.sheen:IsShown() and M:SetOption('window1', 'headerColor', { 0, 0, 1 })
-        and hb.statusBarColor[3] == 1, 'header texture and color')
-    assert(M:SetOption('window1', 'headerTexture', 'mode') and M:SetOption('window1', 'headerColor', Kit.onyx.health))
+    assert(b.session.rim == nil and b.session.text.color[1] == Tone.ivory[1] and b.session.text.color[2] == Tone.ivory[2], 'just the letter, in Ivory')
+    local hb, hp = w1.header.bar, w1.header.parts
+    assert(hp.faceKey == 'Title' and hp.face:IsShown() and hp.face.vertexColor[1] == G.raised[1] and not hb:IsShown(), 'the header is a Mode Title strip in Graphite raised')
+    assert(M:SetOption('window1', 'headerTexture', 'flat') and hb:IsShown() and not hp.face:IsShown() and not hb.sheen:IsShown()
+        and M:SetOption('window1', 'headerColor', { 0, 0, 1 }) and hb.statusBarColor[3] == 1, 'header texture and color')
+    assert(M:SetOption('window1', 'headerTexture', 'mode') and hb:IsShown() and hb.sheen:IsShown(), 'Mode Gradient on the bar')
+    assert(M:SetOption('window1', 'headerTexture', 'media:Mode Title') and M:SetOption('window1', 'headerColor', G.raised) and hp.face:IsShown())
     assert(b.lock.icon.texture:find('DamageMeters/Unlock', 1, true) and b.reset.icon.texture:find('DamageMeters/Reset', 1, true))
     assert(w1.grip:IsShown() and Point(w1.grip)[1] == 'BOTTOMRIGHT' and w1.grip.width == 16, 'resize grip while unlocked')
 
@@ -210,7 +204,7 @@ world.run([==[
     assert(M:SetOption('window1', 'valueColor', { 1, 0, 0 }) and M:SetOption('window1', 'valueColorMode', 'custom') and row1.value.color[2] == 0 and row1.name.color[1] == mage.r, 'value color')
     assert(M:SetOption('window1', 'valueSize', 15) and row1.value.font[2] == 15 and row1.name.font[2] == 12, 'value size on its own')
     assert(M:SetOption('window1', 'nameOutline', false) and row1.name.font[3] == '' and row1.value.font[3] == 'OUTLINE', 'outline per text')
-    assert(M:SetOption('window1', 'titleColor', { 0, 1, 0 }) and w1.header.title.color[1] == 0 and w1.header.info.color[1] == Kit.palette.muted[1], 'header texts on their own')
+    assert(M:SetOption('window1', 'titleColor', { 0, 1, 0 }) and w1.header.title.color[1] == 0 and w1.header.info.color[1] == G.muted[1], 'header texts on their own')
     assert(M:SetOption('window1', 'timerSize', 9) and w1.header.info.font[2] == 9 and w1.header.title.font[2] == 11)
     assert(M:SetOption('window1', 'barColorMode', 'custom') and row1.bar.statusBarColor[3] == M.db.window1.barColor[3], 'one custom color')
     assert(M:ResetWindow('window1') and M.db.window1.meterType == 'interrupts' and M.db.window1.showRank, 'reset keeps the meter')
@@ -250,7 +244,7 @@ world.run([==[
     row1.scripts.OnClick(row1, 'LeftButton'); assert(not panel:IsShown(), 'same row again closes it')
 
     -- Always Show Me and the mouse wheel.
-    assert(M:SetOption('window1', 'rows', 1) and w1.height == 2 + 20 + 1 + 1 + 18 + 1 + 2 + 1, 'one row (an extra pixel keeps it even)')
+    assert(M:SetOption('window1', 'rows', 1) and w1.height == 3 + 20 + 1 + 1 + 18 + 1 + 3 + 1, 'one row (an extra pixel keeps it even)')
     assert(row1.name.text == '2. Fixture', 'you take the last row when ranked below it')
     assert(M:SetOption('window1', 'alwaysShowMe', false) and row1.name.text == '1. Valeria')
     assert(M:SetOption('window1', 'rows', 2))
@@ -347,15 +341,12 @@ world.run([==[
     assert(not M:SetOption('window1', 'group', 'window1'), 'not grouped with itself')
     assert(M:SetOption('window1', 'barTexture', 'flat') and row1.bar.statusBarTexture == Kit.FLAT and not row1.bar.sheen:IsShown(), 'Flat texture')
     assert(M:SetOption('window1', 'barTexture', 'mode') and row1.bar.sheen:IsShown(), 'Mode Gradient')
-    assert(M:SetOption('window1', 'header', false) and not w1.header:IsShown() and not w1.divider:IsShown() and Point(row1)[5] == -3, 'no header: rows start under the rim')
-    assert(w1.g.corner == Kit.CapDepth(18 + 4, 1), 'a row stands in for the header')
-    assert(Masks(row1.icon, m.TOPLEFT) and Masks(row1.bar.bg, m.TOPRIGHT) and Masks(w1.rows[w1.g.rows].bar.bg, m.BOTTOMRIGHT), 'the first row takes the top corners')
-    -- One row, no padding and no icon: the bar reaches all four corners, so it
-    -- takes the rounded ends down each side instead.
-    assert(M:SetOption('window1', 'rows', 1) and M:SetOption('window1', 'padding', 0) and M:SetOption('window1', 'icon', 'none'))
-    assert(Masks(row1.bar:GetStatusBarTexture(), border.ends.LEFT, border.ends.RIGHT) and Masks(row1.bar.sheen, border.ends.LEFT, border.ends.RIGHT), 'a lone row rounds at both ends')
-    assert(M:SetOption('window1', 'rows', 10) and M:SetOption('window1', 'padding', 1) and M:SetOption('window1', 'icon', 'class'))
-    assert(Masks(row1.bar:GetStatusBarTexture(), m.TOPRIGHT), 'and back to its corners')
+    assert(M:SetOption('window1', 'barTexture', 'media:Mode Panel'))
+    assert(M:SetOption('window1', 'header', false) and not w1.header:IsShown() and not w1.divider:IsShown() and Point(row1)[5] == -4, 'no header: rows start under the edge')
+    assert(w1.g.corner == 3 + 4, 'the grip clear of the round corner')
+    assert(M:SetOption('window1', 'backgroundOpacity', 100) and w1.parts.modeEdge.below:IsShown(), 'an opaque window has its soft drop')
+    assert(M:SetOption('window1', 'opacity', 90) and not w1.parts.modeEdge.below:IsShown(), 'not while the window fades')
+    assert(M:SetOption('window1', 'opacity', 100) and M:SetOption('window1', 'backgroundOpacity', 75))
     assert(M:SetOption('window1', 'header', true) and M:SetOption('window1', 'icon', 'none') and not row1.icon:IsShown() and Point(row1.bar)[4] == 0, 'no icon: the bar fills the row')
     assert(M:SetOption('window1', 'clickThrough', true) and not row1.mouse and not w1.grip:IsShown(), 'Click Through')
     assert(M:SetOption('window1', 'clickThrough', false) and row1.mouse)
@@ -607,7 +598,7 @@ end
 old.window3.textColor = { 1, 0, 0 }
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 8 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
+    assert(M.db.version == 9 and M.db.window1.valueColor[2] == 1 and M.db.window1.nameColor[2] == 1 and not M.db.window1.showSession, 'white, no fight name')
     assert(M.db.window3.valueColor[2] == 0 and M.db.window3.nameColor[2] == 1, 'a chosen value color stays; names are white')
     assert(M.db.window1.nameOutline and M.db.window3.valueOutline and M.db.window1.textColor == nil and M.db.window1.outline == nil, 'outlined; old keys gone')
     assert(M.db.window1.decimals == 0 and M.db.window1.group == 'none' and M.db.window1.headerButtons and not M.db.window1.locked, 'new settings take their defaults')
@@ -631,12 +622,13 @@ mod.window2.nameColorMode, mod.window2.decimals = "class", 2
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
     local s = M.db.window1
-    assert(M.db.version == 8 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
+    assert(M.db.version == 9 and s.nameFontMedia == 'Friz' and s.timerFontMedia == 'Friz' and s.titleLifted and not s.valueSlug, 'the font and shadow go to every text')
     assert(s.nameOutline and s.titleOutline, 'outline on (the owner asked)')
     assert(s.nameColor[1] == 1 and s.valueColor[1] == 0.5 and s.nameColorMode == 'custom', 'pure white names; values keep the text color')
     assert(s.titleColor[3] == 0 and s.titleSize == 13, 'title kept')
     assert(s.decimals == 0 and M.db.window2.decimals == 2 and M.db.window2.nameColorMode == 'class', 'one decimal becomes whole; a choice stays')
-    assert(s.headerColor[1] == Kit.onyx.health[1] and s.headerTexture == 'mode', 'the old header becomes Onyx')
+    local G = addon.Style.Tone.graphite
+    assert(s.headerColor[1] == G.raised[1] and s.headerTexture == 'media:Mode Title', 'the old header becomes Onyx, then Graphite raised')
     assert(s.font == nil and s.textColor == nil and s.liftedShadow == nil, 'old keys gone')
 ]==], "migrate v2")
 
@@ -647,7 +639,7 @@ three.version, three.hideBlizzard = 3, nil
 three.window2.group, three.window2.groupSide, three.window3.groupSide = "window1", "below", "below"
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 8 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
+    assert(M.db.version == 9 and M.db.window2.groupSide == 'above' and M.db.window3.groupSide == 'above', 'Below becomes Above')
     assert(M.db.hideBlizzard == true, "Hide Blizzard's Meter on")
 ]==], "migrate v3")
 
@@ -660,7 +652,7 @@ four.window2.backgroundColor = { 1, 0, 0 }
 four.window1.border, four.window1.borderSize, four.window1.borderColor = 'rounded', 1, { 0.06, 0.06, 0.06 }
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
-    assert(M.db.version == 8 and M.db.window1.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
+    assert(M.db.version == 9 and M.db.window1.backgroundColor[1] == addon.Style.Tone.graphite.panel[1], 'the health color, then Graphite')
     assert(M.db.window1.border == nil and M.db.window1.borderSize == nil and M.db.window1.borderColor == nil, 'the old border settings go (version 6)')
     assert(M.db.window2.backgroundColor[1] == 1, 'a picked background stays')
 ]==], "migrate v4")
@@ -674,7 +666,7 @@ for _, window in ipairs({ "window1", "window2", "window3" }) do
 end
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local M = addon.DamageMeters
-    assert(M.db.version == 8 and not M.db.window1.titleUpper and not M.db.window3.titleUpper, 'Uppercase Title off')
+    assert(M.db.version == 9 and not M.db.window1.titleUpper and not M.db.window3.titleUpper, 'Uppercase Title off')
     assert(M.db.window1.titleAlign == 'left' and M.db.window1.titleOffsetX == 0 and M.db.window2.titleOffsetY == 0, 'Title Position, X and Y take their defaults')
 ]==], "migrate v6")
 
@@ -686,10 +678,36 @@ seven.window1.backgroundColor, seven.window1.headerColor = { 28 / 255, 30 / 255,
 seven.window2.backgroundColor = { 1, 0, 0 }
 H.Load({ before = STUBS, saved = v7 }).run([==[
     local M, Kit = addon.DamageMeters, addon.Kit
-    assert(M.db.version == 8 and M.db.window1.backgroundColor[1] == Kit.onyx.health[1], 'the old health background follows')
-    assert(M.db.window1.headerColor[1] == Kit.onyx.health[1], 'the old health header follows')
+    local G = addon.Style.Tone.graphite
+    assert(M.db.version == 9 and M.db.window1.backgroundColor[1] == G.panel[1], 'the old health background follows')
+    assert(M.db.window1.headerColor[1] == G.raised[1], 'the old health header follows')
     assert(M.db.window2.backgroundColor[1] == 1, 'a picked background stays')
 ]==], "migrate v7")
+
+-- Version 8 -> 9 (Phase 7): values still at version 8's defaults take the
+-- Mode design language's; picked values stay.
+local v8 = restored.saved()
+local eight = v8.profiles.Default.modules.damageMeters
+eight.version = 8
+local ONYX, CYAN, MUTED = { 19 / 255, 18 / 255, 18 / 255 }, { 0, 240 / 255, 1 }, { 185 / 255, 185 / 255, 185 / 255 }
+for _, window in ipairs({ "window1", "window2" }) do
+    local style = eight[window]
+    style.backgroundColor, style.headerColor = { ONYX[1], ONYX[2], ONYX[3] }, { ONYX[1], ONYX[2], ONYX[3] }
+    style.headerTexture, style.barTexture, style.barBackground, style.barBackgroundOpacity = "mode", "mode", "flat", 25
+    style.otherColor = { 120 / 255, 128 / 255, 140 / 255 }
+    style.barColor, style.titleColor, style.timerColor = { CYAN[1], CYAN[2], CYAN[3] }, { CYAN[1], CYAN[2], CYAN[3] }, { MUTED[1], MUTED[2], MUTED[3] }
+    for _, part in ipairs({ "name", "value", "title", "timer" }) do style[part .. "FontMedia"] = "Expressway" end
+end
+eight.window2.barTexture, eight.window2.backgroundColor, eight.window2.nameFontMedia = "flat", { 1, 0, 0 }, "Friz"
+H.Load({ before = STUBS, saved = v8 }).run([==[
+    local M, Kit, Tone = addon.DamageMeters, addon.Kit, addon.Style.Tone
+    local G, s, two = Tone.graphite, M.db.window1, M.db.window2
+    assert(M.db.version == 9 and s.backgroundColor[1] == G.panel[1] and s.headerColor[1] == G.raised[1], 'Graphite window and header')
+    assert(s.headerTexture == 'media:Mode Title' and s.barTexture == 'media:Mode Panel' and s.barBackground == 'media:Mode BG' and s.barBackgroundOpacity == 100, 'Mode textures')
+    assert(s.otherColor[1] == G.muted[1] and s.nameFontMedia == 'Mode' and s.timerFontMedia == 'Mode', 'Graphite muted, the Mode typeface')
+    assert(s.barColor[1] == Tone.ivory[1] and s.titleColor[1] == G.text[1] and s.timerColor[1] == G.muted[1], 'Ivory bars, Graphite header text')
+    assert(two.barTexture == 'flat' and two.backgroundColor[1] == 1 and two.nameFontMedia == 'Friz' and two.valueFontMedia == 'Mode', 'picked values stay')
+]==], "migrate v8")
 
 -- Bad saved data stops startup rather than being reset.
 local saved = restored.saved()

@@ -2,16 +2,23 @@ local _, addon = ...
 local M = addon.DamageMeters
 if not M then return end
 
--- A meter window: a hollow pixel rim around the background, the header strip
--- (the meter title, placed by Title Position, X and Y; the lock, Reset, the
--- fight letter and the timer on the right, the timer at the edge) over a one-pixel
--- divider, then the rows. Each row is a square class icon and a Mode
--- Gradient bar with the name and value on it. The same code paints the real
+-- A meter window in the Mode design language (docs/DESIGN_LANGUAGE.md,
+-- "Windows and panels"): Mode Panel in Background Color at Background
+-- Opacity with the `window` edge inside it (no soft drop when see-through),
+-- the header strip (Header Texture, a Mode Title strip in Graphite raised by
+-- default; the meter title placed by Title Position, X and Y; the lock,
+-- Reset, the fight letter and the timer on the right, the timer at the edge)
+-- over a one-pixel Graphite line, then the rows. Each row is a square class
+-- icon and a bar (Mode Panel on Mode BG by default) with the name and value
+-- on it. The same code paints the real
 -- windows, the breakdown panel and the settings preview, so they always match.
 -- Windows are plain frames (nothing here is protected), hung from a stand-in
 -- that Edit Mode moves.
-local Kit, L = addon.Kit, addon.L
-local FLAT = Kit.FLAT
+local Kit, L, Skin, Style = addon.Kit, addon.L, addon.Skin, addon.Style
+local Tone = Style.Tone
+local REACH = Style.EdgeReach("window")
+-- The edge rides above the rows, bars and their text.
+local EDGE_LEVEL = 8
 
 local function TextWithLift(layer)
     local text = Kit.Text(layer)
@@ -23,7 +30,6 @@ function M:BuildRow(parent)
     local row = CreateFrame("Button", nil, parent)
     row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     row.iconBg = row:CreateTexture(nil, "BACKGROUND")
-    row.iconBg:SetTexture(FLAT)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.bar = Kit.Bar(row)
     row.bar:SetMinMaxValues(0, 1); row.bar:SetValue(0)
@@ -32,34 +38,34 @@ function M:BuildRow(parent)
     row.textLayer:SetFrameLevel(row.bar:GetFrameLevel() + 2)
     row.name, row.value = TextWithLift(row.textLayer), TextWithLift(row.textLayer)
     row.highlight = row.textLayer:CreateTexture(nil, "BACKGROUND")
-    row.highlight:SetAllPoints(); row.highlight:SetTexture(FLAT)
-    row.highlight:SetVertexColor(1, 1, 1, 0.06); row.highlight:Hide()
+    row.highlight:SetAllPoints(); Style.ApplyAsset(row.highlight, "Solid")
+    Style.Paint(row.highlight, Tone.mono.white, 0.06); row.highlight:Hide()
     row:SetScript("OnEnter", function() row.highlight:Show() end)
     row:SetScript("OnLeave", function() row.highlight:Hide() end)
     row:Hide()
     return row
 end
 
--- The window's shell: background, rim, header and an empty-state line.
+-- The window's shell: face and edge, header and an empty-state line.
 -- `name` is a global frame name (real windows) or nil (breakdown, preview).
 function M:BuildShell(parent, name)
     local frame = CreateFrame("Frame", name, parent)
     frame:SetSize(240, 160)
-    frame.fill = Kit.BoxFill(frame)
-    -- ModeUI's border, as a rounded rectangle; it rounds what the window holds
-    -- (each part takes the corners it reaches when painted).
-    frame.border = Kit.ModeBoxBorder(frame)
+    frame.parts = Skin.Box(frame, "window", { inset = REACH, level = EDGE_LEVEL })
     local header = CreateFrame("Button", nil, frame)
     header:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     -- The header strip is a full bar, so it takes the same textures as the rows.
     header.bar = Kit.Bar(header)
     header.bar:SetAllPoints(); header.bar:SetMinMaxValues(0, 1); header.bar:SetValue(1)
     header.bar.bg:Hide()
+    -- A Mode texture (Mode Title by default) draws as a box face instead,
+    -- tiled one texel per pixel with its lift (Skin.PaintBox).
+    header.parts = Skin.Box(header, nil, { sublevel = -6 })
     header.text = CreateFrame("Frame", nil, header)
     header.text:SetAllPoints(); header.text:SetFrameLevel(header.bar:GetFrameLevel() + 2)
     header.title, header.info = TextWithLift(header.text), TextWithLift(header.text)
     frame.divider = frame:CreateTexture(nil, "BORDER")
-    frame.divider:SetTexture(FLAT)
+    Style.ApplyAsset(frame.divider, "Solid")
     frame.header = header
     frame.empty = Kit.Text(frame)
     frame.empty:SetWordWrap(true)
@@ -120,20 +126,15 @@ function M:PaintRow(row, frame, style, g, index)
         texture:SetSize(math.max(g.px, g.icon), g.rowH)
         texture:SetShown(iconed)
     end
-    Kit.Tint(row.iconBg, self.TRACK_COLOR, style.barBackgroundOpacity / 100)
+    Style.ApplyAsset(row.iconBg, "Solid")
+    local track = Kit.BarBackgroundColor(style.barBackground)
+    Kit.Tint(row.iconBg, track, style.barBackgroundOpacity / 100)
     row.bar:ClearAllPoints()
     row.bar:SetPoint("TOPLEFT", row, "TOPLEFT", iconed and g.icon + g.iconGap or 0, 0)
     row.bar:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
     Kit.BarForeground(row.bar, style.barTexture, g.rowH, g.px)
     Kit.BarBackground(row.bar, style.barBackground)
-    Kit.Tint(row.bar.bg, self.TRACK_COLOR, style.barBackgroundOpacity / 100)
-    -- Rows near a corner round with the border.
-    local top = self.RowTop(g, index)
-    local bottom, right = g.height - top - g.rowH, g.width - g.left - g.rowW
-    Kit.MaskToBoxBorder(frame.border, { row.bar:GetStatusBarTexture(), row.bar.bg, row.bar.sheen },
-        { left = g.left + (iconed and g.icon + g.iconGap or 0), top = top, right = right, bottom = bottom })
-    Kit.MaskToBoxBorder(frame.border, { row.icon, row.iconBg },
-        { left = g.left, top = top, right = g.width - g.left - math.max(g.px, g.icon), bottom = bottom })
+    Kit.Tint(row.bar.bg, track, style.barBackgroundOpacity / 100)
     local name, value = row.name, row.value
     value:ClearAllPoints(); value:SetPoint("RIGHT", row.bar, "RIGHT", -g.inset, 0); value:SetJustifyH("RIGHT")
     name:ClearAllPoints(); name:SetPoint("LEFT", row.bar, "LEFT", g.inset, 0)
@@ -142,38 +143,31 @@ function M:PaintRow(row, frame, style, g, index)
     self:PaintText(value, style, "value", g.px, true, "RIGHT")
 end
 
--- Paints a style onto a shell: size, rim, background, header and `rows` rows
+-- Paints a style onto a shell: size, face and edge, header and `rows` rows
 -- (the window's Rows by default). Returns the geometry.
 function M:PaintShell(frame, style, rows)
     local px = Kit.PixelSize(frame)
     local g = self.Geometry(style, px, rows)
     frame.g, frame.style = g, style
     frame:SetSize(g.width, g.height)
-    Kit.LayoutModeBoxBorder(frame.border, frame, { px = px, radius = g.corner, level = frame:GetFrameLevel() + 8 })
-    -- The background reaches 1px under the rim, so no seam shows at its edge.
-    Kit.LayoutBoxFill(frame.fill, frame.border, frame, math.max(0, g.border - px), style.backgroundColor, style.backgroundOpacity / 100)
+    -- The Mode window; no soft drop under a see-through one.
+    local alpha = style.backgroundOpacity / 100
+    Skin.PaintBox(frame.parts, frame, "Panel", style.backgroundColor, alpha, true)
+    frame.parts.modeEdge:SetDrop(alpha >= 1 and style.opacity >= 100)
     local header = frame.header
     header:SetShown(style.header)
     header:ClearAllPoints()
     header:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -g.border)
     header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -g.border)
     header:SetHeight(math.max(px, g.header))
-    -- The header bar: Header Texture (Mode Gradient by default) in Header Color.
-    Kit.BarForeground(header.bar, style.headerTexture, math.max(px, g.header), px)
-    local c = style.headerColor
-    header.bar:SetStatusBarColor(c[1], c[2], c[3], style.headerOpacity / 100)
-    local below = g.height - g.border - g.header
-    Kit.MaskToBoxBorder(frame.border, { header.bar:GetStatusBarTexture(), header.bar.sheen },
-        { left = g.border, top = g.border, right = g.border, bottom = below })
+    self:PaintHeaderFace(header, style, math.max(px, g.header), px)
     local divider = frame.divider
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -(g.border + g.header))
     divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -(g.border + g.header))
     divider:SetHeight(px)
-    -- A black hairline, like the one between a unit frame's health and power.
-    Kit.Tint(divider, Kit.onyx.inner, 1)
+    Style.Paint(divider, Tone.graphite.line)
     divider:SetShown(g.divider > 0)
-    Kit.MaskToBoxBorder(frame.border, { divider }, { left = g.border, top = g.border + g.header, right = g.border, bottom = below - px })
     local title, info = header.title, header.info
     -- The timer at the header's right edge; the title in the room left of it
     -- (and of the buttons, which Controls.lua puts between them).
@@ -196,6 +190,24 @@ function M:PaintShell(frame, style, rows)
     for i = g.rows + 1, #frame.rows do frame.rows[i]:Hide() end
     self:LayoutControls(frame, style, g, frame.window)
     return g
+end
+
+-- The header's face: Header Texture in Header Color at Header Opacity. A
+-- Mode texture (Mode Title by default) is a box face, tiled with its lift;
+-- anything else (Mode Gradient, Flat, a SharedMedia bar) the header's bar.
+function M:PaintHeaderFace(header, style, height, px)
+    local _, key = Style.MediaAsset(style.headerTexture)
+    local alpha, parts, bar = style.headerOpacity / 100, header.parts, header.bar
+    bar:SetShown(key == nil)
+    parts.face:SetShown(key ~= nil)
+    if parts.lift then parts.lift:SetShown(key ~= nil and Style.ASSETS[key].lift ~= nil) end
+    if key then
+        Skin.PaintBox(parts, header, key, style.headerColor, alpha)
+        return
+    end
+    Kit.BarForeground(bar, style.headerTexture, height, px)
+    local c = style.headerColor
+    bar:SetStatusBarColor(c[1], c[2], c[3], alpha)
 end
 
 -- The title between the header's left edge and `limit` (the timer, or the
@@ -247,7 +259,7 @@ function M:CreateMover(window)
     mover:SetFrameStrata("HIGH")
     mover:SetSize(240, 160)
     mover.fill = mover:CreateTexture(nil, "BACKGROUND", nil, -8)
-    mover.fill:SetAllPoints(); mover.fill:SetTexture(FLAT)
+    mover.fill:SetAllPoints(); mover.fill:SetTexture(Kit.FLAT)
     self.movers[window] = mover
     -- Measured before registering; the Position Manager then moves it.
     mover:SetPoint("CENTER", UIParent, "CENTER", 0, 0)

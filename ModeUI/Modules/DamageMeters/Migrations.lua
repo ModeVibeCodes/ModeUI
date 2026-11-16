@@ -7,7 +7,10 @@ if not M then return end
 -- Bad data stops with an error; settings are never reset. Later changes add
 -- a migration here, keyed by db.version.
 local Public, Number, Kit = addon.IsPublic, addon.IsNumber, addon.Kit
+local Style = addon.Style
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
+-- Versions 3-8's background and header (the Unit Frames' health color).
+local ONYX = Kit.onyx.health
 
 local ALLOWED = {}
 for key, list in pairs(M.choices) do
@@ -79,7 +82,7 @@ local function MigrateV2(db)
             style.nameColor = Copy(M.TEXT_COLOR)
             style.nameColorMode = style.nameColorMode == "class" and "class" or "custom"
             if style.decimals == 1 then style.decimals = 0 end
-            if SameColor(style.headerColor, OLD_HEADER) then style.headerColor = Copy(M.HEADER_COLOR) end
+            if SameColor(style.headerColor, OLD_HEADER) then style.headerColor = Copy(ONYX) end
             for _, key in ipairs(SHARED_TEXT) do if key ~= "nameColorMode" then style[key] = nil end end
         end
     end
@@ -101,8 +104,8 @@ end
 local function MigrateV4(db)
     for _, window in ipairs(M.windows) do
         local style = db[window]
-        if type(style) == "table" and SameColor(style.backgroundColor, M.OLD_BACKGROUND_COLOR) then
-            style.backgroundColor = Copy(M.BACKGROUND_COLOR)
+        if type(style) == "table" and SameColor(style.backgroundColor, Style.LEGACY.meterFill) then
+            style.backgroundColor = Copy(ONYX)
         end
     end
 end
@@ -134,8 +137,29 @@ local function MigrateV7(db)
     for _, window in ipairs(M.windows) do
         local style = db[window]
         if type(style) == "table" then
-            if Kit.IsOldOnyxHealth(style.backgroundColor) then style.backgroundColor = Copy(M.BACKGROUND_COLOR) end
-            if Kit.IsOldOnyxHealth(style.headerColor) then style.headerColor = Copy(M.HEADER_COLOR) end
+            if Kit.IsOldOnyxHealth(style.backgroundColor) then style.backgroundColor = Copy(ONYX) end
+            if Kit.IsOldOnyxHealth(style.headerColor) then style.headerColor = Copy(ONYX) end
+        end
+    end
+end
+
+-- Version 8 -> 9 (Phase 7): the Mode design language. Each value still at
+-- version 8's default takes the new one; anything the user picked stays.
+local V8 = { headerTexture = { "mode", "media:Mode Title" }, barTexture = { "mode", "media:Mode Panel" },
+    barBackground = { "flat", "media:Mode BG" }, barBackgroundOpacity = { 25, 100 } }
+local V8_COLORS = { backgroundColor = ONYX, headerColor = ONYX, barColor = Kit.palette.accent,
+    otherColor = Style.LEGACY.meterOther, titleColor = Kit.palette.accent, timerColor = Kit.palette.muted }
+local function MigrateV8(db)
+    for _, window in ipairs(M.windows) do
+        local style, defaults = db[window], M.styleDefaults[window]
+        if type(style) == "table" then
+            for key, pair in pairs(V8) do if style[key] == pair[1] then style[key] = pair[2] end end
+            for key, old in pairs(V8_COLORS) do
+                if Style.SameColor(style[key], old) then style[key] = Copy(defaults[key]) end
+            end
+            for _, part in ipairs(M.textParts) do
+                if style[part .. "FontMedia"] == "Expressway" then style[part .. "FontMedia"] = Style.FONT_DEFAULT end
+            end
         end
     end
 end
@@ -160,6 +184,7 @@ function M.Initialize(db)
     if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == 6 then MigrateV6(db); db.version = 7 end
     if db.version == 7 then MigrateV7(db); db.version = 8 end
+    if db.version == 8 then MigrateV8(db); db.version = 9 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid damage meter settings version")
     if db.hideBlizzard == nil then db.hideBlizzard = true end

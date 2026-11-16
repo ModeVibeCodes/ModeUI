@@ -2,19 +2,22 @@ local _, addon = ...
 local M = addon.DamageMeters
 if not M then return end
 
--- The header menu, in the Mode look: the meters on the left (grouped Damage,
+-- The header menu, a Mode window (Mode Panel in Graphite panel, the `window`
+-- edge inside it): the meters on the left (grouped Damage,
 -- Healing, Actions), the fights on the right (Current, Overall and the
 -- earlier fights the game still holds), and Reset All Data. Clicking a
 -- window's header (or right-clicking a row) opens it; choosing anything, or
 -- clicking anywhere else, closes it.
 local Kit, L, T = addon.Kit, addon.L, addon.InterfaceTheme
+local Skin, Style = addon.Skin, addon.Style
 local DM = addon.Domain.DamageMeter
 local ITEM_HEIGHT, COLUMN_WIDTH, PAD, HEADING_HEIGHT, MAX_FIGHTS = 20, 176, 8, 22, 10
 local GROUPS = { "Damage", "Healing", "Actions" }
 
 local function MenuFont(text, size, color, px)
-    Kit.Font(text, { outline = false, shadow = true, slug = true, textColor = color, font = "game", fontMedia = "Expressway" },
-        size, Kit.FontPath({ font = "game", fontMedia = "Expressway" }, M.id), px)
+    local face = { font = "game", fontMedia = Style.FONT_DEFAULT }
+    Kit.Font(text, { outline = false, shadow = true, slug = true, textColor = color, font = "game", fontMedia = face.fontMedia },
+        size, Kit.FontPath(face, M.id), px)
 end
 
 function M:Menu()
@@ -31,9 +34,7 @@ function M:Menu()
     menu:SetFrameLevel(catcher:GetFrameLevel() + 10)
     menu:SetClampedToScreen(true)
     menu:EnableMouse(true)
-    menu.fill = menu:CreateTexture(nil, "BACKGROUND")
-    menu.fill:SetTexture(Kit.FLAT)
-    menu.rim = Kit.Rim(menu, "BORDER")
+    menu.parts = Skin.Box(menu, "window", { inset = Style.EdgeReach("window"), level = 20 })
     menu.catcher, menu.entries = catcher, {}
     self.menu = menu
     return menu
@@ -114,8 +115,7 @@ function M:OpenMenu(window, anchor)
     end
     for index = #items + 1, #menu.entries do menu.entries[index]:Hide() end
     menu:SetSize(2 * COLUMN_WIDTH + 3 * PAD, math.max(heights[1], heights[2]) + PAD)
-    Kit.Inset(menu.fill, menu, px); Kit.Tint(menu.fill, T.card, 0.98)
-    Kit.PlaceRim(menu.rim, menu, px, px, T.cardBorder)
+    Skin.PaintBox(menu.parts, menu, "Panel", Skin.mode.panel, 1, true)
     menu:ClearAllPoints()
     menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
     menu.catcher:Show()

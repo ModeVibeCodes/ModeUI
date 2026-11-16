@@ -1,8 +1,9 @@
 # Interface: Damage Meters
 
-November 13, 2026. Fourth module of the **Interface** category. Off by default
-(turn it on with the switch in the page header). Static/mock validated only;
-**native acceptance is pending**. APIs and their rules are in
+November 13, 2026; rebuilt in the Mode design language November 15, 2026
+(Phase 7, settings version 9). Fourth module of the **Interface** category.
+Off by default (turn it on with the switch in the page header). Static/mock
+validated only; **native acceptance of the Mode rebuild is pending**. APIs and their rules are in
 [API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-damage-meters--november-13-2026).
 
 ## How it works
@@ -86,7 +87,7 @@ justifies it there, and **Title X** (-40 to 40) and **Title Y** (-10 to 10)
 move it on whole pixels. With Show Timer and Show Fight both off, the buttons
 start at the header's edge. The
 fight button shows where the window is without spelling it out: just the
-character, in the Mode cyan (no box): **C** for Current Fight, **O** for
+character, in Ivory (no box): **C** for Current Fight, **O** for
 Overall, or an earlier fight's number in the menu's list. It turns white under
 the mouse. Clicking it switches Current and Overall; right-clicking opens the
 menu.
@@ -149,19 +150,19 @@ the pixel grid. From the outside in:
 
 | Part | Default | Setting |
 |---|---|---|
-| Border | ModeUI's standard border, as on the unit frames' health bar: one crisp 2px rim in Onyx #40454C (`Kit.BORDER_COLOR`), round corners as deep as a bar the header's height would round (6px by default), above what the window holds | none: the border is locked, like the unit frames' rim |
-| Background | the Unit Frames' default health color (Onyx #131212) at 75% (#040404 until settings version 5, which moves a background still at it) | Frame › Background Color, Background Opacity |
-| Header | 20px Onyx bar: Mode Gradient in the Unit Frames health color (#131212) | Header › Texture, Height, Header Color, Header Opacity |
-| Title | 11, the meter's own capitals ("Damage Done"), Mode cyan, outlined, left | Text › Title; Header › Uppercase Title, Title Position, Title X, Title Y |
+| Edge | the Mode `window` edge (1px Steel Sheen, a black gap and a shadow ring, 3px in all) inside the window, above what it holds; no soft drop while the window is see-through (Background Opacity or Opacity under 100) | none: the edge is locked, like every Mode window's |
+| Background | Mode Panel in Graphite panel (#121213) at 75% | Frame › Background Color, Background Opacity |
+| Header | 20px Mode Title strip in Graphite raised (#1A1A1C), tiled one texel per pixel | Header › Texture, Height, Header Color, Header Opacity |
+| Title | 11, the meter's own capitals ("Damage Done"), Graphite text, outlined, left | Text › Title; Header › Uppercase Title, Title Position, Title X, Title Y |
 | Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
-| Timer | 11, #B9B9B9, outlined, at the right edge | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
-| Hairline | 1px black under the header, like a unit frame's between health and power | shown with the header |
+| Timer | 11, Graphite muted, outlined, at the right edge | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
+| Line | 1px Graphite line under the header | shown with the header |
 | Padding | 1px | Window › Padding |
 | Rows | 8 rows, 18 high, 1 apart, 240 wide | Window › Width, Rows, Row Height, Spacing |
 | Icon | square class icon, 1px gap | Bars › Icon |
-| Bar | Mode Gradient, class colored | Bars › Foreground, Bar Opacity, Bar Color (Class or Custom), Other Color |
-| Empty bar | Flat, Onyx track at 25% | Bars › Background, Background Opacity |
-| Name, Value | Expressway 12, pure white, outlined, crisp shadow, 4px in | Text › Name or Value: Font, Size, Outline, Slug Text, Text Shadow, Color (Color or Class), Text Color; Text Inset |
+| Bar | Mode Panel (its base times the color, plus its lift), class colored | Bars › Foreground, Bar Opacity, Bar Color (Class or Custom), Other Color |
+| Empty bar | Mode BG tinted Slate, at 100% | Bars › Background, Background Opacity |
+| Name, Value | the Mode typeface 12 (Expressway when installed, else Geist), pure white, outlined, crisp shadow, 4px in | Text › Name or Value: Font, Size, Outline, Slug Text, Text Shadow, Color (Color or Class), Text Color; Text Inset |
 
 Each text (Name, Value, Title, Timer) has its own font, size, outline, shadow,
 slug and color (`nameFont`, `valueOutline`, `timerColor`...). Names and values
@@ -169,20 +170,13 @@ can take the class color instead (Class Colors' custom colors apply). Text is
 outlined and names are pure white by default, so they read on any bar color.
 The owner found gray text hard to read on a bright rogue-yellow bar.
 
-The border (owner, November 13, 2026: "the new standard border... refer to
-unit frames health bar border") is `Kit.ModeBoxBorder` (`Shared/Kit/Border.lua`),
-the standard border's rounded-rectangle form for boxes taller than a bar.
-`Kit.ModeBorder`'s rounded ends are a quarter of the box's height deep, which
-suits a bar but would turn a 180px window's sides into ovals. So the box form
-keeps the same rim and color and rounds only the corners, with the same art:
-the top and bottom quarters of the cap textures are quarter circles. Its
-corners are as deep as `Kit.CapDepth` makes a bar of the header's height plus
-the rim (a row's height without a header), so the header rounds exactly like
-a bar. Like the unit frames, the background reaches 1px under the rim, and
-the corner masks round the background, header and rows that reach a corner.
-The resize grip sits clear of the corner. The spell breakdown and the
-settings preview use the same shell, so they get the same border.
-**Other Color** (#78808C) is for anything without a class, like pets and
+The window is a Mode window (docs/DESIGN_LANGUAGE.md, "Windows and
+panels"): its `window` edge sits inside it on a frame above the rows, and the
+edge's sliced Round 4 rim covers its own inner corner, so nothing inside needs
+rounding (no masks). The resize grip sits clear of the corner. The spell
+breakdown and the settings preview use the same shell, so they get the same
+look. The header menu is a Mode window too.
+**Other Color** (Graphite muted) is for anything without a class, like pets and
 creatures.
 
 Numbers: **Amount** shows one number. **Amount and Per Second** (the default)
@@ -282,7 +276,7 @@ and names each window with its meter ("Window 1 - DPS"). Six tabs:
 - **Header:** Show Header; Texture, Height, Header Color, Header Opacity;
   Uppercase Title, Show Fight, Show Timer, Title Position, Title X, Title Y,
   Header Buttons, and buttons that open the Title and Timer text settings.
-- **Frame:** Background Color, Background Opacity (the border is locked).
+- **Frame:** Background Color, Background Opacity (the edge is locked).
 - **Copy & Apply:** Copy From (the window in Editing), **Copy** (All, Window,
   Bars, Text), Apply To (tick windows), **Apply to Selected**, **Apply to All
   Windows**, Reset to Defaults.
@@ -291,7 +285,7 @@ Copy & Apply copies by part (`M.copyScopes`):
 - **All:** everything except what each window shows and when, its group and
   matching (Show Window, Meter, Fight, Show, Group With, Side, Gap, Match Width
   and Match Height).
-- **Window:** the window with its header and border: Width, Padding, Opacity,
+- **Window:** the window with its header: Width, Padding, Opacity,
   Background Color, Background Opacity, and
   the header's Show Header, Texture, Height, Color, Opacity, Uppercase Title,
   Title Position, Title X, Title Y, Show Fight, Show Timer and Header Buttons.
@@ -344,12 +338,22 @@ capitalized, so Uppercase Title (`titleUpper`) turns off on every window.
 Title Position (`titleAlign`, left), Title X and Title Y (`titleOffsetX`,
 `titleOffsetY`, 0) take their defaults.
 
+Version 7 → 8: a background or header still at the old health color (#1C1E21)
+takes #131212.
+
+Version 8 → 9 (November 15, 2026, Phase 7): the Mode design language. Each
+value still at version 8's default takes the new one: background #131212 →
+Graphite panel; header Mode Gradient in #131212 → Mode Title in Graphite
+raised; bars Mode Gradient on Flat at 25% → Mode Panel on Mode BG at 100%;
+Bar Color and the title's Mode cyan → Ivory and Graphite text; the timer's
+#B9B9B9 → Graphite muted; Other Color #78808C → Graphite muted; each text's
+Expressway → the Mode typeface. Anything the user picked stays.
+
 ## Files
 
 | File | Job |
 |---|---|
 | `Shared/Domain/DamageMeter.lua` | guarded `C_DamageMeter` reads, meter types, sessions, spells, class atlases, clock text |
-| `Shared/Kit/Shape.lua` | `Kit.Rim`, `Kit.PlaceRim`: the hollow pixel rim |
 | `Shared/Kit/Text.lua` | `Kit.ShortNumber(value, decimals)`: abbreviated numbers with set decimals, secret-safe |
 | `Init.lua` | declaration, windows, positions, colors, defaults, ranges, choices |
 | `Migrations.lua` | `Initialize(db)`: validation, the migrations, group loops |
@@ -461,15 +465,16 @@ concatenation or measurement, and the stub refuses secret arguments.
 8. **Pixel check**
    - **Navigation:** **Global** › **Optimizations**, UI Scale Pixel Perfect (or
      the game's own scale).
-   - **Action:** look at a window's border, the hairline under the header and
-     the bar edges up close, next to the Player frame's health bar.
+   - **Action:** look at a window's edge, the line under the header and the
+     bar edges up close, next to the Character window's edge.
    - **Required state:** any.
    - **Confirmation:**
-     - The border is the same 2px Onyx rim as the health bar's, crisp, never
-       blurred or doubled, and the hairline is one black pixel.
-     - The corners are round and even, with no gap or seam between the rim and
-       the background, header or bars inside it.
-     - The resize grip sits inside the bottom-right corner's curve.
+     - The edge is the same thin steel Mode edge as the Character window's,
+       crisp, never blurred or doubled, and the line under the header is one
+       gray pixel.
+     - The corners are round and even, and no square corner of the
+       background, header or a bar shows past them.
+     - The resize grip sits inside the bottom-right corner.
 9. **Anchor To**
    - **Navigation:** **Edit Mode** in the settings window header.
    - **Action:**
@@ -533,7 +538,7 @@ concatenation or measurement, and the stub refuses secret arguments.
       - Set Window 1's **Rows** to 20 and look at the preview.
     - **Required state:** any.
     - **Confirmation:**
-      - Text copies only fonts and numbers. Window brings the width, border and
+      - Text copies only fonts and numbers. Window brings the width, frame and
         header. Bars brings the bar look.
       - The line beside the buttons says how many windows changed.
       - The preview stays at five rows and a smaller size.

@@ -7,14 +7,13 @@ if not M then return end
 -- rows, and an even number of pixels each way, so a centered window stays on
 -- the pixel grid.
 --
---   rim (the ModeUI border, 2px) | header (Header Height) | 1px black hairline
---   | Padding | rows (Row Height, Spacing apart) | Padding | rim
+--   edge (the Mode `window` edge inside the window, 3px) | header (Header
+--   Height) | 1px Graphite line | Padding | rows (Row Height, Spacing apart)
+--   | Padding | edge
 --
--- The border is ModeUI's standard border (owner, November 13, 2026: like the
--- unit frames' health bar), as a rounded rectangle (Kit.ModeBoxBorder): its
--- corners are as deep as a unit frame bar's rounded end would be on a box the
--- header's height (a quarter of header plus rim), so the header strip rounds
--- like a bar. Without a header, a row's height stands in.
+-- The edge's sliced Round 4 rim covers its own inner corner, so what sits
+-- inside it needs no rounding (no masks). `corner` is how far in from the
+-- sides something sits clear of the round corner (the grip).
 --
 -- Each row is an optional square class icon, a gap, then the bar; the name
 -- and value sit on the bar, Text Inset in from its ends.
@@ -27,7 +26,7 @@ function M.Geometry(style, px, rows)
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local function Odd(v) return math.floor(v / px + 0.5) % 2 == 1 end
     local g = { px = px, rows = rows or style.rows }
-    g.border = addon.Kit.BORDER_PIXELS * px
+    g.border = addon.Style.EdgeReach("window") * px
     g.pad = Round(style.padding)
     g.header = style.header and Snap(style.headerHeight) or 0
     g.divider = style.header and px or 0
@@ -43,8 +42,7 @@ function M.Geometry(style, px, rows)
     local count = math.max(1, g.rows)
     g.height = g.rowsTop + count * g.rowH + (count - 1) * g.gap + g.pad + g.border
     if Odd(g.height) then g.height = g.height + px end
-    local bar = (g.header > 0 and g.header or g.rowH) + 2 * g.border
-    g.corner = math.min(addon.Kit.CapDepth(bar, px), math.floor(math.min(g.width, g.height) / 2 / px) * px)
+    g.corner = g.border + 4 * px
     return g
 end
 

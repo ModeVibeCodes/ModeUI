@@ -252,7 +252,7 @@ function M:CreateConfigPage(parent)
             local fill = Columns({ "Header Color", "Header Opacity" })
             Color(fill[1], "headerColor")
             page.headerOpacitySlider = Slider(fill[2], "headerOpacity", "%")
-            Note("By default the header is an Onyx bar: Mode Gradient in the Unit Frames health color.", 32)
+            Note("By default the header is a Mode Title strip in Graphite raised, as on every ModeUI window.", 32)
             page:Group(L["Header Text"])
             page.titleToggles = Toggles({ { "Uppercase Title", "titleUpper" }, { "Show Fight", "showSession" }, { "Show Timer", "showTimer" } })
             page.titleAlignPills = Choice("Title Position", "titleAlign", 80)
@@ -276,14 +276,14 @@ function M:CreateConfigPage(parent)
         local background = Columns({ "Background Color", "Background Opacity" }); Mark("frame")
         Color(background[1], "backgroundColor")
         page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
-        Note("The border is ModeUI's standard border, as on the unit frames: a crisp 2px Onyx rim with rounded corners, so it has no settings. A black hairline sits under the header.", 32)
+        Note("The edge is the Mode window edge, as on every ModeUI window, so it has no settings. A see-through window has no drop shadow. A one-pixel line sits under the header.", 32)
     end)
 
     -- Copy & Apply: the window in Editing is the source. Pick what to copy
     -- (All, Window, Bars or Text), tick windows, then apply.
     local SCOPE_NOTES = {
         all = "Everything: size, bars, text, header and frame. Each window keeps its own meter, fight, show settings, group and matching.",
-        window = "The window itself, with its header and border: width, padding, opacity, border, background, and the header's bar, height, color, title and buttons.",
+        window = "The window itself, with its header: width, padding, opacity, background, and the header's texture, height, color, title and buttons.",
         bars = "The bars: row height, spacing, textures, opacity, colors, icon and Always Show Me.",
         text = "Every text: the name, value, title and timer fonts, sizes, outlines, shadows and colors, with Text Inset, Show Rank, numbers, Decimals, Separator and Show Percent.",
     }

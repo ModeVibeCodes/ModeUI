@@ -82,7 +82,10 @@ Style.LEGACY = { nameplateFocus = Hex("FFB547"),
     -- slot background, gold procs and the combo point red.
     slotRim = Hex("101010"), slotBackground = Hex("040404"), procGold = Hex("FFD25A"), comboRed = Hex("F05454"),
     -- Windows before version 3: the near-black window fill.
-    windowFill = Hex("0B0B0D") }
+    windowFill = Hex("0B0B0D"),
+    -- Damage Meters before version 9: version 4's background and the bar
+    -- for anything without a class.
+    meterFill = Hex("040404"), meterOther = Hex("78808C") }
 
 -- True when `color` is (within rounding) `reference`: migrations move saved
 -- colors that still equal an old default, and keep anything the player chose.

@@ -264,6 +264,12 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   in the chosen tone with an Ivory label and line, the others tucked down in
   Graphite raised. The button compartment is one `control` box with 1px
   Graphite dividers.
+- **Damage Meters:** each window a Mode window (Graphite panel at its
+  Background Opacity, the `window` edge inside it), a Mode Title header in
+  Graphite raised over a 1px Graphite line, the title in Graphite text and
+  the timer in Graphite muted; rows are Mode Panel bars in class colors on
+  Mode BG (Slate), names and values pure white and outlined; the fight letter
+  is Ivory. The header menu is a Mode window.
 
 ## Settings window
 
