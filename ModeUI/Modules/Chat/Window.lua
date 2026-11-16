@@ -7,18 +7,18 @@ if not M then return end
 -- Blizzard's Background region stays as the window's box: ModeUI moves it to
 -- Text Inset around the messages (plus the border, the edit box when it sits
 -- inside, and the scroll bar's gutter), and the tabs, dock, button frame and
--- alerts that Blizzard anchors to it follow. On the box: ModeUI's standard
--- border in its rounded-rectangle form (Kit.ModeBoxBorder, as the damage
--- meter windows), drawn on its own frame above the window, and the fill
--- (Background Color at Background Opacity) in three bands (Kit.BoxFill)
--- reaching 1px under the rim, rounded by the border's corners. A texture
--- holds at most 3 masks, so each part takes only the corners it reaches. The
--- edit box joins the window: inside the border at the bottom or top, on a
--- darker band with a one-pixel divider that turns cyan while typing; or
--- Below, as its own field Edit Gap under the window, in the standard bar
--- border (Kit.ModeBorder). Sizes are whole physical pixels.
-local Skin, Kit = addon.Skin, addon.Kit
-local C = Skin.colors
+-- alerts that Blizzard anchors to it follow. On the box, the Mode window
+-- (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Mode Panel in Background
+-- Color at Background Opacity, and the `window` edge inside the box on its
+-- own frame above the window (no masks; the rim covers its own corners). A
+-- see-through window has no soft drop, which would only darken it. The edit
+-- box joins the window: inside the edge at the bottom or top, on a darker
+-- Graphite band with a one-pixel divider that turns Ivory while typing; or
+-- Below, as its own field Edit Gap under the window, a Mode field in the
+-- `control` edge. Sizes are whole physical pixels.
+local Skin, Kit, Style = addon.Skin, addon.Kit, addon.Style
+local C = Skin.mode
+local REACH, CONTROL = Style.EdgeReach("window"), Style.EdgeReach("control")
 local Snap = Skin.Snap
 local TEXTURES = { "Background", "TopLeftTexture", "BottomLeftTexture", "TopRightTexture", "BottomRightTexture",
     "LeftTexture", "RightTexture", "BottomTexture", "TopTexture", "ButtonFrameBackground", "ButtonFrameTopLeftTexture",
@@ -33,19 +33,13 @@ local function TextureNames() return type(CHAT_FRAME_TEXTURES) == "table" and CH
 -- The window's box: Blizzard's Background region (hidden, still anchored).
 function M:Box(frame) return frame.Background or _G[(frame:GetName() or "") .. "Background"] end
 
--- The border's thickness, in the window's units: the standard 2px rim.
-function M:Rim(px) return Kit.BORDER_PIXELS * px end
+-- How far the window edge reaches into the box (gap, rim and shadow ring).
+function M:Rim(px) return REACH * px end
 
--- The corners' depth: what a unit frame bar the edit band's height (plus the
--- rim each side) would round to, so the band, which fills the bottom
--- corners, rounds like a bar. 7px by default, the same on every window.
-function M:Corner(px) return Kit.CapDepth(Snap(self.db.editHeight, px) + 2 * self:Rim(px), px) end
-
--- How far in from both sides a square's corner sits clear of the round corner.
-function M:CornerClear(px)
-    local radius, rim = self:Corner(px), self:Rim(px)
-    return math.max(rim + px, math.ceil((radius - (radius - rim) / math.sqrt(2)) / px) * px)
-end
+-- How far in from the box's sides things sit clear of the edge's round
+-- corner (Round 4).
+function M:Corner(px) return self:Rim(px) + Snap(4, px) end
+function M:CornerClear(px) return self:Corner(px) end
 
 -- Room the edit box takes inside the box: top, bottom.
 function M:EditSpace(px)
@@ -74,21 +68,16 @@ function M:SkinWindow(frame)
     self:SkinEditBox(frame, px)
 end
 
--- The window's own pieces, made once: the fill bands and the border, laid
--- round the box but belonging to the window (the idle fade dims them with
--- it, and the masks round the window's own textures), and the edit band.
+-- The window's own pieces, made once: the face and the edge (laid round the
+-- box but belonging to the window, so the idle fade dims them with it), and
+-- the edit band with its divider.
 function M:WindowParts(frame, box)
     local parts = Skin.parts[frame]
-    if parts and parts.border then return parts end
-    parts = parts or { regions = {} }
-    Skin.parts[frame] = parts
-    parts.fill = Kit.BoxFill(frame, -8)
-    parts.border = Kit.ModeBoxBorder(box, frame)
-    parts.border.edge:EnableMouse(false)
+    if parts and parts.band then return parts end
+    parts = Skin.Box(frame, "window", { inset = REACH })
     parts.band = frame:CreateTexture(nil, "BACKGROUND", nil, -7)
     parts.bandLine = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
-    parts.band:SetTexture(Kit.FLAT); parts.bandLine:SetTexture(Kit.FLAT)
-    for _, region in pairs(parts.fill) do parts.regions[region] = true end
+    Style.ApplyAsset(parts.band, "Solid"); Style.ApplyAsset(parts.bandLine, "Solid")
     parts.regions[parts.band], parts.regions[parts.bandLine] = true, true
     return parts
 end
@@ -99,7 +88,7 @@ end
 function M:LayoutWindow(frame)
     local box = self:Box(frame)
     local parts = Skin.parts[frame]
-    if not box or not self.active or not parts or not parts.border then return end
+    if not box or not self.active or not parts or not parts.band then return end
     local px = Kit.PixelSize(frame)
     local rim = self:Rim(px)
     local inset = Snap(self.TEXT_INSET, px) + rim
@@ -114,13 +103,10 @@ function M:LayoutWindow(frame)
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", frame, "TOPLEFT", -inset, top + editTop)
     box:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", right, -(inset + editBottom))
-    -- The rim two levels above the window, as the unit frames' sits above their bars.
-    local level = frame:GetFrameLevel()
-    level = addon.IsNumber(level) and math.min(9000, level + 2) or 2
-    Kit.LayoutModeBoxBorder(parts.border, box, { px = px, radius = self:Corner(px), level = level })
-    -- The background reaches 1px under the rim, so no seam shows at its edge.
-    Kit.LayoutBoxFill(parts.fill, parts.border, box, math.max(0, rim - px), self.db.backgroundColor,
-        self.db.backgroundOpacity / 100)
+    -- The Mode window on the box; no soft drop under a see-through fill.
+    local alpha = self.db.backgroundOpacity / 100
+    Skin.PaintBox(parts, box, "Panel", self.db.backgroundColor, alpha, true)
+    parts.modeEdge:SetDrop(alpha >= 1)
     self:LayoutEditBox(frame, box, px, rim)
     self:PlaceScrollBar(frame)
 end
@@ -143,13 +129,8 @@ function M:LayoutEditBox(frame, box, px, rim)
         line:SetPoint(facing .. "LEFT", band, facing .. "LEFT", 0, 0)
         line:SetPoint(facing .. "RIGHT", band, facing .. "RIGHT", 0, 0)
         line:SetHeight(px)
-        -- The band fills its end's corners and rounds with them; the divider
-        -- only when it sits within them (a short band).
-        local far, lineAt, top = math.huge, rim + height - px, position == "top"
-        Kit.MaskToBoxBorder(parts.border, { band }, { left = rim, right = rim, top = top and rim or far, bottom = top and far or rim })
-        Kit.MaskToBoxBorder(parts.border, { line }, { left = rim, right = rim, top = top and lineAt or far, bottom = top and far or lineAt })
-        -- A little darker than the window, as one piece with it.
-        Kit.Tint(band, C.field, math.min(1, self.db.backgroundOpacity / 100 + 0.15))
+        -- A Graphite band a little darker than the window, as one piece with it.
+        Style.Paint(band, C.field, math.min(1, self.db.backgroundOpacity / 100 + 0.15))
         self:PaintBand(frame)
     end
     if not edit then return end
@@ -166,13 +147,13 @@ function M:LayoutEditBox(frame, box, px, rim)
     end
 end
 
--- The band's divider: cyan while its edit box has focus.
+-- The band's divider: Ivory while its edit box has focus.
 function M:PaintBand(frame)
     local parts = Skin.parts[frame]
     if not parts or not parts.bandLine then return end
     local edit = frame.editBox
     local focused = edit and edit.HasFocus and edit:HasFocus() == true
-    Kit.Tint(parts.bandLine, focused and C.accent or C.fieldRim, 1)
+    Style.Paint(parts.bandLine, focused and C.accent or C.line)
 end
 
 -- Blizzard's MinimalScrollBar: a slim Mode track and thumb in the gutter at
@@ -202,9 +183,17 @@ function M:PlaceScrollBar(frame)
     bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -(rim + px), rim + editBottom + 2 * gap + Snap(16, px))
 end
 
--- Scroll to Bottom: a 16 px field with a chevron in the box's bottom-right
--- corner, above the edit band (clear of the round corner without one). It shows whenever the window is scrolled up
--- (Fade.lua); Blizzard's flashing arrow is hidden for good.
+-- Scroll to Bottom: a 16 px Mode control (Mode Button face, the `control`
+-- edge inside it) with a chevron, in the box's bottom-right corner, above the
+-- edit band (clear of the round corner without one); the chevron and the
+-- edge's outer line turn Ivory on hover. It shows whenever the window is
+-- scrolled up (Fade.lua); Blizzard's flashing arrow is hidden for good.
+function M:PaintScrollButton(button)
+    local parts = Skin.parts[button]
+    if not parts or not parts.icon then return end
+    Skin.PaintBox(parts, button, "Button", C.face, 1, true, parts.hovered and "accent" or nil)
+    Style.Paint(parts.icon, parts.hovered and C.accent or C.label)
+end
 function M:SkinScrollButton(frame, px)
     local button = frame.ScrollToBottomButton
     if not button then return end
@@ -212,15 +201,14 @@ function M:SkinScrollButton(frame, px)
         if button[key] then Skin.Fade(button[key](button)) end
     end
     if button.Flash then Skin.Suppress(button.Flash) end
-    local parts = Skin.Panel(button, "BACKGROUND", -8)
+    local parts = Skin.Box(button, "control", { inset = CONTROL })
     if not parts.icon then
         parts.icon = button:CreateTexture(nil, "ARTWORK")
         parts.regions[parts.icon] = true
         addon.Media:ApplyTexture(parts.icon, "ModeChevron")
-        button:HookScript("OnEnter", function() if self.active then Kit.Tint(parts.icon, C.accent, 1) end end)
-        button:HookScript("OnLeave", function() if self.active then Kit.Tint(parts.icon, C.label, 1) end end)
+        button:HookScript("OnEnter", function() if self.active then parts.hovered = true; self:PaintScrollButton(button) end end)
+        button:HookScript("OnLeave", function() if self.active then parts.hovered = false; self:PaintScrollButton(button) end end)
     end
-    Skin.PaintPanel(parts, button, C.field, 0.9, C.fieldRim, px)
     local rim = self:Rim(px)
     local _, editBottom = self:EditSpace(px)
     local size, inset = Snap(16, px), Snap(3, px)
@@ -233,26 +221,20 @@ function M:SkinScrollButton(frame, px)
     button:SetPoint("BOTTOMRIGHT", self:Box(frame), "BOTTOMRIGHT", -x, y)
     button:SetSize(size, size)
     parts.icon:ClearAllPoints(); parts.icon:SetPoint("CENTER")
-    parts.icon:SetSize(size, size)
-    Kit.Tint(parts.icon, C.label, 1)
+    parts.icon:SetSize(Snap(12, px), Snap(12, px))
+    self:PaintScrollButton(button)
     Skin.PinAlpha(button, function(target) return self:ScrollButtonAlpha(target) end)
 end
 
 -- The edit box: Blizzard's left, middle, right and focus art faded. Inside
--- the border it is see-through on the window's band; Below, it is its own
--- field in ModeUI's standard bar border (Kit.ModeBorder: rounded ends a
--- quarter of its height deep, the field rounded under the rim), cyan while
--- it has focus. Its text,
--- header and prompt use the chat face at the window's text size.
+-- the edge it is see-through on the window's band; Below, it is its own Mode
+-- field (a Graphite base in the `control` edge inside it), Ivory while it
+-- has focus. Its text, header and prompt use the chat face at the window's
+-- text size.
 function M:SkinEditBox(frame, px)
     local edit = frame.editBox
     if not edit then return end
-    local parts = Skin.Panel(edit, "BACKGROUND", -8)
-    if not parts.border then
-        parts.border = Kit.ModeBorder(edit)
-        parts.border.edge:EnableMouse(false)
-        Kit.MaskToBorder(parts.border, { parts.fill })
-    end
+    local parts = Skin.Box(edit, "control", { inset = CONTROL })
     Skin.FadeTextures(edit)
     for _, key in ipairs({ "focusLeft", "focusMid", "focusRight" }) do Skin.Fade(edit[key]) end
     local function Paint()
@@ -278,14 +260,8 @@ end
 
 function M:PaintEditBox(edit)
     local parts = Skin.parts[edit]
-    if not parts or not parts.fill then return end
-    local px = parts.px or 1
+    if not parts or not parts.face then return end
     local below = self.db.editPosition == "below"
     local focused = edit.HasFocus and edit:HasFocus() == true
-    Skin.PaintPanel(parts, edit, C.field, below and 0.9 or 0, C.fieldRim, 0)
-    parts.border.edge:SetShown(below)
-    if below then
-        Kit.LayoutModeBorder(parts.border, edit, { px = px, height = Snap(self.db.editHeight, px),
-            color = focused and C.accent or Kit.BORDER_COLOR })
-    end
+    Skin.PaintBox(parts, edit, "Solid", C.field, below and 1 or 0, below, focused and "accent" or nil)
 end

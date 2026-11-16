@@ -2,11 +2,12 @@ local _, addon = ...
 local M = addon.Chat
 if not M then return end
 
--- The button compartment: one capsule at the right end of the main window's
--- tab row, holding Blizzard's chat buttons as cells with one-pixel dividers:
--- Friends (the online count beside its glyph), Text to Speech and Voice
--- Deafen / Mute (only while the game shows them), Channels (cyan while a
--- voice channel is active) and the Chat Menu. Each button is Blizzard's own,
+-- The button compartment: one Mode control (a Graphite base, the `control`
+-- edge inside it) at the right end of the main window's tab row, holding
+-- Blizzard's chat buttons as cells with one-pixel Graphite dividers: Friends
+-- (the online count beside its glyph), Text to Speech and Voice Deafen / Mute
+-- (only while the game shows them), Channels (Ivory while a voice channel is
+-- active) and the Chat Menu. Each button is Blizzard's own,
 -- moved into the compartment, so its clicks, menus, tooltips, toasts and
 -- keybindings stay Blizzard's; its round art is hidden and a Mode glyph drawn
 -- instead (the voice and speech buttons keep their own state icons, shrunk).
@@ -14,9 +15,11 @@ if not M then return end
 -- whenever it updates, so ModeUI puts it back right after (post-hook). The
 -- other alerts (Battle.net toasts, voice notices) stack above the
 -- compartment. Buttons: Hidden hides it all.
-local Skin, Kit = addon.Skin, addon.Kit
-local C = Skin.colors
+local Skin, Kit, Style = addon.Skin, addon.Kit, addon.Style
+local C = Skin.mode
 local Snap = Skin.Snap
+-- The cells sit inside the compartment's edge.
+local CONTROL = Style.EdgeReach("control")
 local CELL_WIDTH, FRIENDS_WIDTH = 22, 34
 -- Glyphs: ModeUI's for Friends, Channels and the menu.
 local GLYPHS = { QuickJoinToastButton = "ChatFriends", ChatFrameChannelButton = "ChatChannels", ChatFrameMenuButton = "ChatMenu" }
@@ -41,7 +44,7 @@ function M:BuildCompartment()
     if self.compartment then return self.compartment end
     local box = CreateFrame("Frame", "ModeUIChatButtons", UIParent)
     box:SetFrameStrata("MEDIUM")
-    box.parts = Skin.Panel(box, "BACKGROUND", -8)
+    box.parts = Skin.Box(box, "control", { inset = CONTROL })
     box.dividers = {}
     self.compartment = box
     for _, entry in ipairs(self:CompartmentButtons()) do
@@ -71,7 +74,7 @@ local function CellParts(button)
     parts = parts or { regions = {} }
     Skin.parts[button] = parts
     parts.hover = button:CreateTexture(nil, "BACKGROUND", nil, -8)
-    parts.hover:SetTexture(Kit.FLAT)
+    Style.ApplyAsset(parts.hover, "Solid")
     parts.regions[parts.hover] = true
     return parts
 end
@@ -92,7 +95,7 @@ local function SkinCell(self, entry, px, height)
     local parts = CellParts(button)
     local width = Snap(entry.width, px)
     parts.hover:ClearAllPoints(); parts.hover:SetAllPoints(button)
-    Kit.Tint(parts.hover, C.hover, 1)
+    Style.Paint(parts.hover, C.chosen)
     parts.hover:Hide()
     local glyph = GLYPHS[entry.name]
     if glyph then
@@ -127,9 +130,9 @@ local function SkinCell(self, entry, px, height)
     return width
 end
 
--- Lays the shown buttons out left to right with one-pixel dividers, right
--- aligned to the main window's box, one pixel above it (so it sits centered
--- on the tab row).
+-- Lays the shown buttons out left to right with one-pixel dividers inside
+-- the edge, right aligned to the main window's box, one pixel above it (so
+-- it sits centered on the tab row).
 function M:PaintCompartment()
     if not self.active then return end
     local main = ChatFrame1
@@ -139,39 +142,41 @@ function M:PaintCompartment()
     if self.db.buttons == "hidden" then box:Hide(); return end
     self.placingButtons = true
     local px = Kit.PixelSize(box)
-    local size = Snap(self.BUTTON_SIZE, px)
-    local x, shown = px, 0
+    -- The cells keep their 18px; the box grows by the edge's reach past 1px.
+    local edge = CONTROL * px
+    local size = Snap(self.BUTTON_SIZE, px) + 2 * (edge - px)
+    local x, shown = edge, 0
     for _, divider in ipairs(box.dividers) do divider:Hide() end
     for _, entry in ipairs(self:CompartmentButtons()) do
         local button = entry.button
         if button:GetParent() ~= box then button:SetParent(box) end
         button:SetFrameStrata("MEDIUM")
-        local width = SkinCell(self, entry, px, size - 2 * px)
+        local width = SkinCell(self, entry, px, size - 2 * edge)
         local visible = button:IsShown()
         if addon.IsPublic(visible) and visible then
             if shown > 0 then
                 local divider = box.dividers[shown]
                 if not divider then
                     divider = box:CreateTexture(nil, "ARTWORK")
-                    divider:SetTexture(Kit.FLAT)
+                    Style.ApplyAsset(divider, "Solid")
                     box.dividers[shown] = divider
                 end
                 divider:ClearAllPoints()
-                divider:SetPoint("TOPLEFT", box, "TOPLEFT", x, -px)
-                divider:SetSize(px, size - 2 * px)
-                Kit.Tint(divider, C.fieldRim, 1)
+                divider:SetPoint("TOPLEFT", box, "TOPLEFT", x, -edge)
+                divider:SetSize(px, size - 2 * edge)
+                Style.Paint(divider, C.line)
                 divider:Show()
                 x = x + px
             end
             button:ClearAllPoints()
-            button:SetPoint("TOPLEFT", box, "TOPLEFT", x, -px)
+            button:SetPoint("TOPLEFT", box, "TOPLEFT", x, -edge)
             x, shown = x + width, shown + 1
         end
     end
-    box:SetSize(math.max(x + px, 2 * px), size)
+    box:SetSize(math.max(x + edge, 2 * edge), size)
     box:ClearAllPoints()
     box:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, px)
-    Skin.PaintPanel(box.parts, box, C.field, 0.85, C.fieldRim, px)
+    Skin.PaintBox(box.parts, box, "Solid", C.field, 0.85, true)
     box:SetShown(shown > 0)
     -- The other chat alerts: Blizzard's alert column, above the compartment.
     if ChatAlertFrame and ChatAlertFrame.ClearAllPoints then

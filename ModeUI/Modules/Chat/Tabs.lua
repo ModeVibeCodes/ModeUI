@@ -2,22 +2,24 @@ local _, addon = ...
 local M = addon.Chat
 if not M then return end
 
--- Glass tabs. Blizzard's tab art (the left, middle and right pieces, their
--- active and highlight copies) is faded; ModeUI draws a pane resting on the
--- window's border (Blizzard anchors each tab's bottom to the box's top):
---   Glass  the ModeGlass texture (feathered sides and top) with a diagonal
---          glint (ModeSheen, added light). (A white wash and top line were
---          dropped: the owner found the lit top edge odd, November 13, 2026.)
---   Solid  a flat dark field
--- The selected tab stands Tab Height tall with white text and a two-pixel
--- cyan bar; the others are tucked down Tuck Depth with label-gray text.
+-- Mode tabs (the approved Phase 7 probe). Blizzard's tab art (the left,
+-- middle and right pieces, their active and highlight copies) is faded;
+-- ModeUI draws a pane resting on the window's edge (Blizzard anchors each
+-- tab's bottom to the box's top): a Mode control, its `control` edge inside
+-- it, in Graphite raised:
+--   Glass  Mode Glass (its base and lift) at 75%, so the world shows through
+--   Solid  the Mode Button face
+-- The selected tab stands Tab Height tall in the chosen tone, its label and
+-- its edge's outer line Ivory; the others are tucked down Tuck Depth with
+-- Graphite secondary text.
 -- Whisper tabs keep Blizzard's whisper color. How visible each tab is
 -- (selected, others, idle) is Fade.lua's job.
 -- Tab text is measured only for General, Combat Log and other named windows,
 -- to size the tab to the Mode face; whisper tab names can be secret and are
 -- never measured.
-local Skin, Kit = addon.Skin, addon.Kit
-local C = Skin.colors
+local Skin, Kit, Style = addon.Skin, addon.Kit, addon.Style
+local C = Skin.mode
+local CONTROL = Style.EdgeReach("control")
 local Snap = Skin.Snap
 local ART = { "Left", "Middle", "Right", "ActiveLeft", "ActiveMiddle", "ActiveRight",
     "HighlightLeft", "HighlightMiddle", "HighlightRight" }
@@ -26,16 +28,12 @@ local TAB_SIDES_PADDING = 20
 
 local function Parts(tab)
     local parts = Skin.parts[tab]
-    if parts and parts.glass then return parts end
-    parts = parts or { regions = {} }
-    Skin.parts[tab] = parts
-    local function Own(region) parts.regions[region] = true; return region end
-    parts.glass = Own(tab:CreateTexture(nil, "BACKGROUND", nil, -8))
-    parts.glint = Own(tab:CreateTexture(nil, "BACKGROUND", nil, -6))
-    parts.bar = Own(tab:CreateTexture(nil, "ARTWORK", nil, 7))
-    parts.bar:SetTexture(Kit.FLAT)
-    addon.Media:ApplyTexture(parts.glint, "ModeSheen")
-    parts.glint:SetBlendMode("ADD")
+    if parts and parts.pane then return parts end
+    parts = Skin.Box(tab, "control", { inset = CONTROL })
+    -- The pane's place (an empty texture the face and edge follow).
+    parts.pane = tab:CreateTexture(nil, "BACKGROUND", nil, -8)
+    parts.pane:SetAlpha(0)
+    parts.regions[parts.pane] = true
     return parts
 end
 
@@ -60,7 +58,7 @@ function M:SkinTab(tab, frame)
     local parts = Parts(tab)
     parts.px = Kit.PixelSize(tab)
     local text = TextOf(tab)
-    if text then Skin.Font(text, self:FontPath(), self.db.tabFontSize, self.db.outline, self.db.shadow, parts.px) end
+    if text then Skin.Font(text, Style.Weighted(self:FontPath(), "semibold"), self.db.tabFontSize, self.db.outline, self.db.shadow, parts.px) end
     self:SizeTab(tab, frame)
     self:PaintTabState(tab, self:IsSelected(tab, frame))
     Skin.PinAlpha(tab, function(target) return self:TabAlpha(target) end)
@@ -90,66 +88,44 @@ function M:SizeTab(tab, frame, padding, minWidth, maxWidth)
 end
 
 -- The pane: the tab's width less half the gap each side, resting on the
--- border; Tab Height tall when selected, tucked Tuck Depth lower otherwise.
+-- edge; Tab Height tall when selected, tucked Tuck Depth lower otherwise.
 -- The text sits on the pane's middle.
 function M:PaintPane(tab, selected)
     local parts = Skin.parts[tab]
-    if not parts or not parts.glass then return end
+    if not parts or not parts.pane then return end
     local px = parts.px or 1
     local full = Snap(self.db.tabHeight, px)
     -- (Snap never answers less than a pixel, so a Tuck Depth of 0 is checked first.)
     local tuck = (selected or self.db.tuckDepth == 0) and 0 or math.min(full - Snap(12, px), Snap(self.db.tuckDepth, px))
     local height, gap = full - tuck, Snap(self.TAB_GAP / 2, px)
-    local glass = parts.glass
-    glass:ClearAllPoints()
-    glass:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", gap, 0)
-    glass:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", -gap, 0)
-    glass:SetHeight(height)
-    local glassy = self.db.glassTabs
-    if glassy then
-        addon.Media:ApplyTexture(glass, "ModeGlass")
-        Kit.Unsnap(glass)
-        Kit.Tint(glass, self.GLASS_COLOR, selected and 0.62 or 0.5)
-    else
-        if glass.ClearTextureSlice then glass:ClearTextureSlice() end
-        glass:SetTexture(Kit.FLAT); glass:SetTexCoord(0, 1, 0, 1)
-        Kit.Tint(glass, selected and C.selected or C.field, 0.92)
-    end
-    -- The glint: a diagonal band of added light across the pane.
-    local inner = Snap(2, px)
-    local glint = parts.glint
-    glint:ClearAllPoints()
-    glint:SetPoint("TOPLEFT", glass, "TOPLEFT", inner, -px)
-    glint:SetPoint("BOTTOMRIGHT", glass, "BOTTOMRIGHT", -inner, 0)
-    glint:SetVertexColor(1, 1, 1, selected and 0.12 or 0.08)
-    glint:SetShown(glassy)
-    -- The selected tab's cyan bar, half Tab Padding in from the pane's sides.
-    local bar, pad = parts.bar, Snap(self.TAB_PADDING / 2, px)
-    bar:ClearAllPoints()
-    bar:SetPoint("BOTTOMLEFT", glass, "BOTTOMLEFT", pad, 0)
-    bar:SetPoint("BOTTOMRIGHT", glass, "BOTTOMRIGHT", -pad, 0)
-    bar:SetHeight(Snap(2, px))
-    Kit.Tint(bar, C.accent, 1)
-    bar:SetShown(selected)
+    local pane = parts.pane
+    pane:ClearAllPoints()
+    pane:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", gap, 0)
+    pane:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", -gap, 0)
+    pane:SetHeight(height)
+    local glass = self.db.glassTabs
+    Skin.PaintBox(parts, pane, glass and "Glass" or "Button", selected and C.chosen or C.face, glass and 0.75 or 1, true,
+        selected and "accent" or nil)
     -- Text on the pane's middle; the whisper icon, anchored to the text, follows.
     local text = TextOf(tab)
     if text then
         text:ClearAllPoints()
-        text:SetPoint("CENTER", glass, "CENTER", 0, 0)
+        text:SetPoint("CENTER", pane, "CENTER", 0, 0)
     end
 end
 
--- Selected or not: the pane, the cyan bar and the text color. Runs after
+-- Selected or not: the pane, its Ivory line and the text color. Runs after
 -- Blizzard's FCFTab_UpdateColors, which colors the text first.
 function M:PaintTabState(tab, selected)
     local parts = Skin.parts[tab]
-    if not parts or not parts.bar then return end
+    if not parts or not parts.pane then return end
     selected = selected and true or false
     self:PaintPane(tab, selected)
     local text = TextOf(tab)
-    -- Whisper tabs carry their chat type's color; the rest are Mode gray.
+    -- Whisper tabs carry their chat type's color; the rest are Ivory when
+    -- selected, Graphite secondary otherwise.
     if text and not tab.selectedColorTable then
-        local color = selected and C.heading or C.label
+        local color = selected and C.accent or C.label
         text:SetTextColor(color[1], color[2], color[3], 1)
     end
 end

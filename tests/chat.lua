@@ -1,6 +1,6 @@
 -- Chat: Blizzard's chat windows (stubbed with Forever's keys and names)
--- skinned in the Mode look: hidden art, the panel and its box, the edit box,
--- glass tabs and their pinned alpha, the button compartment, the tab fade,
+-- skinned in the Mode design language: hidden art, the Mode window on its
+-- box, the edit box, Mode tabs and their pinned alpha, the button compartment, the tab fade,
 -- the idle fade, whispers, settings, validation, reload and persistence.
 -- Simulated client; not WoW rendering, mouse or taint.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
@@ -95,10 +95,12 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
 
 local world = H.Load({ before = STUBS })
 world.run([==[
-    local M, Skin, Kit, C = addon.Chat, addon.Skin, addon.Kit, addon.Skin.colors
+    local M, Skin, Kit, C = addon.Chat, addon.Skin, addon.Kit, addon.Skin.mode
+    local Tone = addon.Style.Tone
+    local G = Tone.graphite
     assert(M and addon.modules.chat == M and not M.enabled, 'registered, off by default')
-    assert(M.db.fontMedia == 'Expressway' and M.db.idleOpacity == 40 and M.db.buttons == 'compartment')
-    assert(M.db.backgroundColor[1] == Kit.onyx.health[1] and M.db.backgroundOpacity == 60, 'health color, 60%')
+    assert(M.db.fontMedia == 'Mode' and M.db.idleOpacity == 40 and M.db.buttons == 'compartment', 'the Mode typeface')
+    assert(M.db.backgroundColor[1] == G.panel[1] and M.db.backgroundOpacity == 60, 'Graphite panel, 60%')
     assert(M.db.border == nil and M.db.borderSize == nil and M.db.borderColor == nil, 'the border has no settings')
     assert(M.db.tabHeight == 24 and M.db.editPosition == 'bottom' and M.db.scrollBar)
     assert(ChatFrame1Background:IsShown() and Skin.parts[ChatFrame1] == nil, 'nothing changes while off')
@@ -108,63 +110,63 @@ world.run([==[
     assert(not ChatFrame1Background:IsShown() and not ChatFrame2TopTexture:IsShown())
     ChatFrame1TopTexture:Show(); assert(not ChatFrame1TopTexture:IsShown(), 'Blizzard showing its art is undone')
     local panel = Skin.parts[ChatFrame1]
-    local fill, border = panel and panel.fill, panel and panel.border
-    assert(fill and fill.middle.vertexColor[4] == 0.6 and fill.top.vertexColor[1] == Kit.onyx.health[1], 'the health color fill')
-    -- ModeUI's standard border, as on the damage meter windows: the 2px rim
-    -- with round corners as deep as a bar the edit band's height rounds (24 + 2 * 2).
-    assert(border.edge:IsShown() and border.strips.TOP.vertexColor[1] == Kit.BORDER_COLOR[1] and border.strips.TOP.height == 2, 'the standard rim, 2px')
-    assert(border.radius == Kit.CapDepth(28, 1) and border.radius == 7 and border.corners.TOPLEFT.cap.width == 7, 'round corners')
-    assert(Point(border.strips.TOP)[2] == ChatFrame1Background and Point(border.strips.TOP)[4] == 7, 'border on the box')
-    assert(border.edge:GetParent() == ChatFrame1 and border.edge:GetFrameLevel() == ChatFrame1:GetFrameLevel() + 2 and not border.edge.mouse,
-        'on its own frame above the window, which the idle fade dims with it')
-    -- Content takes only the corners it reaches: a texture holds at most 3
-    -- masks (the stubs error on a 4th, as the client does).
-    local function Masks(region, ...)
-        local n = 0
-        for _ in pairs(region.capMasks or {}) do n = n + 1 end
-        if n ~= select('#', ...) then return false end
-        for i = 1, select('#', ...) do if not region.capMasks[select(i, ...)] then return false end end
-        return true
-    end
-    local m = border.masks
-    assert(Masks(fill.top, m.TOPLEFT, m.TOPRIGHT) and Masks(fill.middle) and Masks(fill.bottom, m.BOTTOMLEFT, m.BOTTOMRIGHT), 'background in three bands')
-    assert(Point(fill.top)[2] == ChatFrame1Background and Point(fill.top)[4] == 1 and fill.top.height == 6, 'background 1px under the rim')
+    -- The Mode window: Mode Panel in Graphite at Background Opacity, the
+    -- `window` edge inside the box on its own frame above the window (the idle
+    -- fade dims it with the window); no masks, no soft drop under a
+    -- see-through fill.
+    assert(panel.faceKey == 'Panel' and panel.face.vertexColor[1] == G.panel[1] and panel.face.vertexColor[4] == 0.6, 'Mode Panel at 60%')
+    assert(panel.lift and panel.lift.texture:find('PanelLift', 1, true) and panel.lift.vertexColor[4] == 0.6, 'its lift at the same alpha')
+    assert(Point(panel.face)[2] == ChatFrame1Background, 'the face on the box')
+    assert(panel.modeEdge.preset == 'window' and panel.modeEdge.holder:IsShown(), 'the window edge')
+    local e = Point(panel.edgeFrame)
+    assert(e[2] == ChatFrame1Background and e[4] == 3 and e[5] == -3, 'the edge inside the box')
+    assert(panel.edgeFrame:GetParent() == ChatFrame1 and panel.edgeFrame:GetFrameLevel() > ChatFrame1:GetFrameLevel(), 'above the window')
+    assert(not panel.modeEdge.below:IsShown(), 'no drop under a see-through window')
     local p = Point(ChatFrame1Background)
-    -- Text Inset 6 + the 2px border; the edit box (24) inside at the bottom;
-    -- the scroll bar's 10px gutter at the right.
-    assert(p[1] == 'TOPLEFT' and p[2] == ChatFrame1 and p[4] == -8 and p[5] == 8, 'box around the messages')
+    -- Text Inset 6 + the window edge's 3px; the edit box (24) inside at the
+    -- bottom; the scroll bar's 10px gutter at the right.
+    assert(p[1] == 'TOPLEFT' and p[2] == ChatFrame1 and p[4] == -9 and p[5] == 9, 'box around the messages')
     local q = Point(ChatFrame1Background, 2)
-    assert(q[1] == 'BOTTOMRIGHT' and q[4] == 18 and q[5] == -32, 'room for the edit box and the scroll bar')
+    assert(q[1] == 'BOTTOMRIGHT' and q[4] == 19 and q[5] == -33, 'room for the edit box and the scroll bar')
     FloatingChatFrame_UpdateBackgroundAnchors(ChatFrame1)
-    p = Point(ChatFrame1Background); assert(p[4] == -8, 'Blizzard re-anchoring the box is followed')
-    -- Edit box: joined to the window inside its border, on a darker band.
+    p = Point(ChatFrame1Background); assert(p[4] == -9, 'Blizzard re-anchoring the box is followed')
+    -- Edit box: joined to the window inside its edge, on a darker Graphite band.
     local band = Point(panel.band)
-    assert(panel.band:IsShown() and band[1] == 'BOTTOMLEFT' and band[2] == ChatFrame1Background and band[4] == 2 and band[5] == 2)
+    assert(panel.band:IsShown() and band[1] == 'BOTTOMLEFT' and band[2] == ChatFrame1Background and band[4] == 3 and band[5] == 3)
     assert(panel.band:GetHeight() == 24 and Point(ChatFrame1EditBox)[2] == panel.band, 'edit box on the band')
-    assert(Masks(panel.band, m.BOTTOMLEFT, m.BOTTOMRIGHT) and Masks(panel.bandLine), 'the band rounds with the bottom corners')
+    assert(panel.band.vertexColor[1] == G.base[1] and math.abs(panel.band.vertexColor[4] - 0.75) < 1e-6, 'Graphite base, a little darker')
     assert(ChatFrame1EditBoxLeft.alpha == 0 and ChatFrame1EditBox.focusMid.alpha == 0, 'edit box art faded')
+    assert(panel.bandLine.vertexColor[1] == G.line[1], 'a Graphite divider')
     ChatFrame1EditBox:SetFocus(); ChatFrame1EditBox.scripts.OnEditFocusGained(ChatFrame1EditBox)
-    assert(panel.bandLine.vertexColor[2] == 240 / 255, 'the divider turns cyan while typing')
-    ChatFrame1EditBox:ClearFocus()
-    assert(panel.bandLine.vertexColor[2] ~= 240 / 255, 'field rim again')
+    assert(panel.bandLine.vertexColor[1] == Tone.ivory[1], 'the divider turns Ivory while typing')
+    ChatFrame1EditBox:ClearFocus(); ChatFrame1EditBox.scripts.OnEditFocusLost(ChatFrame1EditBox)
+    assert(panel.bandLine.vertexColor[1] == G.line[1], 'Graphite again')
     -- Font: the chat face, each window's own size kept.
     local path, size = ChatFrame1:GetFont()
     assert(path == Kit.FontPath(M.db, 'chat') and size == 14, 'chat face, window size kept')
     -- Scroll bar: skinned and in the gutter; Scroll to Bottom's flash hidden.
     local bar = ChatFrame1.ScrollBar
     assert(bar.Track.Middle.alpha == 0 and bar.Back.Texture.alpha == 0 and Skin.parts[bar].thumb, 'slim Mode track and thumb')
-    assert(Point(bar)[1] == 'TOPRIGHT' and Point(bar)[2] == ChatFrame1Background and Point(bar)[4] == -3 and Point(bar)[5] == -7, 'below the round corner')
+    assert(Point(bar)[1] == 'TOPRIGHT' and Point(bar)[2] == ChatFrame1Background and Point(bar)[4] == -4 and Point(bar)[5] == -7, 'below the round corner')
     FCF_UpdateScrollbarAnchors(ChatFrame1); assert(Point(bar)[2] == ChatFrame1Background, 'Blizzard re-anchoring it is followed')
     local flash = ChatFrame1.ScrollToBottomButton.Flash
     flash:Show(); assert(not flash:IsShown(), 'no flashing arrow')
+    local scroll = Skin.parts[ChatFrame1.ScrollToBottomButton]
+    assert(scroll.faceKey == 'Button' and scroll.modeEdge.preset == 'control' and scroll.icon.vertexColor[1] == G.secondary[1], 'a Mode control')
+    ChatFrame1.ScrollToBottomButton.scripts.OnEnter(ChatFrame1.ScrollToBottomButton)
+    assert(scroll.icon.vertexColor[1] == Tone.ivory[1] and scroll.modeEdge.highlight[1] == Tone.ivory[1], 'Ivory on hover')
+    ChatFrame1.ScrollToBottomButton.scripts.OnLeave(ChatFrame1.ScrollToBottomButton)
+    assert(scroll.modeEdge.highlight == nil, 'plain again')
 
-    -- Tabs: art faded, glass panes on the border, the selected one raised.
+    -- Tabs: art faded, Mode panes on the edge, the selected one raised and Ivory.
     assert(ChatFrame1Tab.Left.alpha == 0 and ChatFrame1Tab.ActiveMiddle.alpha == 0 and ChatFrame1Tab.HighlightRight.alpha == 0)
     local t1, t2 = Skin.parts[ChatFrame1Tab], Skin.parts[ChatFrame2Tab]
-    assert(t1.glass.texture:find('Glass') and t1.glass:GetHeight() == 24 and t2.glass:GetHeight() == 21, 'selected full, others tucked 3px')
-    assert(t1.glint.texture:find('Sheen') and t1.glint.blendMode == 'ADD' and t1.glint:IsShown(), 'a diagonal glint')
-    assert(t1.bar:IsShown() and not t2.bar:IsShown(), 'cyan bar on the selected tab only')
-    assert(Point(ChatFrame1Tab.Text)[2] == t1.glass, 'text on the pane\'s middle')
+    assert(t1.pane:GetHeight() == 24 and t2.pane:GetHeight() == 21, 'selected full, others tucked 3px')
+    assert(t1.faceKey == 'Glass' and t1.face.vertexColor[4] == 0.75 and t1.lift:IsShown(), 'Glass: Mode Glass, see-through')
+    assert(t1.face.vertexColor[1] == G.track[1] and t2.face.vertexColor[1] == G.raised[1], 'the selected tab in the chosen tone')
+    assert(t1.modeEdge.preset == 'control' and t1.modeEdge.highlight[1] == Tone.ivory[1] and t2.modeEdge.highlight == nil, 'Ivory line on the selected tab only')
+    assert(Point(t1.edgeFrame)[2] == t1.pane and Point(t1.edgeFrame)[4] == 2, 'the edge inside the pane')
+    assert(Point(ChatFrame1Tab.Text)[2] == t1.pane, 'text on the pane\'s middle')
     -- Tab width: sized to the text in the Mode face (7 letters at 13).
     assert(ChatFrame1Tab:GetWidth() == math.ceil(7 * 13 * 0.6) + 20, 'General fits')
     ChatFrame1Tab.Text:SetFont('Fonts/FRIZQT__.TTF', 9, ''); PanelTemplates_TabResize(ChatFrame1Tab, 0)
@@ -173,28 +175,32 @@ world.run([==[
     ChatFrame2.chatType = 'WHISPER'
     assert(not M:SizeTab(ChatFrame2Tab), 'whisper tabs are never measured'); ChatFrame2.chatType = nil
     FCFTab_UpdateColors(ChatFrame2Tab, false)
-    assert(ChatFrame2Tab.Text.color[1] == 196 / 255, 'Mode label gray after Blizzard colors the text')
+    assert(ChatFrame2Tab.Text.color[1] == G.secondary[1], 'Graphite secondary after Blizzard colors the text')
     FCFDock_SelectWindow(GENERAL_CHAT_DOCK, ChatFrame2)
     FCFTab_UpdateColors(ChatFrame2Tab, true); FCFTab_UpdateColors(ChatFrame1Tab, false)
-    assert(t2.bar:IsShown() and ChatFrame2Tab.Text.color[1] == 242 / 255 and t2.glass:GetHeight() == 24 and t1.glass:GetHeight() == 21,
-        'picked tab: raised, white text and the bar')
+    assert(t2.modeEdge.highlight and ChatFrame2Tab.Text.color[1] == Tone.ivory[1] and t2.pane:GetHeight() == 24 and t1.pane:GetHeight() == 21,
+        'picked tab: raised, Ivory text and line')
     FCFDock_SelectWindow(GENERAL_CHAT_DOCK, ChatFrame1); FCFTab_UpdateColors(ChatFrame1Tab, true); FCFTab_UpdateColors(ChatFrame2Tab, false)
 
     -- Compartment: Blizzard's buttons moved in, glyphs drawn, hidden voice skipped.
     local box = ModeUIChatButtons
     assert(box and ChatFrameMenuButton:GetParent() == box and ChatFrameChannelButton:GetParent() == box)
     assert(ChatFrameMenuButton.normal.alpha == 0 and Skin.parts[ChatFrameMenuButton].glyph, 'glyph instead of Blizzard art')
-    assert(box:GetWidth() == 1 + 34 + 1 + 22 + 1 + 22 + 1 and box:GetHeight() == 20, 'Friends, Channels and the menu, dividers, a rim')
+    -- The cells inside the 2px control edge, one-pixel dividers between them.
+    assert(box:GetWidth() == 2 + 34 + 1 + 22 + 1 + 22 + 2 and box:GetHeight() == 22, 'Friends, Channels and the menu, dividers, the edge')
+    local bp = Skin.parts[box]
+    assert(bp.modeEdge.preset == 'control' and bp.faceKey == 'Solid' and bp.face.vertexColor[1] == G.base[1], 'a Mode control')
+    assert(box.dividers[1].vertexColor[1] == G.line[1], 'Graphite dividers')
     -- Friends: in the compartment, first, its art hidden for good, a glyph and its count.
     local friends = QuickJoinToastButton
-    assert(friends:GetParent() == box and Point(friends)[4] == 1, 'Friends grouped with the other buttons, first')
+    assert(friends:GetParent() == box and Point(friends)[4] == 2, 'Friends grouped with the other buttons, first')
     assert(not friends.FriendsButton:IsShown() and Skin.parts[friends].glyph.texture:find('Friends'), 'a Mode glyph instead of its art')
     friends.FriendsButton:Show(); assert(not friends.FriendsButton:IsShown(), 'its toast animations can\'t bring the art back')
     assert(Point(friends.FriendCount)[1] == 'RIGHT' and friends.FriendCount.color[1] == C.label[1], 'the online count beside the glyph')
     ChatAlertFrame:UpdateAnchors()
     assert(Point(friends)[2] == box, 'put back when Blizzard\'s alert column places it again')
     ChatFrameToggleVoiceDeafenButton:Show()
-    assert(box:GetWidth() == 1 + 34 + 1 + 22 + 1 + 22 + 1 + 22 + 1, 'voice button joins the row when shown')
+    assert(box:GetWidth() == 2 + 34 + 1 + 22 + 1 + 22 + 1 + 22 + 2, 'voice button joins the row when shown')
     ChatFrameToggleVoiceDeafenButton:Hide()
     assert(Point(ChatAlertFrame)[2] == box, 'Social and Text to Speech stack above the compartment')
 
@@ -236,35 +242,35 @@ world.run([==[
     -- Settings: checked on a copy; live repaint.
     assert(not M:SetOption('idleOpacity', 140) and not M:SetOption('buttons', 'left') and not M:SetOption('nope', 1))
     assert(not M:SetOption('editPosition', 'left') and not M:SetOption('tabHeight', 60) and not M:SetOption('borderSize', 0))
-    assert(M:SetOption('backgroundOpacity', 50) and panel.fill.middle.vertexColor[4] == 0.5 and panel.fill.bottom.vertexColor[4] == 0.5)
-    assert(not M:SetOption('border', false) and not M:SetOption('borderColor', { 1, 0, 0 }) and border.edge:IsShown(), 'the border is locked')
-    assert(M:SetOption('editPosition', 'top') and Point(ChatFrame1Background)[5] == 8 + 24 and Point(panel.band)[1] == 'TOPLEFT', 'edit box at the top')
-    assert(Masks(panel.band, m.TOPLEFT, m.TOPRIGHT) and Masks(fill.top, m.TOPLEFT, m.TOPRIGHT), 'the band rounds with the top corners')
-    assert(Point(bar)[5] == -(2 + 24 + 4), 'the scroll bar under the band')
+    assert(M:SetOption('backgroundOpacity', 50) and panel.face.vertexColor[4] == 0.5 and not panel.modeEdge.below:IsShown())
+    assert(M:SetOption('backgroundOpacity', 100) and panel.modeEdge.below:IsShown(), 'an opaque window has its soft drop')
+    M:SetOption('backgroundOpacity', 50)
+    assert(not M:SetOption('border', false) and not M:SetOption('borderColor', { 1, 0, 0 }) and panel.modeEdge.holder:IsShown(), 'the edge is locked')
+    assert(M:SetOption('editPosition', 'top') and Point(ChatFrame1Background)[5] == 9 + 24 and Point(panel.band)[1] == 'TOPLEFT', 'edit box at the top')
+    assert(Point(panel.band)[5] == -3 and Point(panel.bandLine)[1] == 'BOTTOMLEFT', 'the band inside the top edge, its divider under it')
+    assert(Point(bar)[5] == -(3 + 24 + 4), 'the scroll bar under the band')
     assert(M:SetOption('editPosition', 'below') and not panel.band:IsShown(), 'Below: its own field')
-    local e = Point(ChatFrame1EditBox)
+    local ep = Point(ChatFrame1EditBox)
     local field = Skin.parts[ChatFrame1EditBox]
-    assert(e[1] == 'TOPLEFT' and e[2] == ChatFrame1Background and e[5] == -4 and field.border.edge:IsShown())
-    -- The field is a bar: the standard bar border, rounded ends, the field rounded under the rim.
-    assert(field.border.ring.top.vertexColor[1] == Kit.BORDER_COLOR[1] and field.border.depth == Kit.CapDepth(24, 1), 'a bar border')
-    assert(Masks(field.fill, field.border.masks.LEFT, field.border.masks.RIGHT), 'the field rounds with it')
+    assert(ep[1] == 'TOPLEFT' and ep[2] == ChatFrame1Background and ep[5] == -4 and field.modeEdge.holder:IsShown())
+    -- A Mode field: Graphite base in the `control` edge inside it.
+    assert(field.faceKey == 'Solid' and field.face.vertexColor[1] == G.base[1] and field.face.vertexColor[4] == 1, 'a Mode field')
+    assert(field.modeEdge.preset == 'control' and Point(field.edgeFrame)[4] == 2, 'the control edge inside it')
     ChatFrame1EditBox:SetFocus(); ChatFrame1EditBox.scripts.OnEditFocusGained(ChatFrame1EditBox)
-    assert(field.border.ring.top.vertexColor[2] == 240 / 255, 'cyan while typing')
+    assert(field.modeEdge.highlight[1] == Tone.ivory[1], 'Ivory while typing')
     ChatFrame1EditBox:ClearFocus(); ChatFrame1EditBox.scripts.OnEditFocusLost(ChatFrame1EditBox)
-    assert(field.border.ring.top.vertexColor[1] == Kit.BORDER_COLOR[1], 'the standard rim again')
+    assert(field.modeEdge.highlight == nil, 'plain again')
     local s = Point(ChatFrame1.ScrollToBottomButton)
-    assert(s[4] == -4 and s[5] == 5, 'Scroll to Bottom clear of the round corner')
-    assert(M:SetOption('editHeight', 18) and border.radius == Kit.CapDepth(22, 1), 'corners follow Edit Box Height')
-    M:SetOption('editHeight', 24)
+    assert(s[4] == -7 and s[5] == 7, 'Scroll to Bottom clear of the round corner')
     M:SetOption('editPosition', 'bottom')
-    assert(not field.border.edge:IsShown() and Masks(panel.band, m.BOTTOMLEFT, m.BOTTOMRIGHT), 'inside again: no field border')
-    assert(M:SetOption('tabHeight', 28)); assert(t1.glass:GetHeight() == 28, 'h1 ' .. tostring(t1.glass:GetHeight()))
-    assert(M:SetOption('tuckDepth', 0)); assert(t2.glass:GetHeight() == 28, 'h2 ' .. tostring(t2.glass:GetHeight()))
+    assert(not field.modeEdge.holder:IsShown() and field.face.vertexColor[4] == 0 and panel.band:IsShown(), 'inside again: no field edge')
+    assert(M:SetOption('tabHeight', 28)); assert(t1.pane:GetHeight() == 28, 'h1 ' .. tostring(t1.pane:GetHeight()))
+    assert(M:SetOption('tuckDepth', 0)); assert(t2.pane:GetHeight() == 28, 'h2 ' .. tostring(t2.pane:GetHeight()))
     assert(M:SetOption('buttons', 'hidden') and not box:IsShown())
     assert(M:SetOption('buttons', 'compartment') and box:IsShown())
-    assert(M:SetOption('glassTabs', false) and t1.glass.texture == Kit.FLAT and not t1.glint:IsShown() and t1.sheen == nil and t1.line == nil)
+    assert(M:SetOption('glassTabs', false) and t1.faceKey == 'Button' and t1.face.vertexColor[4] == 1, 'Solid: the Mode Button face')
     assert(M:SetOption('scrollBar', false)); bar:Show(); assert(not bar:IsShown() and bar.alpha == 0, 'Scroll Bar off')
-    assert(Point(ChatFrame1Background, 2)[4] == 8, 'no gutter without the scroll bar')
+    assert(Point(ChatFrame1Background, 2)[4] == 9, 'no gutter without the scroll bar')
     assert(M:SetOption('scrollBar', true)); bar:Show(); assert(bar:IsShown(), 'Scroll Bar on')
     assert(M:SetOption('idleFade', false)); for _ = 1, 120 do Advance(0.1) end
     assert(ChatFrame1.alpha == 1, 'no idle fade when off')
@@ -292,21 +298,27 @@ world.run([==[
     local old = { version = 1, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 72,
         borderColor = { Kit.onyx.border[1], Kit.onyx.border[2], Kit.onyx.border[3] }, scrollBar = false, idleOpacity = 30 }
     M.Initialize(old)
-    assert(old.version == 5 and old.backgroundColor[1] == Kit.onyx.health[1] and old.backgroundOpacity == 60 and old.scrollBar)
-    assert(old.borderColor == nil and old.idleOpacity == 30 and old.tabHeight == 24)
+    assert(old.version == 6 and old.backgroundColor[1] == G.panel[1] and old.backgroundOpacity == 60 and old.scrollBar)
+    assert(old.borderColor == nil and old.idleOpacity == 30 and old.tabHeight == 24 and old.fontMedia == 'Mode')
     local picked = { version = 1, backgroundColor = { 1, 0, 0 }, backgroundOpacity = 80 }
     M.Initialize(picked); assert(picked.backgroundColor[1] == 1 and picked.backgroundOpacity == 80, 'picked values stay')
     local two = { version = 2, backgroundColor = { Kit.onyx.slate[1], Kit.onyx.slate[2], Kit.onyx.slate[3] } }
-    M.Initialize(two); assert(two.version == 5 and two.backgroundColor[1] == Kit.onyx.health[1], 'version 2 Mode Slate follows')
+    M.Initialize(two); assert(two.version == 6 and two.backgroundColor[1] == G.panel[1], 'version 2 Mode Slate follows')
     -- Version 3 -> 4: the standard border has no settings, so they go; the rest stays.
     local three = { version = 3, border = false, borderSize = 3, borderColor = { 1, 0, 0 }, backgroundOpacity = 35 }
     M.Initialize(three)
-    assert(three.version == 5 and three.border == nil and three.borderSize == nil and three.borderColor == nil and three.backgroundOpacity == 35)
-    -- Version 4 -> 5: a fill still at the old health color (#1C1E21) takes #131212.
+    assert(three.version == 6 and three.border == nil and three.borderSize == nil and three.borderColor == nil and three.backgroundOpacity == 35)
+    -- Version 4 -> 5: a fill still at the old health color (#1C1E21) follows on to Graphite.
     local four = { version = 4, backgroundColor = { 28 / 255, 30 / 255, 33 / 255 } }
-    M.Initialize(four); assert(four.version == 5 and four.backgroundColor[1] == Kit.onyx.health[1], 'the old health color follows')
+    M.Initialize(four); assert(four.version == 6 and four.backgroundColor[1] == G.panel[1], 'the old health color follows')
     local mine = { version = 4, backgroundColor = { 0, 0, 1 } }
     M.Initialize(mine); assert(mine.backgroundColor[3] == 1, 'a picked fill stays')
+    -- Version 5 -> 6: the Mode design language. #131212 takes Graphite panel,
+    -- Expressway the Mode typeface; picked values stay.
+    local five = { version = 5, backgroundColor = { Kit.onyx.health[1], Kit.onyx.health[2], Kit.onyx.health[3] }, fontMedia = 'Expressway' }
+    M.Initialize(five); assert(five.version == 6 and five.backgroundColor[1] == G.panel[1] and five.fontMedia == 'Mode', 'Phase 7 defaults follow')
+    local own = { version = 5, backgroundColor = { 0, 1, 0 }, fontMedia = 'Mode Geist' }
+    M.Initialize(own); assert(own.backgroundColor[2] == 1 and own.fontMedia == 'Mode Geist', 'picked face and fill stay')
 ]==], "chat")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

@@ -25,10 +25,11 @@ local function Same(a, b)
     return true
 end
 
+-- Version 1's fill (later defaults follow on through the steps below);
+-- its border color went with the border in version 4.
 local function MigrateV1(db)
-    if Same(db.backgroundColor, M.OLD_BACKGROUND_COLOR) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+    if Same(db.backgroundColor, addon.Style.LEGACY.windowFill) then db.backgroundColor = Copy(addon.Kit.onyx.slate) end
     if db.backgroundOpacity == 72 then db.backgroundOpacity = M.defaults.backgroundOpacity end
-    if Same(db.borderColor, M.OLD_BORDER_COLOR) then db.borderColor = Copy(M.BORDER_COLOR) end
     if db.scrollBar == false then db.scrollBar = true end
     db.version = 2
 end
@@ -39,7 +40,7 @@ function M.Initialize(db)
     -- Version 3 (November 13, 2026, per the owner): the fill is the unit
     -- frames' health color; a fill still at version 2's Mode Slate follows.
     if db.version == 2 then
-        if Same(db.backgroundColor, M.SLATE_COLOR) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        if Same(db.backgroundColor, addon.Kit.onyx.slate) then db.backgroundColor = Copy(addon.Kit.onyx.health) end
         db.version = 3
     end
     -- Version 4 (November 13, 2026, per the owner): the window takes ModeUI's
@@ -51,8 +52,15 @@ function M.Initialize(db)
     end
     -- Version 5: the health color moved from #1C1E21 to #131212.
     if db.version == 4 then
-        if addon.Kit.IsOldOnyxHealth(db.backgroundColor) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        if addon.Kit.IsOldOnyxHealth(db.backgroundColor) then db.backgroundColor = Copy(addon.Kit.onyx.health) end
         db.version = 5
+    end
+    -- Version 6 (Phase 7): the Mode design language. Graphite panel for a
+    -- fill still at #131212; the Mode typeface for a face still at Expressway.
+    if db.version == 5 then
+        if Same(db.backgroundColor, addon.Kit.onyx.health) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        if db.fontMedia == "Expressway" then db.fontMedia = addon.Style.FONT_DEFAULT end
+        db.version = 6
     end
     assert(db.version == M.VERSION, "Invalid chat settings version")
     for key, default in pairs(M.defaults) do

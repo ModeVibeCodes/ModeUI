@@ -252,7 +252,16 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
 - **Item quality:** the `line` edge in the quality color, inside the slot.
 - **Text on Graphite:** dark parchment text (quest, gossip, books) takes the
   Graphite text color. A window whose content draws under its border frame
-  (the World Map) has no soft drop, which would shade it.
+  (the World Map), or a see-through one (Background Opacity under 100), has
+  no soft drop, which would shade it.
+- **Chat:** each window a Mode window on its message box (the `window` edge
+  inside it, Graphite panel at the chat's Background Opacity); the edit box
+  on a Graphite base band with a 1px Graphite line that turns Ivory while
+  typing (or, Below, a Mode field). Tabs are `control` panes resting on the
+  edge (Mode Glass at 75% or the Mode Button face): the open one full height
+  in the chosen tone with an Ivory label and line, the others tucked down in
+  Graphite raised. The button compartment is one `control` box with 1px
+  Graphite dividers.
 
 ## Settings window
 

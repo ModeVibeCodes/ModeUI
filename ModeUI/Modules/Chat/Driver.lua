@@ -29,7 +29,7 @@ function M:TabOf(frame) return frame and frame.GetName and _G[(frame:GetName() o
 
 function M:OnInitialize()
     self.Initialize(self.db)
-    -- SharedMedia fonts can register after login; Expressway may be one.
+    -- SharedMedia fonts can register after login; the picked face may be one.
     addon.Media:RegisterFontListener(self, function() if self.active then self:Refresh() end end)
 end
 
@@ -94,7 +94,7 @@ function M:InstallHooks()
     -- Fixed sizes (dynamic dock tabs) and whisper tabs are left alone.
     if PanelTemplates_TabResize then
         hooksecurefunc("PanelTemplates_TabResize", function(tab, padding, absoluteSize, minWidth, maxWidth)
-            if Active() and tab and absoluteSize == nil and addon.Skin.parts[tab] and addon.Skin.parts[tab].glass then
+            if Active() and tab and absoluteSize == nil and addon.Skin.parts[tab] and addon.Skin.parts[tab].pane then
                 self:SizeTab(tab, nil, padding, minWidth, maxWidth)
             end
         end)
@@ -120,7 +120,7 @@ function M:Refresh()
     if self.page then self.page:Refresh() end
 end
 
--- The font file for chat text, from the Font setting (Expressway by default).
+-- The font file for chat text, from the Font setting (the Mode typeface by default).
 function M:FontPath() return Kit.FontPath(self.db, self.id) end
 
 -- Values are checked by Initialize on a copy before they're kept.

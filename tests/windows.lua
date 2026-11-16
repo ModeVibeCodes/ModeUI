@@ -435,7 +435,7 @@ world.run([==[
     -- Settings: validated on a copy; look changes repaint at once.
     assert(not M:SetOption('backgroundOpacity', 140) and not M:SetOption('windows', {}) and not M:SetOption('looks', {}))
     assert(not M:SetOption('nope', true) and not M:SetOption('style', 'retro') and not M:SetOption('borderSize', 9))
-    assert(M:SetOption('backgroundOpacity', 60) and parts.face.vertexColor[4] == 0.6)
+    assert(M:SetOption('backgroundOpacity', 60) and parts.face.vertexColor[4] == 0.6 and not parts.modeEdge.below:IsShown(), 'no drop under a see-through window')
     assert(not M:SetOption('borderSize', 3) and not M:SetOption('borderColor', { 1, 0, 0 }), 'Border Size and Border Color retired')
     assert(M:SetOption('titleBar', false) and not parts.strip:IsShown())
     assert(M:SetOption('titleSize', 15) and title.font[2] == 15)
