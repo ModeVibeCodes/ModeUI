@@ -1,10 +1,13 @@
--- Probe addons (probes/): each loads on top of ModeUI from its own TOC, opens
--- through /mprobe, builds every tab, and runs its updates with live units whose
--- values are secret. Static checks: probes draw only through ModeUI-Core and
--- never touch ModeUI's settings or Blizzard's frames. Not native rendering.
+-- The probe kit (probes/Kit/ProbeKit.lua): small preview addons are built on
+-- it to try a redesign in game without changing ModeUI. Every redesign so far
+-- has been built into ModeUI and its probe retired, so this checks the kit
+-- itself: its static rules, and a sample probe (a window with two tabs,
+-- drawn only through ModeUI-Core) opened through /mprobe with secret live
+-- values. Add a new probe's folder name to PROBES to load and check it too.
+-- Simulated client; not native rendering.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 
-local PROBES = { "ModeUI_ProbeFrames", "ModeUI_ProbePanels" }
+local PROBES = {}
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local EXTRA = H.Read(H.root .. "tests/probe_stubs.lua")
 
@@ -40,90 +43,60 @@ local function Check(path)
     assert(not text:find("hooksecurefunc", 1, true) and not text:find("SetAttribute", 1, true), path .. " touches secure code")
 end
 
-local before = STUBS .. "\n" .. EXTRA
-local world = H.Load({ before = before })
+local world = H.Load({ before = STUBS .. "\n" .. EXTRA })
 local env = world.env
-local function LoadProbe(name)
-    local ns = {}
-    for _, path in ipairs(ProbeFiles(name)) do
-        Check(path)
-        local fn = assert(load(H.Read(H.root .. path), "@" .. path, "t", env))
-        fn(name, ns)
-    end
-    return ns
+local function Load(path, name, ns)
+    Check(path)
+    local fn = assert(load(H.Read(H.root .. path), "@" .. path, "t", env))
+    fn(name, ns)
 end
 for _, name in ipairs(PROBES) do
-    local ns = LoadProbe(name)
+    local ns = {}
+    for _, path in ipairs(ProbeFiles(name)) do Load(path, name, ns) end
     assert(ns.Kit and ns.Kit.ok, name .. ": kit ready")
 end
 
+-- The sample probe: the kit, then a window drawn with ModeUI's design system.
+local sample = {}
+Load("probes/Kit/ProbeKit.lua", "ModeUI_ProbeSample", sample)
+assert(sample.Kit and sample.Kit.ok, "the kit is ready on top of ModeUI-Core")
+env.probeSample = sample
 world.run([====[
-    local reg=assert(ModeUIProbes,'probe registry')
-    assert(SlashCmdList.MODEUIPROBE and SLASH_MODEUIPROBE1=='/mprobe','one /mprobe command')
-    for _,id in ipairs({'frames','panels'}) do assert(reg.list[id],'registered: '..id) end
-    -- /mprobe alone lists the probes.
-    local before=#messages;SlashCmdList.MODEUIPROBE('');assert(#messages>before,'lists probes')
-    -- Live units: secret health, power and casts reach only widgets that accept them.
-    units.player={exists=true,health=Secret('hp'),max=Secret('max'),power=Secret('pw'),powerMax=Secret('pmax'),token='ENERGY',
-        name='Fixture',level=60,class='ROGUE',isPlayer=true,connected=true,reaction=5}
-    units.party1={exists=true,health=Secret('hp1'),max=Secret('max1'),power=10,powerMax=100,token='MANA',name=Secret('name1'),
-        level=60,class='PRIEST',isPlayer=true,connected=true,reaction=5}
-    units.target={exists=true,health=Secret('thp'),max=Secret('tmax'),power=0,powerMax=0,token='MANA',name='Defias Thug',
-        level=18,reaction=2,cast={name=Secret('cast'),text=Secret('text'),texture=Secret('tex'),startMs=Secret('s'),endMs=Secret('e'),
-        notInterruptible=Secret('locked')}}
-    for _,id in ipairs(reg.order) do
-        SlashCmdList.MODEUIPROBE(id)
-        local window=reg.list[id].window()
-        assert(window:IsShown(),'opens: '..id)
-        for _,tab in ipairs(window.order) do
-            SlashCmdList.MODEUIPROBE(id..' '..tab.id)
-            assert(window.current==tab.id and window.pages[tab.id]:IsShown(),'tab builds: '..id..' '..tab.id)
-            for _=1,8 do Advance(0.11) end
-        end
-        SlashCmdList.MODEUIPROBE(id);assert(not window:IsShown(),'closes: '..id)
+    local Kit = probeSample.Kit
+    local S, T, D = Kit.S, Kit.T, Kit.D
+    local function Panel(body)
+        local panel = CreateFrame('Frame', nil, body)
+        panel:SetSize(200, 120); panel:SetPoint('TOPLEFT', 6, -6)
+        Kit.Fill(panel, 'Panel', T.graphite.panel)
+        S.Edge(panel, 'window')
+        local holder = CreateFrame('Frame', nil, panel)
+        holder:SetPoint('BOTTOMLEFT', 8, 8); holder:SetPoint('BOTTOMRIGHT', -8, 8); holder:SetHeight(6)
+        local bar = S.Bar(holder, { role = 'health' }); bar:SetAllPoints()
+        local okMax, max, okValue, value = D.Health.Read('player')
+        bar:SetMinMaxValues(0, okMax and max or 1); bar:SetValue(okValue and value or 1)
+        panel.bar = bar
+        Kit.Caption(body, 'A sample panel.', panel, 0, -8)
+        return panel
     end
-    -- Group Frames: every layout and source, frames 1px apart outside their rims.
-    local frames=reg.list.frames.window()
-    frames:Select('group');frames:Show()
-    local body=frames.pages.group
-    local function Buttons(parent,out)
-        out=out or {}
-        for _,child in ipairs(parent.childList or {}) do
-            if child.kind=='Button' and child.id then out[#out+1]=child end
-            Buttons(child,out)
-        end
-        return out
-    end
-    for _,button in ipairs(Buttons(body)) do button.scripts.OnClick(button);for _=1,6 do Advance(0.21) end end
-    for _,id in ipairs({'party','healer','raid','raidhealer','vertical'}) do
-        for _,button in ipairs(Buttons(body)) do if button.id==id or button.id=='live' or button.id=='class' then button.scripts.OnClick(button) end end
-        for _=1,6 do Advance(0.21) end
-        for _,button in ipairs(Buttons(body)) do if button.id=='samples' then button.scripts.OnClick(button) end end
-        Advance(0.21)
-    end
-    -- Live party: the secret health went straight to the health bar.
-    local function Click(id) for _,button in ipairs(Buttons(body)) do if button.id==id then button.scripts.OnClick(button) end end end
-    Click('party');Click('live');Advance(0.21)
-    local function Find(parent,test)
-        for _,region in ipairs(parent.regionList or {}) do if test(region) then return region end end
-        for _,child in ipairs(parent.childList or {}) do
-            if test(child) then return child end
-            local found=Find(child,test);if found then return found end
-        end
-    end
-    assert(Find(body,function(f) return f.kind=='StatusBar' and f.value==units.party1.health end),'live party1 health is the secret value')
-    assert(Find(body,function(f) return f.kind=='StatusBar' and f.value==units.player.health end),'live player health')
-    Click('samples');Advance(0.21)
-    assert(Find(body,function(f) return f.kind=='StatusBar' and f.value==27 end),'sample at 27%')
-    frames:Hide()
-    local function Has(parent,test) return Find(parent,test)~=nil end
-    -- Minimap: the game clock; the secret zone only reaches SetText.
-    local panels=reg.list.panels.window();panels:Select('minimap');panels:Show();Advance(1.1)
-    assert(Has(panels.pages.minimap,function(f) return f.GetText and f:GetText()=='09:05' end),'game clock')
-    panels:Hide()
-    -- No target: the live plate hides.
-    units.target=nil
-    local plates=reg.list.frames.window();plates:Select('plates');plates:Show();Advance(0.2);plates:Hide()
+    local built = {}
+    Kit.Register('sample', 'Sample', function()
+        built.window = built.window or Kit.Window('Sample', 'Sample', 420, 260, {
+            { id = 'one', label = 'One', build = function(body) built.one = Panel(body) end },
+            { id = 'two', label = 'Two', build = function(body) built.two = Panel(body) end },
+        })
+        return built.window
+    end)
+    local reg = assert(ModeUIProbes, 'probe registry')
+    assert(SlashCmdList.MODEUIPROBE and SLASH_MODEUIPROBE1 == '/mprobe', 'one /mprobe command')
+    local before = #messages; SlashCmdList.MODEUIPROBE(''); assert(#messages > before, '/mprobe alone lists the probes')
+    -- A live unit whose health is secret: it reaches only the bar.
+    units.player = { exists = true, health = Secret('hp'), max = Secret('max'), power = 0, powerMax = 0, token = 'ENERGY',
+        name = 'Fixture', level = 60, class = 'ROGUE', isPlayer = true, connected = true, reaction = 5 }
+    SlashCmdList.MODEUIPROBE('sample two')
+    local window = reg.list.sample.window()
+    assert(window:IsShown() and window.current == 'two' and built.two and built.one, 'opens on a tab (the first builds with the window)')
+    assert(built.two.bar.value == units.player.health, 'the secret health went straight to the bar')
+    SlashCmdList.MODEUIPROBE('sample one'); assert(window.current == 'one' and window.pages.one:IsShown() and not window.pages.two:IsShown(), 'switches tabs')
+    SlashCmdList.MODEUIPROBE('sample'); assert(not window:IsShown(), '/mprobe <name> toggles it')
 ]====], "probes")
-
-print("probes: all checks passed (" .. #PROBES .. " probes)")
+print("probes: all checks passed (kit and sample probe" .. (#PROBES > 0 and (", " .. #PROBES .. " probes") or "") .. ")")

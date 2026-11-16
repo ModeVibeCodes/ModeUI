@@ -7,13 +7,16 @@ own design system through the `ModeUI-Core` LibStub API
 never touches ModeUI's modules or Blizzard's frames, and can be deleted at any
 time.
 
-| Addon | Phase | Opens with | Tabs |
-|---|---|---|---|
-| `ModeUI_ProbeFrames` | 5 | `/mprobe frames` | Group Frames, Nameplates |
-| `ModeUI_ProbePanels` | 7 | `/mprobe panels` | Minimap |
+There are no probes right now: every redesign of the Mode rebuild (Phases
+1-7) was built into ModeUI and its probe retired (November 15, 2026). The
+kit (`probes/Kit/ProbeKit.lua`), the build script and `tests/probes.lua`
+stay for the next one. A new probe is a folder `probes/ModeUI_Probe<Name>/`
+with a TOC (`## Dependencies: ModeUI`, `ProbeKit.lua` listed first) whose
+files call `Kit.Register(id, title, window)`; add its folder name to
+`PROBES` in `tests/probes.lua`.
 
-`/mprobe` lists the loaded probes; `/mprobe <name> <tab>` opens one on a tab
-(for example `/mprobe panels bags`). Esc closes a probe window.
+`/mprobe` lists the loaded probes; `/mprobe <name> <tab>` opens one on a tab.
+Esc closes a probe window.
 
 ## Build and install
 
@@ -30,7 +33,8 @@ note and draw nothing.
   Asset), exactly like a module. Game icons are the only file paths.
 - Live values go through `Domain` readers; values the game keeps secret reach
   only widgets documented as accepting them.
-- Files stay under 400 lines. `tests/probes.lua` loads every probe on top of
-  ModeUI, opens every tab with secret live values, and checks the rules.
+- Files stay under 400 lines. `tests/probes.lua` checks the kit with a sample
+  probe and loads every probe listed in `PROBES` on top of ModeUI, checking
+  the rules.
 - When a redesign is approved, it is built into the ModeUI module itself and
   its probe is retired.
