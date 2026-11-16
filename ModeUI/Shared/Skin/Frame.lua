@@ -110,6 +110,8 @@ function Skin.PaintWindow(frame, style)
     local px = Kit.PixelSize(frame)
     local options = parts.options or {}
     Skin.PaintBox(parts, frame, "Panel", style.fill or M.panel, options.noFill and 0 or style.alpha, style.border ~= false)
+    -- The World Map draws under its border frame: no soft drop over the map.
+    if parts.modeEdge then parts.modeEdge:SetDrop(not options.noFill and style.border ~= false) end
     local title = Skin.TitleOf(frame)
     local strip, divider = parts.strip, parts.divider
     local showStrip = style.titleBar and title ~= nil

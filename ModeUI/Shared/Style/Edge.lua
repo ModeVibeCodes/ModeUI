@@ -196,6 +196,12 @@ function Edge:SetLevel(level, under)
     if self.below and addon.IsNumber(floor) then self.below:SetFrameLevel(math.max(0, floor - 1)) end
 end
 
+-- Shows or hides the soft drop alone (a window whose content draws under it,
+-- the World Map's, would be shaded by it).
+function Edge:SetDrop(shown)
+    if self.below then self.below:SetShown(shown ~= false) end
+end
+
 -- The border's textures, for callers that fade them together (from a state
 -- the client may keep secret, through SetAlphaFromBoolean).
 function Edge:Regions()

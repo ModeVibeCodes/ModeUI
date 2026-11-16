@@ -82,6 +82,9 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
     gossip.GreetingPanel.MaterialTopLeft = gossip.GreetingPanel:CreateTexture(nil, 'BORDER')
     gossip.GreetingPanel.topRight = gossip.GreetingPanel:CreateTexture('GossipFrameGreetingPanelMaterialTopRight', 'BORDER')
     gossip.GreetingPanel.text = gossip.GreetingPanel:CreateTexture('GossipFrameGreetingPanelIcon', 'ARTWORK')
+    -- Parchment text: the greeting in dark brown, a title in gold.
+    gossip.GreetingPanel.greeting = gossip.GreetingPanel:CreateFontString(); gossip.GreetingPanel.greeting:SetTextColor(0.18, 0.12, 0.06)
+    gossip.GreetingPanel.gold = gossip.GreetingPanel:CreateFontString(); gossip.GreetingPanel.gold:SetTextColor(1, 0.82, 0)
     WorldMapFrame = CreateFrame('Frame', 'WorldMapFrame', UIParent)
     WorldMapFrame.BorderFrame = MakeWindow('ModeTestWorldMapBorder', WorldMapFrame)
     -- Blizzard's tab picker: shows the active art.
@@ -277,8 +280,15 @@ world.run([==[
     local panel = GossipFrame.GreetingPanel
     assert(GossipFrame.Background.alpha == 0 and panel.MaterialTopLeft.alpha == 0 and panel.topRight.alpha == 0, 'parchment faded')
     assert(panel.text.alpha ~= 0, 'other textures kept')
+    -- Dark parchment text becomes readable, also when Blizzard sets it again; light colors stay.
+    assert(panel.greeting.color[1] == C.text[1] and panel.gold.color[2] == 0.82, 'dark text in the Graphite text color, gold kept')
+    panel.greeting:SetTextColor(0, 0, 0); assert(panel.greeting.color[1] == C.text[1], 'after Blizzard re-colors it too')
+    panel.greeting:SetTextColor(0.9, 0.9, 0.9); assert(panel.greeting.color[1] == 0.9, 'a light color Blizzard sets stays')
     -- The World Map draws under its border frame: border and strip, no fill.
     assert(Skin.parts[WorldMapFrame.BorderFrame].face.vertexColor[4] == 0, 'World Map keeps its map visible')
+    local mapEdge = Skin.parts[WorldMapFrame.BorderFrame].modeEdge
+    assert(mapEdge.holder:IsShown() and not mapEdge.below:IsShown(), 'its edge, but no soft drop over the map')
+    assert(Skin.parts[FriendsFrame].modeEdge.below:IsShown(), 'other windows keep their drop')
 
     -- Guild and Communities.
     local guild = CommunitiesFrame

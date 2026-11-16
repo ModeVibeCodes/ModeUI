@@ -196,6 +196,34 @@ end
 
 -- Text ----------------------------------------------------------------------------
 
+-- Dark text Blizzard draws for its parchment (quest, gossip, book and letter
+-- text in dark brown or black) is lost on Graphite: such a font string takes
+-- the Graphite text color, now and whenever Blizzard sets a dark color again
+-- (quest pages set theirs in code each time they show). Any color with light
+-- in it stays, and text colored inline (|c codes) keeps its codes.
+local DARK = 0.35
+local inking = setmetatable({}, { __mode = "k" })
+local function Dark(r, g, b)
+    local Number = addon.IsNumber
+    return Number(r) and Number(g) and Number(b) and (0.299 * r + 0.587 * g + 0.114 * b) < DARK
+end
+local function Check(text)
+    if inking[text] or not text.GetTextColor then return end
+    local r, g, b = text:GetTextColor()
+    if not Dark(r, g, b) then return end
+    inking[text] = true
+    Skin.Ink(text, M.text)
+    inking[text] = nil
+end
+function Skin.Readable(text)
+    if not text or not text.SetTextColor then return end
+    Skin.Once(text, "readable", function()
+        hooksecurefunc(text, "SetTextColor", Check)
+        if text.SetFontObject then hooksecurefunc(text, "SetFontObject", Check) end
+    end)
+    Check(text)
+end
+
 -- Every font string on `frame` and its children (TEXT_DEPTH levels) in the
 -- Mode face, except ModeUI's own and those in `skip`.
 function Skin.Texts(frame, path, skip, depth)
@@ -207,11 +235,12 @@ function Skin.Texts(frame, path, skip, depth)
         if region.GetObjectType and region:GetObjectType() == "FontString" and not (skip and skip[region])
             and not (own and own.regions and own.regions[region]) then
             Skin.Face(region, path)
+            Skin.Readable(region)
         end
     end
     if frame.GetFontString then
         local text = frame:GetFontString()
-        if text and not (skip and skip[text]) then Skin.Face(text, path) end
+        if text and not (skip and skip[text]) then Skin.Face(text, path); Skin.Readable(text) end
     end
     if frame.GetChildren then
         for _, child in ipairs({ frame:GetChildren() }) do Skin.Texts(child, path, skip, depth + 1) end

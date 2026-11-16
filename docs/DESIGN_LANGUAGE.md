@@ -249,6 +249,9 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   baked file (its light vanishes on Graphite).
   **Scroll bars:** a 4px Graphite track and thumb (rimStrong).
 - **Item quality:** the `line` edge in the quality color, inside the slot.
+- **Text on Graphite:** dark parchment text (quest, gossip, books) takes the
+  Graphite text color. A window whose content draws under its border frame
+  (the World Map) has no soft drop, which would shade it.
 
 ## Settings window
 
