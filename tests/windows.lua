@@ -263,11 +263,21 @@ world.run([==[
     -- The Game Menu: Mode Buttons whose edges sit 1px apart.
     local m1 = Skin.parts[GameMenuFrame.item1]
     local top, bottom = Point(m1.box), Point(m1.box, 2)
-    assert(GameMenuFrame.item1.Center.alpha == 0 and top[5] == -3 and bottom[5] == 2 and Point(m1.edgeFrame)[2] == m1.box, 'stacked: 1px between edges')
+    assert(GameMenuFrame.item1.Center.alpha == 0 and top[5] == -1 and bottom[5] == 0 and Point(m1.edgeFrame)[2] == m1.box, 'stacked: 1px between edges')
+    -- Control edges sit inside their box, clear of their neighbours.
+    local be = Point(Skin.parts[FriendsFrame.testButton].edgeFrame)
+    assert(be[2] == FriendsFrame.testButton and be[4] == 2 and be[5] == -2, 'a button\'s edge inside the button')
+    local ie = Point(Skin.parts[FriendsFrame.Inset].edgeFrame)
+    assert(ie[4] == 2 and ie[5] == -2, 'an inset\'s edge inside the inset')
+    -- A scroll bar's track is faint; the thumb carries it.
+    assert(Skin.parts[FriendsFrame.testBar].track.vertexColor[4] == 0.35 and Skin.parts[FriendsFrame.testBar].thumb.vertexColor[4] == 1)
+    -- A side tab's edge hugs its icon.
+    assert(Point(Skin.parts[FriendsFrame.testSide].edgeFrame)[2] == FriendsFrame.testSide.Icon, 'side tab: the edge round the icon')
     assert(Skin.parts[FriendsFrame.testButton].box == nil, 'other buttons keep their full size')
     -- A field's box is Blizzard's own art rect.
     local fp = Skin.parts[GameMenuFrame.placedField]
     assert(Point(fp.box)[2] == GameMenuFrame.placedField.Left and Point(fp.box, 2)[2] == GameMenuFrame.placedField.Right, 'the field where Blizzard drew it')
+    assert(fp.box:GetHeight() <= 22, 'one line tall')
     assert(CharacterLevelText.color[1] == Tone.ivory[1], 'the level line in Ivory')
     assert(FriendsFrame.testField.Middle.alpha == 0 and Skin.parts[FriendsFrame.testField].box, 'edit field')
     local bar = FriendsFrame.testBar

@@ -42,7 +42,7 @@ function Skin.Dropdown(dropdown, style)
     else
         Fade(dropdown.Background); Fade(dropdown.Arrow)
     end
-    local parts = Skin.Box(dropdown, "control")
+    local parts = Skin.Box(dropdown, "control", { inset = Style.EdgeReach("control") })
     local px = Kit.PixelSize(dropdown)
     parts.px = px
     if not parts.box then
@@ -140,7 +140,7 @@ function Skin.RightSideTab(tab)
     if tab.IconOverlay then keep[tab.IconOverlay] = true end
     Skin.FadeTextures(tab, keep)
     FadeStates(tab)
-    local parts = Skin.Box(tab, "control")
+    local parts = Skin.Box(tab, "control", { inset = Style.EdgeReach("control") })
     local px = Kit.PixelSize(tab)
     parts.px = px
     if tab.Icon then

@@ -81,13 +81,16 @@ function Skin.Kind(frame)
     return nil
 end
 
-local function Parts(frame, preset) return Skin.Box(frame, preset) end
+-- Control boxes draw their edge inside their own rect (the window's rule),
+-- so a button or field never runs into the inset or button beside it.
+local REACH = Style.EdgeReach("control")
+local function Parts(frame, preset) return Skin.Box(frame, preset, { inset = REACH }) end
+local FIELD_HEIGHT = 22
 
 -- Buttons: a Mode Button face in Graphite raised inside the `control` edge;
 -- hover lights its outer line Ivory. Disabled, the text goes muted.
 -- `stack`: buttons Blizzard stacks with no space between them (the Game
--- Menu's): each box is inset so their edges sit 1px apart.
-local REACH = Style.EdgeReach("control")
+-- Menu's): each box starts 1px down, so their edges sit 1px apart.
 function Skin.Button(button, style, stack)
     for _, key in ipairs(BUTTON_ART) do Fade(button[key]) end
     FadeStates(button)
@@ -100,8 +103,8 @@ function Skin.Button(button, style, stack)
     end
     if parts.box then
         parts.box:ClearAllPoints()
-        parts.box:SetPoint("TOPLEFT", button, "TOPLEFT", 0, -(REACH + 1) * parts.px)
-        parts.box:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, REACH * parts.px)
+        parts.box:SetPoint("TOPLEFT", button, "TOPLEFT", 0, -parts.px)
+        parts.box:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
     end
     Skin.Once(button, "buttonHover", function()
         button:HookScript("OnEnter", function() parts.hovered = true; Skin.PaintField(button) end)
@@ -126,17 +129,16 @@ function Skin.Field(edit, style)
         parts.regions[parts.box] = true
     end
     parts.box:ClearAllPoints()
-    -- The box is where Blizzard drew the field: from its Left piece to its
-    -- Right piece (InputBoxTemplate's art is 20px tall, 5px left of the text;
-    -- a taller edit box, the Guild chat's, keeps its art's size and place).
+    -- A field is one line, 22px tall, centred on the edit box, running from
+    -- Blizzard's Left piece to its Right piece (InputBoxTemplate's art starts
+    -- 5px left of the text). A tall edit box (the Guild chat's) gets the same
+    -- one-line field, not a box its full height.
     local left, right = edit.Left, edit.Right
-    if left and right and left.GetPoint and left:GetNumPoints() > 0 and right:GetNumPoints() > 0 then
-        parts.box:SetPoint("TOPLEFT", left, "TOPLEFT", 0, 0)
-        parts.box:SetPoint("BOTTOMRIGHT", right, "BOTTOMRIGHT", 0, 0)
-    else
-        parts.box:SetPoint("TOPLEFT", edit, "TOPLEFT", -Snap(5, px), 0)
-        parts.box:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", 0, 0)
-    end
+    local placed = left and right and left.GetPoint and left:GetNumPoints() > 0 and right:GetNumPoints() > 0
+    parts.box:SetPoint("LEFT", placed and left or edit, "LEFT", placed and 0 or -Snap(5, px), 0)
+    parts.box:SetPoint("RIGHT", placed and right or edit, "RIGHT", 0, 0)
+    local height = edit:GetHeight()
+    parts.box:SetHeight(Snap(addon.IsNumber(height, 1) and math.min(FIELD_HEIGHT, math.max(18, height)) or FIELD_HEIGHT, px))
     Skin.Once(edit, "fieldFocus", function()
         edit:HookScript("OnEditFocusGained", function() Skin.PaintField(edit) end)
         edit:HookScript("OnEditFocusLost", function() Skin.PaintField(edit) end)
@@ -226,7 +228,9 @@ end
 -- the outer line is Ivory.
 function Skin.SideTab(tab, style)
     Fade(tab.Background); Fade(tab.SelectedTexture); Fade(tab.HighlightTexture); Fade(tab.TabGlow)
-    local parts = Parts(tab, "control")
+    -- The edge hugs the icon, just outside it (the tab's own frame is much
+    -- bigger than its icon).
+    local parts = Skin.Box(tab, "control")
     parts.px = Kit.PixelSize(tab)
     Skin.Once(tab, "sideTab", function()
         if tab.SetChecked then hooksecurefunc(tab, "SetChecked", function() Skin.PaintSideTab(tab) end) end
@@ -242,7 +246,7 @@ function Skin.PaintSideTab(tab)
     -- SidePanelTabButtonMixin shows SelectedTexture when checked (it may
     -- have no GetChecked); the texture is faded, but its shown state stays.
     local checked = (tab.GetChecked and Public(tab:GetChecked()) == true) or Shown(tab.SelectedTexture)
-    Skin.PaintBox(parts, tab, "Button", checked and M.chosen or M.face, 1, true, (checked or parts.hovered) and "accent" or nil)
+    Skin.PaintBox(parts, tab.Icon or tab, "Button", checked and M.chosen or M.face, 1, true, (checked or parts.hovered) and "accent" or nil)
 end
 
 -- A window button with a Mode glyph (ModeClose, ModeMinimize, ModeMaximize):
@@ -302,7 +306,8 @@ function Skin.ScrollBar(bar)
     own.track:ClearAllPoints()
     own.track:SetPoint("TOP", track, "TOP", 0, 0); own.track:SetPoint("BOTTOM", track, "BOTTOM", 0, 0)
     own.track:SetWidth(width)
-    Style.Paint(own.track, M.track)
+    -- The track is a faint guide; the thumb carries the bar.
+    Style.Paint(own.track, M.track, 0.35)
     own.thumb:ClearAllPoints()
     own.thumb:SetPoint("TOP", thumb, "TOP", 0, 0); own.thumb:SetPoint("BOTTOM", thumb, "BOTTOM", 0, 0)
     own.thumb:SetWidth(width)
@@ -311,13 +316,14 @@ end
 
 -- An inset: Blizzard's inset border and background faded; a well: Mode
 -- Grain (the even Title texture) in Graphite base, a step darker than the
--- window so lists and chat stand apart from it, inside the `card` edge. Some insets sit ABOVE the
+-- window so lists and chat stand apart from it, with the `card` edge inside
+-- its rect (insets sit side by side; outside edges ran into each other). Some insets sit ABOVE the
 -- content they frame (the Guild roster's InsetFrame is raised to level 100
 -- over its rows), so the face is drawn on the inset's parent, under the
 -- content; the edge (on its own frame) only frames it.
 function Skin.Inset(inset)
     Skin.FadeNineSlice(inset.NineSlice); Fade(inset.Bg)
     local host = inset:GetParent() or inset
-    local parts = Skin.Box(inset, "card", { faceHost = host, sublevel = -7 })
+    local parts = Skin.Box(inset, "card", { faceHost = host, sublevel = -7, inset = Style.EdgeReach("card") })
     Skin.PaintBox(parts, inset, "Title", M.field, 1, true)
 end

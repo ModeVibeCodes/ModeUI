@@ -94,13 +94,16 @@ function M:SkinCharacterPanel(frame)
         for _, child in ipairs({ right:GetChildren() }) do Skin.FadeTextures(child) end
         local parts = Skin.parts[right] or { regions = {} }
         Skin.parts[right] = parts
+        -- Mode Grain in Graphite base behind the stats.
         if not parts.field then
             parts.field = right:CreateTexture(nil, "BACKGROUND", nil, -7)
-            parts.field:SetTexture(Kit.FLAT)
+            addon.Style.ApplyAsset(parts.field, "Title")
             parts.field:SetAllPoints(right)
             parts.regions[parts.field] = true
         end
-        Kit.Tint(parts.field, C.field, 0.6)
+        addon.Style.Paint(parts.field, C.field)
+        local w, h = right:GetWidth(), right:GetHeight()
+        if addon.IsNumber(w, 1) and addon.IsNumber(h, 1) then addon.Style.TileCoords(parts.field, "Title", w, h, Kit.PixelSize(right)) end
         local divider = Line(right, "divider")
         local px = Kit.PixelSize(right)
         divider:ClearAllPoints()
@@ -110,6 +113,11 @@ function M:SkinCharacterPanel(frame)
         Kit.Tint(divider, C.cardRim, 1)
     end
     local pane = CharacterStatsPaneScrollBox
+    -- The class art behind the stats (Blizzard sets and shows it again on
+    -- every show), kept hidden.
+    for _, scroll in ipairs({ pane, _G.CharacterStatsPanePetScrollBox }) do
+        if scroll and scroll.ClassBackground then Skin.Suppress(scroll.ClassBackground) end
+    end
     local box = pane and pane.ScrollBox
     if box and Skin.IsScrollBox(box) then Skin.WatchList(box, function(row) self:SkinStatRow(row) end) end
     -- The rock strip behind the level line.
@@ -117,6 +125,9 @@ function M:SkinCharacterPanel(frame)
     if strip then
         Skin.FadeTextures(strip)
         Fade(strip.TopBackgroundStrip); Fade(strip.TopBackgroundStripBottomEdge)
+        -- A Mode Matte band in Graphite raised behind the level line.
+        local band = Skin.Box(strip)
+        Skin.PaintBox(band, strip, "Matte", C.card, 1)
         local line = Line(strip, "divider")
         line:ClearAllPoints()
         line:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", 0, 0)
