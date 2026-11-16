@@ -133,7 +133,7 @@ local function Style(bar)
         width = size[1], height = size[2], spacing = 4,
         border = "mode", backgroundColor = Copy(Tone.mono.panel), showEmpty = true, backgroundOpacity = 100,
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
-        font = "game", fontMedia = "Mode Geist", outline = false, shadow = true, liftedShadow = false, slug = true,
+        font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = true,
         -- Paging: Action Bar 1 follows the game's own paging (stances, forms,
         -- vehicles, page keys) unless it has Page Conditions; other bars keep
         -- their page until Page Switching is on.

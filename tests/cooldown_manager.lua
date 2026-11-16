@@ -22,7 +22,7 @@ world.run([==[
     assert(M.db.essential.procGlow == 'border' and M.db.essential.readyGlow == 'mode', 'looks a glow starts with')
     local Tone = addon.Style.Tone
     assert(addon.Style.SameColor(M.db.essential.procColor, Tone.celadon) and addon.Style.SameColor(M.db.essential.readyColor, Tone.ivory), 'Celadon procs, Ivory ready')
-    assert(M.db.essential.fontMedia == 'Mode Geist' and not M.db.essential.outline and M.db.essential.backgroundOpacity == 100, 'Geist, no outline, a solid face')
+    assert(M.db.essential.fontMedia == 'Mode' and not M.db.essential.outline and M.db.essential.backgroundOpacity == 100, 'Geist, no outline, a solid face')
 
     addon:SetModuleEnabled('cooldownManager', true)
     assert(M.built and ModeUICooldownEssential and ModeUICooldownBuffBar, 'a stand-in per viewer')
@@ -615,7 +615,7 @@ H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
     local E, U, B = db.essential, db.utility, db.buffBar
     assert(db.version == 5 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
     assert(E.width == 40 and E.height == 34 and U.width == 32 and U.height == 28 and B.height == 16, 'default sizes move')
-    assert(Same(E.backgroundColor, Tone.mono.panel) and E.backgroundOpacity == 100 and E.fontMedia == 'Mode Geist' and not E.outline)
+    assert(Same(E.backgroundColor, Tone.mono.panel) and E.backgroundOpacity == 100 and E.fontMedia == 'Mode' and not E.outline)
     assert(E.procGlow == 'border' and Same(E.procColor, Tone.celadon) and E.readyGlow == 'mode' and Same(E.readyColor, Tone.ivory), 'glow looks')
     assert(Same(E.spells['101'].proc.color, Tone.celadon) and E.spells['101'].proc.style == 'pixel', "a spell's glow takes the new color, keeps its style")
     assert(E.cooldownSize == 13 and E.countSize == 11 and Same(E.countColor, Tone.textBright), 'text sizes and colors')
@@ -624,7 +624,7 @@ H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
     assert(B.barColorMode == 'class' and db.custom1.barColorMode == 'custom' and Same(db.custom1.barColor, { 0.2, 0.4, 0.6 }), 'cyan becomes class; a chosen color stays, as Custom')
     local power, combo = db.resources.power, db.resources.combo
     assert(power.barTexture == 'media:Mode Gradient' and power.barBackground == 'media:Mode BG' and power.barBackgroundOpacity == 60, 'resource bars')
-    assert(power.borderColor == nil and power.fontMedia == 'Mode Geist' and not power.outline and Same(combo.barColor, Tone.reaction.hostile))
+    assert(power.borderColor == nil and power.fontMedia == 'Mode' and not power.outline and Same(combo.barColor, Tone.reaction.hostile))
 ]==], "migrate v4")
 
 -- Bad saved data stops startup rather than being reset.

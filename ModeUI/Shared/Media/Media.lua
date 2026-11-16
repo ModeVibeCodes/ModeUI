@@ -295,20 +295,25 @@ end
 
 -- Reference only verified installed assets; never copy a provider's font file.
 -- Respect an existing LSM registration, including one supplied by a media pack.
+-- Expressway (and Expressway Bold) are the Mode typeface when present
+-- (Style.PROVIDER_FONTS); once they're known, "Mode" is registered.
 function M:RegisterProviderFonts()
     local library=self.library
-    if not library or type(library.Register)~="function" or not (C_UIFileAsset and C_UIFileAsset.IsKnownFile) then return end
-    local fonts=library:HashTable("font")
-    if fonts and fonts.Expressway then return end
-    for _,path in ipairs({
-        "Interface\\AddOns\\EllesmereUI\\media\\fonts\\Expressway.TTF",
-        "Interface\\AddOns\\AyijeUI\\Media\\Fonts\\Expressway.ttf",
-    }) do
-        local ok,known=pcall(C_UIFileAsset.IsKnownFile,path)
-        if ok and not (issecretvalue and issecretvalue(known)) and known==true then
-            library:Register("font","Expressway",path)
-            return
+    if not library or type(library.Register)~="function" then return end
+    if C_UIFileAsset and C_UIFileAsset.IsKnownFile then
+        local fonts=library:HashTable("font")
+        for _,font in ipairs(addon.Style.PROVIDER_FONTS) do
+            if not (fonts and fonts[font.name]) then
+                for _,path in ipairs(font.paths) do
+                    local ok,known=pcall(C_UIFileAsset.IsKnownFile,path)
+                    if ok and not (issecretvalue and issecretvalue(known)) and known==true then
+                        library:Register("font",font.name,path)
+                        break
+                    end
+                end
+            end
         end
     end
+    addon.Style.RegisterTypeface(library)
 end
 

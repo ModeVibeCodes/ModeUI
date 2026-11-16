@@ -171,7 +171,7 @@ world.run([==[
     assert(M and addon.modules.partyFrames == M and M.category == 'frames' and M.defaultEnabled == false)
     assert(not M.enabled and M.header == nil and M.ghost == nil, 'off by default; nothing built')
     -- The Mode design language: Geist, Mode Glass on Mode BG, 150 x 34 + 3, Gradient names.
-    assert(M.db.version == 7 and M.db.fontMedia == 'Mode Geist' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
+    assert(M.db.version == 7 and M.db.fontMedia == 'Mode' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
     assert(M.db.shieldsTexture == 'Shield' and M.db.shieldsColorMode == 'health' and M.db.shieldsOpacity == 100, 'the standard shield look')
     assert(M.db.backgroundOpacity == 60 and M.db.powerBackgroundOpacity == 60, 'see-through empty bars')
     assert(M.db.nameShow and M.db.nameAnchor == 'LEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
@@ -665,7 +665,7 @@ H.Load({ before = STUBS, saved = v3 }).run([==[
     local db, M = addon.PartyFrames.db, addon.PartyFrames
     assert(db.version == 7 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
     assert(db.borderStyle == nil and db.corner == nil and db.shieldTexture == nil and db.absorbColor == nil and db.overshieldOpacity == nil, 'retired')
-    assert(db.foregroundTexture == 'media:Mode Glass' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode Geist')
+    assert(db.foregroundTexture == 'media:Mode Glass' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode')
     assert(db.liftedShadow == false and db.nameColorMode == 'custom' and db.rangeOpacity == 55, 'a picked name color stays')
     assert(db.nameAnchor == 'LEFT' and db.nameX == 17 and db.healthTextAnchor == 'TOP', 'elements at the old place move; moved ones stay')
     assert(db.dispel.Magic.gradient and not db.dispel.Magic.border, 'border alone was the default: Gradient now')

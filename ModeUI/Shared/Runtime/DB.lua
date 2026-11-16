@@ -21,9 +21,26 @@ D.profileDefaults = {
     positions = {},
     -- Edit Mode's Match Width and Match Height picks (Placement/SizeMatch.lua).
     sizeMatches = {},
+    -- The typeface step this profile's fonts are at (see Typeface below).
+    typeface = 2,
 }
 -- The keys a profile may contain (import/export accept nothing else).
-D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true }
+D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true, typeface = true }
+
+-- Typeface step 2 (November 15, 2026, the owner's decision): the Mode font is
+-- "Mode" (Expressway when the client has it, else Geist; Style/Fonts.lua).
+-- Every saved font still at the old default, "Mode Geist", becomes "Mode",
+-- in every module's settings (a spell's own text look included); a font the
+-- player picked stays. Runs after the modules' own migrations, which may
+-- have just moved an older default to "Mode Geist".
+local OLD_TYPEFACE = "Mode Geist"
+local function Typeface(node, depth)
+    if type(node) ~= "table" or depth > 12 then return end
+    for key, value in pairs(node) do
+        if key == "fontMedia" and value == OLD_TYPEFACE then node[key] = addon.Style.FONT_DEFAULT
+        elseif type(value) == "table" then Typeface(value, depth + 1) end
+    end
+end
 D.DEFAULT_PROFILE = "Default"
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -46,6 +63,8 @@ function D:ValidateProfile(source)
     local ok, result = pcall(function()
         assert(type(source) == "table", "Profile must be a table.")
         local profile = Copy(source)
+        local typeface = profile.typeface
+        assert(typeface == nil or typeface == 1 or typeface == 2, "Invalid typeface step.")
         ApplyDefaults(profile, self.profileDefaults, "profile")
         for _, id in ipairs(addon.moduleOrder) do
             local module = addon.modules[id]
@@ -59,6 +78,7 @@ function D:ValidateProfile(source)
         end
         assert(type(profile.positions) == "table", "Invalid positions.")
         assert(addon.PositionManager.ValidSizeMatches(profile.sizeMatches), "Invalid size matches.")
+        if typeface ~= 2 then Typeface(profile.modules, 0); profile.typeface = 2 end
         return profile
     end)
     if ok then return result end

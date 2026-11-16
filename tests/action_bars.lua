@@ -22,7 +22,7 @@ world.run([==[
         assert(Hex(style.backgroundColor) == '0E0E0E' and Hex(style.macroColor) == '69A5B9', 'Mono panel face and macro colors')
         assert(style.border == 'mode' and style.borderSize == nil and style.borderColor == nil and style.spacing == 4, 'the Mode edge, 4px apart')
         assert(style.procGlow == 'border' and Hex(style.procColor) == 'B4CDB6' and Hex(style.readyColor) == 'EFE6D2' and style.readyGlow, 'Celadon proc rim, Ivory ready glow')
-        assert(style.fontMedia == 'Mode Geist' and not style.outline and style.cooldownOpacity == 100, 'Geist, one shadow')
+        assert(style.fontMedia == 'Mode' and not style.outline and style.cooldownOpacity == 100, 'Geist, one shadow')
         assert(style.paging == (bar == 'bar1'), 'bar 1 pages; the others start fixed')
     end
     assert(M.db.bar1.show and not M.db.bar6.show and M.db.bar4.orientation == 'vertical' and M.db.pet.buttons == 10)
@@ -651,7 +651,7 @@ H.Load({ before = STUBS, saved = v5 }).run([==[
     local M, Tone, Same = addon.ActionBars, addon.Style.Tone, addon.Style.SameColor
     local a, b = M.db.bar1, M.db.bar2
     assert(M.db.version == 6 and a.width == 40 and a.height == 34 and a.spacing == 4 and a.border == 'mode' and a.borderSize == nil and a.borderColor == nil, 'v5 -> v6 shape and edge')
-    assert(Same(a.backgroundColor, Tone.mono.panel) and a.backgroundOpacity == 100 and a.fontMedia == 'Mode Geist' and a.outline == false, 'face and font')
+    assert(Same(a.backgroundColor, Tone.mono.panel) and a.backgroundOpacity == 100 and a.fontMedia == 'Mode' and a.outline == false, 'face and font')
     assert(a.procGlow == 'border' and Same(a.procColor, Tone.celadon) and a.readyColor[1] == 0.1, 'Celadon rim; a picked ready color stays')
     assert(a.hotkeySize == 10 and a.countSize == 11 and a.cooldownSize == 13, 'text sizes')
     assert(b.width == 50 and b.border == 'none' and b.procGlow == 'blizzard' and b.backgroundOpacity == 40 and b.hotkeySize == 12, 'picked values stay')

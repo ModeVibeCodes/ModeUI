@@ -171,9 +171,17 @@ Phase 6 probe):
 
 ## Text (`Style.Font`, `Style.SetName`)
 
-- **Geist everywhere** (Regular, Medium, SemiBold, Bold; static TTF, OFL),
-  numbers included. Inter only for special cases. CJK clients fall back to
-  Blizzard's font.
+- **The Mode typeface: Expressway** (owner's decision, November 15, 2026: it
+  reads best in WoW, most of all in text-heavy windows), numbers included,
+  when the client has it: the copy an installed addon ships (EllesmereUI,
+  AyijeUI) or a media pack's LibSharedMedia "Expressway". ModeUI does not ship
+  Expressway (a commercial Typodermic font). Without it the typeface is
+  **Geist** (Regular, Medium, SemiBold, Bold; static TTF, OFL, bundled). The
+  weights below map to Expressway Bold for SemiBold and Bold when present,
+  else to Expressway. Modules store the font name "Mode", which points at
+  whichever typeface the client has. CJK clients fall back to Blizzard's
+  font. (Where this file says "Geist Bold" or "Geist SemiBold", read "the
+  Mode typeface" in that weight.)
 - One shadow: 1px offset (1, −1) at 95% black (no second, lifted copy);
   OUTLINE only as a player choice.
 - **Names:** in SemiBold, and the Gradient is standard (class or reaction

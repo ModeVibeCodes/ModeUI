@@ -16,7 +16,7 @@ world.run([====[
     assert(M.db.layoutVersion==23 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     -- The Mode look (docs/DESIGN_LANGUAGE.md): Geist, Mode Matte health, Mode
     -- Gradient power, Mode BG empty bars, 3px power, Combined shields.
-    assert(M.db.player.fontMedia=='Mode Geist' and M.db.player.texture==nil)
+    assert(M.db.player.fontMedia == 'Mode' and M.db.player.texture==nil)
     assert(M.db.player.foregroundTexture=='media:Mode Matte' and M.db.player.powerForegroundTexture=='media:Mode Gradient'
         and M.db.player.backgroundTexture=='media:Mode BG' and M.db.player.barBackgroundOpacity==60 and M.db.player.powerBackgroundOpacity==60)
     assert(M.db.player.powerHeight==3 and M.db.focus.powerHeight==3 and M.db.player.showShields==true)
@@ -704,7 +704,7 @@ world.run([====[
     assert(v1.layoutVersion==23 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.texts.bottomLeft.content=='none')
     assert(v1.player.texts.right.content=='healthBoth' and v1.player.texts.right.size==14 and v1.player.texts.border.size==14 and v1.player.healthColorMode=='default')
     assert(v1.player.healthText==nil and v1.player.levelStyle==nil and v1.player.nameFontSize==nil,'old text keys removed')
-    assert(v1.player.fontMedia=='Mode Geist' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
+    assert(v1.player.fontMedia == 'Mode' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
     assert(v1.target.enabled==false and v1.target.barWidth==184)
     local custom={player={width=220,height=36,powerHeight=8,showPower=true},target={width=220,height=36},classColor=false,healthColor={0,1,0}}
     M.Initialize(custom);assert(custom.player.healthColorMode=='custom' and custom.player.healthColor[2]==1)
@@ -714,7 +714,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==23 and v5.player.healthHeight==34 and v5.player.texts.border.align=='RIGHT' and v5.player.fontMedia=='Mode Geist')
+    assert(v5.layoutVersion==23 and v5.player.healthHeight==34 and v5.player.texts.border.align=='RIGHT' and v5.player.fontMedia == 'Mode')
     assert(v5.player.texts.bottomLeft.size==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -806,7 +806,7 @@ world.run([====[
     M.Initialize(v19)
     local a,b,c=v19.player,v19.target,v19.targettarget
     assert(v19.layoutVersion==23 and a.powerHeight==3 and a.foregroundTexture=='media:Mode Matte' and a.backgroundTexture=='media:Mode BG' and a.barBackgroundOpacity==60)
-    assert(a.powerForegroundTexture=='media:Mode Gradient' and a.nameColorMode=='gradient' and a.portraitRing=='border' and a.fontMedia=='Mode Geist')
+    assert(a.powerForegroundTexture=='media:Mode Gradient' and a.nameColorMode=='gradient' and a.portraitRing=='border' and a.fontMedia == 'Mode')
     assert(a.barWidth==184 and a.healthHeight==34 and a.portraitScale==140 and a.castBar.gap==2 and a.castBar.foregroundTexture=='media:Mode Cast' and a.castBar.backgroundTexture=='media:Mode BG')
     assert(b.powerHeight==12 and b.foregroundTexture=='media:Smooth' and b.nameColorMode=='class' and b.portraitRing=='custom' and b.fontMedia=='Friz' and b.barWidth==200,'choices kept')
     assert(b.castBar.gap==6 and b.castBar.foregroundTexture=='flat' and c.powerHeight==3 and c.healthHeight==22 and c.barWidth==130)

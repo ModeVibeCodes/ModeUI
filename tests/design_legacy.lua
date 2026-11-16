@@ -40,7 +40,7 @@ return {
     ["Shared/Kit/Points.lua"] = { bar = 1 },
     ["Shared/Kit/Shape.lua"] = { border = 2, bar = 4 },
     ["Shared/Kit/Text.lua"] = { color = 1 },
-    ["Shared/Media/Media.lua"] = { path = 1, font = 3 },
+    ["Shared/Media/Media.lua"] = { path = 1, font = 1 },
     ["Shared/Media/MediaCatalog.lua"] = { font = 26 },
     ["Shared/Media/Styles.lua"] = { border = 1, path = 1, font = 1 },
     ["Shared/Media/Textures.lua"] = { path = 1 },

@@ -120,8 +120,13 @@ From the plan's "Decisions for you" (owner's answers):
    reputation, breath timer, Loot, Objective Tracker, Extra Action button):
    recommended after Phases 0-9, one at a time, most wanted first. **Open:**
    ask the owner before starting Phase 10.
-3. **Fonts:** Geist replaces Expressway as the default; anyone who picked a
-   different font keeps it. Done in each rebuilt module's migration.
+3. **Fonts:** first Geist replaced Expressway as the default (each rebuilt
+   module's migration). Then, November 15, after seeing Geist in text-heavy
+   windows in game, the owner chose **Expressway when the client has it**
+   (an installed addon's copy; ModeUI can't ship the commercial font), with
+   Geist as the fallback. The font name "Mode" points at whichever the client
+   has; profile typeface step 2 (`Shared/Runtime/DB.lua`) moves every saved
+   "Mode Geist" to "Mode"; anyone who picked a different font keeps it.
 4. **Lato:** kept registered for one version, removed in Phase 8.
 5. **Options → AddOns entry:** none.
 6. **Branches and releases:** one branch per phase (`t3/mode-phase-N-<name>`),

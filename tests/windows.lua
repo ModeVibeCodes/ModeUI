@@ -204,7 +204,7 @@ world.run([==[
     local function Lit(parts) return parts.modeEdge.highlight ~= nil and parts.modeEdge.highlight[1] == Tone.ivory[1] end
     assert(M and addon.modules.windows == M and not M.enabled, 'registered, off by default')
     assert(M.db.windows.social and M.db.windows.collections and M.db.backgroundOpacity == 100 and M.db.style == 'modeui')
-    assert(M.db.borderSize == nil and M.db.borderColor == nil and M.db.fontMedia == 'Mode Geist' and M.db.looks.social.scale == 100)
+    assert(M.db.borderSize == nil and M.db.borderColor == nil and M.db.fontMedia == 'Mode' and M.db.looks.social.scale == 100)
     assert(addon.Style.SameColor(M.db.backgroundColor, Tone.graphite.panel), 'the Graphite panel')
     assert(Skin.parts[FriendsFrame] == nil, 'nothing skinned while off')
 
@@ -482,7 +482,7 @@ world.run([==[
     local two = { version = 2, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 94, fontMedia = 'Expressway',
         borderColor = { 1, 0, 0 }, borderSize = 3, looks = { social = { custom = true, backgroundOpacity = 94, border = true, titleBar = true, scale = 110 } } }
     M.Initialize(two)
-    assert(two.version == 3 and addon.Style.SameColor(two.backgroundColor, Tone.graphite.panel) and two.backgroundOpacity == 100 and two.fontMedia == 'Mode Geist')
+    assert(two.version == 3 and addon.Style.SameColor(two.backgroundColor, Tone.graphite.panel) and two.backgroundOpacity == 100 and two.fontMedia == 'Mode')
     assert(two.borderColor == nil and two.borderSize == nil and two.looks.social.backgroundOpacity == 100 and two.looks.social.scale == 110, 'Mode defaults; size and color retire')
     local mine = { version = 2, backgroundColor = { 0.2, 0.1, 0.1 }, backgroundOpacity = 70, fontMedia = 'Friz Quadrata' }
     M.Initialize(mine)

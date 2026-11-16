@@ -311,14 +311,28 @@ end
 assert(#missing == 0, "missing assets: " .. table.concat(missing, ", "))
 print("assets: all present")
 
--- ModeUI's interface is Geist (docs/DESIGN_LANGUAGE.md, "Text"), even when an
--- installed provider brings Expressway; choosing the bundled Lato keeps Lato.
-local function TitleFont(before)
+-- The Mode typeface (docs/DESIGN_LANGUAGE.md, "Text"): Expressway when the
+-- client has it (an installed addon's copy; ModeUI ships none), else Geist.
+-- "Mode", the name modules store, points at whichever it is.
+local function Fonts(before)
     local world = H.Load({ before = before })
-    return world.run([[ SlashCmdList.MODEUI(); return addon.configWindow.title.font[1] ]], "font")
+    return world.run([[ SlashCmdList.MODEUI()
+        return addon.configWindow.title.font[1], addon.Media:GetFont('Mode'), addon.Style.Typeface() ]], "font")
 end
-assert(TitleFont(STUBS):find("Geist", 1, true), "Geist by default")
+local title, mode, face = Fonts(STUBS)
+assert(title:find("Geist", 1, true) and mode:find("Geist", 1, true) and face == "Geist", "Geist without Expressway")
 local provider = STUBS .. "\ntestProviderFonts = { [AYIJE_EXPRESSWAY] = true }\n"
 provider = "AYIJE_EXPRESSWAY = 'Interface' .. string.char(92) .. 'AddOns' .. string.char(92) .. 'AyijeUI' .. string.char(92) .. 'Media' .. string.char(92) .. 'Fonts' .. string.char(92) .. 'Expressway.ttf'\n" .. provider
-assert(TitleFont(provider):find("Geist", 1, true), "Geist even with Expressway installed")
-print("fonts: Geist by default")
+title, mode, face = Fonts(provider)
+assert(title:find("Expressway", 1, true) and mode:find("Expressway", 1, true) and face == "Expressway", "Expressway when installed")
+-- Saved fonts still at the old default ("Mode Geist") become "Mode"; a pick stays.
+local saved = H.Load({ before = STUBS }).saved()
+local p = saved.profiles.Default
+p.typeface = nil
+p.modules.unitFrames.player.fontMedia = "Mode Geist"
+p.modules.nameplates.enemy.fontMedia = "Friz Quadrata"
+H.Load({ before = STUBS, saved = saved }).run([[
+    assert(addon.db.typeface == 2 and addon.db.modules.unitFrames.player.fontMedia == 'Mode', 'the old default moves to Mode')
+    assert(addon.db.modules.nameplates.enemy.fontMedia == 'Friz Quadrata', 'a picked font stays')
+]], "typeface")
+print("fonts: Expressway when installed, else Geist")

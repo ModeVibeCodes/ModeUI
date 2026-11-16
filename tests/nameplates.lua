@@ -121,7 +121,7 @@ world.run([==[
     assert(M.db.version == 11 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     -- The Mode design language: Mode BG on Mode BG, Mode Cast, Gradient names, health text by health, Geist.
     assert(M.db.enemy.foregroundTexture == 'media:Mode BG' and M.db.enemy.backgroundTexture == 'media:Mode BG' and M.db.enemy.castTexture == 'media:Mode Cast')
-    assert(M.db.enemy.nameColorMode == 'gradient' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode Geist' and not M.db.enemy.liftedShadow)
+    assert(M.db.enemy.nameColorMode == 'gradient' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode' and not M.db.enemy.liftedShadow)
     assert(M.db.enemy.targetColor[1] == addon.Style.Tone.ivory[1] and M.db.enemy.focusColor[1] == addon.Style.Tone.rosewood[1], 'Ivory target, Rosewood focus')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
@@ -1099,7 +1099,7 @@ H.Load({ before = STUBS, saved = v8 }).run([==[
     local db, Tone, P = addon.Nameplates.db, addon.Style.Tone, addon.Kit.palette
     local e, f = db.enemy, db.friendly
     assert(db.version == 11 and e.foregroundTexture == 'media:Mode BG' and e.backgroundTexture == 'media:Mode BG' and e.backgroundOpacity == 60)
-    assert(e.nameColorMode == 'gradient' and e.fontMedia == 'Mode Geist' and e.liftedShadow == false and e.castTexture == 'media:Mode Cast')
+    assert(e.nameColorMode == 'gradient' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode Cast')
     assert(e.healthTextColor == 'health' and e.focusColor[1] == Tone.rosewood[1], 'old focus amber takes Rosewood')
     assert(f.backgroundOpacity == 40 and f.nameColorMode == 'class', 'picked values stay')
 ]==], "nameplates_v8")

@@ -40,7 +40,7 @@ late.run([==[
     local M = addon.CooldownManager
     assert(M and addon.moduleOrder[#addon.moduleOrder] == 'cooldownManager' and #addon.lateModules == 0, 'registered late, started')
     assert(M.db == addon.db.modules.cooldownManager and M.db.version == M.VERSION, 'settings checked and migrated')
-    assert(M.db.essential.fontMedia == 'Mode Geist' and M.db.essential.width == 40 and #M.db.customBars == 1, 'old defaults moved, choices kept')
+    assert(M.db.essential.fontMedia == 'Mode' and M.db.essential.width == 40 and #M.db.customBars == 1, 'old defaults moved, choices kept')
     assert(M.enabled and M.active and M.built and ModeUICooldownEssential and ModeUICooldownCustom1, 'on, as saved')
     assert(Point(ItemsOf(EssentialCooldownViewer)[1])[2] == M.holders.essential, "Blizzard's icons on ModeUI's bars")
     assert(SLASH_MODEUICDM1 == '/mcdm')

@@ -156,7 +156,7 @@ local function Frame(side, extra)
         -- A soft glow behind the health numbers (Style.TextGlow).
         healthTextGlow = true,
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
-        font = "game", fontMedia = "Mode Geist", outline = false, shadow = true,
+        font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
         -- a lighter second shadow 2px out (owner, layout version 11).
         -- The Mode text shadow only: one crisp 1px shadow (docs/DESIGN_LANGUAGE.md).

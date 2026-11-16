@@ -21,7 +21,7 @@ world.run([==[
     local db = M.db.resources
     assert(M.db.version == M.VERSION, 'resource bars need no settings version of their own')
     assert(db.power.show and db.combo.show and db.mana.show and not db.health.show, 'Health starts off')
-    assert(db.power.border == 'mode' and db.power.barTexture == 'media:Mode Gradient' and db.power.barBackground == 'media:Mode BG' and db.power.fontMedia == 'Mode Geist', 'the Mode look')
+    assert(db.power.border == 'mode' and db.power.barTexture == 'media:Mode Gradient' and db.power.barBackground == 'media:Mode BG' and db.power.fontMedia == 'Mode', 'the Mode look')
     assert(db.power.barBackgroundOpacity == 60 and db.power.borderColor == nil and not db.power.outline, 'Slate at 60%; one edge color; no outline')
     assert(db.power.matchWidth and db.power.colorMode == 'power' and db.power.text == 'current' and db.combo.text == 'none')
     assert(ModeUIResourcePower == nil, 'nothing built while the module is off')

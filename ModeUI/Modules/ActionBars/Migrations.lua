@@ -104,7 +104,7 @@ end
 -- Version 5 -> 6: the Mode design language. Values still at their version 5
 -- default take the new one; anything the player picked stays. Rounded and
 -- Square borders become the Mode edge; Border Size and Border Color retire.
-local V5 = { fontMedia = { "Expressway", "Mode Geist" }, outline = { true, false }, spacing = { 1, 4 },
+local V5 = { fontMedia = { "Expressway", addon.Style.FONT_DEFAULT }, outline = { true, false }, spacing = { 1, 4 },
     backgroundOpacity = { 75, 100 }, procGlow = { "mode", "border" }, hotkeySize = { 9, 10 }, cooldownSize = { 14, 13 } }
 local Same = addon.Style.SameColor
 local function MigrateV5(db)

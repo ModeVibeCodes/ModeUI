@@ -263,7 +263,7 @@ end
 local V19_FRAME = { foregroundTexture = { "mode", "media:Mode Matte" }, backgroundTexture = { "slate", "media:Mode BG" },
     barBackgroundOpacity = { 70, 100 }, powerForegroundTexture = { "mode", "media:Mode Gradient" },
     powerBackgroundTexture = { "slate", "media:Mode BG" }, powerBackgroundOpacity = { 70, 100 },
-    portraitRing = { "class", "border" }, nameColorMode = { "sky", "gradient" }, fontMedia = { "Expressway", "Mode Geist" } }
+    portraitRing = { "class", "border" }, nameColorMode = { "sky", "gradient" }, fontMedia = { "Expressway", addon.Style.FONT_DEFAULT } }
 local V19_CAST = { foregroundTexture = { "mode", "media:Mode Cast" }, backgroundTexture = { "slate", "media:Mode BG" } }
 local V19_POWER = { player = 10, target = 10, targettarget = 6, focus = 6, focustarget = 6 }
 -- Sizes: { old, new } per frame.
