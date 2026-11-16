@@ -103,12 +103,48 @@ function M:LayoutWindow(frame)
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", frame, "TOPLEFT", -inset, top + editTop)
     box:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", right, -(inset + editBottom))
+    parts.boxOffsets = { left = -inset, top = top + editTop, right = right, bottom = -(inset + editBottom) }
     -- The Mode window on the box; no soft drop under a see-through fill.
     local alpha = self.db.backgroundOpacity / 100
     Skin.PaintBox(parts, box, "Panel", self.db.backgroundColor, alpha, true)
     parts.modeEdge:SetDrop(alpha >= 1)
     self:LayoutEditBox(frame, box, px, rim)
     self:PlaceScrollBar(frame)
+    self:PlaceSelection(frame)
+end
+
+-- Blizzard's Edit Mode selection (ChatFrame1 is an Edit Mode system, its
+-- `Selection` a plain child frame): Blizzard anchors it 32 units left of and
+-- below the window (room for the button column ModeUI moves into the
+-- compartment) and 60 above. ModeUI lays it over the Mode box and the tab
+-- row instead, so the highlight shows the window and snapping puts the box
+-- right on a screen edge or corner. Blizzard measures snaps from the
+-- selection's two points less 2 units of padding
+-- (EditModeSystemMixin:GetLeftOffset and the rest), so the selection reaches
+-- those 2 units past the box; the clamp keeps the box itself on screen. Its
+-- AnchorSelectionFrame sets the clamp from the selection again, so ModeUI
+-- puts its own back right after (post-hook).
+local SELECTION_PADDING = 2
+function M:PlaceSelection(frame)
+    local selection, parts = frame.Selection, Skin.parts[frame]
+    if not (self.active and selection and selection.SetPoint and frame.system ~= nil and parts and parts.boxOffsets) then return end
+    local px = Kit.PixelSize(frame)
+    local o = parts.boxOffsets
+    local tabs = Snap(self.db.tabHeight, px)
+    local below = 0
+    if self.db.editPosition == "below" then
+        below = Snap(self.db.editHeight, px) + (self.db.editGap > 0 and Snap(self.db.editGap, px) or 0)
+    end
+    local left, top, right, bottom = o.left, o.top + tabs, o.right, o.bottom - below
+    selection:ClearAllPoints()
+    selection:SetPoint("TOPLEFT", frame, "TOPLEFT", left - SELECTION_PADDING, top + SELECTION_PADDING)
+    selection:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", right + SELECTION_PADDING, bottom - SELECTION_PADDING)
+    if frame.SetClampRectInsets then frame:SetClampRectInsets(left, right, top, bottom) end
+    Skin.Once(frame, "chatSelection", function()
+        if type(frame.AnchorSelectionFrame) == "function" then
+            hooksecurefunc(frame, "AnchorSelectionFrame", function() if self.active then self:PlaceSelection(frame) end end)
+        end
+    end)
 end
 
 -- The edit box and, inside the border, its band and divider.

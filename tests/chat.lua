@@ -70,6 +70,14 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
         tab.Text = tab:CreateFontString(nil, nil, 'GameFontNormalSmall'); tab.Text:SetText(index == 1 and 'General' or 'Combat Log')
         tab.glow = tab:CreateTexture(nil, 'BACKGROUND')
     end
+    -- ChatFrame1 is an Edit Mode system: its Selection as Blizzard anchors it
+    -- (EditModeChatFrameSystemTemplate), and AnchorSelectionFrame setting the
+    -- clamp from it (EditModeSystemMixin:UpdateClampOffsets).
+    ChatFrame1.system = 3
+    ChatFrame1.Selection = CreateFrame('Frame', nil, ChatFrame1)
+    ChatFrame1.Selection:SetPoint('TOPLEFT', ChatFrame1, 'TOPLEFT', -32, 60)
+    ChatFrame1.Selection:SetPoint('BOTTOMRIGHT', ChatFrame1, 'BOTTOMRIGHT', 25, -32)
+    function ChatFrame1:AnchorSelectionFrame() self:SetClampRectInsets(-32, 25, 60, -32) end
     GENERAL_CHAT_DOCK.selected = ChatFrame1
     CHAT_FRAMES = { 'ChatFrame1', 'ChatFrame2' }
     ChatFrame1Tab:SetAlpha(0.4)
@@ -130,6 +138,16 @@ world.run([==[
     assert(q[1] == 'BOTTOMRIGHT' and q[4] == 19 and q[5] == -33, 'room for the edit box and the scroll bar')
     FloatingChatFrame_UpdateBackgroundAnchors(ChatFrame1)
     p = Point(ChatFrame1Background); assert(p[4] == -9, 'Blizzard re-anchoring the box is followed')
+    -- Edit Mode: the selection over the box and the tab row (24), 2 units of
+    -- Blizzard's snap padding past it, so a snap puts the box on the edge; the
+    -- clamp keeps the box itself on screen, also after AnchorSelectionFrame.
+    local function Selection(i) return Point(ChatFrame1.Selection, i) end
+    assert(Selection(1)[1] == 'TOPLEFT' and Selection(1)[2] == ChatFrame1 and Selection(1)[4] == -11 and Selection(1)[5] == 35, 'selection over the box and tabs')
+    assert(Selection(2)[1] == 'BOTTOMRIGHT' and Selection(2)[4] == 21 and Selection(2)[5] == -35, 'and to the box\'s bottom right')
+    local function Clamp(l, r, t, b) local c = ChatFrame1.clampInsets; return c[1] == l and c[2] == r and c[3] == t and c[4] == b end
+    assert(Clamp(-9, 19, 33, -33), 'clamped by the box')
+    ChatFrame1:AnchorSelectionFrame(); assert(Clamp(-9, 19, 33, -33), 'Blizzard resetting the clamp is followed')
+    assert(ChatFrame2.Selection == nil, 'only the Edit Mode window')
     -- Edit box: joined to the window inside its edge, on a darker Graphite band.
     local band = Point(panel.band)
     assert(panel.band:IsShown() and band[1] == 'BOTTOMLEFT' and band[2] == ChatFrame1Background and band[4] == 3 and band[5] == 3)
@@ -252,6 +270,7 @@ world.run([==[
     assert(Point(panel.band)[5] == -3 and Point(panel.bandLine)[1] == 'BOTTOMLEFT', 'the band inside the top edge, its divider under it')
     assert(Point(bar)[5] == -(3 + 24 + 4), 'the scroll bar under the band')
     assert(M:SetOption('editPosition', 'below') and not panel.band:IsShown(), 'Below: its own field')
+    assert(Point(ChatFrame1.Selection, 2)[5] == -(9 + 4 + 24 + 2) and Clamp(-9, 19, 33, -(9 + 4 + 24)), 'the selection takes in the field below')
     local ep = Point(ChatFrame1EditBox)
     local field = Skin.parts[ChatFrame1EditBox]
     assert(ep[1] == 'TOPLEFT' and ep[2] == ChatFrame1Background and ep[5] == -4 and field.modeEdge.holder:IsShown())

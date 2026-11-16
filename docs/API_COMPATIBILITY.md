@@ -624,6 +624,20 @@ checked against the user's local mainline copy (build 12.1.5.70575).
   saved size on `UPDATE_CHAT_WINDOWS`, so a face set with `SetFont` stays and the
   per-window size is Blizzard's. The setters go through
   `ScrollingMessageFrameSecureMixin` ("secure elevation barriers").
+- **Edit Mode.** `ChatFrame1` inherits `EditModeChatFrameSystemTemplate`
+  ([EditModeSystemTemplates.xml](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_EditMode/Shared/EditModeSystemTemplates.xml)):
+  its `Selection` (a plain child frame) is anchored once in XML, TOPLEFT
+  −32, +60 and BOTTOMRIGHT +25, −32. The chat mixin doesn't override
+  `AnchorSelectionFrame`; the base one only calls `UpdateClampOffsets`, which
+  sets `SetClampRectInsets` from the selection's rect. Snapping reads the
+  selection: `GetLeftOffset` and the rest take `Selection:GetPoint(1)` /
+  `GetPoint(2)` x or y less `SELECTION_PADDING` (2), and the magnet code
+  `Selection:GetRect()` ([EditModeSystemTemplates.lua](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_EditMode/Shared/EditModeSystemTemplates.lua)).
+  ModeUI re-anchors the selection (TOPLEFT then BOTTOMRIGHT, relative to the
+  window, as Blizzard reads them) over its box and tab row plus the 2-unit
+  padding, sets the clamp insets to the box, and post-hooks the window's
+  `AnchorSelectionFrame` to set them again. Geometry only: no Edit Mode
+  table, setting or layout is written.
 - **Not protected.** No chat frame is protected. Secure slash commands typed in
   the edit box run from its `ParseText`; ModeUI never replaces its scripts,
   methods or fields. Chat messages can be secret (`SecretInChatMessagingLockdown`,
