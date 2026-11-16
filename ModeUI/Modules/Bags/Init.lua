@@ -1,9 +1,10 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Interface > Bags: every bag in one Mode window. The backpack, the
--- equipped bags, the reagent bag and the keyring show together on one grid
--- of slots in the Mode look, with a search box, Clean Up (the game's own bag
+-- Interface > Bags: every bag in one Mode window (docs/DESIGN_LANGUAGE.md,
+-- "Windows and panels"). The backpack, the equipped bags, the reagent bag
+-- and the keyring show together on one grid of Mode slots (wider than tall,
+-- in the `group` edge), with a search box, Clean Up (the game's own bag
 -- sort), a view order (Bag Order, Quality, Type, Name) and the money and free
 -- slots. Blizzard keeps deciding when bags open and close (B, the bag bar,
 -- vendors, mail, the bank, Esc): ModeUI's window follows Blizzard's bag
@@ -23,7 +24,11 @@ addon:RegisterModule("bags", M)
 
 -- Version 2 (November 13, 2026): the health color moved to #131212; a window
 -- or title bar still at the old #1C1E21 follows.
-M.VERSION = 2
+-- Version 3 (November 15, 2026, Phase 7): the Mode design language. The
+-- window's edge and the slots' edges are Mode edges, so Border Color, Corner
+-- Radius, Slot Border Color and Slot Border Size go; values still at version
+-- 2's defaults follow (the approved probe's 36px slots 3px apart).
+M.VERSION = 3
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 local Public, Number = addon.IsPublic, addon.IsNumber
 
@@ -32,34 +37,36 @@ local Public, Number = addon.IsPublic, addon.IsNumber
 M.ELEMENT_ID = "modeBags"
 M.DEFAULT_POSITION = { target = "screen", placement = "center", point = "BOTTOMRIGHT", relativePoint = "BOTTOMRIGHT", x = -60, y = 110 }
 
--- Colors: the window in the unit frames' health color (as chat, meters and
--- tooltips), slots like the action bars' (a near-black textured fill in a
--- dark rim), quest items in the Mode quest orange.
-M.SLOT_COLOR, M.QUEST_COLOR = Kit.RGB(4, 4, 4), Kit.RGB(255, 177, 47)
+-- Colors: the window in Graphite panel with a Graphite raised header (as
+-- every Mode window), slots in Mono panel, quest items in the quest tone.
+local Tone = addon.Style.Tone
+M.BACKGROUND_COLOR, M.HEADER_COLOR = Copy(Tone.graphite.panel), Copy(Tone.graphite.raised)
+M.SLOT_COLOR, M.QUEST_COLOR = Copy(Tone.mono.panel), Copy(Tone.quest)
 
 M.defaults = {
     version = M.VERSION,
     -- Layout: columns of slots, their size and gaps, the room inside the
     -- window, its scale and the corner it grows from (it stays put there).
-    columns = 12, slotSize = 38, spacing = 4, padding = 8, scale = 100, growFrom = "BOTTOMRIGHT",
+    -- Slots are Slot Size wide and a little shorter (Style.IconHeight).
+    columns = 12, slotSize = 36, spacing = 3, padding = 8, scale = 100, growFrom = "BOTTOMRIGHT",
     -- What shows: bags apart, the reagent bag and the keyring in their own
     -- sections, and the view order ("bags": as they lie in the bags).
     splitBags = false, reagentSection = true, keyring = true, sortMode = "bags",
     -- Window
-    backgroundColor = Copy(Kit.onyx.health), backgroundOpacity = 95, borderColor = Copy(Kit.BORDER_COLOR), corner = 6,
-    showTitle = true, headerColor = Copy(Kit.onyx.health), titleSize = 13,
+    backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 95,
+    showTitle = true, headerColor = Copy(M.HEADER_COLOR), titleSize = 13,
     showSearch = true, showMoney = true, showFreeSlots = true, locked = false,
     -- Slots
-    slotColor = Copy(M.SLOT_COLOR), slotOpacity = 75, slotBorderColor = Copy(Kit.onyx.border), slotBorderSize = 2,
+    slotColor = Copy(M.SLOT_COLOR), slotOpacity = 100,
     qualityBorders = true, qualityMinimum = "uncommon", questBorders = true, questColor = Copy(M.QUEST_COLOR),
     fadeJunk = true, junkCoin = true, newItems = true, itemLevel = true, itemLevelColor = "quality",
     -- Text
-    font = "game", fontMedia = "Expressway", countSize = 12, levelSize = 11, outline = true,
+    font = "game", fontMedia = addon.Style.FONT_DEFAULT, countSize = 12, levelSize = 11, outline = true,
 }
-M.colorKeys = { backgroundColor = true, borderColor = true, headerColor = true, slotColor = true, slotBorderColor = true, questColor = true }
+M.colorKeys = { backgroundColor = true, headerColor = true, slotColor = true, questColor = true }
 M.ranges = { columns = { 4, 24, 1 }, slotSize = { 24, 64, 1 }, spacing = { 0, 12, 1 }, padding = { 0, 24, 1 }, scale = { 50, 200, 5 },
-    backgroundOpacity = { 0, 100, 5 }, corner = { 2, 16, 1 }, titleSize = { 8, 20, 1 }, slotOpacity = { 0, 100, 5 },
-    slotBorderSize = { 0, 4, 1 }, countSize = { 8, 20, 1 }, levelSize = { 8, 20, 1 } }
+    backgroundOpacity = { 0, 100, 5 }, titleSize = { 8, 20, 1 }, slotOpacity = { 0, 100, 5 },
+    countSize = { 8, 20, 1 }, levelSize = { 8, 20, 1 } }
 M.choices = {
     growFrom = { { id = "TOPLEFT", label = "Top Left" }, { id = "TOPRIGHT", label = "Top Right" },
         { id = "BOTTOMLEFT", label = "Bottom Left" }, { id = "BOTTOMRIGHT", label = "Bottom Right" } },
@@ -88,6 +95,21 @@ function M.Initialize(db)
             if Kit.IsOldOnyxHealth(db[key]) then db[key] = Copy(Kit.onyx.health) end
         end
         db.version = 2
+    end
+    -- Version 3 (Phase 7): the Mode design language. The edges are Mode
+    -- edges, so their color, corner and size settings go; values still at
+    -- version 2's defaults take the new ones; picked values stay.
+    if db.version == 2 then
+        db.borderColor, db.corner, db.slotBorderColor, db.slotBorderSize = nil, nil, nil, nil
+        local Same = addon.Style.SameColor
+        if Same(db.backgroundColor, Kit.onyx.health) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        if Same(db.headerColor, Kit.onyx.health) then db.headerColor = Copy(M.HEADER_COLOR) end
+        if Same(db.slotColor, addon.Style.LEGACY.bagSlot) then db.slotColor = Copy(M.SLOT_COLOR) end
+        if db.slotOpacity == 75 then db.slotOpacity = 100 end
+        if db.slotSize == 38 then db.slotSize = 36 end
+        if db.spacing == 4 then db.spacing = 3 end
+        if db.fontMedia == "Expressway" then db.fontMedia = addon.Style.FONT_DEFAULT end
+        db.version = 3
     end
     assert(db.version == M.VERSION, "Invalid bags settings version")
     for key, default in pairs(M.defaults) do

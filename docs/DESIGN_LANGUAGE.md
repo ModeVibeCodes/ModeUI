@@ -275,6 +275,11 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   item's quality color (or a player's class color, when chosen); the first
   line in SemiBold; reactions in the gameplay tones and quest lines in the
   quest tone (#FFB12F).
+- **Bags:** a Mode window with a Mode Title header and a Mode field for
+  search; slots are Mode slots (Slot Size wide, `Style.IconHeight` tall), a
+  Mono panel face with the icon cropped to it, in the `group` edge 1px apart,
+  the rim in the quality color (Ivory for new items, the quest tone for quest
+  items). The Sort menu is a Mode window.
 
 ## Settings window
 

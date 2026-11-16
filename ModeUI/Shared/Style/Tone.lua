@@ -89,7 +89,9 @@ Style.LEGACY = { nameplateFocus = Hex("FFB547"),
     -- for anything without a class.
     meterFill = Hex("040404"), meterOther = Hex("78808C"),
     -- Tooltip before version 5: the neutral reaction yellow.
-    tooltipNeutral = Hex("FFD140") }
+    tooltipNeutral = Hex("FFD140"),
+    -- Bags before version 3: the near-black slot fill.
+    bagSlot = Hex("040404") }
 
 -- True when `color` is (within rounding) `reference`: migrations move saved
 -- colors that still equal an old default, and keep anything the player chose.

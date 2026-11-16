@@ -11,17 +11,18 @@ if not M then return end
 -- Sort shows the items in an order without moving them: Bag Order (as they
 -- lie in the bags), or Quality, Type or Name, with empty slots last. Clean
 -- Up is the game's own sort, which moves them. All sizes are whole physical
--- pixels; nothing here measures text.
-local Kit, L = addon.Kit, addon.L
+-- pixels; nothing here measures text. Slots are Slot Size wide and a little
+-- shorter (Style.IconHeight, as every Mode icon); Spacing is the gap
+-- between slots, their 1px `group` edges inside it.
+local Kit, L, Style = addon.Kit, addon.L, addon.Style
 local Containers = addon.Domain.Containers
 
 function M:Geometry()
     local db, px = self.db, Kit.PixelSize(self.frame)
     local function Snap(v) return v <= 0 and 0 or math.max(px, math.floor(v / px + 0.5) * px) end
-    local g = { px = px, border = Kit.BORDER_PIXELS * px, columns = db.columns }
+    local g = { px = px, border = Style.EdgeReach("window") * px, columns = db.columns }
     g.slot, g.gap, g.pad = Snap(db.slotSize), Snap(db.spacing), Snap(db.padding)
-    g.slotBorder = db.slotBorderSize * px
-    g.iconInset = g.slotBorder > 0 and g.slotBorder + px or 0
+    g.slotH = Style.IconHeight(math.floor(g.slot / px + 0.5)) * px
     g.inset = Snap(6)
     g.header = Snap(math.max(20, db.titleSize + 10))
     g.search = db.showSearch and Snap(math.max(20, db.titleSize + 8)) or 0
@@ -116,7 +117,7 @@ function M:SectionLabel(index)
     if not labels[index] then
         local text = Kit.Text(self.frame)
         local line = self.frame:CreateTexture(nil, "BORDER")
-        line:SetTexture(Kit.FLAT)
+        Style.ApplyAsset(line, "Solid")
         labels[index] = { text = text, line = line }
     end
     return labels[index]
@@ -133,10 +134,10 @@ function M:Plan(g)
         local entries = self:Entries(section)
         for i, entry in ipairs(entries) do
             local column, row = (i - 1) % g.columns, math.floor((i - 1) / g.columns)
-            placed.slots[i] = { entry = entry, x = g.left + column * (g.slot + g.gap), y = y + row * (g.slot + g.gap) }
+            placed.slots[i] = { entry = entry, x = g.left + column * (g.slot + g.gap), y = y + row * (g.slotH + g.gap) }
         end
         local rows = math.max(1, math.ceil(#entries / g.columns))
-        y = y + rows * g.slot + (rows - 1) * g.gap
+        y = y + rows * g.slotH + (rows - 1) * g.gap
         plan.sections[index] = placed
     end
     plan.height = y + g.pad + (g.footer > 0 and g.footer + g.pad or 0) + g.border
@@ -153,7 +154,7 @@ end
 function M:PaintLabel(index, text, y, g)
     local db, frame = self.db, self.frame
     local label = self:SectionLabel(index)
-    local look = { font = db.font, fontMedia = db.fontMedia, outline = false, shadow = true, textColor = Kit.palette.muted }
+    local look = { font = db.font, fontMedia = db.fontMedia, outline = false, shadow = true, textColor = Style.Tone.graphite.muted }
     Kit.Font(label.text, look, math.max(8, db.titleSize - 2), Kit.FontPath(db, self.id), g.px)
     label.text:SetText(text)
     label.text:ClearAllPoints(); label.text:SetPoint("TOPLEFT", frame, "TOPLEFT", g.left, -y)
@@ -161,7 +162,7 @@ function M:PaintLabel(index, text, y, g)
     label.line:SetPoint("TOPLEFT", frame, "TOPLEFT", g.left, -(y + g.label - g.px))
     label.line:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.left, -(y + g.label - g.px))
     label.line:SetHeight(g.px)
-    Kit.Tint(label.line, db.slotBorderColor, 1)
+    Style.Paint(label.line, Style.Tone.graphite.line)
     label.text:Show(); label.line:Show()
 end
 

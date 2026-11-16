@@ -2,16 +2,18 @@ local _, addon = ...
 local M = addon.Bags
 if not M then return end
 
--- The window: a fill in Background Color inside ModeUI's border (the rounded
--- rectangle form, Kit.ModeBoxBorder), a header bar in Mode Gradient with the
--- title and the Sort, Clean Up and close buttons over a one-pixel divider,
--- the search box, the slots (Layout.lua) and a footer with the free slots and
--- the money. A plain frame (nothing here is protected), hung from a stand-in
+-- The window, a Mode window (docs/DESIGN_LANGUAGE.md, "Windows and
+-- panels"): Mode Panel in Background Color with the `window` edge inside it
+-- (no soft drop while see-through), a Mode Title header in Header Color with
+-- the title (SemiBold, Graphite white) and the Sort, Clean Up and close
+-- buttons over a one-pixel Graphite line, the search box (a Mode field), the
+-- slots (Layout.lua) and a footer with the free slots and the money. A plain frame (nothing here is protected), hung from a stand-in
 -- that Edit Mode moves. Unlocked, dragging the header moves it (out of
 -- combat), saved as Edit Mode would.
-local Kit, L, Skin = addon.Kit, addon.L, addon.Skin
+local Kit, L, Skin, Style = addon.Kit, addon.L, addon.Skin, addon.Style
 local Containers, Number = addon.Domain.Containers, addon.IsNumber
-local FLAT = Kit.FLAT
+local C = Skin.mode
+local REACH, CONTROL = Style.EdgeReach("window"), Style.EdgeReach("control")
 
 local function Tip(owner, title, line)
     if not (GameTooltip and GameTooltip.SetOwner) then return end
@@ -22,8 +24,8 @@ local function Tip(owner, title, line)
 end
 local function HideTip() if GameTooltip and GameTooltip.Hide then GameTooltip:Hide() end end
 
--- A header button: a word (Sort, Clean Up) or a glyph (close), in the text
--- color, the Mode cyan under the mouse.
+-- A header button: a word (Sort, Clean Up) or a glyph (close), in Graphite
+-- secondary, Ivory under the mouse.
 local function HeaderButton(parent, glyph)
     local button = CreateFrame("Button", nil, parent)
     button:RegisterForClicks("LeftButtonUp")
@@ -36,7 +38,7 @@ local function HeaderButton(parent, glyph)
         button.text:SetPoint("CENTER")
     end
     function button:Paint()
-        local c = self.hovered and Kit.palette.accent or Kit.palette.text
+        local c = self.hovered and C.accent or C.label
         if self.icon then Kit.Tint(self.icon, c, self.hovered and 1 or 0.8) end
         if self.text then self.text:SetTextColor(c[1], c[2], c[3], 1) end
         if self.chevron then Kit.Tint(self.chevron, c, 1) end
@@ -58,20 +60,17 @@ function M:BuildWindow()
     frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:SetSize(400, 300)
-    frame.fill = Kit.BoxFill(frame)
-    frame.border = Kit.ModeBoxBorder(frame)
+    frame.parts = Skin.Box(frame, "window", { inset = REACH, level = 30 })
     local header = CreateFrame("Button", nil, frame)
     header:RegisterForDrag("LeftButton")
-    header.bar = Kit.Bar(header)
-    header.bar:SetAllPoints(); header.bar:SetMinMaxValues(0, 1); header.bar:SetValue(1)
-    header.bar.bg:Hide()
+    header.parts = Skin.Box(header, nil, { sublevel = -6 })
     header.layer = CreateFrame("Frame", nil, header)
-    header.layer:SetAllPoints(); header.layer:SetFrameLevel(header.bar:GetFrameLevel() + 2)
+    header.layer:SetAllPoints(); header.layer:SetFrameLevel(header:GetFrameLevel() + 2)
     header.title = Kit.Text(header.layer)
     header.sort, header.clean, header.close = HeaderButton(header.layer), HeaderButton(header.layer), HeaderButton(header.layer, "ModeClose")
     frame.header = header
     frame.divider = frame:CreateTexture(nil, "BORDER")
-    frame.divider:SetTexture(FLAT)
+    Style.ApplyAsset(frame.divider, "Solid")
     self:BuildSearch(frame)
     frame.freeText, frame.moneyText = Kit.Text(frame), Kit.Text(frame)
     frame.labels = {}
@@ -105,8 +104,10 @@ function M:BuildSearch(frame)
     box:SetAutoFocus(false)
     box:SetMaxLetters(40)
     box:SetFontObject(GameFontHighlight)
-    box.parts = Skin.Panel(box, "BACKGROUND", -8)
+    box.parts = Skin.Box(box, "control", { inset = CONTROL })
     box.hint = Kit.Text(box)
+    box:HookScript("OnEditFocusGained", function() M:PaintField() end)
+    box:HookScript("OnEditFocusLost", function() M:PaintField() end)
     box.hint:SetPoint("LEFT", box, "LEFT", 6, 0)
     box:SetScript("OnEscapePressed", function() box:SetText(""); box:ClearFocus() end)
     box:SetScript("OnEnterPressed", function() box:ClearFocus() end)
@@ -147,29 +148,24 @@ function M:PaintWindow()
     local frame, db = self.frame, self.db
     frame:SetScale(db.scale / 100)
     local g = self:Geometry()
-    Kit.LayoutModeBoxBorder(frame.border, frame, { px = g.px, radius = db.corner * g.px, color = db.borderColor,
-        level = frame:GetFrameLevel() + 30 })
-    Kit.LayoutBoxFill(frame.fill, frame.border, frame, math.max(0, g.border - g.px), db.backgroundColor, db.backgroundOpacity / 100)
+    local alpha = db.backgroundOpacity / 100
+    Skin.PaintBox(frame.parts, frame, "Panel", db.backgroundColor, alpha, true)
+    frame.parts.modeEdge:SetDrop(alpha >= 1)
     local header, path = frame.header, Kit.FontPath(db, self.id)
     header:ClearAllPoints()
     header:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -g.border)
     header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -g.border)
     header:SetHeight(math.max(g.px, g.header))
-    Kit.ModeGradient(header.bar, math.max(g.px, g.header), g.px)
-    header.bar:SetStatusBarColor(db.headerColor[1], db.headerColor[2], db.headerColor[3], 1)
-    -- The header and divider round with the top corners; the bags always sit
-    -- below them, away from the bottom ones.
-    Kit.MaskToBoxBorder(frame.border, { header.bar:GetStatusBarTexture(), header.bar.sheen },
-        { left = g.border, top = g.border, right = g.border, bottom = math.huge })
+    Skin.PaintBox(header.parts, header, "Title", db.headerColor, 1)
     local divider = frame.divider
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -(g.border + g.header))
     divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -(g.border + g.header))
     divider:SetHeight(g.px)
-    Kit.Tint(divider, Kit.onyx.inner, 1)
-    Kit.MaskToBoxBorder(frame.border, { divider }, { left = g.border, top = g.border + g.header, right = g.border, bottom = math.huge })
-    local look = { font = db.font, fontMedia = db.fontMedia, outline = false, shadow = true, textColor = { 1, 1, 1 } }
-    Kit.Font(header.title, look, db.titleSize, path, g.px)
+    Style.Paint(divider, C.line)
+    local look = { font = db.font, fontMedia = db.fontMedia, outline = false, shadow = true, textColor = C.text }
+    local title = { font = db.font, fontMedia = db.fontMedia, outline = false, shadow = true, textColor = C.heading }
+    Kit.Font(header.title, title, db.titleSize, Style.Weighted(path, "semibold"), g.px)
     header.title:ClearAllPoints(); header.title:SetPoint("LEFT", header, "LEFT", g.inset, 0)
     header.title:SetText(L["Bags"])
     header.title:SetShown(db.showTitle)
@@ -197,7 +193,7 @@ function M:PaintWindow()
     self:PaintSearch(g, look, path)
     for _, text in ipairs({ frame.freeText, frame.moneyText }) do
         Kit.Font(text, look, math.max(8, db.titleSize - 1), path, g.px)
-        text:SetTextColor(Kit.palette.text[1], Kit.palette.text[2], Kit.palette.text[3], 1)
+        Skin.Ink(text, C.text)
     end
     frame:ClearAllPoints()
     frame:SetPoint(db.growFrom, self.mover, db.growFrom, 0, 0)
@@ -218,15 +214,23 @@ function M:PaintSearch(g, look, path)
     box:SetPoint("TOPLEFT", self.frame, "TOPLEFT", g.left, -g.searchTop)
     box:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -g.left, -g.searchTop)
     box:SetHeight(g.search)
-    box:SetTextInsets(6, 6, 0, 0)
-    Skin.PaintPanel(box.parts, box, Skin.colors.field, 1, Skin.colors.fieldRim, g.px)
+    box:SetTextInsets(7, 7, 0, 0)
+    self:PaintField()
     Skin.Font(box, path, math.max(8, db.titleSize - 1), false, true, g.px)
-    box:SetTextColor(1, 1, 1, 1)
+    Skin.Ink(box, C.text)
     Kit.Font(box.hint, look, math.max(8, db.titleSize - 1), path, g.px)
     box.hint:SetText(L["Search"])
-    local m = Kit.palette.muted
-    box.hint:SetTextColor(m[1], m[2], m[3], 0.8)
+    Skin.Ink(box.hint, C.muted)
     box.hint:SetShown((box:GetText() or "") == "")
+end
+
+-- The search box: a Mode field (a Graphite base in the `control` edge
+-- inside it), its outer line Ivory while typing.
+function M:PaintField()
+    local box = self.frame and self.frame.search
+    if not box or not box.parts then return end
+    local focused = box.HasFocus and box:HasFocus() == true
+    Skin.PaintBox(box.parts, box, "Solid", C.field, 1, true, focused and "accent" or nil)
 end
 
 -- Size, and the footer's free slots and money.
@@ -272,7 +276,7 @@ function M:BuildMover()
     local mover = CreateFrame("Frame", "ModeUIBagsMover", UIParent)
     mover:SetFrameStrata("HIGH")
     mover:SetSize(400, 300)
-    mover.parts = Skin.Panel(mover, "BACKGROUND", -8)
+    mover.parts = Skin.Box(mover, "control", { inset = CONTROL })
     mover.label = mover:CreateFontString(nil, "OVERLAY")
     mover.label:SetPoint("CENTER")
     local d = self.DEFAULT_POSITION
@@ -291,10 +295,11 @@ function M:PlaceMover()
     local scale = self.db.scale / 100
     mover:SetSize(frame:GetWidth() * scale, frame:GetHeight() * scale)
     local px = Kit.PixelSize(mover)
-    Skin.PaintPanel(mover.parts, mover, self.db.backgroundColor, 0.85, Kit.palette.accent, px)
-    Skin.Font(mover.label, Kit.FontPath(self.db, self.id), self.db.titleSize, false, true, px)
+    -- A Mode control lit Ivory, so the stand-in reads as the thing to move.
+    Skin.PaintBox(mover.parts, mover, "Solid", self.db.backgroundColor, 0.85, true, "accent")
+    Skin.Font(mover.label, Style.Weighted(Kit.FontPath(self.db, self.id), "semibold"), self.db.titleSize, false, true, px)
     mover.label:SetText(L["Bags"])
-    mover.label:SetTextColor(1, 1, 1, 1)
+    Skin.Ink(mover.label, C.heading)
 end
 
 -- Moving by the header: unlocked, out of combat and not in Edit Mode.

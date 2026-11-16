@@ -106,10 +106,13 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
 
 local world = H.Load({ before = STUBS })
 world.run([==[
-    local M, Kit = addon.Bags, addon.Kit
+    local M, Kit, Skin = addon.Bags, addon.Kit, addon.Skin
+    local Tone = addon.Style.Tone
+    local G = Tone.graphite
     assert(M and addon.modules.bags == M and not M.enabled and M.category == 'interface', 'registered under Interface, off by default')
-    assert(M.db.columns == 12 and M.db.slotSize == 38 and M.db.sortMode == 'bags' and M.db.growFrom == 'BOTTOMRIGHT')
-    assert(M.db.backgroundColor[1] == Kit.onyx.health[1] and M.db.borderColor[1] == Kit.BORDER_COLOR[1], 'the Mode window colors')
+    assert(M.db.columns == 12 and M.db.slotSize == 36 and M.db.spacing == 3 and M.db.sortMode == 'bags' and M.db.growFrom == 'BOTTOMRIGHT')
+    assert(M.db.backgroundColor[1] == G.panel[1] and M.db.headerColor[1] == G.raised[1] and M.db.slotColor[1] == Tone.mono.panel[1], 'the Mode window colors')
+    assert(M.db.borderColor == nil and M.db.corner == nil and M.db.slotBorderSize == nil and M.db.fontMedia == 'Mode', 'Mode edges, the Mode typeface')
     assert(M.frame == nil and _G.ModeUIBagsFrame == nil, 'nothing built while off')
     OpenAllBags()
     assert(ContainerFrameCombinedBags:GetParent() == UIParent, 'Blizzard\'s bags untouched while off')
@@ -120,7 +123,7 @@ world.run([==[
     assert(frame and not frame:IsShown() and frame.toplevel and frame.clamped, 'window built, closed')
     assert(ContainerFrameCombinedBags:GetParent() == M.hider and not M.hider:IsShown(), 'Blizzard\'s combined bags wait under a hidden frame')
     assert(ContainerFrame1:GetParent() == M.hider and ContainerFrame7:GetParent() == UIParent, 'held bags captured, the bank bag frame left alone')
-    assert(M.slots == nil and frame.width == 2 * (M.g.border + M.g.pad) + 12 * 38 + 11 * 4 and M.mover.width == frame.width,
+    assert(M.slots == nil and frame.width == 2 * (M.g.border + M.g.pad) + 12 * 36 + 11 * 3 and M.mover.width == frame.width,
         'sized for Edit Mode before any slot is built')
 
     -- Blizzard opens its bags (the B key): the window follows.
@@ -147,22 +150,40 @@ world.run([==[
     local art = M.art
     assert(potion.icon.texture == 101 and art[potion].count:GetText() == '5' and art[boots].count:GetText() == '', 'icon and count')
     assert(potion.Count.alpha == 0 and potion.IconBorder.alpha == 0 and potion.NormalTexture.alpha == 0, 'Blizzard\'s art faded')
-    assert(art[potion].edges[1].vertexColor[1] == M.db.slotBorderColor[1], 'common: the slot rim')
-    assert(art[boots].edges[1].vertexColor[1] == 0.12 and art[axe].edges[1].vertexColor[1] == 0.64, 'uncommon and epic in quality colors')
-    assert(art[letter].edges[1].vertexColor[1] == M.db.questColor[1], 'quest item in Quest Color')
+    -- A Mode slot: 36 x 30, a face in Mono panel, the `group` edge outside it.
+    local box = art[potion].box
+    assert(potion.width == 36 and potion.height == 30, 'wider than tall')
+    assert(box.faceKey == 'Solid' and box.face.vertexColor[1] == Tone.mono.panel[1] and box.face.vertexColor[4] == 1, 'a Mono panel face')
+    assert(box.modeEdge.preset == 'group' and box.modeEdge.holder:IsShown() and Point(box.edgeFrame)[4] == 0, 'the group edge just outside')
+    local function Rim(button) return art[button].box.modeEdge.tint end
+    assert(Rim(potion) == nil, 'common: the edge\'s own Gunmetal')
+    assert(Rim(boots)[1] == 0.12 and Rim(axe)[1] == 0.64, 'uncommon and epic in quality colors')
+    assert(Rim(letter)[1] == M.db.questColor[1], 'quest item in Quest Color')
     assert(art[fang].junk:IsShown() and fang.icon.desaturated, 'junk: coin and faded')
     assert(art[boots].level:IsShown() and art[boots].level:GetText() == '27' and not art[potion].level:IsShown(), 'item level on armor only')
     assert(potion.Cooldown.cooldownStart == 100 and potion.Cooldown.cooldownDuration == 30, 'cooldown swipe')
     newItems['0:1'] = true; FireEvent('BAG_NEW_ITEMS_UPDATED')
-    assert(art[potion].edges[1].vertexColor[1] == Kit.palette.accent[1], 'new items in the Mode cyan')
+    assert(Rim(potion)[1] == Tone.ivory[1], 'new items in Ivory')
     newItems['0:1'] = nil; potion.scripts.OnEnter(potion)
-    assert(art[potion].edges[1].vertexColor[1] == M.db.slotBorderColor[1], 'pointing at it clears the mark')
+    assert(Rim(potion) == nil, 'pointing at it clears the mark')
+    -- The window: a Mode window with a Mode Title header and a Mode field.
+    local wp = Skin.parts[frame]
+    assert(wp.faceKey == 'Panel' and wp.face.vertexColor[1] == G.panel[1] and wp.face.vertexColor[4] == 0.95, 'Mode Panel at 95%')
+    assert(wp.modeEdge.preset == 'window' and Point(wp.edgeFrame)[4] == 3 and not wp.modeEdge.below:IsShown(), 'the window edge inside; no drop')
+    assert(Skin.parts[frame.header].faceKey == 'Title' and Skin.parts[frame.header].face.vertexColor[1] == G.raised[1], 'a Mode Title header')
+    assert(frame.divider.vertexColor[1] == G.line[1] and frame.header.title.color[1] == G.white[1], 'a Graphite line; the title in Graphite white')
+    local field = Skin.parts[frame.search]
+    assert(field.faceKey == 'Solid' and field.face.vertexColor[1] == G.base[1] and field.modeEdge.preset == 'control', 'search: a Mode field')
+    frame.search:SetFocus(); frame.search.scripts.OnEditFocusGained(frame.search)
+    assert(field.modeEdge.highlight[1] == Tone.ivory[1], 'Ivory while typing')
+    frame.search:ClearFocus(); frame.search.scripts.OnEditFocusLost(frame.search)
+    assert(field.modeEdge.highlight == nil)
 
     -- Geometry: whole pixels, Columns wide.
     local g = M.g
-    assert(frame.width == 2 * (g.border + g.pad) + 12 * 38 + 11 * 4, 'width from the settings')
+    assert(g.border == 3 and frame.width == 2 * (g.border + g.pad) + 12 * 36 + 11 * 3, 'width from the settings')
     assert(potion.points[1][1] == 'TOPLEFT' and potion.points[1][4] == g.left and potion.points[1][5] == -g.gridTop, 'first slot top left')
-    assert(M.buttons[0][13].points[1][5] == -(g.gridTop + 38 + 4), 'the 13th slot starts row two')
+    assert(M.buttons[0][13].points[1][5] == -(g.gridTop + 30 + 3), 'the 13th slot starts row two (30 high, 3 apart)')
     assert(frame.points[1][1] == 'BOTTOMRIGHT' and frame.points[1][2] == M.mover, 'hangs from its stand-in at Grow From')
 
     -- Footer: free slots and money.
@@ -219,15 +240,15 @@ world.run([==[
     assert(M.buttons[1][1].icon.texture == 109 and not M.stale, 'redrawn as it opens')
 
     -- Settings: live, validated.
-    assert(M:SetOption('columns', 8) and frame.width == 2 * (g.border + g.pad) + 8 * 38 + 7 * 4, 'Columns')
+    assert(M:SetOption('columns', 8) and frame.width == 2 * (g.border + g.pad) + 8 * 36 + 7 * 3, 'Columns')
     assert(not M:SetOption('columns', 40) and not M:SetOption('growFrom', 'CENTER') and not M:SetOption('slotColor', { 2, 0, 0 }), 'bad values refused')
     assert(M:SetOption('reagentSection', false) and M:SetOption('keyring', false))
     assert(not frame.labels[1].text:IsShown() and not frame.labels[2].text:IsShown(), 'sections off')
     assert(M.buttons[5][1]:IsShown() and not M.buttons[-2][1]:IsShown(), 'reagents join the bags; no keyring')
     assert(M:SetOption('splitBags', true))
-    assert(M.buttons[1][1].points[1][5] < M.buttons[0][16].points[1][5] - 38, 'each bag its own block')
+    assert(M.buttons[1][1].points[1][5] < M.buttons[0][16].points[1][5] - 30, 'each bag its own block')
     assert(M:SetOption('showSearch', false) and not frame.search:IsShown() and M.g.gridTop < g.gridTop, 'no search box')
-    assert(M:SetOption('qualityBorders', false) and art[axe].edges[1].vertexColor[1] == M.db.slotBorderColor[1], 'quality borders off')
+    assert(M:SetOption('qualityBorders', false) and Rim(axe) == nil, 'quality borders off')
     assert(M:SetOption('scale', 150) and frame.scale == 1.5 and M.mover.width == frame.width * 1.5, 'scale; the stand-in covers it')
     assert(M:SetOption('growFrom', 'TOPLEFT') and frame.points[1][1] == 'TOPLEFT')
 
@@ -277,7 +298,7 @@ saved.profiles.Default.modules.bags.sortMode = 'name'
 local again = H.Load({ saved = saved, before = STUBS })
 again.run([==[
     local M = addon.Bags
-    assert(M.db.columns == 10 and M.db.sortMode == 'name' and M.db.version == 2, 'kept across reloads')
+    assert(M.db.columns == 10 and M.db.sortMode == 'name' and M.db.version == 3, 'kept across reloads')
 ]==])
 -- Version 1 -> 2: a window or title bar still at the old health color (#1C1E21) takes #131212; a picked one stays.
 local v1 = world.saved()
@@ -285,8 +306,23 @@ local one = v1.profiles.Default.modules.bags
 one.version, one.backgroundColor, one.headerColor = 1, { 28 / 255, 30 / 255, 33 / 255 }, { 1, 0, 0 }
 H.Load({ saved = v1, before = STUBS }).run([==[
     local M, Kit = addon.Bags, addon.Kit
-    assert(M.db.version == 2 and M.db.backgroundColor[1] == Kit.onyx.health[1], 'the old health color follows')
+    assert(M.db.version == 3 and M.db.backgroundColor[1] == addon.Style.Tone.graphite.panel[1], 'the old health color follows (on to Graphite)')
     assert(M.db.headerColor[1] == 1, 'a picked title bar color stays')
+]==])
+-- Version 2 -> 3 (Phase 7): the edges' settings go; values still at
+-- version 2's defaults take the Mode ones; picked values stay.
+local v2 = world.saved()
+local two = v2.profiles.Default.modules.bags
+two.version, two.borderColor, two.corner, two.slotBorderColor, two.slotBorderSize = 2, { 1, 0, 0 }, 9, { 0, 1, 0 }, 3
+two.backgroundColor, two.headerColor = { 19 / 255, 18 / 255, 18 / 255 }, { 19 / 255, 18 / 255, 18 / 255 }
+two.slotColor, two.slotOpacity, two.slotSize, two.spacing, two.fontMedia = { 4 / 255, 4 / 255, 4 / 255 }, 75, 38, 6, 'Expressway'
+H.Load({ saved = v2, before = STUBS }).run([==[
+    local M, Tone = addon.Bags, addon.Style.Tone
+    local db = M.db
+    assert(db.version == 3 and db.borderColor == nil and db.corner == nil and db.slotBorderColor == nil and db.slotBorderSize == nil, 'edge settings gone')
+    assert(db.backgroundColor[1] == Tone.graphite.panel[1] and db.headerColor[1] == Tone.graphite.raised[1], 'Graphite window and header')
+    assert(db.slotColor[1] == Tone.mono.panel[1] and db.slotOpacity == 100 and db.slotSize == 36 and db.fontMedia == 'Mode', 'Mode slots')
+    assert(db.spacing == 6, 'a picked spacing stays')
 ]==])
 local bad = world.saved()
 bad.profiles.Default.modules.bags.columns = 'many'

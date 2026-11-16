@@ -5,17 +5,18 @@ if not M then return end
 -- One slot: Blizzard's own item button (ContainerFrameItemButtonTemplate)
 -- on a holder carrying its bag's ID, so its clicks, drags, stack splitting,
 -- tooltip and item use stay Blizzard's code, which reads only the button's
--- and its parent's IDs. ModeUI dresses it like an action bar slot: a hollow
--- rim (Slot Border Size, colored by quality, quest or new), a textured fill
--- in Slot Color, the icon one pixel inside the rim, cropped square, and its
--- own count, item level and junk marks. Blizzard's art on the button is
+-- and its parent's IDs. ModeUI dresses it as a Mode slot (the approved
+-- probe): a face in Slot Color, the icon filling it (cropped to the slot,
+-- which is wider than tall), the `group` edge just outside it (its rim in
+-- the quality, quest or new-item color), and its own count, item level and
+-- junk marks. Blizzard's art on the button is
 -- faded; its pushed and highlight states become flat Mode overlays. ModeUI's
 -- textures and state live in weak tables keyed by the button: nothing is
 -- written to Blizzard's button tables, and none of Blizzard's update
 -- functions are called.
-local Kit, L = addon.Kit, addon.L
+local Kit, L, Skin, Style = addon.Kit, addon.L, addon.Skin, addon.Style
+local Tone = Style.Tone
 local Containers = addon.Domain.Containers
-local FLAT = Kit.FLAT
 M.art = setmetatable({}, { __mode = "k" })
 M.entries = setmetatable({}, { __mode = "k" })
 
@@ -42,10 +43,7 @@ function M:Button(bag, slot)
 end
 
 function M:BuildArt(button)
-    local art = { edges = {} }
-    for i = 1, 4 do art.edges[i] = button:CreateTexture(nil, "BACKGROUND", nil, -8) end
-    art.fill = button:CreateTexture(nil, "BACKGROUND", nil, -7)
-    art.grain = button:CreateTexture(nil, "BACKGROUND", nil, -6)
+    local art = { box = Skin.Box(button, "group") }
     -- ModeUI's texts sit above the cooldown swipe.
     art.layer = CreateFrame("Frame", nil, button)
     art.layer:SetAllPoints()
@@ -55,18 +53,13 @@ function M:BuildArt(button)
     return art
 end
 
-local function Edge(edge, host, point, x1, y1, relative, x2, y2)
-    edge:ClearAllPoints()
-    edge:SetPoint("TOPLEFT", host, point, x1, y1)
-    edge:SetPoint("BOTTOMRIGHT", host, relative, x2, y2)
-end
-local function Overlay(texture, host, inset, color, alpha)
+local function Overlay(texture, host, color, alpha)
     if not texture then return end
     if texture.ClearTextureSlice then texture:ClearTextureSlice() end
-    texture:SetTexture(FLAT)
+    Style.ApplyAsset(texture, "Solid")
     texture:SetTexCoord(0, 1, 0, 1)
-    Kit.Inset(texture, host, inset)
-    texture:SetVertexColor(color[1], color[2], color[3], alpha)
+    Kit.Inset(texture, host, 0)
+    Style.Paint(texture, color, alpha)
 end
 local function Region(button, key, getter)
     local region = button[key]
@@ -77,28 +70,16 @@ end
 -- The slot's size and fixed look at the window's geometry `g`.
 function M:PaintSlot(button, g)
     local art, db = self.art[button], self.db
-    button:SetSize(g.slot, g.slot)
-    local t = g.slotBorder
-    local top, bottom, left, right = art.edges[1], art.edges[2], art.edges[3], art.edges[4]
-    Edge(top, button, "TOPLEFT", 0, 0, "TOPRIGHT", 0, -t)
-    Edge(bottom, button, "BOTTOMLEFT", 0, t, "BOTTOMRIGHT", 0, 0)
-    Edge(left, button, "TOPLEFT", 0, -t, "BOTTOMLEFT", t, t)
-    Edge(right, button, "TOPRIGHT", -t, -t, "BOTTOMRIGHT", 0, t)
-    for _, edge in ipairs(art.edges) do edge:SetTexture(FLAT); edge:SetShown(t > 0) end
-    local alpha = db.slotOpacity / 100
-    Kit.Inset(art.fill, button, t)
-    art.fill:SetTexture(FLAT); Kit.Tint(art.fill, db.slotColor, alpha)
-    Kit.Inset(art.grain, button, t)
-    if not addon.Media:ApplyTexture(art.grain, "ActionBarSlot") then art.grain:SetTexture(FLAT) end
-    if art.grain.SetBlendMode then art.grain:SetBlendMode("ADD") end
-    art.grain:SetVertexColor(1, 1, 1, alpha)
-    local inset = g.iconInset
+    button:SetSize(g.slot, g.slotH)
+    -- The face in Slot Color (it shows in empty slots); the edge's rim is
+    -- painted with the item (PaintState).
+    Skin.PaintBox(art.box, button, "Solid", db.slotColor, db.slotOpacity / 100, true)
     local icon = button.icon
     if icon then
-        Kit.Inset(icon, button, inset)
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        Kit.Inset(icon, button, 0)
+        Style.CropIcon(icon, g.slot, g.slotH)
     end
-    if button.Cooldown then Kit.Inset(button.Cooldown, button, inset) end
+    if button.Cooldown then Kit.Inset(button.Cooldown, button, 0) end
     for _, key in ipairs(FADED) do
         local region = button[key]
         if region and region.SetAlpha then region:SetAlpha(0) end
@@ -106,11 +87,13 @@ function M:PaintSlot(button, g)
     local normal = Region(button, "NormalTexture", "GetNormalTexture")
     if normal and normal.SetAlpha then normal:SetAlpha(0) end
     if button.Count and button.Count.SetAlpha then button.Count:SetAlpha(0) end
-    Overlay(Region(button, "PushedTexture", "GetPushedTexture"), button, inset, Kit.onyx.inner, 0.45)
-    Overlay(Region(button, "HighlightTexture", "GetHighlightTexture"), button, inset, { 1, 1, 1 }, 0.16)
+    Overlay(Region(button, "PushedTexture", "GetPushedTexture"), button, Tone.shadow, 0.45)
+    Overlay(Region(button, "HighlightTexture", "GetHighlightTexture"), button, Tone.mono.white, 0.16)
     art.layer:SetFrameLevel(button:GetFrameLevel() + 4)
-    local path = Kit.FontPath(db, self.id)
-    local look = { font = db.font, fontMedia = db.fontMedia, outline = db.outline, shadow = true, textColor = { 1, 1, 1 } }
+    -- Counts and item levels in the Mode typeface's Bold, Text bright.
+    local path = Style.Weighted(Kit.FontPath(db, self.id), "bold")
+    local look = { font = db.font, fontMedia = db.fontMedia, outline = db.outline, shadow = true, textColor = Tone.textBright }
+    local inset = 0
     Kit.Font(art.count, look, db.countSize, path, g.px)
     art.count:ClearAllPoints(); art.count:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset - g.px, inset + g.px)
     Kit.Font(art.level, look, db.levelSize, path, g.px)
@@ -143,20 +126,20 @@ function M:PaintItem(button, item)
     self:PaintCooldown(button)
 end
 
--- The rim: a new item in the Mode cyan, then quest items, then the item's
--- quality from Minimum Quality up, else Slot Border Color.
+-- The rim: a new item in Ivory, then quest items, then the item's quality
+-- from Minimum Quality up, else nil (the edge's own Gunmetal).
 function M:RimColor(button, item)
     local db, entry = self.db, self.entries[button]
-    if not item then return db.slotBorderColor end
-    if db.newItems and Containers.IsNew(entry.bag, entry.slot) then return Kit.palette.accent end
+    if not item then return nil end
+    if db.newItems and Containers.IsNew(entry.bag, entry.slot) then return Tone.ivory end
     if db.questBorders then
         local questItem, questID = Containers.Quest(entry.bag, entry.slot)
         if questItem or questID then return db.questColor end
     end
     if db.qualityBorders and type(item.quality) == "number" and item.quality >= self.QUALITY[db.qualityMinimum] then
-        return Containers.QualityColor(item.quality) or db.slotBorderColor
+        return Containers.QualityColor(item.quality)
     end
-    return db.slotBorderColor
+    return nil
 end
 
 -- Search matches, a locked item (being moved), faded junk and the rim.
@@ -165,8 +148,7 @@ function M:PaintState(button)
     if not entry or not art then return end
     local item = Containers.Item(entry.bag, entry.slot)
     entry.item = item
-    local color = self:RimColor(button, item)
-    for _, edge in ipairs(art.edges) do Kit.Tint(edge, color, 1) end
+    art.box.modeEdge:SetTint(self:RimColor(button, item))
     local icon = button.icon
     local junk = item ~= nil and item.quality == 0 and not item.noValue and self.db.fadeJunk
     if icon then icon:SetDesaturated((item ~= nil and item.locked == true) or junk == true) end
