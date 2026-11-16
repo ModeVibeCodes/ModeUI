@@ -50,6 +50,7 @@ Two neutral ramps. Frames and buttons use **Mono**, windows and panels use
 | `celadon` | `#B4CDB6` | specialty accent; ON |
 | `rosewood` | `#CF6A6F` | specialty accent: focus, priority, destructive; OFF |
 | `rosewoodDeep` | `#743B3E` | the OFF toggle block (white text on it) |
+| `brand` | `#E2B866` | "Mode" in the ModeUI wordmark ("UI" stays white): the Game Menu button, the minimap addon menu, the AddOn list. A warm gold from the Ivory family, strong enough to read in bold button text where Ivory looks white (owner, November 15, 2026) |
 | `gunmetal` | light `#5B5E63`, mid `#46494D`, dark `#33363A` | frame and group rims |
 | `steel` | light `#8C8F95`, mid `#74777D`, dark `#5B5E63` | window rims, portrait rings, settings controls |
 

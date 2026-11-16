@@ -1,5 +1,5 @@
 ## Interface: 16001
-## Title: |cff00f0ffModeUI|r
+## Title: |cffe2b866Mode|r|cffffffffUI|r
 ## Notes: Custom Mode interface for WoW Forever: unit frames, nameplates, party frames, action bars, damage meters, chat, windows, bags, profiles, optimizations and class colors.
 ## Author: Mode
 ## Version: 0.1.0-beta.1

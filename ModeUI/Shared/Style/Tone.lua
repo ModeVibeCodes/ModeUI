@@ -35,6 +35,8 @@ local Tone = {
     celadon = Hex("B4CDB6"),
     rosewood = Hex("CF6A6F"),
     rosewoodDeep = Hex("743B3E"),
+    -- "Mode" in the ModeUI wordmark (Ivory reads white in bold button text).
+    brand = Hex("E2B866"),
     celadonInk = Hex("0E1510"),
     gunmetal = { light = Hex("5B5E63"), mid = Hex("46494D"), dark = Hex("33363A") },
     steel = { light = Hex("8C8F95"), mid = Hex("74777D"), dark = Hex("5B5E63") },

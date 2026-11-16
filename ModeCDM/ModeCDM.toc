@@ -1,5 +1,5 @@
 ## Interface: 16001
-## Title: |cff00f0ffModeCDM|r
+## Title: |cffe2b866Mode|r|cffffffffCDM|r
 ## Notes: The Cooldown Manager for ModeUI: Blizzard's Cooldown Manager in the Mode look, custom bars and resource bars. Its settings live in ModeUI's profiles. /mcdm
 ## Author: Mode
 ## Version: 0.1.0-beta.1

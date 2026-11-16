@@ -9,7 +9,7 @@ assert(metadata["X-ModeUI-Edition"] == "Forever" and metadata.Interface == "1600
 -- in the AddOn list (## Group), keeps no saved variables of its own.
 local cdm = H.Toc("ModeCDM")
 assert(cdm.Dependencies == "ModeUI" and cdm.Group == "ModeUI" and cdm.Interface == metadata.Interface, "ModeCDM depends on ModeUI and groups under it")
-assert(cdm.SavedVariables == nil and cdm.Title:find("ModeCDM", 1, true) and cdm.Version == metadata.Version, "ModeCDM: settings in ModeUIDB, same version")
+assert(cdm.SavedVariables == nil and cdm.Title:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):find("ModeCDM", 1, true) and cdm.Version == metadata.Version, "ModeCDM: settings in ModeUIDB, same version")
 
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
@@ -238,11 +238,11 @@ local MENU = STUBS .. [==[
     function GameTooltip:AddLine(text) tooltipLines[#tooltipLines+1]=text end
     compartment={};AddonCompartmentFrame={RegisterAddon=function(self,data) compartment[#compartment+1]=data end}
 ]==]
-local BRAND = "|cffefe6d2Mode|r|cffffffffUI|r"
+local BRAND = "|cffe2b866Mode|r|cffffffffUI|r"
 local menuWorld = H.Load({ before = MENU .. "\nGameMenuFrame=MakeGameMenu()\n" })
 menuWorld.run(([[
     local BRAND=%q
-    assert(addon.Launchers.BRAND_TEXT==BRAND,'Mode in Ivory, UI in white')
+    assert(addon.Launchers.BRAND_TEXT==BRAND,'Mode in the brand gold, UI in white')
     GameMenuFrame:InitButtons()
     assert(MenuLabels(GameMenuFrame)=='Options,Shop,'..BRAND..'+,AddOns+,Edit Mode,Log Out+,Return to Game+',
         'ModeUI has its own section between Shop and AddOns: '..MenuLabels(GameMenuFrame))
