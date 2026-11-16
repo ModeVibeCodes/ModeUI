@@ -1,5 +1,5 @@
 -- Tooltip: Blizzard's tooltips (stubbed with Forever's keys) in the Mode
--- look: the NineSlice faded, fill and border, quality and class borders,
+-- look: the NineSlice faded, the Mode window, quality and class rims,
 -- line fonts, the health bar; placement at the Edit Mode anchor or the
 -- cursor; Hide in Combat with Shift; settings, the page, validation, reload
 -- and persistence. Simulated client; not WoW rendering, mouse or taint.
@@ -57,25 +57,33 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
 local world = H.Load({ before = STUBS })
 world.run([==[
     local M, Skin, Kit = addon.Tooltip, addon.Skin, addon.Kit
+    local Tone = addon.Style.Tone
+    local G = Tone.graphite
     assert(M and addon.modules.tooltip == M and not M.enabled, 'registered, off by default')
-    assert(M.db.position == 'anchor' and M.db.borderSize == 1 and not M.db.hideInCombat and M.db.rounded and M.db.gradient)
+    assert(M.db.position == 'anchor' and M.db.border and not M.db.hideInCombat and M.db.fontMedia == 'Mode', 'the Mode typeface')
+    assert(M.db.borderSize == nil and M.db.borderColor == nil and M.db.rounded == nil and M.db.gradient == nil, 'the edge has no shape or color settings')
     assert(M.db.qualityBorder and not M.db.classBorder, 'quality borders on, class borders off')
-    assert(M.db.backgroundColor[1] == Kit.onyx.health[1], 'the health color')
+    assert(M.db.backgroundColor[1] == G.panel[1], 'Graphite panel')
+    assert(M.db.hostileColor[1] == Tone.reaction.hostile[1] and M.db.questColor[1] == Tone.quest[1], 'the gameplay tones')
     assert(Skin.parts[GameTooltip] == nil, 'nothing skinned while off')
 
     addon:SetModuleEnabled('tooltip', true)
-    -- Look: Blizzard's NineSlice faded; a rounded box under a hollow rounded rim.
+    -- Look: Blizzard's NineSlice faded; a Mode window: Mode Panel in
+    -- Graphite at 92% with its lift, the `window` edge inside it above the
+    -- lines, no soft drop under a see-through tooltip.
     local parts = Skin.parts[GameTooltip]
     assert(GameTooltip.NineSlice.alpha == 0 and GameTooltip.TopOverlay.alpha == 0, 'Blizzard\'s border and background faded')
-    assert(parts.round.texture:find('Round') and parts.round:IsShown() and parts.round.vertexColor[4] == 0.92, 'rounded fill')
-    assert(parts.round.vertexColor[1] == Kit.onyx.health[1])
-    assert(parts.ring.texture:find('Ring1') and parts.ring.vertexColor[1] == Kit.onyx.frameRim[1] and parts.edge:IsShown(), 'a 1px rounded rim above')
-    assert(parts.fill.vertexColor[4] == 0, 'no square fill while rounded')
-    assert(parts.wash:IsShown() and parts.wash.gradient, 'Mode Gradient')
-    assert(GameTooltip.clamped == true and GameTooltip.clampInsets[1] == 0, 'kept on the screen, border and all')
-    assert(Skin.parts[ItemRefTooltip].round and Skin.parts[ShoppingTooltip1].round, 'item links and comparisons too')
+    assert(parts.faceKey == 'Panel' and parts.face.vertexColor[1] == G.panel[1] and parts.face.vertexColor[4] == 0.92 and parts.lift, 'Mode Panel at 92%')
+    assert(parts.modeEdge.preset == 'window' and parts.modeEdge.holder:IsShown() and Point(parts.edgeFrame)[4] == 3, 'the window edge inside it')
+    assert(parts.edgeFrame:GetFrameLevel() > GameTooltip:GetFrameLevel() and not parts.modeEdge.below:IsShown(), 'above the lines; no drop')
+    assert(parts.modeEdge.tint == nil, 'the edge\'s steel for plain content')
+    assert(GameTooltip.clamped == true and GameTooltip.clampInsets[1] == 0, 'kept on the screen, edge and all')
+    assert(Skin.parts[ItemRefTooltip].modeEdge and Skin.parts[ShoppingTooltip1].modeEdge, 'item links and comparisons too')
     local path = Kit.FontPath(M.db, 'tooltip')
-    assert(GameTooltipTextLeft1.font[1] == path and GameTooltipTextLeft1.font[2] == 14 and GameTooltipTextLeft2.font[2] == 12, 'lines in the Mode face')
+    assert(GameTooltipTextLeft1.font[1] == addon.Style.Weighted(path, 'semibold') and GameTooltipTextLeft1.font[2] == 14, 'the header line in SemiBold')
+    assert(GameTooltipTextLeft2.font[1] == path and GameTooltipTextLeft2.font[2] == 12, 'lines in the Mode face')
+    local mp = Skin.parts[ModeUITooltipMover]
+    assert(mp.modeEdge.preset == 'control' and mp.modeEdge.highlight[1] == Tone.ivory[1], 'the Edit Mode stand-in: a Mode control lit Ivory')
     -- No health bar.
     GameTooltipStatusBar:Show(); assert(not GameTooltipStatusBar:IsShown(), 'the health bar is gone')
 
@@ -95,15 +103,16 @@ world.run([==[
     addon:SetEditMode(true); assert(mover:IsShown(), 'the anchor shows in Edit Mode')
     addon:SetEditMode(false); assert(not mover:IsShown())
 
-    -- Borders by content: quality, class, else the rim color.
+    -- Rims by content: quality, class, else the edge's steel.
+    local rim = parts.modeEdge.rimTexture
     GameTooltip.item = 7; GameTooltip:Show()
-    assert(parts.ring.vertexColor[1] == 0.64, 'Epic item: quality border')
+    assert(parts.modeEdge.tint[1] == 0.64 and rim.vertexColor[1] == 0.64, 'Epic item: the rim in its quality')
     GameTooltip:Hide(); GameTooltip.item = nil; GameTooltip.unit = 'mouseover'; GameTooltip:Show()
-    assert(parts.ring.vertexColor[1] == Kit.onyx.frameRim[1], 'a player: the rim color while Class Border is off')
+    assert(parts.modeEdge.tint == nil, 'a player: the steel while Class Border is off')
     GameTooltip:Hide(); assert(M:SetOption('classBorder', true)); GameTooltip:Show()
-    assert(parts.ring.vertexColor[1] == 0.25, 'a mage: class border')
+    assert(parts.modeEdge.tint[1] == 0.25, 'a mage: class rim')
     GameTooltip:Hide(); GameTooltip.unit = { secret = true }; GameTooltip:Show()
-    assert(parts.ring.vertexColor[1] == Kit.onyx.frameRim[1], 'a secret unit keeps the rim color')
+    assert(parts.modeEdge.tint == nil, 'a secret unit keeps the steel')
     GameTooltip:Hide()
 
     -- Text colors: a player's name and class line, the level number.
@@ -121,7 +130,7 @@ world.run([==[
     assert(GameTooltipTextLeft1.color[1] == M.db.hostileColor[1], 'hostile NPC')
     reaction = 4; postCalls[1](GameTooltip, { lines = {} }); assert(GameTooltipTextLeft1.color[1] == M.db.neutralColor[1], 'neutral')
     reaction = 5; postCalls[1](GameTooltip, { lines = {} }); assert(GameTooltipTextLeft1.color[1] == M.db.friendlyColor[1], 'friendly')
-    tapped = true; postCalls[1](GameTooltip, { lines = {} }); assert(GameTooltipTextLeft1.color[1] == Kit.palette.tapped[1], 'tapped: gray')
+    tapped = true; postCalls[1](GameTooltip, { lines = {} }); assert(GameTooltipTextLeft1.color[1] == Tone.reaction.tapped[1], 'tapped: gray')
     tapped, reaction = false, 2
     -- Quest lines.
     Lines('Defias Thug', 'Red Linen Goods', ' - Red Linen Bandana: 3/6')
@@ -157,16 +166,14 @@ world.run([==[
     GameTooltip:Hide()
 
     -- Settings: checked on a copy; live repaint.
-    assert(not M:SetOption('borderSize', 9) and not M:SetOption('position', 'left') and not M:SetOption('nope', 1))
-    assert(M:SetOption('backgroundOpacity', 50) and parts.round.vertexColor[4] == 0.5)
-    assert(M:SetOption('borderSize', 4) and parts.ring.texture:find('Ring4'))
-    assert(M:SetOption('rounded', false) and not parts.round:IsShown() and not parts.ring:IsShown())
-    assert(parts.fill.vertexColor[4] == 0.5 and parts.edgeRim[1]:IsShown(), 'Square: flat fill and square border')
-    assert(M:SetOption('gradient', false) and not parts.wash:IsShown())
+    assert(not M:SetOption('borderSize', 2) and not M:SetOption('rounded', false) and not M:SetOption('position', 'left') and not M:SetOption('nope', 1))
+    assert(M:SetOption('backgroundOpacity', 50) and parts.face.vertexColor[4] == 0.5)
+    assert(M:SetOption('backgroundOpacity', 100) and parts.modeEdge.below:IsShown(), 'an opaque tooltip has its soft drop')
     assert(M:SetOption('textSize', 14) and GameTooltipTextLeft2.font[2] == 14)
     assert(M:SetOption('scale', 120) and GameTooltip.scale == 1.2)
-    assert(M:SetOption('border', false) and not parts.edgeRim[1]:IsShown())
-    M:ResetToDefaults(); assert(M.db.backgroundOpacity == 92 and M.db.border and M.db.rounded and M.db.npcNameColor == 'reaction')
+    assert(M:SetOption('border', false) and not parts.modeEdge.holder:IsShown() and not parts.modeEdge.below:IsShown(), 'Border off: no edge')
+    assert(Point(parts.face)[4] == 0, 'the face to the tooltip\'s sides without it')
+    M:ResetToDefaults(); assert(M.db.backgroundOpacity == 92 and M.db.border and M.db.npcNameColor == 'reaction')
 
     SlashCmdList.MODEUI()
     local window = addon.configWindow
@@ -185,15 +192,23 @@ world.run([==[
     -- Version 1: a fill still at #0B0B0D takes the health color; the health bar settings go.
     local old = { version = 1, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, healthBar = true, healthHeight = 6, healthColor = { 0, 1, 0 } }
     M.Initialize(old)
-    assert(old.version == 4 and old.backgroundColor[1] == Kit.onyx.health[1] and old.healthBar == nil and old.healthColor == nil)
-    assert(old.borderSize == 1 and old.classBorder == false, 'version 2 defaults: 1px, no class color')
-    local picked = { version = 2, borderSize = 3, classBorder = false }
-    M.Initialize(picked); assert(picked.borderSize == 3, 'a picked border size stays')
-    -- Version 3 -> 4: a fill still at the old health color (#1C1E21) takes #131212.
+    assert(old.version == 5 and old.backgroundColor[1] == G.panel[1] and old.healthBar == nil and old.healthColor == nil)
+    assert(old.classBorder == false and old.borderSize == nil, 'version 2 defaults: no class color; the size went with version 5')
+    -- Version 3 -> 4: a fill still at the old health color (#1C1E21) takes #131212 (then Graphite).
     local three = { version = 3, backgroundColor = { 28 / 255, 30 / 255, 33 / 255 } }
-    M.Initialize(three); assert(three.version == 4 and three.backgroundColor[1] == Kit.onyx.health[1], 'the old health color follows')
+    M.Initialize(three); assert(three.version == 5 and three.backgroundColor[1] == G.panel[1], 'the old health color follows')
     local mine = { version = 3, backgroundColor = { 0, 0, 1 } }
     M.Initialize(mine); assert(mine.backgroundColor[3] == 1, 'a picked fill stays')
+    -- Version 4 -> 5 (Phase 7): the border's shape and color settings go;
+    -- the fill, reactions and Expressway still at version 4's defaults follow.
+    local four = { version = 4, backgroundColor = { 19 / 255, 18 / 255, 18 / 255 }, rounded = false, gradient = true,
+        borderColor = { 1, 0, 0 }, borderSize = 3, fontMedia = 'Expressway', hostileColor = { 224 / 255, 102 / 255, 102 / 255 },
+        neutralColor = { 1, 209 / 255, 64 / 255 }, friendlyColor = { 0, 0, 1 } }
+    M.Initialize(four)
+    assert(four.version == 5 and four.rounded == nil and four.gradient == nil and four.borderColor == nil and four.borderSize == nil, 'shape and color settings gone')
+    assert(four.backgroundColor[1] == G.panel[1] and four.fontMedia == 'Mode', 'Graphite and the Mode typeface')
+    assert(four.hostileColor[1] == Tone.reaction.hostile[1] and four.neutralColor[1] == Tone.reaction.neutral[1], 'the gameplay tones')
+    assert(four.friendlyColor[3] == 1, 'a picked reaction color stays')
 ]==], "tooltip")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

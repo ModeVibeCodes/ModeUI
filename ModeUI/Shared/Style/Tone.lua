@@ -51,6 +51,8 @@ local Tone = {
     dispel = { Magic = Hex("3399FF"), Curse = Hex("9900FF"), Disease = Hex("996600"), Poison = Hex("009900") },
     quality = { [0] = Hex("9D9D9D"), [1] = Hex("FFFFFF"), [2] = Hex("1EFF00"), [3] = Hex("0070DD"), [4] = Hex("A335EE"), [5] = Hex("FF8000") },
     cooldown = Hex("FFB12F"),
+    -- Quest titles and objectives in tooltips.
+    quest = Hex("FFB12F"),
     power = Hex("3A6FB8"),
     -- Text.
     text = Hex("DADADA"),
@@ -85,7 +87,9 @@ Style.LEGACY = { nameplateFocus = Hex("FFB547"),
     windowFill = Hex("0B0B0D"),
     -- Damage Meters before version 9: version 4's background and the bar
     -- for anything without a class.
-    meterFill = Hex("040404"), meterOther = Hex("78808C") }
+    meterFill = Hex("040404"), meterOther = Hex("78808C"),
+    -- Tooltip before version 5: the neutral reaction yellow.
+    tooltipNeutral = Hex("FFD140") }
 
 -- True when `color` is (within rounding) `reference`: migrations move saved
 -- colors that still equal an old default, and keep anything the player chose.

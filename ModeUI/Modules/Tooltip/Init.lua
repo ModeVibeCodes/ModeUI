@@ -1,12 +1,13 @@
 local _, addon = ...
 if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 
--- Interface > Tooltip: Blizzard's tooltips in the Mode look, placed from
--- ModeUI's Edit Mode. Blizzard's tooltip border and background (its
--- NineSlice) are faded; ModeUI draws a rounded Onyx box (the unit frames'
--- health color, in Mode Gradient) inside a rounded rim (the item's quality
--- color, a player's class color, or the rim color), sets every line in the
--- Mode face, and colors names, class, level and quest lines. Blizzard's
+-- Interface > Tooltip: Blizzard's tooltips in the Mode design language,
+-- placed from ModeUI's Edit Mode. Blizzard's tooltip border and background
+-- (its NineSlice) are faded; ModeUI makes each tooltip a Mode window (Mode
+-- Panel in Graphite, the `window` edge inside it, its rim in the item's
+-- quality color or a player's class color), sets every line in the Mode
+-- typeface (the first in SemiBold), and colors names, class, level and quest
+-- lines. Blizzard's
 -- health bar under unit tooltips is hidden. The main tooltip's default spot
 -- is ModeUI's Tooltip anchor (moved and attached in Edit Mode) or the
 -- cursor, kept on the screen, so Blizzard's own tooltip placement (its Edit
@@ -20,7 +21,11 @@ local M = { title = L["Tooltip"], category = "interface", defaultEnabled = false
 addon.Tooltip = M
 addon:RegisterModule("tooltip", M)
 
-M.VERSION = 4
+-- Version 5 (November 15, 2026, Phase 7): the Mode design language. The
+-- border is the Mode window edge, so Rounded, Mode Gradient, Border Color and
+-- Border Size go; values still at version 4's defaults (the fill, reaction
+-- colors, Expressway) follow.
+M.VERSION = 5
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 local Public, Number = addon.IsPublic, addon.IsNumber
 
@@ -34,26 +39,25 @@ M.ELEMENT_ID = "modeTooltip"
 M.DEFAULT_POSITION = { target = "screen", placement = "center", point = "BOTTOMRIGHT", relativePoint = "BOTTOMRIGHT", x = -90, y = 110 }
 M.MOVER_WIDTH, M.MOVER_HEIGHT = 200, 64
 
--- The fill: the unit frames' default health color (Onyx #131212), as the
--- chat and the meters (owner, November 13, 2026). Version 1 used #0B0B0D,
--- version 3 the old health color #1C1E21.
-M.BACKGROUND_COLOR, M.OLD_BACKGROUND_COLOR = Copy(Kit.onyx.health), Kit.RGB(11, 11, 13)
--- Text colors: reactions in the Mode palette, quest lines a vivid
--- yellow-orange.
-M.HOSTILE_COLOR, M.NEUTRAL_COLOR, M.FRIENDLY_COLOR = Copy(Kit.palette.hostile), Kit.RGB(255, 209, 64), Copy(Kit.palette.green)
-M.QUEST_COLOR = Kit.RGB(255, 177, 47)
+-- The fill: Graphite panel, as every Mode window. Text colors: reactions in
+-- the gameplay tones (never softened), quest lines in the quest tone.
+-- Earlier defaults, for migrations, are in Migrations.lua and Style.LEGACY.
+local Tone = addon.Style.Tone
+M.BACKGROUND_COLOR = Copy(Tone.graphite.panel)
+M.HOSTILE_COLOR, M.NEUTRAL_COLOR, M.FRIENDLY_COLOR = Copy(Tone.reaction.hostile), Copy(Tone.reaction.neutral), Copy(Tone.reaction.friendly)
+M.QUEST_COLOR = Copy(Tone.quest)
 
 M.defaults = {
     version = M.VERSION,
-    -- Look: a rounded box in Mode Gradient (Rounded off: square corners).
-    backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 92, gradient = true, rounded = true,
-    -- Version 3: a 1px border, no class color on it (owner, November 13, 2026).
-    border = true, borderColor = Copy(Kit.onyx.frameRim), borderSize = 1,
-    qualityBorder = true, classBorder = false,
+    -- Look: a Mode window. Border shows its edge; Quality Border and Class
+    -- Border color the edge's rim (no class color by default, owner,
+    -- November 13, 2026).
+    backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 92,
+    border = true, qualityBorder = true, classBorder = false,
     -- Size: the tooltip's least width, extra room around the text, scale.
     minWidth = 0, padding = 0, scale = 100,
     -- Text
-    font = "game", fontMedia = "Expressway", headerSize = 14, textSize = 12, outline = false, shadow = true,
+    font = "game", fontMedia = addon.Style.FONT_DEFAULT, headerSize = 14, textSize = 12, outline = false, shadow = true,
     -- Text colors. Modes: a player's name and class line by class, an NPC's
     -- name by reaction, the level by difficulty; "custom" uses the color
     -- beside it; "blizzard" leaves Blizzard's.
@@ -69,9 +73,9 @@ M.defaults = {
     -- Combat
     hideInCombat = false, shiftShows = true,
 }
-M.colorKeys = { backgroundColor = true, borderColor = true, playerNameCustom = true, npcNameCustom = true, hostileColor = true,
+M.colorKeys = { backgroundColor = true, playerNameCustom = true, npcNameCustom = true, hostileColor = true,
     neutralColor = true, friendlyColor = true, classTextCustom = true, levelCustom = true, questColor = true }
-M.ranges = { backgroundOpacity = { 0, 100, 5 }, borderSize = { 1, 4, 1 }, headerSize = { 8, 24, 1 }, textSize = { 8, 20, 1 },
+M.ranges = { backgroundOpacity = { 0, 100, 5 }, headerSize = { 8, 24, 1 }, textSize = { 8, 20, 1 },
     scale = { 50, 150, 5 }, minWidth = { 0, 400, 10 }, padding = { 0, 20, 1 } }
 M.choices = {
     playerNameColor = { { id = "class", label = "Class" }, { id = "custom", label = "Custom" }, { id = "blizzard", label = "Blizzard" } },
@@ -103,7 +107,7 @@ end
 function M.Initialize(db)
     if db.version == nil then db.version = M.VERSION end
     if db.version == 1 then
-        if Same(db.backgroundColor, M.OLD_BACKGROUND_COLOR) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        if Same(db.backgroundColor, addon.Style.LEGACY.windowFill) then db.backgroundColor = Copy(Kit.onyx.health) end
         db.healthBar, db.healthHeight, db.healthColor = nil, nil, nil
         db.version = 2
     end
@@ -116,8 +120,20 @@ function M.Initialize(db)
     end
     -- Version 4: a fill still at the old health color (#1C1E21) takes #131212.
     if db.version == 3 then
-        if Kit.IsOldOnyxHealth(db.backgroundColor) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        if Kit.IsOldOnyxHealth(db.backgroundColor) then db.backgroundColor = Copy(Kit.onyx.health) end
         db.version = 4
+    end
+    -- Version 5 (Phase 7): the Mode design language. The border is the Mode
+    -- window edge, so its shape and color settings go; a fill still at
+    -- #131212, reactions still at version 4's colors and Expressway follow.
+    if db.version == 4 then
+        db.rounded, db.gradient, db.borderColor, db.borderSize = nil, nil, nil, nil
+        if Same(db.backgroundColor, Kit.onyx.health) then db.backgroundColor = Copy(M.BACKGROUND_COLOR) end
+        if Same(db.hostileColor, Kit.palette.hostile) then db.hostileColor = Copy(M.HOSTILE_COLOR) end
+        if Same(db.neutralColor, addon.Style.LEGACY.tooltipNeutral) then db.neutralColor = Copy(M.NEUTRAL_COLOR) end
+        if Same(db.friendlyColor, Kit.palette.green) then db.friendlyColor = Copy(M.FRIENDLY_COLOR) end
+        if db.fontMedia == "Expressway" then db.fontMedia = addon.Style.FONT_DEFAULT end
+        db.version = 5
     end
     assert(db.version == M.VERSION, "Invalid tooltip settings version")
     for key, default in pairs(M.defaults) do

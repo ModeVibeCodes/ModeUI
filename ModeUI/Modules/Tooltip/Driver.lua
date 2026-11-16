@@ -147,7 +147,7 @@ function M:BuildMover()
     local mover = CreateFrame("Frame", "ModeUITooltipMover", UIParent)
     mover:SetFrameStrata("HIGH")
     mover:SetSize(self.MOVER_WIDTH, self.MOVER_HEIGHT)
-    mover.parts = Skin.Panel(mover, "BACKGROUND", -8)
+    mover.parts = Skin.Box(mover, "control", { inset = addon.Style.EdgeReach("control") })
     mover.label = mover:CreateFontString(nil, "OVERLAY")
     mover.label:SetPoint("CENTER")
     mover:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", self.DEFAULT_POSITION.x, self.DEFAULT_POSITION.y)
@@ -163,10 +163,11 @@ function M:PlaceMover()
     local mover = self.mover
     if not mover then return end
     local px = Kit.PixelSize(mover)
-    Skin.PaintPanel(mover.parts, mover, self.db.backgroundColor, 0.85, Kit.palette.accent, px)
-    Skin.Font(mover.label, Kit.FontPath(self.db, self.id), self.db.textSize, false, true, px)
+    -- A Mode control lit Ivory, so the stand-in reads as the thing to move.
+    Skin.PaintBox(mover.parts, mover, "Solid", self.db.backgroundColor, 0.85, true, "accent")
+    Skin.Font(mover.label, addon.Style.Weighted(Kit.FontPath(self.db, self.id), "semibold"), self.db.textSize, false, true, px)
     mover.label:SetText(L["Tooltip"])
-    mover.label:SetTextColor(1, 1, 1, 1)
+    Skin.Ink(mover.label, Skin.mode.heading)
 end
 
 -- In ModeUI's Edit Mode the anchor shows (while the tooltip uses it).

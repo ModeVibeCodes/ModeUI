@@ -3,8 +3,8 @@ local M = addon.Tooltip
 if not M then return end
 
 -- What a tooltip shows decides its colors:
---   Border      an item's quality color (Quality Border), a player's class
---               color (Class Border), else Border Color.
+--   Border      the edge's rim: an item's quality color (Quality Border), a
+--               player's class color (Class Border), else the edge's steel.
 --   Name        line 1: a player's in their class color, an NPC's by
 --               reaction (hostile, neutral, friendly; gray once tapped by
 --               someone else), or Custom, or Blizzard's.
@@ -54,7 +54,7 @@ end
 
 -- An NPC's reaction color: gray once tapped by someone else.
 function M:ReactionColor(unit)
-    if Call(UnitIsTapDenied, unit) == true then return Kit.palette.tapped end
+    if Call(UnitIsTapDenied, unit) == true then return addon.Style.Tone.reaction.tapped end
     local reaction = Call(UnitReaction, unit, "player")
     if not Number(reaction) then return nil end
     if reaction <= 3 then return self.db.hostileColor end
@@ -77,7 +77,7 @@ function M:LevelColor(unit)
     return { 0.5, 0.5, 0.5 }
 end
 
--- The border color for what the tooltip shows, or nil for Border Color.
+-- The rim color for what the tooltip shows, or nil for the edge's steel.
 function M:ContentColor(tooltip)
     local db = self.db
     if db.qualityBorder and tooltip.GetItem then

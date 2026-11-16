@@ -22,8 +22,6 @@ return {
     ["Modules/PartyFrames/AuraInit.lua"] = { color = 1 },
     ["Modules/PartyFrames/Init.lua"] = { color = 6 },
     ["Modules/PartyFrames/Picker.lua"] = { border = 2 },
-    ["Modules/Tooltip/Driver.lua"] = { color = 1 },
-    ["Modules/Tooltip/Init.lua"] = { color = 3 },
     ["Modules/UnitFrames/Init.lua"] = { color = 11 },
     ["Modules/Windows/Init.lua"] = { color = 22 },
     ["Shared/Border/Border.lua"] = { border = 1 },

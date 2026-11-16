@@ -62,7 +62,7 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Cast | casting `#F2B13C`, channeling `#3FBF7F`, not interruptible `#7D838C`, interrupted `#E5484D` |
 | Dispel (Blizzard) | Magic `#3399FF`, Curse `#9900FF`, Disease `#996600`, Poison `#009900` |
 | Item quality | common `#9D9D9D`, uncommon `#1EFF00`, rare `#0070DD`, epic `#A335EE`, legendary `#FF8000` |
-| Other | cooldown text `#FFB12F`; class colors come from `Domain.UnitColor` (Class Colors may override) |
+| Other | cooldown text `#FFB12F`; quest lines in tooltips `#FFB12F` (`quest`); class colors come from `Domain.UnitColor` (Class Colors may override) |
 
 Changing a token's value is a migration: saved colors that still equal the old
 value move to the new one; anything the player chose stays.
@@ -270,6 +270,11 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   the timer in Graphite muted; rows are Mode Panel bars in class colors on
   Mode BG (Slate), names and values pure white and outlined; the fight letter
   is Ivory. The header menu is a Mode window.
+- **Tooltips:** each a Mode window (Graphite panel at the tooltip's
+  Background Opacity, the `window` edge inside it), the edge's rim in the
+  item's quality color (or a player's class color, when chosen); the first
+  line in SemiBold; reactions in the gameplay tones and quest lines in the
+  quest tone (#FFB12F).
 
 ## Settings window
 
