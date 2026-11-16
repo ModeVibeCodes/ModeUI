@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: |cffefe6d2ModeUI Probe|r: Panels
-## Notes: Preview of the Mode redesign of Damage Meters, Tooltip, Bags and Minimap. Plain preview frames only; ModeUI's modules and settings are untouched. /mprobe panels
+## Notes: Preview of the Mode redesign of Tooltip, Bags and Minimap. Plain preview frames only; ModeUI's modules and settings are untouched. /mprobe panels
 ## Author: Mode
 ## Version: 0.2.0-probe.1
 ## Dependencies: ModeUI

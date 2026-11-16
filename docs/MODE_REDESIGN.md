@@ -33,7 +33,7 @@ before the next starts.
 | 5 | Frames: Unit Frames, Party Frames, Nameplates | Done, confirmed |
 | 5b | Texture retune after in-game look (see below) | Done, confirmed |
 | 6 | Bars and buttons: **Action Bars**, then **Cooldown Manager** (the ModeCDM addon) | Done, confirmed (November 15) |
-| 7 | Windows and panels: Skin layer + Windows, Chat, Damage Meters, Tooltip, Bags, Minimap | Skin layer + Windows done, confirmed (November 15); Chat done, confirmed (November 15); Damage Meters built (settings v9), awaiting its in-game gate; next: Tooltip |
+| 7 | Windows and panels: Skin layer + Windows, Chat, Damage Meters, Tooltip, Bags, Minimap | Skin layer + Windows done, confirmed (November 15); Chat done, confirmed (November 15); Damage Meters done, confirmed (November 15); next: Tooltip |
 | 8 | Cleanup: delete legacy border systems and palettes | Not started |
 | 9 | Release 0.2.0: notes, notices | Only with the owner's go-ahead |
 | 10 | New coverage (optional) | Waits on decision 2 |

@@ -1,9 +1,9 @@
 local _, ns = ...
 local Kit = ns.Kit
 if not Kit.ok then return end
--- Damage Meters probe (Phase 7; the Windows and Chat tabs retired once
--- ModeUI's modules were built and confirmed) and the Panel and Field helpers
--- the other tabs share: panels in the Mode design
+-- The Panel and Field helpers the Phase 7 tabs share (the Windows, Chat and
+-- Damage Meters tabs retired once ModeUI's modules were built and
+-- confirmed): panels in the Mode design
 -- language (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Graphite panel
 -- with Mode Panel, Mode Title bar, the `window` edge (1px Steel Sheen, black
 -- gap, shadow and drop), cards in the `card` edge, controls in `control`.
@@ -41,36 +41,4 @@ function ns.Field(parent, width, placeholder)
     text:SetText(placeholder)
     field.text = text
     return field
-end
-
--- Damage Meters: Mode Panel bars in class colors, 1px apart.
-local METER = { { "WARRIOR", "Brannoc", 182400 }, { "MAGE", "Vayle", 164900 }, { "HUNTER", "Kestrel", 151200 },
-    { "PRIEST", "Isolde", 40300 } }
-function ns.BuildMeters(body)
-    local meter = ns.Panel(body, "Damage Done  ·  Current", 280, 22 + 6 * 19 + 8)
-    meter:SetPoint("TOPLEFT", 6, -6)
-    local _, class = D.Query.Plain(UnitClass, "player")
-    local rows = { { class or "ROGUE", D.Name.Get("player"), 171800 } }
-    for _, row in ipairs(METER) do rows[#rows + 1] = row end
-    table.sort(rows, function(a, b) return a[3] > b[3] end)
-    local total = 0
-    for _, row in ipairs(rows) do total = total + row[3] end
-    for i, row in ipairs(rows) do
-        local holder = CreateFrame("Frame", nil, meter)
-        holder:SetPoint("TOPLEFT", 4, -26 - (i - 1) * 19); holder:SetPoint("TOPRIGHT", -4, -26 - (i - 1) * 19)
-        holder:SetHeight(18)
-        local bar = S.Bar(holder, { role = "meter" })
-        bar:SetAllPoints()
-        bar:SetFill(Kit.ClassColor(row[1]))
-        bar:SetMinMaxValues(0, rows[1][3]); bar:SetValue(row[3])
-        local texts = CreateFrame("Frame", nil, holder)
-        texts:SetAllPoints(); texts:SetFrameLevel(bar:GetFrameLevel() + 3)
-        local name = Kit.Text(texts, 11, "semibold", T.textBright)
-        name:SetPoint("LEFT", 5, 0)
-        name:SetText(i .. ". " .. (Kit.IsPublic(row[2]) and row[2] or "You"))
-        local value = Kit.Text(texts, 11, "bold", T.textBright)
-        value:SetPoint("RIGHT", -5, 0)
-        value:SetFormattedText("%.1fK  (%d%%)", row[3] / 1000, math.floor(row[3] / total * 100 + 0.5))
-    end
-    Kit.Caption(body, "Mode Panel bars in class colors on Mode BG, 1px apart; names SemiBold, numbers Bold. Sample fight (your name in it).", meter, 0, -12):SetWidth(600)
 end
