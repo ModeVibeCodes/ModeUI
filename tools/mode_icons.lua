@@ -74,6 +74,20 @@ I.ClassColors = Any(Ring(11, 11.5, 5.5), Ring(21, 11.5, 5.5), Ring(16, 20.5, 5.5
 I.Cooldowns = Any(Ring(16, 16, 11), Line(16, 16, 16, 9), Line(16, 16, 21, 19))
 I.Back = Any(Line(19, 7, 10, 16, 19, 25))
 
+-- Glyphs for controls and marks (not module icons).
+-- Clean Up: a broom, its handle from the top right to the binding, the head
+-- fanning down left with one bristle line.
+I.CleanUp = Any(Line(28, 3, 19.5, 12.5), Line(14, 11, 22, 19), Line(14, 11, 5, 22, 4, 28, 10, 27, 22, 19), Line(15, 18, 8.5, 25))
+-- Quest: a disc with the "!" cut out (a quest item's mark, tinted the quest tone).
+do
+    local disc, dot = Dot(16, 16, 15), Dot(16, 24, 2.6)
+    I.Quest = function(x, y)
+        local bang = (x >= 13.5 and x <= 18.5 and y >= 6 and y <= 19) or dot(x, y)
+        return (disc(x, y) and not bang) and 1 or 0
+    end
+end
+I.GLYPHS = { "CleanUp", "Quest" }
+
 -- Menu order, for the build and the test.
 I.ORDER = { "Home", "UnitFrames", "GroupFrames", "Nameplates", "ActionBars", "DamageMeters", "Chat", "Windows",
     "Tooltip", "Bags", "Minimap", "Profiles", "Optimizations", "ClassColors", "Cooldowns", "Back" }

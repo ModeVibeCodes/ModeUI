@@ -32,6 +32,8 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
         b.NormalTexture, b.PushedTexture, b.HighlightTexture = b:CreateTexture(), b:CreateTexture(), b:CreateTexture()
         function b:GetNormalTexture() return self.NormalTexture end
         b.Cooldown = createFrame('Cooldown', name .. 'Cooldown', b)
+        b.Cooldown.countdown = b.Cooldown:CreateFontString()
+        function b.Cooldown:GetCountdownFontString() return self.countdown end
         function b:GetBagID() return self.bagID or self:GetParent():GetID() end
         b:SetScript('OnClick', function(self, button)
             if button == 'RightButton' then used[#used + 1] = { self:GetBagID(), self:GetID() }
@@ -80,6 +82,14 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
         SetItemSearch = function(text) search = text end,
         SortBags = function() sorts = sorts + 1 end,
     }
+    C_Container.ContainerIDToInventoryID = function(bag) return 30 + bag end
+    -- Equipped bags: 1 and 2 (8 slots each), 3 and 4 empty, the reagent bag (5).
+    bagIcons, bagQualities, equipped, pickedBags, cursor = { [31] = 201, [32] = 202, [35] = 205 }, { [32] = 3 }, {}, {}, nil
+    function GetInventoryItemTexture(unit, slot) return bagIcons[slot] end
+    function GetInventoryItemQuality(unit, slot) return bagQualities[slot] or (bagIcons[slot] and 1) or nil end
+    function CursorHasItem() return cursor ~= nil end
+    function PutItemInBag(slot) equipped[#equipped + 1] = slot end
+    function PickupBagFromSlot(slot) pickedBags[#pickedBags + 1] = slot end
     C_NewItems = { IsNewItem = function(bag, slot) return newItems[bag .. ':' .. slot] == true end }
     C_Item = {
         GetItemInfoInstant = function(link)
@@ -166,6 +176,17 @@ world.run([==[
     assert(Rim(potion)[1] == Tone.ivory[1], 'new items in Ivory')
     newItems['0:1'] = nil; potion.scripts.OnEnter(potion)
     assert(Rim(potion) == nil, 'pointing at it clears the mark')
+    -- Quest items: a small quest mark in the corner.
+    assert(art[letter].quest:IsShown() and art[letter].quest.texture:find('Icons\\Quest', 1, true) and art[letter].quest.vertexColor[1] == M.db.questColor[1], 'a quest mark')
+    assert(Point(art[letter].quest)[1] == 'TOPRIGHT' and not art[potion].quest:IsShown(), 'top right, quest items only')
+    -- Cooldown numbers: the Mode typeface's Bold at Count Size, cooldown color, centered.
+    local countdown = potion.Cooldown.countdown
+    assert(countdown.font[1] == addon.Style.Weighted(Kit.FontPath(M.db, 'bags'), 'bold') and countdown.font[2] == 12, 'Bold at Count Size')
+    assert(countdown.color[1] == Tone.cooldown[1] and Point(countdown)[1] == 'CENTER', 'cooldown color, centered')
+    -- Clean Up: the broom glyph, the close cross's size.
+    local clean = frame.header.clean
+    assert(clean.icon and clean.icon.texture:find('CleanUp', 1, true) and clean.text == nil and clean.width == frame.header.close.width, 'a broom')
+    assert(Point(clean)[2] == frame.header.close and Point(frame.header.sort)[2] == clean, 'between Sort and close')
     -- The window: a Mode window with a Mode Title header and a Mode field.
     local wp = Skin.parts[frame]
     assert(wp.faceKey == 'Panel' and wp.face.vertexColor[1] == G.panel[1] and wp.face.vertexColor[4] == 0.95, 'Mode Panel at 95%')
@@ -186,8 +207,26 @@ world.run([==[
     assert(M.buttons[0][13].points[1][5] == -(g.gridTop + 30 + 3), 'the 13th slot starts row two (30 high, 3 apart)')
     assert(frame.points[1][1] == 'BOTTOMRIGHT' and frame.points[1][2] == M.mover, 'hangs from its stand-in at Grow From')
 
-    -- Footer: free slots and money.
-    assert(frame.freeText:GetText() == '29/36 Free', frame.freeText:GetText())
+    -- Footer: the Bag Bar (equipped bag slots with their free slots), the
+    -- free count over a capacity bar, and the money.
+    local bb = frame.bagButtons
+    assert(bb[1]:IsShown() and bb[5]:IsShown() and bb[0] == nil and bb[-2] == nil, 'the four bag slots and the reagent bag')
+    assert(bb[1].icon.texture == 201 and bb[1].free:GetText() == '7' and bb[2].free:GetText() == '8', 'icons and free slots')
+    assert(not bb[3].icon:IsShown() and bb[3].empty:IsShown() and bb[3].free:GetText() == '', 'an empty bag slot: the bag glyph')
+    assert(bb[2].box.modeEdge.tint[1] == 0 and bb[1].box.modeEdge.tint == nil, 'a rare bag in its quality')
+    assert(bb[1].width == 26 and bb[1].height == 22 and Point(bb[2])[4] == Point(bb[1])[4] + 26 + 3, 'small Mode slots, 3px apart')
+    bb[3].scripts.OnReceiveDrag(bb[3]); assert(equipped[1] == 33, 'a bag dropped on a slot goes on')
+    bb[1].scripts.OnClick(bb[1], 'LeftButton'); assert(#equipped == 1, 'a click without a bag does nothing')
+    cursor = 'bag'; bb[4].scripts.OnClick(bb[4], 'LeftButton'); cursor = nil
+    assert(equipped[2] == 34, 'a click with a bag on the cursor puts it on')
+    bb[1].scripts.OnDragStart(bb[1]); assert(pickedBags[1] == 31, 'dragging a bag off picks it up')
+    bb[1].scripts.OnEnter(bb[1])
+    assert(potion.alpha == 0.25 and M.buttons[1][8].alpha == 1, 'pointing at a bag lights its slots')
+    bb[1].scripts.OnLeave(bb[1]); assert(potion.alpha == 1, 'and back')
+    assert(frame.freeCount:GetText() == '29' and frame.freeLabel:GetText() == 'free', frame.freeCount:GetText())
+    assert(frame.freeCount.color[1] == Tone.celadon[1], 'Celadon with room')
+    assert(frame.freeMeter.value == 7 and select(2, frame.freeMeter:GetMinMaxValues()) == 36, 'the capacity bar fills as the bags fill')
+    assert(M.FullnessColor(3, 36)[1] == Tone.ivory[1] and M.FullnessColor(0, 36)[1] == Tone.rosewood[1], 'Ivory near full, Rosewood full')
     assert(frame.moneyText:GetText():find('^12|T') and frame.moneyText:GetText():find('34|T') and frame.moneyText:GetText():find('56|T'), 'gold, silver, copper')
 
     -- Search: the game's own bag search; others fade.

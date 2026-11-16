@@ -24,15 +24,16 @@ local function Tip(owner, title, line)
 end
 local function HideTip() if GameTooltip and GameTooltip.Hide then GameTooltip:Hide() end end
 
--- A header button: a word (Sort, Clean Up) or a glyph (close), in Graphite
--- secondary, Ivory under the mouse.
+-- A header button: a word (Sort) or a glyph (Clean Up's broom, close), in
+-- Graphite secondary, Ivory under the mouse. `glyph` is a Media texture or a
+-- Style asset ("Icon..." keys).
 local function HeaderButton(parent, glyph)
     local button = CreateFrame("Button", nil, parent)
     button:RegisterForClicks("LeftButtonUp")
     if glyph then
         button.icon = button:CreateTexture(nil, "ARTWORK")
         button.icon:SetAllPoints()
-        addon.Media:ApplyTexture(button.icon, glyph)
+        if Style.ASSETS[glyph] then Style.ApplyAsset(button.icon, glyph) else addon.Media:ApplyTexture(button.icon, glyph) end
     else
         button.text = Kit.Text(button)
         button.text:SetPoint("CENTER")
@@ -67,12 +68,12 @@ function M:BuildWindow()
     header.layer = CreateFrame("Frame", nil, header)
     header.layer:SetAllPoints(); header.layer:SetFrameLevel(header:GetFrameLevel() + 2)
     header.title = Kit.Text(header.layer)
-    header.sort, header.clean, header.close = HeaderButton(header.layer), HeaderButton(header.layer), HeaderButton(header.layer, "ModeClose")
+    header.sort, header.clean, header.close = HeaderButton(header.layer), HeaderButton(header.layer, "IconCleanUp"), HeaderButton(header.layer, "ModeClose")
     frame.header = header
     frame.divider = frame:CreateTexture(nil, "BORDER")
     Style.ApplyAsset(frame.divider, "Solid")
     self:BuildSearch(frame)
-    frame.freeText, frame.moneyText = Kit.Text(frame), Kit.Text(frame)
+    self:BuildFooter(frame)
     frame.labels = {}
     -- One holder per bag, carrying the bag's ID: Blizzard's item buttons
     -- find their bag through their parent (ContainerFrameItemButtonMixin
@@ -174,27 +175,22 @@ function M:PaintWindow()
     header.close:ClearAllPoints(); header.close:SetPoint("RIGHT", header, "RIGHT", -g.inset, 0)
     header.close:SetSize(glyph, glyph)
     local small = math.max(8, db.titleSize - 2)
-    local prior = header.close
-    for _, key in ipairs({ "clean", "sort" }) do
-        local button = header[key]
-        Kit.Font(button.text, look, small, path, g.px)
-        button.text:SetText(key == "clean" and L["Clean Up"] or self:SortLabel())
-        -- Sized from the setting, never measured: a word's width is about
-        -- 0.55 of its font size per letter, plus room either side (and
-        -- Sort's chevron, a font size square).
-        local chevron = key == "sort" and small + 2 or 0
-        button:SetSize(math.floor((#button.text:GetText() * small * 0.55 + 12 + chevron) / g.px + 0.5) * g.px, math.max(g.px, g.header))
-        button:ClearAllPoints(); button:SetPoint("RIGHT", prior, "LEFT", -g.inset, 0)
-        prior = button
-    end
+    -- Clean Up: the broom, the close cross's size, left of it.
+    header.clean:ClearAllPoints(); header.clean:SetPoint("RIGHT", header.close, "LEFT", -g.inset, 0)
+    header.clean:SetSize(glyph, glyph)
+    local prior = Containers.CanCleanUp() and header.clean or header.close
+    local sort = header.sort
+    Kit.Font(sort.text, look, small, path, g.px)
+    sort.text:SetText(self:SortLabel())
+    -- Sized from the setting, never measured: a word's width is about 0.55
+    -- of its font size per letter, plus room either side and the chevron (a
+    -- font size square).
+    sort:SetSize(math.floor((#sort.text:GetText() * small * 0.55 + 12 + small + 2) / g.px + 0.5) * g.px, math.max(g.px, g.header))
+    sort:ClearAllPoints(); sort:SetPoint("RIGHT", prior, "LEFT", -g.inset, 0)
     self:PaintSortMenu(g, look, path, small)
     header.clean:SetShown(Containers.CanCleanUp())
     for _, key in ipairs({ "sort", "clean", "close" }) do header[key]:Paint() end
     self:PaintSearch(g, look, path)
-    for _, text in ipairs({ frame.freeText, frame.moneyText }) do
-        Kit.Font(text, look, math.max(8, db.titleSize - 1), path, g.px)
-        Skin.Ink(text, C.text)
-    end
     frame:ClearAllPoints()
     frame:SetPoint(db.growFrom, self.mover, db.growFrom, 0, 0)
     self.g = g
@@ -238,36 +234,6 @@ function M:SizeWindow(width, height)
     self.frame:SetSize(width, height)
     self:PlaceMover()
     self:UpdateFooter()
-end
-
--- Gold, silver and copper with the game's coin icons; copper alone below a silver.
-local COINS = { { 10000, "Interface\\MoneyFrame\\UI-GoldIcon" }, { 100, "Interface\\MoneyFrame\\UI-SilverIcon" },
-    { 1, "Interface\\MoneyFrame\\UI-CopperIcon" } }
-function M.MoneyText(money, size)
-    local parts, rest = {}, money
-    for i, coin in ipairs(COINS) do
-        local amount = math.floor(rest / coin[1])
-        rest = rest - amount * coin[1]
-        if amount > 0 or (i == #COINS and #parts == 0) then
-            parts[#parts + 1] = string.format("%d|T%s:%d:%d:2:0|t", amount, coin[2], size, size)
-        end
-    end
-    return table.concat(parts, " ")
-end
-
-function M:UpdateFooter()
-    local frame, g, db = self.frame, self.g, self.db
-    if not frame or not g then return end
-    local y = g.border + g.pad
-    frame.freeText:ClearAllPoints(); frame.freeText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", g.left, y)
-    frame.moneyText:ClearAllPoints(); frame.moneyText:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -g.left, y)
-    frame.freeText:SetShown(db.showFreeSlots and g.footer > 0)
-    frame.moneyText:SetShown(db.showMoney and g.footer > 0)
-    if db.showFreeSlots then
-        local used, total = self:SlotCounts()
-        frame.freeText:SetText(string.format(L["%d/%d Free"], total - used, total))
-    end
-    if db.showMoney then frame.moneyText:SetText(self.MoneyText(Containers.Money(), math.max(8, db.titleSize - 1))) end
 end
 
 -- Edit Mode stand-in ------------------------------------------------------------

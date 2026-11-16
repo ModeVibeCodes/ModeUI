@@ -136,6 +136,45 @@ function Containers.SetSearch(text)
 end
 function Containers.HasSearch() return type(API("SetItemSearch")) == "function" end
 
+-- Equipped bags (1-4, and the reagent bag): the inventory slot holding bag
+-- `bag`, its icon and quality, its tooltip, and putting a bag there or
+-- picking it up (the game's PutItemInBag and PickupBagFromSlot, which
+-- Blizzard's own bag bar calls; neither is protected).
+function Containers.BagSlot(bag)
+    local ok, slot = Query.Call(API("ContainerIDToInventoryID"), bag)
+    if ok and Public(slot) and type(slot) == "number" then return slot end
+    return nil
+end
+function Containers.BagIcon(bag)
+    local slot = Containers.BagSlot(bag)
+    if not slot then return nil end
+    local ok, icon = Query.Call(GetInventoryItemTexture, "player", slot)
+    if ok and icon ~= nil and Public(icon) then return icon end
+    return nil
+end
+function Containers.BagQuality(bag)
+    local slot = Containers.BagSlot(bag)
+    if not slot then return nil end
+    local ok, quality = Query.Call(GetInventoryItemQuality, "player", slot)
+    if ok and Public(quality) and type(quality) == "number" then return quality end
+    return nil
+end
+function Containers.BagTooltip(tooltip, bag)
+    local slot = Containers.BagSlot(bag)
+    if not (slot and tooltip and tooltip.SetInventoryItem) then return false end
+    local ok, has = pcall(tooltip.SetInventoryItem, tooltip, "player", slot)
+    return ok and has == true
+end
+function Containers.CursorHasItem() return Query.Truthy(CursorHasItem) end
+function Containers.EquipBag(bag)
+    local slot = Containers.BagSlot(bag)
+    return slot ~= nil and (pcall(PutItemInBag, slot)) or false
+end
+function Containers.PickupBag(bag)
+    local slot = Containers.BagSlot(bag)
+    return slot ~= nil and (pcall(PickupBagFromSlot, slot)) or false
+end
+
 -- Blizzard's Clean Up Bags: the game sorts the items in the bags.
 function Containers.CleanUp()
     local fn = API("SortBags")

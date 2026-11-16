@@ -12,7 +12,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- slots are Blizzard's own item buttons (ContainerFrameItemButtonTemplate),
 -- so clicks, using items (in combat too), dragging, splitting stacks and
 -- tooltips stay Blizzard's code. See docs/BAGS.md.
--- Files: Init (this), Driver, Blizzard, Window, Slots, Layout, Settings.
+-- Files: Init (this), Driver, Blizzard, Window, Footer, SortMenu, Slots, Layout, Settings.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Bags"], category = "interface", defaultEnabled = false,
     configDescription = L["Every bag in one Mode window, with search, Clean Up and a sorted view."],
@@ -55,10 +55,12 @@ M.defaults = {
     -- Window
     backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 95,
     showTitle = true, headerColor = Copy(M.HEADER_COLOR), titleSize = 13,
-    showSearch = true, showMoney = true, showFreeSlots = true, locked = false,
+    -- Bag Bar: the equipped bags in the footer, where a new bag can go on.
+    showSearch = true, showMoney = true, showFreeSlots = true, showBagBar = true, locked = false,
     -- Slots
     slotColor = Copy(M.SLOT_COLOR), slotOpacity = 100,
-    qualityBorders = true, qualityMinimum = "uncommon", questBorders = true, questColor = Copy(M.QUEST_COLOR),
+    -- Quest Icon: a small quest mark in a quest item's corner.
+    qualityBorders = true, qualityMinimum = "uncommon", questBorders = true, questIcon = true, questColor = Copy(M.QUEST_COLOR),
     fadeJunk = true, junkCoin = true, newItems = true, itemLevel = true, itemLevelColor = "quality",
     -- Text
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, countSize = 12, levelSize = 11, outline = true,

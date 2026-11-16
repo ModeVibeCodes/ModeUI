@@ -279,7 +279,12 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   search; slots are Mode slots (Slot Size wide, `Style.IconHeight` tall), a
   Mono panel face with the icon cropped to it, in the `group` edge 1px apart,
   the rim in the quality color (Ivory for new items, the quest tone for quest
-  items). The Sort menu is a Mode window.
+  items), a small quest mark (the Quest glyph in the quest tone on a dark
+  disc) on quest items, cooldown numbers in Bold at the count size. The
+  header's Clean Up is the broom glyph. The footer holds the Bag Bar (small
+  Mode slots for the equipped bags with their free slots), the free count in
+  Bold over a thin capacity bar (Celadon, Ivory near full, Rosewood full)
+  and the money. The Sort menu is a Mode window.
 
 ## Settings window
 

@@ -939,6 +939,21 @@ icon). [Details](BAGS.md).
   handlers start from Blizzard's code with values from the client.
   `CreateFrame("ItemButton", name, parent, template)` with a name: the
   template names children `$parentCooldown` and `$parentIconQuestTexture`.
+- **Equipped bags (Bag Bar).** Blizzard's own bag slot buttons
+  (`BaseBagSlotButtonMixin`,
+  [Shared/MainMenuBarBagButtons.lua](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_MainMenuBarBagButtons/Shared/MainMenuBarBagButtons.lua))
+  call `PutItemInBag(inventorySlot)` on click and receive-drag,
+  `PickupBagFromSlot(inventorySlot)` on drag start, read
+  `GetInventoryItemTexture("player", slot)` and show
+  `GameTooltip:SetInventoryItem("player", slot)` (else `EQUIP_CONTAINER` /
+  `EQUIP_CONTAINER_REAGENT`); a bag ID's slot comes from
+  `C_Container.ContainerIDToInventoryID(bag)`. ModeUI's footer bag slots are
+  its own plain buttons making the same calls (through Domain), with
+  `CursorHasItem()` deciding whether a click puts a bag on, and
+  `GetInventoryItemQuality` for the rim. Nothing of Blizzard's bag bar is
+  touched.
+- **Cooldown text.** `Cooldown:GetCountdownFontString()` (as the Action Bars
+  use) gives the countdown FontString; ModeUI sets its font, color and place.
 - **Opening and closing.** `OpenAllBags`, `CloseAllBags`, `ToggleAllBags`,
   `ToggleBackpack`, `OpenBag`, `ToggleBag`, `CloseBag` show and hide
   `ContainerFrameCombinedBags` or `ContainerFrame1-N` (`NUM_CONTAINER_FRAMES`)

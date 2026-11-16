@@ -60,6 +60,10 @@ Style.ASSETS = {
 Style.ICONS = { "Home", "UnitFrames", "GroupFrames", "Nameplates", "ActionBars", "DamageMeters", "Chat", "Windows",
     "Tooltip", "Bags", "Minimap", "Profiles", "Optimizations", "ClassColors", "Cooldowns", "Back" }
 for _, name in ipairs(Style.ICONS) do Style.ASSETS["Icon" .. name] = { file = "Icons\\" .. name } end
+-- Glyphs for controls and marks, the same white line art: Clean Up (a broom)
+-- and Quest (a disc with "!" cut out).
+Style.GLYPHS = { "CleanUp", "Quest" }
+for _, name in ipairs(Style.GLYPHS) do Style.ASSETS["Icon" .. name] = { file = "Icons\\" .. name } end
 
 -- The bar textures every picker offers, in menu order ("Mode" heading, short names).
 Style.BAR_TEXTURES = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield" }

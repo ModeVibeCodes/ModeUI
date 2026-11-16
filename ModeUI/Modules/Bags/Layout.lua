@@ -26,7 +26,7 @@ function M:Geometry()
     g.inset = Snap(6)
     g.header = Snap(math.max(20, db.titleSize + 10))
     g.search = db.showSearch and Snap(math.max(20, db.titleSize + 8)) or 0
-    g.footer = (db.showMoney or db.showFreeSlots) and Snap(math.max(16, db.titleSize + 4)) or 0
+    g.footer = self.FooterHeight(db, g)
     g.label = Snap(math.max(14, db.titleSize + 2))
     g.sectionGap = Snap(math.max(6, 2 * db.spacing))
     g.left = g.border + g.pad

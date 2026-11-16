@@ -16,13 +16,13 @@ bag and the keyring show together on one grid of slots.
 | Part | Look and behavior |
 |---|---|
 | Window | A Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Mode Panel in Background Color (Graphite panel at 95%) with the `window` edge inside it; no soft drop while it is see-through. |
-| Header | A Mode Title strip in Header Color (Graphite raised) over a one-pixel Graphite line: the **Bags** title on the left (SemiBold, Graphite white); **Sort** (a dropdown that names the view order, with the Mode chevron), **Clean Up** and the close cross on the right, in Graphite secondary and Ivory under the mouse. Unlocked, dragging the header moves the window (out of combat). |
+| Header | A Mode Title strip in Header Color (Graphite raised) over a one-pixel Graphite line: the **Bags** title on the left (SemiBold, Graphite white); **Sort** (a dropdown that names the view order, with the Mode chevron), **Clean Up** (a broom glyph, Mode "IconCleanUp") and the close cross on the right, in Graphite secondary and Ivory under the mouse. Unlocked, dragging the header moves the window (out of combat). |
 | Search | A Mode field under the header (a Graphite base in the `control` edge, Ivory while typing). It sets the game's own bag search (`C_Container.SetItemSearch`, the one Blizzard's bag search box uses), so names, types and tooltip text match; items that don't match fade to 25%. Escape clears it; closing the bags clears it. |
 | Slots | Columns wide (12), Slot Size wide (36 px) and a little shorter (30 px, `Style.IconHeight`, as every Mode icon), Spacing (3 px) apart, Padding (8 px) inside the edge. Each slot is a Mode slot (the approved probe): a face in Slot Color (Mono panel) at Slot Opacity (100%), the icon filling it, cropped to its shape, and the `group` edge (1px Gunmetal) just outside it. Pushed and highlight states are flat Mode overlays. |
 | Rims | The slot edge's rim: a new item in Ivory, until you point at it. A quest item: Quest Color (#FFB12F, the quest tone). Otherwise the item's quality color from Minimum Quality (Uncommon) up, else the edge's own Gunmetal. |
-| Marks | Stack counts (bottom right) and item level on weapons and armor (bottom left, in the quality color or white) in the Mode typeface's Bold, a coin on gray items you can sell (Junk Coin) and those items grayed (Fade Junk). Locked items (being moved) are gray. Cooldowns use the button's own swipe. |
+| Marks | Stack counts (bottom right) and item level on weapons and armor (bottom left, in the quality color or white) in the Mode typeface's Bold, a coin on gray items you can sell (Junk Coin) and those items grayed (Fade Junk), and a small quest mark top right on quest items (Quest Icon: the Mode "IconQuest" glyph in Quest Color on a dark disc). Cooldown numbers are the Mode typeface's Bold at Count Size, in the cooldown color, centered. Locked items (being moved) are gray. Cooldowns use the button's own swipe. |
 | Sections | The backpack and equipped bags first (each its own block with Separate Bags), then **Reagents** (the reagent bag, Reagent Section) and **Keyring** (Keyring, when the game shows a keyring), each under a small Graphite muted title and a Graphite line. |
-| Footer | Free slots on the left ("29/36 Free", held bags only) and the money on the right (gold, silver, copper with the game's coin icons). |
+| Footer | Left to right (owner, November 15, 2026): the **Bag Bar** (Bag Bar): one small Mode slot (26 x 22) per equipped bag slot, the four bags then the reagent bag, with the bag's icon (a faint bag glyph when empty), its free slots and its quality on the `group` edge. Drop a bag on a slot, or click it with a bag on the cursor, to equip it; drag a bag off to pick it up; pointing at one shows its tooltip and fades the other bags' slots. Then the **free slots** in the held bags ("29 free"): the number in Bold, Celadon with room, Ivory when a tenth or less is left, Rosewood when full, over a thin capacity bar that fills as the bags fill. The money on the right (gold, silver, copper with the game's coin icons). |
 
 ### Sort and Clean Up
 
@@ -115,9 +115,9 @@ corner as an offset from the same corner of the screen, in whole pixels.
 | | Contents | Separate Bags, Reagent Section, Keyring; Sort dropdown (Bag Order, Quality, Type, Name) |
 | | Defaults | Reset to Defaults |
 | Window | Frame | Background Color and Opacity, Header Color |
-| | Parts | Title, Search Box, Money, Free Slots, Lock Window |
+| | Parts | Title, Search Box, Money, Free Slots, Bag Bar, Lock Window |
 | Slots | Slot | Slot Color and Opacity |
-| | Borders | Quality Borders (Minimum Quality: Poor to Epic), Quest Borders (Quest Color), New Items |
+| | Borders | Quality Borders (Minimum Quality: Poor to Epic), Quest Borders, Quest Icon (Quest Color), New Items |
 | | Marks | Fade Junk, Junk Coin, Item Level (Item Level Color: Quality or White) |
 | Text | Font | Font (the Mode typeface by default), Title Size (header, search, footer), Count Size, Item Level Size, Outline |
 | Position | Position | Grow From (four corners), **Edit Mode** |
@@ -155,12 +155,17 @@ Graphite raised, slots #040404 at 75% → Mono panel at 100%, Slot Size 38 →
 3. **Action:** right-click a consumable in the window, in and out of combat;
    Shift-click a stack; drag an item to an empty slot. **Confirmation:** each
    works as in Blizzard's bags, with no "action blocked" message.
-4. **Action:** type part of an item name in **Search**; click **Sort** in the
+4. **Action:** point at a bag in the footer's Bag Bar, then drag a spare bag
+   from your bags onto an empty bag slot there (or swap one).
+   **Confirmation:** pointing at a bag fades the other bags' slots and shows
+   its tooltip; the dropped bag goes on and its slots join the window; the
+   free count and its bar update (Ivory, then Rosewood as the bags fill).
+5. **Action:** type part of an item name in **Search**; click **Sort** in the
    header and pick **Quality** from its menu; click **Clean Up**.
    **Confirmation:** other items fade; the menu closes, the order changes and
    the button reads Quality; the game sorts the bags.
-5. **Navigation:** the Slots, Window and Position tabs. **Action:** change
+6. **Navigation:** the Slots, Window and Position tabs. **Action:** change
    Columns, Slot Size, Background Color, Quality Borders and Grow From with
    the bags open. **Confirmation:** the window updates at once.
-6. **Action:** switch the module off with the bags open. **Confirmation:**
+7. **Action:** switch the module off with the bags open. **Confirmation:**
    Blizzard's bag frames show in Blizzard's look.

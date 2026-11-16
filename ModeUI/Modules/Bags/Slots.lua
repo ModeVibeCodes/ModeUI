@@ -49,6 +49,10 @@ function M:BuildArt(button)
     art.layer:SetAllPoints()
     art.count, art.level = Kit.Text(art.layer), Kit.Text(art.layer)
     art.junk = art.layer:CreateTexture(nil, "OVERLAY")
+    -- The quest mark: the Quest glyph in Quest Color on a dark disc.
+    art.questBack = art.layer:CreateTexture(nil, "OVERLAY", nil, 1)
+    art.quest = art.layer:CreateTexture(nil, "OVERLAY", nil, 2)
+    Style.ApplyAsset(art.questBack, "Circle"); Style.ApplyAsset(art.quest, "IconQuest")
     self.art[button] = art
     return art
 end
@@ -102,6 +106,13 @@ function M:PaintSlot(button, g)
     art.junk:ClearAllPoints(); art.junk:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
     art.junk:SetSize(coin, coin)
     if art.junk.SetAtlas then art.junk:SetAtlas("bags-junkcoin") end
+    local mark = math.max(g.px, math.floor(g.slotH * 0.4 / g.px + 0.5) * g.px)
+    art.quest:ClearAllPoints(); art.quest:SetPoint("TOPRIGHT", button, "TOPRIGHT", -g.px, -g.px)
+    art.quest:SetSize(mark, mark)
+    art.questBack:ClearAllPoints(); art.questBack:SetPoint("CENTER", art.quest, "CENTER")
+    art.questBack:SetSize(mark + 2 * g.px, mark + 2 * g.px)
+    Style.Paint(art.questBack, Tone.shadow, 0.85)
+    self:PaintCooldownText(button, g)
 end
 
 -- What the slot holds: icon, count, item level, junk and the rim's color.
@@ -153,7 +164,16 @@ function M:PaintState(button)
     local junk = item ~= nil and item.quality == 0 and not item.noValue and self.db.fadeJunk
     if icon then icon:SetDesaturated((item ~= nil and item.locked == true) or junk == true) end
     if icon then icon:SetAlpha(junk and 0.7 or 1) end
-    button:SetAlpha(self:Matches(item) and 1 or 0.25)
+    local quest = false
+    if item and self.db.questIcon then
+        local questItem, questID = Containers.Quest(entry.bag, entry.slot)
+        quest = questItem or questID ~= nil
+    end
+    Style.Paint(art.quest, self.db.questColor)
+    art.quest:SetShown(quest); art.questBack:SetShown(quest)
+    -- Pointing at a bag in the Bag Bar fades the other bags' slots.
+    local focus = self.focusBag == nil or entry.bag == self.focusBag
+    button:SetAlpha((self:Matches(item) and focus) and 1 or 0.25)
 end
 
 -- Whether an item matches the search: the game's own search when the client
@@ -165,6 +185,21 @@ function M:Matches(item)
     if Containers.HasSearch() then return item.filtered ~= true end
     local name = type(item.name) == "string" and item.name:lower() or ""
     return name:find(text:lower(), 1, true) ~= nil
+end
+
+-- The countdown numbers on a slot's cooldown: the Mode typeface's Bold at
+-- Count Size, in the cooldown color, centered (Blizzard's own are larger
+-- than a slot holds).
+function M:PaintCooldownText(button, g)
+    local cooldown = button.Cooldown
+    if not (cooldown and cooldown.GetCountdownFontString) then return end
+    local ok, text = pcall(cooldown.GetCountdownFontString, cooldown)
+    if not ok or not text or not text.SetFont then return end
+    local db = self.db
+    local look = { font = db.font, fontMedia = db.fontMedia, outline = true, shadow = true, textColor = Tone.cooldown }
+    Kit.Font(text, look, db.countSize, Style.Weighted(Kit.FontPath(db, self.id), "bold"), g.px)
+    Skin.Ink(text, Tone.cooldown)
+    text:ClearAllPoints(); text:SetPoint("CENTER", button, "CENTER", 0, 0)
 end
 
 function M:PaintCooldown(button)

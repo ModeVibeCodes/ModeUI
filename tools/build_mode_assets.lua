@@ -192,6 +192,7 @@ end)
 -- Icons --------------------------------------------------------------------
 local ICONS = dofile(here .. "mode_icons.lua")
 for _, name in ipairs(ICONS.ORDER) do Shape("Icons/" .. name, 32, 32, ICONS[name]) end
+for _, name in ipairs(ICONS.GLYPHS) do Shape("Icons/" .. name, 32, 32, ICONS[name]) end
 
 -- Controls -----------------------------------------------------------------
 Shape("Controls/Knob", 8, 8, T.RoundedRect(0, 0, 8, 8, 2))
