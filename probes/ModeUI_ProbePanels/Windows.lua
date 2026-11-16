@@ -1,7 +1,8 @@
 local _, ns = ...
 local Kit = ns.Kit
 if not Kit.ok then return end
--- Windows, Chat and Damage Meters probes (Phase 7): panels in the Mode design
+-- Chat and Damage Meters probes (Phase 7; the Windows tab retired once ModeUI's
+-- Windows module was built and confirmed): panels in the Mode design
 -- language (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Graphite panel
 -- with Mode Panel, Mode Title bar, the `window` edge (1px Steel Sheen, black
 -- gap, shadow and drop), cards in the `card` edge, controls in `control`.
@@ -39,59 +40,6 @@ function ns.Field(parent, width, placeholder)
     text:SetText(placeholder)
     field.text = text
     return field
-end
-
-function ns.BuildWindows(body)
-    local win = ns.Panel(body, "Character", 360, 300)
-    win:SetPoint("TOPLEFT", 6, -6)
-    -- Tabs, a card, then the buttons.
-    local tabs = { "Character", "Reputation", "Skills" }
-    local x = 10
-    for i, label in ipairs(tabs) do
-        local tab = Kit.Text(win, 11, "semibold", i == 1 and T.ivory or T.graphite.muted)
-        tab:SetPoint("TOPLEFT", win, "TOPLEFT", x, -32)
-        tab:SetText(label)
-        if i == 1 then
-            local mark = win:CreateTexture(nil, "ARTWORK")
-            S.ApplyAsset(mark, "Solid"); S.Paint(mark, T.ivory)
-            mark:SetPoint("TOPLEFT", tab, "BOTTOMLEFT", 0, -4); mark:SetPoint("TOPRIGHT", tab, "BOTTOMRIGHT", 0, -4); mark:SetHeight(2)
-        end
-        x = x + (tab:GetStringWidth() or 60) + 18
-    end
-    local card = CreateFrame("Frame", nil, win)
-    card:SetPoint("TOPLEFT", 12, -62); card:SetPoint("TOPRIGHT", -12, -62); card:SetHeight(150)
-    Kit.Fill(card, "Matte", T.graphite.raised)
-    S.Edge(card, "card")
-    Kit.Heading(card, "Attributes", 10, -10)
-    local stats = { { "Strength", "64" }, { "Agility", "212" }, { "Stamina", "180" }, { "Intellect", "38" } }
-    for i, stat in ipairs(stats) do
-        local label = Kit.Text(card, 11, "medium", T.graphite.secondary)
-        label:SetPoint("TOPLEFT", 10, -12 - i * 22)
-        label:SetText(stat[1])
-        local value = Kit.Text(card, 11, "bold", T.graphite.text)
-        value:SetPoint("TOPRIGHT", -10, -12 - i * 22)
-        value:SetText(stat[2])
-    end
-    local field = ns.Field(win, 160, "Search")
-    field:SetPoint("TOPLEFT", card, "BOTTOMLEFT", 0, -12)
-    local accept = Kit.Button(win, "Done", 72, 22, "primary")
-    accept:SetPoint("BOTTOMRIGHT", -12, 12)
-    local reset = Kit.Button(win, "Reset", 72, 22, "danger")
-    reset:SetPoint("RIGHT", accept, "LEFT", -8, 0)
-    local cancel = Kit.Button(win, "Cancel", 72, 22)
-    cancel:SetPoint("RIGHT", reset, "LEFT", -8, 0)
-    -- A popup (StaticPopup) in the same look.
-    local popup = ns.Panel(body, nil, 300, 110)
-    popup:SetPoint("TOPLEFT", win, "TOPRIGHT", 30, 0)
-    local text = Kit.Text(popup, 12, "medium", T.graphite.text)
-    text:SetPoint("TOP", 0, -20); text:SetWidth(270)
-    text:SetText("Delete \"Worn Shortsword\"?")
-    local yes = Kit.Button(popup, "Delete", 88, 22, "danger")
-    yes:SetPoint("BOTTOMRIGHT", popup, "BOTTOM", -4, 16)
-    local no = Kit.Button(popup, "Cancel", 88, 22)
-    no:SetPoint("BOTTOMLEFT", popup, "BOTTOM", 4, 16)
-    Kit.Caption(body, "Window: Graphite panel, Mode Title bar, 1px Steel Sheen with a black gap. Buttons: control edge; Ivory primary, Rosewood Deep destructive; hover lights the outer line.", win, 0, -16):SetWidth(700)
-    Kit.Caption(body, "Popup: the same window edge, no title bar.", popup, 0, -10)
 end
 
 -- Chat: tabs, lines in the game's own channel colors, the edit box.
