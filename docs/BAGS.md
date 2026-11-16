@@ -2,9 +2,9 @@
 
 November 13, 2026; rebuilt in the Mode design language November 15, 2026
 (Phase 7, settings version 3). A module of the **Interface** category. Off
-by default (turn it on with the switch in the page header). Static/mock
-validated only (`tests/bags.lua`); **native acceptance of the Mode rebuild
-is pending**. APIs and
+by default (turn it on with the switch in the page header). Mock tested
+(`tests/bags.lua`), and **confirmed in game by the owner, November 15,
+2026**. APIs and
 their rules are in
 [API_COMPATIBILITY.md](API_COMPATIBILITY.md#bags--november-13-2026).
 

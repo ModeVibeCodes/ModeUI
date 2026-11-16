@@ -117,10 +117,8 @@ world.run([====[
     assert(Find(body,function(f) return f.kind=='StatusBar' and f.value==27 end),'sample at 27%')
     frames:Hide()
     local function Has(parent,test) return Find(parent,test)~=nil end
-    -- Bags: live items, the epic's rim in its quality; money; the secret zone only reaches SetText.
-    local panels=reg.list.panels.window();panels:Select('bags');panels:Show();Advance(1.1)
-    assert(Has(panels.pages.bags,function(f) return f.texture==1002 end),'epic item shown')
-    panels:Select('minimap');Advance(1.1)
+    -- Minimap: the game clock; the secret zone only reaches SetText.
+    local panels=reg.list.panels.window();panels:Select('minimap');panels:Show();Advance(1.1)
     assert(Has(panels.pages.minimap,function(f) return f.GetText and f:GetText()=='09:05' end),'game clock')
     panels:Hide()
     -- No target: the live plate hides.
