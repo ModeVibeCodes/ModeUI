@@ -172,18 +172,27 @@ function Skin.PaintTab(tab)
     if not parts or not parts.bar then return end
     local selected = Shown(tab.LeftActive) or Shown(tab.MiddleActive)
     local px = parts.px or 1
-    local bar, inset = parts.bar, Snap(8, px)
+    local bar, text = parts.bar, Text(tab)
     bar:ClearAllPoints()
-    -- Blizzard's tab is 32px with its text 2px above the middle: the bar
-    -- sits on its window-side edge, clear of the text.
-    local edge = parts.side == "bottom" and "BOTTOM" or "TOP"
-    local y = parts.side == "bottom" and Snap(6, px) or -Snap(4, px)
-    bar:SetPoint(edge .. "LEFT", tab, edge .. "LEFT", inset, y)
-    bar:SetPoint(edge .. "RIGHT", tab, edge .. "RIGHT", -inset, y)
+    -- The bar hugs the label: as wide as its text, 3px off it on the
+    -- window side (under the text for tabs above the content, over it for
+    -- tabs hanging under a window). Without a label it spans the tab.
+    local below = parts.side == "bottom"
+    local gap = Snap(3, px)
+    if text then
+        local edge, from = below and "TOP" or "BOTTOM", below and "BOTTOM" or "TOP"
+        bar:SetPoint(edge .. "LEFT", text, from .. "LEFT", 0, below and -gap or gap)
+        bar:SetPoint(edge .. "RIGHT", text, from .. "RIGHT", 0, below and -gap or gap)
+    else
+        local edge, inset = below and "BOTTOM" or "TOP", Snap(8, px)
+        local y = below and Snap(6, px) or -Snap(4, px)
+        bar:SetPoint(edge .. "LEFT", tab, edge .. "LEFT", inset, y)
+        bar:SetPoint(edge .. "RIGHT", tab, edge .. "RIGHT", -inset, y)
+    end
     bar:SetHeight(Snap(2, px))
     Style.Paint(bar, M.accent)
     bar:SetShown(selected)
-    local text, style = Text(tab), parts.style
+    local style = parts.style
     if text and style then
         Skin.Font(text, Style.Weighted(style.path, "semibold"), style.tabSize, style.outline, style.shadow, px)
         Skin.Ink(text, selected and M.accent or M.muted)

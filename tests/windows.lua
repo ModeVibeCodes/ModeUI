@@ -62,6 +62,14 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
     end
     MakeWindow('FriendsFrame')
     MakeWindow('MerchantFrame')
+    -- The Gossip window: its parchment on the window's own Background, the
+    -- greeting panel's material pieces (one keyed, the others named).
+    local gossip = MakeWindow('GossipFrame')
+    gossip.Background = gossip:CreateTexture(nil, 'BACKGROUND')
+    gossip.GreetingPanel = CreateFrame('Frame', 'GossipFrameGreetingPanel', gossip)
+    gossip.GreetingPanel.MaterialTopLeft = gossip.GreetingPanel:CreateTexture(nil, 'BORDER')
+    gossip.GreetingPanel.topRight = gossip.GreetingPanel:CreateTexture('GossipFrameGreetingPanelMaterialTopRight', 'BORDER')
+    gossip.GreetingPanel.text = gossip.GreetingPanel:CreateTexture('GossipFrameGreetingPanelIcon', 'ARTWORK')
     WorldMapFrame = CreateFrame('Frame', 'WorldMapFrame', UIParent)
     WorldMapFrame.BorderFrame = MakeWindow('ModeTestWorldMapBorder', WorldMapFrame)
     -- Blizzard's tab picker: shows the active art.
@@ -196,6 +204,7 @@ world.run([==[
     assert(parts.faceKey == 'Panel' and parts.face.vertexColor[1] == Tone.graphite.panel[1] and parts.face.vertexColor[4] == 1, 'Mode Panel in Graphite, to the edge')
     assert(parts.modeEdge.preset == 'window' and parts.modeEdge.holder:IsShown(), 'the window edge')
     assert(parts.edgeFrame:GetFrameLevel() == FriendsFrame:GetFrameLevel() + 520, 'the edge above the window\'s children')
+    assert(parts.modeEdge.below:GetFrameLevel() < FriendsFrame:GetFrameLevel(), 'its soft drop under the window, never over its content')
     assert(parts.strip:IsShown() and parts.strip:GetHeight() == 22 and parts.divider:GetHeight() == 1, 'title strip and divider')
     local s = Point(parts.strip); assert(s[4] == 0 and s[5] == 0 and parts.strip.vertexColor[1] == Tone.graphite.raised[1], 'Mode Title strip at the top (the edge is outside)')
     local title = FriendsFrame.TitleContainer.TitleText
@@ -222,7 +231,8 @@ world.run([==[
         and FriendsFrameTab2.Text.color[1] == Tone.graphite.muted[1] and not t1.face, 'text tabs: the chosen one Ivory with its bar')
     PanelTemplates_DeselectTab(FriendsFrameTab1); PanelTemplates_SelectTab(FriendsFrameTab2)
     assert(t2.bar:IsShown() and not t1.bar:IsShown() and FriendsFrameTab2.Text.color[1] == Tone.ivory[1], 'follows Blizzard picking a tab')
-    assert(Point(t2.bar)[1] == 'TOPLEFT', 'tabs under the window: bar on the window side')
+    local b2 = Point(t2.bar)
+    assert(b2[1] == 'BOTTOMLEFT' and b2[2] == FriendsFrameTab2.Text and b2[3] == 'TOPLEFT' and b2[5] == 3, 'tabs under the window: the bar over the label, as wide as it')
     local button = FriendsFrame.testButton
     assert(button.Left.alpha == 0 and Skin.parts[button].faceKey == 'Button' and Skin.parts[button].modeEdge.preset == 'control', 'a Mode Button')
     button.scripts.OnEnter(button); assert(Lit(Skin.parts[button]), 'Ivory line on hover')
@@ -240,6 +250,10 @@ world.run([==[
     local side = FriendsFrame.testSide
     assert(side.Background.alpha == 0 and side.SelectedTexture.alpha == 0)
     side:SetChecked(true); assert(Lit(Skin.parts[side]), 'checked side tab: Ivory line')
+    -- Gossip: the parchment and its material go; other art stays.
+    local panel = GossipFrame.GreetingPanel
+    assert(GossipFrame.Background.alpha == 0 and panel.MaterialTopLeft.alpha == 0 and panel.topRight.alpha == 0, 'parchment faded')
+    assert(panel.text.alpha ~= 0, 'other textures kept')
     -- The World Map draws under its border frame: border and strip, no fill.
     assert(Skin.parts[WorldMapFrame.BorderFrame].face.vertexColor[4] == 0, 'World Map keeps its map visible')
 

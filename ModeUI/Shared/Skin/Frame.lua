@@ -66,11 +66,22 @@ local function FadeDecor(frame)
     for key, region in pairs(frame) do
         if type(key) == "string" and key:find("^InsetBorder") and IsTexture(region) then Fade(region) end
     end
+    -- A quest or gossip panel's parchment material (MaterialTopLeft, and the
+    -- $parentMaterialTopRight/BotLeft/BotRight pieces that have only names).
+    if IsTexture(frame.MaterialTopLeft) and frame.GetRegions then
+        for _, region in ipairs({ frame:GetRegions() }) do
+            local name = IsTexture(region) and region.GetName and region:GetName()
+            if region == frame.MaterialTopLeft or (addon.IsPublic(name) and type(name) == "string" and name:find("Material%a+$")) then Fade(region) end
+        end
+    end
 end
 
 local function FadeArt(frame, options)
     Skin.FadeNineSlice(frame.NineSlice)
     for _, key in ipairs(ART) do Fade(frame[key]) end
+    -- A window's own Background texture (the Gossip window's parchment);
+    -- a Background that is a frame holds content and stays.
+    if IsTexture(frame.Background) then Fade(frame.Background) end
     FadeDecor(frame)
     -- The Game Menu's dialog border and header art.
     if frame.Border then Skin.FadeNineSlice(frame.Border); Fade(frame.Border.Bg) end

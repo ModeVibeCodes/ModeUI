@@ -258,8 +258,10 @@ function Skin.PaintBox(parts, box, key, color, alpha, edge, highlight)
     if parts.modeEdge then
         local frame = parts.edgeFrame
         frame:ClearAllPoints(); frame:SetAllPoints(box)
-        local level = frame:GetParent():GetFrameLevel()
-        if addon.IsNumber(level) then frame:SetFrameLevel(math.min(9000, level + parts.edgeLevel)); parts.modeEdge:SetLevel(1) end
+        local host = frame:GetParent()
+        local level = host:GetFrameLevel()
+        -- The rim rides above the host's children; its soft drop stays under the host.
+        if addon.IsNumber(level) then frame:SetFrameLevel(math.min(9000, level + parts.edgeLevel)); parts.modeEdge:SetLevel(1, host) end
         parts.modeEdge:SetShown(edge ~= false)
         parts.modeEdge:Layout()
         parts.modeEdge:SetHighlight(highlight)

@@ -186,11 +186,14 @@ end
 
 -- Moves the border to `level` frame levels above its host (a host whose own
 -- level changes, or whose children stack high, like Blizzard's windows).
-function Edge:SetLevel(level)
+-- The soft drop always sits under `under` (the frame the border is really
+-- for; the host by default): lifted with the rim it would shade the content.
+function Edge:SetLevel(level, under)
     local base = self.host:GetFrameLevel()
     if not addon.IsNumber(base) then return end
     self.holder:SetFrameLevel(math.min(9000, base + level))
-    if self.below then self.below:SetFrameLevel(math.max(0, base - 1)) end
+    local floor = under and under:GetFrameLevel() or base
+    if self.below and addon.IsNumber(floor) then self.below:SetFrameLevel(math.max(0, floor - 1)) end
 end
 
 -- The border's textures, for callers that fade them together (from a state

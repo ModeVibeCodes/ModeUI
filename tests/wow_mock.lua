@@ -281,9 +281,9 @@ function methods:SetAlpha(value) self.alpha = value end
 local function Object(parent)
     return setmetatable({ parent = parent, shown = true, scripts = {}, events = {} }, { __index = methods })
 end
-function methods:CreateTexture(_, layer)
+function methods:CreateTexture(name, layer)
     local texture = Object(self)
-    texture.kind, texture.layer = "Texture", layer
+    texture.kind, texture.layer, texture.name = "Texture", layer, name
     textures[#textures + 1] = texture
     self.regionList = self.regionList or {}; self.regionList[#self.regionList + 1] = texture
     return texture
