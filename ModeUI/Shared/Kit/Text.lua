@@ -168,12 +168,12 @@ function Kit.ShortNumber(value, decimals)
 end
 
 -- The font file for a style's font/fontMedia choice. Expressway (registered by
--- Media from an installed AyijeUI or EllesmereUI copy) falls back to the
--- bundled ModeUI Lato when unavailable. scope is the module ID.
+-- Media from an installed AyijeUI or EllesmereUI copy) falls back to the Mode
+-- typeface (Geist without Expressway) when unavailable. scope is the module ID.
 function Kit.FontPath(style, scope)
     local media = addon.Media
     if style.fontMedia == "Expressway" and not media:GetFont("Expressway") then
-        return media:GetFont("ModeUI Lato") or media.gameFont
+        return media:GetFont(addon.Style.FONT_DEFAULT) or media.gameFont
     end
     return media:GetDisplayFont({ font = style.font, fontMedia = style.fontMedia }, false, scope)
 end

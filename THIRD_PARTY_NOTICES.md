@@ -27,12 +27,6 @@ SHA-256: Geist-Regular.ttf 2c460a7a71063e53491f343d44b382267bc0cf496e31db64865f9
 Geist is the Mode design language's fallback typeface (docs/DESIGN_LANGUAGE.md),
 used when the client has no Expressway.
 
-Lato-Regular.ttf and Lato-Bold.ttf are unmodified Lato font software, Copyright
-(c) 2010–2014 tyPoland Lukasz Dziedzic, SIL Open Font License 1.1, reserved font
-name Lato. Full terms: LICENSES/Lato-OFL.txt. Pinned source, hashes and Figma
-design provenance: design/mode/README.md. The font terms are separate from the
-addon distribution license.
-
 Expressway is the Mode typeface when the client has it, and only by reference:
 ModeUI uses a verified font asset from an installed EllesmereUI/AyijeUI
 (Expressway and Expressway Bold), or an existing LibSharedMedia registration.

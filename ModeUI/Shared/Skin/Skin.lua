@@ -17,16 +17,6 @@ local IsPublic = addon.IsPublic
 Skin.parts = setmetatable({}, { __mode = "k" })
 Skin.hooked = setmetatable({}, { __mode = "k" })
 
--- The Mode colors used by skins: the window fill, rims, fields, the
--- selected segment, text and the cyan accent (Theme.lua's Mode palette).
-local function RGB(r, g, b) return { r / 255, g / 255, b / 255 } end
-Skin.colors = {
-    window = RGB(11, 11, 13), card = RGB(18, 19, 22), cardRim = RGB(30, 32, 36), rim = Kit.onyx.border,
-    field = RGB(14, 15, 17), fieldRim = RGB(42, 45, 50), selected = RGB(34, 38, 43), hover = RGB(34, 38, 43),
-    heading = RGB(242, 242, 242), label = RGB(196, 200, 206), muted = RGB(138, 143, 150), disabled = RGB(102, 102, 110),
-    accent = Kit.palette.accent, track = RGB(22, 24, 27), thumb = RGB(74, 79, 86),
-}
-
 -- A value rounded to whole physical pixels, at least one.
 function Skin.Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
 
@@ -97,31 +87,6 @@ function Skin.PinAlpha(frame, getter)
 end
 function Skin.Unpin(frame) Skin.pins[frame] = nil end
 
--- ModeUI's pieces for a host: a fill and a hollow one-pixel rim, created on
--- first use under the host's own art (BACKGROUND, lowest sublevels).
-function Skin.Panel(host, layer, sublevel)
-    local parts = Skin.parts[host]
-    if parts and parts.fill then return parts end
-    parts = parts or { regions = {} }
-    Skin.parts[host] = parts
-    parts.fill = host:CreateTexture(nil, layer or "BACKGROUND", nil, sublevel or -8)
-    parts.fill:SetTexture(FLAT)
-    parts.rim = Kit.Rim(host, layer or "BACKGROUND", (sublevel or -8) + 1)
-    parts.regions[parts.fill] = true
-    for _, edge in ipairs(parts.rim) do parts.regions[edge] = true end
-    return parts
-end
-
--- Lays a panel over `box` (any region or frame; the panel's textures can
--- belong to another frame), filled with `fill` at `alpha` inside a `rimColor`
--- rim `thickness` units thick (0 for none). The rim is hollow, so a
--- see-through fill never takes on its color.
-function Skin.PaintPanel(parts, box, fill, alpha, rimColor, thickness)
-    Kit.Inset(parts.fill, box, thickness)
-    Kit.Tint(parts.fill, fill, alpha)
-    Kit.PlaceRim(parts.rim, box, thickness, 0, rimColor or fill, 1)
-end
-
 -- Font, flags and the crisp one-pixel shadow on a Blizzard font string or
 -- font instance (chat frames and edit boxes are font instances too). A size
 -- of nil keeps the region's own size. FontStrings answer SetFont with
@@ -150,34 +115,11 @@ function Skin.Face(region, path)
     return region:SetFont(path, size, flags) ~= false
 end
 
--- A crisp border drawn on its own frame above `host`'s children (as the unit
--- frames' rim sits above their bars): four flat edges, `thickness` thick,
--- square corners. The frame never takes the mouse. `lift` raises it above
--- the host's own frame level (child art like a NineSlice can sit 500 up).
-function Skin.Edge(host, lift)
-    local parts = Skin.parts[host] or { regions = {} }
-    Skin.parts[host] = parts
-    if not parts.edge then
-        local edge = CreateFrame("Frame", nil, host)
-        edge:EnableMouse(false)
-        edge:SetAllPoints(host)
-        parts.edge, parts.edgeRim = edge, Kit.Rim(edge, "OVERLAY", 7)
-    end
-    local level = host:GetFrameLevel()
-    if IsPublic(level) and type(level) == "number" then parts.edge:SetFrameLevel(math.min(9000, level + (lift or 1))) end
-    return parts
-end
-function Skin.PaintEdge(parts, thickness, color, alpha)
-    Kit.PlaceRim(parts.edgeRim, parts.edge, thickness, 0, color, alpha or 1)
-    parts.edge:SetShown(thickness > 0)
-end
-
 -- The Mode design language ---------------------------------------------------
 -- Windows and their controls (docs/DESIGN_LANGUAGE.md, "Windows and panels"):
 -- Graphite surfaces with Mode textures, Style.Edge borders (`window` on a
 -- window, `control` on its buttons and fields, `card` on insets), Ivory for
 -- hover, focus and the chosen tab. Every color is a Style.Tone token.
--- (Skin.colors and Skin.Panel above stay for the modules not rebuilt yet.)
 local Style = addon.Style
 local Tone = Style.Tone
 local G = Tone.graphite

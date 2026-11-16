@@ -22,7 +22,7 @@ D.profileDefaults = {
     -- Edit Mode's Match Width and Match Height picks (Placement/SizeMatch.lua).
     sizeMatches = {},
     -- The typeface step this profile's fonts are at (see Typeface below).
-    typeface = 2,
+    typeface = 3,
 }
 -- The keys a profile may contain (import/export accept nothing else).
 D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true, typeface = true }
@@ -33,12 +33,16 @@ D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatc
 -- in every module's settings (a spell's own text look included); a font the
 -- player picked stays. Runs after the modules' own migrations, which may
 -- have just moved an older default to "Mode Geist".
-local OLD_TYPEFACE = "Mode Geist"
-local function Typeface(node, depth)
+-- Typeface step 3 (November 15, 2026, Phase 8): the bundled Lato is gone
+-- (decision 4), so a saved "ModeUI Lato" becomes "Mode" too, and a global
+-- interface font still at Lato goes back to the default.
+local OLD_TYPEFACES = { ["Mode Geist"] = 2, ["ModeUI Lato"] = 3 }
+local function Typeface(node, depth, from)
     if type(node) ~= "table" or depth > 12 then return end
     for key, value in pairs(node) do
-        if key == "fontMedia" and value == OLD_TYPEFACE then node[key] = addon.Style.FONT_DEFAULT
-        elseif type(value) == "table" then Typeface(value, depth + 1) end
+        local step = key == "fontMedia" and OLD_TYPEFACES[value]
+        if step and step > from then node[key] = addon.Style.FONT_DEFAULT
+        elseif type(value) == "table" then Typeface(value, depth + 1, from) end
     end
 end
 D.DEFAULT_PROFILE = "Default"
@@ -64,7 +68,7 @@ function D:ValidateProfile(source)
         assert(type(source) == "table", "Profile must be a table.")
         local profile = Copy(source)
         local typeface = profile.typeface
-        assert(typeface == nil or typeface == 1 or typeface == 2, "Invalid typeface step.")
+        assert(typeface == nil or typeface == 1 or typeface == 2 or typeface == 3, "Invalid typeface step.")
         ApplyDefaults(profile, self.profileDefaults, "profile")
         for _, id in ipairs(addon.moduleOrder) do
             local module = addon.modules[id]
@@ -78,7 +82,12 @@ function D:ValidateProfile(source)
         end
         assert(type(profile.positions) == "table", "Invalid positions.")
         assert(addon.PositionManager.ValidSizeMatches(profile.sizeMatches), "Invalid size matches.")
-        if typeface ~= 2 then Typeface(profile.modules, 0); profile.typeface = 2 end
+        local from = typeface or 1
+        if from < 3 then
+            Typeface(profile.modules, 0, from)
+            if profile.globalMedia.font == "media:ModeUI Lato" then profile.globalMedia.font = "game" end
+            profile.typeface = 3
+        end
         return profile
     end)
     if ok then return result end

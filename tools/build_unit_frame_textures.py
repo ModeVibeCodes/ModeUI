@@ -1,6 +1,6 @@
-"""Build the Unit Frames Onyx textures: the rounded rim and gap, the round
-portrait circle and the satin bar fill (the retired Satin Matte, Inset Wells
-and tile textures were removed with layout version 9).
+"""Build the Unit Frames circle texture (UnitFrameCircle: the round portrait
+cap and combo point sockets). The rim, gap and satin bar art were retired
+(layout version 9, and the Mode redesign's Phase 8).
 
 Every texture is
 neutral luminance (R=G=B) multiplied in-game by the frame's tint, so colour
@@ -21,10 +21,7 @@ SS = 8  # supersampling factor for silhouettes
 
 # Shape constants shared with Modules/UnitFrames/Layout.lua and Shared/Media/Media.lua
 # (slice margins must cover each corner radius).
-FRAME = (32, 32, 5)     # Onyx bar block rim; sliced at 6
-FRAME_INNER = (32, 32, 3) # inner dark line backing, inset 2px inside FrameFill; sliced at 4
 CIRCLE = 128            # anti-aliased circle for the portrait ring layers (downscaled crisply)
-BAR = (64, 32)         # stretched status bar fill
 
 
 def rounded_mask(width, height, radius, inset=0.0):
@@ -83,29 +80,10 @@ def save(img, name):
 
 
 def build():
-    # Minimal Rounded (owner choice A): one thin, soft-cornered frame. The
-    # backing doubles as the border and the 1px hairlines between portrait,
-    # health and power; content sits 2 units in, inside the corner curve.
-    w, h, r = FRAME
-    save(luminance_image(w, h, lambda x, y: 1.0, rounded_mask(w, h, r)), 'FrameFill.tga')
-    # Palette frame: tighter inner radius so the 1px inner line follows the
-    # 2px outer border's curve; and a crisp circle for the round portrait cap.
-    w, h, r = FRAME_INNER
-    save(luminance_image(w, h, lambda x, y: 1.0, rounded_mask(w, h, r)), 'FrameInner.tga')
+    # A crisp circle for the round portrait cap and combo point sockets
+    # (UnitFrameCircle). The Satin Matte frame and bar art were retired with
+    # the Mode redesign (Phase 8, November 15, 2026).
     save(luminance_image(CIRCLE, CIRCLE, lambda x, y: 1.0, circle_mask(CIRCLE)), 'Circle.tga')
-
-    # Bar: satin fill for health/power, tinted by the bar colour.
-    w, h = BAR
-    noise = grain(w, h, 0.02, 3307)
-    alpha = Image.new('L', (w, h), 255)
-
-    def bar(x, y):
-        t = y / (h - 1)
-        v = 1.0 - 0.34 * t + 0.06 * math.exp(-((t - 0.18) / 0.14) ** 2)
-        if y == 0:
-            v = 1.0
-        return min(1.0, v) + noise[y][x]
-    save(luminance_image(w, h, bar, alpha), 'BarSatin.tga')
 
 
 if __name__ == '__main__':

@@ -51,20 +51,6 @@ function M:PaintSurface(texture,color,alpha,scope)
     if texture:SetTexture(self:GetSurfaceTexture(scope))==false then texture:SetTexture(self.defaultStatusBar) end
     texture:SetVertexColor(color[1],color[2],color[3],alpha or color[4] or 1)
 end
-function M:ApplyBackdrop(frame, backdrop, scope, preserveBackground)
-    scope=scope or self:FrameScope(frame)
-    local copy={};for k,v in pairs(backdrop) do copy[k]=v end
-    local border=self:GetBorder(self:GlobalStyle("border",scope) or "thin") or {kind="thin",edgeSize=1}
-    copy.edgeFile=border.path or self.defaultStatusBar
-    if border.kind=="none" then copy.edgeFile=nil end
-    local thickness=backdrop.edgeSize
-    if thickness==nil or thickness==1 then thickness=border.edgeSize or 1 end
-    copy.edgeSize=math.max(1,math.min(thickness,12))
-    if copy.insets then copy.insets={left=1,right=1,top=1,bottom=1} end
-    -- Settings popups keep native theme artwork; displays inherit Global Texture.
-    if copy.bgFile and not preserveBackground then copy.bgFile=self:GetSurfaceTexture(scope) end
-    frame:SetBackdrop(copy)
-end
 function M:SetGlobalStyle(kind,value,scope)
     if InCombatLockdown() or UnitAffectingCombat("player") then return false end
     if kind~="font" and kind~="texture" and kind~="border" then return false end
@@ -77,15 +63,4 @@ function M:SetGlobalStyle(kind,value,scope)
     db[kind]=value
     addon.ReloadManager:Request("globalMedia","Apply Global Settings media changes.")
     return true
-end
-
-function M:RegisterBundledMedia()
-    local library=self.library
-    if not library or type(library.Register)~="function" then return end
-    if not (C_UIFileAsset and C_UIFileAsset.IsKnownFile) then return end
-    local lato="Interface\\AddOns\\ModeUI\\Media\\Fonts\\Lato-Regular.ttf"
-    local latoOK,latoKnown=pcall(C_UIFileAsset.IsKnownFile,lato)
-    if latoOK and not (issecretvalue and issecretvalue(latoKnown)) and latoKnown==true then
-        library:Register("font","ModeUI Lato",lato)
-    end
 end

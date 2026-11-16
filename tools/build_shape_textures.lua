@@ -3,36 +3,19 @@
 --   lua tools/build_shape_textures.lua
 --
 --   Mode/Flat.tga        ModeFlat: soft rounded fill for settings controls (radius 4, sliced at 5)
---   Mode/Card.tga        ModeCard: settings cards (radius 6, sliced at 7)
---   Mode/Circle.tga      ModeCircle: switch knobs and slider thumbs (unsliced)
---   Mode/Switch.tga      ModeSwitch: 32x16 stadium switch track (sliced 8 left and right)
---   Mode/Track.tga       ModeTrack: 8x4 stadium slider track (sliced 2 left and right)
 --   Mode/Chevron.tga     ModeChevron: small down chevron for dropdowns
---   Nameplates/Rim.tga   plate and aura rims (radius 3, sliced at 4)
---   Nameplates/Gap.tga   the black gap inside a rim (radius 2, sliced at 3)
 --   Nameplates/Glow.tga  soft target glow around a plate, hollow inside (sliced at 12)
 --   Nameplates/AuraGlow.tga small glow around an aura icon, hollow inside (sliced at 6)
 --   Nameplates/Arrow.tga target arrow pointing right (mirrored for the left)
 --   Nameplates/Stripes.tga diagonal stripes for the focus highlight (tiles seamlessly)
 --   Mode/SlateHatch.tga  ModeSlateHatch: 4x4 tile, gray 80% with a 1px full-white diagonal; tinted
 --                        Mode Slate / 0.8, so the base is Mode Slate and the lines a little lighter
---   Mode/CapRight.tga, CapLeft.tga  ModeCapRight/Left: 64x256, a straight end with 64px round corners, open
---                        at the left (Right) or right (Left); the rounded end of a box, and its mask
---   Mode/CapHoleRight.tga, CapHoleLeft.tga  the same, inverted: masks that hollow a cap into a ring
---   Mode/CornerTopLeft.tga (TopRight, BottomLeft, BottomRight)  ModeCorner*: 64x64, one round corner
---                        of a box (a quarter circle on the corner's side), and its mask; box borders use
---                        these instead of a quarter of the cap, so no mask needs texture coordinates
---   Mode/CornerHoleTopLeft.tga (and the other three)  the same, inverted: hollow a corner into a ring
 --   UnitFrames/Rested.tga  UnitFrameRested: a "Zz" in square strokes, for the rested badge
 --   UnitFrames/Combat.tga  UnitFrameCombat: crossed swords with guards, for the combat badge
 --   DamageMeters/Reset.tga  a circular arrow (Reset All Data)
 --   DamageMeters/Lock.tga   a closed padlock (window locked)
 --   DamageMeters/Unlock.tga an open padlock (window unlocked)
 --   DamageMeters/Grip.tga   three diagonal lines in the bottom-right corner (resize)
---   ActionBars/Slot.tga  ActionBarSlot: a dark action slot with a soft top bevel, darker edges and
---                        fine grain, in color (not tinted) and shown at Background Opacity
---   Mode/Glass.tga       ModeGlass: a frosted tab: top corners rounded (radius 3), edges feathered
---                        over 2px for a soft blurred look, lighter at the top (sliced at 6)
 --   Mode/Close.tga       ModeClose: a thin cross for close buttons
 --   Chat/Menu.tga        ChatMenu: a speech bubble outline, the chat menu button's glyph
 --   Chat/Channels.tga    ChatChannels: a "#", the chat channels button's glyph
@@ -41,9 +24,6 @@
 --   Mode/Maximize.tga    ModeMaximize: an arrow out to the top-right corner (expand a window)
 --   Mode/Sheen.tga       ModeSheen: 64x16, a soft diagonal band of light, brighter at the top,
 --                        laid over glass tabs (ADD) for a glassy glint
---   Mode/Round.tga       ModeRound: a rounded box (radius 5, sliced at 6), the fill under a ring
---   Mode/Ring1-4.tga     ModeRing1..4: its hollow rim, 1 to 4 px thick (sliced at 6), so a
---                        see-through fill never takes the rim's color
 local SAMPLES = 8
 local ROOT = "ModeUI/Media/Textures/"
 
@@ -57,19 +37,6 @@ local function RoundedRect(width, height, radius)
     end
 end
 
--- A rounded box's rim, `thickness` px wide: inside the outer rounded box and
--- outside the inner one (inset by the thickness, its radius smaller by it).
-local function Ring(size, radius, thickness)
-    local outer = RoundedRect(size, size, radius)
-    local innerRadius = math.max(0, radius - thickness)
-    local inner = RoundedRect(size - 2 * thickness, size - 2 * thickness, innerRadius)
-    return function(x, y)
-        if outer(x, y) == 0 then return 0 end
-        local ix, iy = x - thickness, y - thickness
-        if ix >= 0 and iy >= 0 and ix <= size - 2 * thickness and iy <= size - 2 * thickness and inner(ix, iy) == 1 then return 0 end
-        return 1
-    end
-end
 
 -- A soft falloff around a hollow core: alpha fades from 1 at the rounded
 -- core's edge to 0 over `blur` pixels (smoothstep). The core's whole square is
@@ -104,29 +71,7 @@ local function Strokes(segments, width)
     end
 end
 
--- The rounded end of a box (owner's reference, November 13, 2026): a straight
--- end edge with circular corners whose radius is the texture's width, open on
--- the left (or the right when `left`); optionally inverted (a hole).
-local function Cap(width, height, left, hole)
-    return function(x, y)
-        local u = left and width - x or x
-        local cy = math.max(width, math.min(height - width, y))
-        local inside = u * u + (y - cy) * (y - cy) <= width * width
-        if hole then return inside and 0 or 1 end
-        return inside and 1 or 0
-    end
-end
 
--- One round corner of a box, 64x64: a quarter circle of radius 64 centered on
--- the corner's inner side, opaque inside (or inverted, a hole).
-local function Corner(right, bottom, hole)
-    local cx, cy = right and 0 or 64, bottom and 0 or 64
-    return function(x, y)
-        local inside = (x - cx) * (x - cx) + (y - cy) * (y - cy) <= 64 * 64
-        if hole then return inside and 0 or 1 end
-        return inside and 1 or 0
-    end
-end
 
 -- Diagonal stripes, `width` pixels wide every `period` pixels; the period
 -- divides the tile so it repeats without a seam.
@@ -134,24 +79,6 @@ local function Stripes(period, width)
     return function(x, y) return ((x + y) % period) < width and 1 or 0 end
 end
 
--- The action slot background: returns r, g, b (0-1) for a pixel of a size x
--- size texture. A cool dark gray, lighter in the middle, a soft highlight
--- along the top, darker edges and a little even grain, like a recessed slot.
-local function Slot(size)
-    local function Smooth(a, b, t) t = math.max(0, math.min(1, (t - a) / (b - a))); return t * t * (3 - 2 * t) end
-    return function(x, y)
-        local u, v = (x + 0.5) / size, (y + 0.5) / size
-        local d = math.sqrt((u - 0.5) ^ 2 + (v - 0.55) ^ 2)
-        local l = 0.21 - 0.13 * Smooth(0.12, 0.72, d)
-        if v < 0.14 then l = l + 0.06 * (1 - v / 0.14) end
-        if v > 0.86 then l = l - 0.03 * ((v - 0.86) / 0.14) end
-        local edge = math.min(u, 1 - u, v, 1 - v)
-        if edge < 0.07 then l = l - 0.05 * (1 - edge / 0.07) end
-        local grain = (math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1
-        l = math.max(0, math.min(1, l + (grain - 0.5) * 0.03))
-        return l * 0.95, l * 0.99, l * 1.1
-    end
-end
 
 local function Triangle(ax, ay, bx, by, cx, cy)
     local function Side(px, py, x1, y1, x2, y2) return (px - x2) * (y1 - y2) - (x1 - x2) * (py - y2) end
@@ -181,21 +108,6 @@ local function Stroke(points, thickness)
     end
 end
 
--- A frosted glass tab: a rect with rounded top corners whose edges fade out
--- over `blur` pixels (smoothstep), and whose body thins from full at the top
--- to `floor` at the bottom, so the tint reads as glass with a soft sheen.
-local function Glass(size, radius, blur, floor)
-    return function(x, y)
-        local cx = math.max(radius + blur, math.min(size - radius - blur, x))
-        local cy = math.max(radius + blur, y)
-        local distance = y < radius + blur and math.sqrt((x - cx) ^ 2 + (y - cy) ^ 2) - radius
-            or math.max(blur - x, x - (size - blur)) + 0
-        local t = math.max(0, math.min(1, (blur - distance) / blur))
-        local edge = t * t * (3 - 2 * t)
-        local body = 1 - (1 - floor) * (y / size)
-        return edge * body
-    end
-end
 
 -- Any of several shapes.
 local function Union(...)
@@ -251,34 +163,14 @@ end
 -- { path, width, height, shape, supersample[, color] }
 local TEXTURES = {
     { "Mode/Flat.tga", 16, 16, RoundedRect(16, 16, 4), true },
-    { "Mode/Card.tga", 16, 16, RoundedRect(16, 16, 6), true },
-    { "Mode/Circle.tga", 16, 16, RoundedRect(16, 16, 8), true },
-    { "Mode/Switch.tga", 32, 16, RoundedRect(32, 16, 8), true },
-    { "Mode/Track.tga", 8, 4, RoundedRect(8, 4, 2), true },
     { "Mode/Chevron.tga", 16, 16, Stroke({ { 4.5, 6 }, { 8, 9.5 }, { 11.5, 6 } }, 1.6), true },
-    { "Nameplates/Rim.tga", 16, 16, RoundedRect(16, 16, 3), true },
-    { "Nameplates/Gap.tga", 16, 16, RoundedRect(16, 16, 2), true },
     { "Nameplates/Glow.tga", 32, 32, Glow(32, 12, 2, 11), false },
     { "Nameplates/AuraGlow.tga", 24, 24, Glow(24, 6, 2, 5), false },
     { "Nameplates/Arrow.tga", 16, 16, Triangle(3, 2, 14, 8, 3, 14), true },
     { "Nameplates/Stripes.tga", 16, 16, Stripes(8, 3), true },
-    { "ActionBars/Slot.tga", 64, 64, function() return 1 end, false, Slot(64) },
-    { "Mode/CapRight.tga", 64, 256, Cap(64, 256, false, false), true },
-    { "Mode/CapLeft.tga", 64, 256, Cap(64, 256, true, false), true },
-    { "Mode/CapHoleRight.tga", 64, 256, Cap(64, 256, false, true), true },
-    { "Mode/CapHoleLeft.tga", 64, 256, Cap(64, 256, true, true), true },
-    { "Mode/CornerTopLeft.tga", 64, 64, Corner(false, false, false), true },
-    { "Mode/CornerTopRight.tga", 64, 64, Corner(true, false, false), true },
-    { "Mode/CornerBottomLeft.tga", 64, 64, Corner(false, true, false), true },
-    { "Mode/CornerBottomRight.tga", 64, 64, Corner(true, true, false), true },
-    { "Mode/CornerHoleTopLeft.tga", 64, 64, Corner(false, false, true), true },
-    { "Mode/CornerHoleTopRight.tga", 64, 64, Corner(true, false, true), true },
-    { "Mode/CornerHoleBottomLeft.tga", 64, 64, Corner(false, true, true), true },
-    { "Mode/CornerHoleBottomRight.tga", 64, 64, Corner(true, true, true), true },
     { "UnitFrames/Rested.tga", 32, 32, Strokes({ { 5, 8, 16, 8 }, { 16, 8, 5, 21 }, { 5, 21, 16, 21 },
         { 19, 15, 27, 15 }, { 27, 15, 19, 24 }, { 19, 24, 27, 24 } }, 3), true },
     { "UnitFrames/Combat.tga", 32, 32, Strokes({ { 7, 7, 25, 25 }, { 25, 7, 7, 25 }, { 4, 22, 10, 28 }, { 22, 28, 28, 22 } }, 3), true },
-    { "Mode/Glass.tga", 16, 16, Glass(16, 3, 2, 0.7), true },
     { "Mode/Close.tga", 16, 16, Strokes({ { 4.5, 4.5, 11.5, 11.5 }, { 11.5, 4.5, 4.5, 11.5 } }, 1.4), true },
     { "Chat/Menu.tga", 16, 16, Stroke({ { 2.5, 2.5 }, { 13.5, 2.5 }, { 13.5, 10.5 }, { 7.5, 10.5 }, { 4.5, 13.5 },
         { 4.5, 10.5 }, { 2.5, 10.5 }, { 2.5, 2.5 } }, 1), true },
@@ -293,11 +185,6 @@ local TEXTURES = {
     { "DamageMeters/Unlock.tga", 16, 16, Padlock(true), true },
     { "DamageMeters/Grip.tga", 16, 16, Grip(), true },
     { "Chat/Friends.tga", 16, 16, Union(Stroke(Arc(8, 5.5, 2.75, 0, 360, 32), 1.1), Stroke(Arc(8, 15.5, 5.5, 200, 340, 20), 1.1)), true },
-    { "Mode/Round.tga", 16, 16, RoundedRect(16, 16, 5), true },
-    { "Mode/Ring1.tga", 16, 16, Ring(16, 5, 1), true },
-    { "Mode/Ring2.tga", 16, 16, Ring(16, 5, 2), true },
-    { "Mode/Ring3.tga", 16, 16, Ring(16, 5, 3), true },
-    { "Mode/Ring4.tga", 16, 16, Ring(16, 5, 4), true },
     { "Mode/Minimize.tga", 16, 16, Strokes({ { 11.5, 4.5, 5, 11 }, { 4.5, 6.5, 4.5, 11.5 }, { 4.5, 11.5, 9.5, 11.5 } }, 1.4), true },
     { "Mode/Maximize.tga", 16, 16, Strokes({ { 4.5, 11.5, 11, 5 }, { 6.5, 4.5, 11.5, 4.5 }, { 11.5, 4.5, 11.5, 9.5 } }, 1.4), true },
     { "Mode/Sheen.tga", 64, 16, function(x, y)

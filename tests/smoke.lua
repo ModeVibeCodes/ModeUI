@@ -305,7 +305,7 @@ for key, asset in pairs(assets.addon.Media.Textures) do
     local path = H.addonDir .. "Media/Textures/" .. asset.file
     local file = io.open(path, "rb"); if file then file:close() else missing[#missing + 1] = key end
 end
-for _, name in ipairs({ "Lato-Regular.ttf", "Lato-Bold.ttf" }) do
+for _, name in ipairs({ "Geist/Geist-Regular.ttf", "Geist/Geist-Medium.ttf", "Geist/Geist-SemiBold.ttf", "Geist/Geist-Bold.ttf" }) do
     local file = io.open(H.addonDir .. "Media/Fonts/" .. name, "rb"); if file then file:close() else missing[#missing + 1] = name end
 end
 assert(#missing == 0, "missing assets: " .. table.concat(missing, ", "))
@@ -331,8 +331,11 @@ local p = saved.profiles.Default
 p.typeface = nil
 p.modules.unitFrames.player.fontMedia = "Mode Geist"
 p.modules.nameplates.enemy.fontMedia = "Friz Quadrata"
+p.modules.partyFrames.fontMedia = "ModeUI Lato"
+p.globalMedia.font = "media:ModeUI Lato"
 H.Load({ before = STUBS, saved = saved }).run([[
-    assert(addon.db.typeface == 2 and addon.db.modules.unitFrames.player.fontMedia == 'Mode', 'the old default moves to Mode')
+    assert(addon.db.typeface == 3 and addon.db.modules.unitFrames.player.fontMedia == 'Mode', 'the old default moves to Mode')
     assert(addon.db.modules.nameplates.enemy.fontMedia == 'Friz Quadrata', 'a picked font stays')
+    assert(addon.db.modules.partyFrames.fontMedia == 'Mode' and addon.db.globalMedia.font == 'game', 'the retired Lato moves to the Mode typeface')
 ]], "typeface")
 print("fonts: Expressway when installed, else Geist")

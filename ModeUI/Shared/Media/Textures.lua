@@ -9,28 +9,17 @@ M.Textures = {
     ModeSurface = { file = "Mode/Surface.tga", slice = 12, rounded = true },
     ModePageDetail = { file = "Mode/PageAbstract.tga", transparent = true },
     ModePillSurface = { file = "Mode/PillSurface.tga", rounded = true },
-    ModeHeaderLine = { file = "Mode/HeaderLine.tga", transparent = true },
     ModeBorder = { file = "Mode/Border.tga", slice = 12, transparent = true },
-    ModeSelection = { file = "Mode/Selection.tga", transparent = true },
-    ModeControlSurface = { file = "Mode/ControlSurface.tga", slice = 10, rounded = true },
-    ModeControlBorder = { file = "Mode/ControlBorder.tga", slice = 10, transparent = true },
     -- Fixed-size controls use full sprites: no slice margins can flatten their
     -- small alpha corners. Fresh paths avoid reusing previously cached images.
     ModeCheckSurface = { file = "Mode/CheckSurfaceRound.tga", rounded = true },
-    ModeCheckBorder = { file = "Mode/CheckBorderRound.tga", transparent = true },
     ModeCheckMark = { file = "Mode/CheckSurfaceRound.tga", rounded = true },
     ModeToggleSurface = { file = "Mode/ToggleSurfacePill.tga", rounded = true },
-    ModeToggleBorder = { file = "Mode/ToggleBorderPill.tga", transparent = true },
     ModeThumb = { file = "Mode/Thumb.tga", rounded = true },
-    ModeSliderThumb = { file = "Mode/CheckSurfaceRound.tga", rounded = true },
     ModeScrollThumb = { file = "Mode/ScrollThumb.tga", rounded = true },
-    ModeDivider = { file = "Mode/Divider.tga", transparent = true },
     -- Unit Frames Satin Matte (tools/build_unit_frame_textures.py): neutral
     -- luminance tinted in-game; slices cover each corner radius.
-    UnitFrameFrame = { file = "UnitFrames/FrameFill.tga", slice = 6, rounded = true },
-    UnitFrameFrameInner = { file = "UnitFrames/FrameInner.tga", slice = 4, rounded = true },
     UnitFrameCircle = { file = "UnitFrames/Circle.tga", rounded = true },
-    UnitFrameBar = { file = "UnitFrames/BarSatin.tga" },
     -- Status badge icons (tools/build_shape_textures.lua), white, tinted in game.
     UnitFrameRested = { file = "UnitFrames/Rested.tga", transparent = true },
     UnitFrameCombat = { file = "UnitFrames/Combat.tga", transparent = true },
@@ -40,50 +29,20 @@ M.Textures = {
     -- ({ left, top, right, bottom }). The nameplate rims use small corner
     -- radii so health and cast boxes round alike.
     ModeFlat = { file = "Mode/Flat.tga", slice = 5, rounded = true },
-    ModeCard = { file = "Mode/Card.tga", slice = 7, rounded = true },
-    ModeCircle = { file = "Mode/Circle.tga", rounded = true },
-    ModeSwitch = { file = "Mode/Switch.tga", slice = { 8, 0, 8, 0 }, rounded = true },
-    ModeTrack = { file = "Mode/Track.tga", slice = { 2, 0, 2, 0 }, rounded = true },
     ModeChevron = { file = "Mode/Chevron.tga", transparent = true },
     -- 4x4 tile for Mode Slate Hatch (Kit.BarBackground tiles it per pixel).
     ModeSlateHatch = { file = "Mode/SlateHatch.tga" },
-    -- Half-oval box ends and their hole masks (Kit.CapRing, Kit.EndMask).
-    ModeCapRight = { file = "Mode/CapRight.tga", rounded = true },
-    ModeCapLeft = { file = "Mode/CapLeft.tga", rounded = true },
-    ModeCapHoleRight = { file = "Mode/CapHoleRight.tga", transparent = true },
-    ModeCapHoleLeft = { file = "Mode/CapHoleLeft.tga", transparent = true },
-    -- One round corner of a box and its hole (Kit.ModeBoxBorder): whole
-    -- textures, so the corner masks need no texture coordinates.
-    ModeCornerTopLeft = { file = "Mode/CornerTopLeft.tga", rounded = true },
-    ModeCornerTopRight = { file = "Mode/CornerTopRight.tga", rounded = true },
-    ModeCornerBottomLeft = { file = "Mode/CornerBottomLeft.tga", rounded = true },
-    ModeCornerBottomRight = { file = "Mode/CornerBottomRight.tga", rounded = true },
-    ModeCornerHoleTopLeft = { file = "Mode/CornerHoleTopLeft.tga", transparent = true },
-    ModeCornerHoleTopRight = { file = "Mode/CornerHoleTopRight.tga", transparent = true },
-    ModeCornerHoleBottomLeft = { file = "Mode/CornerHoleBottomLeft.tga", transparent = true },
-    ModeCornerHoleBottomRight = { file = "Mode/CornerHoleBottomRight.tga", transparent = true },
-    NameplateRim = { file = "Nameplates/Rim.tga", slice = 4, rounded = true },
-    NameplateGap = { file = "Nameplates/Gap.tga", slice = 3, rounded = true },
     NameplateGlow = { file = "Nameplates/Glow.tga", slice = 12, rounded = true },
     AuraGlow = { file = "Nameplates/AuraGlow.tga", slice = 6, rounded = true },
     NameplateArrow = { file = "Nameplates/Arrow.tga", transparent = true },
-    -- The action slot background (in color, not tinted), stretched to the slot.
-    ActionBarSlot = { file = "ActionBars/Slot.tga" },
     NameplateStripes = { file = "Nameplates/Stripes.tga", transparent = true },
     -- Skins (Shared/Skin): the frosted chat tab, feathered at its sides and
     -- top, and the close button's cross.
-    ModeGlass = { file = "Mode/Glass.tga", slice = 6, rounded = true },
     ModeClose = { file = "Mode/Close.tga", transparent = true },
     -- Window shrink and expand glyphs, and the glass tabs' diagonal glint.
     ModeMinimize = { file = "Mode/Minimize.tga", transparent = true },
     ModeMaximize = { file = "Mode/Maximize.tga", transparent = true },
     ModeSheen = { file = "Mode/Sheen.tga", transparent = true },
-    -- A rounded box and its hollow rim, 1 to 4 px (tooltips).
-    ModeRound = { file = "Mode/Round.tga", slice = 6, rounded = true },
-    ModeRing1 = { file = "Mode/Ring1.tga", slice = 6, rounded = true },
-    ModeRing2 = { file = "Mode/Ring2.tga", slice = 6, rounded = true },
-    ModeRing3 = { file = "Mode/Ring3.tga", slice = 6, rounded = true },
-    ModeRing4 = { file = "Mode/Ring4.tga", slice = 6, rounded = true },
     -- Chat compartment glyphs: the chat menu's speech bubble and Channels' "#".
     ChatMenu = { file = "Chat/Menu.tga", transparent = true },
     ChatChannels = { file = "Chat/Channels.tga", transparent = true },

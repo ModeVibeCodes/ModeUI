@@ -151,21 +151,12 @@ function W.Outline(frame, color, layer, inset, alpha, scope)
     function outline:SetColor(value, opacity)
         for _, edge in ipairs(self.edges) do Paint(edge, InterfaceColor(value), opacity) end
         local style=addon.Media:GlobalStyle("border",scope) or "thin"
-        self.kind=style=="none" and "none" or style=="thin" and "thin" or "shared"
-        if self.kind=="shared" then
-            if not self.view then self.view={};addon.Border.Create(self.view,frame) end
-            addon.Border.Apply(self.view,{borderStyle=style,borderColor=InterfaceColor(value),
-                borderOpacity=opacity or 1,inset=true,size=64})
-        end
+        self.kind=style=="none" and "none" or "thin"
         self:SetShown(self.shown)
     end
     function outline:SetShown(shown)
         self.shown=shown
         for _,edge in ipairs(self.edges) do edge:SetShown(shown and self.kind=="thin") end
-        if self.view then
-            self.view.iconBorder:SetShown(shown and self.kind=="shared" and self.view.borderKind=="thin")
-            if self.view.borderFrame then self.view.borderFrame:SetShown(shown and self.kind=="shared" and self.view.borderKind=="shared") end
-        end
     end
     outline:SetColor(color, alpha)
     return outline

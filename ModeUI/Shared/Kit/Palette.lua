@@ -26,6 +26,9 @@ Kit.onyx = { health = RGB(19, 18, 18), track = RGB(10, 11, 12), border = RGB(37,
     -- Unit frame rims: a little lighter than `border`, to stand apart from
     -- the health bar (owner, November 13, 2026).
     frameRim = RGB(64, 69, 76) }
+-- The pre-Mode unit frame rim (#40454C), which saved settings still hold as
+-- a default (aura borders, combo point sockets).
+Kit.BORDER_COLOR = Kit.onyx.frameRim
 
 -- True when a saved color is still the old Onyx health fill (#1C1E21), for
 -- the migrations that move it to the current one.

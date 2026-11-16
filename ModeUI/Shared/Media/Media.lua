@@ -16,7 +16,6 @@ function M:MediaLabel(name)
     local label=(name or ""):gsub("%s*%b()",""):gsub("%s+$","")
     return label~="" and label or (name or ""):gsub("[()]","")
 end
-M.latoPath = "Interface\\AddOns\\ModeUI\\Media\\Fonts\\Lato-"
 M.defaultStatusBar = "Interface\\Buttons\\WHITE8X8"
 function M:RegisterStatusBarListener(owner,callback) self.statusbarListeners[owner]=callback end
 function M:UnregisterStatusBarListener(owner) self.statusbarListeners[owner]=nil end
@@ -98,14 +97,11 @@ function M:RefreshBorders()
     for owner, callback in pairs(self.borderListeners) do callback(owner) end
 end
 
--- ModeUI's interface font is Geist by default (docs/DESIGN_LANGUAGE.md,
--- "Text"); headings use Geist SemiBold. Choosing the bundled Lato keeps Lato.
+-- ModeUI's interface font is the Mode typeface by default
+-- (docs/DESIGN_LANGUAGE.md, "Text"); headings use its SemiBold.
 function M:GetInterfaceFont(fallbackPath, scope, weight)
     local theme = addon.InterfaceTheme
     local selection = self:GlobalStyle("font", scope)
-    if theme and theme.id == "mode" and selection == "media:ModeUI Lato" then
-        return self.latoPath .. (weight == "heading" and "Bold" or "Regular") .. ".ttf"
-    end
     if theme and theme.id == "mode" and (selection == nil or selection == "game") then
         return addon.Style.FontPath(weight == "heading" and "semibold" or weight or "regular")
     end
@@ -138,7 +134,6 @@ function M:AttachLibrary()
         self.library.UnregisterCallback(self, "LibSharedMedia_SetGlobal")
     end
     self.library = library
-    self:RegisterBundledMedia()
     self:RegisterProviderFonts()
     if library.RegisterCallback then
         library.RegisterCallback(self, "LibSharedMedia_Registered", "OnMediaRegistered")

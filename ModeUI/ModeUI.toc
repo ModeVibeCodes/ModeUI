@@ -59,8 +59,6 @@ Shared\Kit\Palette.lua
 Shared\Kit\Shape.lua
 Shared\Kit\Bands.lua
 Shared\Kit\Edges.lua
-Shared\Kit\Capsule.lua
-Shared\Kit\Border.lua
 Shared\Kit\Slot.lua
 Shared\Kit\Glows.lua
 Shared\Kit\Points.lua
@@ -84,7 +82,6 @@ Shared\Media\Styles.lua
 Shared\Media\MediaCatalog.lua
 Shared\Media\MediaDiscovery.lua
 Shared\Placement\PreviewStates.lua
-Shared\Border\Border.lua
 Shared\Placement\PositionHighlights.lua
 Shared\Placement\PositionGrid.lua
 Shared\Skin\Skin.lua

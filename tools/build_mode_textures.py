@@ -5,9 +5,10 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'ModeUI/Media/Textures/Mode'
-SIZES = {'Surface': (128,128), 'Border': (128,128), 'Selection': (128,4),
-         'ControlSurface': (64,32), 'ControlBorder': (64,32),
-         'Thumb': (32,32), 'ScrollThumb': (4,64), 'Divider': (256,4)}
+# (Selection, ControlSurface, ControlBorder, Divider, the check and toggle
+# borders, the logo and the header rule were retired in Phase 8, November 15,
+# 2026: nothing used them.)
+SIZES = {'Surface': (128,128), 'Border': (128,128), 'Thumb': (32,32), 'ScrollThumb': (4,64)}
 
 def build():
     DEST.mkdir(parents=True, exist_ok=True)
@@ -22,17 +23,12 @@ def build():
     # resampled to a power-of-two canvas. Small controls render without slices.
     for source,target,size in (
         ('CheckSurface','CheckSurfaceRound',(32,32)),
-        ('CheckBorder','CheckBorderRound',(32,32)),
         ('ToggleSurface','ToggleSurfacePill',(32,16)),
-        ('ToggleBorder','ToggleBorderPill',(32,16)),
     ):
         image=Image.open(ROOT/'design/mode'/(source+'.png')).convert('RGBA')
         if image.size!=size: image=image.resize(size,Image.Resampling.LANCZOS)
         image.save(DEST/(target+'.tga'),compression=None)
         print('PASS power-of-two full sprite:',target)
-    logo=ROOT/'design/mode/Logo.png'
-    if logo.exists():
-        Image.open(logo).convert('RGBA').resize((128,128),Image.Resampling.LANCZOS).save(DEST/'Logo.tga',compression=None)
     # Figma-generated abstract detail is a full-frame overlay, never sliced.
     detail=Image.open(ROOT/'design/mode/PageAbstractSource.png').convert('RGBA')
     assert detail.size==(1024,1024)
@@ -50,14 +46,6 @@ def build():
     pill.putalpha(mask.resize((256,64),Image.Resampling.LANCZOS))
     pill.save(DEST/'PillSurface.tga',compression=None)
     print('PASS supersampled SVG capsule: PillSurface.tga')
-    # Identical alpha rows give a consistent thin rule with a symmetric fade.
-    rule=Image.new('RGBA',(256,4),(255,255,255,0))
-    for x in range(256):
-        t=min(1,x/48,(255-x)/48)
-        alpha=round(255*t*t*(3-2*t))
-        for y in range(4): rule.putpixel((x,y),(255,255,255,alpha))
-    rule.save(DEST/'HeaderLine.tga',compression=None)
-    print('PASS symmetric fading header rule: HeaderLine.tga')
 
 if __name__ == '__main__':
     build()
