@@ -15,6 +15,8 @@
     <Script file="Glow.lua"/>
     <Script file="Visibility.lua"/>
     <Script file="Resources.lua"/>
+    <Script file="ResourceGroup.lua"/>
+    <Script file="ResourceMarks.lua"/>
     <Script file="ResourceUpdate.lua"/>
     <Script file="SpellMenu.lua"/>
     <Script file="GlowPopout.lua"/>
@@ -26,5 +28,6 @@
     <Script file="Settings.lua"/>
     <Script file="SettingsTabs.lua"/>
     <Script file="ResourceSettings.lua"/>
+    <Script file="ResourceSettingsLook.lua"/>
     <Script file="Window.lua"/>
 </Ui>

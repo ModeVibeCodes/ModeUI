@@ -207,6 +207,27 @@ glint (not built).
 In-game gate (owner): every module's border, the pickers on each page, and the
 dispel-colored aura rims on nameplates and party frames.
 
+### Revision: ModeCDM resource bars and player cast bar (November 17, 2026)
+
+Plan and mockups (owner-approved over four rounds):
+https://claude.ai/artifact/QgDguMeW25MVA4hvH5EuVu. Built on branch
+`t3/mcdm-bars` (worktree `ModeUI-mcdm`), one gated step at a time.
+
+- **Built, waiting on the in-game gate:** ModeCDM settings version 6. Resource
+  bars in Mode-Round and Gunmetal, Dark mode (text in Power Type), thinner
+  (Power 10, Combo Points and Alternate Mana 6) with border height floors
+  (`Style.EdgeMinHeight`; Mode-Round draws thin bars at 10px), Rim Color
+  (metals, Bar Color, Custom), Tick Marks per power type, Grouped or
+  Separated combo points with Divider Width and Color, the count on, Full
+  Color, and Group Resources. See `docs/COOLDOWN_MANAGER.md`.
+- **Next:** the player cast bar moves into ModeCDM (Mode-Round, Dark, icon
+  hidden, above Essential; the Unit Frames Player cast bar steps aside while
+  it is on; Target and Focus untouched). First the shared pieces move to
+  `Shared/` (the Blizzard bar fade from Unit Frames, the interrupt hold from
+  Nameplates) with no visible change.
+- **Open:** a smaller Mode-Round ring so Mode-Round bars can be thinner than
+  10px; the Combo Points default layout (Grouped assumed).
+
 ## Decisions
 
 From the plan's "Decisions for you" (owner's answers):
