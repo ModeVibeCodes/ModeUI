@@ -72,6 +72,9 @@ I.Profiles = Any(Ring(16, 10, 5), Ring(16, 30, 10, function(_, y) return y <= 27
 I.Optimizations = Any(Line(18, 3, 8, 18, 16, 18, 13, 29, 24, 13, 16, 13, 18, 3))
 I.ClassColors = Any(Ring(11, 11.5, 5.5), Ring(21, 11.5, 5.5), Ring(16, 20.5, 5.5))
 I.Cooldowns = Any(Ring(16, 16, 11), Line(16, 16, 16, 9), Line(16, 16, 21, 19))
+-- Buffs & Debuffs: two aura icons side by side, a plus (buff) and a minus (debuff).
+I.Auras = Any(Box(3, 9, 15.5, 23, 3), Line(9.25, 12.5, 9.25, 19.5), Line(5.75, 16, 12.75, 16),
+    Box(16.5, 9, 29, 23, 3), Line(19.25, 16, 26.25, 16))
 I.Back = Any(Line(19, 7, 10, 16, 19, 25))
 
 -- Glyphs for controls and marks (not module icons).
@@ -90,6 +93,6 @@ I.GLYPHS = { "CleanUp", "Quest" }
 
 -- Menu order, for the build and the test.
 I.ORDER = { "Home", "UnitFrames", "GroupFrames", "Nameplates", "ActionBars", "DamageMeters", "Chat", "Windows",
-    "Tooltip", "Bags", "Minimap", "Profiles", "Optimizations", "ClassColors", "Cooldowns", "Back" }
+    "Tooltip", "Bags", "Minimap", "Profiles", "Optimizations", "ClassColors", "Cooldowns", "Auras", "Back" }
 
 return I

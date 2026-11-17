@@ -251,6 +251,10 @@ world.run([====[
     assert(M:FrameDB('target').buffs==M.db.target.buffs,'a matched Target keeps its own auras')
     assert(M:SetAuraOption('target','debuffs','enabled',false) and not d1:IsShown())
     units.target.helpful,units.target.harmful=nil,nil;FireEvent('UNIT_AURA','target');assert(not b1:IsShown())
+    -- The Player frame's auras moved to Buffs & Debuffs: none draw here, whatever its saved settings say.
+    assert(M:SetAuraOption('player','debuffs','enabled',true));units.player.harmful={{icon=136207,auraInstanceID=9,dispelName='Magic'}}
+    FireEvent('UNIT_AURA','player');assert(M.frames.player.auraShown.debuffs==0 and not M:ShowsAuras('player') and M:ShowsAuras('target'),'no Player auras')
+    units.player.harmful=nil;assert(M:SetAuraOption('player','debuffs','enabled',false))
 
     -- Target of Target, Focus and Target of Focus: secure frames of their own,
     -- each replacing Blizzard's; Blizzard's Focus frame fades like the Target.
@@ -1007,6 +1011,9 @@ restored.run([====[
     assert(Shared());page.unitFrameAuraButtons[2].scripts.OnClick();assert(page.unitFrameAuraGroup()=='debuffs' and not Shared(),'debuffs start off')
     assert(M:SetAuraOption('target','debuffs','enabled',true) and Shared() and M:SetAuraOption('target','debuffs','enabled',false))
     page.SetAuraGroup('buffs')
+    -- Editing the Player: its Auras tab points to Buffs & Debuffs.
+    page.SetEditing('player');assert(Visible(page.unitFramePlayerAurasButton:GetParent().row) and not Shared(),'Player auras live in Buffs & Debuffs')
+    page.SetEditing('target');assert(not Visible(page.unitFramePlayerAurasButton:GetParent().row) and Shared())
     -- Preview: a live sample of the frame being edited, built by the same code as
     -- the frames in the world; clicking a part opens its settings.
     local view=page.configPreview

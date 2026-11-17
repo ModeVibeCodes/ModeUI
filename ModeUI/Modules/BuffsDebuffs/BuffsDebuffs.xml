@@ -1,0 +1,13 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="Init.lua"/>
+    <Script file="Migrations.lua"/>
+    <Script file="Driver.lua"/>
+    <Script file="Placement.lua"/>
+    <Script file="Bars.lua"/>
+    <Script file="Blizzard.lua"/>
+    <Script file="Samples.lua"/>
+    <Script file="Preview.lua"/>
+    <Script file="Settings.lua"/>
+    <Script file="SettingsBar.lua"/>
+    <Script file="Blacklist.lua"/>
+</Ui>

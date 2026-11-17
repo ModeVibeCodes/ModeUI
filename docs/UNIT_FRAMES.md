@@ -5,6 +5,19 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Player auras move to Buffs & Debuffs (November 17, 2026)
+
+The owner asked for the Player frame's buffs and debuffs to be bars in the
+new **Buffs & Debuffs** module ([BUFFS_DEBUFFS.md](BUFFS_DEBUFFS.md)): bars you
+filter by kind, size, style, blacklist and place anywhere (Player Buffs and
+Player Debuffs anchor to the ModeUI Player Frame by default). Unit Frames no
+longer draws Player auras (`M:ShowsAuras(unit)` in `Auras.lua`), and editing
+the Player, the **Auras** tab shows a note and **Open Buffs & Debuffs**
+instead of its controls. `db.player.buffs` and `db.player.debuffs` stay saved
+and untouched; a profile whose Player frame showed either starts Buffs &
+Debuffs switched on (its `Adopt`). Target, Target of Target, Focus and Target
+of Focus keep their auras here. No layout version change: nothing saved moved.
+
 ## Match Width and Match Height (November 15, 2026)
 
 Every unit frame offers Edit Mode's **Match Width** and **Match Height**

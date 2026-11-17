@@ -120,11 +120,13 @@ function Kit.TintAuraRim(icon, color) icon.edge:SetTint(color) end
 -- Hands the rim to an aura button's container to color by dispel type
 -- (AddDispelTypeTexture with `options`): the rim goes flat first (its base
 -- ring alone, `color` until the game recolors it), so no lighting layer
--- covers the type's color.
-function Kit.DispelAuraRim(button, options, color)
-    button.edge:SetTint(color or Style.Tone.metal.silver.mid)
-    button.rim = button.edge.rimTexture
-    button:AddDispelTypeTexture(button.rim, options)
+-- covers the type's color. `icon` is the frame holding the icon parts when
+-- they sit on a child of the button (Buffs & Debuffs: room for text below).
+function Kit.DispelAuraRim(button, options, color, icon)
+    icon = icon or button
+    icon.edge:SetTint(color or Style.Tone.metal.silver.mid)
+    icon.rim = icon.edge.rimTexture
+    button:AddDispelTypeTexture(icon.rim, options)
 end
 -- Lets an aura's art follow a module's Border choice (style and metal ids).
 function Kit.AuraBorderStyle(icon, styleId, metalId) icon.edge:SetStyle(styleId or "thin", metalId) end

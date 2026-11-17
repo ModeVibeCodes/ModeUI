@@ -57,22 +57,25 @@ function Kit.AuraDispelOptions(colors)
 end
 
 -- Seconds as whole numbers, minutes past a minute ("12", "3m"); nil leaves
--- the game's own format. Made once.
-local formatter
-function Kit.AuraTimeFormatter()
-    if formatter == nil then
-        formatter = false
+-- the game's own format. Made once. `hours` adds hours past an hour ("2h")
+-- for long buffs (Buffs & Debuffs), a formatter of its own.
+local formatters = {}
+function Kit.AuraTimeFormatter(hours)
+    local key = hours and "hours" or "minutes"
+    if formatters[key] == nil then
+        formatters[key] = false
         if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter then
             local ok, made = pcall(function()
                 local f = C_StringUtil.CreateNumericRuleFormatter()
                 f:AddBreakpoint({ threshold = 0, step = 1, format = "%d" })
                 f:AddBreakpoint({ threshold = 60, format = "%dm", components = { { div = 60, step = 1 } } })
+                if hours then f:AddBreakpoint({ threshold = 3600, format = "%dh", components = { { div = 3600, step = 1 } } }) end
                 return f
             end)
-            if ok and made then formatter = made end
+            if ok and made then formatters[key] = made end
         end
     end
-    return formatter or nil
+    return formatters[key] or nil
 end
 
 local FLOW = AnchorUtil and AnchorUtil.FlowDirection or { Left = -1, Right = 1, Up = 1, Down = -1 }

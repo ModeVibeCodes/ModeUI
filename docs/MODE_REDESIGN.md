@@ -159,6 +159,13 @@ The owner may keep tuning textures; expect small edits to
    says so.
 3. **Phase 10** (new coverage) only after decision 2 (below).
 
+New module on the owner's request (November 17, 2026): **Buffs & Debuffs**
+(`docs/BUFFS_DEBUFFS.md`), planned on the canvas
+https://claude.ai/artifact/73o8fB82wKRQUS314hvg5E and built on branch
+`t3/buffs-debuffs`: Mode bars on Blizzard's aura containers standing in for
+Blizzard's buff frames, the Player frame's auras moved out of Unit Frames,
+custom bars and a blacklist. Waits on its in-game gate.
+
 ### Revision 1: borders (checkpoint, November 16)
 
 The owner felt the shipping Mode edge (Round 4, 2px Gunmetal, top row lit)

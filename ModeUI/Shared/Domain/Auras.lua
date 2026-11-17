@@ -109,6 +109,35 @@ function Auras.GroupFilter(group, choice, crowdControlShown)
     return Auras.buffFilters[choice]
 end
 
+-- Whether the game never keeps a spell's aura secret
+-- (C_Secrets.GetSpellAuraSecrecy == Enum.SecrecyLevel.NeverSecret;
+-- SecretPredicateAPIDocumentation.lua). Aura containers filter a debuff on a
+-- friendly unit by spell ID only then (AuraContainerUtil.
+-- CanApplyIdentityCandidateFilters). True, false, or nil when the client
+-- can't say.
+function Auras.NeverSecret(spellID)
+    if not (C_Secrets and C_Secrets.GetSpellAuraSecrecy and Enum and Enum.SecrecyLevel) then return nil end
+    local ok, secrecy = pcall(C_Secrets.GetSpellAuraSecrecy, spellID)
+    if not ok or not addon.IsPublic(secrecy) then return nil end
+    return secrecy == Enum.SecrecyLevel.NeverSecret
+end
+
+-- The auras on a unit now with public spell IDs (out of combat), each once:
+-- { id, icon, harmful }. For pickers.
+function Auras.Spells(unit)
+    local list, seen = {}, {}
+    for _, kind in ipairs({ "HELPFUL", "HARMFUL" }) do
+        for _, aura in ipairs(Auras.List(unit, kind, 40)) do
+            local id, icon = Field(aura, "spellId"), Field(aura, "icon")
+            if addon.IsNumber(id) and not seen[id] then
+                seen[id] = true
+                list[#list + 1] = { id = id, icon = addon.IsPublic(icon) and icon or nil, harmful = kind == "HARMFUL" }
+            end
+        end
+    end
+    return list
+end
+
 -- Every aura for the filters, in order, up to max. A filter the client rejects
 -- (for example a negation it doesn't know) is retried without the negation.
 function Auras.Collect(unit, filters, max)

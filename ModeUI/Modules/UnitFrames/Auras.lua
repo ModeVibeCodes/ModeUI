@@ -124,13 +124,17 @@ function M:AuraRim(icon, adb, dispelType)
     Kit.TintAuraRim(icon, adb.border == "type" and dispelType and self.dispelColors[dispelType] or nil)
 end
 
+-- The Player frame's auras are bars in Buffs & Debuffs (owner, November 17,
+-- 2026); its saved settings stay, unused.
+function M:ShowsAuras(unit) return unit ~= "player" end
+
 function M:UpdateAuras(unit)
     local f = self.frames and self.frames[unit]
     if not f or not f.auraIcons then return end
     for _, group in ipairs(self.auraGroups) do
         local adb, count = self.db[unit][group], 0
         local filter = Auras.frameFilters[group][adb.filter]
-        if self:FrameOn(unit) and adb.enabled and filter then
+        if self:FrameOn(unit) and self:ShowsAuras(unit) and adb.enabled and filter then
             for index, aura in ipairs(Auras.Collect(unit, { filter }, adb.max)) do
                 local icon = self:AuraIcon(f, group, index)
                 Auras.Apply(icon, unit, aura, adb.timer, adb.count)
@@ -150,7 +154,7 @@ function M:PaintAuraSample(g, unit)
     if not g.auraIcons then return end
     for _, group in ipairs(self.auraGroups) do
         local adb = self.db[unit][group]
-        local count = adb.enabled and math.min(adb.max, self.AURA_SAMPLE) or 0
+        local count = adb.enabled and self:ShowsAuras(unit) and math.min(adb.max, self.AURA_SAMPLE) or 0
         for index = 1, count do
             local icon = self:AuraIcon(g, group, index)
             icon.auraUnit, icon.auraID = nil, nil -- samples have no tooltip

@@ -136,4 +136,5 @@ Modules\Minimap\Minimap.xml
 Modules\UnitFrames\UnitFrames.xml
 Modules\Nameplates\Nameplates.xml
 Modules\PartyFrames\PartyFrames.xml
+Modules\BuffsDebuffs\BuffsDebuffs.xml
 Shared\Runtime\Boot.lua

@@ -108,7 +108,7 @@ it needs no mask. The look was chosen in the border study (Revision 1,
 |---|---|---|---|---|
 | **Mode-Blizz** (`blizz`) | 45° cut corners: 5px heavy, 3px thin | Specular band | Silver; Steel, Gunmetal | Unit Frames, Party Frames, cast bars, action buttons, Cooldown Manager, the minimap |
 | **Mode-BlizzEmpty** (`blizzEmpty`) | as Mode-Blizz | Flat: one color, tinted by state | Silver's mid when untinted | proc and ready glows, aggro, dispel and target rims; a choice for colored fills |
-| **Mode-Thin** (`thin`) | as Mode-Blizz | Bevel | Steel; Gunmetal, Silver | every window and panel (Blizzard windows, Chat, Damage Meters, Tooltip, Bags, the settings window), controls, cards, auras |
+| **Mode-Thin** (`thin`) | as Mode-Blizz | Bevel | Steel; Gunmetal, Silver | every window and panel (Blizzard windows, Chat, Damage Meters, Tooltip, Bags, the settings window), controls, cards, auras (Buffs & Debuffs bars: Mode-Blizz by default, Border Style per bar) |
 | **Mode-Round** (`round`) | Soft round: 12px heavy, 6px thin | Bevel | Silver; Gunmetal, Steel | nameplates |
 
 Lighting, over the ring's own height (top 0%, bottom 100%):
@@ -293,7 +293,7 @@ Phase 6 probe):
 | Raid, standard / healer | 74 × 34 / 92 × 48 + 3 |
 | Party, vertical fill | 62 × 66 + 3 |
 | Group spacing | exactly 1px, no shadow |
-| Icons (buttons, auras, cooldowns, slots) | wider than tall: 4px shorter up to 35px wide, 6px from 36px (40 x 34) |
+| Icons (buttons, auras, cooldowns, slots) | wider than tall: 4px shorter up to 35px wide, 6px from 36px (40 x 34); Buffs & Debuffs bars are 6px shorter at every width (owner, November 17, 2026: 32 x 26 by the minimap) |
 | Auras inside group frames | flush in the corner by default (the frame's rim is their outer border) |
 
 ## Windows and panels

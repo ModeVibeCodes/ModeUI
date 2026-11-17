@@ -1480,3 +1480,72 @@ type: the mainline `Minimap.lua`/`Minimap.xml` plus Camelot overrides
   BasicMinimap ships its `circle.tga` in; white with matching alpha, so the
   mask works whichever channel the client reads. New files need a client
   restart.
+
+## Buffs & Debuffs — November 17, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source (build 1.60.1,
+paths under `Interface/AddOns/`); design notes in
+[BUFFS_DEBUFFS.md](BUFFS_DEBUFFS.md). Native confirmation pending.
+
+- **Blizzard's buff frames.** Forever runs the mainline `Blizzard_BuffFrame`
+  (the TOC's Classic `BuffFrame.lua` line is `[AllowLoadGameType classic]`).
+  `BuffFrame` and `DebuffFrame` (`AuraFrameMixin`, not secure) keep their
+  unnamed `AuraButtonTemplate` buttons in `.AuraContainer` (and
+  `.auraFrames`); `DebuffFrame`'s private aura anchors and `BuffFrame`'s
+  TempEnchant buttons are in the same container. They show themselves again
+  (`AuraFrameEditModeMixin:UpdateShownState` on `PLAYER_IN_COMBAT_CHANGED`)
+  and the status tray moves `BuffFrame`
+  (`Blizzard_StatusTrayManager/StatusTrayManager.lua`), so a Hide doesn't
+  last. While a stand-in bar shows, ModeUI calls the frame's
+  `UnregisterAllEvents` and moves its `AuraContainer`,
+  `CollapseAndExpandButton` and `ConsolidatedBuffs` to a hidden frame with
+  `SetParent` (method calls only; no field written, no method replaced). The
+  frames stay where Blizzard's Edit Mode puts them (`Enum.EditModeSystem.AuraFrame`)
+  as anchors (`frame:BuffFrame`). They come back with a reload.
+- **Aura containers.** Each bar is one `CreateFrame("AuraContainer", nil,
+  holder, "CustomAuraContainerTemplate")` on `"player"`
+  (`Blizzard_AuraContainer/Blizzard_CustomAuraContainer.lua`): one
+  `AddAuraGroup(key, filter, { maxFrameCount, layout, candidateFilters,
+  initializeFrame })` per kind shown (each group makes ten buttons up front,
+  `CustomAuraContainerConstants.FrameCreationBatchSize`), then
+  `SetAuraGroupFilterString`, `MaxFrameCount`, `Layout`, `CandidateFilters`
+  (only when the blacklist changed: it reads every aura again) and
+  `SetAuraGroupSortMethod(key, AuraContainerSortMethod.Default/Expiration/Name,
+  AuraContainerSortDirection.Normal)` (globals exported by
+  `Blizzard_AuraContainerShared.lua`). Weapon enchants:
+  `AddItemEnchantment(AuraContainerItemEnchantmentSlot.MainHand/OffHand, {
+  initializeFrame })` and `SetItemEnchantmentLayout({ ..., placement =
+  CustomAuraContainerItemEnchantmentPlacement.AfterAuraGroups })`. Private
+  auras come with the container (`ShouldIncludePrivateAuraSource`). Adding a
+  group forbids untrusted layout scripts on the container, so nothing anchors
+  to it: it sits in a ModeUI holder that the bar's mover (the Edit Mode
+  element other bars anchor to) places.
+- **Buttons.** Styled once in `initializeFrame` (buttons get
+  `DenyTaintedAccessWhenAurasAreSecret`): the Mode icon on a child frame,
+  `SetIcon`, `SetDurationCooldown`, `SetApplicationCount`,
+  `SetDurationText(fontString, { textFormatter })` (any FontString on the
+  button, so time text can sit under the icon), `AddDispelTypeTexture` for a
+  rim and glow by debuff type, `SetTooltipAnchorPoint("ANCHOR_BOTTOMLEFT")`
+  and `SetCancelAuraButtons("RightButtonUp")` (or Down with the
+  `ActionButtonUseKeyDown` CVar): the game's own cancel
+  (`AuraButtonPrivateMixin:OnClick_Intrinsic` →
+  `C_UnitAuras.CancelAuraByInstanceID`, `C_PaperDollInfo.CancelTemporaryEnchantment`).
+  Whether the cancel works in combat isn't documented.
+- **Filters.** `AuraUtil.AuraFilters` tokens BIG_DEFENSIVE,
+  EXTERNAL_DEFENSIVE, IMPORTANT, RAID_IN_COMBAT, PLAYER, CANCELABLE,
+  CROWD_CONTROL and RAID, with `!` negation for the kinds before
+  (`NOT_CANCELABLE` is gone on Forever). Candidate filters
+  (`ValidateCandidateFilters`): `includeDispelTypes`, `excludeDispelTypes`,
+  `isBossAura = true`, `maxDuration = 60` (which also drops permanent auras)
+  and `excludeSpellIDs` (the blacklist). `isBossAura = false` isn't used: the
+  check is `auraData.isBossAura ~= candidateFilters.isBossAura`, and the
+  field isn't documented as never nil.
+- **Blacklist limits.** `AuraContainerUtil.CanApplyIdentityCandidateFilters`
+  skips spell IDs for a harmful aura on a unit the player can assist (the
+  player too) unless `C_Secrets.GetSpellAuraSecrecy(spellID) ==
+  Enum.SecrecyLevel.NeverSecret` (`SecretPredicateAPIDocumentation.lua`,
+  `SecretWrapperConstantsDocumentation.lua`; `Domain.Auras.NeverSecret`). The
+  picker marks the other spells; buffs are always filtered.
+- **Picker.** `C_UnitAuras.GetUnitAuras("player", "HELPFUL"/"HARMFUL")` out of
+  combat with public `spellId`s (`Domain.Auras.Spells`), names and icons from
+  `C_Spell` (`Domain.Cooldowns`).

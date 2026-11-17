@@ -14,13 +14,13 @@ assert(cdm.SavedVariables == nil and cdm.Title:gsub("|c%x%x%x%x%x%x%x%x", ""):gs
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,bags,minimap,unitFrames,nameplates,partyFrames,cooldownManager')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,bags,minimap,unitFrames,nameplates,partyFrames,buffsDebuffs,cooldownManager')
     -- Sidebar order and captions (docs/DESIGN_LANGUAGE.md): Interface, Panels, System.
     assert(table.concat(addon.categoryOrder,',')=='frames,interface,global' and addon.categories.frames.title=='Interface'
         and addon.categories.interface.title=='Panels' and addon.categories.global.title=='System')
     assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
     assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,tooltip,bags,minimap')
-    assert(table.concat(addon.categories.frames.modules,',')=='unitFrames,nameplates,partyFrames')
+    assert(table.concat(addon.categories.frames.modules,',')=='unitFrames,nameplates,partyFrames,buffsDebuffs')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
     assert(addon.Style.SameColor(addon.InterfaceTheme.primary,addon.Style.Tone.ivory),'Mode Ivory accent')
     assert(SLASH_MODEUI1=='/modeui' and SLASH_PLAYTHEGAMETOOLS1==nil)
@@ -31,6 +31,7 @@ world.run([[
     assert(not addon.modules.damageMeters.enabled,'damage meters start off')
     assert(not addon.modules.minimap.enabled,'the minimap starts off')
     assert(not addon.modules.cooldownManager.enabled,'the cooldown manager starts off')
+    assert(not addon.modules.buffsDebuffs.enabled,'buffs and debuffs start off')
     assert(ModeUIDB.importedFrom=='none','nothing to import without Play The Game Tools')
     assert(ModeUIDB.schemaVersion==2 and ModeUIDB.activeProfile=='Default' and ModeUIDB.profiles.Default==addon.db,'Default profile')
     assert(messages[1]:find('ModeUI',1,true),'welcome line')
@@ -60,7 +61,7 @@ world.run([[
     assert(Top(rows.home)>Top(rows.unitFrames) and Top(rows.unitFrames)>Top(rows.chat) and Top(rows.chat)>Top(rows.profiles),'General, then Interface, Panels, System')
     assert(rows.unitFrames.label:GetText()=='Unit Frames' and rows.unitFrames.icon and rows.unitFrames.dot and not rows.profiles.dot,'icons and on/off dots')
     local count=0;for _ in pairs(rows) do count=count+1 end
-    assert(count==14,'General and thirteen modules in the sidebar')
+    assert(count==15,'General and fourteen modules in the sidebar')
     assert(window.profileSelect and window.searchInput and window.closeButton,'header: search, profile, close')
     assert(window.doneButton and window.editButton and window.reloadButton and window.previewButton,'footer buttons')
     -- A simple module keeps the sidebar and the whole page, with a breadcrumb.

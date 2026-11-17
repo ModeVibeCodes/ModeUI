@@ -78,6 +78,11 @@ function D:ValidateProfile(source)
             if db.enabled == nil then db.enabled = module.defaultEnabled ~= false end
             assert(type(db.enabled) == "boolean", "Invalid module enable state: " .. id)
             if module.alwaysOn then db.enabled = true end
+            -- Adopt(db, modules): a module that takes over settings another
+            -- module kept (Buffs & Debuffs, the Player frame's auras from
+            -- Unit Frames) reads them here, by saved key, before its own
+            -- validation. It writes only its own `db`, once.
+            if module.Adopt then module.Adopt(db, profile.modules) end
             if module.Initialize then module.Initialize(db) end
         end
         assert(type(profile.positions) == "table", "Invalid positions.")

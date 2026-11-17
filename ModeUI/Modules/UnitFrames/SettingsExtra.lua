@@ -119,33 +119,47 @@ function M:BuildAurasTab(ui)
     function page.SetAuraGroup(name) if M.auraGroupLabels[name] then group = name; page:Refresh(); page:Layout() end end
     page.unitFrameAuraGroup = function() return group end
     local n = Nested(ui, A, function(key, value) M:SetAuraOption(ui.Editing(), group, key, value) end)
+    local function Player() return ui.Editing() == "player" end
     ui.Tab("Auras", function()
-        local buttons, refresh = W.Exclusive(page:Row("Group", 48), { { label = "Buffs", value = "buffs", width = 110 },
-            { label = "Debuffs", value = "debuffs", width = 110 } }, function() return group end, page.SetAuraGroup)
-        page.refreshers[#page.refreshers + 1] = refresh
-        page.unitFrameAuraButtons = buttons; ui.Mark("auras")
-        page.unitFrameAuraToggles = n.Toggles({ { label = "Show", get = function() return A().enabled end,
-            set = function(v) M:SetAuraOption(ui.Editing(), group, "enabled", v) end } })
-        When(function() return A().enabled end, function()
-            page:Group("Which Auras")
-            for _, name in ipairs(M.auraGroups) do
-                When(function() return group == name end, function() n.Select("Filter", M.choices[name .. "Filter"], "filter") end)
-            end
-            local count = page:Columns({ "Max Shown", "Per Row" })
-            n.Slider(count[1], M.auraRanges.max, "max"); n.Slider(count[2], M.auraRanges.perRow, "perRow")
-            page:Group("Placement")
-            local place = page:Columns({ "Corner", "Grow" })
-            page.unitFrameAuraAnchor = n.SelectIn(place[1], M.choices.auraAnchor, "anchor")
-            n.SelectIn(place[2], M.choices.auraGrow, "grow")
-            local offsets = page:Columns({ "Offset X", "Offset Y" })
-            n.Slider(offsets[1], M.auraRanges.x, "x", "px"); n.Slider(offsets[2], M.auraRanges.y, "y", "px")
-            page:Group("Icons")
-            local look = page:Columns({ "Icon Size", "Spacing" })
-            page.unitFrameAuraSize = n.Slider(look[1], M.auraRanges.size, "size", "px")
-            n.Slider(look[2], M.auraRanges.spacing, "spacing", "px")
-            local skin = page:Columns({ "Shape", "Border" })
-            n.SelectIn(skin[1], M.choices.auraShape, "shape"); n.SelectIn(skin[2], M.choices.auraBorder, "border")
-            n.Toggles({ n.Toggle("Timer Swipe", "timer"), n.Toggle("Stack Count", "count") })
+        -- The Player frame's auras are bars in Buffs & Debuffs (owner,
+        -- November 17, 2026); its saved settings here stay untouched.
+        When(Player, function()
+            local row = page:Row("Player Auras", 72)
+            local label = W.Label(row, addon.L["The Player frame's buffs and debuffs moved to Buffs & Debuffs (Interface): bars you filter, size, style and place anywhere."],
+                nil, 0, -4, 420, addon.InterfaceTheme.muted)
+            label:SetWordWrap(true)
+            page.unitFramePlayerAurasButton = W.Button(row, addon.L["Open Buffs & Debuffs"], 190, 28, "secondary")
+            page.unitFramePlayerAurasButton:SetPoint("TOPLEFT", 0, -40)
+            page.unitFramePlayerAurasButton:SetScript("OnClick", function() addon:SelectConfigPage("buffsDebuffs") end)
+        end)
+        When(function() return not Player() end, function()
+            local buttons, refresh = W.Exclusive(page:Row("Group", 48), { { label = "Buffs", value = "buffs", width = 110 },
+                { label = "Debuffs", value = "debuffs", width = 110 } }, function() return group end, page.SetAuraGroup)
+            page.refreshers[#page.refreshers + 1] = refresh
+            page.unitFrameAuraButtons = buttons; ui.Mark("auras")
+            page.unitFrameAuraToggles = n.Toggles({ { label = "Show", get = function() return A().enabled end,
+                set = function(v) M:SetAuraOption(ui.Editing(), group, "enabled", v) end } })
+            When(function() return A().enabled end, function()
+                page:Group("Which Auras")
+                for _, name in ipairs(M.auraGroups) do
+                    When(function() return group == name end, function() n.Select("Filter", M.choices[name .. "Filter"], "filter") end)
+                end
+                local count = page:Columns({ "Max Shown", "Per Row" })
+                n.Slider(count[1], M.auraRanges.max, "max"); n.Slider(count[2], M.auraRanges.perRow, "perRow")
+                page:Group("Placement")
+                local place = page:Columns({ "Corner", "Grow" })
+                page.unitFrameAuraAnchor = n.SelectIn(place[1], M.choices.auraAnchor, "anchor")
+                n.SelectIn(place[2], M.choices.auraGrow, "grow")
+                local offsets = page:Columns({ "Offset X", "Offset Y" })
+                n.Slider(offsets[1], M.auraRanges.x, "x", "px"); n.Slider(offsets[2], M.auraRanges.y, "y", "px")
+                page:Group("Icons")
+                local look = page:Columns({ "Icon Size", "Spacing" })
+                page.unitFrameAuraSize = n.Slider(look[1], M.auraRanges.size, "size", "px")
+                n.Slider(look[2], M.auraRanges.spacing, "spacing", "px")
+                local skin = page:Columns({ "Shape", "Border" })
+                n.SelectIn(skin[1], M.choices.auraShape, "shape"); n.SelectIn(skin[2], M.choices.auraBorder, "border")
+                n.Toggles({ n.Toggle("Timer Swipe", "timer"), n.Toggle("Stack Count", "count") })
+            end)
         end)
     end, true)
 end

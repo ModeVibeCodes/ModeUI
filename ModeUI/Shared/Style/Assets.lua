@@ -55,7 +55,7 @@ Style.ASSETS = {
 
 -- Module icons (white line glyphs, tinted): Style.ASSETS["Icon" .. name].
 Style.ICONS = { "Home", "UnitFrames", "GroupFrames", "Nameplates", "ActionBars", "DamageMeters", "Chat", "Windows",
-    "Tooltip", "Bags", "Minimap", "Profiles", "Optimizations", "ClassColors", "Cooldowns", "Back" }
+    "Tooltip", "Bags", "Minimap", "Profiles", "Optimizations", "ClassColors", "Cooldowns", "Auras", "Back" }
 for _, name in ipairs(Style.ICONS) do Style.ASSETS["Icon" .. name] = { file = "Icons\\" .. name } end
 -- Glyphs for controls and marks, the same white line art: Clean Up (a broom)
 -- and Quest (a disc with "!" cut out).
