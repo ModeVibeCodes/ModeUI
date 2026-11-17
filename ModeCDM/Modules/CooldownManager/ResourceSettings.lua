@@ -113,6 +113,12 @@ function M:CreateResourcePage(parent)
     Tab("Look", function()
         page:Group(L["Border"])
         page.resourceBorderPills = Pills("Border", M.resourceChoices.border, "border", 96)
+        -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+        When(function() return db().border ~= "none" end, function()
+            page.resourceBorderStylePicker, page.resourceBorderMetalPicker = W.BorderPickers(page,
+                { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
+                { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
+        end)
         page:Group(L["Bar"])
         local texture = Columns({ "Bar Texture", "Bar Color" })
         page.resourceTextureSelect = Select(texture[1], 200, function() return addon.Kit.BarTextureChoices(true) end, "barTexture")

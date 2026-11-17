@@ -266,6 +266,19 @@ world.run([==[
     assert(M:SetOption('backgroundOpacity', 100) and panel.modeEdge.below:IsShown(), 'an opaque window has its soft drop')
     M:SetOption('backgroundOpacity', 50)
     assert(not M:SetOption('border', false) and not M:SetOption('borderColor', { 1, 0, 0 }) and panel.modeEdge.holder:IsShown(), 'the edge is locked')
+    -- Border Style and Border Metal (owner, November 17, 2026): the window in
+    -- Mode-Thin, Steel by default; any style keeps the layout; tabs and
+    -- buttons keep their control edge.
+    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and panel.modeEdge.styleId == 'thin'
+        and panel.modeEdge:Metal() == Tone.metal.steel, 'the window in Mode-Thin, Steel')
+    local boxBefore, outBefore = Point(ChatFrame1Background), panel.modeEdge:Outset()
+    local tabStyle = t1.modeEdge.styleId
+    assert(M:SetOption('edgeStyle', 'round') and panel.modeEdge.styleId == 'round' and t1.modeEdge.styleId == tabStyle, 'Mode-Round on the window only')
+    local boxAfter = Point(ChatFrame1Background)
+    assert(boxAfter[4] == boxBefore[4] and boxAfter[5] == boxBefore[5] and panel.modeEdge:Outset() == outBefore, 'same box, same reach')
+    assert(M:SetOption('edgeMetal', 'gunmetal') and panel.modeEdge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
+    assert(M:SetOption('edgeStyle', 'thin') and M:SetOption('edgeMetal', 'default') and panel.modeEdge:Metal() == Tone.metal.steel)
     assert(M:SetOption('editPosition', 'top') and Point(ChatFrame1Background)[5] == 9 + 24 and Point(panel.band)[1] == 'TOPLEFT', 'edit box at the top')
     assert(Point(panel.band)[5] == -3 and Point(panel.bandLine)[1] == 'BOTTOMLEFT', 'the band inside the top edge, its divider under it')
     assert(Point(bar)[5] == -(3 + 24 + 4), 'the scroll bar under the band')
@@ -305,6 +318,7 @@ world.run([==[
     local page = window.pages.chat
     assert(page and page:IsShown() and page.idleOpacitySlider and page.tabStylePills and page.editPills and page.tuckSlider)
     assert(page.tabContentTop and window.moduleHeader.title:GetText() == 'Chat', 'section tabs pinned, never over a card')
+    assert(page.borderStyle and page.borderMetal, 'Border Style and Border Metal on the Window tab')
     page.tabStylePills[2].scripts.OnClick(page.tabStylePills[2]); assert(M.db.glassTabs == false, 'Solid')
     page.tabStylePills[1].scripts.OnClick(page.tabStylePills[1]); assert(M.db.glassTabs == true, 'Glass')
     window:Hide()
@@ -321,6 +335,7 @@ world.run([==[
     M.Initialize(old)
     assert(old.version == 6 and old.backgroundColor[1] == G.panel[1] and old.backgroundOpacity == 60 and old.scrollBar)
     assert(old.borderColor == nil and old.idleOpacity == 30 and old.tabHeight == 24 and old.fontMedia == 'Mode')
+    assert(old.edgeStyle == 'thin' and old.edgeMetal == 'default', 'saved settings take the border defaults')
     local picked = { version = 1, backgroundColor = { 1, 0, 0 }, backgroundOpacity = 80 }
     M.Initialize(picked); assert(picked.backgroundColor[1] == 1 and picked.backgroundOpacity == 80, 'picked values stay')
     local two = { version = 2, backgroundColor = { Kit.onyx.slate[1], Kit.onyx.slate[2], Kit.onyx.slate[3] } }

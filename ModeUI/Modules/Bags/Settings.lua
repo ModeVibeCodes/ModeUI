@@ -103,6 +103,11 @@ function M:CreateConfigPage(parent)
     page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
     Color(Columns({ "Header Color" })[1], "headerColor")
     Note("The window is a Mode window: Graphite by default, the Mode window edge inside it and a Mode Title header. A see-through window has no drop shadow.")
+    page:Group(L["Border"])
+    page.borderStyle, page.borderMetal = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = Set("edgeStyle") },
+        { get = function() return M.db.edgeMetal end, set = Set("edgeMetal") })
+    Note("The window's border, also on its Sort menu. Slots keep their thin Mode edge in the item's quality color.")
     page:Group(L["Parts"])
     page.partToggles = Toggles({ { "Title", "showTitle" }, { "Search Box", "showSearch" }, { "Money", "showMoney" },
         { "Free Slots", "showFreeSlots" }, { "Bag Bar", "showBagBar" }, { "Lock Window", "locked" } })

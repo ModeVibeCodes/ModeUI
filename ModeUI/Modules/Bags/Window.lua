@@ -151,6 +151,8 @@ function M:PaintWindow()
     local g = self:Geometry()
     local alpha = db.backgroundOpacity / 100
     Skin.PaintBox(frame.parts, frame, "Panel", db.backgroundColor, alpha, true)
+    -- Border Style and Border Metal; every style has the same reach.
+    frame.parts.modeEdge:SetStyle(db.edgeStyle, db.edgeMetal)
     frame.parts.modeEdge:SetDrop(alpha >= 1)
     local header, path = frame.header, Kit.FontPath(db, self.id)
     header:ClearAllPoints()

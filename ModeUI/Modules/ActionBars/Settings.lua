@@ -191,6 +191,12 @@ function M:CreateConfigPage(parent)
     Tab("Buttons", function()
         page:Group(L["Border"])
         page.borderPills = Pills("Border", M.choices.border, function() return db().border end, Set("border"))
+        -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+        When(function() return db().border ~= "none" end, function()
+            page.borderStylePicker, page.borderMetalPicker = W.BorderPickers(page,
+                { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
+                { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
+        end)
         page:Group(L["Background"])
         local background = Columns({ "Background Color", "Background Opacity" })
         Color(background[1], "backgroundColor")

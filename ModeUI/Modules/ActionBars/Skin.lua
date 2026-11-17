@@ -4,8 +4,9 @@ if not M then return end
 
 -- The Mode button (docs/DESIGN_LANGUAGE.md, "Action buttons"): a Mode Button
 -- face in the Background Color behind the icon, the icon filling the button
--- (cropped, never stretched), and the `frame` edge outside it (2px Gunmetal,
--- edge-lit, shadow and soft drop). Hover lights the edge's outer line Ivory;
+-- (cropped, never stretched), and the `frame` edge outside it (2px, in the
+-- bar's Border Style and Border Metal, shadow and soft drop). Hover lights
+-- the edge's outer line Ivory;
 -- a Border proc or ready glow swaps its rim color (Glow.lua). Blizzard's slot
 -- art and frame are faded; pushed, checked and flash become flat overlays on
 -- the icon. The icon takes the Mode tints for no power, unusable and out of
@@ -33,6 +34,7 @@ end
 function M.PaintArt(art, host, style)
     art.face:ClearAllPoints(); art.face:SetAllPoints(host)
     Style.Paint(art.face, style.backgroundColor, style.backgroundOpacity / 100)
+    art.edge:SetStyle(style.edgeStyle, style.edgeMetal)
     art.edge:SetShown(style.border ~= "none")
     art.edge:Layout()
 end

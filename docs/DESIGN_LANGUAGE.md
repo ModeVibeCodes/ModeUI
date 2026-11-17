@@ -65,8 +65,11 @@ Two neutral ramps. Frames and buttons use **Mono**, windows and panels use
 | `rosewood` | `#CF6A6F` | specialty accent: focus, priority, destructive; OFF |
 | `rosewoodDeep` | `#743B3E` | the OFF toggle block (white text on it) |
 | `brand` | `#E2B866` | "Mode" in the ModeUI wordmark ("UI" stays white): the Game Menu button, the minimap addon menu, the AddOn list. A warm gold from the Ivory family, strong enough to read in bold button text where Ivory looks white (owner, November 15, 2026) |
-| `gunmetal` | light `#5B5E63`, mid `#46494D`, dark `#33363A` | frame and group rims |
-| `steel` | light `#8C8F95`, mid `#74777D`, dark `#5B5E63` | window rims, portrait rings, settings controls |
+| `gunmetal` | light `#5B5E63`, mid `#46494D`, dark `#33363A` | flat rim colors: the minimap's Rim color, auras without a type, Character slot lines |
+| `steel` | light `#8C8F95`, mid `#74777D`, dark `#5B5E63` | portrait rings, settings control faces |
+| `metal.silver` | hi `#F2F4F6`, light `#D9DCE0`, mid `#9A9EA4`, dark `#5C6066`, deep `#3A3D41` | border metal: Mode-Blizz and Mode-Round |
+| `metal.steel` | hi `#D4D7DC`, light `#A3A6AB`, mid `#6E7176`, dark `#3D4044`, deep `#26282B` | border metal: Mode-Thin |
+| `metal.gunmetal` | hi `#A5A9AF`, light `#7C8086`, mid `#4E5156`, dark `#2C2E31`, deep `#1A1B1D` | border metal (an option on every border) |
 
 Gameplay colors keep their meaning everywhere and are never softened:
 
@@ -92,35 +95,86 @@ value move to the new one; anything the player chose stays.
 
 ## Borders (`Style.Edge`)
 
-One factory, named presets. Outer radius 4 ("Round 4"); every inner layer's
-radius steps in by its own thickness, so each ring is the same width all
-round. The rim art fills its own inner corner, so the content under it needs no
-mask. Art: **Mode Light** (lit metal rims) and **Mode Empty** (flat tintable
-rims).
+One factory. A border is a **role** (a preset: how far it reaches and which
+rings it has) drawn in a **style** (its shape and lighting) and a **metal**.
+Every ring steps in by its own thickness, so each ring is the same width all
+round, and the innermost ring fills its own inner corner, so the content under
+it needs no mask. The look was chosen in the border study (Revision 1,
+`design/border-study/`, owner, November 17, 2026).
 
-| Preset | Shape | Rim | Lighting | Outer | Inner gap | Use |
-|---|---|---|---|---|---|---|
-| `frame` | Round 4 | 2px Gunmetal | Edge-lit (top 1px catches light) | 1px shadow + soft drop | — | player, target, cast bars, action buttons |
-| `frameThin` | Round 4 | 1px Gunmetal | Edge-lit (half strength on 1px, so the top keeps the sides' weight) | 1px shadow | — | minor and boss frames, nameplates, icons, auras |
-| `group` | Round 4 or Round 2 | 1px Gunmetal | Solid | — | — | party and raid frames (1px apart), bag slots |
-| `window` | Round 4 | 1px Steel | Sheen (light band through the middle) | 1px shadow + soft drop | 1px black | every window and panel, the settings window, popups |
-| `card` | Round 4 | 1px Steel | Sheen | — | 1px black | settings cards (a window border without the shadow) |
-| `control` | Round 4 | 1px Steel | Sheen | 1px shadow | — | buttons, dropdowns, fields, the slide toggle |
-| `ring` | circle | 3px Steel | Edge-lit (light on the top of the ring, fading by its middle) | 1px shadow | — | portraits, badges |
-| `line` | Round 4 | 1px flat color | — | 1px shadow | — | aura dispel rims, item quality |
-| `empty` | Round 4 | 1px or 2px, any color | Edge-lit, tinted | 1px shadow | — | an element's only border in a custom color: proc ready, aggro, target in group frames |
+### Styles
 
-Highlight: the outer shadow ring takes the accent (1px), so the metal rim keeps
-its look. Target uses Ivory; focus uses Rosewood. Group frames swap their rim to
-`empty` instead, so their size never changes.
+| Style | Shape | Lighting | Metal (default; options) | Default for |
+|---|---|---|---|---|
+| **Mode-Blizz** (`blizz`) | 45° cut corners: 5px heavy, 3px thin | Specular band | Silver; Steel, Gunmetal | Unit Frames, Party Frames, cast bars, action buttons, Cooldown Manager, the minimap |
+| **Mode-BlizzEmpty** (`blizzEmpty`) | as Mode-Blizz | Flat: one color, tinted by state | Silver's mid when untinted | proc and ready glows, aggro, dispel and target rims; a choice for colored fills |
+| **Mode-Thin** (`thin`) | as Mode-Blizz | Bevel | Steel; Gunmetal, Silver | every window and panel (Blizzard windows, Chat, Damage Meters, Tooltip, Bags, the settings window), controls, cards, auras |
+| **Mode-Round** (`round`) | Soft round: 12px heavy, 6px thin | Bevel | Silver; Gunmetal, Steel | nameplates |
+
+Lighting, over the ring's own height (top 0%, bottom 100%):
+
+- **Specular band**, 2px: mid, hi at 16%, mid 32%, dark 56%, mid 82%, light at
+  the bottom (the bottom edge stays lit). 1px: mid, hi 16%, mid 34%, dark 58%,
+  light.
+- **Bevel**, 2px: a lit outer lip (hi, light 40%, mid) over a shaded inner row
+  (mid, dark 50%, deep). 1px: hi fading to mid.
+- **Flat**: one color (Mode-BlizzEmpty, and any rim tinted for a state).
+
+The art is white and tinted in game: each lit band is a base ring in one metal
+tone with up to three lighting layers over it (each a ring whose alpha follows
+the lighting), so every metal draws the study's gradient exactly.
+
+### Roles (`Style.EDGE_PRESETS`)
+
+Every style has the same rings in a role, so changing style never moves a
+layout. Outside in: the 1px shadow ring, the metal band, the 1px black line.
+On the heavy roles the black line is drawn just inside the host's edge, over
+its outermost pixel, so they reach exactly as far as before the line (no
+layout moved for it).
+
+| Role | Size | Band | Shadow | Black line | Reach | Default style | Use |
+|---|---|---|---|---|---|---|---|
+| `frame` | heavy | 2px | 1px + soft drop | 1px, inside the host | 3px | Mode-Blizz | player, target, action buttons, the minimap |
+| `frameThin` | thin | 1px | 1px | — | 2px | Mode-Blizz | minor and boss frames, cast bars, nameplates, icons, auras |
+| `group` | thin | 1px | — | — | 1px | Mode-Blizz | party and raid frames (1px apart) |
+| `window` | heavy | 2px | 1px + soft drop | 1px, inside the host | 3px | Mode-Thin | every window and panel, the settings window, popups |
+| `card` | thin | 1px | — | 1px | 2px | Mode-Thin | settings cards (a window border without the shadow) |
+| `control` | thin | 1px | 1px | — | 2px | Mode-Thin | buttons, dropdowns, fields, the slide toggle |
+| `line` | thin | 1px flat color | 1px | — | 2px | Mode-Thin | aura dispel rims, item quality |
+| `empty` | thin | 1px or 2px, any color | 1px | — | 2-3px | Mode-BlizzEmpty | an element's only border in a custom color: proc ready, aggro |
+| `ring` | circle | 3px Steel, edge-lit | 1px | — | 4px | — | portraits, badges (`Style.Ring`) |
+
+A 1px band on a heavy role (`SetRim(1)`: Minimap Map Border Thin) or a 2px band
+on a thin one (aura Border Size 2) keeps the role's other rings.
+
+### Choosing a border
+
+Every module with borders has **Border Style** (Mode-Blizz, Mode-BlizzEmpty,
+Mode-Thin, Mode-Round) and **Border Metal** (Default, Silver, Steel, Gunmetal;
+Default is the style's own metal) on one line (`W.BorderPickers`), saved as
+`edgeStyle` and `edgeMetal`. A module that could already hide its border keeps
+that switch (Action Bars and Cooldown Manager Border Mode/None, Tooltip Border)
+and shows the pickers while the border is on. The module's main elements take
+the choice; its controls, cards, item slots and aura icons keep their role's
+default. Defaults: Mode-Blizz for Unit Frames, Party Frames, Action Bars, the
+Cooldown Manager and the Minimap; Mode-Round for Nameplates; Mode-Thin for
+Windows, Chat, Damage Meters, Tooltip and Bags.
+
+An aura rim the game colors by dispel type goes flat first
+(`Kit.DispelAuraRim`), so no lighting layer covers the type's color.
+
+Highlight: the outer shadow ring takes the accent (1px), so the metal band keeps
+its look. Target uses Ivory; focus uses Rosewood. Group frames tint their band
+instead, so their size never changes.
 
 ## Action buttons
 
 - **Shape:** 40 x 34 by default (icons are wider than tall), the icon filling
   the button, cropped, over a Mode Button face in Mono panel (Background
   Color and Opacity; it shows in empty slots).
-- **Border:** the `frame` edge outside the button (2px Gunmetal, edge-lit,
-  1px shadow and the soft drop); buttons sit 4px apart outside their shadows
+- **Border:** the `frame` edge outside the button (Mode-Blizz: 2px Silver
+  Specular band, 1px black line, 1px shadow and the soft drop; Border Style
+  and Border Metal per bar); buttons sit 4px apart outside their shadows
   (Spacing counts from the shadow). Border None hides it.
 - **States:** hover lights the outer line Ivory (the edge highlight). A proc
   swaps the rim for Celadon (Mode Empty, 2px; Proc Glow: Border); Mode Glow,
@@ -140,8 +194,9 @@ Phase 6 probe):
 
 - **Icons:** Essential 40 x 34; Utility, Tracked Buffs and Buff Bars 32 x 28;
   Cooldown Bars 40 x 34. The icon fills the item (cropped) over a Mode Button
-  face in Mono panel, with the `frameThin` edge outside it (1px Gunmetal,
-  edge-lit, shadow ring). Rows leave room for the edges, so Spacing (2px)
+  face in Mono panel, with the `frameThin` edge outside it (Mode-Blizz: 1px
+  Silver Specular band, shadow ring; Border Style and Border Metal per bar).
+  Rows leave room for the edges, so Spacing (2px)
   counts between the shadows and a matched width includes them. Border None
   hides the edge and gives its room back.
 - **Glows:** Border swaps the rim (a Mode Empty rim in the glow color over the
@@ -308,8 +363,9 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   Mode slots for the equipped bags with their free slots), the free count in
   Bold over a thin capacity bar (Celadon, Ivory near full, Rosewood full)
   and the money. The Sort menu is a Mode window.
-- **Minimap:** the map in the `frame` edge (rim 2px, or 1px with Map Border
-  Thin; Border Color may tint it), its mask square (the rim covers the
+- **Minimap:** the map in the `frame` edge (Mode-Blizz by default; rim 2px,
+  or 1px with Map Border Thin; Border Color other than Metal tints it flat),
+  its mask square (the rim covers the
   corners); Blizzard's buttons and the addon buttons on Mode tiles (a Mode
   Button face in Mono raised, in the `group` edge); clock Bold above the zone
   SemiBold; zone colors are the gameplay reaction tones.

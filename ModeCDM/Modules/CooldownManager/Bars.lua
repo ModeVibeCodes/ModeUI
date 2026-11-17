@@ -70,6 +70,7 @@ function M:SkinBar(item, style, g, state)
     Fade(item.DebuffBorder, style.debuffBorder)
     Fade(bar.BarBG, false)
     Fade(bar.Pip, false)
+    state.boxEdge:SetStyle(style.edgeStyle, style.edgeMetal)
     state.boxEdge:SetShown(style.border ~= "none")
     self:LayoutBarParts(item)
     -- The background fills the box; the fill and its lift draw over it.

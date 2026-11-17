@@ -54,6 +54,10 @@ M.defaults = {
     splitBags = false, reagentSection = true, keyring = true, sortMode = "bags",
     -- Window
     backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 95,
+    -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a
+    -- border"): the window and its Sort menu in Mode-Thin in its own metal
+    -- (owner, November 17, 2026). Slots and controls keep their own edges.
+    edgeStyle = "thin", edgeMetal = "default",
     showTitle = true, headerColor = Copy(M.HEADER_COLOR), titleSize = 13,
     -- Bag Bar: the equipped bags in the footer, where a new bag can go on.
     showSearch = true, showMoney = true, showFreeSlots = true, showBagBar = true, locked = false,
@@ -77,6 +81,8 @@ M.choices = {
     qualityMinimum = { { id = "poor", label = "Poor" }, { id = "common", label = "Common" }, { id = "uncommon", label = "Uncommon" },
         { id = "rare", label = "Rare" }, { id = "epic", label = "Epic" } },
     itemLevelColor = { { id = "quality", label = "Quality" }, { id = "white", label = "White" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 -- Item qualities (Enum.ItemQuality): Poor 0, Common 1, Uncommon 2, Rare 3, Epic 4.
 M.QUALITY = { poor = 0, common = 1, uncommon = 2, rare = 3, epic = 4 }

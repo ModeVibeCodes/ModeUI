@@ -110,6 +110,8 @@ M.choices = {
     auraGlow = { { id = "none", label = "Off" }, { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     auraGlowColor = { { id = "type", label = "By Type" }, { id = "custom", label = "Custom" } },
     place = { { id = "inside", label = "Inside" }, { id = "outside", label = "Outside" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 
 -- What each debuff type does to a member that has it (Highlights tab).
@@ -123,6 +125,10 @@ M.defaults = {
     width = 150, healthHeight = 34,
     foregroundTexture = "media:Mode Glass", backgroundTexture = "media:Mode BG", healthOpacity = 100, backgroundOpacity = EMPTY,
     fillDirection = "standard", fillEdge = true, healthColorMode = "class", healthColor = Copy(P.green),
+    -- The member's border, its inset power bar's and the dispel rim's shape
+    -- (docs/DESIGN_LANGUAGE.md, "Choosing a border"): Mode-Blizz in its own
+    -- metal (owner, November 17, 2026).
+    edgeStyle = "blizz", edgeMetal = "default",
     -- Power Bars and Resources: who shows it, where, how it looks, its text.
     powerShown = "all", powerStyle = "below", powerHeight = 3, powerWidth = 70, powerAlign = "CENTER", powerX = 0, powerY = 3,
     powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerOpacity = 100, powerBackgroundOpacity = EMPTY,
@@ -178,7 +184,8 @@ M.colorKeys = { healthColor = true, powerColor = true, healPredictionColor = tru
 M.choiceKeys = { growth = "growth", sortBy = "sortBy", healthColorMode = "healthColorMode", shieldsColorMode = "shieldsColorMode",
     powerColorMode = "powerColorMode", powerShown = "powerShown", powerStyle = "powerStyle", powerAlign = "powerAlign",
     nameColorMode = "nameColorMode", healthText = "healthText", healthTextColor = "healthTextColor", fillDirection = "fillDirection", targetHighlight = "highlightStyle",
-    powerFillDirection = "fillDirection", powerText = "powerText", powerTextAlign = "powerAlign" }
+    powerFillDirection = "fillDirection", powerText = "powerText", powerTextAlign = "powerAlign",
+    edgeStyle = "edgeStyle", edgeMetal = "edgeMetal" }
 M.groupChoiceKeys = { border = "auraBorder", glow = "auraGlow", glowColor = "auraGlowColor", grow = "growChoices",
     anchor = "anchors", place = "place" }
 -- Texture choices are shared with every bar (Shared/Kit/Shape.lua).

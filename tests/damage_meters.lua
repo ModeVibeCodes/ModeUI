@@ -347,6 +347,20 @@ world.run([==[
     assert(M:SetOption('window1', 'backgroundOpacity', 100) and w1.parts.modeEdge.below:IsShown(), 'an opaque window has its soft drop')
     assert(M:SetOption('window1', 'opacity', 90) and not w1.parts.modeEdge.below:IsShown(), 'not while the window fades')
     assert(M:SetOption('window1', 'opacity', 100) and M:SetOption('window1', 'backgroundOpacity', 75))
+    -- Border Style and Border Metal (owner, November 17, 2026): each window in
+    -- Mode-Thin, Steel by default; its menu follows; any style keeps the size.
+    local edge = w1.parts.modeEdge
+    assert(M.db.window1.edgeStyle == 'thin' and M.db.window2.edgeMetal == 'default' and edge.styleId == 'thin'
+        and edge:Metal() == Tone.metal.steel, 'Mode-Thin in Steel')
+    local width, height, rowTop = w1.width, w1.height, Point(row1)[5]
+    assert(M:SetOption('window1', 'edgeStyle', 'round') and edge.styleId == 'round' and M.db.window2.edgeStyle == 'thin', 'Mode-Round, this window only')
+    assert(w1.width == width and w1.height == height and Point(row1)[5] == rowTop, 'same size, rows in place')
+    assert(M:SetOption('window1', 'edgeMetal', 'gunmetal') and edge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
+    w1.header.scripts.OnClick(w1.header, 'LeftButton')
+    assert(menu.parts.modeEdge.styleId == 'round' and menu.parts.modeEdge:Metal() == Tone.metal.gunmetal, 'the menu in the window\'s border')
+    M:CloseMenu()
+    assert(not M:SetOption('window1', 'edgeStyle', 'nope') and not M:SetOption('window1', 'edgeMetal', 'gold') and M.db.window1.edgeStyle == 'round', 'unknown styles are refused')
+    assert(M:SetOption('window1', 'edgeStyle', 'thin') and M:SetOption('window1', 'edgeMetal', 'default') and edge:Metal() == Tone.metal.steel)
     assert(M:SetOption('window1', 'header', true) and M:SetOption('window1', 'icon', 'none') and not row1.icon:IsShown() and Point(row1.bar)[4] == 0, 'no icon: the bar fills the row')
     assert(M:SetOption('window1', 'clickThrough', true) and not row1.mouse and not w1.grip:IsShown(), 'Click Through')
     assert(M:SetOption('window1', 'clickThrough', false) and row1.mouse)
@@ -528,6 +542,9 @@ world.run([==[
     local shell = view.window
     assert(M.db.window1.rows == 10 and shell.g.rows == 5 and not (shell.rows[6] and shell.rows[6]:IsShown()) and shell.scale <= 0.8, 'a sample of five rows, drawn smaller')
     assert(shell.width == 320 and shell.rows[1].name.text == '1. Valeria' and shell.rows[1].value.text == '1.2M (13.6K)', 'preview: the sample fight in the edited window')
+    assert(page.borderStyle and page.borderMetal and shell.parts.modeEdge.styleId == 'thin', 'Border pickers on Frame; the preview in the window\'s border')
+    assert(M:SetOption('window1', 'edgeStyle', 'blizz') and shell.parts.modeEdge.styleId == 'blizz', 'the preview follows')
+    assert(M:SetOption('window1', 'edgeStyle', 'thin'))
     assert(shell.header.title.text == 'Damage Done' and view.caption.text == 'Window 1 · sample fight' and shell.buttons.session.text.text == 'C')
     page.SetEditing('window2')
     assert(page.windowEditing() == 'window2' and shell.header.title.text == 'Healing Done' and shell.rows[1].name.text == '1. Ysolde', 'follows the window being edited')
@@ -707,6 +724,7 @@ H.Load({ before = STUBS, saved = v8 }).run([==[
     assert(s.otherColor[1] == G.muted[1] and s.nameFontMedia == 'Mode' and s.timerFontMedia == 'Mode', 'Graphite muted, the Mode typeface')
     assert(s.barColor[1] == Tone.ivory[1] and s.titleColor[1] == G.text[1] and s.timerColor[1] == G.muted[1], 'Ivory bars, Graphite header text')
     assert(two.barTexture == 'flat' and two.backgroundColor[1] == 1 and two.nameFontMedia == 'Friz' and two.valueFontMedia == 'Mode', 'picked values stay')
+    assert(s.edgeStyle == 'thin' and s.edgeMetal == 'default' and two.edgeStyle == 'thin' and two.edgeMetal == 'default', 'saved windows take the border defaults')
 ]==], "migrate v8")
 
 -- Bad saved data stops startup rather than being reset.

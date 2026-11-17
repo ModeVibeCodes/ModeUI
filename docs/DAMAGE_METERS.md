@@ -150,7 +150,7 @@ the pixel grid. From the outside in:
 
 | Part | Default | Setting |
 |---|---|---|
-| Edge | the Mode `window` edge (1px Steel Sheen, a black gap and a shadow ring, 3px in all) inside the window, above what it holds; no soft drop while the window is see-through (Background Opacity or Opacity under 100) | none: the edge is locked, like every Mode window's |
+| Edge | the Mode `window` edge (Mode-Thin by default: a 2px Steel bevel, a 1px black line just inside and a shadow ring, 3px in all) inside the window, above what it holds; no soft drop while the window is see-through (Background Opacity or Opacity under 100) | Border Style and Border Metal (Frame tab, Border group), per window |
 | Background | Mode Panel in Graphite panel (#121213) at 75% | Frame › Background Color, Background Opacity |
 | Header | 20px Mode Title strip in Graphite raised (#1A1A1C), tiled one texel per pixel | Header › Texture, Height, Header Color, Header Opacity |
 | Title | 11, the meter's own capitals ("Damage Done"), Graphite text, outlined, left | Text › Title; Header › Uppercase Title, Title Position, Title X, Title Y |

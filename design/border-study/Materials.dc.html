@@ -15,7 +15,7 @@ body{margin:0}
 a{color:#EFE6D2}a:hover{color:#FFFFFF}
 </style>
 </helmet>
-<div style="width: 1520px; height: 940px; box-sizing: border-box; padding: 36px 30px; background: #121213; font-family: Geist, system-ui, sans-serif; color: #D8D8DB; display: flex; flex-direction: column; gap: 20px">
+<div style="width: 1520px; height: 1080px; box-sizing: border-box; padding: 36px 30px; background: #121213; font-family: Geist, system-ui, sans-serif; color: #D8D8DB; display: flex; flex-direction: column; gap: 20px">
 <div style="display: flex; flex-direction: column; gap: 8px; max-width: 1000px">
 <h1 style="margin: 0; font-size: 26px; font-weight: 600; color: #F5F5F6">Every metal under every light</h1>
 <p style="margin: 0; font-size: 14px; line-height: 20px; color: #B9B9BE">Each cell shows D (cut corners) above Soft round, both in the full frame border: 1px shadow, the 2px metal band, 1px black. Steel under Top lit is today’s border.</p>
@@ -58,7 +58,7 @@ a{color:#EFE6D2}a:hover{color:#FFFFFF}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1520,"height":940}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1520,"height":1080}}'>
 class Component extends DCLogic {
   renderVals() {
     var SH = 'rgba(0,0,0,0.85)';
@@ -76,7 +76,8 @@ class Component extends DCLogic {
       { name: 'Top lit', short: 'Today: light at the top, fading down.', heavy: function (m) { return [{ w: 2, bg: lg([m.light, m.mid + ' 45%', m.dark]) }, { w: 1, bg: '#000000' }]; } },
       { name: 'Polished', short: 'Bright top, dark middle, reflected light low.', heavy: function (m) { return [{ w: 2, bg: lg([m.hi, m.light + ' 10%', m.dark + ' 45%', m.deep + ' 60%', m.mid + ' 85%', m.dark]) }, { w: 1, bg: '#000000' }]; } },
       { name: 'Bevel', short: 'Lit outer lip over a shaded inner row.', heavy: function (m) { return [{ w: 1, bg: lg([m.hi, m.light + ' 40%', m.mid]) }, { w: 1, bg: lg([m.mid, m.dark + ' 50%', m.deep]) }, { w: 1, bg: '#000000' }]; } },
-      { name: 'Specular band', short: 'A narrow highlight near the top.', heavy: function (m) { return [{ w: 2, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 32%', m.dark + ' 70%', m.deep]) }, { w: 1, bg: '#000000' }]; } },
+      { name: 'Specular band', short: 'Revised: the highlight near the top, lit again at the bottom.', heavy: function (m) { return [{ w: 2, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 32%', m.dark + ' 56%', m.mid + ' 82%', m.light]) }, { w: 1, bg: '#000000' }]; } },
+      { name: 'Specular (original)', short: 'The first version: dark at the bottom.', heavy: function (m) { return [{ w: 2, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 32%', m.dark + ' 70%', m.deep]) }, { w: 1, bg: '#000000' }]; } },
       { name: 'Edge catch', short: 'Only the top row catches the light.', heavy: function (m) { return [{ w: 2, bg: 'linear-gradient(180deg,' + m.hi + ' 0px,' + m.hi + ' 1px,' + m.light + ' 1px,' + m.mid + ' 40%,' + m.dark + ')' }, { w: 1, bg: '#000000' }]; } },
       { name: 'Two-tone', short: 'A hard horizon halfway down.', heavy: function (m) { return [{ w: 2, bg: lg([m.light, m.mid + ' 48%', m.deep + ' 52%', m.dark]) }, { w: 1, bg: '#000000' }]; } }
     ];

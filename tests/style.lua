@@ -79,7 +79,7 @@ for _, entry in ipairs(registered) do Check(entry[2] and entry[3], entry[1] .. "
 -- Applying an asset sets its path, wrap and slice margins; an unknown key does nothing.
 world.run([[
     local tex = CreateFrame("Frame"):CreateTexture()
-    assert(addon.Style.ApplyAsset(tex, "Rim1"), "Rim1 applies")
+    assert(addon.Style.ApplyAsset(tex, "EdgecutHeavy12s2m"), "border ring art applies")
     assert(addon.Style.ApplyAsset(tex, "NoSuchAsset") == false, "unknown keys are refused")
     assert(addon.Style.AssetPath("Shield"):find("Mode\\Bars\\Shield", 1, true))
     assert(addon.Style.FontPath("semibold"):find("Geist%-SemiBold%.ttf$"))
@@ -96,13 +96,54 @@ world.run([[
         local edge = Style.Edge(host, preset, { color = Tone.celadon })
         assert(edge.rimTexture and edge.holder, preset .. ": rim and holder")
         assert((edge.shadow ~= nil) == (def.shadow == true), preset .. ": shadow ring matches the preset")
-        assert((edge.gap ~= nil) == (def.gap == true), preset .. ": gap matches the preset")
-        assert(edge:Layout() == (def.gap and 1 or 0) + def.rim, preset .. ": outset in pixels")
+        assert((edge.gap ~= nil) == (def.gap ~= nil), preset .. ": gap matches the preset")
+        assert(edge:Layout() == (def.gap == true and 1 or 0) + def.rim, preset .. ": outset in pixels")
+        assert(edge.styleId == def.style, preset .. ": the role's own style")
         edge:SetHighlight("accent")
         edge:SetHighlight(nil)
         edge:SetTint(Tone.dispel.Magic)
         edge:SetTint(nil)
+        -- Every style keeps the role's reach and rings, so a layout never moves.
+        for _, choice in ipairs(Style.EdgeStyleChoices()) do
+            edge:SetStyle(choice.id)
+            assert(edge.styleId == choice.id and edge:Layout() == (def.gap == true and 1 or 0) + def.rim, preset .. " in " .. choice.id .. ": same reach")
+            assert((edge.shadow ~= nil) == (def.shadow == true) and (edge.gap ~= nil) == (def.gap ~= nil), preset .. " in " .. choice.id .. ": same rings")
+            for i, ring in ipairs(edge.rings) do
+                assert(edge.textures[i].texture == Style.AssetPath("Edge" .. ring.key), preset .. " " .. ring.key .. ": its art")
+            end
+        end
+        edge:SetStyle(nil)
     end
+    -- The roles' defaults (owner, November 17, 2026): frames Mode-Blizz in
+    -- Silver, windows Mode-Thin in Steel. The reach of every role is what it
+    -- was: the heavy roles' black line sits just inside the host.
+    assert(Style.EdgeReach("frame") == 3 and Style.EdgeReach("window") == 3 and Style.EdgeReach("frameThin") == 2
+        and Style.EdgeReach("group") == 1 and Style.EdgeReach("control") == 2 and Style.EdgeReach("card") == 2, "reach by role")
+    assert(Style.EdgeDepth("frame") == 2 and Style.EdgeDepth("frameThin") == 1 and Style.EdgeDepth("card") == 2, "band and outside black line")
+    local frame = Style.Edge(host, "frame")
+    assert(frame.rings[#frame.rings].kind == "gap" and frame.rings[#frame.rings].out == 0, "the black line inside the host's edge")
+    assert(frame.styleId == "blizz" and frame:Metal() == Tone.metal.silver, "frames: Mode-Blizz, Silver")
+    -- The Specular band: a dark base with mid, light and hi layers, the metal's own tones.
+    local layers = {}
+    for i, ring in ipairs(frame.rings) do if ring.kind == "band" then layers[#layers + 1] = { ring, frame.textures[i] } end end
+    assert(#layers == 4 and layers[1][1].tone == "dark" and layers[4][1].tone == "hi" and layers[4][1].profile == "s2h", "specular layers")
+    assert(layers[1][2].vertexColor[1] == Tone.metal.silver.dark[1] and layers[4][2]:IsShown(), "painted in Silver")
+    frame:SetTint(Tone.celadon)
+    assert(layers[1][2].vertexColor[1] == Tone.celadon[1] and not layers[4][2]:IsShown(), "a tint is one flat color")
+    frame:SetTint(nil)
+    frame:SetStyle("blizz", "gunmetal")
+    assert(frame:Metal() == Tone.metal.gunmetal and layers[1][2].vertexColor[1] == Tone.metal.gunmetal.dark[1], "another metal repaints")
+    frame:SetStyle("blizzEmpty")
+    assert(#frame.rings == 3 and frame.textures[2].vertexColor[1] == Tone.metal.silver.mid[1] and not frame.textures[4]:IsShown(), "Mode-BlizzEmpty: flat Silver mid, back to the style's metal")
+    local window = Style.Edge(host, "window")
+    assert(window.styleId == "thin" and window:Metal() == Tone.metal.steel and #window.rings == 8, "windows: Mode-Thin bevel in Steel")
+    window:SetStyle("round", "default")
+    assert(window.styleId == "round" and window:Metal() == Tone.metal.silver and window.rings[2].key:find("^roundHeavy"), "Mode-Round, Silver")
+    assert(Style.EdgeStyleChoices(true)[5].id == "none" and Style.EdgeMetalChoices()[1].id == "default", "picker choices")
+    frame:SetStyle(nil)
+    frame:SetRim(1)
+    assert(frame:Layout() == 1 and #frame.rings == 6 and frame.rings[3].profile == "s1m" and frame.rings[6].kind == "gap",
+        "a 1px band: the 1px Specular band, and the shadow and black line stay")
     -- A host whose scale changes after layout (a nameplate aura button made
     -- once) keeps one physical pixel per holder unit: the holder ignores its
     -- parents' scale and takes the pixel factor itself.

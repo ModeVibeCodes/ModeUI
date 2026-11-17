@@ -4,14 +4,12 @@
 -- (on the owner's machine: the lua-language-server binary bundled with the VS Code
 -- Lua extension runs it). Shared/Style/Assets.lua lists how each file is used.
 --
--- Borders/  white art tinted in game. Outer radius 4 ("Round 4"), every inner
---           edge steps in by the rim's own thickness, so each ring is even and
---           the rim covers its own inner corner: no masks.
---   Rim1, Rim2       Mode Empty: a flat 1px / 2px rim (sliced at 5)
---   Edge1, Edge2     Mode Light, Edge-lit: the rim's top edge only, laid over the rim
---   Sheen1           Mode Light, Sheen: a soft band of light through the middle of a 1px rim
---   Shadow           the 1px dark ring one size up (radius 5, sliced at 6)
---   Gap              the 1px black gap inside a window rim (radius 3, sliced at 4)
+-- Borders/  white art tinted in game. Every ring Shared/Style/EdgeData.lua can
+--           name (D.AllRings): <shape><depth><thickness>[<profile>], a ring of
+--           that thickness whose outer corner is the shape's corner stepped in
+--           by its depth, so each ring is even and the innermost covers its own
+--           inner corner: no masks. A profile ring's alpha follows the lighting
+--           down its height (the middle rows stretch over the border's height).
 --   Soft             a soft drop shadow under frames and windows (sliced at 12)
 --   RingSheen        a disc with a light band, laid over a portrait's metal disc
 --   RingLight        a disc lit from the top, fading by its middle (the edge-lit ring)
@@ -60,27 +58,32 @@ local function Lift(path, w, h, alpha)
 end
 
 -- Borders ------------------------------------------------------------------
-local S = 16
-local rim1, rim2 = T.Ring(S, S, 4, 1), T.Ring(S, S, 4, 2)
-Shape("Borders/Rim1", S, S, rim1)
-Shape("Borders/Rim2", S, S, rim2)
--- Edge-lit: the outermost row of the rim where it faces up (the top edge and
--- the upper part of the top corners).
-local function TopFacing(x, y)
-    if y < 1 then return 1 end
-    if y >= 4 then return 0 end
-    local cx = x < 8 and 4 or S - 4
-    local dx, dy = x - cx, y - 4
-    local d = math.sqrt(dx * dx + dy * dy)
-    if d < 3 then return 0 end
-    return (-dy / d) > 0.6 and 1 or 0
+local EDGE = dofile(here .. "../ModeUI/Shared/Style/EdgeData.lua")
+-- The alpha of a lighting profile at t (0 at the ring's top, 1 at its bottom).
+local function Profile(stops, t)
+    for i = 1, #stops - 1 do
+        local a, b = stops[i], stops[i + 1]
+        if t <= b[1] then return T.Lerp(a[2], b[2], (t - a[1]) / math.max(1e-6, b[1] - a[1])) end
+    end
+    return stops[#stops][2]
 end
-Shape("Borders/Edge1", S, S, function(x, y) return rim1(x, y) * TopFacing(x, y) end)
-Shape("Borders/Edge2", S, S, function(x, y) return rim2(x, y) * TopFacing(x, y) end)
--- Sheen: strongest through the middle rows, fading to nothing at the top and bottom.
-Shape("Borders/Sheen1", S, S, rim1, function(_, y) return T.Smooth(1 - math.abs(y - S / 2) / (S / 2)) end)
-Shape("Borders/Shadow", S, S, T.Ring(S, S, 5, 1))
-Shape("Borders/Gap", S, S, T.Ring(S, S, 3, 1))
+local function EdgeShape(spec, w, h, inset, step)
+    if spec.cut then return T.CutRect(inset, inset, w - inset, h - inset, math.max(0, spec.cut - EDGE.CUT_STEP * step)) end
+    return T.RoundedRect(inset, inset, w - inset, h - inset, math.max(0, spec.radius - step))
+end
+local rings, keys = EDGE.AllRings(), {}
+for key in pairs(rings) do keys[#keys + 1] = key end
+table.sort(keys)
+for _, key in ipairs(keys) do
+    local ring = rings[key]
+    local spec = EDGE.SHAPES[ring.shape]
+    local w, h = spec.w, spec.h
+    local outer = EdgeShape(spec, w, h, 0, ring.depth)
+    local inner = EdgeShape(spec, w, h, ring.thick, ring.depth + ring.thick)
+    local stops = ring.profile and EDGE.PROFILES[ring.profile]
+    Shape("Borders/" .. key, w, h, function(x, y) return outer(x, y) * (1 - inner(x, y)) end,
+        stops and function(_, y) return Profile(stops, y / h) end)
+end
 -- Soft shadow: a rounded box (radius 6) whose alpha falls off over 5px outside it.
 do
     local W, inner = 32, 6

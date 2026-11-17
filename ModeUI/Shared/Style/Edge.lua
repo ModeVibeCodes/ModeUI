@@ -1,52 +1,42 @@
 local _, addon = ...
--- The one border factory (docs/DESIGN_LANGUAGE.md, "Borders"). A border sits
--- outside its host: an optional 1px black gap, the rim, then an optional 1px
--- shadow ring (or the accent highlight), and an optional soft drop below the
--- host. Every piece is sliced Round 4 art on a holder frame scaled to one
--- physical pixel per unit, so offsets and slice margins are whole pixels at any
--- UI scale; the pieces keep the client's default pixel snapping, so a host on a
--- fractional pixel still gets crisp 1px rims. The rim covers its own inner
--- corner: no masks.
+-- The one border factory (docs/DESIGN_LANGUAGE.md, "Borders"). A border is a
+-- role (a preset: which rings it has, how far it reaches) drawn in a style
+-- (Mode-Blizz, Mode-BlizzEmpty, Mode-Thin, Mode-Round) and a metal. It sits
+-- outside its host: the 1px shadow ring, the metal band (a base ring with up
+-- to three lighting layers), the 1px black line (on frames and windows just
+-- inside the host's edge), and a soft drop below. Every
+-- ring is sliced art (Shared/Style/EdgeData.lua names it) on a holder frame
+-- scaled to one physical pixel per unit, so offsets and slice margins are whole
+-- pixels at any UI scale. The innermost ring covers its own inner corner: no
+-- masks.
 local Style = addon.Style
 local Tone = Style.Tone
+local D = Style.EDGE_DATA
 
--- rim: thickness in pixels. metal: Tone metal table, or nil for a flat color.
--- light: "edge" (top edge catches light), "sheen" (band through the middle),
--- "solid". shadow: 1px dark ring. soft: drop shadow. gap: 1px black ring
--- inside the rim. color: flat rim color for line/empty.
-Style.EDGE_PRESETS = {
-    frame = { rim = 2, metal = "gunmetal", light = "edge", shadow = true, soft = true },
-    frameThin = { rim = 1, metal = "gunmetal", light = "edge", shadow = true },
-    group = { rim = 1, metal = "gunmetal", light = "solid" },
-    window = { rim = 1, metal = "steel", light = "sheen", shadow = true, soft = true, gap = true },
-    card = { rim = 1, metal = "steel", light = "sheen", gap = true },
-    control = { rim = 1, metal = "steel", light = "sheen", shadow = true },
-    line = { rim = 1, light = "solid", shadow = true, flat = true },
-    empty = { rim = 1, light = "edge", shadow = true, flat = true },
-}
+Style.EDGE_PRESETS = D.PRESETS
+Style.EDGE_STYLES = D.STYLES
 
-local EDGE_LIGHT_ALPHA = 0.28
--- A 1px rim has no second row for the light to fade into, so its whole top
--- edge would read heavier than the sides; it takes half the light.
-local THIN_LIGHT = 0.5
-
--- The sheen's base tone and the strength of its band, so the band peaks at
--- mix(light, mid, 0.7) over a base of mix(dark, mid, 0.5).
-local function Sheen(metal)
-    local base = Style.Mix(metal.dark, metal.mid, 0.5)
-    local peak = Style.Mix(metal.light, metal.mid, 0.7)
-    local alpha = 0
-    for i = 1, 3 do alpha = alpha + (peak[i] - base[i]) / math.max(0.01, 1 - base[i]) end
-    return base, math.max(0, math.min(1, alpha / 3))
+-- Every ring's art is an asset ("Edge" .. key), sliced at its shape's margin.
+for key, ring in pairs(D.AllRings()) do
+    Style.ASSETS["Edge" .. key] = { file = "Borders\\" .. key, slice = D.SHAPES[ring.shape].margin }
 end
 
-local function Piece(frame, layer, sublevel, key)
-    local texture = frame:CreateTexture(nil, layer, nil, sublevel)
-    Style.ApplyAsset(texture, key)
-    return texture
+-- The style choices for a Border picker ({ id, label }), with None when asked.
+function Style.EdgeStyleChoices(withNone)
+    local list = {}
+    for _, id in ipairs(D.STYLE_ORDER) do list[#list + 1] = { id = id, label = D.STYLES[id].label } end
+    if withNone then list[#list + 1] = { id = "none", label = "None" } end
+    return list
 end
--- Anchors a piece `out` pixels outside the holder on every side (holder units
--- are physical pixels), shifted down by `drop`.
+-- The metal choices for a Border Metal picker; "default" is the style's own.
+function Style.EdgeMetalChoices()
+    local list = { { id = "default", label = "Default" } }
+    for _, id in ipairs(D.METAL_ORDER) do list[#list + 1] = { id = id, label = D.METAL_LABELS[id] } end
+    return list
+end
+-- A saved style id that is a real style (anything else: nil, the role's default).
+function Style.EdgeStyle(id) return D.STYLES[id] and id or nil end
+
 local function Around(texture, holder, out, drop)
     texture:ClearAllPoints()
     texture:SetPoint("TOPLEFT", holder, "TOPLEFT", -out, out - (drop or 0))
@@ -58,39 +48,62 @@ Edge.__index = Edge
 -- Every border, so a window can re-lay them after its scale changes.
 local edges = setmetatable({}, { __mode = "k" })
 
--- Re-lays every border on whole pixels (UI scale or a window's own scale changed).
 function Style.RelayoutEdges()
     for edge in pairs(edges) do edge:Layout() end
 end
 
--- A border of `preset` for `host`. opts: level (frame levels above the host,
--- default 2), color (flat presets), rim (override thickness, 1 or 2).
+-- A border of role `preset` for `host`. opts: level (frame levels above the
+-- host, default 2), style and metal (default: the role's style and that
+-- style's metal), color (a flat role's color), rim (the band's width, 1 or 2).
 function Style.Edge(host, preset, opts)
-    local def = assert(Style.EDGE_PRESETS[preset], "Style.Edge: unknown preset " .. tostring(preset))
+    local def = assert(D.PRESETS[preset], "Style.Edge: unknown preset " .. tostring(preset))
     opts = opts or {}
-    local edge = setmetatable({ host = host, preset = preset, def = def, rim = opts.rim or def.rim, color = opts.color }, Edge)
+    local edge = setmetatable({ host = host, preset = preset, def = def, rim = opts.rim or def.rim, color = opts.color,
+        styleId = Style.EdgeStyle(opts.style) or def.style, metalId = opts.metal, textures = {} }, Edge)
     local holder = CreateFrame("Frame", nil, host)
     holder:SetAllPoints(host)
     holder:EnableMouse(false)
     holder:SetFrameLevel(host:GetFrameLevel() + (opts.level or 2))
     edge.holder = holder
-    if def.shadow then edge.shadow = Piece(holder, "BORDER", 0, "Shadow") end
-    if def.gap then edge.gap = Piece(holder, "BORDER", 1, "Gap") end
-    edge.rimTexture = Piece(holder, "ARTWORK", 0, edge.rim == 2 and "Rim2" or "Rim1")
-    if def.light == "edge" then edge.light = Piece(holder, "ARTWORK", 1, edge.rim == 2 and "Edge2" or "Edge1")
-    elseif def.light == "sheen" then edge.light = Piece(holder, "ARTWORK", 1, "Sheen1") end
     if def.soft then
         local below = CreateFrame("Frame", nil, host)
         below:SetAllPoints(host)
         below:EnableMouse(false)
         below:SetFrameLevel(math.max(0, host:GetFrameLevel() - 1))
         edge.below = below
-        edge.soft = Piece(below, "BACKGROUND", -8, "Soft")
+        edge.soft = below:CreateTexture(nil, "BACKGROUND", nil, -8)
+        Style.ApplyAsset(edge.soft, "Soft")
     end
     edges[edge] = true
-    edge:Layout()
-    edge:Paint()
+    edge:Build()
     return edge
+end
+
+-- (Re)builds the rings for the current style and band width.
+function Edge:Build()
+    local rings = D.Rings(self.preset, self.styleId, self.rim)
+    self.rings = rings
+    self.shadow, self.gap, self.rimTexture = nil, nil, nil
+    local sub = { shadow = 0, gap = 1 }
+    local band = -1
+    for i, ring in ipairs(rings) do
+        local texture = self.textures[i]
+        if not texture then texture = self.holder:CreateTexture(nil, "ARTWORK"); self.textures[i] = texture end
+        if ring.kind == "band" then
+            band = ring.profile and band + 1 or 0
+            texture:SetDrawLayer("ARTWORK", math.max(0, band))
+        else
+            texture:SetDrawLayer("BORDER", sub[ring.kind])
+        end
+        Style.ApplyAsset(texture, "Edge" .. ring.key)
+        texture:Show()
+        if ring.kind == "shadow" then self.shadow = texture
+        elseif ring.kind == "gap" then self.gap = texture
+        elseif not self.rimTexture then self.rimTexture = texture end
+    end
+    for i = #rings + 1, #self.textures do self.textures[i]:Hide() end
+    self:Layout()
+    self:Paint()
 end
 
 -- One physical pixel per unit on a holder: it ignores its parents' scale and
@@ -103,69 +116,87 @@ local function PixelGrid(frame, px)
     frame:SetScale(factor or px)
 end
 
--- Places every piece on whole physical pixels. Call again when the host's
--- effective scale changes without a pixel factor (the fallback only).
+-- Places every ring on whole physical pixels. Returns how far the band and
+-- black line reach outside the host (the shadow ring left out).
 function Edge:Layout()
     local px = Style.Pixel(self.host)
     self.px = px
     PixelGrid(self.holder, px)
     if self.below then PixelGrid(self.below, px) end
-    local gap = self.def.gap and 1 or 0
-    local rim = self.rim
-    if self.gap then Around(self.gap, self.holder, gap) end
-    Around(self.rimTexture, self.holder, gap + rim)
-    if self.light then Around(self.light, self.holder, gap + rim) end
-    if self.shadow then Around(self.shadow, self.holder, gap + rim + 1) end
-    if self.soft then Around(self.soft, self.below, gap + rim + 6, 1) end
-    return gap + rim
+    for i, ring in ipairs(self.rings) do Around(self.textures[i], self.holder, ring.out) end
+    local depth = (self.def.gap == true and 1 or 0) + self.rim
+    if self.soft then Around(self.soft, self.below, depth + 6, 1) end
+    return depth
 end
 
--- How far a preset's border reaches outside its host, in physical pixels
--- (gap, rim and shadow ring; the soft drop is left out).
+-- How far a preset's border reaches outside its host, in physical pixels (the
+-- shadow ring, band and an outside black line; the soft drop is left out).
+-- Every style reaches the same in a role.
 function Style.EdgeReach(preset)
-    local def = assert(Style.EDGE_PRESETS[preset], "Style.EdgeReach: unknown preset " .. tostring(preset))
-    return (def.gap and 1 or 0) + def.rim + (def.shadow and 1 or 0)
+    local def = assert(D.PRESETS[preset], "Style.EdgeReach: unknown preset " .. tostring(preset))
+    return (def.gap == true and 1 or 0) + def.rim + (def.shadow and 1 or 0)
+end
+-- The band and an outside black line alone (what a frame keeps inside its own rect).
+function Style.EdgeDepth(preset)
+    local def = assert(D.PRESETS[preset], "Style.EdgeDepth: unknown preset " .. tostring(preset))
+    return (def.gap == true and 1 or 0) + def.rim
 end
 
 -- How far the border reaches outside the host, in the host's UI units.
 function Edge:Outset()
-    local gap = self.def.gap and 1 or 0
-    return (gap + self.rim + (self.shadow and 1 or 0)) * (self.px or 1)
+    return ((self.def.gap == true and 1 or 0) + self.rim + (self.def.shadow and 1 or 0)) * (self.px or 1)
+end
+
+-- The metal the band is painted in: the chosen one, else the style's.
+function Edge:Metal()
+    local metal = Tone.metal[self.metalId] or Tone.metal[D.STYLES[self.styleId].metal]
+    return metal
 end
 
 function Edge:Paint()
-    local def = self.def
-    local rimColor, lightAlpha
-    if def.flat or self.tint then
-        rimColor = self.tint or self.color or Tone.mono.rimStrong
-        lightAlpha = def.light == "edge" and 0.3 * (self.rim == 1 and THIN_LIGHT or 1) or 0
-    else
-        local metal = Tone[def.metal]
-        if def.light == "sheen" then rimColor, lightAlpha = Sheen(metal)
-        else rimColor, lightAlpha = metal.mid, def.light == "edge" and EDGE_LIGHT_ALPHA * (self.rim == 1 and THIN_LIGHT or 1) or 0 end
-    end
-    Style.Paint(self.rimTexture, rimColor)
-    if self.light then
-        self.light:SetVertexColor(1, 1, 1, lightAlpha)
-        self.light:SetShown(lightAlpha > 0)
-    end
-    if self.gap then Style.Paint(self.gap, Tone.shadow) end
-    if self.shadow then
-        if self.highlight then Style.Paint(self.shadow, self.highlight)
-        else Style.Paint(self.shadow, Tone.shadow, Tone.shadowAlpha) end
+    local metal = self:Metal()
+    -- A tint, a flat role or Mode-BlizzEmpty paints the band one color: its
+    -- base rings only, the lighting layers hidden.
+    local flat = self.tint or (self.def.flat and (self.color or Tone.mono.rimStrong))
+        or (D.STYLES[self.styleId].light == "flat" and metal.mid)
+    for i, ring in ipairs(self.rings) do
+        local texture = self.textures[i]
+        if ring.kind == "shadow" then
+            if self.highlight then Style.Paint(texture, self.highlight)
+            else Style.Paint(texture, Tone.shadow, Tone.shadowAlpha) end
+        elseif ring.kind == "gap" then
+            Style.Paint(texture, Tone.shadow)
+        elseif flat then
+            texture:SetShown(not ring.profile)
+            if not ring.profile then Style.Paint(texture, flat) end
+        else
+            texture:Show()
+            Style.Paint(texture, metal[ring.tone])
+        end
     end
     if self.soft then Style.Paint(self.soft, Tone.shadow, Tone.softAlpha) end
 end
 
--- A custom rim color (Mode Empty, Mode Line, or any preset's rim swapped for a
--- state such as a dispel type); nil restores the preset's metal.
+-- Draws the border in another style and metal (nil: the role's style, the
+-- style's metal; "default" is the style's metal too). The reach never changes.
+function Edge:SetStyle(styleId, metalId)
+    styleId = Style.EdgeStyle(styleId) or self.def.style
+    metalId = Tone.metal[metalId] and metalId or nil
+    if styleId == self.styleId and metalId == self.metalId then return end
+    local rebuild = styleId ~= self.styleId
+    self.styleId, self.metalId = styleId, metalId
+    if rebuild then self:Build() else self:Paint() end
+end
+
+-- A custom band color (a state such as a dispel type, proc or aggro); nil
+-- restores the style's metal.
 function Edge:SetTint(color)
     self.tint = color
     self:Paint()
 end
 
 -- The 1px outer accent line: "accent" (Ivory), "specialty" (Rosewood), a color
--- table, or nil for none. Presets without a shadow ring take it as a tint.
+-- table, or nil for none. Roles without a shadow ring take it as a tint.
 function Edge:SetHighlight(kind)
     local color = kind and (type(kind) == "table" and kind or Style.Accent(kind)) or nil
     if self.shadow then self.highlight = color
@@ -173,15 +204,12 @@ function Edge:SetHighlight(kind)
     self:Paint()
 end
 
--- Changes the rim's thickness (1 or 2 pixels): its art, its light and layout.
+-- Changes the band's width (1 or 2 pixels): its lighting, rings and layout.
 function Edge:SetRim(rim)
     rim = rim == 2 and 2 or 1
     if rim == self.rim then return end
     self.rim = rim
-    Style.ApplyAsset(self.rimTexture, rim == 2 and "Rim2" or "Rim1")
-    if self.def.light == "edge" and self.light then Style.ApplyAsset(self.light, rim == 2 and "Edge2" or "Edge1") end
-    self:Layout()
-    self:Paint()
+    self:Build()
 end
 
 -- Moves the border to `level` frame levels above its host (a host whose own
@@ -206,9 +234,8 @@ end
 -- the client may keep secret, through SetAlphaFromBoolean).
 function Edge:Regions()
     local list = {}
-    for _, key in ipairs({ "shadow", "gap", "rimTexture", "light", "soft" }) do
-        if self[key] then list[#list + 1] = self[key] end
-    end
+    for i = 1, #self.rings do list[#list + 1] = self.textures[i] end
+    if self.soft then list[#list + 1] = self.soft end
     return list
 end
 

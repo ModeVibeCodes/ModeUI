@@ -11,8 +11,8 @@ if not M then return end
 --           inside the tooltip on its own frame above the lines (Border off
 --           hides it). No soft drop under a see-through tooltip.
 --   Border  the edge's rim in the item's quality color (Quality Border) or a
---           player's class color (Class Border), else the edge's steel
---           (Colors.lua).
+--           player's class color (Class Border), else the edge's own metal
+--           (Colors.lua), in the Border Style and Border Metal.
 --   Text    every line in the Mode face, the first at Header Size in
 --           SemiBold, the rest at Text Size. Lines can hold secret text;
 --           only their font and color are set.
@@ -54,6 +54,8 @@ function M:Paint(tooltip, rimColor)
     local alpha = db.backgroundOpacity / 100
     Skin.PaintBox(parts, tooltip, "Panel", db.backgroundColor, alpha, db.border)
     parts.modeEdge:SetDrop(db.border and alpha >= 1)
+    -- Border Style and Border Metal; a quality or class rim tints it flat.
+    parts.modeEdge:SetStyle(db.edgeStyle, db.edgeMetal)
     parts.modeEdge:SetTint(db.border and rimColor or nil)
     if tooltip.SetScale and tooltip == GameTooltip and (db.scale ~= 100 or self.scaled) then
         self.scaled = true

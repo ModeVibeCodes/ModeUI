@@ -212,6 +212,19 @@ world.run([==[
     -- The group edge round the bars' area: a 1px rim, nothing masked.
     assert(p1.panel.edge.preset == 'group' and p1.geometry.border == 1 and #(p1.health:GetStatusBarTexture().masks or {}) == 0)
     assert(Point(p1.health)[2] == p1.panel.inner, 'the bars fill the area inside the rim')
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Blizz in
+    -- its own metal by default, the member and its inset power bar together;
+    -- any style keeps the size.
+    local Metal = addon.Style.Tone.metal
+    assert(M.db.edgeStyle == 'blizz' and M.db.edgeMetal == 'default' and p1.panel.edge.styleId == 'blizz'
+        and p1.panel.edge:Metal() == Metal.silver and p1.powerEdge.styleId == 'blizz', 'members in Mode-Blizz, Silver')
+    local wide, tall = p1.geometry.width, p1.geometry.height
+    assert(M:SetOption('edgeStyle', 'round') and p1.panel.edge.styleId == 'round' and p1.powerEdge.styleId == 'round'
+        and p1.geometry.width == wide and p1.geometry.height == tall and p1.width == wide, 'Mode-Round, same size')
+    assert(M:SetOption('edgeMetal', 'gunmetal') and p1.panel.edge:Metal() == Metal.gunmetal and p1.powerEdge:Metal() == Metal.gunmetal)
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
+    assert(M:SetOption('edgeStyle', 'blizz') and M:SetOption('edgeMetal', 'default') and p1.panel.edge.styleId == 'blizz'
+        and p1.panel.edge:Metal() == Metal.silver)
     -- Mode Glass draws its base with the white lift over the fill; the empty
     -- part is Slate at 60% with no black plate behind it.
     local S = addon.Style
@@ -399,7 +412,7 @@ world.run([==[
     SlashCmdList.MODEUI(); addon:SelectConfigPage('partyFrames')
     local page = M.page
     local view = page.configPreview
-    assert(page and page:IsShown() and view and page.elementSelect and page.auraGroupSelect and page.dispelToggles, 'page built')
+    assert(page and page:IsShown() and view and page.elementSelect and page.auraGroupSelect and page.dispelToggles and page.borderStyleSelect and page.borderMetalSelect, 'page built')
     local function Shown() local n = 0; for _, face in ipairs(view.faces) do if face:IsShown() then n = n + 1 end end; return n end
     assert(M.previewSample == 'one' and Shown() == 1, 'one member by default')
     assert(#page.previewHeaderButtons == 6 and page.previewStateSelect and M:SetPreviewSample('raid20') and Shown() == 20 and view.faces[1]:GetScale() == 0.5)
@@ -569,6 +582,13 @@ H.Load({ before = CONTAINERS }).run([==[
     assert(sb.dispelEffects.gradient:IsShown() and not sb.dispelEffects.rim.holder:IsShown(), 'the slot holds the Gradient')
     assert(not sb.dispelEffects.health:IsShown() and #(sb.dispelEffects.health.masks or {}) == 0, 'nothing masked')
     assert(M:SetDispelEffect('Magic', 'border', true) and p1.dispelContainer.slots.Magic.button.dispelEffects.rim.tint == M.db.auraMagicColor)
+    -- The dispel rim takes the Border Style's shape (in the type's color).
+    assert(p1.dispelContainer.slots.Magic.button.dispelEffects.rim.styleId == 'blizz')
+    local before = p1.dispelContainer
+    assert(M:SetOption('edgeStyle', 'thin') and p1.dispelContainer ~= before, 'a new style: new slots')
+    local rim = p1.dispelContainer.slots.Magic.button.dispelEffects.rim
+    assert(rim.styleId == 'thin' and rim.tint == M.db.auraMagicColor and M:SetOption('edgeStyle', 'blizz'))
+    slots = p1.dispelContainer
     assert(M:SetDispelEffect('Curse', 'health', true) and p1.dispelContainer ~= slots and p1.dispelContainer.slots.Curse.button.dispelEffects.health:IsShown())
     for _, kind in ipairs(M.dispelTypes) do
         assert(M:SetDispelEffect(kind, 'border', false) and M:SetDispelEffect(kind, 'health', false) and M:SetDispelEffect(kind, 'gradient', false))
@@ -700,9 +720,11 @@ H.Load({ before = STUBS, saved = v5 }).run([==[
 local v6 = world.saved()
 local p6 = v6.profiles.Default.modules.partyFrames
 p6.version, p6.backgroundOpacity, p6.powerBackgroundOpacity = 6, 100, 35
+p6.edgeStyle, p6.edgeMetal = nil, nil
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local db = addon.PartyFrames.db
     assert(db.version == 7 and db.backgroundOpacity == 60 and db.powerBackgroundOpacity == 35, '100 becomes 60')
+    assert(db.edgeStyle == 'blizz' and db.edgeMetal == 'default', 'the border keys arrive with their defaults')
 ]==], "party_v6")
 
 -- Invalid saved settings stop validation instead of being reset.

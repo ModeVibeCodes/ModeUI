@@ -102,14 +102,24 @@ function M:Skin(frame, entry, repaint)
     local function Run()
         if not self.active then return end
         self:ApplyScale(frame, entry)
-        if repaint then Skin.PaintWindow(frame, self:Style(entry)); return end
-        if not self:IsModeUI(entry) then return end
-        self.skinned[frame] = entry
-        Skin.Window(frame, self:Style(entry), entry.options)
+        if repaint then Skin.PaintWindow(frame, self:Style(entry))
+        elseif not self:IsModeUI(entry) then return
+        else
+            self.skinned[frame] = entry
+            Skin.Window(frame, self:Style(entry), entry.options)
+        end
+        self:StyleEdge(frame)
     end
     local protected = frame.IsProtected and frame:IsProtected()
     if addon.IsPublic(protected) and not protected then Run(); return end
     Defer:Run("windows:" .. entry.id .. ":" .. tostring(frame), Run)
+end
+
+-- The window's own edge in the Border Style and Border Metal (the same reach
+-- in every style, so nothing inside moves). Its controls and cards keep theirs.
+function M:StyleEdge(frame)
+    local parts = Skin.parts[frame]
+    if parts and parts.modeEdge then parts.modeEdge:SetStyle(self.db.edgeStyle, self.db.edgeMetal) end
 end
 
 -- A window's Scale (100% leaves Blizzard's own until it's been changed).

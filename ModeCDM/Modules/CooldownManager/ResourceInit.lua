@@ -76,6 +76,8 @@ local function Style(show, height, colorMode, color, text, size)
     return {
         show = show, width = 300, height = height, matchWidth = true,
         border = "mode",
+        -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+        edgeStyle = "blizz", edgeMetal = "default",
         barTexture = "media:Mode Gradient", colorMode = colorMode, barColor = Copy(color), barOpacity = 100,
         barBackground = "media:Mode BG", barBackgroundOpacity = M.RESOURCE_EMPTY,
         -- Fill direction, smooth changes (the client eases the bar toward a
@@ -113,6 +115,7 @@ local function List(ids, labels)
 end
 M.resourceChoices = {
     border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(), edgeMetal = addon.Style.EdgeMetalChoices(),
     textAnchor = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     reverse = { { id = false, label = "Left to Right" }, { id = true, label = "Right to Left" } },
     visibility = M.choices.visibility,
@@ -132,7 +135,8 @@ local function Set(list)
     return set
 end
 local ALLOWED = { border = Set(M.resourceChoices.border), textAnchor = Set(M.resourceChoices.textAnchor),
-    visibility = Set(M.resourceChoices.visibility) }
+    visibility = Set(M.resourceChoices.visibility), edgeStyle = Set(M.resourceChoices.edgeStyle),
+    edgeMetal = Set(M.resourceChoices.edgeMetal) }
 local function Whole(value, range) return Number(value, range[1], range[2]) and value == math.floor(value) end
 
 local function ValidateResource(style, id)

@@ -82,7 +82,7 @@ function M:MatchedFrame(unit, fdb)
     local wide, tall = own.matchWidth and size and size.width, own.matchHeight and size and size.height
     if not (wide or tall) then return fdb end
     local out = setmetatable({}, { __index = fdb })
-    local scale, rim = fdb.scale / 100, Style.EDGE_PRESETS[M.EdgePreset(unit)].rim
+    local scale, rim = fdb.scale / 100, Style.EdgeDepth(M.EdgePreset(unit))
     local function Clamp(v, r) return math.max(r[1], math.min(r[2], math.floor(v + 0.5))) end
     local g = self:Geometry(fdb, 1, rim)
     if tall then
@@ -101,8 +101,10 @@ function M:ApplyLayout(f, unit)
     local fdb = self:MatchedFrame(unit, self:FrameDB(unit))
     -- Scale first: the pixel size depends on the frame's effective scale.
     f:SetScale(fdb.scale / 100 * (f.previewScale or 1))
-    local g = self:Geometry(fdb, self:PixelSize(f), Style.EDGE_PRESETS[M.EdgePreset(unit)].rim)
+    local g = self:Geometry(fdb, self:PixelSize(f), Style.EdgeDepth(M.EdgePreset(unit)))
     f.geometry = g
+    f.panel.edge:SetStyle(fdb.edgeStyle, fdb.edgeMetal)
+    if f.castBox then f.castBox.edge:SetStyle(fdb.edgeStyle, fdb.edgeMetal) end
     local near, far, sign = Sides(fdb)
     f:SetSize(g.width, g.height)
     local panel = f.panel

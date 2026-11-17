@@ -14,10 +14,11 @@ The owner's November 14 design, rebuilt in the Mode design language on
 November 15 (owner: "Mode edge, keep what fits"):
 
 - A rectangle **16 px wider than tall** (200 × 184 by default) in the Mode
-  `frame` edge (Gunmetal, edge-lit, a shadow ring and the soft drop; the
-  edge's own round corners). **Map Border** sets its rim: **Mode** (2px, the
-  default) or **Thin** (1px). **Border Color** tints the rim: Gunmetal (the
-  edge's own), Black, Slate, Ivory or the player's Class Color.
+  `frame` edge in **Border Style** and **Border Metal** (Mode-Blizz in Silver
+  by default: cut corners, the Specular band, a shadow ring and the soft
+  drop; the tiles and the text bar take the same). **Map Border** sets its rim: **Mode** (2px, the
+  default) or **Thin** (1px). **Border Color** tints the rim: Metal (no tint:
+  the lit Border Metal), Black, Slate, Ivory or the player's Class Color.
 - The clock (Bold) above the zone (SemiBold), centered at the bottom of the
   map; coordinates centered at the top. The Mode typeface with ModeUI's
   lifted shadow. Zone text by PvP status in the gameplay reaction tones
@@ -88,7 +89,7 @@ November 15 (owner: "Mode edge, keep what fits"):
 | Tab | Card | Settings |
 |---|---|---|
 | Shape | Minimap | Size (140-280), Wider Than Tall By (0 to 48 px in 8 px steps; 16 by default) |
-| Shape | Border | Map Border (Thin, Mode), Button Border (Thin, Mode), Border Color (Gunmetal, Black, Slate, Ivory, Class Color) |
+| Shape | Border | Map Border (Thin, Mode), Button Border (Thin, Mode), Border Color (Metal, Black, Slate, Ivory, Class Color), Border Style, Border Metal |
 | Text | Zone and Clock | Text Layout (On Map, Bar Below, On Hover), Zone Color (PvP Status, White), Clock, Coordinates, Clock Format (24 Hour, 12 Hour), Text Size |
 | Buttons | Blizzard Buttons | Tracking, Calendar, New Mail, Expansion Button: a switch and a corner each |
 | Buttons | Addon Buttons | Show (Always, Mouseover, Hidden), Match Minimap Width, Button Size, Spacing |

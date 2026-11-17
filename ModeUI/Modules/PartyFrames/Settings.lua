@@ -126,6 +126,12 @@ function M:CreateConfigPage(parent)
     page:Group(L["Size"])
     local size = c.Columns({ "Width", "Health Height" })
     page.widthSlider = c.Slider(size[1], "width", "px"); page.healthHeightSlider = c.Slider(size[2], "healthHeight", "px")
+    -- Every member's border, an inset power bar's and the dispel rim's shape
+    -- (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+    page:Group(L["Border"])
+    page.borderStyleSelect, page.borderMetalSelect = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = c.Set("edgeStyle") },
+        { get = function() return M.db.edgeMetal end, set = c.Set("edgeMetal") })
     page:Group(L["This Module"])
     local tools = page:Row(L["Settings"], 48)
     page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")

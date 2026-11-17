@@ -7,29 +7,25 @@
       "title": "Overview: today vs. five border families",
       "w": 1400,
       "x": 0,
-      "y": 0
+      "y": 0,
+      "page": "overview"
     },
     "Scene.dc.html": {
       "h": 800,
       "is_interactive": true,
       "title": "In context: switch families",
       "w": 1280,
-      "x": 1480,
-      "y": 0
-    },
-    "Swatch.dc.html": {
-      "h": 480,
-      "title": "Swatch (one family, used by the overview)",
-      "w": 420,
-      "x": 1480,
-      "y": 920
+      "x": 0,
+      "y": 0,
+      "page": "scene"
     },
     "Ends.dc.html": {
       "h": 1180,
       "title": "Rounded ends for unit frames (Cut Steel material)",
       "w": 1400,
       "x": 0,
-      "y": 1320
+      "y": 0,
+      "page": "ends"
     },
     "Lab.dc.html": {
       "h": 800,
@@ -37,14 +33,24 @@
       "title": "Metal and lighting lab: D vs. Soft round",
       "w": 1400,
       "x": 0,
-      "y": 2620
+      "y": 0,
+      "page": "lab"
     },
     "Materials.dc.html": {
-      "h": 940,
+      "h": 1080,
       "title": "Every metal under every light",
       "w": 1520,
-      "x": 1480,
-      "y": 2620
+      "x": 0,
+      "y": 0,
+      "page": "materials"
+    },
+    "Swatch.dc.html": {
+      "h": 480,
+      "title": "Swatch (one family, used by the overview)",
+      "w": 420,
+      "x": 0,
+      "y": 0,
+      "page": "swatch"
     }
   },
   "createdOnFiles": {
@@ -53,17 +59,25 @@
   },
   "designSystems": [],
   "launch": {
-    "view": "canvas"
+    "view": "canvas",
+    "page": "overview"
   },
   "notes": {},
   "order": [
     "Main.dc.html",
     "Scene.dc.html",
-    "Swatch.dc.html",
     "Ends.dc.html",
     "Lab.dc.html",
-    "Materials.dc.html"
+    "Materials.dc.html",
+    "Swatch.dc.html"
   ],
-  "pages": [],
+  "pages": [
+    { "id": "overview", "name": "Overview" },
+    { "id": "scene", "name": "In context" },
+    { "id": "ends", "name": "Rounded ends" },
+    { "id": "lab", "name": "Metal & lighting lab" },
+    { "id": "materials", "name": "Every metal" },
+    { "id": "swatch", "name": "Swatch" }
+  ],
   "title": "ModeUI Border Study"
 }

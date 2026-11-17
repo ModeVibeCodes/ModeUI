@@ -87,6 +87,7 @@ function M:PaintSortMenu(g, look, path, size)
     local width = math.floor((widest * size * 0.55 + 2 * g.inset) / g.px + 0.5) * g.px + 2 * pad
     menu:SetSize(math.max(width, sort:GetWidth(), 2 * radius), 2 * top + #self.choices.sortMode * height)
     Skin.PaintBox(menu.parts, menu, "Panel", C.panel, 1, true)
+    menu.parts.modeEdge:SetStyle(db.edgeStyle, db.edgeMetal)
     menu:ClearAllPoints()
     menu:SetPoint("TOPRIGHT", sort, "BOTTOMRIGHT", 0, -g.px)
 end

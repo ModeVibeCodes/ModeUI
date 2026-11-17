@@ -48,6 +48,7 @@ Shared\Domain\Location.lua
 Shared\Style\Assets.lua
 Shared\Style\Fonts.lua
 Shared\Style\ProviderMedia.lua
+Shared\Style\EdgeData.lua
 Shared\Style\Edge.lua
 Shared\Style\Bar.lua
 Shared\Style\Shield.lua
@@ -108,6 +109,7 @@ Shared\Settings\Previews.lua
 Shared\Settings\Search.lua
 Shared\Settings\FontDropdown.lua
 Shared\Settings\Select.lua
+Shared\Settings\BorderPicker.lua
 Shared\Settings\ColorRow.lua
 Shared\Settings\TextInput.lua
 Shared\Settings\Confirm.lua

@@ -147,6 +147,9 @@ local function Style(size, perLine, lineGrowth, small)
         -- Match Width / Match Height (Edit Mode): the size of what it hangs from.
         matchWidth = false, matchHeight = false,
         border = "mode", backgroundColor = Copy(Tone.mono.panel), backgroundOpacity = 100,
+        -- The border's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
+        -- icons and the Tracked Bars' boxes; Mode-Blizz in its own metal (owner, November 17, 2026).
+        edgeStyle = "blizz", edgeMetal = "default",
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
         -- in Swipe Color at Swipe Opacity; Edge is the bright line on its
         -- rim, Ready Flash Blizzard's flash as it ends.
@@ -236,6 +239,7 @@ M.choices = {
         { id = "down", label = "Vertical Down" }, { id = "up", label = "Vertical Up" } },
     lineGrowth = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" }, { id = "left", label = "Left" } },
     border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
+    edgeStyle = Mode.EdgeStyleChoices(), edgeMetal = Mode.EdgeMetalChoices(),
     barColorMode = { { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     procGlow = GLOW_STYLES, activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,
     readyMode = { { id = "flash", label = "Flash" }, { id = "always", label = "While Ready" } },

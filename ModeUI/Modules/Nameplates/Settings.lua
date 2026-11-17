@@ -113,6 +113,11 @@ function M:CreateConfigPage(parent)
             local size = Columns({ "Width", "Health Height" })
             page.widthSlider = Slider(size[1], "width", "px")
             page.healthHeightSlider = Slider(size[2], "healthHeight", "px")
+            -- The health and cast bar border (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+            page:Group(L["Border"])
+            page.borderStyleSelect, page.borderMetalSelect = W.BorderPickers(page,
+                { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
+                { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
             page:Group(L["Textures"])
             local textures = Columns({ "Foreground", "Background" })
             page.foregroundSelect = SelectIn(textures[1], 200, function() return M.TextureChoices(true) end,

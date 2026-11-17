@@ -207,7 +207,16 @@ world.run([====[
     FireEvent('UNIT_AURA','target')
     local b1,b2=t.auraIcons.buffs[1],t.auraIcons.buffs[2]
     assert(b1:IsShown() and b2:IsShown() and t.auraShown.buffs==2 and t.auraShown.debuffs==0 and auraFilters[#auraFilters]=='HELPFUL')
-    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.edge.preset=='frameThin' and b1.edge.tint==nil and b1.rim.vertexColor[1]==addon.Style.Tone.gunmetal.mid[1],'auras wear the frameThin edge')
+    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.edge.preset=='frameThin' and b1.edge.tint==nil and b1.rim.vertexColor[1]==addon.Style.Tone.metal.steel.mid[1] and b1.edge.styleId=='thin','auras wear the frameThin edge in Mode-Thin')
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Blizz in
+    -- Silver by default, frame and cast bar together; any style keeps the layout.
+    assert(M.db.player.edgeStyle=='blizz' and M.db.player.edgeMetal=='default' and p.panel.edge.styleId=='blizz'
+        and p.panel.edge:Metal()==addon.Style.Tone.metal.silver and p.castBox.edge.styleId=='blizz','frames in Mode-Blizz, Silver')
+    local before=p.geometry.width
+    assert(M:SetFrameOption('player','edgeStyle','round') and p.panel.edge.styleId=='round' and p.castBox.edge.styleId=='round' and p.geometry.width==before,'Mode-Round, same size')
+    assert(M:SetFrameOption('player','edgeMetal','gunmetal') and p.panel.edge:Metal()==addon.Style.Tone.metal.gunmetal)
+    assert(not M:SetFrameOption('player','edgeStyle','nope') and M.db.player.edgeStyle=='round','unknown styles are refused')
+    assert(M:SetFrameOption('player','edgeStyle','blizz') and M:SetFrameOption('player','edgeMetal','default') and p.panel.edge.styleId=='blizz')
     -- Hover shows the game's tooltip for that aura; a secret ID (combat) shows none.
     function GameTooltip:SetOwner(owner) self.owner=owner end
     function GameTooltip:GetOwner() return self.owner end

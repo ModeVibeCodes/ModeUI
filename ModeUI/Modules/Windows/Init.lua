@@ -109,8 +109,11 @@ M.defaults = {
     windows = windows, looks = looks,
     -- Frame
     backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 100,
-    -- Border: the Mode `window` edge, on or off.
-    border = true, titleBar = true,
+    -- Border: the Mode `window` edge, on or off, and its Border Style and
+    -- Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"): Mode-Thin
+    -- in its own metal, Steel (owner, November 17, 2026). Controls and cards
+    -- keep their role's border.
+    border = true, titleBar = true, edgeStyle = "thin", edgeMetal = "default",
     -- Text: titles and tabs at their sizes; Window Text puts every other
     -- text in the window in the font too, at the game's sizes.
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, titleSize = 13, tabSize = 12, outline = false, shadow = true,
@@ -133,6 +136,8 @@ M.choices = {
     style = { { id = "modeui", label = "ModeUI" }, { id = "blizzard", label = "Blizzard" } },
     charStatsAnchor = { { id = "TOPLEFT" }, { id = "TOP" }, { id = "TOPRIGHT" }, { id = "LEFT" }, { id = "CENTER" },
         { id = "RIGHT" }, { id = "BOTTOMLEFT" }, { id = "BOTTOM" }, { id = "BOTTOMRIGHT" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 -- Settings that only take full effect after a reload when turned off: the
 -- Blizzard art (and fonts) they replaced come back with the interface.

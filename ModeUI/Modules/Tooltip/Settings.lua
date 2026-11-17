@@ -70,6 +70,12 @@ function M:CreateConfigPage(parent)
     Note("Each tooltip is a Mode window, Graphite by default. A see-through tooltip has no drop shadow.")
     page:Group(L["Border"])
     page.borderToggles = Toggles({ { "Border", "border" }, { "Quality Border", "qualityBorder" }, { "Class Border", "classBorder" } })
+    -- The edge's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"), with Border on.
+    When(function() return M.db.border end, function()
+        page.borderStyle, page.borderMetal = W.BorderPickers(page,
+            { get = function() return M.db.edgeStyle end, set = Set("edgeStyle") },
+            { get = function() return M.db.edgeMetal end, set = Set("edgeMetal") })
+    end)
     Note("Border shows the Mode window edge. Quality Border colors its rim by an item's quality; Class Border by a player's class (when the game lets addons see it).")
     page:Group(L["Size"])
     local size = Columns({ "Minimum Width", "Padding" })

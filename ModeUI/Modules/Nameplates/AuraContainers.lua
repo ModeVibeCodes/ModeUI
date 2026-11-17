@@ -80,7 +80,7 @@ local function Initializer(style, group, width, height, px, path)
             local options = { style = Enum.CustomAuraButtonDispelTypeTextureStyle.PreserveAsset,
                 showWhenHarmful = true, showWhenHelpful = true, showWithoutDispelType = true }
             for key, value in pairs(colors) do options[key] = value end
-            button:AddDispelTypeTexture(button.rim, options)
+            Kit.DispelAuraRim(button, options, style.auraNoTypeColor)
         end
         -- Crowd control glows in its rim color: the GCD flash (looping, started
         -- here while the button is still ours to touch) or a soft halo.

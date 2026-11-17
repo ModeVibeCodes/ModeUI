@@ -105,11 +105,22 @@ world.run([==[
     assert(health.boxes[1].bar.statusBarColor[1] == rogue.r and health.boxes[1].bar.statusBarColor[3] == rogue.b, 'class color')
     assert(M:SetResourceOption('health', 'colorMode', 'custom'))
 
+    -- Border Style and Border Metal (owner, November 17, 2026): each bar its
+    -- own, Mode-Blizz in its own metal; the boxes keep their places.
+    local Tone = addon.Style.Tone
+    for _, id in ipairs(M.resources) do assert(db[id].edgeStyle == 'blizz' and db[id].edgeMetal == 'default', id .. ' in Mode-Blizz') end
+    assert(box.edge.styleId == 'blizz' and box.edge:Metal() == Tone.metal.silver, 'Mode-Blizz, Silver')
+    assert(M:SetResourceOption('power', 'edgeStyle', 'round') and M:SetResourceOption('power', 'edgeMetal', 'steel') and box.edge.styleId == 'round'
+        and box.edge:Metal() == Tone.metal.steel, 'Mode-Round in Steel')
+    assert(Point(box)[4] == 2 and Point(box)[5] == -2 and box.width == 450 and box.height == 14 and ModeUIResourcePower.height == 18, 'same box, same reach')
+    assert(combo.boxes[1].edge.styleId == 'blizz', 'other bars keep their own')
+    assert(not M:SetResourceOption('power', 'edgeStyle', 'nope') and not M:SetResourceOption('power', 'edgeMetal', 'gold'), 'unknown styles and metals are refused')
     -- Settings: own width without Match Width, checked values, border off, reverse fill.
     assert(M:SetResourceOption('power', 'matchWidth', false) and ModeUIResourcePower.width == 300, 'Width while Match Width is off')
     assert(not M:SetResourceOption('power', 'height', 100) and not M:SetResourceOption('power', 'visibility', 'sometimes'), 'bad values refused')
     assert(not M:SetResourceOption('power', 'unknown', 1))
     assert(M:SetResourceOption('power', 'border', 'none') and not box.edge.holder:IsShown() and Point(box)[4] == 0 and ModeUIResourcePower.height == 14, 'no border, no reach')
+    assert(db.power.edgeStyle == 'round', 'None keeps the Border Style')
     assert(M:SetResourceOption('power', 'reverse', true) and bar.reverseFill == true)
     assert(M:SetResourceOption('power', 'smooth', false)); FireEvent('UNIT_POWER_FREQUENT', 'player'); assert(bar.ease == nil, 'Smooth off snaps')
     assert(M:SetResourceOption('power', 'textAnchor', 'LEFT') and Point(power.text)[1] == 'LEFT' and Point(power.text)[4] == 4)
@@ -131,6 +142,7 @@ world.run([==[
 
     -- Reset keeps Show Bar and the size.
     assert(M:ResetResource('power') and db.power.border == 'mode' and db.power.visibility == 'always' and db.power.opacity == 100)
+    assert(db.power.edgeStyle == 'blizz' and db.power.edgeMetal == 'default' and box.edge.styleId == 'blizz' and box.edge:Metal() == Tone.metal.silver, 'Reset: Mode-Blizz again')
     assert(db.power.matchWidth == false and db.power.show, 'size and show stay')
     assert(M:SetResourceOption('power', 'matchWidth', true) and ModeUIResourcePower.width == 454)
 
@@ -148,6 +160,15 @@ world.run([==[
     assert(page.resourceStatus.text == 'Shows now. Move it in Edit Mode.', 'a Rogue has combo points')
     window.rows[5].scripts.OnClick(window.rows[5])
     assert(M:ResourceEditing() == 'power' and view.bar.count == 1 and view.bar.boxes[1].bar.value == 65 and view.bar.text.text == '13.2K', 'preview: Power, sample values')
+    -- Border Style and Border Metal: in Border on the Look tab, while the border shows.
+    local borderGroup, pickerRow
+    for _, row in ipairs(page.rows) do
+        if row.settingsGroupTitle == 'Border' and row.section.title == 'Look' then borderGroup = row
+        elseif borderGroup and not pickerRow and row.card == borderGroup.card and row.visibleWhen then pickerRow = row end
+    end
+    assert(page.resourceBorderStylePicker and page.resourceBorderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border Style and Border Metal in Border')
+    assert(M:SetResourceOption('power', 'border', 'none') and not pickerRow.visibleWhen() and M:SetResourceOption('power', 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
+    assert(M:SetResourceOption('power', 'edgeStyle', 'thin') and view.bar.boxes[1].edge.styleId == 'thin' and M:SetResourceOption('power', 'edgeStyle', 'blizz'), 'the preview follows the style')
     assert(M:SetResourceOption('power', 'text', 'percent') and view.bar.text.text == '65%', 'the preview follows the settings')
     assert(page.resourceStatus.text == 'Shows now. Move it in Edit Mode.')
     window.rows[1].scripts.OnClick(window.rows[1])
@@ -161,7 +182,7 @@ world.run([==[
     assert(not power:IsShown() and not combo:IsShown() and M.resourceEvents.on == false)
     addon:SetModuleEnabled('cooldownManager', true)
     assert(power:IsShown())
-    assert(M:SetResourceOption('combo', 'height', 12))
+    assert(M:SetResourceOption('combo', 'height', 12) and M:SetResourceOption('combo', 'edgeStyle', 'thin') and combo.boxes[1].edge.styleId == 'thin')
     -- In combat: bars keep updating and follow a form change; settings wait.
     testCombat, testLockdown = true, true; FireEvent('PLAYER_REGEN_DISABLED')
     units.player.token = 'RAGE'; FireEvent('UNIT_DISPLAYPOWER', 'player')
@@ -181,6 +202,7 @@ local restored = H.Load({ before = STUBS, saved = saved })
 restored.run([==[
     local db = addon.CooldownManager.db.resources
     assert(db.health.show and db.combo.height == 12 and db.combo.text == 'current' and db.health.colorMode == 'custom', 'kept')
+    assert(db.combo.edgeStyle == 'thin' and addon.CooldownManager.resourceFrames.combo.boxes[1].edge.styleId == 'thin', 'Border Style kept')
     assert(Point(ModeUICooldownBuffBar)[2] == ModeUIResourcePower, 'a viewer attached to a resource bar finds it after a reload')
 ]==], "restore")
 local before = restored.saved()
@@ -189,6 +211,15 @@ H.Load({ before = STUBS, saved = before }).run([==[
     local db = addon.CooldownManager.db.resources
     assert(db.power.show and not db.health.show and db.combo.height == 10, 'defaults for an older profile')
 ]==], "older profile")
+
+-- Saved bars from before Border Style and Border Metal take their defaults; nothing else changes.
+local noEdge = restored.saved()
+for _, style in pairs(noEdge.profiles.Default.modules.cooldownManager.resources) do style.edgeStyle, style.edgeMetal = nil, nil end
+H.Load({ before = STUBS, saved = noEdge }).run([==[
+    local db = addon.CooldownManager.db.resources
+    assert(db.combo.height == 12 and db.health.show, 'nothing reset')
+    for _, id in ipairs(addon.CooldownManager.resources) do assert(db[id].edgeStyle == 'blizz' and db[id].edgeMetal == 'default', id .. ' takes the default border') end
+]==], "fill border style")
 
 -- Bad saved data stops startup rather than being reset.
 local function Refused(change, label)
@@ -201,5 +232,7 @@ Refused(function(db) db.combo.text = "percent" end, "combo text")
 Refused(function(db) db.health.colorMode = "power" end, "health color mode")
 Refused(function(db) db.mana.barColor = { 2, 0, 0 } end, "color")
 Refused(function(db) db.power.visibility = "never" end, "visibility")
+Refused(function(db) db.power.edgeStyle = "nope" end, "a Border Style")
+Refused(function(db) db.combo.edgeMetal = "gold" end, "a Border Metal")
 
 print("resource bars: all checks passed")

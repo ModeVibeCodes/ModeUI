@@ -138,6 +138,13 @@ function M:CreateConfigPage(parent)
     end)
     When(function() return db().enabled end, function()
         Style(function() page:Group("Size"); Slider("Scale", "scale", "%") end)
+        -- The frame's and its cast bar's border (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+        Style(function()
+            page:Group("Border")
+            page.unitFrameBorder, page.unitFrameBorderMetal = W.BorderPickers(page,
+                { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
+                { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
+        end)
         -- Target of Target and Target of Focus can attach to their parent frame
         -- (offsets in screen pixels); detached, they move in Edit Mode.
         When(function() return M.attachParents[editing] ~= nil end, function()

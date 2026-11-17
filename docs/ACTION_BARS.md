@@ -56,9 +56,10 @@ The Mode design language (`docs/DESIGN_LANGUAGE.md`, "Action buttons"):
 - **Buttons are 40 by 34** by default (Width and Height on the **Bar** tab):
   icons are wider than tall. Sizes are whole physical pixels, and each bar is
   an even number of pixels each way, so a centered bar stays on the pixel grid.
-- **Border:** **Mode** (by default) is the `frame` edge outside the button:
-  a 2px Gunmetal rim lit along its top, a 1px shadow ring and a soft drop.
-  **None** hides it. Each bar leaves room for its buttons' edges, and
+- **Border:** **Mode** (by default) is the `frame` edge outside the button,
+  in the bar's **Border Style** (Mode-Blizz by default: a 2px Silver Specular
+  band, a 1px black line, a 1px shadow ring and a soft drop) and **Border
+  Metal** (shown while Border is Mode). **None** hides it. Each bar leaves room for its buttons' edges, and
   **Spacing** (4px by default) counts between the edges' shadows.
 - **Background:** the **Mode Button** face behind the icon, in the
   **Background Color** (Mono panel, #0E0E0E, by default) at **Background

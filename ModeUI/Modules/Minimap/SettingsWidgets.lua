@@ -32,7 +32,8 @@ function UI.Switch(page, host, key)
     return toggle
 end
 
--- Border Color: a swatch per choice; the chosen one has a light ring.
+-- Border Color: a swatch per choice; the chosen one has a light ring. The
+-- first (no tint) shows the Border Metal the edges are drawn in.
 function UI.Swatches(page, host)
     local swatches = {}
     for index, item in ipairs(M.choices.borderColor) do
@@ -54,7 +55,8 @@ function UI.Swatches(page, host)
     page.refreshers[#page.refreshers + 1] = function()
         local chosen = M.db.borderColor
         for _, button in ipairs(swatches) do
-            local color = button.id == "class" and M.BorderColorFor("class") or M.BORDER_COLORS[button.id]
+            local color = button.id == "class" and M.BorderColorFor("class")
+                or button.id == "rim" and M:EdgeMetal().mid or M.BORDER_COLORS[button.id]
             button.color:SetVertexColor(color[1], color[2], color[3], 1)
             local ring = button.id == chosen and T.text or T.rim
             button.ring:SetVertexColor(ring[1], ring[2], ring[3], button.id == chosen and 1 or 0.6)

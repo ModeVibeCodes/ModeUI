@@ -52,7 +52,7 @@ end
 -- Everything the slots' buttons bake in when they're made.
 local function SlotKey(self, f)
     local db, g = self.db, f.geometry
-    local parts = { db.dispelFilter, g.width, g.height, g.px, g.healthHeight, db.dispelGradientOpacity }
+    local parts = { db.dispelFilter, g.width, g.height, g.px, g.healthHeight, db.dispelGradientOpacity, db.edgeStyle, db.edgeMetal }
     for _, kind in ipairs(self.dispelTypes) do
         local e, c = db.dispel[kind], db[self.dispelColorKeys[kind]]
         parts[#parts + 1] = string.format("%s%s%s%.3f,%.3f,%.3f", tostring(e.border), tostring(e.health), tostring(e.gradient), c[1], c[2], c[3])
@@ -70,11 +70,12 @@ local function SlotInitializer(self, f, kind)
         local set = { health = button:CreateTexture(nil, "ARTWORK", nil, 1), gradient = button:CreateTexture(nil, "ARTWORK", nil, 2) }
         Style.ApplyAsset(set.health, "Solid"); Style.ApplyAsset(set.gradient, "Solid")
         -- Border: a flat rim in the type's color over the member's own,
-        -- on the same band (the button covers the member).
+        -- on the same band (the button covers the member), in its Border Style.
         set.inner = CreateFrame("Frame", nil, button)
         local b = f.geometry.border
         set.inner:SetPoint("TOPLEFT", f.panel, "TOPLEFT", b, -b); set.inner:SetPoint("BOTTOMRIGHT", f.panel, "BOTTOMRIGHT", -b, b)
-        set.rim = Style.Edge(set.inner, "group", { level = 3 })
+        set.rim = Style.Edge(set.inner, "group", { level = 3, style = self.db.edgeStyle })
+        set.rim:SetStyle(self.db.edgeStyle, self.db.edgeMetal)
         set.rim:SetTint(color)
         set.rim:SetShown(effects.border)
         LayoutEffects(self, f, set, color)

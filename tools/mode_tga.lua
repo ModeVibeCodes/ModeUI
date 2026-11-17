@@ -44,6 +44,17 @@ function T.RoundedRect(x0, y0, x1, y1, r)
     end
 end
 
+-- Inside a box from (x0, y0) to (x1, y1) with each corner cut at 45 degrees,
+-- the cut's legs c long.
+function T.CutRect(x0, y0, x1, y1, c)
+    return function(x, y)
+        if x < x0 or x > x1 or y < y0 or y > y1 then return 0 end
+        if c <= 0 then return 1 end
+        local dx, dy = math.min(x - x0, x1 - x), math.min(y - y0, y1 - y)
+        return dx + dy >= c and 1 or 0
+    end
+end
+
 -- The rim of a rounded box: inside the outer box (radius r) and outside the box
 -- inset by t (radius r - t), so the ring is t wide all round.
 function T.Ring(w, h, r, t)

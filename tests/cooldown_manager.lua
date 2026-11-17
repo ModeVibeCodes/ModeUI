@@ -55,6 +55,20 @@ world.run([==[
     assert(M:SetOption('essential', 'border', 'none') and not art.edge.holder:IsShown() and Point(items[1])[5] == 0)
     assert(not M:SetOption('essential', 'border', 'rounded'), 'the slot rims retired')
     assert(M:SetOption('essential', 'border', 'mode'))
+    -- Border Style and Border Metal (owner, November 17, 2026): per bar,
+    -- Mode-Blizz in its own metal; any style keeps the layout.
+    for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'blizz' and M.db[viewer].edgeMetal == 'default', viewer .. ' in Mode-Blizz') end
+    assert(art.edge.styleId == 'blizz' and art.edge:Metal() == Tone.metal.silver, 'icons in Mode-Blizz, Silver')
+    local wide, step = ModeUICooldownEssential.width, Point(items[2])[4]
+    assert(M:SetOption('essential', 'edgeStyle', 'round') and art.edge.styleId == 'round', 'Mode-Round')
+    assert(ModeUICooldownEssential.width == wide and Point(items[2])[4] == step and Point(items[1])[5] == -2 and art.edge:Outset() == 2, 'same layout, same reach')
+    assert(M:SetOption('essential', 'edgeMetal', 'steel') and art.edge:Metal() == Tone.metal.steel, 'Steel')
+    assert(M.dress[ItemsOf(utility)[1]].art.edge.styleId == 'blizz', 'other bars keep their own')
+    assert(not M:SetOption('essential', 'edgeStyle', 'nope') and not M:SetOption('essential', 'edgeMetal', 'gold') and not M:SetOption('essential', 'edgeStyle', 'none'), 'unknown styles and metals are refused')
+    assert(M.db.essential.edgeStyle == 'round' and M.db.essential.edgeMetal == 'steel')
+    assert(M:SetOption('essential', 'border', 'none') and not art.edge.holder:IsShown() and Point(items[1])[5] == 0, 'None still hides the edge')
+    assert(M:SetOption('essential', 'border', 'mode') and art.edge.holder:IsShown() and art.edge.styleId == 'round')
+    assert(M:SetOption('essential', 'edgeStyle', 'blizz') and M:SetOption('essential', 'edgeMetal', 'default') and art.edge:Metal() == Tone.metal.silver)
     items[1]:RefreshSpellCooldownInfo()
     assert(items[1].Cooldown.drawEdge == false and items[1].Cooldown.swipeColor[4] == 0.7, 'edge off, 70% swipe after the refresh')
     local count = items[1].ChargeCount.Current
@@ -180,6 +194,11 @@ world.run([==[
     assert(bar.Bar.statusBarTexture ~= Kit.FLAT and barState.sheen:IsShown() and bar.Bar.BarBG.alpha == 0 and bar.Bar.Pip.alpha == 0, 'Mode Gradient: base and lift')
     assert(barState.bg.vertexColor[1] == Tone.slate[1] and barState.bg.vertexColor[4] == 1, 'Mode BG on Slate, solid')
     assert(barState.art.edge.holder:IsShown() and barState.boxEdge.preset == 'frameThin' and barState.boxEdge.holder:IsShown(), 'the Mode edge on the icon and the bar')
+    local boxAt = Point(barState.box)[4]
+    assert(M:SetOption('buffBar', 'edgeStyle', 'thin') and M:SetOption('buffBar', 'edgeMetal', 'gunmetal') and barState.art.edge.styleId == 'thin'
+        and barState.boxEdge.styleId == 'thin' and barState.boxEdge:Metal() == Tone.metal.gunmetal and Point(barState.box)[4] == boxAt, 'icon and bar box in Mode-Thin Gunmetal, same place')
+    assert(M:SetOption('buffBar', 'border', 'none') and not barState.boxEdge.holder:IsShown() and M:SetOption('buffBar', 'border', 'mode'))
+    assert(M:SetOption('buffBar', 'edgeStyle', 'blizz') and M:SetOption('buffBar', 'edgeMetal', 'default') and barState.boxEdge.styleId == 'blizz')
     assert(Point(bar.Bar)[4] == 0 and barState.comet.clip:IsShown(), 'the bar fills its box; the Comet spark')
     assert(M:SetOption('buffBar', 'showSpark', false) and not barState.comet.clip:IsShown() and M:SetOption('buffBar', 'showSpark', true))
     assert(M:SetOption('buffBar', 'barColorMode', 'custom') and bar.Bar.statusBarColor[1] == Tone.ivory[1], 'Custom: Bar Color (Ivory)')
@@ -314,6 +333,14 @@ world.run([==[
     window.rows[6].scripts.OnClick(window.rows[6])
     local page, view = M.page, M.previewView
     assert(page.viewerEditing() == c2 and view.icons[1].key == '301' and view.plus:IsShown(), 'a custom bar: its spells, then +')
+    -- Border Style and Border Metal: in Border on the Look tab, while the border shows.
+    local borderGroup, pickerRow
+    for _, row in ipairs(page.rows) do
+        if row.settingsGroupTitle == 'Border' and row.section.title == 'Look' then borderGroup = row
+        elseif borderGroup and not pickerRow and row.card == borderGroup.card and row.visibleWhen then pickerRow = row end
+    end
+    assert(page.borderStylePicker and page.borderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border Style and Border Metal in Border')
+    assert(M:SetOption(c2, 'border', 'none') and not pickerRow.visibleWhen() and M:SetOption(c2, 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     local picker = M.picker
     assert(picker:IsShown() and picker.buttons[1]:IsShown() and picker.buttons[1].key == '302', 'tracked buffs not on it yet')
@@ -511,9 +538,9 @@ world.run([==[
     assert(window:IsShown() and M.selectedBar == 'utility' and page.viewerEditing() == 'utility', 'Open Module Settings lands on the bar')
 
     -- Copy and reset, then the no-writes rule.
-    assert(M:SetOption('essential', 'border', 'none') and M:CopyStyleToAll('essential'))
-    assert(M.db.custom1.border == 'none' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
-    assert(M:ResetViewer(c1) and M.db.custom1.border == 'mode')
+    assert(M:SetOption('essential', 'border', 'none') and M:SetOption('essential', 'edgeStyle', 'round') and M:CopyStyleToAll('essential'))
+    assert(M.db.custom1.border == 'none' and M.db.custom1.edgeStyle == 'round' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
+    assert(M:ResetViewer(c1) and M.db.custom1.border == 'mode' and M.db.custom1.edgeStyle == 'blizz')
     assert(#blizzardWrites == 0, 'wrote to Blizzard frames: ' .. table.concat(blizzardWrites, ', '))
 
     -- Switching off: icons back at full, a reload for the look.
@@ -540,10 +567,25 @@ local restored = H.Load({ before = STUBS .. "\nMakeViewers()", saved = world.sav
 restored.run([==[
     local M = addon.CooldownManager
     assert(M.enabled and M.db.essential.border == 'none' and #M.db.customBars == 2 and M.db.nextCustom == 6 and M.db.racials == 'utility', 'settings persist')
+    assert(M.db.essential.edgeStyle == 'round' and M.dress[ItemsOf(EssentialCooldownViewer)[1]].art.edge.styleId == 'round', 'Border Style persists')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
     assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
 ]==], "restore")
+
+-- A version 5 profile from before Border Style and Border Metal takes their
+-- defaults on every bar; nothing else changes.
+do
+    local saved = restored.saved()
+    local db = saved.profiles.Default.modules.cooldownManager
+    for key, style in pairs(db) do if type(style) == "table" and style.border then style.edgeStyle, style.edgeMetal = nil, nil end end
+    H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
+        local M = addon.CooldownManager
+        assert(M.db.version == 5 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
+        for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'blizz' and M.db[viewer].edgeMetal == 'default', viewer .. ' takes the default border') end
+        assert(M.db.custom1.edgeStyle == 'blizz' and M.db.custom2.edgeMetal == 'default', 'custom bars too')
+    ]==], "fill border style")
+end
 
 -- Version 1: Lines, First Icon and Center Lines; the ready glow switch.
 local v1 = restored.saved()
@@ -647,6 +689,8 @@ Refused(function(db) db.order = { essential = { "101", "101" } } end, "a spell t
 Refused(function(db) db.order = { custom9 = { "101" } } end, "an order for no viewer")
 Refused(function(db) db.racials = "buffIcon" end, "racials on Tracked Buffs")
 Refused(function(db) db.extras.essential = { "s9001", "s9001" } end, "Essential's spells twice")
+Refused(function(db) db.essential.edgeStyle = "nope" end, "a Border Style")
+Refused(function(db) db.custom1.edgeMetal = "gold" end, "a Border Metal")
 local function Text(look) return { ["101"] = { text = { count = look } } } end
 local function Copy(t) local c = {}; for k, v in pairs(t) do c[k] = type(v) == "table" and Copy(v) or v end; return c end
 local good = { show = true, size = 12, anchor = "TOP", x = 0, y = 0, color = { 1, 1, 1 }, font = "game", fontMedia = "Expressway", outline = "thick", shadow = true }

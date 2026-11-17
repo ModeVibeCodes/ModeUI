@@ -6,7 +6,8 @@ if not M then return end
 -- layout is the owner's approved design (November 14, 2026): four tabs
 -- pinned above the cards, two controls per line, no description text.
 --   Shape     Minimap (Size, Wider Than Tall By); Border (Map Border,
---             Button Border: Thin or Mode; Border Color: the edges' rim)
+--             Button Border: Thin or Mode; Border Color: the edges' rim;
+--             Border Style and Border Metal)
 --   Text      Zone and Clock (Text Layout, Zone Color, Clock, Coordinates,
 --             Clock Format, Text Size)
 --   Buttons   Blizzard Buttons (a switch and a corner each); Addon Buttons
@@ -46,6 +47,10 @@ function M:CreateConfigPage(parent)
     page.borderButtons = UI.Segments(page, border[1], "border", 80)
     page.buttonBorderButtons = UI.Segments(page, border[2], "buttonBorder", 80)
     page.swatches = UI.Swatches(page, Columns({ "Border Color" })[1])
+    -- Every edge's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+    page.borderStyle, page.borderMetal = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = function(value) M:SetOption("edgeStyle", value) end },
+        { get = function() return M.db.edgeMetal end, set = function(value) M:SetOption("edgeMetal", value) end })
 
     page:Section(L["Text"], nil, false)
     page:Group(L["Zone and Clock"])

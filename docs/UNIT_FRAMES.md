@@ -110,8 +110,10 @@ Onyx skin's masked rim, cap and circle textures are gone; every frame is built
 from `Shared/Style`:
 
 - **Frame:** the bar block (health, a 1px black line, power) inside a
-  `Style.Edge` border, `frame` (2px Gunmetal Edge-lit) on the Player and
-  Target and `frameThin` (1px) on the smaller frames. The border covers its
+  `Style.Edge` border, `frame` (2px band, a 1px black line just inside) on the
+  Player and Target and `frameThin` (1px) on the smaller frames, in each
+  frame's **Border Style** and **Border Metal** (Frame tab; Mode-Blizz in
+  Silver by default), the cast bar with it. The border covers its
   own rounded corners, so nothing is masked. Frames keep the Onyx frame's
   overall size, so positions and attachments carry over.
 - **Portrait:** a `Style.Ring` (Steel Sheen, no gap) centred on the block's

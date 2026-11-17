@@ -66,7 +66,7 @@ M.defaultPositions = {
 
 -- Colors: the window in Graphite panel, the header a Mode Title strip in
 -- Graphite raised, bars for anything without a class in Graphite muted. The
--- edge is the Mode `window` edge, so it has no settings. Names and values are
+-- edge is the Mode `window` edge, in Border Style and Border Metal. Names and values are
 -- pure white (owner) and outlined, so they read on any bar color. Earlier
 -- defaults, for migrations, are in Migrations.lua and Style.LEGACY.
 local Tone = addon.Style.Tone
@@ -103,6 +103,10 @@ local function Style(window)
         width = 240, rows = 8, rowHeight = 18, spacing = 1, padding = 1,
         -- Frame
         backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 75,
+        -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a
+        -- border"): the window, its breakdown and its menu in Mode-Thin in its
+        -- own metal (owner, November 17, 2026).
+        edgeStyle = "thin", edgeMetal = "default",
         -- Header
         header = true, headerHeight = 20, headerTexture = "media:Mode Title", headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
         titleUpper = false, showSession = false, showTimer = true, headerButtons = true,
@@ -142,7 +146,7 @@ M.ownKeys = { show = true, meterType = true, session = true, rows = true, group 
 -- identity keys. Window brings its size, frame and header with it; Bars the
 -- rows' look; Text every text and number setting.
 M.copyScopes = {
-    window = { "width", "padding", "opacity", "backgroundColor", "backgroundOpacity",
+    window = { "width", "padding", "opacity", "backgroundColor", "backgroundOpacity", "edgeStyle", "edgeMetal",
         "header", "headerHeight", "headerTexture", "headerColor", "headerOpacity", "titleUpper", "titleAlign", "titleOffsetX", "titleOffsetY",
         "showSession", "showTimer", "headerButtons" },
     bars = { "rowHeight", "spacing", "barTexture", "barBackground", "barOpacity", "barBackgroundOpacity", "barColorMode",
@@ -187,5 +191,7 @@ M.choices = {
     numbers = { { id = "primary", label = "Amount" }, { id = "both", label = "Amount and Per Second" } },
     group = { { id = "none", label = "None" } },
     groupSide = { { id = "above", label = "Above" }, { id = "below", label = "Below" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 for _, window in ipairs(M.windows) do M.choices.group[#M.choices.group + 1] = { id = window, label = M.windowLabels[window] } end

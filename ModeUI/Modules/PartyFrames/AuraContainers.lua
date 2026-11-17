@@ -61,7 +61,7 @@ local function Initializer(self, group, width, height, px, path)
         if adb.timerText then button:SetDurationText(button.timer, formatter and { textFormatter = formatter } or nil)
         else button.timer:Hide() end
         if adb.count then button:SetApplicationCount(button.count) else button.count:Hide() end
-        if typed then button:AddDispelTypeTexture(button.rim, typed) end
+        if typed then Kit.DispelAuraRim(button, typed, self:AuraRimColor(adb, nil)) end
         -- The glow: by type through the game's dispel colors, or a fixed color.
         if adb.glow ~= "none" then
             local gcd = adb.glow == "gcd"

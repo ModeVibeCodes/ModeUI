@@ -75,6 +75,10 @@ function M:ApplyLayout(f)
     Style.Paint(panel.hairline, Tone.shadow)
     f.healPrediction:SetReverseFill(reverse)
     if f.health.SetClipsChildren then f.health:SetClipsChildren(true) end
+    -- Border Style and Border Metal: the member's edge and its inset power
+    -- bar's (every style reaches the same, so the geometry never moves).
+    panel.edge:SetStyle(db.edgeStyle, db.edgeMetal)
+    f.powerEdge:SetStyle(db.edgeStyle, db.edgeMetal)
     -- Edge over the bars; highlights, text and auras over the edge.
     panel.edge.holder:SetFrameLevel(level + 3)
     panel.edge:Layout()

@@ -62,7 +62,11 @@ function M:CreateConfigPage(parent)
     local background = Columns({ "Background Color", "Background Opacity" })
     Color(background[1], "backgroundColor")
     page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
-    Note("The edge is the Mode window edge, as on every ModeUI window, so it has no settings. A see-through window has no drop shadow.", 48)
+    page:Group(L["Border"])
+    page.borderStyle, page.borderMetal = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = Set("edgeStyle") },
+        { get = function() return M.db.edgeMetal end, set = Set("edgeMetal") })
+    Note("The window's border; the tabs and buttons keep the Mode control edge. A see-through window has no drop shadow.", 48)
     page:Group(L["Edit Box"])
     page.editPills = Pills("Position", M.choices.editPosition, function() return M.db.editPosition end, Set("editPosition"))
     local edit = Columns({ "Edit Box Height", "Edit Gap" })

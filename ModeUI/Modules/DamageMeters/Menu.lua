@@ -116,6 +116,9 @@ function M:OpenMenu(window, anchor)
     for index = #items + 1, #menu.entries do menu.entries[index]:Hide() end
     menu:SetSize(2 * COLUMN_WIDTH + 3 * PAD, math.max(heights[1], heights[2]) + PAD)
     Skin.PaintBox(menu.parts, menu, "Panel", Skin.mode.panel, 1, true)
+    -- In the window's Border Style and Border Metal.
+    local style = self:Style(window)
+    menu.parts.modeEdge:SetStyle(style.edgeStyle, style.edgeMetal)
     menu:ClearAllPoints()
     menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
     menu.catcher:Show()

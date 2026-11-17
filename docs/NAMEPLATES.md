@@ -11,8 +11,9 @@ On every nameplate the game gives to addons, ModeUI parents its own plain
 frame and fades Blizzard's art. Each plate has:
 
 - **Health and cast boxes** (docs/DESIGN_LANGUAGE.md, settings version 9 from
-  the approved Nameplates probe): the bar inside the `frameThin` edge (1px
-  Gunmetal, edge-lit, a 1px shadow ring). The rim art sits outside the bar and
+  the approved Nameplates probe): the bar inside the `frameThin` edge, in each
+  kind's **Border Style** and **Border Metal** (Mode-Round by default: Soft
+  round corners, a 1px Silver bevel, a 1px shadow ring). The rim art sits outside the bar and
   covers its own corners, so nothing is masked. Health fills in **Mode BG**
   on Mode BG (Slate); the cast bar has its own **Cast Bar** texture (**Mode
   Cast**) and the **Comet** spark on the fill's leading edge (a channel's on

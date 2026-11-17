@@ -14,7 +14,8 @@ You and your party (not a raid), one member under the next by default. Each
 member is:
 
 - **Bars**: health, a 1px black line and a 3px power bar inside the `group`
-  edge (docs/DESIGN_LANGUAGE.md: 1px Gunmetal, Round 4; the rim art covers the
+  edge (docs/DESIGN_LANGUAGE.md: **Border Style** and **Border Metal** on the
+  Layout tab, Mode-Blizz by default, a 1px Silver Specular band; the rim art covers the
   bars' corners, so nothing is masked). 150 × 34 health by default, Mode
   Glass on Mode BG (the owner's pick), **Spacing** 1: every size is whole pixels, so the rims
   sit exactly one pixel apart. **Arrange** Vertical or Horizontal, with its **Direction**. Foreground and background

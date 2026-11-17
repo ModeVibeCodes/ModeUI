@@ -135,6 +135,9 @@ local function Style(bar)
         buttons = spec.count, perLine = spec.count, orientation = upright and "vertical" or "horizontal", start = "TOPLEFT",
         width = size[1], height = size[2], spacing = 4,
         border = "mode", backgroundColor = Copy(Tone.mono.panel), showEmpty = true, backgroundOpacity = 100,
+        -- The buttons' border style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a
+        -- border"): Mode-Blizz in its own metal (owner, November 17, 2026).
+        edgeStyle = "blizz", edgeMetal = "default",
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = true,
         -- Paging: Action Bar 1 follows the game's own paging (stances, forms,
@@ -190,6 +193,7 @@ M.choices = {
     start = { { id = "TOPLEFT", label = "Top Left" }, { id = "TOPRIGHT", label = "Top Right" },
         { id = "BOTTOMLEFT", label = "Bottom Left" }, { id = "BOTTOMRIGHT", label = "Bottom Right" } },
     border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(), edgeMetal = addon.Style.EdgeMetalChoices(),
     procGlow = { { id = "mode", label = "Mode Glow" }, { id = "border", label = "Border" }, { id = "blizzard", label = "Blizzard" },
         { id = "none", label = "None" } },
     readyStyle = { { id = "glow", label = "Glow" }, { id = "border", label = "Border" } },

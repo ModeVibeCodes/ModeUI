@@ -104,11 +104,13 @@ M.choices = {
     attachPoint = { { id = "bottomright", label = "Below, Right Edges" }, { id = "bottomleft", label = "Below, Left Edges" },
         { id = "right", label = "Right Side" }, { id = "left", label = "Left Side" }, { id = "topright", label = "Above, Right Edges" } },
     fill = { { id = "standard", label = "Left to Right" }, { id = "reverse", label = "Right to Left" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 -- Setting key -> choice list.
 M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring", healthTextColor = "healthText",
     nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
-    fillDirection = "fill" }
+    fillDirection = "fill", edgeStyle = "edgeStyle", edgeMetal = "edgeMetal" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -164,7 +166,10 @@ local function Frame(side, extra)
         attach = false, attachPoint = "bottomright", attachOffsetX = 0, attachOffsetY = -2,
         -- Which way health and power fill (and drain). The Target runs the
         -- other way from the Player by default (owner, November 13, 2026).
-        fillDirection = "standard" }
+        fillDirection = "standard",
+        -- The frame's and its cast bar's border (docs/DESIGN_LANGUAGE.md,
+        -- "Choosing a border"): Mode-Blizz in its own metal (owner, November 17, 2026).
+        edgeStyle = "blizz", edgeMetal = "default" }
     for key, value in pairs(extra or {}) do frame[key] = value end
     return frame
 end

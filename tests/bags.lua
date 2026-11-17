@@ -281,6 +281,17 @@ world.run([==[
     -- Settings: live, validated.
     assert(M:SetOption('columns', 8) and frame.width == 2 * (g.border + g.pad) + 8 * 36 + 7 * 3, 'Columns')
     assert(not M:SetOption('columns', 40) and not M:SetOption('growFrom', 'CENTER') and not M:SetOption('slotColor', { 2, 0, 0 }), 'bad values refused')
+    -- Border Style and Border Metal (owner, November 17, 2026): the window and
+    -- its Sort menu in Mode-Thin, Steel by default; slots keep theirs; any
+    -- style keeps the window's size.
+    local edge, menuEdge, slotEdge = wp.modeEdge, menu.parts.modeEdge, art[axe].box.modeEdge
+    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and edge.styleId == 'thin' and edge:Metal() == Tone.metal.steel, 'Mode-Thin in Steel')
+    local width, height, slotStyle = frame.width, frame.height, slotEdge.styleId
+    assert(M:SetOption('edgeStyle', 'round') and edge.styleId == 'round' and menuEdge.styleId == 'round', 'Mode-Round: window and Sort menu')
+    assert(frame.width == width and frame.height == height and slotEdge.styleId == slotStyle, 'same size; slots keep their edge')
+    assert(M:SetOption('edgeMetal', 'gunmetal') and edge:Metal() == Tone.metal.gunmetal and menuEdge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
+    assert(M:SetOption('edgeStyle', 'thin') and M:SetOption('edgeMetal', 'default') and edge:Metal() == Tone.metal.steel)
     assert(M:SetOption('reagentSection', false) and M:SetOption('keyring', false))
     assert(not frame.labels[1].text:IsShown() and not frame.labels[2].text:IsShown(), 'sections off')
     assert(M.buttons[5][1]:IsShown() and not M.buttons[-2][1]:IsShown(), 'reagents join the bags; no keyring')
@@ -311,6 +322,7 @@ world.run([==[
     SlashCmdList.MODEUI(); addon:SelectConfigPage('bags')
     local page = M.page
     assert(page and page.columnsSlider and page.sortSelect and page.growPills and page.resetButton, 'page controls')
+    assert(page.borderStyle and page.borderMetal, 'Border Style and Border Metal on the Window tab')
     -- Sort on the page is a dropdown of the same orders.
     local select = page.sortSelect
     assert(select.label:GetText() == 'Bag Order', select.label:GetText())
@@ -362,6 +374,7 @@ H.Load({ saved = v2, before = STUBS }).run([==[
     assert(db.backgroundColor[1] == Tone.graphite.panel[1] and db.headerColor[1] == Tone.graphite.raised[1], 'Graphite window and header')
     assert(db.slotColor[1] == Tone.mono.panel[1] and db.slotOpacity == 100 and db.slotSize == 36 and db.fontMedia == 'Mode', 'Mode slots')
     assert(db.spacing == 6, 'a picked spacing stays')
+    assert(db.edgeStyle == 'thin' and db.edgeMetal == 'default', 'saved settings take the border defaults')
 ]==])
 local bad = world.saved()
 bad.profiles.Default.modules.bags.columns = 'many'

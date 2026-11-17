@@ -40,6 +40,12 @@ local Tone = {
     celadonInk = Hex("0E1510"),
     gunmetal = { light = Hex("5B5E63"), mid = Hex("46494D"), dark = Hex("33363A") },
     steel = { light = Hex("8C8F95"), mid = Hex("74777D"), dark = Hex("5B5E63") },
+    -- Border metals (Style.Edge), five tones each from the border study.
+    metal = {
+        silver = { hi = Hex("F2F4F6"), light = Hex("D9DCE0"), mid = Hex("9A9EA4"), dark = Hex("5C6066"), deep = Hex("3A3D41") },
+        steel = { hi = Hex("D4D7DC"), light = Hex("A3A6AB"), mid = Hex("6E7176"), dark = Hex("3D4044"), deep = Hex("26282B") },
+        gunmetal = { hi = Hex("A5A9AF"), light = Hex("7C8086"), mid = Hex("4E5156"), dark = Hex("2C2E31"), deep = Hex("1A1B1D") },
+    },
     shadow = { 0, 0, 0 },
     shadowAlpha = 0.82,
     softAlpha = 0.55,

@@ -162,6 +162,21 @@ world.run([==[
     assert(math.abs(box:GetHeight() - (M.db.enemy.healthHeight + 2)) < 1e-9 and Point(box.inner)[4] == 1, 'the bar one rim inside the box')
     assert(plate.castBox.edge.preset == 'frameThin' and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
     assert(plate.comet and plate.comet.head and plate.comet.trail, 'the Comet spark on the cast bar')
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Round in
+    -- its own metal (Silver) by default, per kind, health and cast bar together;
+    -- any style keeps the box's size.
+    local Metal = addon.Style.Tone.metal
+    assert(M.db.enemy.edgeStyle == 'round' and M.db.enemy.edgeMetal == 'default' and M.db.friendly.edgeStyle == 'round'
+        and M.db.friendly.edgeMetal == 'default', 'Mode-Round, the style\'s metal')
+    assert(box.edge.styleId == 'round' and box.edge:Metal() == Metal.silver and plate.castBox.edge.styleId == 'round', 'plates in Mode-Round, Silver')
+    local boxWidth, boxHeight, castHeight = box:GetWidth(), box:GetHeight(), plate.castBox:GetHeight()
+    assert(M:SetOption('enemy', 'edgeStyle', 'blizz') and box.edge.styleId == 'blizz' and plate.castBox.edge.styleId == 'blizz', 'Mode-Blizz')
+    assert(box:GetWidth() == boxWidth and box:GetHeight() == boxHeight and plate.castBox:GetHeight() == castHeight, 'same size')
+    assert(M:SetOption('enemy', 'edgeMetal', 'gunmetal') and box.edge:Metal() == Metal.gunmetal and plate.castBox.edge:Metal() == Metal.gunmetal, 'Gunmetal')
+    assert(M.db.friendly.edgeStyle == 'round' and M.db.friendly.edgeMetal == 'default', 'per kind')
+    assert(not M:SetOption('enemy', 'edgeStyle', 'nope') and not M:SetOption('enemy', 'edgeMetal', 'gold') and M.db.enemy.edgeStyle == 'blizz', 'unknown styles are refused')
+    assert(M:SetOption('enemy', 'edgeStyle', 'round') and M:SetOption('enemy', 'edgeMetal', 'default') and box.edge.styleId == 'round'
+        and box.edge:Metal() == Metal.silver)
     -- The indicator reads level, classification and quest from the unit.
     local P1 = plate.indicatorParts
     assert(not P1.level:IsShown() and not P1.quest:IsShown() and M:IndicatorRoom(plate, 'LEFT') == 0, 'nothing known, nothing shown')
@@ -658,6 +673,7 @@ world.run([==[
     local page = addon.configWindow.pages.nameplates
     local view = page.configPreview
     assert(view and page.previewArea:IsShown() and not page.testDisplayButton:IsShown(), 'preview without a screen test')
+    assert(page.borderStyleSelect and page.borderMetalSelect, 'Border Style and Border Metal on the Nameplates tab')
     local sample, friend = view.plates.enemy, view.plates.friendly
     assert(sample:IsShown() and not friend:IsShown() and sample:GetParent() == view.frame, 'only the enemy sample while editing Enemy')
     local at = Point(sample)
@@ -1122,9 +1138,11 @@ H.Load({ before = STUBS, saved = v9 }).run([==[
 local v10 = world.saved()
 np = v10.profiles.Default.modules.nameplates
 np.version, np.enemy.backgroundOpacity, np.friendly.backgroundOpacity = 10, 100, 45
+np.enemy.edgeStyle, np.enemy.edgeMetal, np.friendly.edgeStyle, np.friendly.edgeMetal = nil, nil, nil, nil
 H.Load({ before = STUBS, saved = v10 }).run([==[
     local db = addon.Nameplates.db
     assert(db.version == 11 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 45, '100 becomes 60')
+    assert(db.enemy.edgeStyle == 'round' and db.friendly.edgeMetal == 'default', 'the border keys arrive with their defaults')
 ]==], "nameplates_v10")
 
 -- Invalid saved settings stop validation instead of being reset.

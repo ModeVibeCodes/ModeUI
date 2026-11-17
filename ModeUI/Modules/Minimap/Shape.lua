@@ -27,13 +27,23 @@ function M.BorderColorFor(key)
     return M.BORDER_COLORS[key]
 end
 function M:BorderColor() return M.BorderColorFor(self.db.borderColor) end
--- The rim's tint: nil for Gunmetal (the edge's own metal).
+-- The rim's tint: nil for `rim` (the edge's own lit metal); any other Border
+-- Color paints it one flat color.
 function M:RimTint()
     if self.db.borderColor == "rim" then return nil end
     return self:BorderColor()
 end
--- Paints a Mode edge with the Map Border or Button Border rim and Border Color.
+-- The metal the edges are drawn in: Border Metal, else Border Style's own
+-- (the `rim` swatch shows its mid tone).
+function M:EdgeMetal()
+    local db, metals = self.db, Style.Tone.metal
+    local style = Style.EDGE_STYLES[Style.EdgeStyle(db.edgeStyle) or "blizz"]
+    return metals[db.edgeMetal] or metals[style.metal]
+end
+-- Paints a Mode edge in Border Style and Border Metal with the Map Border or
+-- Button Border rim and Border Color (the map, its bar and every tile).
 function M:PaintEdge(edge, choice)
+    edge:SetStyle(self.db.edgeStyle, self.db.edgeMetal)
     edge:SetRim(self.BORDER_PIXELS[choice] or 2)
     edge:SetTint(self:RimTint())
     edge:Layout()

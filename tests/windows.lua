@@ -234,6 +234,19 @@ world.run([==[
     assert(FriendsFrameCloseButton.normal.alpha == 0 and close.icon.texture:find('Close') and FriendsFrameCloseButton:GetWidth() == 18)
     local p = Point(FriendsFrameCloseButton); assert(p[1] == 'TOPRIGHT' and p[4] == -5 and p[5] == -5, '2px inside the edge')
     assert(close.modeEdge.preset == 'control')
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Thin in
+    -- Steel by default; a switch restyles every window edge in place, sizes
+    -- unchanged; controls keep their role's border.
+    local Metal = Tone.metal
+    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and parts.modeEdge.styleId == 'thin'
+        and parts.modeEdge:Metal() == Metal.steel, 'windows in Mode-Thin, Steel')
+    local reach, width = parts.modeEdge:Outset(), FriendsFrame:GetWidth()
+    assert(M:SetOption('edgeStyle', 'round') and parts.modeEdge.styleId == 'round' and parts.modeEdge:Metal() == Metal.silver, 'Mode-Round, its own metal')
+    assert(parts.modeEdge:Outset() == reach and FriendsFrame:GetWidth() == width and Point(parts.edgeFrame)[4] == 3, 'same reach, same size')
+    assert(close.modeEdge.styleId == 'thin', 'controls keep their role\'s style')
+    assert(M:SetOption('edgeMetal', 'gunmetal') and parts.modeEdge:Metal() == Metal.gunmetal, 'Gunmetal')
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
+    assert(M:SetOption('edgeStyle', 'thin') and M:SetOption('edgeMetal', 'default') and parts.modeEdge.styleId == 'thin' and parts.modeEdge:Metal() == Metal.steel)
     FriendsFrameCloseButton.scripts.OnEnter(FriendsFrameCloseButton)
     assert(close.icon.vertexColor[1] == Tone.ivory[1] and Lit(close), 'Ivory cross and line on hover')
     -- Inset: its face sits on its parent, under the content; the card edge frames it.
@@ -473,6 +486,7 @@ world.run([==[
     assert(page and page:IsShown() and window.moduleHeader.title:GetText() == 'Windows' and page.tabContentTop, 'tabs pinned above the cards')
     local count = 0; for _ in pairs(page.windowRows) do count = count + 1 end
     assert(count == #M.registry and next(page.expandedWindows) == nil, 'one row per window, all collapsed')
+    assert(page.borderStyle:IsVisible() and page.borderMetal:IsVisible(), 'Border Style and Border Metal on the Look tab')
     page:SelectSectionTab(2)
     local socialRow = page.windowRows.social
     local scaleRow = page.windowLooks.social.scale
@@ -498,6 +512,7 @@ world.run([==[
     M.Initialize(old)
     assert(old.version == 3 and old.borderColor == nil and old.windows.social == false and old.backgroundOpacity == 80)
     assert(old.looks.social.scale == 100 and old.style == 'modeui' and old.charStatList.mainStat, 'new settings filled in')
+    assert(old.edgeStyle == 'thin' and old.edgeMetal == 'default', 'Border Style and Border Metal filled in')
     -- Version 2: values at their old defaults take the Mode ones; picks stay.
     local two = { version = 2, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 94, fontMedia = 'Expressway',
         borderColor = { 1, 0, 0 }, borderSize = 3, looks = { social = { custom = true, backgroundOpacity = 94, border = true, titleBar = true, scale = 110 } } }

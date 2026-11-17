@@ -235,6 +235,12 @@ function M:BuildLookTab(ui)
     ui.Tab("Look", function()
         page:Group(L["Border"])
         page.borderPills = ui.Pills("Border", M.choices.border, function() return db().border end, ui.Set("border")); ui.Mark("look")
+        -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+        ui.When(function() return db().border ~= "none" end, function()
+            page.borderStylePicker, page.borderMetalPicker = W.BorderPickers(page,
+                { get = function() return db().edgeStyle end, set = ui.Set("edgeStyle") },
+                { get = function() return db().edgeMetal end, set = ui.Set("edgeMetal") })
+        end)
         page:Group(L["Background"])
         local background = ui.Columns({ "Background Color", "Background Opacity" })
         ui.Color(background[1], "backgroundColor")

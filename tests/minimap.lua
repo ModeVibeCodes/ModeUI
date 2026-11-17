@@ -222,7 +222,24 @@ world.run([==[
     assert(M:SetOption('borderColor', 'accent') and M.edge.tint[1] == Tone.ivory[1] and tiles.tracking.parts.modeEdge.tint[1] == Tone.ivory[1], 'Ivory rims')
     assert(M:SetOption('borderColor', 'class') and M.edge.tint ~= nil, 'the class color')
     M:SetOption('size', 200); M:SetOption('difference', 16); M:SetOption('border', 'mode')
-    M:SetOption('borderColor', 'rim'); assert(M.edge.tint == nil and M.edge.rim == 2, 'Gunmetal again')
+    M:SetOption('borderColor', 'rim'); assert(M.edge.tint == nil and M.edge.rim == 2, 'the metal again, lit')
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Blizz in
+    -- Silver by default on the map, its bar and every tile; a switch restyles
+    -- them in place, sizes unchanged; Border Color still tints over any style.
+    local Metal, tileEdge, barEdge = Tone.metal, tiles.tracking.parts.modeEdge, M.bar.parts.modeEdge
+    assert(M.db.edgeStyle == 'blizz' and M.db.edgeMetal == 'default' and M.edge.styleId == 'blizz' and M.edge:Metal() == Metal.silver
+        and tileEdge.styleId == 'blizz' and barEdge.styleId == 'blizz', 'Mode-Blizz, Silver')
+    assert(M:EdgeMetal() == Metal.silver, 'the Border Metal swatch shows Silver')
+    local width, height, reach, moverHeight = M.map:GetWidth(), M.map:GetHeight(), M.edge:Outset(), M.mover:GetHeight()
+    assert(M:SetOption('edgeStyle', 'round') and M.edge.styleId == 'round' and tileEdge.styleId == 'round', 'Mode-Round on the map and tiles')
+    assert(M:SetOption('textLayout', 'bar') and barEdge.styleId == 'round', 'and the bar as it shows')
+    M:SetOption('textLayout', 'map')
+    assert(M.map:GetWidth() == width and M.map:GetHeight() == height and M.edge:Outset() == reach and M.mover:GetHeight() == moverHeight and M.edge.rim == 2, 'same size, same rim')
+    assert(M:SetOption('edgeMetal', 'gunmetal') and M.edge:Metal() == Metal.gunmetal and tileEdge:Metal() == Metal.gunmetal and M:EdgeMetal() == Metal.gunmetal)
+    assert(M:SetOption('borderColor', 'accent') and M.edge.tint[1] == Tone.ivory[1] and M.edge.styleId == 'round', 'Border Color tints any style')
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
+    M:SetOption('borderColor', 'rim'); M:SetOption('edgeStyle', 'blizz'); M:SetOption('edgeMetal', 'default')
+    assert(M.edge.styleId == 'blizz' and M.edge:Metal() == Metal.silver and M.edge.tint == nil)
 
     -- Edit Mode: three stand-ins; the eye shows to be moved.
     QueueStatusButton:Hide()
@@ -243,11 +260,14 @@ world.run([==[
     assert(table.concat(tabs, ',') == 'Shape,Text,Buttons,Behavior', 'four tabs')
     assert(page.sizeSlider and #page.differenceButtons == 7 and page.cornerButtons == nil and #page.borderButtons == 2)
     assert(#page.swatches == 5 and page.textToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
+    assert(page.borderStyle:IsShown() and page.borderStyle.label:GetText() == 'Mode-Blizz' and page.borderMetal.label:GetText() == 'Default',
+        'Border Style and Border Metal in the Border group')
     page.differenceButtons[2]:GetScript('OnClick')(); assert(M.db.difference == 8 and Minimap.mask:find('Mask%-200%-8%-0$'))
     local picker = page.buttonRows.mail.picker
     assert(picker[1].label:GetText() == 'Top Left' and picker[4].label:GetText() == 'Bottom Right', 'the corners by name (never blank in the dropdown)')
     picker[1]:GetScript('OnClick')(); assert(M.db.buttons.mail.corner == 'TOPLEFT')
     page.swatches[2]:GetScript('OnClick')(); assert(M.db.borderColor == 'black')
+    assert(page.swatches[1].color.vertexColor[1] == Tone.metal.silver.mid[1], 'the first swatch shows the metal drawn')
     window:Hide()
 
     addon:SetModuleEnabled('minimap', false)
@@ -266,6 +286,7 @@ world.run([==[
     assert(one.fontMedia == 'Mode' and one.buttonSize == 26 and one.buttonSpacing == 5, 'defaults follow; a picked spacing stays')
     local thin = { version = 1, border = 'thin', borderColor = 'class' }
     M.Initialize(thin); assert(thin.border == 'thin' and thin.borderColor == 'class', 'Thin and Class Color stay')
+    assert(one.edgeStyle == 'blizz' and one.edgeMetal == 'default' and thin.edgeStyle == 'blizz', 'Border Style and Border Metal filled in')
 ]==], "minimap")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

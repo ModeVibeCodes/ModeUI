@@ -42,8 +42,10 @@ end
 -- edge and the tiles' `group` edge take either).
 local Tone = addon.Style.Tone
 M.BORDER_PIXELS = { thin = 1, mode = 2 }
--- Border colors, the rim's tint: Gunmetal (the edge's own, no tint), black,
--- Slate, Ivory, or the player's class color. Each is a swatch color too.
+-- Border colors, the rim's tint: none (`rim`: the edge's own lit Border
+-- Metal), black, Slate, Ivory, or the player's class color. Each is a swatch
+-- color too (`rim`'s swatch shows the metal drawn; this Gunmetal is the class
+-- color's fallback).
 M.BORDER_COLORS = { rim = Tone.gunmetal.mid, black = Tone.shadow, slate = Tone.slate, accent = Tone.ivory }
 -- Zone text by the zone's PvP type, in the gameplay reaction tones
 -- (sanctuaries Ivory); White (Text bright) otherwise.
@@ -79,6 +81,9 @@ M.defaults = {
     size = 200, difference = 16,
     -- Border: the map's edge (and the text bar's), the tiles' edges, their rim color.
     border = "mode", buttonBorder = "thin", borderColor = "rim",
+    -- Border Style and Border Metal of every edge here (docs/DESIGN_LANGUAGE.md,
+    -- "Choosing a border"): Mode-Blizz in its own metal (owner, November 17, 2026).
+    edgeStyle = "blizz", edgeMetal = "default",
     -- Text: layout, zone color, clock, coordinates.
     textLayout = "map", zoneColor = "pvp", clock = true, coords = true, clockFormat = "24", textSize = 13,
     font = "game", fontMedia = addon.Style.FONT_DEFAULT,
@@ -103,13 +108,15 @@ M.choices = {
         { id = 32, label = "32 px" }, { id = 40, label = "40 px" }, { id = 48, label = "48 px" } },
     border = { { id = "thin", label = "Thin" }, { id = "mode", label = "Mode" } },
     buttonBorder = { { id = "thin", label = "Thin" }, { id = "mode", label = "Mode" } },
-    borderColor = { { id = "rim", label = "Gunmetal" }, { id = "black", label = "Black" }, { id = "slate", label = "Slate" },
+    borderColor = { { id = "rim", label = "Metal" }, { id = "black", label = "Black" }, { id = "slate", label = "Slate" },
         { id = "accent", label = "Ivory" }, { id = "class", label = "Class Color" } },
     textLayout = { { id = "map", label = "On Map" }, { id = "bar", label = "Bar Below" }, { id = "hover", label = "On Hover" } },
     zoneColor = { { id = "pvp", label = "PvP Status" }, { id = "white", label = "White" } },
     clockFormat = { { id = "24", label = "24 Hour" }, { id = "12", label = "12 Hour" } },
     addonButtons = { { id = "always", label = "Always" }, { id = "mouseover", label = "Mouseover" }, { id = "hidden", label = "Hidden" } },
     zoomReset = { { id = 0, label = "Off" }, { id = 10, label = "10 s" }, { id = 30, label = "30 s" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 local ALLOWED = {}
 for key, list in pairs(M.choices) do

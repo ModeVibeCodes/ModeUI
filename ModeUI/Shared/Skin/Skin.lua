@@ -133,7 +133,9 @@ local TILED = { Panel = true, Title = true }
 -- A Mode box for `host`: a face texture (on `opts.faceHost`, default the
 -- host, at `opts.layer`/`opts.sublevel`) and, with `preset`, a Style.Edge on
 -- a frame of its own that follows the painted box (`opts.level` levels above
--- the host). Made once; returns the host's parts.
+-- the host). `opts.style`/`opts.metal`: the edge's Border Style and Border
+-- Metal (a module's choice; later changes go through parts.modeEdge:SetStyle).
+-- Made once; returns the host's parts.
 function Skin.Box(host, preset, opts)
     opts = opts or {}
     local parts = Skin.parts[host] or { regions = {} }
@@ -157,7 +159,7 @@ function Skin.Box(host, preset, opts)
         -- `opts.inset`: pixels the edge sits inside the box (its reach puts
         -- the whole border within the box).
         parts.edgeInset = opts.inset or 0
-        parts.modeEdge = Style.Edge(frame, preset, { level = 1 })
+        parts.modeEdge = Style.Edge(frame, preset, { level = 1, style = opts.style, metal = opts.metal })
     end
     return parts
 end

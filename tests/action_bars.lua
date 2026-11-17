@@ -73,6 +73,20 @@ world.run([==[
     assert(not M:SetOption('bar1', 'borderSize', 1) and not M:SetOption('bar1', 'border', 'rounded'), 'Border Size retired; Mode or None')
     assert(M:SetOption('bar1', 'border', 'none') and not art.edge.holder:IsShown() and bar1.width == 12 * 44 - 4, 'None: no edge, no room for it')
     assert(M:ResetBar('bar1') and M.db.bar1.border == 'mode' and M.db.bar1.backgroundOpacity == 100 and art.edge.holder:IsShown())
+    -- Border Style and Border Metal (owner, November 17, 2026): every bar in
+    -- Mode-Blizz in its own metal; any style keeps the layout; per bar.
+    for _, bar in ipairs(M.bars) do assert(M.db[bar].edgeStyle == 'blizz' and M.db[bar].edgeMetal == 'default', bar .. ' in Mode-Blizz') end
+    local art2 = M.art[MultiBarBottomLeftButton1]
+    assert(art.edge.styleId == 'blizz' and art.edge:Metal() == Tone.metal.silver and slotArt.edge.styleId == 'blizz', 'buttons and slots in Mode-Blizz, Silver')
+    local wide, tall, step = bar1.width, bar1.height, Point(ActionButton2)[4]
+    assert(M:SetOption('bar1', 'edgeStyle', 'round') and art.edge.styleId == 'round' and slotArt.edge.styleId == 'round', 'Mode-Round')
+    assert(bar1.width == wide and bar1.height == tall and Point(ActionButton2)[4] == step and art.edge:Outset() == 3, 'same layout, same reach')
+    assert(art2.edge.styleId == 'blizz', 'other bars keep their own')
+    assert(M:SetOption('bar1', 'edgeMetal', 'gunmetal') and art.edge:Metal() == Tone.metal.gunmetal and slotArt.edge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
+    assert(not M:SetOption('bar1', 'edgeStyle', 'nope') and not M:SetOption('bar1', 'edgeMetal', 'gold') and not M:SetOption('bar1', 'edgeStyle', 'none'), 'unknown styles and metals are refused')
+    assert(M.db.bar1.edgeStyle == 'round' and M.db.bar1.edgeMetal == 'gunmetal')
+    assert(M:SetOption('bar1', 'border', 'none') and not art.edge.holder:IsShown() and bar1.width == 12 * 44 - 4, 'None still hides the edge')
+    assert(M:ResetBar('bar1') and art.edge.styleId == 'blizz' and art.edge:Metal() == Tone.metal.silver and art.edge.holder:IsShown())
 
     -- Text: font, tucked into its corner, keybind color kept unless out of range.
     local hotkey = ActionButton1.HotKey
@@ -448,6 +462,7 @@ world.run([==[
     assert(ActionButton2.SpellActivationAlert:GetAlpha() == 0, "Blizzard's alert faded")
     assert(M:SetOption('bar1', 'procGlow', 'mode') and proc.soft:IsShown() and edge2.tint == nil, 'Mode Glow: a soft glow, the metal rim')
     assert(M:SetOption('bar1', 'procGlow', 'border') and M:SetOption('bar1', 'procColor', { 0, 1, 0 }) and edge2.tint[2] == 1, 'proc color')
+    assert(M:SetOption('bar1', 'edgeStyle', 'thin') and edge2.styleId == 'thin' and edge2.tint[2] == 1 and M:SetOption('bar1', 'edgeStyle', 'blizz'), 'a proc rim survives a style change')
     assert(M:SetOption('bar1', 'procGlow', 'blizzard') and not proc:IsShown() and ActionButton2.SpellActivationAlert:GetAlpha() == 1, 'Blizzard style')
     assert(M:SetOption('bar1', 'procGlow', 'none') and not proc:IsShown() and ActionButton2.SpellActivationAlert:GetAlpha() == 0, 'None')
     assert(M:SetOption('bar1', 'procGlow', 'mode') and proc:IsShown())
@@ -580,11 +595,20 @@ world.run([==[
     assert(M.db.bar1.cooldownDesaturate == false, 'Full Color keeps the icon as it is')
     pills[1].scripts.OnClick(pills[1])
     assert(M.db.bar1.cooldownDesaturate == true, 'Desaturate turns it gray')
+    -- Border Style and Border Metal sit in Border on the Buttons tab, while the border shows.
+    local borderGroup, pickerRow
+    for _, row in ipairs(page.rows) do
+        if row.settingsGroupTitle == 'Border' and row.section.title == 'Buttons' then borderGroup = row
+        elseif borderGroup and not pickerRow and row.card == borderGroup.card and row.visibleWhen then pickerRow = row end
+    end
+    assert(page.borderStylePicker and page.borderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border Style and Border Metal in Border')
+    assert(M:SetOption('bar1', 'border', 'none') and not pickerRow.visibleWhen() and M:SetOption('bar1', 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
 
     -- Copy and reset.
-    assert(M:SetOption('bar1', 'border', 'none') and M:CopyStyleToAll('bar1'))
+    assert(M:SetOption('bar1', 'border', 'none') and M:SetOption('bar1', 'edgeStyle', 'round') and M:CopyStyleToAll('bar1'))
+    assert(M.db.bar5.edgeStyle == 'round', 'Border Style copies with the look')
     assert(M.db.bar5.border == 'none' and M.db.bar5.width == 30 and M.db.bar5.orientation == 'vertical' and M.db.pet.buttons == 10, 'look copied, shape kept')
-    assert(M:ResetBar('bar5') and M.db.bar5.width == 40 and M.db.bar5.border == 'mode')
+    assert(M:ResetBar('bar5') and M.db.bar5.width == 40 and M.db.bar5.border == 'mode' and M.db.bar5.edgeStyle == 'blizz')
 
     -- Switching off gives everything back; the look returns on reload.
     bar1:SetAttribute('modeshown', 'show') -- as the state handler would
@@ -604,6 +628,7 @@ restored.run([==[
     assert(M.enabled and M.db.bar1.width == 30 and M.db.bar2.buttons == 6 and M.db.bar3.border == 'none', 'settings persist')
     assert(addon.PositionManager:GetPosition('actionBarsBar1').y == 81, 'position persists')
     assert(ActionButton1:GetParent() == ModeUIActionBar1 and ActionButton1.width == 30)
+    assert(M.db.bar1.edgeStyle == 'round' and M.db.bar3.edgeStyle == 'round' and M.art[ActionButton1].edge.styleId == 'round', 'Border Style persists')
 ]==], "restore")
 
 -- Version 1: 42x38 buttons, white cooldown numbers, Fade Until Mouseover and
@@ -657,6 +682,22 @@ H.Load({ before = STUBS, saved = v5 }).run([==[
     assert(b.width == 50 and b.border == 'none' and b.procGlow == 'blizzard' and b.backgroundOpacity == 40 and b.hotkeySize == 12, 'picked values stay')
     assert(M.db.micro.width == 32 and M.db.micro.height == 36, 'the micro menu keeps its size (not an action button)')
 ]==], "migrate v5")
+
+-- A saved version 6 profile from before Border Style and Border Metal takes
+-- their defaults; nothing else changes.
+local noEdge = restored.saved()
+for _, style in pairs(noEdge.profiles.Default.modules.actionBars) do
+    if type(style) == "table" then style.edgeStyle, style.edgeMetal = nil, nil end
+end
+H.Load({ before = STUBS, saved = noEdge }).run([==[
+    local M = addon.ActionBars
+    assert(M.db.version == 6 and M.db.bar1.width == 30 and M.db.bar3.border == 'none', 'nothing reset')
+    for _, bar in ipairs(M.bars) do assert(M.db[bar].edgeStyle == 'blizz' and M.db[bar].edgeMetal == 'default', bar .. ' takes the default border') end
+    assert(M.art[ActionButton1].edge.styleId == 'blizz')
+]==], "fill border style")
+local badEdge = restored.saved()
+badEdge.profiles.Default.modules.actionBars.bar2.edgeStyle = "nope"
+assert(not pcall(H.Load, { before = STUBS, saved = badEdge }), "an unknown saved Border Style is refused")
 
 -- Bad saved data stops startup rather than being reset.
 local saved = restored.saved()

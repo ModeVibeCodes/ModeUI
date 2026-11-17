@@ -91,6 +91,8 @@ function M.LayoutBox(box, width, barHeight, px, background, db, texture)
     local backgroundTexture = db and db.backgroundTexture or "media:Mode BG"
     Kit.BarBackground(bar, backgroundTexture, width - 2 * inset, barHeight, px)
     Tint(bar.bg, Kit.BarBackgroundColor(backgroundTexture), background or 1)
+    -- Border Style and Border Metal (every style reaches the same: the box keeps its size).
+    if db then box.edge:SetStyle(db.edgeStyle, db.edgeMetal) end
     box.edge.holder:SetFrameLevel(bar:GetFrameLevel() + 2)
     box.edge:Layout()
     return height

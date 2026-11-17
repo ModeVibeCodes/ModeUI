@@ -276,14 +276,18 @@ function M:CreateConfigPage(parent)
         local background = Columns({ "Background Color", "Background Opacity" }); Mark("frame")
         Color(background[1], "backgroundColor")
         page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
-        Note("The edge is the Mode window edge, as on every ModeUI window, so it has no settings. A see-through window has no drop shadow. A one-pixel line sits under the header.", 32)
+        page:Group(L["Border"])
+        page.borderStyle, page.borderMetal = W.BorderPickers(page,
+            { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
+            { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
+        Note("The window's border, also on its breakdown and menu. A see-through window has no drop shadow. A one-pixel line sits under the header.", 32)
     end)
 
     -- Copy & Apply: the window in Editing is the source. Pick what to copy
     -- (All, Window, Bars or Text), tick windows, then apply.
     local SCOPE_NOTES = {
         all = "Everything: size, bars, text, header and frame. Each window keeps its own meter, fight, show settings, group and matching.",
-        window = "The window itself, with its header: width, padding, opacity, background, and the header's texture, height, color, title and buttons.",
+        window = "The window itself, with its header: width, padding, opacity, background, border, and the header's texture, height, color, title and buttons.",
         bars = "The bars: row height, spacing, textures, opacity, colors, icon and Always Show Me.",
         text = "Every text: the name, value, title and timer fonts, sizes, outlines, shadows and colors, with Text Inset, Show Rank, numbers, Decimals, Separator and Show Percent.",
     }

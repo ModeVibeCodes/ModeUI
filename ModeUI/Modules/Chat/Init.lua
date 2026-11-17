@@ -51,6 +51,10 @@ M.defaults = {
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true,
     -- Window
     backgroundColor = Copy(M.BACKGROUND_COLOR), backgroundOpacity = 60,
+    -- The window's border (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
+    -- Mode-Thin in its own metal (owner, November 17, 2026). Tabs, buttons and
+    -- the field keep their `control` edge. New keys: filled from these defaults.
+    edgeStyle = "thin", edgeMetal = "default",
     -- Edit box: inside the edge at the bottom or top, or below the window.
     editPosition = "bottom", editHeight = 24, editGap = 4,
     -- Tabs: Glass (true) or Solid; others tuck down Tuck Depth. awayTabOpacity
@@ -71,4 +75,6 @@ M.ranges = { backgroundOpacity = { 0, 100, 5 }, tabFontSize = { 8, 20, 1 },
 M.choices = {
     buttons = { { id = "compartment", label = "Compartment" }, { id = "hidden", label = "Hidden" } },
     editPosition = { { id = "bottom", label = "Bottom" }, { id = "top", label = "Top" }, { id = "below", label = "Below" } },
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }

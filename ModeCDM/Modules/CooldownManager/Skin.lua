@@ -70,8 +70,8 @@ M.FadeRegion = Fade
 
 -- The Mode icon art (docs/DESIGN_LANGUAGE.md, "Cooldown icons"): a Mode
 -- Button face in Background Color behind the icon, and the `frameThin` edge
--- outside the host (1px Gunmetal, edge-lit, with its shadow ring; the layout
--- leaves room for it). The rim covers its own corners: no mask goes on
+-- outside the host (1px, in Border Style and Border Metal, with its shadow
+-- ring; the layout leaves room for it). The rim covers its own corners: no mask goes on
 -- Blizzard's textures. Border None hides the edge.
 function M.IconArt(host)
     local art = { face = host:CreateTexture(nil, "BACKGROUND", nil, -7), edge = Style.Edge(host, M.EDGE) }
@@ -81,6 +81,7 @@ end
 function M.PaintIconArt(art, host, style)
     art.face:ClearAllPoints(); art.face:SetAllPoints(host)
     Style.Paint(art.face, style.backgroundColor, style.backgroundOpacity / 100)
+    art.edge:SetStyle(style.edgeStyle, style.edgeMetal)
     art.edge:SetShown(style.border ~= "none")
     art.edge:Layout()
 end

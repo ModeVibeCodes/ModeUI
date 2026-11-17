@@ -107,6 +107,8 @@ function M:LayoutWindow(frame)
     -- The Mode window on the box; no soft drop under a see-through fill.
     local alpha = self.db.backgroundOpacity / 100
     Skin.PaintBox(parts, box, "Panel", self.db.backgroundColor, alpha, true)
+    -- Border Style and Border Metal; every style has the same reach.
+    parts.modeEdge:SetStyle(self.db.edgeStyle, self.db.edgeMetal)
     parts.modeEdge:SetDrop(alpha >= 1)
     self:LayoutEditBox(frame, box, px, rim)
     self:PlaceScrollBar(frame)

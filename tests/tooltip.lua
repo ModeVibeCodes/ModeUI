@@ -174,6 +174,16 @@ world.run([==[
     assert(M:SetOption('border', false) and not parts.modeEdge.holder:IsShown() and not parts.modeEdge.below:IsShown(), 'Border off: no edge')
     assert(Point(parts.face)[4] == 0, 'the face to the tooltip\'s sides without it')
     M:ResetToDefaults(); assert(M.db.backgroundOpacity == 92 and M.db.border and M.db.npcNameColor == 'reaction')
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Thin in
+    -- Steel by default; a switch restyles the edge in place, size unchanged.
+    local Metal, edge = Tone.metal, parts.modeEdge
+    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and edge.styleId == 'thin' and edge:Metal() == Metal.steel, 'Mode-Thin, Steel')
+    local reach, width = edge:Outset(), GameTooltip:GetWidth()
+    assert(M:SetOption('edgeStyle', 'blizz') and edge.styleId == 'blizz' and edge:Metal() == Metal.silver, 'Mode-Blizz, its own metal')
+    assert(edge:Outset() == reach and GameTooltip:GetWidth() == width and Point(parts.edgeFrame)[4] == 3, 'same reach, same size')
+    assert(M:SetOption('edgeMetal', 'gunmetal') and edge:Metal() == Metal.gunmetal and Skin.parts[ItemRefTooltip].modeEdge:Metal() == Metal.gunmetal, 'every tooltip')
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'blizz', 'unknown styles are refused')
+    M:ResetToDefaults(); assert(edge.styleId == 'thin' and edge:Metal() == Metal.steel, 'reset: Mode-Thin again')
 
     SlashCmdList.MODEUI()
     local window = addon.configWindow
@@ -182,6 +192,9 @@ world.run([==[
     local page = window.pages.tooltip
     assert(page and page:IsShown() and page.tabContentTop and page.positionPills and page.combatToggles and window.moduleHeader.title:GetText() == 'Tooltip')
     assert(page.playerNamePills and page.npcNamePills and page.levelPills and page.classTextPills and page.questToggles and page.minWidthSlider)
+    assert(page.borderStyle:IsVisible() and page.borderMetal:IsVisible(), 'Border Style and Border Metal with Border on')
+    M:SetOption('border', false); assert(not page.borderStyle:IsVisible(), 'hidden with Border off')
+    M:SetOption('border', true)
     window:Hide()
     M:SetOption('anchorPoint', 'TOP')
 
@@ -194,6 +207,7 @@ world.run([==[
     M.Initialize(old)
     assert(old.version == 5 and old.backgroundColor[1] == G.panel[1] and old.healthBar == nil and old.healthColor == nil)
     assert(old.classBorder == false and old.borderSize == nil, 'version 2 defaults: no class color; the size went with version 5')
+    assert(old.edgeStyle == 'thin' and old.edgeMetal == 'default', 'Border Style and Border Metal filled in')
     -- Version 3 -> 4: a fill still at the old health color (#1C1E21) takes #131212 (then Graphite).
     local three = { version = 3, backgroundColor = { 28 / 255, 30 / 255, 33 / 255 } }
     M.Initialize(three); assert(three.version == 5 and three.backgroundColor[1] == G.panel[1], 'the old health color follows')

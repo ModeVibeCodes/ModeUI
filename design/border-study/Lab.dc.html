@@ -147,7 +147,7 @@ a{color:#EFE6D2}a:hover{color:#FFFFFF}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"metal":{"editor":"enum","options":["steel","gunmetal","silver","iron","cobalt","bronze","gold"],"default":"steel"},"light":{"editor":"enum","options":["top","polished","bevel","specular","edge","horizon"],"default":"top"},"$preview":{"width":1400,"height":800}}'>
+<script type="text/x-dc" data-dc-script data-props="{&quot;metal&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;steel&quot;,&quot;gunmetal&quot;,&quot;silver&quot;,&quot;iron&quot;,&quot;cobalt&quot;,&quot;bronze&quot;,&quot;gold&quot;],&quot;default&quot;:&quot;silver&quot;},&quot;light&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;top&quot;,&quot;polished&quot;,&quot;bevel&quot;,&quot;specular&quot;,&quot;specular0&quot;,&quot;edge&quot;,&quot;horizon&quot;],&quot;default&quot;:&quot;specular&quot;},&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:800}}">
 class Component extends DCLogic {
   renderVals() {
     var SH = 'rgba(0,0,0,0.85)';
@@ -171,7 +171,10 @@ class Component extends DCLogic {
       { id: 'bevel', name: 'Bevel', note: 'Bevel: the 2px band split in two, a lit outer lip over a shaded inner row, so the rim reads raised.',
         heavy: function (m) { return [{ w: 1, bg: lg([m.hi, m.light + ' 40%', m.mid]) }, { w: 1, bg: lg([m.mid, m.dark + ' 50%', m.deep]) }, { w: 1, bg: '#000000' }]; },
         thin: function (m) { return [{ w: 1, bg: lg([m.hi, m.mid]) }]; } },
-      { id: 'specular', name: 'Specular band', note: 'Specular band: a narrow highlight a fifth of the way down, as if lit from above and in front.',
+      { id: 'specular', name: 'Specular band', note: 'Specular band (revised): the narrow highlight a fifth of the way down, then the band dips dark through the middle and climbs back to light metal at the bottom, so the bottom edge stays lit and never melts into a dark frame.',
+        heavy: function (m) { return [{ w: 2, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 32%', m.dark + ' 56%', m.mid + ' 82%', m.light]) }, { w: 1, bg: '#000000' }]; },
+        thin: function (m) { return [{ w: 1, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 34%', m.dark + ' 58%', m.light]) }]; } },
+      { id: 'specular0', name: 'Specular (original)', note: 'Specular (original): the first version, fading to the deepest tone at the bottom. Kept to compare with the revised band.',
         heavy: function (m) { return [{ w: 2, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 32%', m.dark + ' 70%', m.deep]) }, { w: 1, bg: '#000000' }]; },
         thin: function (m) { return [{ w: 1, bg: lg([m.mid, m.hi + ' 16%', m.mid + ' 34%', m.dark]) }]; } },
       { id: 'edge', name: 'Edge catch', note: 'Edge catch: only the very top row catches the light; the rest of the band is mid metal fading dark.',

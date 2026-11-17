@@ -3,11 +3,10 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 16, 2026 (Phases 0-8
+machine or in a new session. Last updated November 17, 2026 (Phases 0-8
 built and confirmed November 15. The revisions and tweaks phase has started:
-the first revision, a more detailed border, is in design study; see
-"Revision 1: borders" below). Next: the owner picks the border's metal and
-lighting from the study.
+the first revision, a more detailed border, is built and waits on its in-game
+gate; see "Revision 1: borders" below).
 
 ## Goal
 
@@ -181,19 +180,32 @@ Decided so far (owner):
 - Capsule and oval ends were looked at; not chosen (they would need shape
   masks on the bars).
 
-Open, for the owner to go through in the canvas's Lab and Materials boards:
+The metal and lighting questions were settled on November 17 (below). Still
+open: C's corner caps (not part of the picks, so not built) and the inner
+glint (not built).
 
-- The metal (Steel, Gunmetal, Silver, Dark Iron, Cobalt, Bronze, Gold) and
-  the lighting model (Top lit, Polished, Bevel, Specular band, Edge catch,
-  Two-tone), possibly one per element type; and the inner glint.
-- Where C's caps and Soft round apply.
+**Picks (owner, November 17, 2026), built the same day** on branch
+`t3/mode-revisions-borders` (not yet committed or confirmed in game):
 
-Nothing is built yet: `ModeUI/` is unchanged. When the owner decides: write
-the new `Style.Edge` presets into `docs/DESIGN_LANGUAGE.md` ("Borders"),
-then the art in `tools/build_mode_assets.lua` and the presets in
-`Shared/Style/Edge.lua`, then check each module (the 4px reach is 1px more
-than `frame` today and 2px more than `frameThin`: spacing and "edges inside
-boxes" layouts move). Work on branch `t3/mode-revisions-borders`.
+- **Mode-Blizz** (`blizz`): D's cut corners, the revised Specular band,
+  Silver. Unit Frames and Party Frames (plus cast bars, action buttons, the
+  Cooldown Manager and the minimap).
+- **Mode-BlizzEmpty** (`blizzEmpty`): the same shape, a flat band a state
+  color tints (proc and ready glows, aggro, dispel and target rims).
+- **Mode-Thin** (`thin`): cut corners, Bevel, Steel (Gunmetal the option).
+  Every window and panel, controls, cards and aura icons.
+- **Mode-Round** (`round`): Soft round, Bevel, Silver (Gunmetal the option).
+  Nameplates; on a nameplate's height it reads as the pill shape.
+- Every module with borders got **Border Style** and **Border Metal**
+  (`edgeStyle`, `edgeMetal`; new keys filled from defaults, nothing reset).
+- Every style keeps its role's reach, so no layout moved: on frames and
+  windows the 1px black line sits just inside the host's edge.
+- Art: `tools/build_mode_assets.lua` draws every ring
+  `Shared/Style/EdgeData.lua` names (69 files in `Borders/`); the old Round 4
+  rim art is gone.
+
+In-game gate (owner): every module's border, the pickers on each page, and the
+dispel-colored aura rims on nameplates and party frames.
 
 ## Decisions
 

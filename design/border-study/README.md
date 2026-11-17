@@ -2,7 +2,9 @@
 
 The owner's study of a more detailed, Blizzard-like border for the Mode
 design language. It is a design canvas, not addon code: nothing here loads in
-game, and `ModeUI/` is unchanged by it.
+game. The picks (November 17, 2026) are built: see
+`docs/DESIGN_LANGUAGE.md`, "Borders", and `docs/MODE_REDESIGN.md`,
+"Revision 1: borders".
 
 Live canvas (private to the owner):
 https://claude.ai/artifact/2g21nREnhBy9fkDph2nUkY
@@ -56,7 +58,10 @@ Lighting models for the 2px band (gradient stops top to bottom of the frame):
 - **Top lit:** light, mid 45%, dark (D as drawn).
 - **Polished:** hi, light 10%, dark 45%, deep 60%, mid 85%, dark.
 - **Bevel:** two 1px rows: hi, light 40%, mid over mid, dark 50%, deep.
-- **Specular band:** mid, hi 16%, mid 32%, dark 70%, deep.
+- **Specular band** (revised; the chosen one): mid, hi 16%, mid 32%, dark
+  56%, mid 82%, light, so the bottom edge stays lit. 1px: mid, hi 16%, mid
+  34%, dark 58%, light.
+- **Specular (original):** mid, hi 16%, mid 32%, dark 70%, deep.
 - **Edge catch:** hi on the top row only, then light, mid 40%, dark.
 - **Two-tone:** light, mid 48%, deep 52%, dark.
 

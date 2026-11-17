@@ -78,6 +78,9 @@ local function Style(kind)
         healthOpacity = 100, backgroundOpacity = EMPTY,
         -- Bar textures: Mode BG fill on Mode BG (Slate), and Mode Cast for the cast bar.
         foregroundTexture = "media:Mode BG", backgroundTexture = "media:Mode BG", castTexture = "media:Mode Cast",
+        -- The health and cast bar border (docs/DESIGN_LANGUAGE.md, "Choosing a
+        -- border"): Mode-Round in its own metal (owner, November 17, 2026).
+        edgeStyle = "round", edgeMetal = "default",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
         threatPullingColor = Copy(M.threatPalette.warning),
         healthText = enemy and "percent" or "none", healthFontSize = 9, healthTextColor = "health", healthTextGlow = true,
@@ -185,6 +188,8 @@ M.choices = {
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,
     questAnchor = M.elementAnchors, classificationAnchor = M.elementAnchors, levelAnchor = M.elementAnchors,
     comboAnchor = M.elementAnchors,
+    edgeStyle = addon.Style.EdgeStyleChoices(),
+    edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 M.growChoices = { { id = "right", label = "Right" }, { id = "left", label = "Left" }, { id = "up", label = "Up" },
     { id = "down", label = "Down" }, { id = "center", label = "Center" } }

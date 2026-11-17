@@ -2,8 +2,8 @@ local _, addon = ...
 local Kit, Style = addon.Kit, addon.Style
 
 -- An aura icon in the Mode design language (docs/DESIGN_LANGUAGE.md: icons
--- and auras wear the `frameThin` edge): the art one rim inside the icon,
--- cropped to its shape, inside a 1px Gunmetal edge-lit rim (2px at Border
+-- and auras wear the `frameThin` edge in Mode-Thin): the art one rim inside
+-- the icon, cropped to its shape, inside a 1px Steel bevel (2px at Border
 -- Size 2) that a dispel type tints, with a cooldown swipe and the stack count
 -- in the corner. The rim art covers its own corners: no masks. Fill it with
 -- Domain.Auras.Apply.
@@ -25,8 +25,9 @@ function Kit.AuraIconParts(icon)
     icon.inner = CreateFrame("Frame", nil, icon)
     icon.back = icon:CreateTexture(nil, "BACKGROUND", nil, 1)
     Style.ApplyAsset(icon.back, "Solid"); Style.Paint(icon.back, Style.Tone.shadow)
-    icon.edge = Style.Edge(icon.inner, "frameThin")
-    -- The rim art: aura containers recolor it by dispel type (AddDispelTypeTexture).
+    icon.edge = Style.Edge(icon.inner, "frameThin", { style = "thin" })
+    -- The rim's base ring: aura containers recolor it by dispel type
+    -- (Kit.DispelAuraRim), the lighting layers over it hidden.
     icon.rim = icon.edge.rimTexture
     icon.icon = icon:CreateTexture(nil, "ARTWORK")
     -- CooldownFrameTemplate carries the swipe texture; a bare Cooldown draws nothing.
@@ -114,8 +115,19 @@ function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon.timer:SetShown(style.auraTimerText ~= false)
 end
 
--- The rim color: a dispel type's color, or nil for the Gunmetal metal.
+-- The rim color: a dispel type's color, or nil for the border's metal.
 function Kit.TintAuraRim(icon, color) icon.edge:SetTint(color) end
+-- Hands the rim to an aura button's container to color by dispel type
+-- (AddDispelTypeTexture with `options`): the rim goes flat first (its base
+-- ring alone, `color` until the game recolors it), so no lighting layer
+-- covers the type's color.
+function Kit.DispelAuraRim(button, options, color)
+    button.edge:SetTint(color or Style.Tone.metal.silver.mid)
+    button.rim = button.edge.rimTexture
+    button:AddDispelTypeTexture(button.rim, options)
+end
+-- Lets an aura's art follow a module's Border choice (style and metal ids).
+function Kit.AuraBorderStyle(icon, styleId, metalId) icon.edge:SetStyle(styleId or "thin", metalId) end
 -- Shows or hides the whole edge (a group's Border: None).
 function Kit.ShowAuraRim(icon, shown) icon.edge:SetShown(shown and true or false) end
 

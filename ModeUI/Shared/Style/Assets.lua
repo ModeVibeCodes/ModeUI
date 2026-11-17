@@ -17,14 +17,8 @@ Style.ASSET_BASE = BASE
 -- white overlay adding light). lsm: the LibSharedMedia name, so other addons can
 -- use it too (statusbar and background).
 Style.ASSETS = {
-    -- Borders (white, tinted): Mode Empty rims, Mode Light lighting, shadow and gap.
-    Rim1 = { file = "Borders\\Rim1", slice = 5 },
-    Rim2 = { file = "Borders\\Rim2", slice = 5 },
-    Edge1 = { file = "Borders\\Edge1", slice = 5 },
-    Edge2 = { file = "Borders\\Edge2", slice = 5 },
-    Sheen1 = { file = "Borders\\Sheen1", slice = 5 },
-    Shadow = { file = "Borders\\Shadow", slice = 6 },
-    Gap = { file = "Borders\\Gap", slice = 4 },
+    -- Borders (white, tinted): every ring's art is "Edge<key>", registered by
+    -- Shared/Style/Edge.lua from Shared/Style/EdgeData.lua.
     Soft = { file = "Borders\\Soft", slice = 12 },
     RingSheen = { file = "Borders\\RingSheen" },
     RingLight = { file = "Borders\\RingLight" },

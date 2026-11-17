@@ -71,6 +71,7 @@ local function LayoutBox(box, frame, style, x, y, w, h, px, edge)
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -y)
     box:SetSize(w, h)
+    box.edge:SetStyle(style.edgeStyle, style.edgeMetal)
     box.edge:SetShown(style.border ~= "none")
     box.edge:Layout()
     local bar = box.bar

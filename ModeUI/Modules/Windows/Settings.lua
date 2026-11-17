@@ -121,6 +121,11 @@ function M:CreateConfigPage(parent)
     H.Color(background[1], "backgroundColor")
     page.backgroundSlider = H.Slider(background[2], "backgroundOpacity", "%")
     page.frameToggles = H.Toggles({ { "Border", "border" }, { "Title Bar", "titleBar" } }, 2)
+    -- Every window's border (docs/DESIGN_LANGUAGE.md, "Choosing a border"),
+    -- shown with Border off too: a window's Own Look can turn it back on.
+    page.borderStyle, page.borderMetal = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = H.Set("edgeStyle") },
+        { get = function() return M.db.edgeMetal end, set = H.Set("edgeMetal") })
     page:Group(L["Text"])
     local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); H.Refresh(fontRefresh)
     local sizes = H.Columns({ "Title Size", "Tab Text Size" })
