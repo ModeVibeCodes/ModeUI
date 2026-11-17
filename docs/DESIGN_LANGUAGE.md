@@ -18,7 +18,11 @@ texture paths or font files outside `Shared/Style/`) and `tests/style.lua`
   from `Style.Edge`, bars from `Style.Bar`, textures from `Style.Asset`, fonts
   from `Style.Font`. Modules never hard-code any of these.
 - **Pixel perfect.** Sizes and offsets land on whole physical pixels
-  (`Kit.PixelSize`). Every border is one even ring.
+  (`Kit.PixelSize`). Every border is one even ring. The settings window is
+  laid out in whole UI units, which at a UI scale that isn't pixel perfect
+  (Blizzard's default) fall between pixels, so its borders snap onto the
+  nearest whole pixels (`Style.SnapEdges`, redone on show, page layout,
+  scroll, drag and popups) and button faces follow the snapped rect.
 - **No masks for borders.** Rim art covers its own inner corner, so content
   under a border is never masked. (A frame's own shape, the minimap's
   rectangle, is the one mask, through `Style.SetShapeMask`.)
@@ -66,7 +70,7 @@ Two neutral ramps. Frames and buttons use **Mono**, windows and panels use
 | `rosewoodDeep` | `#743B3E` | the OFF toggle block (white text on it) |
 | `brand` | `#E2B866` | "Mode" in the ModeUI wordmark ("UI" stays white): the Game Menu button, the minimap addon menu, the AddOn list. A warm gold from the Ivory family, strong enough to read in bold button text where Ivory looks white (owner, November 15, 2026) |
 | `gunmetal` | light `#5B5E63`, mid `#46494D`, dark `#33363A` | flat rim colors: the minimap's Rim color, auras without a type, Character slot lines |
-| `steel` | light `#8C8F95`, mid `#74777D`, dark `#5B5E63` | portrait rings, settings control faces |
+| `steel` | light `#8C8F95`, mid `#74777D`, dark `#5B5E63` | settings control faces |
 | `metal.silver` | hi `#F2F4F6`, light `#D9DCE0`, mid `#9A9EA4`, dark `#5C6066`, deep `#3A3D41` | border metal: Mode-Blizz and Mode-Round |
 | `metal.steel` | hi `#D4D7DC`, light `#A3A6AB`, mid `#6E7176`, dark `#3D4044`, deep `#26282B` | border metal: Mode-Thin |
 | `metal.gunmetal` | hi `#A5A9AF`, light `#7C8086`, mid `#4E5156`, dark `#2C2E31`, deep `#1A1B1D` | border metal (an option on every border) |
@@ -120,6 +124,15 @@ Lighting, over the ring's own height (top 0%, bottom 100%):
   (mid, dark 50%, deep). 1px: hi fading to mid.
 - **Flat**: one color (Mode-BlizzEmpty, and any rim tinted for a state).
 
+The portrait ring (`ring`) is a disc, so a style's 2px lighting runs over the
+disc's whole height: Mode-Blizz's specular band (the default, in Silver) shows
+as hi near the top, dark through the middle of the sides and light at the
+bottom. A bevel's inner row is a disc 1px inside the outer one, so Mode-Thin
+and Mode-Round show a lit 1px lip over a shaded band (on a circle the two
+differ only in their default metal); Mode-BlizzEmpty is the metal's mid,
+flat. The ring has its own Ring Style and Ring Metal. A colored ring (class,
+custom, the combat red) is the flat color alone, whatever the style.
+
 The art is white and tinted in game: each lit band is a base ring in one metal
 tone with up to three lighting layers over it (each a ring whose alpha follows
 the lighting), so every metal draws the study's gradient exactly.
@@ -142,7 +155,7 @@ layout moved for it).
 | `control` | thin | 1px | 1px | — | 2px | Mode-Thin | buttons, dropdowns, fields, the slide toggle |
 | `line` | thin | 1px flat color | 1px | — | 2px | Mode-Thin | aura dispel rims, item quality |
 | `empty` | thin | 1px or 2px, any color | 1px | — | 2-3px | Mode-BlizzEmpty | an element's only border in a custom color: proc ready, aggro |
-| `ring` | circle | 3px Steel, edge-lit | 1px | — | 4px | — | portraits, badges (`Style.Ring`) |
+| `ring` | circle | 3px: any style's 2px lighting over the whole disc in a border metal, or one flat color | 1px | — | 4px | Mode-Blizz | portraits (`Style.Ring`) |
 
 A 1px band on a heavy role (`SetRim(1)`: Minimap Map Border Thin) or a 2px band
 on a thin one (aura Border Size 2) keeps the role's other rings.
@@ -261,6 +274,11 @@ Phase 6 probe):
   whichever typeface the client has. CJK clients fall back to Blizzard's
   font. (Where this file says "Geist Bold" or "Geist SemiBold", read "the
   Mode typeface" in that weight.)
+- **Mode Script: Damion** (owner's pick, November 17, 2026; OFL, bundled):
+  a bold, flowing script for the word "Mode" in ModeUI's own wordmark only,
+  in Ivory (`Style.SCRIPT_FONT`). Never in game frames; headers and every
+  other text stay in the Mode typeface. It doesn't follow the interface
+  Font setting.
 - One shadow: 1px offset (1, −1) at 95% black (no second, lifted copy);
   OUTLINE only as a player choice.
 - **Names:** in SemiBold, and the Gradient is standard (class or reaction
@@ -271,11 +289,26 @@ Phase 6 probe):
 - **Text in bars** (health, power, cast) in Geist Bold. Health text is colored
   by health: Rosewood at 30% and under, through Ivory, to Celadon at full
   (the client evaluates a color curve, since the health percent is secret).
-- **Health text glow** (on by default, a module toggle): a soft halo behind
-  the health numbers in the text's own color (added light, 22%), fading out
-  round and soft 5px past the digits, with no visible edge. Its width comes from the format (characters × 0.62 × size),
-  never from measuring, since health text can be secret; it sits on the
-  text's justified side and follows the text's color and visibility.
+- **Text glow, Halo** (`Style.TextHalo`; owner's picks, November 17, 2026):
+  light that hugs the letters. Eight copies of the text sit under it, 1px out
+  (N, NE, E … NW), at the glow strength, without outline or shadow.
+  Overlapping copies add up, so low strengths read (5% to 40%). WoW has no blur
+  for text and its outline is always black, which is why the glow is made of
+  copies. A glowing text has no drop shadow (crisp or lifted): the shadow is
+  part of the text, drew over the glow on one side and made it read as a second
+  shadow, and a second ring 2px out read as blur at 11px (owner, in game,
+  November 17, 2026). Glow colors:
+  **Deep** (the text's hue, saturation × 1.25 + 0.12, lightness halved:
+  `Style.Deep`), **Ink** (the shadow black, a soft dark ring) and **Match
+  Text**. Glow is a per-text choice, used on a few small texts. Defaults:
+  Unit Frames health numbers Deep 15%, unit frame names Ink 20%. Health text
+  colored by health takes its Deep glow from a second color curve, since the
+  color is secret.
+- **Health text glow on Party Frames and Nameplates** (a module toggle, until
+  they move to the Halo): a soft capsule behind the health numbers in the
+  text's own color (added light, 22%, `Style.TextGlow`), 5px past the digits,
+  its width from the format (characters × 0.62 × size), on the text's
+  justified side.
 - **Placement:** the name sits on the top border, 9px in from the side
   opposite the portrait, lifted so the rim runs near its baseline. Health is
   right-aligned inside the health bar (padded past a portrait on that side).
@@ -284,7 +317,7 @@ Phase 6 probe):
 
 | Element | Size |
 |---|---|
-| Player, target | 184 wide; 34 health + 1 + 3 power; portrait ring 140% of the bar block (58px), overlapping, Steel Sheen, no gap, the image cropped a little toward the face over a dark disc |
+| Player, target | 184 wide; 34 health + 1 + 3 power; portrait ring 140% of the bar block (58px), overlapping, Mode-Blizz Silver, no gap, the image cropped a little toward the face over a dark disc |
 | Target of target, focus, pet | 22 health + 3 power, 12px text; no portrait by default |
 | Boss | 24 health + 3 power; no portrait by default |
 | Cast bar under a frame | 14px with icon, 1–2px below (default 2), edges on the frame's edges; with a portrait it starts where the ring ends |
@@ -374,7 +407,8 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
 
 A hybrid window built one-to-one from the study:
 
-- **Main panel:** 1000px wide; header (MODE wordmark, search, profile, close);
+- **Main panel:** 1000px wide; header (the "Mode" wordmark in Mode Script,
+  Ivory 22, search, profile, close);
   184px sidebar of categories (Interface, Panels, System) with module icons
   ("Mode Icon&lt;Name&gt;" art) and Celadon/Rosewood status dots; the General
   page's global cards four across (186px); footer with Edit Mode, Reset

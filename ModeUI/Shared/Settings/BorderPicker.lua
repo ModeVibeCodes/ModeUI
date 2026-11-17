@@ -5,10 +5,12 @@ local Style = addon.Style
 -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"): two
 -- dropdowns on one line of a settings page. style and metal: { get, set }
 -- (get returns the saved id: a style id or "none"; a metal id or "default").
--- opts.none offers None (modules that could already hide their borders).
+-- opts.none offers None (modules that could already hide their borders);
+-- opts.labels names the two fields (default Border Style, Border Metal).
 -- Returns the two fields.
 function W.BorderPickers(page, style, metal, opts)
-    local cells = page:Columns({ L["Border Style"], L["Border Metal"] })
+    local labels = opts and opts.labels or { "Border Style", "Border Metal" }
+    local cells = page:Columns({ L[labels[1]], L[labels[2]] })
     local function Localized(list)
         for _, choice in ipairs(list) do choice.label = L[choice.label] end
         return list

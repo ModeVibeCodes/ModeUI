@@ -1,7 +1,9 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <!-- Slug templates for Kit.SlugFont. Only XML can mark a font slug
          (slug="true", as Blizzard's SystemFont_Outline_Slug_* fonts in
-         Blizzard_Fonts_Shared do); Lua copies these and sets the face. -->
-    <Font name="ModeUISlugFont" font="Interface\AddOns\ModeUI\Media\Fonts\Lato-Regular.ttf" height="12" slug="true" virtual="true"/>
-    <Font name="ModeUISlugFontOutline" font="Interface\AddOns\ModeUI\Media\Fonts\Lato-Regular.ttf" height="12" slug="true" outline="NORMAL" virtual="true"/>
+         Blizzard_Fonts_Shared do); Lua copies these and sets the face. The
+         face here is only a placeholder: Geist, which ModeUI ships (tests/smoke.lua
+         checks every path the addon names). -->
+    <Font name="ModeUISlugFont" font="Interface\AddOns\ModeUI\Media\Fonts\Geist\Geist-Regular.ttf" height="12" slug="true" virtual="true"/>
+    <Font name="ModeUISlugFontOutline" font="Interface\AddOns\ModeUI\Media\Fonts\Geist\Geist-Regular.ttf" height="12" slug="true" outline="NORMAL" virtual="true"/>
 </Ui>

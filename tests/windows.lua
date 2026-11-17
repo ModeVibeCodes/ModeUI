@@ -85,6 +85,20 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
     -- Parchment text: the greeting in dark brown, a title in gold.
     gossip.GreetingPanel.greeting = gossip.GreetingPanel:CreateFontString(); gossip.GreetingPanel.greeting:SetTextColor(0.18, 0.12, 0.06)
     gossip.GreetingPanel.gold = gossip.GreetingPanel:CreateFontString(); gossip.GreetingPanel.gold:SetTextColor(1, 0.82, 0)
+    -- The Quest window: a page that fills a pooled title button as it shows
+    -- (the black NORMAL_QUEST_DISPLAY code, then Blizzard unfixing its color).
+    local quest = MakeWindow('QuestFrame')
+    local questPage = CreateFrame('Frame', 'QuestFrameGreetingPanel', quest)
+    questPage:SetScript('OnShow', function(self)
+        if not self.title then
+            local title = CreateFrame('Button', nil, self)
+            title.Text = title:CreateFontString(); title.Text:SetFont('Fonts/FRIZQT__.TTF', 12, '')
+            function title:GetFontString() return self.Text end
+            self.title = title
+        end
+        self.title.Text:SetText('|cff000000Armory of Sunnyglade|r'); self.title.Text:SetFixedColor(false)
+    end)
+    questPage:Hide()
     WorldMapFrame = CreateFrame('Frame', 'WorldMapFrame', UIParent)
     WorldMapFrame.BorderFrame = MakeWindow('ModeTestWorldMapBorder', WorldMapFrame)
     -- Blizzard's tab picker: shows the active art.
@@ -307,6 +321,24 @@ world.run([==[
     assert(panel.greeting.color[1] == C.text[1] and panel.gold.color[2] == 0.82, 'dark text in the Graphite text color, gold kept')
     panel.greeting:SetTextColor(0, 0, 0); assert(panel.greeting.color[1] == C.text[1], 'after Blizzard re-colors it too')
     panel.greeting:SetTextColor(0.9, 0.9, 0.9); assert(panel.greeting.color[1] == 0.9, 'a light color Blizzard sets stays')
+    assert(panel.greeting.fixedColor == true and panel.gold.fixedColor == nil, 'inked text is fixed, so inline dark codes give way')
+    -- The Quest window: a page's title button made as it shows, its black
+    -- inline code overridden, also after Blizzard unfixes it.
+    local questPage = QuestFrameGreetingPanel
+    questPage:Show()
+    local questTitle = questPage.title.Text
+    assert(questTitle.fixedColor == true and questTitle.color[1] == C.text[1], 'a black-coded quest title made on show is readable')
+    questTitle:SetFixedColor(false); assert(questTitle.fixedColor == true, 'Blizzard unfixing it is undone')
+    -- Its buttons: the `empty` edge in the quest tone (same reach); other windows' stay `control`.
+    local accept = Skin.parts[QuestFrame.testButton]
+    assert(accept.modeEdge.preset == 'empty' and accept.modeEdge.color == Tone.quest and accept.modeEdge.tint == nil, 'quest buttons rimmed in the quest tone')
+    assert(Point(accept.edgeFrame)[4] == 2, 'the same reach as a control edge')
+    QuestFrame.testButton.scripts.OnEnter(QuestFrame.testButton); assert(Lit(accept), 'Ivory line on hover')
+    QuestFrame.testButton:SetEnabled(false); QuestFrame.testButton.scripts.OnDisable(QuestFrame.testButton)
+    assert(accept.modeEdge.tint == C.disabled and QuestFrame.testButton.Text.color[1] == C.muted[1], 'disabled: a Graphite rim, muted text')
+    QuestFrame.testButton:SetEnabled(true); QuestFrame.testButton.scripts.OnEnable(QuestFrame.testButton)
+    assert(accept.modeEdge.tint == nil, 'enabled again: the quest tone')
+    assert(Skin.parts[FriendsFrame.testButton].modeEdge.preset == 'control', 'other windows keep control buttons')
     -- The World Map draws under its border frame: border and strip, no fill.
     assert(Skin.parts[WorldMapFrame.BorderFrame].face.vertexColor[4] == 0, 'World Map keeps its map visible')
     local mapEdge = Skin.parts[WorldMapFrame.BorderFrame].modeEdge

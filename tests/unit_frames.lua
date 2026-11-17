@@ -98,7 +98,7 @@ world.run([====[
     combat.player=true;FireEvent('PLAYER_REGEN_DISABLED')
     local cb2=Point(p.combatBadge);assert(p.combatBadge:IsShown() and cb2[4]==-25 and cb2[5]==-25,'bottom left')
     local red=M.db.player.status.ringColor
-    assert(p.redRing and math.abs(p.portrait.ring.disc.vertexColor[1]-addon.Style.Mix(red,addon.Style.Tone.steel.dark,0.7)[1])<1e-9,'the ring turns red')
+    assert(p.redRing and p.portrait.ring.disc.vertexColor[1]==red[1] and not p.portrait.ring.layers[2].texture:IsShown(),'the ring turns red: Mode-BlizzEmpty, flat')
     assert(p.portrait.halo:IsShown(),'pulled unawares: the ring pulses')
     -- You target it and it fights you: the pulse stops; the ring holds red.
     combat.target,attackable.target=true,true;FireEvent('UNIT_FLAGS','target')
@@ -365,7 +365,7 @@ world.run([====[
     local ring=p.portrait
     -- The ring sits above the bars and the border, so its whole circle is drawn over the block's end.
     assert(ring:GetFrameLevel()>p.health:GetFrameLevel() and ring:GetFrameLevel()>p.panel.edge.holder:GetFrameLevel(),'ring over the block end')
-    assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and ring.ring.sheen.texture==addon.Style.AssetPath('RingLight') and ring.ring.shadow.vertexColor[4]==addon.Style.Tone.shadowAlpha,'edge-lit Steel ring with its shadow ring')
+    assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and #ring.ring.layers==4 and ring.ring.layers[2].texture.texture==addon.Style.AssetPath('Rings2m') and ring.ring.shadow.vertexColor[4]==addon.Style.Tone.shadowAlpha,'Mode-Blizz specular ring with its shadow ring')
     assert(Point(ring.icon)[4]==3 and Point(ring.icon)[5]==-3 and ring.ring.mask,'the portrait 3px inside (a 3px ring), cut round, no gap')
     assert(p.nameClip==nil and p.nameShine==nil and p.panel.ringBorder==nil)
     assert(p.textLayer:GetFrameLevel()>ring:GetFrameLevel(),'text above the portrait')
@@ -434,8 +434,13 @@ world.run([====[
     assert(name:sub(1,10)=='|cff'..string.format('%02x%02x%02x',math.floor(rogue[1]*255+0.5),math.floor(rogue[2]*255+0.5),math.floor(rogue[3]*255+0.5)),'starting at the class color')
     assert(t.texts.border.text.label=='name','secret target name passed straight to SetText')
     -- The suite's text style: every text has an opaque one-pixel shadow and a lifted
-    -- shadow (one translucent black copy 2px down-right).
+    -- shadow (one translucent black copy 2px down-right); a glowing text (the
+    -- name and health by default) has neither: the glow takes their place.
     local px=p.geometry.px
+    for _,text in ipairs({p.texts.border,p.texts.right}) do
+        assert(text.halo and text.halo.on and text.shadowColor[4]==0 and not text.lift:IsShown(),'the glow replaces the shadows')
+    end
+    assert(M:SetFrameOption('player','nameTextGlow',false) and M:SetFrameOption('player','healthTextGlow',false))
     for _,text in ipairs({p.texts.border,p.texts.bottomLeft,p.texts.right}) do
         local lift,la,lb=text.lift,Point(text.lift,1),Point(text.lift,2)
         assert(text.shadowColor[4]==1 and text.shadowOffset[1]==px and text.shadowOffset[2]==-px,'opaque one-pixel shadow')
@@ -444,14 +449,27 @@ world.run([====[
         assert(lb[1]=='BOTTOMRIGHT' and lb[2]==text and lb[4]==2*px and lb[5]==-2*px,'covers the text box')
         assert(lift.shadowColor[4]==0 and lift.font[2]==text.font[2] and lift.font[3]=='')
     end
+    assert(M:SetFrameOption('player','nameTextGlow',true) and M:SetFrameOption('player','healthTextGlow',true))
     assert(p.texts.border.lift.justifyH=='RIGHT' and not p.texts.powerCenter.lift:IsShown(),'no power text by default, so no lift')
     assert(t.texts.border.lift.text.label=='name' and t.texts.left.lift.text.secret.label=='pct','secret values go straight to the lifts')
-    -- Steel Sheen ring by default; Class Color tints its metal (Style.PaintRing).
+    -- Metal: Ring Style in Ring Metal (Mode-Blizz in Silver by default); Class
+    -- Color is Mode-BlizzEmpty, the flat class color (Style.PaintRing).
     local soft=Soft(rogue)
     local S=addon.Style
-    assert(Near(p.portrait.ring.disc.vertexColor[1],S.Mix(S.Tone.steel.dark,S.Tone.steel.mid,0.5)[1]) and p.portrait.ring.sheen,'Steel Sheen')
-    assert(M:SetFrameOption('player','portraitRing','class') and Near(p.portrait.ring.disc.vertexColor[1],S.Mix(Soft(rogue),S.Tone.steel.dark,0.7)[1]),'class-tinted metal')
-    assert(M:SetFrameOption('player','portraitRing','border'))
+    local silver,pr=S.Tone.metal.silver,p.portrait.ring
+    assert(M.db.player.portraitRingStyle=='blizz' and M.db.player.portraitRingMetal=='default')
+    assert(pr.styleId=='blizz' and pr.disc.vertexColor[1]==silver.dark[1] and pr.layers[4].texture:IsShown() and pr.layers[4].texture.vertexColor[1]==silver.hi[1],'Mode-Blizz in Silver')
+    assert(M:SetFrameOption('player','portraitRingMetal','gunmetal') and pr.disc.vertexColor[1]==S.Tone.metal.gunmetal.dark[1],'Ring Metal')
+    assert(M:SetFrameOption('player','edgeMetal','steel') and pr.disc.vertexColor[1]==S.Tone.metal.gunmetal.dark[1],'Border Metal leaves the ring alone')
+    assert(M:SetFrameOption('player','edgeMetal','default') and not M:SetFrameOption('player','portraitRingMetal','gold'))
+    assert(M:SetFrameOption('player','portraitRingStyle','thin') and pr.styleId=='thin' and #pr.layers==6 and pr.layers[5].texture.texture==S.AssetPath('Ringb2id'),'Mode-Thin: bevel')
+    assert(Point(pr.layers[4].texture)[4]>0 and Point(pr.layers[1].texture)[4]==0,'the inner row sits 1px in')
+    assert(M:SetFrameOption('player','portraitRingMetal','default') and pr.disc.vertexColor[1]==S.Tone.metal.steel.mid[1],'Default: the style own metal')
+    assert(M:SetFrameOption('player','portraitRingStyle','blizzEmpty') and #pr.layers==1 and pr.disc.vertexColor[1]==silver.mid[1] and not pr.pool[2]:IsShown(),'Mode-BlizzEmpty: flat Silver')
+    assert(M:SetFrameOption('player','portraitRingStyle','round') and pr.styleId=='round' and not M:SetFrameOption('player','portraitRingStyle','none'))
+    assert(M:SetFrameOption('player','portraitRingStyle','blizz') and #pr.layers==4)
+    assert(M:SetFrameOption('player','portraitRing','class') and Near(pr.disc.vertexColor[1],soft[1]) and not pr.layers[2].texture:IsShown(),'Mode-BlizzEmpty in the class color')
+    assert(M:SetFrameOption('player','portraitRing','border') and pr.layers[2].texture:IsShown())
     assert(p.portrait.icon.texture=='portrait:player' and p.portrait.icon.texCoord[1]==0.1 and p.portrait.icon.texCoord[3]==0.04,'the portrait cropped a little toward the face')
     assert(p.texts.bottomLeft:GetText()=='60' and p.texts.right:GetText()=='90%')
 
@@ -496,24 +514,23 @@ world.run([====[
     assert(not M:SetFrameOption('player','nameGlow',true) and not M:SetFrameOption('player','nameGlowStrength',50),'glow settings are retired')
     assert(not M:SetFrameOption('player','nameLift',true),'the name-only lift is retired')
     assert(M:SetFrameOption('player','liftedShadow',false) and not p.texts.border.lift:IsShown() and not p.texts.right.lift:IsShown(),'one toggle for every text')
-    assert(p.texts.border:IsShown() and p.texts.border.shadowColor[4]==1 and p.texts.right.shadowColor[4]==1,'lift off keeps the crisp shadow')
-    assert(M:SetFrameOption('player','liftedShadow',true) and p.texts.border.lift:IsShown() and p.texts.bottomLeft.lift:IsShown())
+    assert(p.texts.border:IsShown() and p.texts.bottomLeft.shadowColor[4]==1 and p.texts.border.shadowColor[4]==0,'lift off keeps the crisp shadow (the glowing name has none)')
+    assert(M:SetFrameOption('player','liftedShadow',true) and not p.texts.border.lift:IsShown() and p.texts.bottomLeft.lift:IsShown())
     assert(M:SetFrameOption('player','shadow',false) and not p.texts.border.lift:IsShown() and not p.texts.right.lift:IsShown(),'the lift needs Text Shadow')
     assert(p.texts.right.shadowColor[4]==0 and p.texts.right.shadowOffset[1]==0)
     assert(M:SetFrameOption('player','shadow',true) and M:SetTextOption('player','border','content','none') and not p.texts.border.lift:IsShown())
-    assert(M:SetTextOption('player','border','content','name') and p.texts.border.lift:IsShown() and Plain(p.texts.border.lift:GetText())=='Fixture')
-    assert(M:SetFrameOption('player','outline',true) and p.texts.border.lift.font[3]=='OUTLINE' and p.texts.bottomLeft.lift.font[3]=='OUTLINE','lift matches the outlined glyphs')
+    assert(M:SetTextOption('player','border','content','name') and not p.texts.border.lift:IsShown() and Plain(p.texts.border.lift:GetText())=='Fixture')
+    assert(M:SetFrameOption('player','outline',true) and p.texts.bottomLeft.lift:IsShown() and p.texts.bottomLeft.lift.font[3]=='OUTLINE' and p.texts.bottomLeft.lift.font[3]=='OUTLINE','lift matches the outlined glyphs')
     assert(M:SetFrameOption('player','outline',false))
     assert(M:SetTextOption('player','powerCenter','content','powerPercent') and p.texts.powerCenter.lift:IsShown() and p.texts.powerCenter.lift:GetText()=='50%','power text lifts too')
     assert(M:SetTextOption('player','powerCenter','content','none') and not p.texts.powerCenter.lift:IsShown())
     local function Disc(f) return f.portrait.ring.disc.vertexColor end
-    local steel=S.Mix(S.Tone.steel.dark,S.Tone.steel.mid,0.5)
-    assert(M:SetFrameOption('player','portraitRing','border') and Near(Disc(p)[1],steel[1]),'Steel Sheen')
+    assert(M:SetFrameOption('player','portraitRing','border') and Near(Disc(p)[1],S.Tone.metal.silver.dark[1]),'Mode-Blizz')
     assert(M:SetFrameOption('player','portraitRing','custom') and M:SetFrameOption('player','portraitRingColor',{1,0,1})
-        and Near(Disc(p)[2],0.3*S.Tone.steel.dark[2]) and Near(Disc(p)[1],0.7+0.3*S.Tone.steel.dark[1]),'custom-tinted metal')
+        and Disc(p)[1]==1 and Disc(p)[2]==0 and Disc(p)[3]==1,'Mode-BlizzEmpty in the custom color')
     assert(not M:SetFrameOption('player','portraitRing','accent'))
     assert(M:SetFrameOption('player','portraitRing','class'))
-    assert(M:SetFrameOption('player','classSoftness',0) and Near(Disc(p)[1],S.Mix(rogue,S.Tone.steel.dark,0.7)[1]),'0% softness: original class color')
+    assert(M:SetFrameOption('player','classSoftness',0) and Near(Disc(p)[1],rogue[1]),'0% softness: original class color')
     assert(not M:SetFrameOption('player','classSoftness',120))
     assert(M:SetFrameOption('player','classSoftness',40) and M:SetFrameOption('player','portraitRing','border'))
     -- Locked skin: retired settings are not options.
@@ -653,10 +670,10 @@ world.run([====[
     assert(Plain(M.ghosts.target.texts.border:GetText())=='Name','other stand-ins show a sample name, not the frame title')
     local handle=addon.PositionManager.elements.unitFramesPlayer.decoration
     assert(handle and handle.label:GetText()=='Player Frame' and addon.PositionManager.elements.unitFramesTarget.decoration.label:GetText()=='Target Frame','each handle names its frame')
-    assert(Plain(ghost.texts.border.lift:GetText())=='Fixture' and ghost.texts.border.lift:IsShown() and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
-    local steelBase=addon.Style.Mix(addon.Style.Tone.steel.dark,addon.Style.Tone.steel.mid,0.5)
-    assert(ghost.width==p.width and math.abs(ghost.portrait.ring.disc.vertexColor[1]-steelBase[1])<1e-9,'stand-in matches size and ring')
-    assert(math.abs(M.ghosts.target.portrait.ring.disc.vertexColor[1]-steelBase[1])<1e-9,'target stand-in: the same Steel Sheen ring')
+    assert(Plain(ghost.texts.border.lift:GetText())=='Fixture' and ghost.texts.bottomLeft.lift:IsShown() and ghost.texts.border.halo and ghost.texts.border.halo.on and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
+    local silverBase=addon.Style.Tone.metal.silver.dark
+    assert(ghost.width==p.width and ghost.portrait.ring.disc.vertexColor[1]==silverBase[1],'stand-in matches size and ring')
+    assert(M.ghosts.target.portrait.ring.disc.vertexColor[1]==silverBase[1],'target stand-in: the same Mode-Blizz ring')
     local gc=M.ghosts.target.combo;assert(gc:IsShown() and gc.points[3].bar.value==M.COMBO_SAMPLE and gc.points[5]:IsShown(),'stand-in shows sample combo points')
     local ga=M.ghosts.target;assert(ga.auraShown.buffs==M.AURA_SAMPLE and ga.auraIcons.buffs[1]:IsShown() and ga.auraShown.debuffs==0,'sample buffs')
     assert(ga.castBox:IsShown() and ga.castBox.text:GetText()=='Frostbolt' and not M.ghosts.player.auraIcons.buffs[1],'sample cast; no buffs on the Player')
@@ -833,13 +850,23 @@ world.run([====[
     M.Initialize(v21)
     assert(v21.layoutVersion==23 and v21.player.buffs.size==22 and v21.player.buffs.perRow==5 and v21.player.castBar.fontSize==11)
     assert(v21.player.debuffs.size==30 and v21.player.debuffs.perRow==3 and v21.player.healthTextColor=='health')
-    -- Health Text Glow: on by default; a halo behind health texts only.
-    assert(M.db.player.healthTextGlow==true and v21.player.healthTextGlow==true)
+    -- Text glow (Style.TextHalo): health numbers in Deep at 15%, names in Ink at 20%.
+    local d0=M.db.player
+    assert(d0.healthTextGlow==true and v21.player.healthTextGlow==true and d0.healthTextGlowColor=='deep' and d0.healthTextGlowStrength==15)
+    assert(d0.nameTextGlow==true and d0.nameTextGlowColor=='ink' and d0.nameTextGlowStrength==20 and v21.player.nameTextGlowColor=='ink','new keys fill in')
     local ht0=assert(p.textKinds.health[1],'a health text').text
-    assert(ht0.glow and ht0.glow.on and ht0.glow:IsShown(),'health numbers glow')
-    assert(not (p.textKinds.name[1].text.glow and p.textKinds.name[1].text.glow.on),'names do not')
-    assert(M:SetFrameOption('player','healthTextGlow',false) and not ht0.glow:IsShown(),'Health Text Glow off')
-    assert(M:SetFrameOption('player','healthTextGlow',true) and ht0.glow:IsShown())
+    local halo=ht0.halo
+    assert(halo and halo.on and halo.mode=='deep' and #halo==8 and halo[1]:IsShown(),'health numbers glow')
+    assert(math.abs(halo[1].alpha-0.15)<1e-9 and ht0.shadowColor[4]==0,'15%, in place of the shadow')
+    assert(not ht0.glow,'no capsule')
+    local nt0
+    for _,entry in ipairs(p.textKinds.name) do if entry.content=='name' then nt0=entry.text end end
+    assert(nt0 and nt0.halo and nt0.halo.on and nt0.halo.mode=='ink' and nt0.halo[1].color[1]==addon.Style.Tone.shadow[1],'names glow in Ink')
+    assert(M:SetFrameOption('player','healthTextGlow',false) and not halo[1]:IsShown() and ht0.shadowColor[4]==1,'Health Text Glow off: the shadow is back')
+    assert(M:SetFrameOption('player','healthTextGlow',true) and halo[1]:IsShown())
+    assert(M:SetFrameOption('player','healthTextGlowColor','match') and halo.mode=='match' and M:SetFrameOption('player','healthTextGlowColor','deep'))
+    assert(not M:SetFrameOption('player','healthTextGlowStrength',50) and not M:SetFrameOption('player','nameTextGlowColor','bright'),'ranges and choices hold')
+    assert(M:SetFrameOption('player','nameTextGlow',false) and not nt0.halo[1]:IsShown() and M:SetFrameOption('player','nameTextGlow',true))
     -- Version 22 -> 23: solid empty bars (100) take the see-through 60; picked values stay.
     local v22={layoutVersion=22,player={barBackgroundOpacity=100,powerBackgroundOpacity=40},target={barBackgroundOpacity=80}}
     M.Initialize(v22)

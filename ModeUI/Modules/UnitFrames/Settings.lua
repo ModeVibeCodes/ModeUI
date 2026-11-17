@@ -239,6 +239,13 @@ function M:CreateConfigPage(parent)
             Slider("Portrait Size", "portraitScale", "%")
             Choice("Portrait Ring", "portraitRing")
             When(function() return db().portraitRing == "custom" end, function() Color("Portrait Ring Color", "portraitRingColor") end)
+            -- Metal: any Mode border style and metal (a color is always flat).
+            When(function() return db().portraitRing == "border" end, function()
+                page.unitFrameRingStyle, page.unitFrameRingMetal = W.BorderPickers(page,
+                    { get = function() return db().portraitRingStyle end, set = Set("portraitRingStyle") },
+                    { get = function() return db().portraitRingMetal end, set = Set("portraitRingMetal") },
+                    { labels = { "Ring Style", "Ring Metal" } })
+            end)
         end)
     end, false, function()
         Style(function() Toggles({ { "Show Portrait", "showPortrait" } }); Mark("portrait") end)

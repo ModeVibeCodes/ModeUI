@@ -62,7 +62,7 @@ function W.Page(parent, minimumWidth)
     W.ScrollThumb(bar, 40)
     bar:SetScript("OnValueChanged", function(_, value)
         if page.lastScrollValue~=value and addon.CloseFontDropdown then addon:CloseFontDropdown() end
-        page.lastScrollValue=value;scroll:SetVerticalScroll(value)
+        page.lastScrollValue=value;scroll:SetVerticalScroll(value);W.SnapSettings()
     end)
     page.scrollbar = bar
     local function Wheel(_,delta) bar:SetValue(bar:GetValue()-delta*42) end
@@ -70,6 +70,7 @@ function W.Page(parent, minimumWidth)
     content:EnableMouseWheel(true);content:SetScript("OnMouseWheel",Wheel)
     page:EnableMouseWheel(true);page:SetScript("OnMouseWheel",Wheel)
     function page:Layout()
+        W.SnapSettings()
         local width = math.max(minimumWidth or 320, scroll:GetWidth() - 4)
         content:SetWidth(width)
         local leftInset=self.contentInset+(self.layoutInsetLeft or 0)

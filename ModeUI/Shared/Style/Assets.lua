@@ -18,10 +18,9 @@ Style.ASSET_BASE = BASE
 -- use it too (statusbar and background).
 Style.ASSETS = {
     -- Borders (white, tinted): every ring's art is "Edge<key>", registered by
-    -- Shared/Style/Edge.lua from Shared/Style/EdgeData.lua.
+    -- Shared/Style/Edge.lua from Shared/Style/EdgeData.lua; the portrait
+    -- ring's lighting discs are "Ring<profile>", registered by Icon.lua.
     Soft = { file = "Borders\\Soft", slice = 12 },
-    RingSheen = { file = "Borders\\RingSheen" },
-    RingLight = { file = "Borders\\RingLight" },
     -- Bars.
     Solid = { file = "Bars\\Solid", lsm = "Mode Solid" },
     Matte = { file = "Bars\\Matte", fill = "MatteBase", lift = "MatteLift", lsm = "Mode Matte" },

@@ -12,6 +12,8 @@ function W.PlacePopup(menu,button)
     menu:ClearAllPoints()
     if below<menu:GetHeight()*ratio+8 then menu:SetPoint("BOTTOMLEFT",button,"TOPLEFT",0,4)
     else menu:SetPoint("TOPLEFT",button,"BOTTOMLEFT",0,-4) end
+    -- A popup belongs to UIParent, not the settings window: it snaps its own borders.
+    addon.Style.QueueSnapEdges(menu)
 end
 function W.Popup(button,width,height)
     local menu=CreateFrame("Frame",nil,UIParent)

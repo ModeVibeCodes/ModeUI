@@ -67,12 +67,24 @@ function W.Box(frame, key, layer, sublevel, opts)
     box.fill:SetAllPoints(frame)
     Style.ApplyAsset(box.fill, "Solid")
     box.rim = box.fill -- older callers only read the fill
-    if key then box.edge = Style.Edge(frame, opts and opts.preset or "control") end
+    if key then
+        box.edge = Style.Edge(frame, opts and opts.preset or "control")
+        -- The face covers the border's holder, so when the settings window
+        -- snaps it to whole pixels (Style.SnapEdges) face and rim stay flush.
+        box.fill:ClearAllPoints(); box.fill:SetAllPoints(box.edge.holder)
+    end
     return box
 end
 
 function W.RefreshPixelInsets()
     Style.RelayoutEdges()
+    W.SnapSettings()
+end
+
+-- Snaps every border in the settings window to whole physical pixels on the
+-- next frame (Style.QueueSnapEdges): call it whenever its controls move.
+function W.SnapSettings()
+    if addon.configWindow then Style.QueueSnapEdges(addon.configWindow) end
 end
 
 -- A small down chevron at the right of a dropdown button; muted, lit by hover.

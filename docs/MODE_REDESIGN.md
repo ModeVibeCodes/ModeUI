@@ -42,7 +42,8 @@ before the next starts.
 
 - **Unit Frames** (layout version 23): Mode Matte health, Mode Gradient power,
   Mode Cast casts, Mode BG empty bars, Geist, Gradient names, health text
-  colored by health with a soft glow, a 3px edge-lit Steel portrait ring with a
+  colored by health with a soft glow, a 3px Mode-Blizz portrait ring (its own
+  Ring Style and Ring Metal; Class Color and Custom are flat, Mode-BlizzEmpty) with a
   1px shadow ring, Combined shields. See `docs/UNIT_FRAMES.md`.
 - **Party Frames** (settings version 7): the `group` edge, 150 x 34 + 3, Mode
   Glass health (owner's pick), Shields tab (texture, color, opacity), Gradient
@@ -154,7 +155,7 @@ The owner may keep tuning textures; expect small edits to
 1. **Revisions and tweaks** (started November 16): adjustments to
    finished elements from play. Keep each one focused, tested and gated in
    game; follow the design doc first, then Style, then the module. In
-   progress: Revision 1, borders (below).
+   progress: Revision 1, borders, and Revision 2, type and text glow (below).
 2. **Phase 9 release** 0.2.0: release notes and notices. Only when the owner
    says so.
 3. **Phase 10** (new coverage) only after decision 2 (below).
@@ -215,6 +216,56 @@ glint (not built).
 
 In-game gate (owner): every module's border, the pickers on each page, and the
 dispel-colored aura rims on nameplates and party frames.
+
+**Portrait ring** (owner, November 17, 2026): the ring takes the Mode border
+texturing, a style's 2px lighting drawn over the whole disc (new art
+`Borders/Ring<profile>` for the Specular and Bevel profiles; the old
+`RingLight` and unused `RingSheen` are gone). Its own **Ring Style** (every
+Mode border style; Mode-Blizz by default) and **Ring Metal** (Default, Silver,
+Steel, Gunmetal; Default is the style's own) sit under Portrait Ring while it
+is Metal (`portraitRingStyle`, `portraitRingMetal`; new keys filled from
+defaults). Class Color and Custom (and the combat red) draw as
+Mode-BlizzEmpty: the flat color, no lighting, where they used to tint the
+Steel 70%. Portrait Ring's first option reads Metal (was Steel; the saved id
+`border` is unchanged). Waiting on an in-game look.
+
+### Revision 2: type and text glow (November 17)
+
+Mock: https://claude.ai/artifact/BpVXy6tBm8GMXkAy7E21Hg (Expressway only as
+static renders).
+
+- **Expressway** stays "used when installed". The free download's Typodermic
+  Desktop EULA forbids bundling it in a mod (§4.3, §4.6); shipping it needs
+  Typodermic's written permission (an Application License). The owner keeps
+  Expressway as the look for headers.
+- **Mode Script**: a bold, flowing script for the word "Mode" only (the
+  settings wordmark), in Ivory. The owner picked **Damion** from round 2;
+  built the same day (Media/Fonts/Damion, `Style.SCRIPT_FONT`, the header
+  wordmark "Mode" at 22, bound with `Media:BindFixedFont` so the interface
+  Font setting leaves it alone). Waiting on an in-game look.
+- **Text glow, Halo** (owner's picks): Deep for health numbers and stack
+  counts (10-15%) and cooldown numbers (20%), Ink for unit frame names, Match
+  Text offered. Built on branch `t3/mode-revisions-text-glow` for Unit
+  Frames (health numbers Deep 15%, names Ink 20%, each with Glow, Color and
+  Strength on the Text tab); not committed or confirmed in game. Next: stack
+  counts and cooldown numbers (Action Bars, Cooldown Manager). Blizzard's
+  cooldown numbers are written by the client, not Lua, so their glow needs a
+  way to follow the text first. Party Frames and Nameplates keep the capsule
+  until the owner says.
+- **First in-game look** (owner, 11px text): the glow read fuzzy and sat like
+  a second shadow, down-right. Causes: the text's own 1px black shadow draws
+  over the copies on that side (Ink on a dark bar showed almost only there),
+  and the 2px outer ring doubled the glow's width. Fix, same day: one ring
+  of 8 copies 1px out, and a glowing text drops its shadows (crisp and
+  lifted). Waiting on the next in-game look.
+- **Settings borders** (owner, in game, November 17): button, dropdown and
+  segment rims read thin or missing on one side, with specks at the cut
+  corners. Cause: the owner plays at Blizzard's default UI scale (no
+  `uiScale` set), where whole UI units fall between physical pixels, and a
+  border holder copied its host's fractional rect. Fix: settings borders snap
+  their holders to whole pixels (`Style.SnapEdges`, `W.SnapSettings`), and
+  faces follow the snapped rect. In-game frames keep the plain anchor.
+  Waiting on an in-game look.
 
 ## Decisions
 

@@ -1,8 +1,14 @@
 local _, addon = ...
 -- Icons and portraits (docs/DESIGN_LANGUAGE.md, "Sizes"). Square elements are a
--- little wider than tall, cropped evenly; portraits sit in an edge-lit Steel ring.
+-- little wider than tall, cropped evenly; portraits sit in a Mode border ring.
 local Style = addon.Style
 local Tone = Style.Tone
+local D = Style.EDGE_DATA
+
+-- The ring's lighting discs, every style's (EdgeData D.RingProfiles): "Ring" .. profile.
+for _, profile in ipairs(D.RingProfiles()) do
+    Style.ASSETS["Ring" .. profile] = { file = "Borders\\Ring" .. profile }
+end
 
 -- Height for an icon `width` pixels wide: 4px shorter up to 35, 6px from 36.
 function Style.IconHeight(width)
@@ -29,16 +35,16 @@ function Style.SetShapeMask(frame, path)
 end
 
 -- A portrait in a ring (the `ring` preset): a metal disc `diameter + 2 * rim`
--- wide, lit from the top like the frames' edge-lit rims, a 1px dark shadow
--- ring outside it, and the portrait texture cropped to a circle on top.
--- Returns { frame, portrait, disc } sized in `host`'s units.
+-- wide in a border style's lighting (Mode-Blizz by default: a base disc and
+-- its lighting discs, D.RingLayers), a 1px dark shadow ring outside it, and
+-- the portrait texture cropped to a circle on top. Returns { frame, portrait,
+-- disc, layers } sized in `host`'s units.
 Style.RING_RIM = 3 -- the `ring` preset's metal, in physical pixels
-Style.RING_LIGHT_ALPHA = 0.32
-function Style.Ring(host, diameter, rim)
+function Style.Ring(host, diameter, rim, styleId)
     rim = rim or Style.RING_RIM
     local px = Style.Pixel(host)
     local outer = (diameter + 2 * rim) * px
-    local ring = { rim = rim }
+    local ring = { rim = rim, px = px, pool = {}, layers = {} }
     local frame = CreateFrame("Frame", nil, host)
     frame:SetSize(outer, outer)
     ring.frame = frame
@@ -48,16 +54,6 @@ function Style.Ring(host, diameter, rim)
     Style.Paint(shadow, Tone.shadow, Tone.shadowAlpha)
     shadow:SetPoint("TOPLEFT", frame, "TOPLEFT", -px, px)
     shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", px, -px)
-    local disc = frame:CreateTexture(nil, "BORDER", nil, 0)
-    Style.ApplyAsset(disc, "Circle")
-    disc:SetAllPoints()
-    local base, light = Tone.steel.dark, Tone.steel.mid
-    local tone = Style.Mix(base, light, 0.5)
-    Style.Paint(disc, tone)
-    local sheen = frame:CreateTexture(nil, "BORDER", nil, 1)
-    Style.ApplyAsset(sheen, "RingLight")
-    sheen:SetAllPoints()
-    Style.Paint(sheen, Tone.mono.white, Style.RING_LIGHT_ALPHA)
     -- A dark disc under the portrait: nothing behind shows through its edges.
     local back = frame:CreateTexture(nil, "ARTWORK", nil, -1)
     Style.ApplyAsset(back, "Circle")
@@ -70,14 +66,50 @@ function Style.Ring(host, diameter, rim)
     mask:SetTexture(Style.AssetPath("Circle"), "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:SetAllPoints(portrait)
     portrait:AddMaskTexture(mask)
-    ring.disc, ring.sheen, ring.portrait, ring.mask, ring.back, ring.shadow = disc, sheen, portrait, mask, back, shadow
+    ring.portrait, ring.mask, ring.back, ring.shadow = portrait, mask, back, shadow
+    Style.SetRingStyle(ring, styleId)
     return ring
+end
+
+-- Places the metal's discs: an "inner" row's disc 1px inside the outer one.
+local function PlaceLayers(ring)
+    for _, layer in ipairs(ring.layers) do
+        local inset = layer.row == "inner" and ring.px or 0
+        layer.texture:ClearAllPoints()
+        layer.texture:SetPoint("TOPLEFT", ring.frame, "TOPLEFT", inset, -inset)
+        layer.texture:SetPoint("BOTTOMRIGHT", ring.frame, "BOTTOMRIGHT", -inset, inset)
+    end
+end
+
+-- Draws the ring's metal in a border style (a Style.EDGE_STYLES id; anything
+-- else: Mode-Blizz): the base disc, then each lighting disc over it, in order.
+-- Paint it again after (Style.PaintRing).
+function Style.SetRingStyle(ring, styleId)
+    styleId = Style.EdgeStyle(styleId) or D.RING.style
+    if ring.styleId == styleId then return end
+    ring.styleId = styleId
+    local layers = {}
+    for i, layer in ipairs(D.RingLayers(styleId)) do
+        local texture = ring.pool[i]
+        if not texture then
+            texture = ring.frame:CreateTexture(nil, "BORDER", nil, i - 1)
+            ring.pool[i] = texture
+        end
+        Style.ApplyAsset(texture, layer.profile and ("Ring" .. layer.profile) or "Circle")
+        texture:Show()
+        layers[i] = { texture = texture, tone = layer.tone, profile = layer.profile, row = layer.row }
+    end
+    for i = #layers + 1, #ring.pool do ring.pool[i]:Hide() end
+    ring.layers, ring.disc = layers, layers[1].texture
+    PlaceLayers(ring)
+    Style.PaintRing(ring)
 end
 
 -- Resizes a ring to `outer` (its full width in its host's units) and keeps the
 -- portrait `rim` physical pixels inside it.
 function Style.LayoutRing(ring, outer, px)
     px = px or Style.Pixel(ring.frame)
+    ring.px = px
     ring.frame:SetSize(outer, outer)
     ring.shadow:ClearAllPoints()
     ring.shadow:SetPoint("TOPLEFT", ring.frame, "TOPLEFT", -px, px)
@@ -86,11 +118,17 @@ function Style.LayoutRing(ring, outer, px)
     ring.portrait:ClearAllPoints()
     ring.portrait:SetPoint("TOPLEFT", ring.frame, "TOPLEFT", inset, -inset)
     ring.portrait:SetPoint("BOTTOMRIGHT", ring.frame, "BOTTOMRIGHT", -inset, inset)
+    PlaceLayers(ring)
 end
 
--- The ring's metal: edge-lit Steel by default, or tinted (a class color, the
--- combat red) while keeping its light band.
-function Style.PaintRing(ring, color)
-    local base = color and Style.Mix(color, Tone.steel.dark, 0.7) or Style.Mix(Tone.steel.dark, Tone.steel.mid, 0.5)
-    Style.Paint(ring.disc, base)
+-- The ring's look: its style in a border metal (`metalId`, a Tone.metal key;
+-- anything else: the style's own metal), or with `color` (a class color, a
+-- custom color, the combat red) Mode-BlizzEmpty: that flat color alone.
+function Style.PaintRing(ring, color, metalId)
+    local metal = Tone.metal[metalId] or Tone.metal[D.STYLES[ring.styleId].metal]
+    for _, layer in ipairs(ring.layers) do
+        local shown = not (color and layer.profile)
+        layer.texture:SetShown(shown)
+        if shown then Style.Paint(layer.texture, color or metal[layer.tone]) end
+    end
 end

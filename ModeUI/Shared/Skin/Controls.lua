@@ -91,11 +91,14 @@ local FIELD_HEIGHT = 22
 -- hover lights its outer line Ivory. Disabled, the text goes muted.
 -- `stack`: buttons Blizzard stacks with no space between them (the Game
 -- Menu's): each box starts 1px down, so their edges sit 1px apart.
-function Skin.Button(button, style, stack)
+-- `accent`: the `empty` edge (the same reach) in the quest tone instead, so
+-- a window's actions stand apart from its page (the quest and gossip
+-- windows'); disabled, the rim goes Graphite rim.
+function Skin.Button(button, style, stack, accent)
     for _, key in ipairs(BUTTON_ART) do Fade(button[key]) end
     FadeStates(button)
-    local parts = Parts(button, "control")
-    parts.px, parts.style = Kit.PixelSize(button), style
+    local parts = accent and Skin.Box(button, "empty", { inset = REACH, color = M.quest }) or Parts(button, "control")
+    parts.px, parts.style, parts.accent = Kit.PixelSize(button), style, accent
     if stack and not parts.box then
         parts.box = button:CreateTexture(nil, "BACKGROUND", nil, -8)
         parts.box:SetAlpha(0)
@@ -109,6 +112,9 @@ function Skin.Button(button, style, stack)
     Skin.Once(button, "buttonHover", function()
         button:HookScript("OnEnter", function() parts.hovered = true; Skin.PaintField(button) end)
         button:HookScript("OnLeave", function() parts.hovered = false; Skin.PaintField(button) end)
+        -- Blizzard enables and disables a window's buttons as it shows (Complete Quest).
+        button:HookScript("OnEnable", function() Skin.PaintField(button) end)
+        button:HookScript("OnDisable", function() Skin.PaintField(button) end)
     end)
     local text = Text(button)
     if text then Skin.Font(text, Style.Weighted(style.path, "semibold"), nil, style.outline, style.shadow, parts.px) end
@@ -158,6 +164,7 @@ function Skin.PaintField(frame)
         Skin.PaintBox(parts, parts.box or frame, "Solid", M.field, 1, true, lit and "accent" or nil)
     else
         Skin.PaintBox(parts, parts.box or frame, "Button", M.face, 1, true, lit and "accent" or nil)
+        if parts.accent and parts.modeEdge then parts.modeEdge:SetTint(not enabled and M.disabled or nil) end
         Skin.Ink(Text(frame), enabled and M.text or M.muted)
     end
 end

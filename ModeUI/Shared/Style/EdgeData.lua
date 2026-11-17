@@ -115,6 +115,27 @@ function D.Rings(preset, styleId, rim)
     return rings, reach
 end
 
+-- The portrait ring (Style.Ring): any style's 2px lighting laid over a whole
+-- disc, so it runs down the disc's height (Mode-Blizz by default). Each layer
+-- is a disc ("Ring" .. profile; a base is the plain Circle) in one metal tone;
+-- an "inner" row's disc sits 1px inside the outer one.
+D.RING = { style = "blizz", rim = 2 }
+function D.RingLayers(styleId)
+    local style = D.STYLES[styleId] or D.STYLES[D.RING.style]
+    return D.LIGHTS[style.light][D.RING.rim]
+end
+-- Every lighting profile a ring can draw, sorted: the art the builder writes.
+function D.RingProfiles()
+    local seen, list = {}, {}
+    for styleId in pairs(D.STYLES) do
+        for _, layer in ipairs(D.RingLayers(styleId)) do
+            if layer.profile and not seen[layer.profile] then seen[layer.profile] = true; list[#list + 1] = layer.profile end
+        end
+    end
+    table.sort(list)
+    return list
+end
+
 -- Every ring any border can draw (each role in each style, at either band
 -- width), by key: the art the builder writes and the game registers.
 function D.AllRings()

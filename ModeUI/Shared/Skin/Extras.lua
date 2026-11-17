@@ -199,20 +199,41 @@ end
 -- Dark text Blizzard draws for its parchment (quest, gossip, book and letter
 -- text in dark brown or black) is lost on Graphite: such a font string takes
 -- the Graphite text color, now and whenever Blizzard sets a dark color again
--- (quest pages set theirs in code each time they show). Any color with light
--- in it stays, and text colored inline (|c codes) keeps its codes.
+-- (quest pages set theirs in code each time they show). Its color is then
+-- fixed (FontString:SetFixedColor, as Blizzard's own dark Quest Text
+-- Contrast does), so dark inline codes in it give way too: quest titles come
+-- wrapped in black (NORMAL_QUEST_DISPLAY's |c code). Text whose own color is
+-- light but holds a dark code is treated the same; Blizzard unfixing an
+-- inked text is undone. Any other color with light in it stays.
 local DARK = 0.35
 local inking = setmetatable({}, { __mode = "k" })
+local inked = setmetatable({}, { __mode = "k" })
 local function Dark(r, g, b)
     local Number = addon.IsNumber
     return Number(r) and Number(g) and Number(b) and (0.299 * r + 0.587 * g + 0.114 * b) < DARK
 end
+-- A |cAARRGGBB code with little light in it.
+local function DarkCode(text)
+    local value = text.GetText and text:GetText()
+    if not (addon.IsPublic(value) and type(value) == "string") then return false end
+    for r, g, b in value:gmatch("|c%x%x(%x%x)(%x%x)(%x%x)") do
+        if Dark(tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255) then return true end
+    end
+    return false
+end
 local function Check(text)
     if inking[text] or not text.GetTextColor then return end
     local r, g, b = text:GetTextColor()
-    if not Dark(r, g, b) then return end
-    inking[text] = true
+    if not (Dark(r, g, b) or DarkCode(text)) then return end
+    inking[text], inked[text] = true, true
+    if text.SetFixedColor then text:SetFixedColor(true) end
     Skin.Ink(text, M.text)
+    inking[text] = nil
+end
+local function Refix(text, fixed)
+    if fixed or inking[text] or not inked[text] then return end
+    inking[text] = true
+    text:SetFixedColor(true)
     inking[text] = nil
 end
 function Skin.Readable(text)
@@ -220,12 +241,14 @@ function Skin.Readable(text)
     Skin.Once(text, "readable", function()
         hooksecurefunc(text, "SetTextColor", Check)
         if text.SetFontObject then hooksecurefunc(text, "SetFontObject", Check) end
+        if text.SetFixedColor then hooksecurefunc(text, "SetFixedColor", Refix) end
     end)
     Check(text)
 end
 
--- Every font string on `frame` and its children (TEXT_DEPTH levels) in the
--- Mode face, except ModeUI's own and those in `skip`.
+-- Every font string on `frame` and its children (TEXT_DEPTH levels) made
+-- readable and, with a `path`, in the Mode face; ModeUI's own and those in
+-- `skip` are left alone.
 function Skin.Texts(frame, path, skip, depth)
     depth = depth or 0
     if depth > TEXT_DEPTH or not frame or not frame.GetRegions then return end
@@ -234,13 +257,16 @@ function Skin.Texts(frame, path, skip, depth)
     for _, region in ipairs({ frame:GetRegions() }) do
         if region.GetObjectType and region:GetObjectType() == "FontString" and not (skip and skip[region])
             and not (own and own.regions and own.regions[region]) then
-            Skin.Face(region, path)
+            if path then Skin.Face(region, path) end
             Skin.Readable(region)
         end
     end
     if frame.GetFontString then
         local text = frame:GetFontString()
-        if text and not (skip and skip[text]) then Skin.Face(text, path); Skin.Readable(text) end
+        if text and not (skip and skip[text]) then
+            if path then Skin.Face(text, path) end
+            Skin.Readable(text)
+        end
     end
     if frame.GetChildren then
         for _, child in ipairs({ frame:GetChildren() }) do Skin.Texts(child, path, skip, depth + 1) end
@@ -267,12 +293,13 @@ function Skin.WatchList(box, onRow)
     pcall(box.ForEachFrame, box, function(row) onRow(row) end)
 end
 
--- A list row: the Mode face on its text and, with `fadeRows`, its row strip
--- (the button's normal texture) faded so the window's fill shows through.
+-- A list row: its text readable (in the Mode face with Window Text) and,
+-- with `fadeRows`, its row strip (the button's normal texture) faded so the
+-- window's fill shows through.
 function Skin.Row(row, style, fadeRows)
     if fadeRows and row.GetNormalTexture then Fade(row:GetNormalTexture()) end
     -- The Guild roster's brown profession header strip.
     local header = fadeRows and row.ProfessionHeader
     if header then for _, key in ipairs({ "Left", "Middle", "Right" }) do Fade(header[key]) end end
-    if style.bodyFont then Skin.Texts(row, style.path) end
+    Skin.Texts(row, style.bodyFont and style.path or nil)
 end

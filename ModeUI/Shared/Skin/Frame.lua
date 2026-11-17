@@ -17,7 +17,9 @@ local Skin, Kit = addon.Skin, addon.Kit
 --   ScrollBar, Inset = bool }
 -- `options` (per window): noFill (the World Map draws under its border
 -- frame), fade (extra frames whose own textures are faded), fadeOwn (fade
--- every texture directly on the window), fadeRows (fade list rows' strips).
+-- every texture directly on the window), fadeRows (fade list rows' strips),
+-- accentButtons (buttons in the `empty` edge in the quest tone), pages
+-- (function(window) returning frames whose OnShow re-runs the text pass).
 local M, Style = Skin.mode, addon.Style
 local Snap, Fade = Skin.Snap, Skin.Fade
 Skin.TITLE_HEIGHT, Skin.CLOSE_SIZE, Skin.CLOSE_INSET = 22, 18, 2
@@ -188,12 +190,28 @@ function Skin.Window(frame, style, options)
     Skin.Scan(frame, frame, style, 0)
     -- A window's own extra parts (the Character window's stats pane).
     if options.after then options.after(frame, style) end
-    if style.bodyFont then
-        local skip = {}
-        local title = Skin.TitleOf(frame)
-        if title then skip[title] = true end
-        Skin.Texts(frame, style.path, skip)
+    parts.textStyle = style
+    Skin.WindowTexts(frame)
+    -- Pages that fill their text as they show (the Quest window's pooled
+    -- title buttons and objectives) get the text pass again after Blizzard's.
+    for _, page in ipairs(options.pages and options.pages(frame) or {}) do
+        Skin.Once(page, "windowTexts", function()
+            page:HookScript("OnShow", function() Skin.WindowTexts(frame) end)
+        end)
     end
+end
+
+-- The window's text readable on Graphite (dark parchment text in the
+-- Graphite text color) and, with Window Text, in the Mode face; the title
+-- keeps its own font.
+function Skin.WindowTexts(frame)
+    local parts = Skin.parts[frame]
+    local style = parts and parts.textStyle
+    if not style then return end
+    local skip = {}
+    local title = Skin.TitleOf(frame)
+    if title then skip[title] = true end
+    Skin.Texts(frame, style.bodyFont and style.path or nil, skip)
 end
 
 -- Walks the window's children for controls to skin, SCAN_DEPTH levels deep.
@@ -236,7 +254,7 @@ end
 
 function Skin.Control(window, control, kind, style)
     local options = (Skin.parts[window] and Skin.parts[window].options) or {}
-    if kind == "Button" then Skin.Button(control, style, options.stackButtons)
+    if kind == "Button" then Skin.Button(control, style, options.stackButtons, options.accentButtons)
     elseif kind == "Field" then Skin.Field(control, style)
     elseif kind == "Tab" then Skin.Tab(control, style, TabSide(window, control))
     elseif kind == "SideTab" then Skin.SideTab(control, style)

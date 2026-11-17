@@ -112,6 +112,35 @@ end
 -- Lighter by `amount` toward white (the Comet trail uses 0.45).
 function Style.Lighten(color, amount) return Style.Mix({ 1, 1, 1 }, color, amount) end
 
+-- The Deep glow color (docs/DESIGN_LANGUAGE.md, "Text glow"): the same hue,
+-- saturation x 1.25 + 0.12 (at most 1), lightness halved.
+function Style.Deep(color)
+    local r, g, b = color[1], color[2], color[3]
+    local high, low = math.max(r, g, b), math.min(r, g, b)
+    local l = (high + low) / 2
+    local h, s = 0, 0
+    if high ~= low then
+        local d = high - low
+        s = l > 0.5 and d / (2 - high - low) or d / (high + low)
+        if high == r then h = (g - b) / d + (g < b and 6 or 0)
+        elseif high == g then h = (b - r) / d + 2
+        else h = (r - g) / d + 4 end
+        h = h / 6
+    end
+    s, l = math.min(1, s * 1.25 + 0.12), l * 0.5
+    if s == 0 then return { l, l, l } end
+    local q = l < 0.5 and l * (1 + s) or l + s - l * s
+    local p = 2 * l - q
+    local function Channel(t)
+        t = t % 1
+        if t < 1 / 6 then return p + (q - p) * 6 * t end
+        if t < 1 / 2 then return q end
+        if t < 2 / 3 then return p + (q - p) * (2 / 3 - t) * 6 end
+        return p
+    end
+    return { Channel(h + 1 / 3), Channel(h), Channel(h - 1 / 3) }
+end
+
 -- Names: subtle Gradient end (74% color + 26% white) and Soft class (55% + 45%).
 function Style.GradientEnd(color) return Style.Mix(color, Tone.mono.white, 0.5) end
 function Style.Soft(color) return Style.Mix(color, { 1, 1, 1 }, 0.55) end

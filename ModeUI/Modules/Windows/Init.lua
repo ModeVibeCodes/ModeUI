@@ -44,7 +44,10 @@ M.registry = {
     { id = "achievements", label = "Achievements", frames = { "AchievementFrame" }, addon = "Blizzard_AchievementUI",
         options = { fadeOwn = true } },
     { id = "worldMap", label = "World Map", frames = { "WorldMapFrame.BorderFrame" }, options = { noFill = true }, noScale = true },
-    { id = "quests", label = "Quests and Gossip", frames = { "QuestFrame", "GossipFrame", "QuestLogPopupDetailFrame" } },
+    -- Buttons in the quest tone, apart from the page; the Quest window's
+    -- pages fill their text (title buttons, objectives) as they show.
+    { id = "quests", label = "Quests and Gossip", frames = { "QuestFrame", "GossipFrame", "QuestLogPopupDetailFrame" },
+        options = { accentButtons = true, pages = function(frame) return M:QuestPages(frame) end } },
     { id = "merchant", label = "Merchant", frames = { "MerchantFrame" } },
     { id = "mail", label = "Mail", frames = { "MailFrame", "OpenMailFrame" } },
     { id = "bank", label = "Bank", frames = { "BankFrame" } },
@@ -62,6 +65,18 @@ M.registry = {
 }
 M.byId = {}
 for _, entry in ipairs(M.registry) do M.byId[entry.id] = entry end
+
+-- The Quest window's pages (Forever's Mainline QuestFrame.xml), those that
+-- are the window's own.
+local QUEST_PAGES = { "QuestFrameGreetingPanel", "QuestFrameDetailPanel", "QuestFrameProgressPanel", "QuestFrameRewardPanel" }
+function M:QuestPages(frame)
+    local list = {}
+    for _, name in ipairs(QUEST_PAGES) do
+        local page = _G[name]
+        if page and page.HookScript and page:GetParent() == frame then list[#list + 1] = page end
+    end
+    return list
+end
 
 -- Colors: the Graphite panel. Version 1-2 defaults, kept for migrations:
 -- the #0B0B0D fill at 94%, the border (#40454C; version 1's #25282C).

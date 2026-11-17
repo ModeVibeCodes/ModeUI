@@ -185,10 +185,18 @@ function M:GetDisplayFont(appearance, respectGlobal, scope)
 end
 
 function M:ApplyInterfaceFont(region, spec)
-    local preferred = self:GetInterfaceFont(spec.path,spec.scope,spec.weight)
+    local preferred = spec.fixed and spec.path or self:GetInterfaceFont(spec.path,spec.scope,spec.weight)
     if not region:SetFont(preferred, spec.size, spec.flags) then
-        region:SetFont(spec.path, spec.size, spec.flags)
+        region:SetFont(spec.fallback or spec.path, spec.size, spec.flags)
     end
+end
+
+-- A font that doesn't follow the interface font (the Mode Script wordmark),
+-- redrawn with the rest; `fallback` if the client refuses the file.
+function M:BindFixedFont(region, path, size, fallback)
+    local spec = { path = path, size = size, flags = "", fixed = true, fallback = fallback }
+    self.regions[region] = spec
+    self:ApplyInterfaceFont(region, spec)
 end
 
 function M:BindInterfaceFont(region, fontObject, fontSize, scope, weight)

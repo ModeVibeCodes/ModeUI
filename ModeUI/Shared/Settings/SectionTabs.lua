@@ -46,7 +46,7 @@ function W.SectionTabs(page, order)
     local offset = 0
     function strip:Scroll(value)
         offset = math.max(0, math.min(self.maximum or 0, value))
-        viewport:SetHorizontalScroll(offset)
+        viewport:SetHorizontalScroll(offset); W.SnapSettings()
         left:SetEnabled(offset > 0); right:SetEnabled(offset < (self.maximum or 0))
         if slider:GetValue() ~= offset then self.syncing = true; slider:SetValue(offset); self.syncing = false end
     end

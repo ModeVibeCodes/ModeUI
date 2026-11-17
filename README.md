@@ -89,7 +89,7 @@ ModeCDM/           the Cooldown Manager's companion addon (also goes in Interfac
                    (Edit Mode), Media, Border, Skin (Blizzard frames), Settings (window, widgets)
   Modules/         one folder per module (UnitFrames, Nameplates, PartyFrames, BuffsDebuffs, ActionBars, DamageMeters, Chat, Windows, Tooltip, Bags, Minimap, Profiles, Optimizations, ClassColors),
                    each with its own XML, Init.lua, Driver.lua and Settings.lua
-  Media/           Mode textures (tools/build_mode_assets.lua and friends), minimap masks, Geist fonts
+  Media/           Mode textures (tools/build_mode_assets.lua and friends), minimap masks, Geist and Damion (Mode Script) fonts
 tests/             structure, runtime, smoke, Unit Frames, Nameplates, Party Frames, Action Bars, Cooldown Manager, Resource Bars, Damage Meters, Chat, Windows, Tooltip, Bags, Minimap, Global and template tests
                    (simulated client, not WoW)
 tools/             texture generators (Python + Pillow; ModeFlat and nameplate shapes in plain Lua)

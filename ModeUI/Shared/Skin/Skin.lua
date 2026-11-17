@@ -127,6 +127,8 @@ Skin.mode = {
     panel = G.panel, title = G.raised, line = G.line, field = G.base, face = G.raised, chosen = G.track,
     track = G.track, thumb = G.rimStrong, heading = G.white, text = G.text, label = G.secondary, muted = G.muted,
     disabled = G.rim, accent = Tone.ivory, card = G.raised, cardRim = G.line, fieldRim = G.rim,
+    -- The rim of the quest and gossip windows' buttons (Accept, Goodbye...).
+    quest = Tone.quest,
 }
 local TILED = { Panel = true, Title = true }
 
@@ -134,7 +136,8 @@ local TILED = { Panel = true, Title = true }
 -- host, at `opts.layer`/`opts.sublevel`) and, with `preset`, a Style.Edge on
 -- a frame of its own that follows the painted box (`opts.level` levels above
 -- the host). `opts.style`/`opts.metal`: the edge's Border Style and Border
--- Metal (a module's choice; later changes go through parts.modeEdge:SetStyle).
+-- Metal (a module's choice; later changes go through parts.modeEdge:SetStyle);
+-- `opts.color`: a flat role's color (the `empty` edge's).
 -- Made once; returns the host's parts.
 function Skin.Box(host, preset, opts)
     opts = opts or {}
@@ -159,7 +162,7 @@ function Skin.Box(host, preset, opts)
         -- `opts.inset`: pixels the edge sits inside the box (its reach puts
         -- the whole border within the box).
         parts.edgeInset = opts.inset or 0
-        parts.modeEdge = Style.Edge(frame, preset, { level = 1, style = opts.style, metal = opts.metal })
+        parts.modeEdge = Style.Edge(frame, preset, { level = 1, style = opts.style, metal = opts.metal, color = opts.color })
     end
     return parts
 end

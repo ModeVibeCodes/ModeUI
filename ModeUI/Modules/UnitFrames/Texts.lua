@@ -131,11 +131,15 @@ function M:LayoutTexts(f, unit)
             Write(text, "")
         end
         text:SetShown(shown)
-        LayoutLift(text, fdb, s.size, path, g.px, shown, justify)
-        -- Health numbers glow (Health Text Glow); width from the format.
-        local glow = shown and fdb.healthTextGlow and self.contentKind[s.content] == "health"
-        addon.Style.TextGlow(text, glow and { size = s.size, chars = addon.Style.GLOW_CHARS[(s.content:gsub("^health", ""):lower())],
-            justify = justify, px = g.px } or nil)
+        -- Text glow (Style.TextHalo): Health Text Glow on health numbers,
+        -- Name Text Glow on names (not the level alone). A glowing text drops
+        -- its shadows, the lifted one included: the glow takes their place.
+        local kind = shown and self.contentKind[s.content]
+        local glow = kind == "health" and fdb.healthTextGlow and "healthText"
+            or kind == "name" and s.content ~= "level" and fdb.nameTextGlow and "nameText"
+        LayoutLift(text, fdb, s.size, path, g.px, shown and not glow, justify)
+        addon.Style.TextHalo(text, glow and { color = fdb[glow .. "GlowColor"], strength = fdb[glow .. "GlowStrength"] / 100,
+            px = g.px } or nil)
     end
 end
 
@@ -155,6 +159,8 @@ function M:WriteNames(f, unit, name, level, identity)
         if styled then
             local white = addon.Style.Tone.mono.white
             text:SetTextColor(white[1], white[2], white[3], 1); Write(text, styled)
+            -- The glow takes the name's color, not the white under the codes.
+            addon.Style.TintHalo(text, color[1], color[2], color[3])
             -- The lift is a black copy: color codes would show through it.
             if text.lift then text.lift:SetText(name) end
         elseif content == "name" then Write(text, name)

@@ -16,7 +16,7 @@ function addon:CreateCategoryNavigation(parent, navigationButtons)
     strip:SetSize(1,36);viewport:SetScrollChild(strip)
     local offset=0
     function view:Scroll(value)
-        offset=math.max(0,math.min(self.maximum or 0,value));viewport:SetHorizontalScroll(offset)
+        offset=math.max(0,math.min(self.maximum or 0,value));viewport:SetHorizontalScroll(offset);W.SnapSettings()
     end
     viewport:EnableMouseWheel(true);viewport:SetScript("OnMouseWheel",function(_,delta) view:Scroll(offset-delta*100) end)
     view.buttons = {}

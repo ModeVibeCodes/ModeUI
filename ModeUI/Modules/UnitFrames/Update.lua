@@ -54,16 +54,18 @@ function M:NameColor(unit, identity)
     return self.nameAccents[mode] or self.ACCENT
 end
 
--- Portrait ring (Style.Ring): edge-lit Steel by default, or its metal tinted by
--- the class/reaction color or a custom color, keeping its light band.
+-- Portrait ring (Style.Ring): Metal draws its Ring Style in its Ring Metal
+-- (Mode-Blizz in Silver by default); Class Color, Custom and the combat red
+-- are Mode-BlizzEmpty, the flat color alone.
 function M:PaintRing(f, unit)
     local fdb = self:FrameDB(unit)
     local ring, mode = f.portrait.ring, fdb.portraitRing
+    Style.SetRingStyle(ring, fdb.portraitRingStyle)
     -- In combat, with Combat Ring on, the ring turns red (Status.lua).
     if f.redRing then Style.PaintRing(ring, self.db[unit].status.ringColor); return end
     if mode == "custom" then Style.PaintRing(ring, fdb.portraitRingColor); return end
     local color = mode == "class" and (f.ghost and self:SampleIdentity(unit, fdb) or self:IdentityColor(unit))
-    Style.PaintRing(ring, color or nil)
+    Style.PaintRing(ring, color or nil, fdb.portraitRingMetal)
 end
 
 -- The health fill's color, and the shield's tint that follows it.

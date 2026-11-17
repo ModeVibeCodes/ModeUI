@@ -114,6 +114,27 @@ world.run([[
         end
         edge:SetStyle(nil)
     end
+    -- Snapping (Style.SnapEdges): at a UI scale that isn't pixel perfect a host
+    -- sits between pixels; a snapped edge's holder moves onto whole pixels.
+    local oldPixelUtil = PixelUtil
+    PixelUtil = { GetPixelToUIUnitFactor = function() return 768 / 1440 end }
+    local root = CreateFrame("Frame", nil, UIParent)
+    local control = CreateFrame("Button", nil, root)
+    control:SetSize(191, 24); control.centerX, control.centerY = 300.5, 200.2
+    local snapped, plain = Style.Edge(control, "control"), Style.Edge(host, "control")
+    Style.SnapEdges(root)
+    local k = control:GetEffectiveScale() / (768 / 1440)
+    local low, high = snapped.holder.points[1], snapped.holder.points[2]
+    assert(low[1] == "BOTTOMLEFT" and high[1] == "TOPRIGHT" and low[2] == control, "corner to corner on the host")
+    for _, side in ipairs({ { control:GetLeft(), low[4] }, { control:GetBottom(), low[5] },
+        { control:GetLeft() + 191, high[4] }, { control:GetBottom() + 24, high[5] } }) do
+        local px = side[1] * k + side[2]
+        assert(math.abs(px - math.floor(px + 0.5)) < 1e-6 and math.abs(side[2]) <= 0.5, "each side on a whole pixel, moved under half a pixel")
+    end
+    assert(math.abs(low[4]) > 1e-6, "the fixture really sits between pixels")
+    assert(plain.holder.points[1][1] == "TOPLEFT" and plain.holder.points[1][4] == 0, "an edge outside the root keeps the plain anchor")
+    snapped:Layout(); assert(snapped.holder.points[1][1] == "BOTTOMLEFT", "a re-layout keeps the snap")
+    PixelUtil = oldPixelUtil
     -- The roles' defaults (owner, November 17, 2026): frames Mode-Blizz in
     -- Silver, windows Mode-Thin in Steel. The reach of every role is what it
     -- was: the heavy roles' black line sits just inside the host.
@@ -221,6 +242,25 @@ world.run([[
     assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
     local ring = Style.Ring(host, 66)
     assert(ring.portrait and ring.mask and ring.rim == 3 and ring.shadow, "portrait ring, 3px of metal and a shadow ring")
+    -- Mode-Blizz's specular layers in Silver by default; a color is Mode-BlizzEmpty.
+    local silver = Tone.metal.silver
+    assert(#ring.layers == 4 and ring.disc.vertexColor[1] == silver.dark[1] and ring.layers[4].texture.vertexColor[1] == silver.hi[1], "Mode-Blizz, Silver")
+    for _, profile in ipairs(Style.EDGE_DATA.RingProfiles()) do assert(Style.ASSETS["Ring" .. profile], "ring art is registered") end
+    Style.PaintRing(ring, nil, "steel")
+    assert(ring.disc.vertexColor[1] == Tone.metal.steel.dark[1] and ring.layers[2].texture:IsShown(), "another metal")
+    Style.PaintRing(ring, Tone.celadon)
+    assert(ring.disc.vertexColor[1] == Tone.celadon[1] and ring.disc:IsShown() and not ring.layers[2].texture:IsShown(), "Mode-BlizzEmpty: the flat color")
+    -- Every Mode border style draws on the ring; bevel's inner row sits 1px in.
+    for _, choice in ipairs(Style.EdgeStyleChoices()) do
+        Style.SetRingStyle(ring, choice.id)
+        assert(ring.styleId == choice.id and #ring.layers == #Style.EDGE_DATA.RingLayers(choice.id), choice.id)
+    end
+    Style.SetRingStyle(ring, "thin"); Style.PaintRing(ring)
+    assert(#ring.layers == 6 and ring.disc.vertexColor[1] == Tone.metal.steel.mid[1], "Mode-Thin: Steel bevel")
+    Style.SetRingStyle(ring, "blizzEmpty"); Style.PaintRing(ring)
+    assert(#ring.layers == 1 and ring.disc.vertexColor[1] == silver.mid[1] and not ring.pool[2]:IsShown(), "Mode-BlizzEmpty: flat Silver")
+    Style.SetRingStyle(ring, "bogus")
+    assert(ring.styleId == "blizz" and #ring.layers == 4 and ring.pool[4]:IsShown(), "unknown style: Mode-Blizz")
     assert(Style.SameColor(Style.Hex("575757"), Tone.slate), "Slate, a little lighter")
     -- Health text glow: a halo in the text's color, sized from the format and
     -- set on the text's justified side; it follows the color and visibility.
@@ -244,6 +284,31 @@ world.run([[
     text:Show(); assert(glow:IsShown())
     Style.TextGlow(text, nil); assert(not glow:IsShown(), "toggled off")
     text:Show(); assert(not glow:IsShown(), "stays off")
+    -- Text glow, Halo: 8 copies under the text that take its writes (color
+    -- codes left out), its color by mode, and its visibility.
+    local word = host:CreateFontString(nil, "OVERLAY")
+    word:SetFont("Fonts/x.ttf", 12, "OUTLINE"); word:SetJustifyH("LEFT"); word:SetTextColor(0.2, 0.8, 0.4, 1); word:SetText("87%")
+    Style.TextHalo(word, { color = "deep", strength = 0.2, px = 1 })
+    local halo = word.halo
+    assert(#halo == 8 and halo[1].text == "87%" and halo[1].font[3] == "" and halo[1].shadowColor[4] == 0, "8 copies, no outline or shadow")
+    assert(halo[1].alpha == 0.2 and halo[8].alpha == 0.2, "every copy at the strength")
+    for _, copy in ipairs(halo) do
+        local x, y = copy.points[1][4], copy.points[1][5]
+        assert(math.abs(x) <= 1 and math.abs(y) <= 1 and (x ~= 0 or y ~= 0), "1px out, tight to the letters")
+    end
+    assert(word.shadowColor[4] == 0, "the glow takes the shadow's place")
+    local deep = Style.Deep({ 0.2, 0.8, 0.4 })
+    assert(math.abs(halo[1].color[2] - deep[2]) < 1e-9 and deep[2] < 0.6 and deep[2] > deep[1], "Deep: the same hue, darker")
+    word:SetText("|cffff0000Kae|rlyn"); assert(halo[5].text == "Kaelyn", "color codes stay out of the glow")
+    word:SetFormattedText("|cff808080%s|r %s", "60", "Kaelyn"); assert(halo[8].text == "60 Kaelyn")
+    Style.TextHalo(word, { color = "ink", strength = 0.2, px = 1 })
+    word:SetTextColor(0, 1, 0); assert(halo[1].color[2] == Tone.shadow[2], "Ink stays dark")
+    Style.TextHalo(word, { color = "match", strength = 0.2, px = 1 })
+    word:SetTextColor(0, 1, 0); assert(halo[1].color[2] == 1, "Match follows the text")
+    word:Hide(); assert(not halo[1]:IsShown(), "hides with the text")
+    word:Show(); assert(halo[1]:IsShown())
+    Style.TextHalo(word, nil); assert(not halo[1]:IsShown(), "toggled off")
+    word:Show(); word:SetText("off"); assert(not halo[1]:IsShown() and halo[1].text ~= "off", "stays off and unwritten")
     hooksecurefunc = oldHook
     assert(Style.Accent("specialty") == Tone.rosewood and Style.Accent() == Tone.ivory)
     -- The style sheet builds on demand.

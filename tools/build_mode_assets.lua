@@ -11,8 +11,9 @@
 --           inner corner: no masks. A profile ring's alpha follows the lighting
 --           down its height (the middle rows stretch over the border's height).
 --   Soft             a soft drop shadow under frames and windows (sliced at 12)
---   RingSheen        a disc with a light band, laid over a portrait's metal disc
---   RingLight        a disc lit from the top, fading by its middle (the edge-lit ring)
+--   Ring<profile>    the portrait ring's lighting (EdgeData D.RingProfiles): a
+--                    disc whose alpha follows a style's lighting profile down
+--                    its height, laid over the metal's base disc
 -- Bars/     luminance art multiplied by the bar color (SetVertexColor), and white
 --           "Lift" overlays (alpha only) that add light the multiply can't.
 --   Solid (8x8), MatteBase/MatteLift, BG, ButtonBase/ButtonLift, GlassBase/GlassLift,
@@ -96,10 +97,11 @@ do
         return 0, 0, 0, a
     end)
 end
--- Portrait ring light: a disc with a soft horizontal band through its middle.
-Shape("Borders/RingSheen", 128, 128, T.Circle(64, 64, 64), function(_, y) return T.Smooth(1 - math.abs(y - 64) / 64) end)
--- Edge-lit ring: light from the top, strongest at the top edge, gone by the middle.
-Shape("Borders/RingLight", 128, 128, T.Circle(64, 64, 64), function(_, y) return math.max(0, (64 - y) / 64) ^ 1.5 end)
+-- Portrait ring lighting: every style's lighting layers over a whole disc.
+for _, profile in ipairs(EDGE.RingProfiles()) do
+    local stops = EDGE.PROFILES[profile]
+    Shape("Borders/Ring" .. profile, 128, 128, T.Circle(64, 64, 64), function(_, y) return Profile(stops, y / 128) end)
+end
 
 -- Bars ---------------------------------------------------------------------
 local BW, BH = 256, 32
