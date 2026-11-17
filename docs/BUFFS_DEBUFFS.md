@@ -1,13 +1,25 @@
 # Interface: Buffs & Debuffs
 
-November 17, 2026. **Built on branch `t3/buffs-debuffs`; waits on its in-game
-gate.** A module in the sidebar's **Interface** group (category `frames`),
+November 17, 2026. **Built on branch `t3/buffs-debuffs` and merged into
+`main` on the owner's word (November 17).** A module in the sidebar's **Interface** group (category `frames`),
 after Party Frames. Off by default; a profile whose Unit Frames Player frame
 showed auras starts with it on. Planned and approved on the canvas
 https://claude.ai/artifact/73o8fB82wKRQUS314hvg5E (the owner's saved picks
 are the defaults). APIs and their rules are in
 [API_COMPATIBILITY.md](API_COMPATIBILITY.md#buffs--debuffs--november-17-2026).
-Static/mock validated only; nothing here has run in the client yet.
+Run in the client by the owner (November 17): the module, the handover from
+Unit Frames, the stand-in and the icons confirmed, no Lua errors; gate items 5
+and 6 (the Boss & Important bar and the bar picker row) were merged before an
+in-game recheck (see [In-game gate](#in-game-gate)).
+
+## History
+
+| Commit | What |
+|---|---|
+| `13f6670` | The module: Mode aura bars on Blizzard's aura containers, the stand-in, custom bars, blacklist, the handover from Unit Frames |
+| `6a16676` | First in-game look: Icon Width and Height, Icon Zoom (crop), Border Size and Gap, time and stack text settings, Player Debuffs 42 wide with a 2px border, the `BuffFrame.lua:177` error fixed (settings version 2) |
+| `dfdc340` | Every icon drew black: the art's clip frame layered above the icon frame |
+| `6c11507` | Player Debuffs (Boss & Important), the (All) label, the bar picker's buttons on their own row |
 
 ## What the owner asked for
 
@@ -279,6 +291,49 @@ Not built (from the plan): reskin in place (decision 1 went to stand in);
 moving Party Frames' aura catalog into Shared (left alone so a confirmed
 module doesn't change).
 
+### Extending it
+
+- **A new kind:** one entry in `M.categories[kind]` (`Init.lua`) with an `id`,
+  a `label` and one of `token` (an `AuraUtil.AuraFilters` name), `dispel`,
+  `boss`, `maxDuration`, `other`, `all` or `enchant`. Order matters: a token
+  kind excludes the token kinds before it. Give the samples that count as it
+  its id in `cats` (`Samples.lua`); the label goes through `L[...]` (English
+  is the fallback).
+- **A new fixed bar:** its id in `M.FIXED`, `M.FIXED_LABELS` and
+  `M.FIXED_KIND`, a `Bar(...)` in `M.barDefaults` and a place in
+  `M.defaultPositions` (all `Init.lua`), a line in `NOTES` (`Settings.lua`).
+  Its Edit Mode target is registered from `M.FIXED`, and
+  `M.Initialize` gives existing profiles the bar on the next load, so no
+  migration is needed (Player Debuffs (Boss & Important) came this way).
+- **A new bar setting:** a default in `Bar(...)`, a check in `M.ValidateBar`
+  (`Migrations.lua`), a control in `SettingsBar.lua` or `SettingsLook.lua`; if
+  it changes how a button is built, it's part of `M:LookKey` (`Icons.lua`,
+  a new container) automatically; a setting the container takes in place
+  goes in that file's `LIVE` list. Change a shipped default only
+  where the saved value still equals the old one (bump `SETTINGS_VERSION`).
+
+## Known limits and open questions
+
+- **An aura can show twice.** A boss debuff with a type shows under both Boss
+  and its type in a bar that picks both (`isBossAura = false` isn't safe to
+  send). Player Debuffs (All) keeps Boss Debuffs (the owner's picks), so boss
+  debuffs show there and in Player Debuffs (Boss & Important); untick Boss in
+  (All) to stop it.
+- **The blacklist and your own debuffs.** The game skips spell filters for
+  harmful auras on the player unless the spell is never secret; the picker
+  marks which.
+- **Bringing Blizzard's frames back** (hiding Buffs or Debuffs, or turning
+  the module off) asks for a reload: they were unregistered.
+- **Blizzard's Edit Mode settings** for its Buff and Debuff frames (Icon Size,
+  Padding, Limit, ...) don't reach the Mode bars; only the frame's place
+  does, as the Buffs bar's anchor.
+- **Combat:** settings changes and Edit Mode moves wait until combat ends;
+  the bars themselves keep updating (the containers are Blizzard's).
+- **Enrage** isn't offered as a type: unconfirmed as a candidate filter key.
+- **Open (owner, November 17):** "offsets" for borders was built as **Border
+  Gap** (the space between the art and the band); what "shift" should do was
+  asked and isn't built yet.
+
 ## In-game gate
 
 First look (owner, November 17, 2026): the module, the handover and the
@@ -308,7 +363,8 @@ read, and text wasn't adjustable. All addressed above. Recheck, after
    font, **Outline** and **Shadow**. Required state: out of combat.
    Confirmation: live auras and the preview take each change.
 
-Icons confirmed in game (owner, November 17: "Looks good"). Then:
+Icons confirmed in game (owner, November 17: "Looks good"). Then (merged
+into `main` before this recheck; still to confirm):
 
 5. **Boss & Important.** Navigation: the game world, then **Edit Mode** in
    the ModeUI window header. Action: look above Player Debuffs (All); pick

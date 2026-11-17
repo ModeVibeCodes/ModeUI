@@ -164,7 +164,9 @@ New module on the owner's request (November 17, 2026): **Buffs & Debuffs**
 https://claude.ai/artifact/73o8fB82wKRQUS314hvg5E and built on branch
 `t3/buffs-debuffs`: Mode bars on Blizzard's aura containers standing in for
 Blizzard's buff frames, the Player frame's auras moved out of Unit Frames,
-custom bars and a blacklist. Waits on its in-game gate.
+custom bars and a blacklist. Run in game by the owner and merged into
+`main` (November 17); the last round (Player Debuffs (Boss & Important), the
+bar picker row) still waits on its in-game recheck.
 
 ### Revision 1: borders (checkpoint, November 16)
 

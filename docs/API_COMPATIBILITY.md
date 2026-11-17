@@ -1485,7 +1485,8 @@ type: the mainline `Minimap.lua`/`Minimap.xml` plus Camelot overrides
 
 Checked against the `forever` branch of Gethe/wow-ui-source (build 1.60.1,
 paths under `Interface/AddOns/`); design notes in
-[BUFFS_DEBUFFS.md](BUFFS_DEBUFFS.md). Native confirmation pending.
+[BUFFS_DEBUFFS.md](BUFFS_DEBUFFS.md). Run in game by the owner (November 17):
+the stand-in, the containers on the player and the clip-frame crop work.
 
 - **Blizzard's buff frames.** Forever runs the mainline `Blizzard_BuffFrame`
   (the TOC's Classic `BuffFrame.lua` line is `[AllowLoadGameType classic]`).
