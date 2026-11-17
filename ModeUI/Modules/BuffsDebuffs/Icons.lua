@@ -41,7 +41,6 @@ local function LayoutArt(icon, bar, px, width, height)
     icon.clip:ClearAllPoints()
     icon.clip:SetPoint("TOPLEFT", icon, "TOPLEFT", inset, -inset)
     icon.clip:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -inset, inset)
-    icon.clip:SetFrameLevel(icon:GetFrameLevel())
     local visible = math.max(width, height) - 2 * inset
     local side = math.max(px, visible / (1 - 2 * bar.crop / 100))
     icon.art:ClearAllPoints()
@@ -49,7 +48,16 @@ local function LayoutArt(icon, bar, px, width, height)
     icon.art:SetSize(side, side)
     icon.art:SetTexCoord(0, 1, 0, 1)
     icon.cooldown:ClearAllPoints(); icon.cooldown:SetAllPoints(icon.clip)
-    icon.cooldown:SetFrameLevel(icon:GetFrameLevel() + 1)
+    -- Layers, bottom up: the icon frame's black back, the art, the swipe
+    -- and GCD flash, the border, the texts. The art's frame must sit above
+    -- the icon frame: at the same level the back drew over it (owner's
+    -- in-game report, November 17, 2026: every icon black).
+    local level = icon:GetFrameLevel()
+    icon.clip:SetFrameLevel(level + 1)
+    icon.cooldown:SetFrameLevel(level + 2)
+    icon.flashLayer:SetFrameLevel(level + 2)
+    icon.edge.holder:SetFrameLevel(level + 3)
+    icon.textLayer:SetFrameLevel(level + 4)
 end
 
 -- Stacks in their corner and the time text on the icon, in the bar's sizes,

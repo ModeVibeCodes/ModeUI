@@ -194,6 +194,8 @@ Height, in the bar's Border Style, Metal and Size. The art is cropped by
 size, not texture coordinates (the game sets each aura's texture itself): a
 square **Icon Zoom**% wider than the visible part on each side, centered in a
 frame that clips it (`SetClipsChildren`), a **Border Gap** inside the band.
+That frame sits one level above the icon frame, whose black back drew over
+the art at the same level (every icon black in game, fixed November 17).
 Time text below, above or on the icon and the stack count in any corner,
 each with its own size, color and X/Y offset (the module's font, outline and
 shadow); swipe; a flat rim the game colors by debuff type

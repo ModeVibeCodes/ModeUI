@@ -125,6 +125,9 @@ H.Load({ before = STUBS }).run([==[
     assert(b.timerRegion == b.modeOutside and b.countRegion == b.modeIcon.count, 'time text below, stacks')
     -- Cropped by size: the art is 10% wider than its clipping frame on each side (30 x 26 inside a 1px band).
     assert(b.modeIcon.clip.clipsChildren and not b.modeIcon.icon:IsShown(), 'a clipping frame holds the art')
+    local lv = b.modeIcon:GetFrameLevel()
+    assert(b.modeIcon.clip:GetFrameLevel() == lv + 1 and b.modeIcon.cooldown:GetFrameLevel() == lv + 2 and b.modeIcon.edge.holder:GetFrameLevel() == lv + 3
+        and b.modeIcon.textLayer:GetFrameLevel() == lv + 4, 'the art above the black back, under the swipe, border and text')
     assert(math.abs(b.modeIcon.art.width - 30 / 0.8) < 1e-6 and b.modeIcon.art.points[1][1] == 'CENTER')
     assert(Point(b.modeIcon.count)[1] == 'BOTTOMRIGHT' and b.modeIcon.count.font[2] == M.db.bars.buffs.countSize, 'stacks in their corner')
     assert(b.cancel == 'RightButtonUp' and b.tooltipPoint == 'ANCHOR_BOTTOMLEFT', 'right-click cancels; tooltip')
