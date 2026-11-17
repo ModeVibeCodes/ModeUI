@@ -188,6 +188,17 @@ function Style.EdgeDepth(preset)
     local def = assert(D.PRESETS[preset], "Style.EdgeDepth: unknown preset " .. tostring(preset))
     return (def.gap == true and 1 or 0) + def.rim
 end
+-- The shortest host, in physical pixels, a border of `preset` in style
+-- `styleId` fits ("Choosing a border", Height floor): each ring's corners are
+-- drawn 1:1, so a ring must be at least two slice margins tall, and a ring
+-- `out` pixels outside the host is the host's height plus 2 * out.
+function Style.EdgeMinHeight(preset, styleId)
+    local floor = 1
+    for _, ring in ipairs((D.Rings(preset, Style.EdgeStyle(styleId)))) do
+        floor = math.max(floor, 2 * D.SHAPES[ring.shape].margin - 2 * ring.out)
+    end
+    return floor
+end
 
 -- How far the border reaches outside the host, in the host's UI units.
 function Edge:Outset()

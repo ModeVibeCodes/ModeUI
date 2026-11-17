@@ -259,6 +259,25 @@ local function MigrateV4(db)
     for _, style in pairs(type(db.resources) == "table" and db.resources or {}) do ResourceToV5(style) end
 end
 
+-- Version 5 -> 6 (owner, November 17, 2026): resource bars in Mode-Round
+-- and Gunmetal, thinner, with the combo point count on their left. A value
+-- still at version 5's default takes the new one; new keys (Dark mode, Rim
+-- Color, Tick Marks, the combo layout) fill from their defaults; Separate
+-- Resources stays, so no bar moves.
+local function MigrateV5(db)
+    local old = M.V5_RESOURCE
+    for _, id in ipairs(M.resources) do
+        local style, defaults = type(db.resources) == "table" and db.resources[id], M.resourceDefaults[id]
+        if type(style) == "table" and Public(style) then
+            if style.edgeStyle == "blizz" then style.edgeStyle = defaults.edgeStyle end
+            if style.edgeMetal == "default" then style.edgeMetal = defaults.edgeMetal end
+            if old.height[id] and style.height == old.height[id] then style.height = defaults.height end
+            if id == "combo" and style.text == old.comboText then style.text = defaults.text end
+            if id == "combo" and style.textAnchor == old.comboAnchor then style.textAnchor = defaults.textAnchor end
+        end
+    end
+end
+
 function M.Initialize(db)
     if db.version == nil then db.version = M.VERSION end
     if db.version == 1 then
@@ -304,6 +323,7 @@ function M.Initialize(db)
         db.version = 4
     end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
+    if db.version == 5 then MigrateV5(db); db.version = 6 end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end

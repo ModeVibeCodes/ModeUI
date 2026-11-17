@@ -176,6 +176,18 @@ Windows, Chat, Damage Meters, Tooltip and Bags.
 An aura rim the game colors by dispel type goes flat first
 (`Kit.DispelAuraRim`), so no lighting layer covers the type's color.
 
+**Height floor.** Every ring's corners are drawn 1:1 from sliced art, so a
+host must be tall enough for two slice margins on each ring
+(`Style.EdgeMinHeight(role, style)`): in `frameThin`, 6px for the cut styles
+(Mode-Blizz, Mode-BlizzEmpty, Mode-Thin) and 10px for Mode-Round; in `frame`,
+12px cut and 24px round. A thin bar in its own border draws no shorter than
+its floor (its saved height is kept); bars inside a shared border have no
+floor of their own.
+
+**Rim Color** (the Cooldown Manager's resource bars): one picker in place of
+Border Metal: Default Metal, Silver, Steel, Gunmetal (saved in `edgeMetal`),
+Bar Color or Custom, which paint the band flat in that color (`Edge:SetTint`).
+
 Highlight: the outer shadow ring takes the accent (1px), so the metal band keeps
 its look. Target uses Ivory; focus uses Rosewood. Group frames tint their band
 instead, so their size never changes.
@@ -223,9 +235,18 @@ Phase 6 probe):
 - **Tracked bars:** 220 x 16; the icon 4px wider than the bar is tall, in the
   `frameThin` edge, 2px from the bar's own edge; Mode Gradient (base and lift)
   in your class color (Custom: Ivory) over solid Mode BG, with the Comet spark.
-- **Resource bars:** each box in the `frameThin` edge, Mode Gradient over Mode
-  BG at 60%, Geist Bold text; combo points in the hostile red, Spacing between
-  the shadows.
+- **Resource bars** (owner, November 17, 2026): each bar in the `frameThin`
+  edge, Mode-Round in Gunmetal, Mode Gradient over Mode BG at 60%, Geist Bold
+  text. Power 10px, Combo Points and Alternate Mana 6px (drawn at the border's
+  floor). **Dark** by default: every fill in `darkFill`, combo points too, the
+  fill end line kept, the text in the bar's own color (Power Type; Class
+  Color or Custom the options). Combo points in the hostile red, **Grouped**
+  (one edge, a 1px Divider Color line between points) or **Separated** (an
+  edge each, Spacing between the shadows), the count on their left. **Tick
+  Marks**: up to three 1px Ivory lines at power values, each for one power
+  type. **Group Resources** puts Power, Combo Points and Alternate Mana in one
+  edge with a 1px black line between them, like the unit frames' bar block;
+  only the block has a floor, so its strips can be thinner.
 
 ## Bars (`Style.Bar`)
 

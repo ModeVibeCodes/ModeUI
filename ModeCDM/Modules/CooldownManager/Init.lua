@@ -44,7 +44,11 @@ addon:RegisterModule("cooldownManager", M)
 -- in the Mode colors, Celadon procs and buffs, Ivory active and ready glows;
 -- Tracked Bars in Mode Gradient on Mode BG with the Comet spark, in your
 -- class color (Bar Color: Class Color or Custom).
-M.VERSION = 5
+-- Version 6 (owner, November 17, 2026): Resource Bars in Mode-Round and
+-- Gunmetal, Dark mode, thinner (Power 10, Combo Points and Alternate Mana 6),
+-- the combo point count on; Rim Color, Tick Marks, Grouped or Separated combo
+-- points and Group Resources added (ResourceInit.lua, Migrations.lua).
+M.VERSION = 6
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone
