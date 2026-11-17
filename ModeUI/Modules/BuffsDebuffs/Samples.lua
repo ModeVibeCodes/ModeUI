@@ -30,7 +30,7 @@ M.SAMPLES = {
         { icon = "Spell_Shadow_AbominationExplosion", cats = {}, type = "Disease", time = "18", count = "3" },
         { icon = "Ability_PoisonSting", cats = {}, type = "Poison", time = "9", count = "2" },
         { icon = "Ability_Gouge", cats = {}, type = "Bleed", time = "11" },
-        { icon = "Spell_Shadow_UnholyFrenzy", cats = {}, time = "25" },
+        { icon = "Spell_Shadow_UnholyFrenzy", cats = { "important" }, time = "25" },
     },
 }
 

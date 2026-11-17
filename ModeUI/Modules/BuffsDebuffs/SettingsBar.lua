@@ -11,7 +11,9 @@ local function Toggle(label, key) return { label = label, get = function() retur
 function M:BuildBarsTab(page, c)
     page:Section(L["Bars"], nil, false)
     page:Group(L["Bar"])
-    page.barSelect = self:BuildBarPicker(page, c)
+    local select, add, delete = self:BuildBarPicker(page, c)
+    page.barSelect = select
+    function page.barSelectParts() return select, add, delete end
     page.barNote = c.Note(function() return M:BarNote() end, 48)
     page.showToggles = c.Toggles({ Toggle("Show This Bar", "show") })
     c.When(function() return M:Custom(M:EditingBar()) ~= nil end, function()

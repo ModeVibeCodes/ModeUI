@@ -150,6 +150,16 @@ H.Load({ before = STUBS }).run([==[
     assert(pd.playerDebuffs_cc.button.modeIcon.edge.styleId == 'blizzEmpty', 'the owner picked Mode-BlizzEmpty')
     local pdi = pd.playerDebuffs_cc.button.modeIcon
     assert(pdi.width == 42 and pdi.height == 36 and pdi.edge.rim == 2, 'Player Debuffs: 42 x 36 with a 2px border')
+    assert(M:BarLabel('playerDebuffs') == 'Player Debuffs (All)' and M:BarLabel('playerImportant') == 'Player Debuffs (Boss & Important)')
+    -- The Boss & Important preset: Important first, then boss debuffs that aren't, a little bigger, just above (All).
+    local pi = M.containers.playerImportant
+    assert(table.concat(pi.order, ',') == 'playerImportant_important,playerImportant_boss')
+    assert(pi.groups.playerImportant_important.filter == 'HARMFUL|IMPORTANT' and pi.groups.playerImportant_boss.filter == 'HARMFUL|!IMPORTANT'
+        and pi.groups.playerImportant_boss.candidates.isBossAura == true, 'each aura once')
+    local pii = pi.groups.playerImportant_important.button.modeIcon
+    assert(pii.width == 48 and pii.height == 42 and pii.edge.rim == 2 and pii.edge.styleId == 'blizzEmpty')
+    local above = M.movers.playerImportant.points[1]
+    assert(above[1] == 'BOTTOMRIGHT' and above[2] == M.movers.playerDebuffs and above[3] == 'TOPRIGHT' and above[5] == 6, '6px above (All)')
     -- Defensives glow Aura Gold.
     local def = M.containers.custom1.groups.custom1_bigdef.button
     assert(def.modeIcon.glow:IsShown(), 'soft glow')
@@ -243,6 +253,10 @@ H.Load({ before = STUBS }).run([==[
     for _, section in ipairs(page.sections) do tabs[#tabs + 1] = section.title end
     assert(table.concat(tabs, ',') == 'Bars,Look,Blacklist,Module', 'four tabs')
     assert(page.heightSlider and page.cropSlider and page.borderGapSlider and page.timerSizeSlider and page.timerNudge and page.countCorner and page.countNudge and page.outlinePills, 'size, border and text controls')
+    -- + New Bar and Delete Bar sit under the dropdown (which spans its row), Delete only for your own bars.
+    local _, add, delete = page.barSelectParts()
+    assert(add:GetParent().row ~= page.barSelect:GetParent().row and not delete:IsShown(), 'buttons on their own row')
+    page.SetEditing('custom1'); assert(delete:IsShown()); page.SetEditing('buffs')
     local view = page.configPreview
     assert(view and view.pool[1] and view.pool[1]:IsShown() and view.caption:GetText():find('Buffs', 1, true), 'the preview shows Buffs')
     page.SetEditing('playerDebuffs')

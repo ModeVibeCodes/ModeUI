@@ -159,10 +159,13 @@ forbids anchoring frames to a container, so other bars anchor to movers.
 | Buffs | All Buffs, Weapon Enchants; 32 max, 10 a row | Blizzard's Buff Frame (`frame:BuffFrame`), top right on top right | 32 x 28, 4px apart, grows left, rows down, time below |
 | Debuffs | All Debuffs; 16 max, 10 a row | Buffs' top right, 4 right and 147 down | as Buffs, rims by debuff type |
 | Player Buffs | Important, Heals Over Time, Yours; 12 max, 8 a row | under the ModeUI Player Frame's right end (top right on bottom right, -6, -2) | 24 x 20, 2px apart, grows left, time on the icon |
-| Player Debuffs | Crowd Control, Dispellable by You, Boss, Magic, Curse, Disease, Poison, Bleed, Other; 8 max, 6 a row | above the ModeUI Player Frame (top right on top right, 2, 131) | 42 x 36 (owner, after the first in-game look), 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
+| Player Debuffs (All) | Crowd Control, Dispellable by You, Boss, Magic, Curse, Disease, Poison, Bleed, Other; 8 max, 6 a row | above the ModeUI Player Frame (top right on top right, 2, 131) | 42 x 36 (owner, after the first in-game look), 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
+| Player Debuffs (Boss & Important) (owner, November 17) | Important (`IMPORTANT`), Boss (that aren't Important); 6 max, 6 a row | 6px above Player Debuffs (All), right edges lined up (bottom right on its top right, 0, 6) | 48 x 42, 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
 | Defensives (custom) | Big and External Defensives, Important; 4 max | left of center (-151, 27) | 40 x 34, Mode-BlizzEmpty, Soft glow in Aura Gold, time on the icon |
 
-Player Buffs' rows go down (the canvas had Up, which would cover the frame
+Player Debuffs (All) still shows Boss debuffs too (the owner's picks); untick
+Boss there to see them only in the Boss & Important bar. Player Buffs' rows
+go down (the canvas had Up, which would cover the frame
 once a second row starts). Custom bars: **+ New Bar** (eight at most),
 renamed, deleted (what hangs from one moves to where it is).
 
@@ -176,6 +179,7 @@ One aura group per kind picked, in this order (an aura shows once):
   Minute (`maxDuration` 60), All Buffs; Weapon Enchants are the container's
   item enchantments (main and off hand, after the groups).
 - Debuffs: Crowd Control (`CROWD_CONTROL`), Dispellable by You (`RAID`),
+  Important (`IMPORTANT`),
   Boss Debuffs (`isBossAura`), Magic, Curse, Disease, Poison, Bleed
   (`includeDispelTypes`), Other (`excludeDispelTypes` all five), All Debuffs.
 - Each token kind adds `|!<token>` for the token kinds before it. All stands
@@ -303,3 +307,17 @@ read, and text wasn't adjustable. All addressed above. Recheck, after
    to another corner, size and color; under **Module** › **Text** pick a
    font, **Outline** and **Shadow**. Required state: out of combat.
    Confirmation: live auras and the preview take each change.
+
+Icons confirmed in game (owner, November 17: "Looks good"). Then:
+
+5. **Boss & Important.** Navigation: the game world, then **Edit Mode** in
+   the ModeUI window header. Action: look above Player Debuffs (All); pick
+   **Player Debuffs (Boss & Important)** in the **Bar** dropdown on the
+   **Bars** tab. Required state: a boss or an Important debuff on you if
+   possible (Edit Mode shows samples). Confirmation: the bar sits 6px above
+   Player Debuffs (All), right edges lined up, its icons 48 x 42.
+6. **Bar picker.** Navigation: **Interface** › **Buffs & Debuffs**,
+   **Bars** tab. Action: look at the right end of the **Bar** dropdown;
+   click **+ New Bar**. Required state: out of combat. Confirmation: no
+   clipped box beside the dropdown; **+ New Bar** and **Delete Bar** sit on
+   the row under it (**Delete Bar** only for your own bars).

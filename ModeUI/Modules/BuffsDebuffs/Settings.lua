@@ -73,31 +73,34 @@ end
 
 -- The bar picker with + New Bar, Delete and the name (custom bars), at the
 -- top of a tab. Every tab's picker edits the same bar.
+-- The dropdown spans its row, so the buttons sit on a row of their own (a
+-- button beside it was pushed past the card's edge and clipped).
 function M:BuildBarPicker(page, c)
-    local row = page:Row(L["Bar"], 48)
-    local select = c.SelectIn(row, 200, function() return M:BarChoices() end, function() return M:EditingBar() end, page.SetEditing)
-    local add = W.Button(row, L["+ New Bar"], 110, 28, "secondary")
-    add:SetPoint("LEFT", select, "RIGHT", 10, 0)
+    local select = c.SelectIn(page:Row(L["Bar"], 48), 200, function() return M:BarChoices() end,
+        function() return M:EditingBar() end, page.SetEditing)
+    local function Custom() return M:Custom(M:EditingBar()) ~= nil end
+    local tools = page:Row("", 36)
+    tools.rowLabel:Hide(); tools:ClearAllPoints(); tools:SetAllPoints(tools.row)
+    local add = W.Button(tools, L["+ New Bar"], 110, 28, "secondary")
+    add:SetPoint("LEFT", 0, 0)
     add:SetScript("OnClick", function()
         local id = M:AddCustomBar()
         if id then page.SetEditing(id) end
     end)
-    c.Refresh(function() add:SetEnabled(#M.db.customBars < M.MAX_CUSTOM) end)
-    local function Custom() return M:Custom(M:EditingBar()) ~= nil end
+    local delete = W.Button(tools, L["Delete Bar"], 110, 28, "secondary")
+    delete:SetPoint("LEFT", add, "RIGHT", 10, 0)
+    delete:SetScript("OnClick", function()
+        local id = M:EditingBar()
+        W.Confirm(L["Delete Bar"], string.format(L["Delete %s? Its place and settings are forgotten."], M:BarLabel(id)), L["Delete"],
+            function() if M:DeleteCustomBar(id) then page.SetEditing("buffs") end end)
+    end)
+    c.Refresh(function() add:SetEnabled(#M.db.customBars < M.MAX_CUSTOM); delete:SetShown(Custom()) end)
     c.When(Custom, function()
-        local named = page:Row(L["Name"], 48)
-        local box = W.TextInput(named, 200, L["Bar name"], 40)
+        local box = W.TextInput(page:Row(L["Name"], 48), 200, L["Bar name"], 40)
         box.onEnter = function(text) M:RenameCustomBar(M:EditingBar(), text); page:Refresh() end
         c.Refresh(function() if not box:HasFocus() then box:SetText(M:BarLabel(M:EditingBar())) end end)
-        local delete = W.Button(named, L["Delete Bar"], 110, 28, "secondary")
-        delete:SetPoint("LEFT", box, "RIGHT", 10, 0)
-        delete:SetScript("OnClick", function()
-            local id = M:EditingBar()
-            W.Confirm(L["Delete Bar"], string.format(L["Delete %s? Its place and settings are forgotten."], M:BarLabel(id)), L["Delete"],
-                function() if M:DeleteCustomBar(id) then page.SetEditing("buffs") end end)
-        end)
     end)
-    return select
+    return select, add, delete
 end
 
 local NOTES = {
@@ -105,6 +108,7 @@ local NOTES = {
     debuffs = "Stands in for Blizzard's debuffs by the minimap, private auras included.",
     playerBuffs = "Your Player frame's buffs (they moved here from Unit Frames).",
     playerDebuffs = "Your Player frame's debuffs (they moved here from Unit Frames).",
+    playerImportant = "Boss and Important debuffs on you, a little bigger, just above Player Debuffs (All).",
 }
 function M:BarNote()
     return L[NOTES[self:EditingBar()] or "A bar of your own: pick what it shows, then place it in Edit Mode."]

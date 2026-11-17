@@ -22,10 +22,11 @@ addon.BuffsDebuffs = M
 addon:RegisterModule("buffsDebuffs", M)
 
 M.SETTINGS_VERSION = 2
--- The four bars every profile has, then custom bars ("custom1"...).
-M.FIXED = { "buffs", "debuffs", "playerBuffs", "playerDebuffs" }
-M.FIXED_LABELS = { buffs = "Buffs", debuffs = "Debuffs", playerBuffs = "Player Buffs", playerDebuffs = "Player Debuffs" }
-M.FIXED_KIND = { buffs = "buffs", debuffs = "debuffs", playerBuffs = "buffs", playerDebuffs = "debuffs" }
+-- The five bars every profile has, then custom bars ("custom1"...).
+M.FIXED = { "buffs", "debuffs", "playerBuffs", "playerDebuffs", "playerImportant" }
+M.FIXED_LABELS = { buffs = "Buffs", debuffs = "Debuffs", playerBuffs = "Player Buffs", playerDebuffs = "Player Debuffs (All)",
+    playerImportant = "Player Debuffs (Boss & Important)" }
+M.FIXED_KIND = { buffs = "buffs", debuffs = "debuffs", playerBuffs = "buffs", playerDebuffs = "debuffs", playerImportant = "debuffs" }
 M.MAX_CUSTOM = 8
 M.MAX_BLACKLIST = 64
 function M.ElementId(id) return "buffsDebuffs" .. id:gsub("^%l", string.upper) end
@@ -58,6 +59,7 @@ M.categories = {
     debuffs = {
         { id = "cc", label = "Crowd Control", token = "CROWD_CONTROL" },
         { id = "dispellable", label = "Dispellable by You", token = "RAID" },
+        { id = "important", label = "Important", token = "IMPORTANT" },
         { id = "boss", label = "Boss Debuffs", boss = true },
         { id = "Magic", label = "Magic", dispel = "Magic" },
         { id = "Curse", label = "Curse", dispel = "Curse" },
@@ -105,6 +107,10 @@ M.barDefaults = {
     -- Owner, after the first in-game look: much bigger (42 wide) with a 2px border.
     playerDebuffs = Bar("debuffs", { "cc", "dispellable", "boss", "Magic", "Curse", "Disease", "Poison", "Bleed", "other" },
         { max = 8, perRow = 6, width = 42, spacing = 3, timer = "center", edgeStyle = "blizzEmpty", borderSize = 2 }),
+    -- Owner, November 17, 2026: a preset for Boss and Important debuffs, in
+    -- Player Debuffs' look a little bigger (48 x 42), just above it.
+    playerImportant = Bar("debuffs", { "important", "boss" },
+        { max = 6, perRow = 6, width = 48, spacing = 3, timer = "center", edgeStyle = "blizzEmpty", borderSize = 2 }),
 }
 -- A new custom bar, and the one every profile starts with (Defensives).
 M.customDefaults = Bar("buffs", { "all" }, { max = 8, perRow = 8, width = 36 })
@@ -123,6 +129,8 @@ M.defaultPositions = {
     debuffs = At(M.ElementId("buffs"), "TOPRIGHT", "TOPRIGHT", 4, -147),
     playerBuffs = At(PLAYER, "TOPRIGHT", "BOTTOMRIGHT", -6, -2),
     playerDebuffs = At(PLAYER, "TOPRIGHT", "TOPRIGHT", 2, 131),
+    -- 6px above Player Debuffs (All), right edges lined up, wherever it is.
+    playerImportant = At(M.ElementId("playerDebuffs"), "BOTTOMRIGHT", "TOPRIGHT", 0, 6),
 }
 M.firstCustomPosition = At("screen", "CENTER", "CENTER", -151, 27)
 function M.CustomPosition(index) return At("screen", "CENTER", "CENTER", 0, 60 - 50 * ((index - 1) % 6)) end
