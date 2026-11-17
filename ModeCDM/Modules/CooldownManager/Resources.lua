@@ -9,10 +9,12 @@ if not M then return end
 -- Points; a box is a status bar (the fill in Bar Texture and Bar Color over
 -- Bar Background) in the `frameThin` edge outside it (docs/DESIGN_LANGUAGE.md,
 -- "Bars"); the bar's frame leaves room for the edges, so its width matches
--- the cooldown rows' and Spacing counts between the shadows. No masks.
+-- the cooldown rows' and Spacing counts between the shadows. Grouped combo
+-- points share one edge (frame.outer) with a line between points. A bar is
+-- never shorter than its border's floor (Style.EdgeMinHeight). No masks.
 -- Values may be secret, so they only ever go to the status bars and text
 -- setters (ResourceUpdate.lua). The settings preview draws a bar with these
--- same functions.
+-- same functions; ResourceGroup.lua lays out Group Resources.
 local Kit, L, Style = addon.Kit, addon.L, addon.Style
 local PM = addon.PositionManager
 local PAD = 4 -- pixels between a text and the end of its bar
@@ -27,11 +29,26 @@ local function NewBox(parent)
 end
 -- How far a bar's edges reach past its boxes, in px units.
 function M.ResourceReach(style, px) return style.border == "none" and 0 or M.EDGE_REACH * px end
+-- The shortest bar its border fits, in px units (one pixel without a border).
+function M.ResourceFloor(style, px)
+    if style.border == "none" then return px end
+    return Style.EdgeMinHeight(M.EDGE, style.edgeStyle) * px
+end
+-- A bar's height on whole pixels, raised to its border's floor unless it sits
+-- inside a Grouped block (`free`), where only the block has a floor.
+function M.ResourceBarHeight(style, px, free)
+    local h = math.max(px, math.floor(style.height / px + 0.5) * px)
+    if free then return h end
+    return math.max(h, M.ResourceFloor(style, px))
+end
 
--- A bar's frame: its boxes (made as they're needed) and a text above them.
+-- A bar's frame: its boxes (made as they're needed), the shared edge of
+-- grouped points with the lines between them, and a text above them.
 function M:NewResourceFrame(parent)
     local frame = CreateFrame("Frame", nil, parent)
-    frame.boxes = {}
+    frame.boxes, frame.dividers = {}, {}
+    frame.outer = CreateFrame("Frame", nil, frame)
+    frame.outer.edge = Style.Edge(frame.outer, M.EDGE)
     frame.textLayer = CreateFrame("Frame", nil, frame)
     frame.textLayer:SetAllPoints(frame)
     frame.text = Kit.Text(frame.textLayer)
@@ -66,13 +83,14 @@ function M:ResourceWidth(id, px)
     return math.max(px, math.floor(width / px + 0.5) * px)
 end
 
--- Lays one box out: `w` by `h` at `x`, `y` from the frame's top left.
-local function LayoutBox(box, frame, style, x, y, w, h, px, edge)
+-- Lays one box out: `w` by `h` at `x`, `y` from the frame's top left, in its
+-- own edge when `edged`.
+local function LayoutBox(box, frame, style, x, y, w, h, px, edged, fillEdge)
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -y)
     box:SetSize(w, h)
     box.edge:SetStyle(style.edgeStyle, style.edgeMetal)
-    box.edge:SetShown(style.border ~= "none")
+    box.edge:SetShown(edged)
     box.edge:Layout()
     local bar = box.bar
     bar:ClearAllPoints()
@@ -84,60 +102,129 @@ local function LayoutBox(box, frame, style, x, y, w, h, px, edge)
     local fill = bar:GetStatusBarTexture()
     if fill and fill.ClearTextureSlice then fill:ClearTextureSlice() end
     if bar.SetReverseFill then bar:SetReverseFill(style.reverse) end
-    Kit.FillEdge(bar, edge, style.reverse, px)
+    Kit.FillEdge(bar, fillEdge, style.reverse, px)
     box:Show()
 end
 
+-- The Full color on a combo point: a second bar over it spanning max - 1 to
+-- max, so the count lights every point's layer only once it reaches the
+-- maximum, without the count ever being compared.
+local function LayoutFull(box, style, index, count, h, px)
+    if not style.fullShow then
+        if box.full then box.full:Hide() end
+        return
+    end
+    local full = box.full
+    if not full then full = Kit.Bar(box); full.bg:Hide(); box.full = full end
+    full:ClearAllPoints(); full:SetAllPoints(box)
+    full:SetFrameLevel(box.bar:GetFrameLevel() + 1)
+    Kit.BarForeground(full, style.barTexture, h, px)
+    if full.SetReverseFill then full:SetReverseFill(style.reverse) end
+    full:SetMinMaxValues(count - 1, count)
+    full:SetValue(count - 1)
+    full:SetStatusBarColor(style.fullColor[1], style.fullColor[2], style.fullColor[3], 1)
+    full.index = index
+    full:Show()
+end
+
 -- Lays a bar's frame out at `width` (the frame is sized by the caller,
--- edges included). Combo Points split the width into `count` boxes with
--- their edges, `spacing` apart between the shadows, on whole pixels, the last
--- one ending exactly at the bar's end.
-function M:LayoutResourceFrame(frame, id, width, px, sample)
+-- edges included) and returns its height. Combo Points split the width into
+-- `count` boxes on whole pixels, the last one ending exactly at the bar's
+-- end: Separated, each in its edge, Spacing apart between the shadows;
+-- Grouped (and always inside a block), in one edge with a Divider Width line
+-- between points. opts (Group Resources): inBlock (no edges, no floor),
+-- height, x and y (the boxes' offset), textHost (the region the text sits on).
+function M:LayoutResourceFrame(frame, id, width, px, sample, opts)
+    opts = opts or {}
     local style = self.db.resources[id]
-    local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local function Round(v) return math.floor(v / px + 0.5) * px end
-    local h = Snap(style.height)
+    local h = opts.height or M.ResourceBarHeight(style, px, opts.inBlock)
     local segmented = self.resourceSpecs[id].segmented
     local count = self:ResourceBoxCount(id, sample)
-    local gap = segmented and Round(style.spacing) or 0
-    local reach = M.ResourceReach(style, px)
+    local reach = opts.inBlock and 0 or M.ResourceReach(style, px)
+    local x0, y0 = (opts.x or 0) + reach, (opts.y or 0) + reach
+    local combined = segmented and (opts.inBlock or style.layout == "grouped")
+    local outer = frame.outer
+    outer:ClearAllPoints()
+    outer:SetPoint("TOPLEFT", frame, "TOPLEFT", x0, -y0)
+    outer:SetSize(math.max(px, width - 2 * reach), h)
+    outer:SetFrameLevel(frame:GetFrameLevel() + 1)
+    outer.edge:SetStyle(style.edgeStyle, style.edgeMetal)
+    outer.edge:SetShown(combined and not opts.inBlock and style.border ~= "none")
+    outer.edge:Layout()
+    local inner = width - 2 * reach
+    local gap = combined and style.dividerWidth * px or (segmented and Round(style.spacing) or 0)
+    local span = combined and inner or width
+    local edged = not combined and not opts.inBlock and style.border ~= "none"
+    local firstWidth
     for i = 1, count do
         local box = frame.boxes[i]
         if not box then box = NewBox(frame); frame.boxes[i] = box end
-        local left = Round((i - 1) * (width + gap) / count)
-        local right = i == count and width or Round(i * (width + gap) / count) - gap
+        local left = Round((i - 1) * (span + gap) / count)
+        local right = i == count and span or Round(i * (span + gap) / count) - gap
         box:SetFrameLevel(frame:GetFrameLevel() + 1)
-        LayoutBox(box, frame, style, left + reach, reach, math.max(px, right - left - 2 * reach), h, px, style.fillEdge and not segmented)
+        local w = combined and math.max(px, right - left) or math.max(px, right - left - 2 * reach)
+        firstWidth = firstWidth or w
+        if combined then LayoutBox(box, frame, style, x0 + left, y0, w, h, px, false, false)
+        else LayoutBox(box, frame, style, (opts.x or 0) + left + reach, y0, w, h, px, edged, style.fillEdge and not segmented) end
         -- A point's box fills from (i - 1) to i: SetValue(count) lights it or
         -- leaves it dark without the count ever being compared.
-        if segmented then box.bar:SetMinMaxValues(i - 1, i) end
+        if segmented then box.bar:SetMinMaxValues(i - 1, i); LayoutFull(box, style, i, count, h, px) end
+        -- The line after a grouped point, in Divider Color.
+        local line = frame.dividers[i]
+        if combined and i < count then
+            if not line then line = frame:CreateTexture(nil, "ARTWORK"); line:SetTexture(Kit.FLAT); frame.dividers[i] = line end
+            line:ClearAllPoints()
+            line:SetPoint("TOPLEFT", frame, "TOPLEFT", x0 + right, -y0)
+            line:SetSize(gap, h)
+            Kit.Tint(line, style.dividerColor, 1)
+            line:Show()
+        elseif line then line:Hide() end
     end
     for i = count + 1, #frame.boxes do frame.boxes[i]:Hide() end
-    frame.count, frame.px, frame.barHeight = count, px, h
-    self:LayoutResourceText(frame, style, width, h, px)
+    for i = math.max(1, count), #frame.dividers do frame.dividers[i]:Hide() end
+    frame.count, frame.px, frame.barHeight, frame.barWidth = count, px, h, firstWidth
+    frame.rimKey, frame.textKey, frame.markKey = nil, nil, nil
+    local host = opts.textHost == "box" and frame.boxes[1] or opts.textHost
+    self:LayoutResourceText(frame, style, width, h, px, host)
+    if self.LayoutResourceMarks then self:LayoutResourceMarks(frame, id) end
     return h + 2 * reach
 end
 
 -- The text: at Text Anchor on the bar (Left, Center or Right), PAD pixels
--- in from that end, then moved by its offsets. Nothing is measured: the
--- text can be secret.
-function M:LayoutResourceText(frame, style, width, h, px)
+-- in from that end, then moved by its offsets; on `host` when given (a box
+-- or a Grouped block). Nothing is measured: the text can be secret.
+function M:LayoutResourceText(frame, style, width, h, px, host)
     local text = frame.text
     local look = { outline = style.outline, shadow = style.shadow, slug = style.slug, textColor = style.textColor }
     local path, size = Style.Weighted(Kit.FontPath(style, self.id), "bold"), style.textSize
     Kit.Font(text, look, size, path, px)
     local anchor = style.textAnchor
-    local inset = PAD * px + M.ResourceReach(style, px)
+    local inset = PAD * px + (host and 0 or M.ResourceReach(style, px))
     local dx = (anchor == "LEFT" and inset) or (anchor == "RIGHT" and -inset) or 0
     local function Snap(v) return math.floor(v / px + 0.5) * px end
     text:ClearAllPoints()
-    text:SetPoint(anchor, frame, anchor, dx + Snap(style.textX), Snap(style.textY))
+    text:SetPoint(anchor, host or frame, anchor, dx + Snap(style.textX), Snap(style.textY))
     text:SetJustifyH(anchor)
     local shown = style.text ~= "none"
     text:SetShown(shown)
     Kit.LayoutLift(text, look, size, path, px, false, anchor)
     frame.textLayer:SetFrameLevel(frame:GetFrameLevel() + 6)
     return width
+end
+
+-- Rim Color: Bar Color and Custom paint every edge of the bar flat in that
+-- color (Edge:SetTint); Metal leaves the style's lit metal. Painted only
+-- when the color changes.
+function M:PaintResourceEdges(frame, id, barColor)
+    local style = self.db.resources[id]
+    local tint = (style.rimColor == "bar" and barColor) or (style.rimColor == "custom" and style.rimCustom) or nil
+    local key = tint and string.format("%.3f,%.3f,%.3f", tint[1], tint[2], tint[3]) or "metal"
+    if frame.rimKey == key then return end
+    frame.rimKey = key
+    for _, box in ipairs(frame.boxes) do box.edge:SetTint(tint) end
+    frame.outer.edge:SetTint(tint)
+    if frame.block then frame.block.edge:SetTint(tint) end
 end
 
 -- Stand-ins and frames ---------------------------------------------------------
@@ -165,7 +252,7 @@ function M:BuildResource(id)
     local ok, reason = PM:RegisterElement(eid, mover, { moduleId = self.id,
         -- Anchors to any ModeUI element, 1 physical pixel off its side.
         defaultPosition = self.resourcePositions[id], anyTarget = true, gapPixels = 1,
-        canDrag = function() return self.active == true and self.db.resources[id].show end,
+        canDrag = function() return self.active == true and self.db.resources[id].show and not self:ResourceInBlock(id) end,
         label = self:ResourceLabel(id) })
     assert(ok, "ModeUI: resource bar position registration failed: " .. tostring(reason))
     -- Match Width in the Edit Mode window: the bar takes the width of what
@@ -187,25 +274,30 @@ function M:BuildResource(id)
     self.resourceFrames[id] = frame
 end
 
--- Sizes the stand-in and lays the bar out, then fills it.
+-- Sizes the stand-in and lays the bar out, then fills it. A bar in a
+-- Grouped block is laid out with the block (ResourceGroup.lua).
 function M:LayoutResource(id)
     local frame, mover = self.resourceFrames and self.resourceFrames[id], self.resourceMovers and self.resourceMovers[id]
     if not frame then return end
+    if self:ResourceGrouped(id) then self:LayoutResourceGroup(); return end
+    -- Back on its own stand-in (it may have sat in a block).
+    frame:ClearAllPoints(); frame:SetAllPoints(mover)
+    if frame.block then frame.block:Hide() end
     local px = Kit.PixelSize(mover)
     local width = self:ResourceWidth(id, px)
     local style = self.db.resources[id]
-    local h = math.max(px, math.floor(style.height / px + 0.5) * px)
-    mover:SetSize(width, h + 2 * M.ResourceReach(style, px))
+    mover:SetSize(width, M.ResourceBarHeight(style, px) + 2 * M.ResourceReach(style, px))
     self:LayoutResourceFrame(frame, id, width, px, false)
     self:UpdateResource(id)
 end
 
 -- In ModeUI's Edit Mode each bar that's on shows its stand-in, even while
--- it has nothing to show (Combo Points on a class without them).
+-- it has nothing to show (Combo Points on a class without them); a bar in a
+-- Grouped block moves with Power's.
 function M:RenderResourceMovers()
     if not self.resourceMovers then return end
     for id, mover in pairs(self.resourceMovers) do
-        local show = self.editing == true and self.active == true and self.db.resources[id].show
+        local show = self.editing == true and self.active == true and self.db.resources[id].show and not self:ResourceInBlock(id)
         PM:SetEditable(self.ResourceElementId(id), show)
         mover:SetShown(show)
     end
@@ -214,8 +306,12 @@ end
 -- Everything again: after a settings change, a new form, or the scale.
 function M:RefreshResources()
     if not self.resourceFrames then return end
+    local grouped = false
     for _, id in ipairs(self.resources) do
-        if self.active then self:LayoutResource(id) else self.resourceFrames[id]:Hide() end
+        if not self.active then self.resourceFrames[id]:Hide()
+        elseif self:ResourceGrouped(id) then
+            if not grouped then grouped = true; self:LayoutResourceGroup() end
+        else self:LayoutResource(id) end
     end
     self:RenderResourceMovers()
 end
@@ -233,5 +329,6 @@ function M:ResourceStatus(id)
         if not addon.Domain.Power.HasAlternateMana("player") then return L["Only Druids have mana under another power; this bar stays hidden."] end
         if not addon.Domain.Power.AlternateManaActive("player") then return L["Shows in Bear and Cat Form."] end
     end
+    if self:ResourceInBlock(id) then return L["Shows now, in the Grouped block. Move the block with Power in Edit Mode."] end
     return L["Shows now. Move it in Edit Mode."]
 end

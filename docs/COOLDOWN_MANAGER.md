@@ -337,20 +337,41 @@ Manager option says.
 
 | Bar | Shows | Default |
 |---|---|---|
-| **Power** | the power your character shows now: mana, rage or energy, in its own color | on, 14px, Current text |
-| **Combo Points** | one box per point you can hold, lit for each point on your target (Rogues; Druids in Cat Form) | on, 10px, no text |
-| **Alternate Mana** | a Druid's mana while Bear Form (rage) or Cat Form (energy) shows another power; Forever's own frames show none then | on, 8px, no text |
+| **Power** | the power your character shows now: mana, rage or energy, in its own color | on, 10px, Current text |
+| **Combo Points** | one point per point you can hold, lit for each point on your target (Rogues; Druids in Cat Form) | on, 6px, Grouped, Count on the left |
+| **Alternate Mana** | a Druid's mana while Bear Form (rage) or Cat Form (energy) shows another power; Forever's own frames show none then | on, 6px, no text |
 | **Health** | your health, in your class color | off, 14px, Percent text |
+
+Since version 6 (owner, November 17, 2026) every bar starts in Mode-Round
+with Gunmetal and in Dark mode, and a bar in its own border is drawn no
+shorter than that border's floor (10px for Mode-Round, 6px for the cut
+styles; `Style.EdgeMinHeight`), so 6px bars show at 10px in Mode-Round.
 
 Each bar has its own settings, on four tabs under a preview with sample
 values (every class sees every bar; Animated runs the fill):
 
 | Tab | Settings |
 |---|---|
-| Bar | **Show Bar**, Status (whether it shows for this character now), **Width**, **Height** (Match Width lives only in Edit Mode's element panel since November 15, 2026: click it, then the element to take the width of), Combo Points' **Spacing**, **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
-| Look | **Border** (Mode or None); **Bar Texture** (Mode Gradient by default, Flat or SharedMedia), **Bar Color** (Power Type, Class Color or Custom; Combo Points: Custom or Class Color), **Bar Opacity**, **Bar Background** (Mode BG by default) and **Background Opacity**; **Fill Direction**, **Smooth** and **Fill End Line** |
-| Text | **Text** (None, Current, Percent, Current and Percent, Current / Max; Combo Points: None or Count), **Anchor** (Left, Center, Right), **Size**, **Offset X/Y**, **Text Color**; **Font**, **Outline**, **Text Shadow**, **Slug Text** |
+| Bar | **Show Bar**, Status (whether it shows for this character now); Power, Combo Points and Alternate Mana: **Resources** › **Layout** (Separate Resources or Group Resources, shared by the three); **Width** (not while grouped), **Height** (Match Width lives only in Edit Mode's element panel since November 15, 2026: click it, then the element to take the width of); Combo Points: **Layout** (Grouped or Separated), **Spacing** (Separated), **Divider Width** and **Divider Color** (Grouped); Power and Alternate Mana: **Tick Marks** (**Tick 1-3**, each a value, 0 for off, and **Shows On**: Any Power, Energy, Rage, Mana or Focus; **Tick Width**, **Tick Color**); **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
+| Look | **Border** (Mode or None), **Border Style** and **Rim Color** (Default Metal, Silver, Steel, Gunmetal, Bar Color, Custom, with **Custom Rim Color**; on Power for a Grouped block); **Bar Mode** (Color or Dark), **Bar Texture** (Mode Gradient by default, Flat or SharedMedia), **Bar Color** (Power Type, Class Color or Custom; Combo Points: Custom or Class Color), **Dark Text Color** (Power Type or Bar Color, Class Color, Custom), **Bar Opacity**, **Bar Background** (Mode BG by default) and **Background Opacity**; Combo Points: **Full Color** (a color once every point is lit); **Fill Direction**, **Smooth** and **Fill End Line** |
+| Text | **Text** (None, Current, Percent, Current and Percent, Current / Max; Combo Points: None or Count), **Anchor** (Left, Center, Right), **Size**, **Offset X/Y**, **Text Color** (Color mode); **Font**, **Outline**, **Text Shadow**, **Slug Text** |
 | Visibility | **Show** (Always, In Combat, Out of Combat, In Combat or With a Target, Mouseover, Hidden), **Opacity**, **Faded Opacity** |
+
+**Group Resources** (`ResourceGroup.lua`). Power, Combo Points and Alternate
+Mana share one border on Power's stand-in, top down, a 1px black line between
+them, like the unit frames' health and power. Power's Border, Border Style,
+Rim Color, Width and Match Width are the block's; each bar keeps its height,
+colors, texts and visibility. A bar that's off or has nothing to show leaves
+the block, which closes up (a Druid's block changes with each form, in combat
+too). Only the block has a height floor (Power grows to it). Combo Points'
+and Alternate Mana's stand-ins fold to 1px under the block and leave Edit
+Mode, so what hangs from them stays close. Health never joins; with Power off
+the bars stand apart again.
+
+**Tick Marks** (`ResourceMarks.lua`). A line at `value / max` of the bar,
+shown only while its power type is shown and the value is under the maximum.
+Forever documents the player's maximum power as readable; if it ever comes
+secret, the last readable maximum for that power type is kept (none: hidden).
 
 **Placement.** Each bar is an element of ModeUI's Edit Mode
 (`ModeUIResourcePower`, `ModeUIResourceCombo`, `ModeUIResourceMana`,
@@ -366,19 +387,30 @@ still holds its place, so the bars under it don't move.
 **How values are handled.** Health and power can be secret: they go only
 to the status bars, `AbbreviateNumbers` and the text setters, and percent
 text comes from the game's 0-100 curve. Combo points light one box each
-from `SetValue(count)` on boxes spanning `i - 1` to `i`. No value is
-compared, so there is no Hide When Full.
+from `SetValue(count)` on boxes spanning `i - 1` to `i`; Full Color is a
+second bar per point spanning `max - 1` to `max`, lit by the same count. No
+value is compared, so there is no Hide When Full.
 
 **Saved settings.** `modules.cooldownManager.resources` with one table per
-bar (`power`, `combo`, `mana`, `health`). Added without a version step: a
-profile saved before them takes their defaults; bad data stops startup.
+bar (`power`, `combo`, `mana`, `health`), and `resourceLayout` (`"separate"`
+or `"grouped"`). Added without a version step: a profile saved before them
+takes their defaults; bad data stops startup. Version 6 adds `barMode`,
+`darkText`, `darkTextColor`, `rimColor`, `rimCustom`; on Power and Alternate
+Mana `marks` (three `{ value, power }` slots), `markColor`, `markWidth`; on
+Combo Points `layout`, `dividerWidth`, `dividerColor`, `fullShow`,
+`fullColor`. It moves values still at version 5's defaults: Mode-Blizz to
+Mode-Round, Default to Gunmetal, heights 14/10/8 to 10/6/6, the combo count
+from None to Count and from Center to Left. Separate Resources stays, so no
+bar moves.
 
 | File | Job |
 |---|---|
 | `ResourceInit.lua` | the bars, their Edit Mode targets, defaults, ranges, choices and validation |
 | `Resources.lua` | frames, stand-ins, Match Width, the border and bar layout, combo boxes, the text's place, status |
-| `ResourceUpdate.lua` | filling from the game, colors, texts, events, alpha, settings changes and reset |
-| `ResourcePreview.lua`, `ResourceSettings.lua` | the preview and the page |
+| `ResourceGroup.lua` | Group Resources: the block on Power's stand-in |
+| `ResourceMarks.lua` | Tick Marks |
+| `ResourceUpdate.lua` | filling from the game, colors (Dark mode, Rim Color), texts, events, alpha, settings changes and reset |
+| `ResourcePreview.lua`, `ResourceSettings.lua`, `ResourceSettingsLook.lua` | the preview and the page (Bar; Look, Text and Visibility) |
 
 Shared: `Domain.Power.ManaType`, `ReadType`, `HasAlternateMana` and
 `AlternateManaActive`; the Edit Mode size match and anchor size listener
@@ -402,3 +434,22 @@ Shared: `Domain.Power.ManaType`, `ReadType`, `HasAlternateMana` and
   "current / max"; combo point boxes light one by one on your target; a
   Druid sees a thin mana bar in Bear and Cat Form only; the Power bar stays
   where you dropped it; no Lua errors in combat.
+
+### In-game check: version 6 (November 17, 2026)
+
+- **Navigation:** type `/mcdm`, then click **Power** under **Resource Bars**.
+- **Action:** look at the bars first, untouched. Then on Power's **Bar** tab
+  set **Tick 1** to 40 and **Shows On** to Energy; on the **Look** tab try
+  **Border Style** Mode-Blizz and back to Mode-Round, and **Rim Color**
+  Silver, Bar Color, then Gunmetal. Click **Combo Points**: on its **Bar** tab
+  set **Layout** to Separated, then Grouped, and change **Divider Color**.
+  Back on **Power**, set **Resources** › **Layout** to **Group Resources**,
+  then shift forms; set it back to **Separate Resources**.
+- **Required state:** a Druid (Cat and Bear Form, in and out of combat,
+  with a target) and a Rogue; the Cooldown Manager switched on.
+- **Confirmation:** every bar is dark with its number in the power's color
+  and a fill end line; Mode-Round corners look whole on every bar (the 6px
+  bars draw at 10px); combo points sit in one Gunmetal border with lines
+  between them and their count on the left; the 40 Energy line stays put in
+  Cat Form and is gone in Bear Form; Group Resources shows one border that
+  closes up as combo points and mana come and go; no Lua errors.

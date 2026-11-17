@@ -22,7 +22,7 @@ function M:GetResourcePreviewSize()
     local style = self.db.resources[id]
     local width = self:ResourceWidth(id, 1)
     local scale = Scale(width)
-    local tall = math.max(style.height + 2 * self.ResourceReach(style, 1), style.textSize + 2 * math.abs(style.textY))
+    local tall = math.max(self.ResourceBarHeight(style, 1) + 2 * self.ResourceReach(style, 1), style.textSize + 2 * math.abs(style.textY))
     return math.max(320, width * scale), tall * scale + 12 + CAPTION_HEIGHT
 end
 
@@ -53,16 +53,25 @@ function M:RenderResourcePreview(view)
     if self.resourceSpecs[id].segmented then
         local count = frame.count
         local lit = phase and (math.floor(phase * 2) % (count + 1)) or math.min(count, 3)
-        for i = 1, count do frame.boxes[i].bar:SetValue(lit) end
-        self.PaintResource(frame, self:ResourceColor(id), opacity)
+        for i = 1, count do
+            frame.boxes[i].bar:SetValue(lit)
+            if frame.boxes[i].full then frame.boxes[i].full:SetValue(lit) end
+        end
+        self:PaintResourceLook(frame, id, self:ResourceColor(id), opacity)
         Kit.Write(frame.text, style.text == "current" and tostring(lit) or "")
     else
         local fraction = phase and (0.55 + 0.4 * math.sin(phase * 1.5)) or 0.65
         local bar = frame.boxes[1].bar
         bar:SetMinMaxValues(0, 100); bar:SetValue(fraction * 100)
-        local token = id == "mana" and "MANA" or nil
-        if id == "power" then token = select(2, Power.Read("player")) end
-        self.PaintResource(frame, self:ResourceColor(id, token), opacity)
+        local token, powerType = id == "mana" and "MANA" or nil, id == "mana" and Power.ManaType() or nil
+        if id == "power" then powerType, token = Power.Read("player") end
+        self:PaintResourceLook(frame, id, self:ResourceColor(id, token), opacity)
+        -- Tick Marks for the power shown now, on its real maximum (100 when unreadable).
+        if self.resourceSpecs[id].marks then
+            local _, max = Power.ReadType("player", powerType)
+            if not addon.IsNumber(max, 1) then max = 100 end
+            self:UpdateResourceMarks(frame, id, token, true, max)
+        end
         Kit.Write(frame.text, SampleText(style.text, fraction))
     end
     frame:Show()

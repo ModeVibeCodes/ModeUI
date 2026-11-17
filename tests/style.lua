@@ -120,6 +120,11 @@ world.run([[
     assert(Style.EdgeReach("frame") == 3 and Style.EdgeReach("window") == 3 and Style.EdgeReach("frameThin") == 2
         and Style.EdgeReach("group") == 1 and Style.EdgeReach("control") == 2 and Style.EdgeReach("card") == 2, "reach by role")
     assert(Style.EdgeDepth("frame") == 2 and Style.EdgeDepth("frameThin") == 1 and Style.EdgeDepth("card") == 2, "band and outside black line")
+    -- Height floors: two slice margins per ring (cut 4/6, round 6/12) less the ring's reach outside the host.
+    assert(Style.EdgeMinHeight("frameThin", "blizz") == 6 and Style.EdgeMinHeight("frameThin", "thin") == 6
+        and Style.EdgeMinHeight("frameThin", "blizzEmpty") == 6 and Style.EdgeMinHeight("frameThin", "round") == 10, "thin floors")
+    assert(Style.EdgeMinHeight("frame", "blizz") == 12 and Style.EdgeMinHeight("frame", "round") == 24, "heavy floors (the inside black line)")
+    assert(Style.EdgeMinHeight("frameThin", nil) == 6, "the role's own style")
     local frame = Style.Edge(host, "frame")
     assert(frame.rings[#frame.rings].kind == "gap" and frame.rings[#frame.rings].out == 0, "the black line inside the host's edge")
     assert(frame.styleId == "blizz" and frame:Metal() == Tone.metal.silver, "frames: Mode-Blizz, Silver")

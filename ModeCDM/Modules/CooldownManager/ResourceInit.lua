@@ -22,14 +22,18 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 M.resources = { "power", "combo", "mana", "health" }
 -- segmented: one box per point. colorModes: the Bar Color choices it offers.
--- texts: the Text choices it offers.
+-- texts: the Text choices it offers. marks: Tick Marks at power values.
+-- group: joins the Grouped block (Group Resources; Power hosts it).
 local VALUE_TEXTS = { "none", "current", "percent", "both", "currentMax" }
 M.resourceSpecs = {
-    power = { label = "Power", colorModes = { "power", "class", "custom" }, texts = VALUE_TEXTS },
-    combo = { label = "Combo Points", segmented = true, colorModes = { "custom", "class" }, texts = { "none", "current" } },
-    mana = { label = "Alternate Mana", colorModes = { "power", "class", "custom" }, texts = VALUE_TEXTS },
+    power = { label = "Power", colorModes = { "power", "class", "custom" }, texts = VALUE_TEXTS, marks = true, group = true },
+    combo = { label = "Combo Points", segmented = true, colorModes = { "custom", "class" }, texts = { "none", "current" }, group = true },
+    mana = { label = "Alternate Mana", colorModes = { "power", "class", "custom" }, texts = VALUE_TEXTS, marks = true, group = true },
     health = { label = "Health", colorModes = { "class", "custom" }, texts = VALUE_TEXTS },
 }
+-- Group Resources: Power, Combo Points and Alternate Mana in one border.
+M.resourceGroup = { "power", "combo", "mana" }
+M.MARK_SLOTS = 3
 function M:IsResource(id) return type(id) == "string" and self.resourceSpecs[id] ~= nil end
 function M:ResourceLabel(id) return L[self.resourceSpecs[id].label] end
 
@@ -68,18 +72,26 @@ M.resourcePositions = {
 }
 
 -- The Mode look (docs/DESIGN_LANGUAGE.md, "Bars"): the `frameThin` edge
--- outside each box, Mode Gradient over Mode BG (Slate at 60%, so the world
--- shows through), Geist Bold text. Combo points in the hostile red; health in
--- your class color.
+-- outside each box (Mode-Round in Gunmetal, owner's pick, November 17, 2026),
+-- Mode Gradient over Mode BG (Slate at 60%, so the world shows through),
+-- Geist Bold text. Dark mode by default: the fill in darkFill and the text in
+-- the bar's own color. Combo points in the hostile red with their count;
+-- health in your class color.
 M.RESOURCE_EMPTY = math.floor(Tone.emptyAlpha * 100 + 0.5)
-local function Style(show, height, colorMode, color, text, size)
-    return {
+local function Style(show, height, colorMode, color, text, size, extra)
+    local style = {
         show = show, width = 300, height = height, matchWidth = true,
         border = "mode",
         -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
-        edgeStyle = "blizz", edgeMetal = "default",
+        edgeStyle = "round", edgeMetal = "gunmetal",
+        -- Rim Color: the metal (edgeMetal), the bar's color, or a custom one;
+        -- the last two paint the band flat.
+        rimColor = "metal", rimCustom = Copy(Tone.ivory),
         barTexture = "media:Mode Gradient", colorMode = colorMode, barColor = Copy(color), barOpacity = 100,
         barBackground = "media:Mode BG", barBackgroundOpacity = M.RESOURCE_EMPTY,
+        -- Bar Mode: Color, or Dark (the unit frames' dark mode: the fill in
+        -- darkFill, the text in the bar's color, class color or a custom one).
+        barMode = "dark", darkText = "power", darkTextColor = Copy(Tone.textBright),
         -- Fill direction, smooth changes (the client eases the bar toward a
         -- new value), the 1px line where the fill ends, and the gap between
         -- combo points.
@@ -88,19 +100,35 @@ local function Style(show, height, colorMode, color, text, size)
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, slug = true,
         visibility = "always", opacity = 100, fadeOpacity = 0,
     }
+    for key, value in pairs(extra or {}) do style[key] = value end
+    return style
+end
+-- Tick Marks: three slots, each a power value (0: off) and the power type it
+-- shows on ("any" or a token), so a Druid's 40 Energy hides in Bear Form.
+local function Marks()
+    local marks = {}
+    for i = 1, M.MARK_SLOTS do marks[i] = { value = 0, power = "any" } end
+    return { marks = marks, markColor = Copy(Tone.ivory), markWidth = 1 }
 end
 M.resourceDefaults = {
-    power = Style(true, 14, "power", Tone.power, "current", 11),
-    combo = Style(true, 10, "custom", Tone.reaction.hostile, "none", 10),
-    mana = Style(true, 8, "power", Tone.power, "none", 9),
+    power = Style(true, 10, "power", Tone.power, "current", 11, Marks()),
+    -- Combo Points: Grouped (one border, a line between points) or Separated
+    -- (a border per point); a Full color when every point is lit.
+    combo = Style(true, 6, "custom", Tone.reaction.hostile, "current", 10, { textAnchor = "LEFT", layout = "grouped",
+        dividerWidth = 1, dividerColor = Copy(Tone.shadow), fullShow = false, fullColor = Copy(Tone.ivory) }),
+    mana = Style(true, 6, "power", Tone.power, "none", 9, Marks()),
     health = Style(false, 14, "class", Tone.reaction.friendly, "percent", 11),
 }
+-- Version 5's heights, combo text and anchor (MigrateV5 moves a value still at them).
+M.V5_RESOURCE = { height = { power = 14, combo = 10, mana = 8 }, comboText = "none", comboAnchor = "CENTER" }
 
 M.resourceRanges = { width = { 40, 600, 1 }, height = { 4, 40, 1 }, spacing = { 0, 12, 1 },
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 },
     textSize = { 6, 32, 1 }, textX = { -60, 60, 1 }, textY = { -40, 40, 1 },
-    opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 } }
-M.resourceColorKeys = { barColor = true, textColor = true }
+    opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, markWidth = { 1, 2, 1 }, dividerWidth = { 1, 2, 1 } }
+M.MARK_RANGE = { 0, 1000, 1 }
+M.resourceColorKeys = { barColor = true, textColor = true, rimCustom = true, darkTextColor = true, markColor = true,
+    dividerColor = true, fullColor = true }
 M.resourceAlphaKeys = { opacity = true, fadeOpacity = true }
 -- Keys Reset to Defaults leaves alone: whether it shows and its size.
 M.resourceIdentityKeys = { show = true, width = true, height = true, matchWidth = true }
@@ -116,6 +144,13 @@ end
 M.resourceChoices = {
     border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
     edgeStyle = addon.Style.EdgeStyleChoices(), edgeMetal = addon.Style.EdgeMetalChoices(),
+    rimColor = { { id = "metal", label = "Metal" }, { id = "bar", label = "Bar Color" }, { id = "custom", label = "Custom" } },
+    barMode = { { id = "color", label = "Color" }, { id = "dark", label = "Dark" } },
+    darkText = { { id = "power", label = "Power Type" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
+    layout = { { id = "grouped", label = "Grouped" }, { id = "separated", label = "Separated" } },
+    resourceLayout = { { id = "separate", label = "Separate Resources" }, { id = "grouped", label = "Group Resources" } },
+    markPower = { { id = "any", label = "Any Power" }, { id = "ENERGY", label = "Energy" }, { id = "RAGE", label = "Rage" },
+        { id = "MANA", label = "Mana" }, { id = "FOCUS", label = "Focus" } },
     textAnchor = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     reverse = { { id = false, label = "Left to Right" }, { id = true, label = "Right to Left" } },
     visibility = M.choices.visibility,
@@ -125,6 +160,33 @@ function M:ResourceColorChoices(id) return List(self.resourceSpecs[id].colorMode
 function M:ResourceTextChoices(id)
     local labels = setmetatable({ current = id == "combo" and "Count" or "Current" }, { __index = TEXT_LABELS })
     return List(self.resourceSpecs[id].texts, labels)
+end
+-- Dark text: "power" is the bar's own color, named Power Type where the bar shows a power.
+function M:ResourceDarkTextChoices(id)
+    local list = Copy(self.resourceChoices.darkText)
+    if self.resourceSpecs[id].colorModes[1] ~= "power" then list[1].label = "Bar Color" end
+    return list
+end
+
+-- Rim Color in one picker: Default Metal (the style's own), Silver, Steel,
+-- Gunmetal, Bar Color or Custom; saved as rimColor plus edgeMetal, so
+-- edgeMetal keeps its meaning everywhere else.
+function M.ResourceRimChoices()
+    local list = {}
+    for _, metal in ipairs(addon.Style.EdgeMetalChoices()) do
+        list[#list + 1] = { id = metal.id, label = metal.id == "default" and "Default Metal" or metal.label }
+    end
+    list[#list + 1] = { id = "bar", label = "Bar Color" }
+    list[#list + 1] = { id = "custom", label = "Custom" }
+    return list
+end
+function M:ResourceRim(id)
+    local style = self.db.resources[id]
+    return style.rimColor == "metal" and style.edgeMetal or style.rimColor
+end
+function M:SetResourceRim(id, choice)
+    if choice == "bar" or choice == "custom" then return self:SetResourceOption(id, "rimColor", choice) end
+    return self:SetResourceOption(id, "edgeMetal", choice) and self:SetResourceOption(id, "rimColor", "metal")
 end
 
 -- Validation ------------------------------------------------------------------
@@ -136,8 +198,20 @@ local function Set(list)
 end
 local ALLOWED = { border = Set(M.resourceChoices.border), textAnchor = Set(M.resourceChoices.textAnchor),
     visibility = Set(M.resourceChoices.visibility), edgeStyle = Set(M.resourceChoices.edgeStyle),
-    edgeMetal = Set(M.resourceChoices.edgeMetal) }
+    edgeMetal = Set(M.resourceChoices.edgeMetal), rimColor = Set(M.resourceChoices.rimColor),
+    barMode = Set(M.resourceChoices.barMode), darkText = Set(M.resourceChoices.darkText), layout = Set(M.resourceChoices.layout) }
+local MARK_POWER = Set(M.resourceChoices.markPower)
 local function Whole(value, range) return Number(value, range[1], range[2]) and value == math.floor(value) end
+
+-- Tick Marks: exactly the slots, each a whole value (0: off) and a power type.
+local function ValidateMarks(marks, id)
+    assert(#marks == M.MARK_SLOTS, "Invalid resource bar tick marks: " .. id)
+    for key in pairs(marks) do assert(Public(key) and Whole(key, { 1, M.MARK_SLOTS }), "Invalid resource bar tick marks: " .. id) end
+    for _, mark in ipairs(marks) do
+        assert(Public(mark) and type(mark) == "table" and Whole(mark.value, M.MARK_RANGE) and MARK_POWER[mark.power],
+            "Invalid resource bar tick mark: " .. id)
+    end
+end
 
 local function ValidateResource(style, id)
     local defaults = M.resourceDefaults[id]
@@ -150,8 +224,13 @@ local function ValidateResource(style, id)
             for i = 1, 3 do assert(Number(value[i], 0, 1), "Invalid resource bar color: " .. id .. "." .. key) end
         end
     end
-    for key, range in pairs(M.resourceRanges) do assert(Whole(style[key], range), "Invalid resource bar range: " .. id .. "." .. key) end
-    for key, allowed in pairs(ALLOWED) do assert(allowed[style[key]], "Invalid resource bar choice: " .. id .. "." .. key) end
+    for key, range in pairs(M.resourceRanges) do
+        if defaults[key] ~= nil then assert(Whole(style[key], range), "Invalid resource bar range: " .. id .. "." .. key) end
+    end
+    for key, allowed in pairs(ALLOWED) do
+        if defaults[key] ~= nil then assert(allowed[style[key]], "Invalid resource bar choice: " .. id .. "." .. key) end
+    end
+    if defaults.marks then ValidateMarks(style.marks, id) end
     local spec = M.resourceSpecs[id]
     assert(Set(spec.colorModes)[style.colorMode], "Invalid resource bar color mode: " .. id)
     assert(Set(spec.texts)[style.text], "Invalid resource bar text: " .. id)
@@ -168,4 +247,7 @@ function M.ValidateResources(db)
         if db.resources[id] == nil then db.resources[id] = Copy(M.resourceDefaults[id]) end
         ValidateResource(db.resources[id], id)
     end
+    -- Separate Resources (each bar on its own) or Group Resources.
+    if db.resourceLayout == nil then db.resourceLayout = "separate" end
+    assert(Set(M.resourceChoices.resourceLayout)[db.resourceLayout], "Invalid resource bar layout")
 end
