@@ -79,29 +79,30 @@ end
 function M:PaintSamples(host, pool, bar, px)
     local samples = self:SampleList(bar)
     local cw, ch = self:CellSize(bar, px)
-    local _, iconHeight = self:IconSize(bar, px)
-    -- The icon sits at the top of its cell (time text below it).
-    local lift = ch - iconHeight
     local spacing = bar.spacing * px
     local corner = self:StartCorner(bar)
     local horizontal = self.HORIZONTAL[bar.grow]
     local dx = corner:find("RIGHT") and -1 or 1
     local dy = corner:find("TOP") and -1 or 1
+    -- The icon sits at the top of its cell with time text below, at the
+    -- bottom with it above.
+    local room, shift = self:TextRoom(bar, px), 0
+    if bar.timer == "below" and dy > 0 then shift = room elseif bar.timer == "above" and dy < 0 then shift = -room end
     for index, sample in ipairs(samples) do
         local icon = pool[index]
         if not icon then
             icon = Kit.AuraIcon(host)
-            icon.below = Kit.Text(icon)
+            icon.outside = Kit.Text(icon)
             pool[index] = icon
         end
         local _, _, path = self:LayoutIcon(icon, bar, px)
-        icon.icon:SetTexture(ICON .. sample.icon)
+        icon.art:SetTexture(ICON .. sample.icon)
         Kit.Write(icon.count, bar.count and sample.count or "")
         icon.cooldown:Hide()
         local shownTime = bar.timer ~= "none" and sample.time or ""
         icon.timer:SetText(bar.timer == "center" and shownTime or "")
-        self:LayoutBelow(icon.below, bar, px, path, icon)
-        icon.below:SetText(bar.timer == "below" and shownTime or "")
+        self:LayoutOutside(icon.outside, bar, px, path, icon)
+        icon.outside:SetText(shownTime)
         Kit.TintAuraRim(icon, Rim(bar, sample))
         local glow = bar.glow ~= "none" and (bar.glowColor == "custom" and bar.glowCustomColor
             or (bar.kind == "debuffs" and (addon.Style.Tone.debuffType[sample.type] or addon.Style.Tone.metal.gunmetal.mid))) or nil
@@ -109,7 +110,7 @@ function M:PaintSamples(host, pool, bar, px)
         local slot, line = (index - 1) % bar.perRow, math.floor((index - 1) / bar.perRow)
         local column, row = horizontal and slot or line, horizontal and line or slot
         icon:ClearAllPoints()
-        icon:SetPoint(corner, host, corner, dx * column * (cw + spacing), dy * row * (ch + spacing) + (dy < 0 and 0 or lift))
+        icon:SetPoint(corner, host, corner, dx * column * (cw + spacing), dy * row * (ch + spacing) + shift)
         icon:Show()
     end
     for index = #samples + 1, #pool do pool[index]:Hide() end

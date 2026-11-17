@@ -1497,11 +1497,23 @@ paths under `Interface/AddOns/`); design notes in
   and the status tray moves `BuffFrame`
   (`Blizzard_StatusTrayManager/StatusTrayManager.lua`), so a Hide doesn't
   last. While a stand-in bar shows, ModeUI calls the frame's
-  `UnregisterAllEvents` and moves its `AuraContainer`,
-  `CollapseAndExpandButton` and `ConsolidatedBuffs` to a hidden frame with
-  `SetParent` (method calls only; no field written, no method replaced). The
-  frames stay where Blizzard's Edit Mode puts them (`Enum.EditModeSystem.AuraFrame`)
-  as anchors (`frame:BuffFrame`). They come back with a reload.
+  `UnregisterAllEvents` and hides its `AuraContainer`,
+  `CollapseAndExpandButton` and `ConsolidatedBuffs` where they are,
+  hidden again whenever Blizzard shows them (`Skin.Suppress`: post-hooks on
+  `Show` and `SetShown`). They must keep their parent:
+  `AuraContainerMixin:UpdateGridLayout` calls
+  `self:GetParent():UpdateSize(...)`, from Blizzard's own updates
+  (`PlayerFrame_ToPlayerArt` → `BuffFrame:Update`) and from Edit Mode
+  (`EditModeManager:UpdateSystems`); the first build moved the container to
+  a plain hidden frame with `SetParent` and Blizzard's layout errored
+  ("BuffFrame.lua:177: attempt to call a nil value", owner's report,
+  November 17, 2026). The frames stay where Blizzard's Edit Mode puts them
+  (`Enum.EditModeSystem.AuraFrame`) as anchors (`frame:BuffFrame`). They
+  come back with a reload.
+- **Cropping.** `AuraContainerUtil.SetIconTextureForAura` only calls
+  `SetTexture` on the registered icon, so ModeUI crops by size instead of
+  texture coordinates: the art is a square wider than its frame, clipped by
+  a frame with `SetClipsChildren(true)`.
 - **Aura containers.** Each bar is one `CreateFrame("AuraContainer", nil,
   holder, "CustomAuraContainerTemplate")` on `"player"`
   (`Blizzard_AuraContainer/Blizzard_CustomAuraContainer.lua`): one

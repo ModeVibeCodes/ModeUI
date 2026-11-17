@@ -293,7 +293,7 @@ Phase 6 probe):
 | Raid, standard / healer | 74 × 34 / 92 × 48 + 3 |
 | Party, vertical fill | 62 × 66 + 3 |
 | Group spacing | exactly 1px, no shadow |
-| Icons (buttons, auras, cooldowns, slots) | wider than tall: 4px shorter up to 35px wide, 6px from 36px (40 x 34); Buffs & Debuffs bars are 6px shorter at every width (owner, November 17, 2026: 32 x 26 by the minimap) |
+| Icons (buttons, auras, cooldowns, slots) | wider than tall: 4px shorter up to 35px wide, 6px from 36px (40 x 34); Buffs & Debuffs bars start the same, with width and height each adjustable (owner, November 17, 2026) |
 | Auras inside group frames | flush in the corner by default (the frame's rim is their outer border) |
 
 ## Windows and panels

@@ -103,6 +103,7 @@ local STUBS = UNIT_STUBS .. [==[
 -- A fresh profile: off by default; switched on, every bar is a container.
 H.Load({ before = STUBS }).run([==[
     local M = addon.BuffsDebuffs
+    local function Point(f) return f.points[#f.points] end
     assert(M and M.title == 'Buffs & Debuffs' and M.category == 'frames' and not M.enabled, 'off on a fresh profile, in Interface')
     assert(#M.db.customBars == 1 and M.db.customBars[1].name == 'Defensives' and M.db.bars.custom1.cats.bigdef, 'starts with Defensives')
     assert(M.db.blacklist[1] == 104280 and M.db.blacklist[2] == 57724, 'Well Fed and Sated hidden')
@@ -115,13 +116,17 @@ H.Load({ before = STUBS }).run([==[
     assert(#buffs.order == 1 and buffs.groups.buffs_all.filter == 'HELPFUL' and #buffs.enchantSlots == 2, 'all buffs and both enchants')
     assert(buffs.enchantLayout.placement == 1 and buffs.groups.buffs_all.max == 32)
     assert(buffs.groups.buffs_all.candidates.excludeSpellIDs[104280] and buffs.groups.buffs_all.candidates.excludeSpellIDs[57724], 'the blacklist goes to the game')
-    -- 32 wide, 6 shorter, time text below: cells 32 x 38.
+    -- 32 wide, 4 shorter (the design rule under 36), time text below (10px and 2px): cells 32 x 40.
     local layout = buffs.groups.buffs_all.layout or buffs.groups.buffs_all.options.layout
-    assert(layout.elementWidth == 32 and layout.elementHeight == 26 + 12 and layout.elementSpacing == 4)
+    assert(layout.elementWidth == 32 and layout.elementHeight == 28 + 12 and layout.elementSpacing == 4)
     local b = buffs.groups.buffs_all.button
-    assert(b.modeIcon and b.modeIcon.width == 32 and b.modeIcon.height == 26 and b.iconRegion == b.modeIcon.icon, 'the Mode icon on a child')
+    assert(b.modeIcon and b.modeIcon.width == 32 and b.modeIcon.height == 28 and b.iconRegion == b.modeIcon.art, 'the Mode icon on a child')
     assert(b.modeIcon.edge.styleId == 'blizz' and b.modeIcon.edge.rim == 1, 'Mode-Blizz, 1px band')
-    assert(b.timerRegion == b.modeBelow and b.countRegion == b.modeIcon.count, 'time text below, stacks')
+    assert(b.timerRegion == b.modeOutside and b.countRegion == b.modeIcon.count, 'time text below, stacks')
+    -- Cropped by size: the art is 10% wider than its clipping frame on each side (30 x 26 inside a 1px band).
+    assert(b.modeIcon.clip.clipsChildren and not b.modeIcon.icon:IsShown(), 'a clipping frame holds the art')
+    assert(math.abs(b.modeIcon.art.width - 30 / 0.8) < 1e-6 and b.modeIcon.art.points[1][1] == 'CENTER')
+    assert(Point(b.modeIcon.count)[1] == 'BOTTOMRIGHT' and b.modeIcon.count.font[2] == M.db.bars.buffs.countSize, 'stacks in their corner')
     assert(b.cancel == 'RightButtonUp' and b.tooltipPoint == 'ANCHOR_BOTTOMLEFT', 'right-click cancels; tooltip')
     -- Flow: grows left, rows down, from the top right.
     assert(buffs.flowAnchor == 'TOPRIGHT' and buffs.growth[1] == addon.Kit.AURA_FLOW.Left and buffs.growth[2] == addon.Kit.AURA_FLOW.Down)
@@ -140,17 +145,37 @@ H.Load({ before = STUBS }).run([==[
     assert(pd.playerDebuffs_other.candidates.excludeDispelTypes.Bleed and pd.playerDebuffs_other.candidates.excludeDispelTypes.Magic)
     assert(pd.playerDebuffs_cc.button.timerRegion == pd.playerDebuffs_cc.button.modeIcon.timer, 'time on the icon')
     assert(pd.playerDebuffs_cc.button.modeIcon.edge.styleId == 'blizzEmpty', 'the owner picked Mode-BlizzEmpty')
+    local pdi = pd.playerDebuffs_cc.button.modeIcon
+    assert(pdi.width == 42 and pdi.height == 36 and pdi.edge.rim == 2, 'Player Debuffs: 42 x 36 with a 2px border')
     -- Defensives glow Aura Gold.
     local def = M.containers.custom1.groups.custom1_bigdef.button
     assert(def.modeIcon.glow:IsShown(), 'soft glow')
 
-    -- Blizzard's frames step aside: unregistered, their buttons parked; the frames stay as anchors.
+    -- Blizzard's frames step aside: unregistered, their parts hidden (and
+    -- kept hidden) where they are, since Blizzard's layout calls
+    -- AuraContainer:GetParent():UpdateSize(); the frames stay as anchors.
     assert(BuffFrame.unregistered and DebuffFrame.unregistered and BuffFrame:IsShown())
-    assert(BuffFrame.AuraContainer.parent ~= BuffFrame and BuffFrame.CollapseAndExpandButton.parent ~= BuffFrame and DebuffFrame.AuraContainer.parent ~= DebuffFrame)
+    assert(BuffFrame.AuraContainer:GetParent() == BuffFrame and not BuffFrame.AuraContainer:IsShown(), 'hidden in place')
+    assert(not BuffFrame.CollapseAndExpandButton:IsShown() and DebuffFrame.AuraContainer:GetParent() == DebuffFrame and not DebuffFrame.AuraContainer:IsShown())
+    BuffFrame.AuraContainer:Show(); assert(not BuffFrame.AuraContainer:IsShown(), 'hidden again when Blizzard shows it')
     local mover = M.movers.buffs
     assert(_G.ModeUIBuffsDebuffsBuffsMover == mover and mover.points[1][1] == 'TOPRIGHT' and mover.points[1][2] == BuffFrame, 'Buffs sit in Blizzard\'s spot')
     assert(M.movers.debuffs.points[1][2] == M.movers.buffs, 'Debuffs hang from Buffs')
-    assert(mover.width == 10 * 32 + 9 * 4 and mover.height == 4 * 38 + 3 * 4, 'the mover holds a full bar')
+    assert(mover.width == 10 * 32 + 9 * 4 and mover.height == 4 * 40 + 3 * 4, 'the mover holds a full bar')
+
+    -- Width and height: the height follows the width while at its default offset.
+    assert(M:SetBarOption('playerBuffs', 'width', 40) and M.db.bars.playerBuffs.height == 34, '6px shorter from 36 wide')
+    assert(M:SetBarOption('playerBuffs', 'height', 30) and M:SetBarOption('playerBuffs', 'width', 44) and M.db.bars.playerBuffs.height == 30, 'a height you set stays')
+    assert(M:SetBarOption('playerBuffs', 'width', 24) and M:SetBarOption('playerBuffs', 'height', 20))
+    -- Text: time above with an offset; stacks top left; the border gap and zoom.
+    assert(M:SetBarOption('buffs', 'timer', 'above') and M:SetBarOption('buffs', 'timerY', 3) and M:SetBarOption('buffs', 'countPoint', 'TOPLEFT'))
+    local ab = M.containers.buffs.groups.buffs_all.button
+    assert(Point(ab.modeIcon)[1] == 'BOTTOM' and Point(ab.modeOutside)[1] == 'BOTTOM' and Point(ab.modeOutside)[5] == 2 + 3, 'time over the icon, 3 up')
+    assert(Point(ab.modeIcon.count)[1] == 'TOPLEFT' and not M:SetBarOption('buffs', 'countPoint', 'MIDDLE'))
+    assert(M:SetBarOption('buffs', 'borderGap', 2) and M.containers.buffs.groups.buffs_all.button.modeIcon.clip.points[1][4] == 3, 'the art 2px inside the band')
+    assert(M:SetBarOption('buffs', 'timer', 'below') and M:SetBarOption('buffs', 'timerY', 0) and M:SetBarOption('buffs', 'countPoint', 'BOTTOMRIGHT') and M:SetBarOption('buffs', 'borderGap', 0))
+    assert(M:SetOption('outline', 'thick') and M.db.outline == 'thick' and not M:SetOption('outline', 'bold') and not M:SetOption('max', 3))
+    assert(M:SetOption('outline', 'none'))
 
     -- Settings: kinds, All standing alone, sorting, growth.
     assert(M:SetCategory('playerBuffs', 'bigdef', true) and M.containers.playerBuffs.groups.playerBuffs_bigdef, 'a new kind rebuilds the bar')
@@ -158,9 +183,9 @@ H.Load({ before = STUBS }).run([==[
     assert(M:SetCategory('playerBuffs', 'all', true) and next(M.db.bars.playerBuffs.cats) == 'all' and #M.containers.playerBuffs.order == 1, 'All stands alone')
     assert(M:SetCategory('playerBuffs', 'mine', true) and not M.db.bars.playerBuffs.cats.all, 'another kind takes All off')
     assert(not M:SetCategory('playerBuffs', 'Magic', true), 'no debuff kinds on a buff bar')
-    assert(M:SetBarOption('debuffs', 'sort', 'time') and debuffs.groups.debuffs_all.sort[1] == 4, 'sorted by time left')
+    assert(M:SetBarOption('debuffs', 'sort', 'time') and M.containers.debuffs.groups.debuffs_all.sort[1] == 4, 'sorted by time left')
     assert(M:SetBarOption('debuffs', 'grow', 'down') and M.db.bars.debuffs.wrap == 'right', 'rows go across the growth')
-    assert(debuffs.axis == addon.Kit.AURA_AXIS.Vertical and debuffs.flowAnchor == 'TOPLEFT')
+    assert(M.containers.debuffs.axis == addon.Kit.AURA_AXIS.Vertical and M.containers.debuffs.flowAnchor == 'TOPLEFT')
     assert(not M:SetBarOption('debuffs', 'wrap', 'down'), 'rows never run the way the icons grow')
     assert(not M:SetBarOption('debuffs', 'kind', 'buffs'), 'Blizzard\'s stand-ins keep their kind')
     assert(not M:SetBarOption('buffs', 'width', 99) and not M:SetBarOption('buffs', 'edgeStyle', 'gold'))
@@ -195,7 +220,7 @@ H.Load({ before = STUBS }).run([==[
 
     local samples = M.samples.playerDebuffs
     assert(samples and samples[1]:IsShown() and M.movers.playerDebuffs:IsShown() and not M.containers.playerDebuffs.enabled, 'samples in Edit Mode')
-    assert(samples[1].icon.texture:find('Spell_Shadow_Possession'), 'crowd control first')
+    assert(samples[1].art.texture:find('Spell_Shadow_Possession'), 'crowd control first')
     M:SetEditMode(false)
     assert(not samples[1]:IsShown() and M.containers.playerDebuffs.enabled)
 
@@ -214,10 +239,11 @@ H.Load({ before = STUBS }).run([==[
     local tabs = {}
     for _, section in ipairs(page.sections) do tabs[#tabs + 1] = section.title end
     assert(table.concat(tabs, ',') == 'Bars,Look,Blacklist,Module', 'four tabs')
+    assert(page.heightSlider and page.cropSlider and page.borderGapSlider and page.timerSizeSlider and page.timerNudge and page.countCorner and page.countNudge and page.outlinePills, 'size, border and text controls')
     local view = page.configPreview
     assert(view and view.pool[1] and view.pool[1]:IsShown() and view.caption:GetText():find('Buffs', 1, true), 'the preview shows Buffs')
     page.SetEditing('playerDebuffs')
-    assert(view.caption:GetText():find('Player Debuffs', 1, true) and view.pool[1].icon.texture:find('Possession'))
+    assert(view.caption:GetText():find('Player Debuffs', 1, true) and view.pool[1].art.texture:find('Possession'))
     assert(view.pool[1].edge.tint ~= nil, 'debuff samples take their type color')
     assert(M:OpenPicker(page.blacklistButton) and M.picker:IsShown(), 'the blacklist picker')
     assert(M.picker.buttons[1].spell == 104280 and M.picker.buttons[3].spell == 21562, 'hidden first, then auras on you')
@@ -235,5 +261,22 @@ H.Load({ before = STUBS, saved = saved }).run([==[
     assert(addon.modules.unitFrames.db.player.debuffs.enabled == true, 'Unit Frames keeps its saved Player auras')
     assert(M.containers.playerDebuffs and M.containers.playerDebuffs.enabled)
 ]==], "buffs_debuffs_handover")
+
+-- Version 1 -> 2: heights and text sizes from each bar's width; Player
+-- Debuffs at the old defaults (30 wide, 1px) become 42 wide with 2px; a width
+-- the player set stays; the outline becomes a choice.
+local v1 = { schemaVersion = 2, activeProfile = 'Default', profiles = { Default = { modules = { buffsDebuffs = {
+    enabled = true, settingsVersion = 1, outline = false,
+    bars = { playerDebuffs = { width = 30, borderSize = 1, timer = 'center' }, playerBuffs = { width = 42, borderSize = 1 },
+        buffs = { width = 32 } } } } } } }
+H.Load({ before = STUBS, saved = v1 }).run([==[
+    local M = addon.BuffsDebuffs
+    local bars = M.db.bars
+    assert(M.db.settingsVersion == 2 and M.db.outline == 'none')
+    assert(bars.playerDebuffs.width == 42 and bars.playerDebuffs.height == 36 and bars.playerDebuffs.borderSize == 2, 'Player Debuffs grow')
+    assert(bars.playerDebuffs.timerSize == 16 and addon.Style.SameColor(bars.playerDebuffs.timerColor, addon.Style.Tone.cooldown))
+    assert(bars.playerBuffs.width == 42 and bars.playerBuffs.height == 36 and bars.playerBuffs.borderSize == 1, 'other bars keep their border')
+    assert(bars.buffs.height == 28 and bars.buffs.timerSize == 10 and bars.buffs.crop == 10 and bars.buffs.borderGap == 0)
+]==], "buffs_debuffs_v2")
 
 print("buffs and debuffs: all checks passed")

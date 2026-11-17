@@ -12,7 +12,7 @@ if not M then return end
 -- room under it for time text, the Mode-Blizz edge, rim by debuff type, glow,
 -- swipe, stacks, tooltip and right-click cancel. A change to how buttons look
 -- builds a new container; filters, counts, sorting and layout change in place.
-local Kit, Style = addon.Kit, addon.Style
+local Kit = addon.Kit
 local TEMPLATE = Kit.AURA_CONTAINER_TEMPLATE
 local FLOW, AXIS = Kit.AURA_FLOW, Kit.AURA_AXIS
 
@@ -65,46 +65,7 @@ function M:Groups(id)
     return groups
 end
 
--- The text style the icons use (Kit.Font's style table).
-function M:TextStyle(bar)
-    local db = self.db
-    return setmetatable({ auraTimerText = bar.timer == "center", auraBorderSize = bar.borderSize,
-        auraTimerColor = db.timerColor }, { __index = db })
-end
-
-local function Hex(c) return string.format("%.3f,%.3f,%.3f", c[1], c[2], c[3]) end
--- Everything a bar's buttons bake in when they're made.
-function M:LookKey(id, px)
-    local bar, db = self.db.bars[id], self.db
-    return table.concat({ bar.kind, bar.width, bar.timer, tostring(bar.swipe), tostring(bar.count), tostring(bar.tooltip),
-        tostring(bar.cancel), bar.edgeStyle, bar.edgeMetal, bar.borderSize, tostring(bar.byType), bar.glow, bar.glowColor,
-        Hex(bar.glowCustomColor), tostring(bar.cats.enchant), px, db.fontMedia, db.font, tostring(db.outline),
-        tostring(db.shadow), Hex(db.textColor), Hex(db.timerColor) }, "|")
-end
-
-local function Metal(bar) return bar.edgeMetal ~= "default" and bar.edgeMetal or nil end
-local function TypeColor(name)
-    if name == "none" then return Style.Tone.metal.gunmetal.mid end
-    return Style.Tone.debuffType[name] or Style.Tone.metal.gunmetal.mid
-end
-
--- Lays one icon (a Kit.AuraIconParts frame) out in the bar's look.
-function M:LayoutIcon(icon, bar, px)
-    local width, height = self:IconSize(bar, px)
-    local path = Kit.FontPath(self.db, self.id)
-    Kit.LayoutAuraIcon(icon, width, height, px, self:TextStyle(bar), path)
-    Kit.AuraBorderStyle(icon, bar.edgeStyle, Metal(bar))
-    icon.cooldown:SetShown(bar.swipe)
-    icon.count:SetShown(bar.count)
-    return width, height, path
-end
--- Time text under the icon, centered, in the Mode face.
-function M:LayoutBelow(text, bar, px, path, icon)
-    Kit.Font(text, self:TextStyle(bar), 10, Style.Weighted(path, "bold"), px)
-    text:ClearAllPoints()
-    text:SetPoint("TOP", icon, "BOTTOM", 0, -2 * px)
-    text:SetJustifyH("CENTER")
-end
+local TypeColor = M.TypeColor
 
 local function Initializer(self, id, px)
     local bar = self.db.bars[id]
@@ -112,27 +73,26 @@ local function Initializer(self, id, px)
     local formatter = Kit.AuraTimeFormatter(true)
     local cancel = bar.kind == "buffs" and bar.cancel
     local cellWidth, cellHeight = self:CellSize(bar, px)
+    local point = self:IconPoint(bar)
     return function(button)
-        -- The button is the cell: the icon at its top, time text under it.
+        -- The button is the cell: the icon, and room for time text under or over it.
         button:SetSize(cellWidth, cellHeight)
         local icon = CreateFrame("Frame", nil, button)
         Kit.AuraIconParts(icon)
         local _, _, path = self:LayoutIcon(icon, bar, px)
-        icon:SetPoint("TOP", button, "TOP", 0, 0)
+        icon:SetPoint(point, button, point, 0, 0)
         icon:Show()
         button.modeIcon = icon
-        button:SetIcon(icon.icon)
+        button:SetIcon(icon.art)
         if bar.swipe then button:SetDurationCooldown(icon.cooldown) end
-        -- Game-filled text can't drive the lifted copies.
-        icon.timer.lift:Hide(); icon.count.lift:Hide()
         if bar.count then button:SetApplicationCount(icon.count) end
         local options = formatter and { textFormatter = formatter } or nil
         if bar.timer == "center" then button:SetDurationText(icon.timer, options)
-        elseif bar.timer == "below" then
-            local below = Kit.Text(button)
-            self:LayoutBelow(below, bar, px, path, icon)
-            button.modeBelow = below
-            button:SetDurationText(below, options)
+        elseif bar.timer == "below" or bar.timer == "above" then
+            local outside = Kit.Text(button)
+            self:LayoutOutside(outside, bar, px, path, icon)
+            button.modeOutside = outside
+            button:SetDurationText(outside, options)
         end
         if typed then Kit.DispelAuraRim(button, typed, nil, icon) end
         -- The glow: by debuff type through the game's colors, or a fixed color.

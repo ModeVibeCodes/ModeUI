@@ -19,6 +19,11 @@ Static/mock validated only; nothing here has run in the client yet.
 - The Player frame's aura settings leave **Unit Frames**.
 - After the canvas (owner, November 17): a **1px band** everywhere, debuffs
   **colored by type** on most bars, the canvas layout.
+- After the first in-game look (owner, November 17): width and height each
+  adjustable (4 or 6px shorter by default), text settings on every bar (time
+  and stacks: place, size, color, offsets), Player Debuffs much bigger (42
+  wide) with a 2px border and cropped icons, Border Size and offsets on every
+  border, and the BuffFrame error fixed.
 
 ## Decisions (owner, November 17, 2026)
 
@@ -27,8 +32,10 @@ Static/mock validated only; nothing here has run in the client yet.
    the Buffs and Debuffs bars sit in their place.
 2. **Player only** moves out of Unit Frames; Target, Target of Target, Focus
    and Target of Focus keep their auras there.
-3. Icons are **always width − 6** (every width, not the design rule's −4
-   under 36).
+3. Icons were first always width − 6; after the in-game look (owner,
+   November 17) **Width and Height are each a setting**, the height starting
+   at the design rule (`Style.IconHeight`: 4px shorter under 36 wide, 6px
+   from 36) and following the width until it's changed.
 4. Time text **below** the icon by default (Player bars and Defensives: on
    the icon, the owner's picks).
 5. Sidebar: the caption **Interface** is category ID `frames` (Unit Frames,
@@ -149,10 +156,10 @@ forbids anchoring frames to a container, so other bars anchor to movers.
 
 | Bar | Shows (default) | Place (owner's canvas) | Look |
 |---|---|---|---|
-| Buffs | All Buffs, Weapon Enchants; 32 max, 10 a row | Blizzard's Buff Frame (`frame:BuffFrame`), top right on top right | 32 x 26, 4px apart, grows left, rows down, time below |
+| Buffs | All Buffs, Weapon Enchants; 32 max, 10 a row | Blizzard's Buff Frame (`frame:BuffFrame`), top right on top right | 32 x 28, 4px apart, grows left, rows down, time below |
 | Debuffs | All Debuffs; 16 max, 10 a row | Buffs' top right, 4 right and 147 down | as Buffs, rims by debuff type |
-| Player Buffs | Important, Heals Over Time, Yours; 12 max, 8 a row | under the ModeUI Player Frame's right end (top right on bottom right, -6, -2) | 24 x 18, 2px apart, grows left, time on the icon |
-| Player Debuffs | Crowd Control, Dispellable by You, Boss, Magic, Curse, Disease, Poison, Bleed, Other; 8 max, 6 a row | above the ModeUI Player Frame (top right on top right, 2, 131) | 30 x 24, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
+| Player Buffs | Important, Heals Over Time, Yours; 12 max, 8 a row | under the ModeUI Player Frame's right end (top right on bottom right, -6, -2) | 24 x 20, 2px apart, grows left, time on the icon |
+| Player Debuffs | Crowd Control, Dispellable by You, Boss, Magic, Curse, Disease, Poison, Bleed, Other; 8 max, 6 a row | above the ModeUI Player Frame (top right on top right, 2, 131) | 42 x 36 (owner, after the first in-game look), 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
 | Defensives (custom) | Big and External Defensives, Important; 4 max | left of center (-151, 27) | 40 x 34, Mode-BlizzEmpty, Soft glow in Aura Gold, time on the icon |
 
 Player Buffs' rows go down (the canvas had Up, which would cover the frame
@@ -180,25 +187,33 @@ One aura group per kind picked, in this order (an aura shows once):
 
 ### Buttons
 
-Styled once in `initializeFrame`: the button is the cell (icon plus 12px for
-time text below); the Mode icon (`Kit.AuraIconParts`) on a child frame at its
-top, in the bar's Border Style, Metal and Size; swipe, stacks, time text
-(below in the Mode face Bold 10, or on the icon), a flat rim the game colors
-by debuff type (`Kit.DispelAuraRim` on the child), Soft or Flash glows (by
-type or a color), the game's tooltip (bottom left) and, on buff bars,
-right-click cancel (`SetCancelAuraButtons`, Up or Down by Cast on Key Down).
-A new look builds a new container (the old one disabled); kinds, counts,
-layout and sorting change in place; candidate filters only when the
-blacklist changes (they make the game read every aura again).
+Styled once in `initializeFrame` (`Bars.lua`, the look in `Icons.lua`): the
+button is the cell (the icon plus room for time text under or over it: its
+size and 2px); the Mode icon (`Kit.AuraIconParts`) on a child frame, Width x
+Height, in the bar's Border Style, Metal and Size. The art is cropped by
+size, not texture coordinates (the game sets each aura's texture itself): a
+square **Icon Zoom**% wider than the visible part on each side, centered in a
+frame that clips it (`SetClipsChildren`), a **Border Gap** inside the band.
+Time text below, above or on the icon and the stack count in any corner,
+each with its own size, color and X/Y offset (the module's font, outline and
+shadow); swipe; a flat rim the game colors by debuff type
+(`Kit.DispelAuraRim` on the child); Soft or Flash glows (by type or a
+color); the game's tooltip (bottom left); on buff bars right-click cancel
+(`SetCancelAuraButtons`, Up or Down by Cast on Key Down). A new look builds a
+new container (the old one disabled); kinds, counts, layout and sorting
+change in place; candidate filters only when the blacklist changes (they
+make the game read every aura again).
 
 ### Blizzard's frames
 
 While the Buffs (Debuffs) bar shows, `BuffFrame` (`DebuffFrame`) is
 unregistered and its `AuraContainer`, collapse button and consolidated buffs
-wait on a hidden frame (method calls only); the frame stays where Blizzard's
-Edit Mode puts it, as the Buffs bar's anchor. Hiding the bar or switching the
-module off asks for a reload to bring Blizzard's back. `DeadlyDebuffFrame` is
-left alone.
+are hidden where they are and kept hidden (`Skin.Suppress`). They keep their
+parent: Blizzard's layout calls `AuraContainer:GetParent():UpdateSize()`, and
+the first build, which moved the container to a hidden frame, made it error
+in game. The frame stays where Blizzard's Edit Mode puts it, as the Buffs
+bar's anchor. Hiding the bar or switching the module off asks for a reload
+to bring Blizzard's back. `DeadlyDebuffFrame` is left alone.
 
 ### Blacklist
 
@@ -215,31 +230,39 @@ with sample auras in its look (`Samples.lua`); the mover shows over them.
 The page (split layout, Auras icon) previews the bar being edited with the
 same samples. Tabs: **Bars** (bar picker, + New Bar, name, Delete Bar, Show
 This Bar, Shows for custom bars, Which Auras, Sort, Max Shown, Per Row, Grow,
-New Rows Go), **Look** (Icon Width, Spacing, Time Text, Timer Swipe, Stack
-Count, Tooltips, Right-Click Cancels, Border Style, Border Metal, Border Size,
-Rim Colored by Debuff Type, Glow, Glow Color, Custom Color), **Blacklist**
-(+ Add or Remove Auras), **Module** (Reset to Defaults).
+New Rows Go), **Look** (Icon Width, Icon Height, Spacing, Icon Zoom, Timer
+Swipe, Tooltips, Right-Click Cancels; Border Style, Border Metal, Border
+Size, Border Gap, Rim Colored by Debuff Type; Time Text: Below, Above, On
+Icon or None, Size, Color, Offset X/Y and Nudge; Stack Count: Show, Corner,
+Size, Color, Offset X/Y and Nudge; Glow, Glow Color, Custom Color),
+**Blacklist** (+ Add or Remove Auras), **Module** (Text: Font, Outline,
+Shadow; Reset to Defaults).
 
 ### Saved settings
 
-`ModeUIDB` profile `modules.buffsDebuffs` (settings version 1): `bars[id]`
-(show, kind, cats, sort, max, perRow, width, spacing, grow, wrap, timer,
-swipe, count, tooltip, cancel, edgeStyle, edgeMetal, borderSize, byType,
-glow, glowColor, glowCustomColor), `customBars` ({ id, name }), `nextCustom`,
-`blacklist`, and the text keys (font, fontMedia, outline, shadow,
-liftedShadow, slug, textColor, timerColor). Places under `positions`.
-Unit Frames keeps `player.buffs` and `player.debuffs` untouched; `M.Adopt`
-(a new module hook in `DB:ValidateProfile`) turns this module on once when
-either showed.
+`ModeUIDB` profile `modules.buffsDebuffs` (settings version 2): `bars[id]`
+(show, kind, cats, sort, max, perRow, width, height, spacing, crop, grow,
+wrap, timer, timerSize, timerColor, timerX, timerY, swipe, count, countPoint,
+countSize, countColor, countX, countY, tooltip, cancel, edgeStyle, edgeMetal,
+borderSize, borderGap, byType, glow, glowColor, glowCustomColor),
+`customBars` ({ id, name }), `nextCustom`, `blacklist`, and the text keys
+(font, fontMedia, outline: none, outline or thick; shadow, liftedShadow,
+slug, textColor, timerColor). Places under `positions`. Version 2 gives each
+bar its height (the design rule from its width) and text sizes, makes Player
+Debuffs 42 wide with a 2px border where still at the old 30 and 1px, and
+turns the outline into a choice. Unit Frames keeps `player.buffs` and
+`player.debuffs` untouched; `M.Adopt` (a module hook in
+`DB:ValidateProfile`) turns this module on once when either showed.
 
 ### Files
 
 `Modules/BuffsDebuffs/`: `Init.lua` (declaration, bars, kinds, defaults),
 `Migrations.lua` (validation, Adopt), `Driver.lua` (lifecycle, setters,
 custom bars, blacklist), `Placement.lua` (sizes, movers, holders),
-`Bars.lua` (containers, groups, buttons), `Blizzard.lua` (the stand-in),
-`Samples.lua`, `Preview.lua`, `Settings.lua`, `SettingsBar.lua`,
-`Blacklist.lua`. Shared: `Runtime/DB.lua` (Adopt), `Domain/Auras.lua`
+`Icons.lua` (an icon's look: size, crop, border, texts), `Bars.lua`
+(containers, groups, buttons), `Blizzard.lua` (the stand-in), `Samples.lua`,
+`Preview.lua`, `Settings.lua`, `SettingsBar.lua` (Bars tab),
+`SettingsLook.lua` (Look tab, Module text), `Blacklist.lua`. Shared: `Runtime/DB.lua` (Adopt), `Domain/Auras.lua`
 (`NeverSecret`, `Spells`), `Kit/AuraIcon.lua` (`DispelAuraRim` on a child),
 `Kit/AuraContainer.lua` (`AuraTimeFormatter(hours)`), the Auras icon
 (`tools/mode_icons.lua`, `Style.ICONS`). Unit Frames: `Auras.lua`
@@ -252,32 +275,29 @@ module doesn't change).
 
 ## In-game gate
 
-One check at a time, after `/reload` on this branch:
+First look (owner, November 17, 2026): the module, the handover and the
+stand-in work; Blizzard's buff frame errored (`BuffFrame.lua:177`), Player
+Debuffs were too small with borders hard to see, Player Buffs' border didn't
+read, and text wasn't adjustable. All addressed above. Recheck, after
+`/reload` on this branch:
 
-1. **Handover.** Navigation: `/modeui`, **Interface** › **Buffs & Debuffs**,
-   then **Interface** › **Unit Frames**, pick the Player above the preview,
-   open the **Auras** tab. Action: click **Open Buffs & Debuffs**. Required
-   state: out of combat. Confirmation: Buffs & Debuffs is switched on; the
-   Player's Auras tab shows the note and the button (which opens the page);
-   no auras draw on the Player frame; the Target's auras still show.
-2. **Stand-in.** Navigation: the game world. Action: gain and lose a few
-   buffs and a debuff; right-click a buff. Required state: out of combat,
-   then in combat (a training dummy). Confirmation: Blizzard's buffs and
-   debuffs by the minimap are gone and Mode bars (32 x 26, Mode-Blizz, time
-   below) sit in their place; debuff rims take their type's color; a
-   right-click cancels a buff out of combat (note whether it does in combat).
-3. **Player bars and Defensives.** Navigation: the game world, then
-   **Edit Mode** in the ModeUI window header. Action: watch the Player bars;
-   drag Player Debuffs and pick **Anchor To**. Required state: auras on you.
-   Confirmation: Player Debuffs above the Player frame, Player Buffs under its
-   right end, Defensives left of center; in Edit Mode each bar shows samples
-   and moves.
-4. **Settings and blacklist.** Navigation: **Interface** › **Buffs &
-   Debuffs**, tabs **Bars**, **Look**, **Blacklist**. Action: pick another
-   kind on a bar, change **Icon Width** and **Border Style**, click
-   **+ New Bar**, open **+ Add or Remove Auras** and hide a buff on you.
-   Required state: out of combat. Confirmation: the preview and the bars
-   follow each change; the hidden buff leaves every bar.
-5. **Off.** Navigation: **Interface** › **Buffs & Debuffs**. Action: switch
-   the module off and reload when asked. Required state: out of combat.
-   Confirmation: Blizzard's buffs and debuffs are back by the minimap.
+1. **No errors.** Navigation: the game world, then Blizzard's Edit Mode
+   (Game Menu › Edit Mode) and out again. Action: `/reload`, open and close
+   Blizzard's Edit Mode, mount and dismount. Required state: out of combat,
+   error display on. Confirmation: no `BuffFrame.lua` errors; Blizzard's
+   buffs and debuffs stay hidden; the Mode bars stay in place.
+2. **Icons.** Navigation: the game world. Action: look at Player Debuffs and
+   Player Buffs with a few auras up. Required state: auras on you.
+   Confirmation: Player Debuffs 42 x 36 with a 2px border that reads; every
+   icon cropped (no game icon frame inside the Mode border); Player Buffs'
+   border visible.
+3. **Size and border.** Navigation: `/modeui`, **Interface** › **Buffs &
+   Debuffs**, **Look** tab. Action: pick a bar; change **Icon Width** (the
+   height follows), then **Icon Height**, **Icon Zoom**, **Border Size** and
+   **Border Gap**. Required state: out of combat. Confirmation: the preview
+   and the bar follow; the height stops following the width once set.
+4. **Text.** Same tab. Action: set **Time Text** to Below, Above and On Icon
+   with a size, color and offset (try the nudge arrows); move **Stack Count**
+   to another corner, size and color; under **Module** › **Text** pick a
+   font, **Outline** and **Shadow**. Required state: out of combat.
+   Confirmation: live auras and the preview take each change.

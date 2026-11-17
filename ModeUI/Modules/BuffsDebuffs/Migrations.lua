@@ -38,7 +38,10 @@ function M.ValidateBar(bar, defaults, fixedKind, where)
     end
     assert(Public(bar.edgeStyle) and Style.EdgeStyle(bar.edgeStyle) ~= nil, "Invalid " .. where .. ".edgeStyle")
     assert(bar.edgeMetal == "default" or (Public(bar.edgeMetal) and Style.Tone.metal[bar.edgeMetal] ~= nil), "Invalid " .. where .. ".edgeMetal")
-    assert(Color(bar.glowCustomColor), "Invalid " .. where .. ".glowCustomColor")
+    assert(Color(bar.glowCustomColor) and Color(bar.timerColor) and Color(bar.countColor), "Invalid " .. where .. " colors")
+    local point = false
+    for _, name in ipairs(M.POINTS) do if bar.countPoint == name then point = true end end
+    assert(point, "Invalid " .. where .. ".countPoint")
     assert(type(bar.cats) == "table", "Invalid " .. where .. ".cats")
     for id, on in pairs(bar.cats) do
         assert(on == true and M.categoryById[bar.kind][id] ~= nil, "Invalid " .. where .. ".cats." .. tostring(id))
@@ -75,6 +78,23 @@ function M.Initialize(db)
         db.bars.custom1 = db.bars.custom1 or Copy(M.firstCustom.bar)
         db.nextCustom = 2
     end
+    -- Version 2 (owner, after the first in-game look, November 17, 2026):
+    -- icon height, crop, border gap and text settings per bar; Player
+    -- Debuffs 42 wide with a 2px border where still at the old defaults; the
+    -- outline as a choice.
+    if db.settingsVersion == 1 then
+        for id, bar in pairs(type(db.bars) == "table" and db.bars or {}) do
+            if type(bar) == "table" and Number(bar.width) then
+                if id == "playerDebuffs" then
+                    if bar.width == 30 then bar.width = 42 end
+                    if bar.borderSize == 1 then bar.borderSize = 2 end
+                end
+                M.FillSizes(bar)
+            end
+        end
+        if db.outline == false then db.outline = "none" elseif db.outline == true then db.outline = "outline" end
+        db.settingsVersion = 2
+    end
     for key, value in pairs(M.defaults) do
         if db[key] == nil then db[key] = Copy(value) end
     end
@@ -91,10 +111,10 @@ function M.Initialize(db)
         M.ValidateBar(db.bars[entry.id], M.customDefaults, nil, "bar " .. entry.id)
     end
     ValidateBlacklist(db.blacklist)
-    for _, key in ipairs({ "outline", "shadow", "liftedShadow", "slug" }) do
-        assert(type(db[key]) == "boolean" or (key == "outline" and Public(db[key]) and type(db[key]) == "string"),
-            "Invalid buffs and debuffs " .. key)
+    for _, key in ipairs({ "shadow", "liftedShadow", "slug" }) do
+        assert(type(db[key]) == "boolean", "Invalid buffs and debuffs " .. key)
     end
+    assert(Public(db.outline) and InList(M.choices.outline, db.outline), "Invalid buffs and debuffs outline")
     assert(Public(db.font) and type(db.font) == "string" and Public(db.fontMedia) and type(db.fontMedia) == "string",
         "Invalid buffs and debuffs font")
     assert(Color(db.textColor) and Color(db.timerColor), "Invalid buffs and debuffs text colors")

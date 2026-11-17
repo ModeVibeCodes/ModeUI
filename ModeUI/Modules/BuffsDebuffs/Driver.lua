@@ -80,12 +80,33 @@ function M:SetBarOption(id, key, value)
     local candidate = Copy(self.db)
     local bar = candidate.bars[id]
     if bar[key] == nil then return false end
+    -- A height still at its width's default offset follows the width.
+    if key == "width" and addon.IsNumber(value) and bar.height == addon.Style.IconHeight(bar.width) then
+        bar.height = addon.Style.IconHeight(value)
+    end
     bar[key] = value
     if key == "kind" then bar.cats = { all = true }; bar.byType = value == "debuffs"; bar.cancel = value == "buffs" end
     if key == "grow" and self.HORIZONTAL[value] == self.HORIZONTAL[bar.wrap] then
         bar.wrap = self.HORIZONTAL[value] and "down" or "right"
     end
     return self:Commit(candidate)
+end
+
+-- The module's text: font, outline and shadow (every bar's time and stacks).
+M.TEXT_KEYS = { font = true, fontMedia = true, outline = true, shadow = true }
+function M:SetOption(key, value)
+    if not self:CanConfigure() or not self.TEXT_KEYS[key] then return false end
+    local candidate = Copy(self.db)
+    candidate[key] = value
+    return self:Commit(candidate)
+end
+-- The font picker and color rows read and write through an owner.
+function M:TextOwner()
+    local owner = { db = { appearance = setmetatable({}, { __index = function(_, key) return M.db[key] end }) } }
+    function owner.CanConfigure() return M:CanConfigure() end
+    function owner.GetFonts() return addon.Media:GetFonts() end
+    function owner.SetAppearance(_, key, value) return M:SetOption(key, value) end
+    return owner
 end
 
 -- Turns one kind of aura on or off for a bar. All stands alone (it already

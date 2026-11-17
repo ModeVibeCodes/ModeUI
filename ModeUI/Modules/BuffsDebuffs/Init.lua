@@ -21,7 +21,7 @@ addon.BuffsDebuffs = M
 -- The ID is also the saved-settings key (ModeUIDB profile modules.buffsDebuffs).
 addon:RegisterModule("buffsDebuffs", M)
 
-M.SETTINGS_VERSION = 1
+M.SETTINGS_VERSION = 2
 -- The four bars every profile has, then custom bars ("custom1"...).
 M.FIXED = { "buffs", "debuffs", "playerBuffs", "playerDebuffs" }
 M.FIXED_LABELS = { buffs = "Buffs", debuffs = "Debuffs", playerBuffs = "Player Buffs", playerDebuffs = "Player Debuffs" }
@@ -79,19 +79,32 @@ end
 local function Bar(kind, cats, o)
     local bar = { show = true, kind = kind, cats = {}, sort = "default", max = 8, perRow = 8, width = 32, spacing = 4,
         grow = "left", wrap = "down", timer = "below", swipe = true, count = true, tooltip = true, cancel = kind == "buffs",
-        edgeStyle = "blizz", edgeMetal = "default", borderSize = 1, byType = kind == "debuffs", glow = "none",
-        glowColor = "custom", glowCustomColor = Copy(Tone.auraGlow) }
+        edgeStyle = "blizz", edgeMetal = "default", borderSize = 1, borderGap = 0, crop = 10, byType = kind == "debuffs",
+        glow = "none", glowColor = "custom", glowCustomColor = Copy(Tone.auraGlow),
+        timerX = 0, timerY = 0, countPoint = "BOTTOMRIGHT", countX = 0, countY = 0, countColor = Copy(Tone.textBright) }
     for _, id in ipairs(cats) do bar.cats[id] = true end
     for key, value in pairs(o or {}) do bar[key] = value end
+    M.FillSizes(bar)
     return bar
 end
 M.Bar = Bar
+-- Height and text sizes that follow the icon unless set (owner, November 17,
+-- 2026: width and height both adjustable, 4 or 6px shorter by default, the
+-- design rule; Style.IconHeight). Time text on the icon is the cooldown color,
+-- under or over it the bright text color.
+function M.FillSizes(bar)
+    if bar.height == nil then bar.height = Style.IconHeight(bar.width) end
+    if bar.timerSize == nil then bar.timerSize = bar.timer == "center" and math.max(8, math.floor(bar.height * 0.45 + 0.5)) or 10 end
+    if bar.countSize == nil then bar.countSize = math.max(8, math.floor(bar.height * 0.4 + 0.5)) end
+    if bar.timerColor == nil then bar.timerColor = Copy(bar.timer == "center" and Tone.cooldown or Tone.textBright) end
+end
 M.barDefaults = {
     buffs = Bar("buffs", { "all", "enchant" }, { max = 32, perRow = 10 }),
     debuffs = Bar("debuffs", { "all" }, { max = 16, perRow = 10 }),
     playerBuffs = Bar("buffs", { "mine", "important", "hots" }, { max = 12, perRow = 8, width = 24, spacing = 2, timer = "center" }),
+    -- Owner, after the first in-game look: much bigger (42 wide) with a 2px border.
     playerDebuffs = Bar("debuffs", { "cc", "dispellable", "boss", "Magic", "Curse", "Disease", "Poison", "Bleed", "other" },
-        { max = 8, perRow = 6, width = 30, spacing = 3, timer = "center", edgeStyle = "blizzEmpty" }),
+        { max = 8, perRow = 6, width = 42, spacing = 3, timer = "center", edgeStyle = "blizzEmpty", borderSize = 2 }),
 }
 -- A new custom bar, and the one every profile starts with (Defensives).
 M.customDefaults = Bar("buffs", { "all" }, { max = 8, perRow = 8, width = 36 })
@@ -117,17 +130,22 @@ function M.CustomPosition(index) return At("screen", "CENTER", "CENTER", 0, 60 -
 M.defaults = { settingsVersion = M.SETTINGS_VERSION, bars = {}, customBars = {}, nextCustom = 1,
     -- Owner's picks: Well Fed and Sated hidden.
     blacklist = { 104280, 57724 },
-    font = "game", fontMedia = Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = false,
+    font = "game", fontMedia = Style.FONT_DEFAULT, outline = "none", shadow = true, liftedShadow = false, slug = false,
     textColor = Copy(Tone.textBright), timerColor = Copy(Tone.cooldown) }
 for id, bar in pairs(M.barDefaults) do M.defaults.bars[id] = Copy(bar) end
 
-M.ranges = { max = { 1, 32, 1 }, perRow = { 1, 16, 1 }, width = { 16, 56, 1 }, spacing = { 0, 12, 1 }, borderSize = { 1, 2, 1 } }
+M.ranges = { max = { 1, 32, 1 }, perRow = { 1, 16, 1 }, width = { 16, 64, 1 }, height = { 12, 64, 1 }, spacing = { 0, 12, 1 },
+    borderSize = { 1, 2, 1 }, borderGap = { 0, 4, 1 }, crop = { 0, 30, 1 }, timerSize = { 6, 32, 1 }, countSize = { 6, 32, 1 },
+    timerX = { -30, 30, 1 }, timerY = { -30, 30, 1 }, countX = { -30, 30, 1 }, countY = { -30, 30, 1 } }
+M.POINTS = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
 M.choices = {
     kind = { { id = "buffs", label = "Buffs" }, { id = "debuffs", label = "Debuffs" } },
     sort = { { id = "default", label = "Game Order" }, { id = "time", label = "Time Left" }, { id = "name", label = "Name" } },
     grow = { { id = "right", label = "Right" }, { id = "left", label = "Left" }, { id = "up", label = "Up" }, { id = "down", label = "Down" } },
     wrap = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" }, { id = "left", label = "Left" } },
-    timer = { { id = "below", label = "Below" }, { id = "center", label = "On Icon" }, { id = "none", label = "None" } },
+    timer = { { id = "below", label = "Below" }, { id = "above", label = "Above" }, { id = "center", label = "On Icon" },
+        { id = "none", label = "None" } },
+    outline = { { id = "none", label = "None" }, { id = "outline", label = "Outline" }, { id = "thick", label = "Thick" } },
     glow = { { id = "none", label = "None" }, { id = "soft", label = "Soft" }, { id = "gcd", label = "Flash" } },
     glowColor = { { id = "type", label = "By Debuff Type" }, { id = "custom", label = "Custom" } },
 }

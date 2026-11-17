@@ -9,18 +9,23 @@ if not M then return end
 -- anchoring other frames to it). Bars anchor to anything: the screen,
 -- Blizzard's Buff Frame (its Edit Mode place), ModeUI's frames, each other.
 local Kit, L = addon.Kit, addon.L
-M.TEXT_ROOM = 12 -- time text below an icon: 10px text and 2px above it
+M.TEXT_GAP = 2 -- between an icon and time text under or over it
 
--- Icon width and height in whole physical pixels: always 6px shorter than wide
--- (owner, November 17, 2026: 36 x 30).
+-- Icon width and height in whole physical pixels (each its own setting; the
+-- height starts 4 or 6px shorter, Style.IconHeight).
 function M:IconSize(bar, px)
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
-    return Snap(bar.width), Snap(math.max(1, bar.width - 6))
+    return Snap(bar.width), Snap(bar.height)
 end
--- One icon's cell (the icon and, with time text below, its room).
+-- Room for time text under or over the icon.
+function M:TextRoom(bar, px)
+    if bar.timer ~= "below" and bar.timer ~= "above" then return 0 end
+    return (bar.timerSize + self.TEXT_GAP) * px
+end
+-- One icon's cell (the icon and its time text's room).
 function M:CellSize(bar, px)
     local width, height = self:IconSize(bar, px)
-    return width, height + (bar.timer == "below" and self.TEXT_ROOM * px or 0)
+    return width, height + self:TextRoom(bar, px)
 end
 -- Columns and rows a full bar takes.
 function M:Grid(bar)
