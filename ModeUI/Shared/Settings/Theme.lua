@@ -58,9 +58,10 @@ addon.InterfaceTheme = {
     blizzardArt = false,
     -- One font scale for every settings surface (the artifact's sizes): page
     -- titles 18, section tabs and headings 12, card titles 11 uppercase, sidebar
-    -- captions 10 uppercase, labels 12, values and help 11, the MODE wordmark 13.
+    -- captions 10 uppercase, labels 12, values and help 11, the Mode wordmark
+    -- 22 in Mode Script (a script's lowercase runs small, so it sits larger).
     spacing = addon.Theme.spacing,
-    fontSize = { small = 11, body = 12, group = 10, card = 11, section = 12, brand = 13, page = 18, display = 18 },
+    fontSize = { small = 11, body = 12, group = 10, card = 11, section = 12, brand = 22, page = 18, display = 18 },
 }
 for key, color in pairs(MODE) do addon.InterfaceTheme[key] = Copy(color) end
 

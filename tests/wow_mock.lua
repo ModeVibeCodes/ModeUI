@@ -179,6 +179,7 @@ function methods:SetColorTexture(...) self.color = {...} end
 function methods:SetTextColor(...) self.color = {...} end
 function methods:GetTextColor() local c = self.color or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] or 1 end
 function methods:GetDrawLayer() return self.drawLayer or self.layer, self.sublevel or 0 end
+function methods:SetDrawLayer(layer, sublevel) self.drawLayer = layer; self.sublevel = sublevel end
 function CreateColor(r,g,b,a) return {r=r,g=g,b=b,a=a} end
 function methods:SetGradient(orientation,minimum,maximum)
     assert(orientation=="HORIZONTAL" or orientation=="VERTICAL")

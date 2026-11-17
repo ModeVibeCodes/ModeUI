@@ -29,8 +29,16 @@ any ModeUI element. Unit frames themselves still hang only from the screen
 - The portrait ring is 3px of Steel (was 2px), lit from the top like the frames'
   edge-lit rims, with a 1px dark shadow ring outside; the portrait sits 3px
   inside. The Ring choice formerly called Steel Sheen is now Steel.
-- Health texts glow faintly in their own color (**Health Text Glow**, Text tab,
-  on by default; 22%, fading round 5px past the digits): `Style.TextGlow`, sized from the format, never measured.
+- Health texts and names glow (Text tab, Glow group; `Style.TextHalo`, the
+  Halo: 8 copies of the text 1px out under it, in place of the text's
+  shadows). **Health Text Glow**: on,
+  **Health Glow Color** Deep, **Health Glow Strength** 15%. **Name Text
+  Glow**: on, **Name Glow Color** Ink, **Name Glow Strength** 20% (names and
+  Level and Name, not the level alone). Colors: Deep, Ink, Match Text;
+  strength 5% to 40%. Keys `healthTextGlowColor`, `healthTextGlowStrength`,
+  `nameTextGlow`, `nameTextGlowColor`, `nameTextGlowStrength` (November 17,
+  2026, filled from defaults with no version step; `healthTextGlow` keeps its
+  value). Before, health texts had a 22% capsule behind them (`Style.TextGlow`).
 - Borders stay one physical pixel even when a frame's scale changes after
   layout: each edge's holder ignores its parents' scale and takes Blizzard's
   pixel factor (this fixed oversized rims on nameplate aura icons).

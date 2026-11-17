@@ -54,24 +54,28 @@ end
 -- (UnitHealthPercent with a LuaColorCurveObject) and the result only reaches
 -- SetTextColor, which accepts secret values.
 local HEALTH_POINTS = { { 0, Tone.rosewood }, { 0.3, Tone.rosewood }, { 0.65, Tone.ivory }, { 1, Tone.celadon } }
-local healthCurve
-local function HealthCurve()
-    if healthCurve ~= nil then return healthCurve or nil end
-    healthCurve = false
+-- The Deep glow of health text (Style.TextHalo): the same points, each Deep.
+local DEEP_POINTS = {}
+for i, point in ipairs(HEALTH_POINTS) do DEEP_POINTS[i] = { point[1], Style.Deep(point[2]) } end
+local curves = {}
+local function Curve(points)
+    if curves[points] ~= nil then return curves[points] or nil end
+    curves[points] = false
     local util = C_CurveUtil
     if type(util) == "table" and type(util.CreateColorCurve) == "function" and type(CreateColor) == "function" then
         local ok, curve = pcall(util.CreateColorCurve)
         if ok and curve then
             if curve.SetType and Enum and Enum.LuaCurveType then pcall(curve.SetType, curve, Enum.LuaCurveType.Linear) end
-            for _, point in ipairs(HEALTH_POINTS) do
+            for _, point in ipairs(points) do
                 local c = point[2]
                 pcall(curve.AddPoint, curve, point[1], CreateColor(c[1], c[2], c[3], 1))
             end
-            healthCurve = curve
+            curves[points] = curve
         end
     end
-    return healthCurve or nil
+    return curves[points] or nil
 end
+local function HealthCurve() return Curve(HEALTH_POINTS) end
 Style.HEALTH_TEXT_FULL = Tone.celadon
 -- The same colors for a plain fraction `p` (0-1): samples and previews, whose
 -- health is a known number.
@@ -84,13 +88,16 @@ function Style.HealthTextColorAt(p)
     return HEALTH_POINTS[#HEALTH_POINTS][2]
 end
 -- Paints `fontString` by `unit`'s health; false when the client can't (then
--- the caller keeps its own color).
+-- the caller keeps its own color). A Deep glow on it takes the Deep curve.
 function Style.PaintHealthText(fontString, unit)
     local curve = HealthCurve()
     if not curve or not unit then return false end
     local ok = pcall(function()
         local color = UnitHealthPercent(unit, false, curve)
         fontString:SetTextColor(color:GetRGB())
+        local halo = fontString.halo
+        local deep = halo and halo.on and halo.mode == "deep" and Curve(DEEP_POINTS)
+        if deep then Style.SetHaloColor(fontString, UnitHealthPercent(unit, false, deep):GetRGB()) end
     end)
     return ok
 end

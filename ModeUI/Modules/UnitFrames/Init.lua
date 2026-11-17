@@ -106,11 +106,14 @@ M.choices = {
     fill = { { id = "standard", label = "Left to Right" }, { id = "reverse", label = "Right to Left" } },
     edgeStyle = addon.Style.EdgeStyleChoices(),
     edgeMetal = addon.Style.EdgeMetalChoices(),
+    -- Text glow colors (Style.TextHalo): Deep, Ink, Match Text.
+    glowColor = addon.Style.GLOW_COLORS,
 }
 -- Setting key -> choice list.
 M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring", healthTextColor = "healthText",
     nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
-    fillDirection = "fill", edgeStyle = "edgeStyle", edgeMetal = "edgeMetal" }
+    fillDirection = "fill", edgeStyle = "edgeStyle", edgeMetal = "edgeMetal", healthTextGlowColor = "glowColor",
+    nameTextGlowColor = "glowColor" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -154,8 +157,10 @@ local function Frame(side, extra)
         healthColorMode = "default", healthColor = Copy(M.palette.green),
         -- Health texts in the bars: colored by health (Style.PaintHealthText).
         healthTextColor = "health",
-        -- A soft glow behind the health numbers (Style.TextGlow).
-        healthTextGlow = true,
+        -- Text glow (Style.TextHalo, owner's picks, November 17, 2026): health
+        -- numbers in Deep at 15%, names in Ink at 20%.
+        healthTextGlow = true, healthTextGlowColor = "deep", healthTextGlowStrength = 15,
+        nameTextGlow = true, nameTextGlowColor = "ink", nameTextGlowStrength = 20,
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
@@ -189,7 +194,8 @@ M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlaye
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 },
     barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, powerForegroundOpacity = { 10, 100, 5 },
-    powerBackgroundOpacity = { 0, 100, 5 }, attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 } }
+    powerBackgroundOpacity = { 0, 100, 5 }, attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 },
+    healthTextGlowStrength = { 5, 40, 5 }, nameTextGlowStrength = { 5, 40, 5 } }
 -- Keys that describe placement/identity rather than style; Copy Style skips them.
 M.identityKeys = { enabled = true, hideBlizzard = true, portraitSide = true, matchPlayer = true, mirrorText = true,
     attach = true, attachPoint = true, attachOffsetX = true, attachOffsetY = true, fillDirection = true,

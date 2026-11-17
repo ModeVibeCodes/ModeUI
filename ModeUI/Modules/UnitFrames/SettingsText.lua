@@ -181,7 +181,16 @@ function M:BuildTextTab(ui)
         When(function() return ui.db().nameColorMode == "custom" end, function() ui.Color("Custom Name Color", "nameColor") end)
         -- Health texts: by health (Rosewood low, Ivory, Celadon full) or the Text Color.
         ui.Choice("Health Text Color", "healthTextColor")
-        ui.Toggles({ { "Health Text Glow", "healthTextGlow" } })
+        -- Text glow (Style.TextHalo): each kind on its own, with its color and strength.
+        page:Group("Glow")
+        ui.Toggles({ { "Health Text Glow", "healthTextGlow" }, { "Name Text Glow", "nameTextGlow" } })
+        When(function() return ui.db().healthTextGlow end, function()
+            ui.Choice("Health Glow Color", "healthTextGlowColor"); ui.Slider("Health Glow Strength", "healthTextGlowStrength", "%")
+        end)
+        When(function() return ui.db().nameTextGlow end, function()
+            ui.Choice("Name Glow Color", "nameTextGlowColor"); ui.Slider("Name Glow Strength", "nameTextGlowStrength", "%")
+        end)
+        page:Group("Colors")
         -- Pastel: class-colored names, class health and the class ring all use it.
         ui.Slider("Class Color Softness", "classSoftness", "%")
         M:BuildTextKinds(ui)

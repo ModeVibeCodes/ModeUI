@@ -53,6 +53,7 @@ Shared\Style\Edge.lua
 Shared\Style\Bar.lua
 Shared\Style\Shield.lua
 Shared\Style\Names.lua
+Shared\Style\Halo.lua
 Shared\Style\Icon.lua
 Shared\Style\Sheet.lua
 Shared\Runtime\API.lua

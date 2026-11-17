@@ -52,6 +52,36 @@ function Style.RelayoutEdges()
     for edge in pairs(edges) do edge:Layout() end
 end
 
+-- Snapping: a host can sit between physical pixels (a UI scale that isn't
+-- pixel perfect puts most whole-unit offsets there), and its 1px rings then
+-- land on half pixels: one side full, the other faint or gone, specks at the
+-- cut corners. A snapped edge moves its holder onto the nearest whole pixels
+-- of the host's rect. Only a surface that re-snaps as it moves uses it
+-- (Style.SnapEdges: the settings window, on show, page layout, scroll and
+-- drag); a host that moves by itself (a nameplate) keeps the plain anchor.
+local function Under(frame, root)
+    for _ = 1, 40 do
+        if frame == root then return true end
+        frame = frame and frame.GetParent and frame:GetParent()
+        if not frame then return false end
+    end
+    return false
+end
+function Style.SnapEdges(root)
+    for edge in pairs(edges) do
+        if edge.snapRoot ~= root then edge.snapRoot, edge.snap = root, Under(edge.host, root) end
+        if edge.snap then edge:Place() end
+    end
+end
+-- Snaps once on the next frame, after the client has laid the frames out.
+local queued = {}
+function Style.QueueSnapEdges(root)
+    if not root or queued[root] then return end
+    if not (C_Timer and C_Timer.After) then Style.SnapEdges(root); return end
+    queued[root] = true
+    C_Timer.After(0, function() queued[root] = nil; Style.SnapEdges(root) end)
+end
+
 -- A border of role `preset` for `host`. opts: level (frame levels above the
 -- host, default 2), style and metal (default: the role's style and that
 -- style's metal), color (a flat role's color), rim (the band's width, 1 or 2).
@@ -116,12 +146,29 @@ local function PixelGrid(frame, px)
     frame:SetScale(factor or px)
 end
 
+-- The holder over its host: on the host's rect, or (snapped) on its nearest
+-- whole physical pixels. Holder offsets are in physical pixels (PixelGrid).
+function Edge:Place()
+    local holder, host, N = self.holder, self.host, addon.IsNumber
+    holder:ClearAllPoints()
+    local factor = self.snap and Style.PixelFactor()
+    local scale = factor and host:GetEffectiveScale()
+    local l, b, w, h
+    if N(scale, 0.01, 100) then l, b, w, h = host:GetLeft(), host:GetBottom(), host:GetWidth(), host:GetHeight() end
+    if not (N(l) and N(b) and N(w) and N(h)) then holder:SetAllPoints(host); return end
+    local k = scale / factor
+    local function Off(v) v = v * k; return math.floor(v + 0.5) - v end
+    holder:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", Off(l), Off(b))
+    holder:SetPoint("TOPRIGHT", host, "TOPRIGHT", Off(l + w), Off(b + h))
+end
+
 -- Places every ring on whole physical pixels. Returns how far the band and
 -- black line reach outside the host (the shadow ring left out).
 function Edge:Layout()
     local px = Style.Pixel(self.host)
     self.px = px
     PixelGrid(self.holder, px)
+    self:Place()
     if self.below then PixelGrid(self.below, px) end
     for i, ring in ipairs(self.rings) do Around(self.textures[i], self.holder, ring.out) end
     local depth = (self.def.gap == true and 1 or 0) + self.rim

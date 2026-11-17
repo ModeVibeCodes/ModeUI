@@ -27,6 +27,14 @@ SHA-256: Geist-Regular.ttf 2c460a7a71063e53491f343d44b382267bc0cf496e31db64865f9
 Geist is the Mode design language's fallback typeface (docs/DESIGN_LANGUAGE.md),
 used when the client has no Expressway.
 
+Damion-Regular.ttf (ModeUI/Media/Fonts/Damion) is unmodified Damion font
+software, Version 1.100, Copyright 2014 The Damion Project Authors
+(https://github.com/googlefonts/damionFont), SIL Open Font License 1.1, with no
+reserved font name. Full terms: LICENSES/Damion-OFL.txt, also next to the font.
+Source: https://github.com/google/fonts/tree/main/ofl/damion.
+SHA-256: Damion-Regular.ttf a51fd6c3c517feb9924b98139c2e902a7317caee52c22a2ec9682973969562bf.
+Damion is Mode Script, used only for the "Mode" wordmark in the settings window.
+
 Expressway is the Mode typeface when the client has it, and only by reference:
 ModeUI uses a verified font asset from an installed EllesmereUI/AyijeUI
 (Expressway and Expressway Bold), or an existing LibSharedMedia registration.

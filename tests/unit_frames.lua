@@ -430,8 +430,13 @@ world.run([====[
     assert(name:sub(1,10)=='|cff'..string.format('%02x%02x%02x',math.floor(rogue[1]*255+0.5),math.floor(rogue[2]*255+0.5),math.floor(rogue[3]*255+0.5)),'starting at the class color')
     assert(t.texts.border.text.label=='name','secret target name passed straight to SetText')
     -- The suite's text style: every text has an opaque one-pixel shadow and a lifted
-    -- shadow (one translucent black copy 2px down-right).
+    -- shadow (one translucent black copy 2px down-right); a glowing text (the
+    -- name and health by default) has neither: the glow takes their place.
     local px=p.geometry.px
+    for _,text in ipairs({p.texts.border,p.texts.right}) do
+        assert(text.halo and text.halo.on and text.shadowColor[4]==0 and not text.lift:IsShown(),'the glow replaces the shadows')
+    end
+    assert(M:SetFrameOption('player','nameTextGlow',false) and M:SetFrameOption('player','healthTextGlow',false))
     for _,text in ipairs({p.texts.border,p.texts.bottomLeft,p.texts.right}) do
         local lift,la,lb=text.lift,Point(text.lift,1),Point(text.lift,2)
         assert(text.shadowColor[4]==1 and text.shadowOffset[1]==px and text.shadowOffset[2]==-px,'opaque one-pixel shadow')
@@ -440,6 +445,7 @@ world.run([====[
         assert(lb[1]=='BOTTOMRIGHT' and lb[2]==text and lb[4]==2*px and lb[5]==-2*px,'covers the text box')
         assert(lift.shadowColor[4]==0 and lift.font[2]==text.font[2] and lift.font[3]=='')
     end
+    assert(M:SetFrameOption('player','nameTextGlow',true) and M:SetFrameOption('player','healthTextGlow',true))
     assert(p.texts.border.lift.justifyH=='RIGHT' and not p.texts.powerCenter.lift:IsShown(),'no power text by default, so no lift')
     assert(t.texts.border.lift.text.label=='name' and t.texts.left.lift.text.secret.label=='pct','secret values go straight to the lifts')
     -- Steel Sheen ring by default; Class Color tints its metal (Style.PaintRing).
@@ -492,13 +498,13 @@ world.run([====[
     assert(not M:SetFrameOption('player','nameGlow',true) and not M:SetFrameOption('player','nameGlowStrength',50),'glow settings are retired')
     assert(not M:SetFrameOption('player','nameLift',true),'the name-only lift is retired')
     assert(M:SetFrameOption('player','liftedShadow',false) and not p.texts.border.lift:IsShown() and not p.texts.right.lift:IsShown(),'one toggle for every text')
-    assert(p.texts.border:IsShown() and p.texts.border.shadowColor[4]==1 and p.texts.right.shadowColor[4]==1,'lift off keeps the crisp shadow')
-    assert(M:SetFrameOption('player','liftedShadow',true) and p.texts.border.lift:IsShown() and p.texts.bottomLeft.lift:IsShown())
+    assert(p.texts.border:IsShown() and p.texts.bottomLeft.shadowColor[4]==1 and p.texts.border.shadowColor[4]==0,'lift off keeps the crisp shadow (the glowing name has none)')
+    assert(M:SetFrameOption('player','liftedShadow',true) and not p.texts.border.lift:IsShown() and p.texts.bottomLeft.lift:IsShown())
     assert(M:SetFrameOption('player','shadow',false) and not p.texts.border.lift:IsShown() and not p.texts.right.lift:IsShown(),'the lift needs Text Shadow')
     assert(p.texts.right.shadowColor[4]==0 and p.texts.right.shadowOffset[1]==0)
     assert(M:SetFrameOption('player','shadow',true) and M:SetTextOption('player','border','content','none') and not p.texts.border.lift:IsShown())
-    assert(M:SetTextOption('player','border','content','name') and p.texts.border.lift:IsShown() and Plain(p.texts.border.lift:GetText())=='Fixture')
-    assert(M:SetFrameOption('player','outline',true) and p.texts.border.lift.font[3]=='OUTLINE' and p.texts.bottomLeft.lift.font[3]=='OUTLINE','lift matches the outlined glyphs')
+    assert(M:SetTextOption('player','border','content','name') and not p.texts.border.lift:IsShown() and Plain(p.texts.border.lift:GetText())=='Fixture')
+    assert(M:SetFrameOption('player','outline',true) and p.texts.bottomLeft.lift:IsShown() and p.texts.bottomLeft.lift.font[3]=='OUTLINE' and p.texts.bottomLeft.lift.font[3]=='OUTLINE','lift matches the outlined glyphs')
     assert(M:SetFrameOption('player','outline',false))
     assert(M:SetTextOption('player','powerCenter','content','powerPercent') and p.texts.powerCenter.lift:IsShown() and p.texts.powerCenter.lift:GetText()=='50%','power text lifts too')
     assert(M:SetTextOption('player','powerCenter','content','none') and not p.texts.powerCenter.lift:IsShown())
@@ -649,7 +655,7 @@ world.run([====[
     assert(Plain(M.ghosts.target.texts.border:GetText())=='Name','other stand-ins show a sample name, not the frame title')
     local handle=addon.PositionManager.elements.unitFramesPlayer.decoration
     assert(handle and handle.label:GetText()=='Player Frame' and addon.PositionManager.elements.unitFramesTarget.decoration.label:GetText()=='Target Frame','each handle names its frame')
-    assert(Plain(ghost.texts.border.lift:GetText())=='Fixture' and ghost.texts.border.lift:IsShown() and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
+    assert(Plain(ghost.texts.border.lift:GetText())=='Fixture' and ghost.texts.bottomLeft.lift:IsShown() and ghost.texts.border.halo and ghost.texts.border.halo.on and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
     local steelBase=addon.Style.Mix(addon.Style.Tone.steel.dark,addon.Style.Tone.steel.mid,0.5)
     assert(ghost.width==p.width and math.abs(ghost.portrait.ring.disc.vertexColor[1]-steelBase[1])<1e-9,'stand-in matches size and ring')
     assert(math.abs(M.ghosts.target.portrait.ring.disc.vertexColor[1]-steelBase[1])<1e-9,'target stand-in: the same Steel Sheen ring')
@@ -829,13 +835,23 @@ world.run([====[
     M.Initialize(v21)
     assert(v21.layoutVersion==23 and v21.player.buffs.size==22 and v21.player.buffs.perRow==5 and v21.player.castBar.fontSize==11)
     assert(v21.player.debuffs.size==30 and v21.player.debuffs.perRow==3 and v21.player.healthTextColor=='health')
-    -- Health Text Glow: on by default; a halo behind health texts only.
-    assert(M.db.player.healthTextGlow==true and v21.player.healthTextGlow==true)
+    -- Text glow (Style.TextHalo): health numbers in Deep at 15%, names in Ink at 20%.
+    local d0=M.db.player
+    assert(d0.healthTextGlow==true and v21.player.healthTextGlow==true and d0.healthTextGlowColor=='deep' and d0.healthTextGlowStrength==15)
+    assert(d0.nameTextGlow==true and d0.nameTextGlowColor=='ink' and d0.nameTextGlowStrength==20 and v21.player.nameTextGlowColor=='ink','new keys fill in')
     local ht0=assert(p.textKinds.health[1],'a health text').text
-    assert(ht0.glow and ht0.glow.on and ht0.glow:IsShown(),'health numbers glow')
-    assert(not (p.textKinds.name[1].text.glow and p.textKinds.name[1].text.glow.on),'names do not')
-    assert(M:SetFrameOption('player','healthTextGlow',false) and not ht0.glow:IsShown(),'Health Text Glow off')
-    assert(M:SetFrameOption('player','healthTextGlow',true) and ht0.glow:IsShown())
+    local halo=ht0.halo
+    assert(halo and halo.on and halo.mode=='deep' and #halo==8 and halo[1]:IsShown(),'health numbers glow')
+    assert(math.abs(halo[1].alpha-0.15)<1e-9 and ht0.shadowColor[4]==0,'15%, in place of the shadow')
+    assert(not ht0.glow,'no capsule')
+    local nt0
+    for _,entry in ipairs(p.textKinds.name) do if entry.content=='name' then nt0=entry.text end end
+    assert(nt0 and nt0.halo and nt0.halo.on and nt0.halo.mode=='ink' and nt0.halo[1].color[1]==addon.Style.Tone.shadow[1],'names glow in Ink')
+    assert(M:SetFrameOption('player','healthTextGlow',false) and not halo[1]:IsShown() and ht0.shadowColor[4]==1,'Health Text Glow off: the shadow is back')
+    assert(M:SetFrameOption('player','healthTextGlow',true) and halo[1]:IsShown())
+    assert(M:SetFrameOption('player','healthTextGlowColor','match') and halo.mode=='match' and M:SetFrameOption('player','healthTextGlowColor','deep'))
+    assert(not M:SetFrameOption('player','healthTextGlowStrength',50) and not M:SetFrameOption('player','nameTextGlowColor','bright'),'ranges and choices hold')
+    assert(M:SetFrameOption('player','nameTextGlow',false) and not nt0.halo[1]:IsShown() and M:SetFrameOption('player','nameTextGlow',true))
     -- Version 22 -> 23: solid empty bars (100) take the see-through 60; picked values stay.
     local v22={layoutVersion=22,player={barBackgroundOpacity=100,powerBackgroundOpacity=40},target={barBackgroundOpacity=80}}
     M.Initialize(v22)

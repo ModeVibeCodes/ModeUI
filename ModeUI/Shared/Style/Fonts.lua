@@ -14,6 +14,11 @@ local Style = addon.Style or {}
 addon.Style = Style
 
 local BASE = "Interface\\AddOns\\ModeUI\\Media\\Fonts\\Geist\\Geist-"
+-- Mode Script (docs/DESIGN_LANGUAGE.md, "Text"; owner's pick, November 17,
+-- 2026): Damion, a bold flowing script (SIL OFL 1.1, Media/Fonts/Damion/OFL.txt),
+-- for the word "Mode" in ModeUI's own wordmark only, in Ivory. It draws one
+-- fixed Latin word, so every locale uses it.
+Style.SCRIPT_FONT = "Interface\\AddOns\\ModeUI\\Media\\Fonts\\Damion\\Damion-Regular.ttf"
 Style.FONT_WEIGHTS = { regular = "Regular", medium = "Medium", semibold = "SemiBold", bold = "Bold" }
 -- LibSharedMedia names: "Mode" (the default everywhere) and Geist's weights.
 Style.FONT_NAMES = { regular = "Mode Geist", medium = "Mode Geist Medium", semibold = "Mode Geist SemiBold", bold = "Mode Geist Bold" }

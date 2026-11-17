@@ -18,7 +18,11 @@ texture paths or font files outside `Shared/Style/`) and `tests/style.lua`
   from `Style.Edge`, bars from `Style.Bar`, textures from `Style.Asset`, fonts
   from `Style.Font`. Modules never hard-code any of these.
 - **Pixel perfect.** Sizes and offsets land on whole physical pixels
-  (`Kit.PixelSize`). Every border is one even ring.
+  (`Kit.PixelSize`). Every border is one even ring. The settings window is
+  laid out in whole UI units, which at a UI scale that isn't pixel perfect
+  (Blizzard's default) fall between pixels, so its borders snap onto the
+  nearest whole pixels (`Style.SnapEdges`, redone on show, page layout,
+  scroll, drag and popups) and button faces follow the snapped rect.
 - **No masks for borders.** Rim art covers its own inner corner, so content
   under a border is never masked. (A frame's own shape, the minimap's
   rectangle, is the one mask, through `Style.SetShapeMask`.)
@@ -261,6 +265,11 @@ Phase 6 probe):
   whichever typeface the client has. CJK clients fall back to Blizzard's
   font. (Where this file says "Geist Bold" or "Geist SemiBold", read "the
   Mode typeface" in that weight.)
+- **Mode Script: Damion** (owner's pick, November 17, 2026; OFL, bundled):
+  a bold, flowing script for the word "Mode" in ModeUI's own wordmark only,
+  in Ivory (`Style.SCRIPT_FONT`). Never in game frames; headers and every
+  other text stay in the Mode typeface. It doesn't follow the interface
+  Font setting.
 - One shadow: 1px offset (1, −1) at 95% black (no second, lifted copy);
   OUTLINE only as a player choice.
 - **Names:** in SemiBold, and the Gradient is standard (class or reaction
@@ -271,11 +280,26 @@ Phase 6 probe):
 - **Text in bars** (health, power, cast) in Geist Bold. Health text is colored
   by health: Rosewood at 30% and under, through Ivory, to Celadon at full
   (the client evaluates a color curve, since the health percent is secret).
-- **Health text glow** (on by default, a module toggle): a soft halo behind
-  the health numbers in the text's own color (added light, 22%), fading out
-  round and soft 5px past the digits, with no visible edge. Its width comes from the format (characters × 0.62 × size),
-  never from measuring, since health text can be secret; it sits on the
-  text's justified side and follows the text's color and visibility.
+- **Text glow, Halo** (`Style.TextHalo`; owner's picks, November 17, 2026):
+  light that hugs the letters. Eight copies of the text sit under it, 1px out
+  (N, NE, E … NW), at the glow strength, without outline or shadow.
+  Overlapping copies add up, so low strengths read (5% to 40%). WoW has no blur
+  for text and its outline is always black, which is why the glow is made of
+  copies. A glowing text has no drop shadow (crisp or lifted): the shadow is
+  part of the text, drew over the glow on one side and made it read as a second
+  shadow, and a second ring 2px out read as blur at 11px (owner, in game,
+  November 17, 2026). Glow colors:
+  **Deep** (the text's hue, saturation × 1.25 + 0.12, lightness halved:
+  `Style.Deep`), **Ink** (the shadow black, a soft dark ring) and **Match
+  Text**. Glow is a per-text choice, used on a few small texts. Defaults:
+  Unit Frames health numbers Deep 15%, unit frame names Ink 20%. Health text
+  colored by health takes its Deep glow from a second color curve, since the
+  color is secret.
+- **Health text glow on Party Frames and Nameplates** (a module toggle, until
+  they move to the Halo): a soft capsule behind the health numbers in the
+  text's own color (added light, 22%, `Style.TextGlow`), 5px past the digits,
+  its width from the format (characters × 0.62 × size), on the text's
+  justified side.
 - **Placement:** the name sits on the top border, 9px in from the side
   opposite the portrait, lifted so the rim runs near its baseline. Health is
   right-aligned inside the health bar (padded past a portrait on that side).
@@ -374,7 +398,8 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
 
 A hybrid window built one-to-one from the study:
 
-- **Main panel:** 1000px wide; header (MODE wordmark, search, profile, close);
+- **Main panel:** 1000px wide; header (the "Mode" wordmark in Mode Script,
+  Ivory 22, search, profile, close);
   184px sidebar of categories (Interface, Panels, System) with module icons
   ("Mode Icon&lt;Name&gt;" art) and Celadon/Rosewood status dots; the General
   page's global cards four across (186px); footer with Edit Mode, Reset

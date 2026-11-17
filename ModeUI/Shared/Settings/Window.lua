@@ -48,6 +48,8 @@ function addon:FinishWindowInteraction()
     if not window or not window.moving then return end
     window:StopMovingOrSizing()
     window.moving = false
+    -- A drag leaves the window anywhere: its borders snap to whole pixels again.
+    W.SnapSettings()
     local ratio = window:GetEffectiveScale() / UIParent:GetEffectiveScale()
     local x, y = window:GetCenter()
     local parentX, parentY = UIParent:GetCenter()
@@ -140,9 +142,10 @@ function addon:CreateConfig()
     controls:SetAllPoints(); controls:SetFrameLevel(header:GetFrameLevel() + 2); controls:EnableMouse(false)
     window.headerControls = controls
     local function Control(button) button:SetFrameLevel(controls:GetFrameLevel() + 1); return button end
-    local wordmark = Control(W.Button(controls, "M O D E", 64, 24, "quiet"))
+    -- The wordmark: "Mode" in Mode Script (Damion), Ivory.
+    local wordmark = Control(W.Button(controls, "Mode", 64, 24, "quiet"))
     wordmark:SetPoint("LEFT", 8, 0)
-    addon.Media:BindInterfaceFont(wordmark.label, GameFontHighlight, T.fontSize.brand, nil, "bold")
+    addon.Media:BindFixedFont(wordmark.label, addon.Style.SCRIPT_FONT, T.fontSize.brand, addon.Style.FontPath("bold"))
     wordmark:SetLabelColor(T.primary)
     wordmark:SetScript("OnClick", function() self:ConfigBack() end)
     window.wordmark, window.title = wordmark, wordmark.label
@@ -250,6 +253,7 @@ function addon:CreateConfig()
         if window.backCatcher then window.backCatcher:Show() end
         -- Fills in labels left blank by a font still loading on a fresh launch.
         addon.Media:ScheduleTextRedraw()
+        W.SnapSettings()
     end)
     window:SetScript("OnHide", function()
         if window.backCatcher then window.backCatcher.closing = true; window.backCatcher:Hide(); window.backCatcher.closing = nil end

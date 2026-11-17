@@ -42,8 +42,9 @@ world.run([[
     local function Click(button) button:GetScript('OnClick')(button) end
     local function Has(list,value) for _,v in ipairs(list or {}) do if v==value then return true end end end
     assert(window:IsShown() and window:GetWidth()==1000 and S.sidebar==184 and S.rail==48 and S.column==432,'the artifact measurements')
-    assert(window.title:GetText()=='M O D E' and window.title.font[2]==addon.InterfaceTheme.fontSize.brand,'MODE wordmark')
-    assert(window.title.font[1]:find('Geist%-Bold%.ttf$'),'the wordmark in Geist Bold')
+    assert(window.title:GetText()=='Mode' and window.title.font[2]==addon.InterfaceTheme.fontSize.brand,'Mode wordmark')
+    assert(window.title.font[1]==addon.Style.SCRIPT_FONT and window.title.font[1]:find('Damion%-Regular%.ttf$'),'the wordmark in Mode Script (Damion)')
+    addon.Media:RedrawInterfaceText(); assert(window.title.font[1]==addon.Style.SCRIPT_FONT,'it keeps the script when fonts redraw')
     -- Opens on the main panel: full sidebar, General page, no breadcrumb.
     assert(window.selectedPage=='home' and window.layout=='home' and window.pages.home:IsShown())
     assert(window.moduleHeader.title:GetText()=='General' and not window.moduleHeader.toggle:IsShown())
@@ -305,9 +306,32 @@ for key, asset in pairs(assets.addon.Media.Textures) do
     local path = H.addonDir .. "Media/Textures/" .. asset.file
     local file = io.open(path, "rb"); if file then file:close() else missing[#missing + 1] = key end
 end
-for _, name in ipairs({ "Geist/Geist-Regular.ttf", "Geist/Geist-Medium.ttf", "Geist/Geist-SemiBold.ttf", "Geist/Geist-Bold.ttf" }) do
+for _, name in ipairs({ "Geist/Geist-Regular.ttf", "Geist/Geist-Medium.ttf", "Geist/Geist-SemiBold.ttf", "Geist/Geist-Bold.ttf",
+    "Damion/Damion-Regular.ttf" }) do
     local file = io.open(H.addonDir .. "Media/Fonts/" .. name, "rb"); if file then file:close() else missing[#missing + 1] = name end
 end
+-- Every full ModeUI file path written out in Lua or XML (ModeUI's and the
+-- companions') names a file that ships, so a deleted file can't stay
+-- referenced (Kit/Fonts.xml once still named the retired Lato).
+local MEDIA = { ttf = true, otf = true, tga = true, blp = true, png = true }
+local function CheckPaths(dir, prefix, name)
+    local lua, _, xml = H.Files(name)
+    local list = {}
+    for _, path in ipairs(lua) do list[#list + 1] = path end
+    for path in pairs(xml) do list[#list + 1] = path end
+    for _, path in ipairs(list) do
+        local text = H.Read(dir .. path)
+        for ref, ext in text:gmatch("Interface[\\/]+[Aa]dd[Oo]ns[\\/]+ModeUI[\\/]+([%w_%-%. \\/]-)%.(%a+)%f[^%w]") do
+            if MEDIA[ext:lower()] then
+                local rel = (ref:gsub("[\\/]+", "/")) .. "." .. ext
+                local file = io.open(H.addonDir .. rel, "rb")
+                if file then file:close() else missing[#missing + 1] = prefix .. path .. " -> " .. rel end
+            end
+        end
+    end
+end
+CheckPaths(H.addonDir, "", nil)
+for _, companion in ipairs(H.COMPANIONS) do CheckPaths(H.Dir(companion), companion .. "/", companion) end
 assert(#missing == 0, "missing assets: " .. table.concat(missing, ", "))
 print("assets: all present")
 
@@ -317,14 +341,18 @@ print("assets: all present")
 local function Fonts(before)
     local world = H.Load({ before = before })
     return world.run([[ SlashCmdList.MODEUI()
-        return addon.configWindow.title.font[1], addon.Media:GetFont('Mode'), addon.Style.Typeface() ]], "font")
+        return addon.configWindow.crumbTitle.font[1], addon.Media:GetFont('Mode'), addon.Style.Typeface(),
+            addon.configWindow.title.font[1] ]], "font")
 end
-local title, mode, face = Fonts(STUBS)
+-- The wordmark is Mode Script (Damion) either way.
+local title, mode, face, wordmark = Fonts(STUBS)
 assert(title:find("Geist", 1, true) and mode:find("Geist", 1, true) and face == "Geist", "Geist without Expressway")
+assert(wordmark:find("Damion", 1, true), "the wordmark keeps Mode Script")
 local provider = STUBS .. "\ntestProviderFonts = { [AYIJE_EXPRESSWAY] = true }\n"
 provider = "AYIJE_EXPRESSWAY = 'Interface' .. string.char(92) .. 'AddOns' .. string.char(92) .. 'AyijeUI' .. string.char(92) .. 'Media' .. string.char(92) .. 'Fonts' .. string.char(92) .. 'Expressway.ttf'\n" .. provider
-title, mode, face = Fonts(provider)
+title, mode, face, wordmark = Fonts(provider)
 assert(title:find("Expressway", 1, true) and mode:find("Expressway", 1, true) and face == "Expressway", "Expressway when installed")
+assert(wordmark:find("Damion", 1, true), "the wordmark keeps Mode Script with Expressway too")
 -- Saved fonts still at the old default ("Mode Geist") become "Mode"; a pick stays.
 local saved = H.Load({ before = STUBS }).saved()
 local p = saved.profiles.Default
