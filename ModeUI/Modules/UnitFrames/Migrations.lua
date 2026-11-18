@@ -274,62 +274,66 @@ local V19_SIZES = {
     focus = { barWidth = { 110, 160 }, healthHeight = { 16, 22 }, portraitScale = { 150, 165 } },
     focustarget = { barWidth = { 110, 130 }, healthHeight = { 16, 22 }, portraitScale = { 150, 165 } },
 }
-local function MigrateV19(db)
+local function EachFrame(db, fn) -- fn(frame, unit) for each saved frame table
     for _, unit in ipairs(M.units) do
         local frame = db[unit]
-        if type(frame) == "table" and Public(frame) then
-            for key, change in pairs(V19_FRAME) do if frame[key] == change[1] then frame[key] = change[2] end end
-            if frame.powerHeight == V19_POWER[unit] then frame.powerHeight = 3 end
-            for key, change in pairs(V19_SIZES[unit]) do if frame[key] == change[1] then frame[key] = change[2] end end
-            local cast = frame.castBar
-            if type(cast) == "table" and Public(cast) then
-                for key, change in pairs(V19_CAST) do if cast[key] == change[1] then cast[key] = change[2] end end
-                if unit ~= "focus" and cast.gap == 3 then cast.gap = 2 end
-            end
-        end
+        if type(frame) == "table" and Public(frame) then fn(frame, unit) end
     end
+end
+local function MigrateV19(db)
+    EachFrame(db, function(frame, unit)
+        for key, change in pairs(V19_FRAME) do if frame[key] == change[1] then frame[key] = change[2] end end
+        if frame.powerHeight == V19_POWER[unit] then frame.powerHeight = 3 end
+        for key, change in pairs(V19_SIZES[unit]) do if frame[key] == change[1] then frame[key] = change[2] end end
+        local cast = frame.castBar
+        if type(cast) == "table" and Public(cast) then
+            for key, change in pairs(V19_CAST) do if cast[key] == change[1] then cast[key] = change[2] end end
+            if unit ~= "focus" and cast.gap == 3 then cast.gap = 2 end
+        end
+    end)
 end
 
 -- Version 20 -> 21, from the owner's in-game check: Portrait Size 165 -> 140,
 -- the lifted second shadow off, the cast bar icon on the portrait side.
 local function MigrateV20(db)
-    for _, unit in ipairs(M.units) do
-        local frame = db[unit]
-        if type(frame) == "table" and Public(frame) then
-            if frame.portraitScale == 165 then frame.portraitScale = 140 end
-            if frame.liftedShadow == true then frame.liftedShadow = false end
-            local cast = frame.castBar
-            if type(cast) == "table" and Public(cast) and cast.icon == "far" then cast.icon = "near" end
-        end
-    end
+    EachFrame(db, function(frame)
+        if frame.portraitScale == 165 then frame.portraitScale = 140 end
+        if frame.liftedShadow == true then frame.liftedShadow = false end
+        local cast = frame.castBar
+        if type(cast) == "table" and Public(cast) and cast.icon == "far" then cast.icon = "near" end
+    end)
 end
 
 -- Version 21 -> 22: 22px auras five to a row (from 20px, eight), 11px cast text.
 local function MigrateV21(db)
-    for _, unit in ipairs(M.units) do
-        local frame = db[unit]
-        if type(frame) == "table" and Public(frame) then
-            for _, group in ipairs(M.auraGroups) do
-                local adb = frame[group]
-                if type(adb) == "table" and Public(adb) then
-                    if adb.size == 20 then adb.size = 22 end
-                    if adb.perRow == 8 then adb.perRow = 5 end
-                end
+    EachFrame(db, function(frame)
+        for _, group in ipairs(M.auraGroups) do
+            local adb = frame[group]
+            if type(adb) == "table" and Public(adb) then
+                if adb.size == 20 then adb.size = 22 end
+                if adb.perRow == 8 then adb.perRow = 5 end
             end
-            local cast = frame.castBar
-            if type(cast) == "table" and Public(cast) and cast.fontSize == 10 then cast.fontSize = 11 end
         end
-    end
+        local cast = frame.castBar
+        if type(cast) == "table" and Public(cast) and cast.fontSize == 10 then cast.fontSize = 11 end
+    end)
 end
 
 -- Version 22 -> 23: empty bars still solid (100) take the semi-transparent 60.
 local function MigrateV22(db)
-    for _, unit in ipairs(M.units) do
-        local frame = db[unit]
-        if type(frame) == "table" and Public(frame) then
-            for _, key in ipairs({ "barBackgroundOpacity", "powerBackgroundOpacity" }) do if frame[key] == 100 then frame[key] = 60 end end
-        end
-    end
+    EachFrame(db, function(frame)
+        for _, key in ipairs({ "barBackgroundOpacity", "powerBackgroundOpacity" }) do if frame[key] == 100 then frame[key] = 60 end end
+    end)
+end
+
+-- Version 23 -> 24 (owner): rings still on Metal take Class Color; Class Color
+-- Softness is retired; Player and Target portraits still at 140% take 165%.
+local function MigrateV23(db)
+    EachFrame(db, function(frame, unit)
+        if frame.portraitRing == "border" then frame.portraitRing = "class" end
+        if frame.portraitScale == 140 and (unit == "player" or unit == "target") then frame.portraitScale = 165 end
+        frame.classSoftness = nil
+    end)
 end
 
 -- Pure defaults, one-time migration and validation; profile validation runs
@@ -353,7 +357,8 @@ function M.Initialize(db)
     if db.layoutVersion == 19 then MigrateV19(db); db.layoutVersion = 20 end
     if db.layoutVersion == 20 then MigrateV20(db); db.layoutVersion = 21 end
     if db.layoutVersion == 21 then MigrateV21(db); db.layoutVersion = 22 end
-    if db.layoutVersion == 22 then MigrateV22(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 22 then MigrateV22(db); db.layoutVersion = 23 end
+    if db.layoutVersion == 23 then MigrateV23(db); db.layoutVersion = M.LAYOUT_VERSION end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

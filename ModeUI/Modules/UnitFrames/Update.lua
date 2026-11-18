@@ -5,35 +5,26 @@ if not M then return end
 -- Colors and live unit data: health, power and portraits; the text slots
 -- (names, levels, values) are filled by Texts.lua.
 local P, ONYX = M.palette, M.onyx
-local Kit, Domain = addon.Kit, addon.Domain
+local Domain = addon.Domain
 local UnitColor, Portrait = Domain.UnitColor, Domain.Portrait
-local Lighten = Kit.Lighten
 local Style = addon.Style
 
--- Blends a class/reaction color toward white by the frame's Class Color
--- Softness (pastel; 0 keeps the original color).
-function M:Soften(color, fdb)
-    if not color then return nil end
-    local t = fdb.classSoftness / 100
-    if t <= 0 then return color end
-    return Lighten(color, t)
-end
+-- Class and reaction colors are their true colors: Class Color Softness (a
+-- pastel blend toward white) was retired at layout version 24 (owner).
 local REACTION_COLORS = { hostile = P.hostile, neutral = P.neutral, friendly = P.green }
--- Class color for players (or Mode reaction colors when allowed), softened by
--- the frame's Class Color Softness, else nil. `fdb` defaults to the unit's frame.
-function M:IdentityColor(unit, reactionOnly, fdb)
-    fdb = fdb or self:FrameDB(unit)
+-- Class color for players (or Mode reaction colors when allowed), else nil.
+function M:IdentityColor(unit, reactionOnly)
     if not reactionOnly then
         local color = UnitColor.PlayerClass(unit)
-        if color then return self:Soften({ color.r, color.g, color.b }, fdb) end
+        if color then return { color.r, color.g, color.b } end
     end
     local reaction = UnitColor.Reaction(unit)
     if reaction == "tapped" then return P.tapped end
-    if reaction then return self:Soften(REACTION_COLORS[reaction], fdb) end
+    if reaction then return REACTION_COLORS[reaction] end
 end
 -- Edit Mode/preview stand-ins show the player's own class, and an enemy for others.
-function M:SampleIdentity(unit, fdb)
-    return unit == "player" and self:IdentityColor("player", false, fdb) or self:Soften(P.hostile, fdb)
+function M:SampleIdentity(unit)
+    return unit == "player" and self:IdentityColor("player") or P.hostile
 end
 
 function M:HealthColor(unit, identity)
@@ -48,24 +39,31 @@ function M:NameColor(unit, identity)
     local mode = fdb.nameColorMode
     if mode == "custom" then return fdb.nameColor end
     if mode == "class" then return identity or self:IdentityColor(unit) or self.ACCENT end
-    -- Gradient (docs/DESIGN_LANGUAGE.md, "Text"): the class or reaction color
-    -- itself, unsoftened; WriteNames runs it toward white letter by letter.
-    if mode == "gradient" then return self:IdentityColor(unit, false, { classSoftness = 0 }) or self.ACCENT end
+    -- Gradient (docs/DESIGN_LANGUAGE.md, "Text"): the class or reaction color;
+    -- WriteNames runs it toward white letter by letter.
+    if mode == "gradient" then return self:IdentityColor(unit) or self.ACCENT end
     return self.nameAccents[mode] or self.ACCENT
 end
 
--- Portrait ring (Style.Ring): Metal draws its Ring Style in its Ring Metal
--- (Mode-Blizz in Silver by default); Class Color, Custom and the combat red
--- are Mode-BlizzEmpty, the flat color alone.
+-- Portrait ring (Style.Ring): its Ring Style (Mode-Blizz by default) in its
+-- Ring Finish: a metal, Class Color (the default; the reaction color for NPCs)
+-- or Custom. A color, and the combat red, is the style's lighting in tones
+-- made from it (Style.ColorTones).
 function M:PaintRing(f, unit)
     local fdb = self:FrameDB(unit)
     local ring, mode = f.portrait.ring, fdb.portraitRing
-    Style.SetRingStyle(ring, fdb.portraitRingStyle)
     -- In combat, with Combat Ring on, the ring turns red (Status.lua).
-    if f.redRing then Style.PaintRing(ring, self.db[unit].status.ringColor); return end
-    if mode == "custom" then Style.PaintRing(ring, fdb.portraitRingColor); return end
-    local color = mode == "class" and (f.ghost and self:SampleIdentity(unit, fdb) or self:IdentityColor(unit))
-    Style.PaintRing(ring, color or nil, fdb.portraitRingMetal)
+    local color = f.redRing and self.db[unit].status.ringColor or mode == "custom" and fdb.portraitRingColor
+        or mode == "class" and (f.ghost and self:SampleIdentity(unit) or self:IdentityColor(unit)) or nil
+    Style.SetRingStyle(ring, fdb.portraitRingStyle)
+    Style.PaintRing(ring, color, fdb.portraitRingMetal)
+end
+-- Ring Finish as one choice: a Ring Metal id while Portrait Ring is Metal
+-- ("border"), else "class" or "custom".
+function M.RingFinish(fdb) return fdb.portraitRing == "border" and fdb.portraitRingMetal or fdb.portraitRing end
+function M:SetRingFinish(unit, id)
+    if id == "class" or id == "custom" then return self:SetFrameOption(unit, "portraitRing", id) end
+    return self:SetFrameOption(unit, "portraitRingMetal", id) and self:SetFrameOption(unit, "portraitRing", "border")
 end
 
 -- The health fill's color, and the shield's tint that follows it.
@@ -99,7 +97,7 @@ end
 
 function M:PaintSample(g, unit)
     local fdb = self:FrameDB(unit)
-    local identity = self:SampleIdentity(unit, fdb)
+    local identity = self:SampleIdentity(unit)
     local color = self:HealthColor(unit, identity)
     local alpha = fdb.barForegroundOpacity / 100
     PaintHealth(g.health, color, alpha)

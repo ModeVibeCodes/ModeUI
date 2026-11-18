@@ -13,7 +13,7 @@ world.run([====[
     assert(M and addon.modules.unitFrames==M and M.category=='frames' and M.defaultEnabled==true)
     assert(addon.categories.frames.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
-    assert(M.db.layoutVersion==23 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
+    assert(M.db.layoutVersion==24 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
     -- The Mode look (docs/DESIGN_LANGUAGE.md): Geist, Mode Matte health, Mode
     -- Gradient power, Mode BG empty bars, 3px power, Combined shields.
     assert(M.db.player.fontMedia == 'Mode' and M.db.player.texture==nil)
@@ -22,9 +22,9 @@ world.run([====[
     assert(M.db.player.powerHeight==3 and M.db.focus.powerHeight==3 and M.db.player.showShields==true)
     assert(M.db.player.castBar.gap==2 and M.db.focus.castBar.gap==8 and M.db.player.castBar.foregroundTexture=='media:Mode Cast')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
-    assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='gradient' and M.db.player.portraitRing=='border')
+    assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='gradient' and M.db.player.portraitRing=='class')
     local PS=M.db.player.texts
-    assert(PS.border.content=='name' and PS.border.align=='RIGHT' and PS.border.size==12 and M.db.player.classSoftness==40)
+    assert(PS.border.content=='name' and PS.border.align=='RIGHT' and PS.border.size==12 and M.db.player.classSoftness==nil,'Class Color Softness retired')
     for _,key in ipairs(M.retiredKeys) do assert(M.frameDefaults.player[key]==nil and M.db.player[key]==nil,'retired: '..key) end
     -- The locked Onyx skin and the Sky, Champagne, Lilac and Frost name colors.
     local function Hex(c) return string.format('%02X%02X%02X',math.floor(c[1]*255+0.5),math.floor(c[2]*255+0.5),math.floor(c[3]*255+0.5)) end
@@ -46,8 +46,8 @@ world.run([====[
     testLockdown=false;testCombat=false
     FireEvent('PLAYER_REGEN_ENABLED')
     local p,t=M.frames.player,M.frames.target
-    -- Version 21 defaults: Portrait Size 140, the single text shadow, cast icons on the portrait side.
-    assert(M.db.player.portraitScale==140 and M.db.player.liftedShadow==false and M.db.player.castBar.icon=='near' and M.db.target.castBar.icon=='near')
+    -- Defaults: Portrait Size 165 on the Player and Target (layout version 24), the single text shadow, cast icons on the portrait side.
+    assert(M.db.player.portraitScale==165 and M.db.target.portraitScale==165 and M.db.focus.portraitScale==140 and M.db.player.liftedShadow==false and M.db.player.castBar.icon=='near' and M.db.target.castBar.icon=='near')
     -- The geometry below is measured at Portrait Size 165, with the lifted shadow
     -- and far-side cast icons (all still options).
     local function Pin()
@@ -98,7 +98,7 @@ world.run([====[
     combat.player=true;FireEvent('PLAYER_REGEN_DISABLED')
     local cb2=Point(p.combatBadge);assert(p.combatBadge:IsShown() and cb2[4]==-25 and cb2[5]==-25,'bottom left')
     local red=M.db.player.status.ringColor
-    assert(p.redRing and p.portrait.ring.disc.vertexColor[1]==red[1] and not p.portrait.ring.layers[2].texture:IsShown(),'the ring turns red: Mode-BlizzEmpty, flat')
+    assert(p.redRing and p.portrait.ring.layers[2].texture.vertexColor[1]==red[1] and p.portrait.ring.layers[2].texture:IsShown(),'the ring turns red: Specular in red tones')
     assert(p.portrait.halo:IsShown(),'pulled unawares: the ring pulses')
     -- You target it and it fights you: the pulse stops; the ring holds red.
     combat.target,attackable.target=true,true;FireEvent('UNIT_FLAGS','target')
@@ -366,7 +366,9 @@ world.run([====[
     -- The ring sits above the bars and the border, so its whole circle is drawn over the block's end.
     assert(ring:GetFrameLevel()>p.health:GetFrameLevel() and ring:GetFrameLevel()>p.panel.edge.holder:GetFrameLevel(),'ring over the block end')
     assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and #ring.ring.layers==4 and ring.ring.layers[2].texture.texture==addon.Style.AssetPath('Rings2m') and ring.ring.shadow.vertexColor[4]==addon.Style.Tone.shadowAlpha,'Mode-Blizz specular ring with its shadow ring')
-    assert(Point(ring.icon)[4]==3 and Point(ring.icon)[5]==-3 and ring.ring.mask,'the portrait 3px inside (a 3px ring), cut round, no gap')
+    local line=ring.ring.line
+    assert(Point(line)[4]==2 and Point(line)[5]==-2 and line.vertexColor[1]==0 and line.vertexColor[2]==0 and line.vertexColor[3]==0,'the 1px black line, the band inner pixel')
+    assert(Point(ring.icon)[4]==3 and Point(ring.icon)[5]==-3 and ring.ring.mask,'the whole portrait 3px in, cut round')
     assert(p.nameClip==nil and p.nameShine==nil and p.panel.ringBorder==nil)
     assert(p.textLayer:GetFrameLevel()>ring:GetFrameLevel(),'text above the portrait')
     -- On the Border (default): the baseline on the top rim's middle (bottom = 2 - 1 - 3
@@ -401,13 +403,13 @@ world.run([====[
     -- Texts colored by the unit: Reaction, Class Color, and Level Difficulty for the level.
     assert(M:SetFrameOption('target','matchPlayer',false))
     local TL=t.texts.bottomRight
-    assert(M:SetTextOption('target','bottomRight','colorMode','reaction') and TL.color[1]==M:IdentityColor('target',true)[1] and TL.color[2]==M:IdentityColor('target',true)[2],'a hostile level in pastel red')
+    assert(M:SetTextOption('target','bottomRight','colorMode','reaction') and TL.color[1]==M:IdentityColor('target',true)[1] and TL.color[2]==M:IdentityColor('target',true)[2],'a hostile level in red')
     assert(M:SetTextOption('target','bottomRight','colorMode','difficulty') and TL.color[1]==P.hostile[1] and TL.color[2]==P.hostile[2],'a skull level: red')
     assert(M:SetTextOption('target','right','colorMode','class') and t.texts.right.color[1]==M:IdentityColor('target')[1],'an NPC by reaction')
     assert(M:SetTextOption('target','border','colorMode','difficulty') and t.texts.border.color[1]==M:NameColor('target')[1],'difficulty does not suit a name: its default color')
     units.target.reaction=5;FireEvent('UNIT_FACTION','target');assert(TL.color[1]==P.hostile[1],'skull stays red')
     assert(M:SetTextOption('target','bottomRight','colorMode','reaction') and TL.color[2]==M:IdentityColor('target',true)[2],'repainted when the reaction changes')
-    assert(math.abs(TL.color[2]-(P.green[2]+(1-P.green[2])*0.4))<1e-9,'friendly now')
+    assert(math.abs(TL.color[2]-P.green[2])<1e-9,'friendly now, the true color')
     units.target.reaction=2;FireEvent('UNIT_FACTION','target')
     GetCreatureDifficultyColor=function() return {r=0.25,g=0.75,b=0.25} end
     assert(M:SetTextOption('player','bottomLeft','colorMode','difficulty') and p.texts.bottomLeft.color[2]==0.75,'your own level by difficulty')
@@ -424,7 +426,6 @@ world.run([====[
     assert(not M:SetTextOption('player','left','align','LEFT'),'only the border text has an alignment')
 
     M:UpdateAll()
-    local function Soft(c,amount) amount=amount or 0.4;return {c[1]+(1-c[1])*amount,c[2]+(1-c[2])*amount,c[3]+(1-c[3])*amount} end
     local function Near(a,b) return math.abs(a-b)<1e-9 end
     local rc=addon.ClassColors:GetColor('ROGUE');local rogue={rc.r,rc.g,rc.b}
     assert(p.health.statusBarColor[1]==S.Tone.darkFill[1] and t.health.statusBarColor[1]==S.Tone.darkFill[1],'Dark #1C1D1C health by default')
@@ -453,10 +454,11 @@ world.run([====[
     assert(p.texts.border.lift.justifyH=='RIGHT' and not p.texts.powerCenter.lift:IsShown(),'no power text by default, so no lift')
     assert(t.texts.border.lift.text.label=='name' and t.texts.left.lift.text.secret.label=='pct','secret values go straight to the lifts')
     -- Metal: Ring Style in Ring Metal (Mode-Blizz in Silver by default); Class
-    -- Color is Mode-BlizzEmpty, the flat class color (Style.PaintRing).
-    local soft=Soft(rogue)
+    -- Color is Mode-Blizz's Specular in tones of the true class color (Style.PaintRing).
     local S=addon.Style
     local silver,pr=S.Tone.metal.silver,p.portrait.ring
+    assert(M.db.player.portraitRing=='class' and Near(pr.layers[2].texture.vertexColor[1],rogue[1]) and pr.layers[2].texture:IsShown() and pr.styleId=='blizz','Class Color by default: Specular in the class tones')
+    assert(M:SetFrameOption('player','portraitRing','border'))
     assert(M.db.player.portraitRingStyle=='blizz' and M.db.player.portraitRingMetal=='default')
     assert(pr.styleId=='blizz' and pr.disc.vertexColor[1]==silver.dark[1] and pr.layers[4].texture:IsShown() and pr.layers[4].texture.vertexColor[1]==silver.hi[1],'Mode-Blizz in Silver')
     assert(M:SetFrameOption('player','portraitRingMetal','gunmetal') and pr.disc.vertexColor[1]==S.Tone.metal.gunmetal.dark[1],'Ring Metal')
@@ -468,14 +470,22 @@ world.run([====[
     assert(M:SetFrameOption('player','portraitRingStyle','blizzEmpty') and #pr.layers==1 and pr.disc.vertexColor[1]==silver.mid[1] and not pr.pool[2]:IsShown(),'Mode-BlizzEmpty: flat Silver')
     assert(M:SetFrameOption('player','portraitRingStyle','round') and pr.styleId=='round' and not M:SetFrameOption('player','portraitRingStyle','none'))
     assert(M:SetFrameOption('player','portraitRingStyle','blizz') and #pr.layers==4)
-    assert(M:SetFrameOption('player','portraitRing','class') and Near(pr.disc.vertexColor[1],soft[1]) and not pr.layers[2].texture:IsShown(),'Mode-BlizzEmpty in the class color')
+    assert(M:SetFrameOption('player','portraitRing','class') and Near(pr.layers[2].texture.vertexColor[1],rogue[1]) and pr.layers[2].texture:IsShown(),'Specular in the class tones')
+    assert(M:SetFrameOption('player','portraitRingStyle','thin') and pr.styleId=='thin' and Near(pr.disc.vertexColor[1],rogue[1]) and Near(pr.layers[4].texture.vertexColor[1],rogue[1]*0.35),'Ring Style with Class Color: Mode-Thin bevel in the class tones')
+    assert(M:SetFrameOption('player','portraitRingStyle','blizzEmpty') and #pr.layers==1 and Near(pr.disc.vertexColor[1],rogue[1]),'Mode-BlizzEmpty: the flat class color')
+    assert(M:SetFrameOption('player','portraitRingStyle','blizz'))
+    -- Ring Finish (the Portrait tab): a metal, Class Color or Custom in one choice.
+    assert(M.RingFinish(M.db.player)=='class' and M:SetRingFinish('player','steel') and M.db.player.portraitRing=='border' and M.db.player.portraitRingMetal=='steel' and M.RingFinish(M.db.player)=='steel')
+    assert(pr.disc.vertexColor[1]==S.Tone.metal.steel.dark[1],'Steel finish')
+    assert(M:SetRingFinish('player','custom') and M.RingFinish(M.db.player)=='custom' and M.db.player.portraitRingMetal=='steel')
+    assert(M:SetRingFinish('player','default') and M:SetRingFinish('player','class') and not M:SetRingFinish('player','gold'))
     assert(M:SetFrameOption('player','portraitRing','border') and pr.layers[2].texture:IsShown())
     assert(p.portrait.icon.texture=='portrait:player' and p.portrait.icon.texCoord[1]==0.1 and p.portrait.icon.texCoord[3]==0.04,'the portrait cropped a little toward the face')
     assert(p.texts.bottomLeft:GetText()=='60' and p.texts.right:GetText()=='90%')
 
     -- Colors: health Default/Class/Custom, name Accent/Class/Custom, ring Class/Default/Custom.
-    assert(M:SetFrameOption('player','healthColorMode','class') and Near(p.health.statusBarColor[1],soft[1]),'pastel class health')
-    assert(Near(t.health.statusBarColor[1],Soft(P.hostile)[1]),'matched target: NPC reaction color, pastel')
+    assert(M:SetFrameOption('player','healthColorMode','class') and Near(p.health.statusBarColor[1],rogue[1]),'class health, the true color')
+    assert(Near(t.health.statusBarColor[1],P.hostile[1]),'matched target: NPC reaction color')
     assert(M:SetFrameOption('player','healthColorMode','custom') and M:SetFrameOption('player','healthColor',{0,0,1}) and p.health.statusBarColor[3]==1)
     assert(M:SetFrameOption('player','healthColorMode','default') and p.health.statusBarColor[1]==S.Tone.darkFill[1])
     -- Foreground and background opacity and textures, per frame; a matched Target follows the Player.
@@ -500,7 +510,7 @@ world.run([====[
     assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',60) and M:SetFrameOption('player','powerBackgroundOpacity',60))
     assert(M:SetFrameOption('player','showPower',false) and not p.panel.hairline:IsShown() and M:SetFrameOption('player','showPower',true))
     assert(not M:SetFrameOption('player','healthColorMode','palette') and not M:SetFrameOption('player','healthColorMode','reaction'),'only Default, Class Color or Custom')
-    assert(M:SetFrameOption('player','nameColorMode','class') and Near(p.texts.border.color[1],soft[1]))
+    assert(M:SetFrameOption('player','nameColorMode','class') and Near(p.texts.border.color[1],rogue[1]))
     assert(M:SetFrameOption('player','nameColorMode','custom') and M:SetFrameOption('player','nameColor',{1,0,0}) and p.texts.border.color[1]==1 and p.texts.border.color[2]==0)
     local L,F=M.nameAccents.lilac,M.nameAccents.frost
     assert(M:SetFrameOption('player','nameColorMode','lilac') and p.texts.border.color[1]==L[1] and p.texts.border.color[3]==L[3] and t.texts.border.color[2]==L[2],'Lilac')
@@ -525,14 +535,14 @@ world.run([====[
     assert(M:SetTextOption('player','powerCenter','content','powerPercent') and p.texts.powerCenter.lift:IsShown() and p.texts.powerCenter.lift:GetText()=='50%','power text lifts too')
     assert(M:SetTextOption('player','powerCenter','content','none') and not p.texts.powerCenter.lift:IsShown())
     local function Disc(f) return f.portrait.ring.disc.vertexColor end
+    local function Mid(f) return f.portrait.ring.layers[2].texture.vertexColor end
     assert(M:SetFrameOption('player','portraitRing','border') and Near(Disc(p)[1],S.Tone.metal.silver.dark[1]),'Mode-Blizz')
     assert(M:SetFrameOption('player','portraitRing','custom') and M:SetFrameOption('player','portraitRingColor',{1,0,1})
-        and Disc(p)[1]==1 and Disc(p)[2]==0 and Disc(p)[3]==1,'Mode-BlizzEmpty in the custom color')
+        and Mid(p)[1]==1 and Mid(p)[2]==0 and Mid(p)[3]==1,'Specular in the custom color')
     assert(not M:SetFrameOption('player','portraitRing','accent'))
     assert(M:SetFrameOption('player','portraitRing','class'))
-    assert(M:SetFrameOption('player','classSoftness',0) and Near(Disc(p)[1],rogue[1]),'0% softness: original class color')
-    assert(not M:SetFrameOption('player','classSoftness',120))
-    assert(M:SetFrameOption('player','classSoftness',40) and M:SetFrameOption('player','portraitRing','border'))
+    assert(Near(Mid(p)[1],rogue[1]) and not M:SetFrameOption('player','classSoftness',0),'the true class color; Class Color Softness is retired')
+    assert(M:SetFrameOption('player','portraitRing','border'))
     -- Locked skin: retired settings are not options.
     for _,key in ipairs({'palette','borderStyle','backgroundOpacity','backgroundColor','rimThickness','nameSheen','portraitSize'}) do
         assert(not M:SetFrameOption('player',key,M.db.player.scale),'locked: '..key)
@@ -608,7 +618,7 @@ world.run([====[
     assert(M:SetFrameOption('player','showPower',true) and t.power:IsShown())
     assert(M:SetFrameOption('target','barWidth',300) and t.width==60+300+2,'a matched Target uses its own width')
     assert(M:FrameDB('target').portraitSide=='right' and M:FrameDB('target').barWidth==300 and M:FrameDB('target').healthHeight==M.db.player.healthHeight)
-    assert(M:SetFrameOption('target','matchPlayer',false) and t.width==350,'own settings once unmatched (its own Portrait Size 140: 47 + 300 + 2, evened to 350)')
+    assert(M:SetFrameOption('target','matchPlayer',false) and t.width==60+300+2,'own settings once unmatched (its own Portrait Size 165, as the Player)')
     assert(M:FrameDB('target')==M.db.target and t.texts.border.justifyH=='RIGHT' and t.texts.right:IsShown() and not t.texts.left:IsShown(),'its own slots')
     assert(M:SetFrameOption('player','barWidth',184) and M:SetFrameOption('target','barWidth',184))
 
@@ -622,7 +632,7 @@ world.run([====[
     assert(issecretvalue(t.health.value) and t.health.high.label=='max' and t.power.value.label=='p')
     assert(t.texts.right.text.secret.label=='pct' and t.texts.border.text.label=='name')
     assert(t.texts.bottomRight:GetText()=='??+')
-    assert(Near(t.health.statusBarColor[1],Soft(P.hostile)[1]),'NPC reaction color, pastel')
+    assert(Near(t.health.statusBarColor[1],P.hostile[1]),'NPC reaction color')
     assert(t.portrait.icon.texture=='portrait:target')
 
     -- Per-frame customization stays independent.
@@ -673,7 +683,7 @@ world.run([====[
     assert(Plain(ghost.texts.border.lift:GetText())=='Fixture' and ghost.texts.bottomLeft.lift:IsShown() and ghost.texts.border.halo and ghost.texts.border.halo.on and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
     local silverBase=addon.Style.Tone.metal.silver.dark
     assert(ghost.width==p.width and ghost.portrait.ring.disc.vertexColor[1]==silverBase[1],'stand-in matches size and ring')
-    assert(M.ghosts.target.portrait.ring.disc.vertexColor[1]==silverBase[1],'target stand-in: the same Mode-Blizz ring')
+    assert(Near(M.ghosts.target.portrait.ring.layers[2].texture.vertexColor[1],M.palette.hostile[1]),'target stand-in: Class Color, a sample enemy in the hostile tones')
     local gc=M.ghosts.target.combo;assert(gc:IsShown() and gc.points[3].bar.value==M.COMBO_SAMPLE and gc.points[5]:IsShown(),'stand-in shows sample combo points')
     local ga=M.ghosts.target;assert(ga.auraShown.buffs==M.AURA_SAMPLE and ga.auraIcons.buffs[1]:IsShown() and ga.auraShown.debuffs==0,'sample buffs')
     assert(ga.castBox:IsShown() and ga.castBox.text:GetText()=='Frostbolt' and not M.ghosts.player.auraIcons.buffs[1],'sample cast; no buffs on the Player')
@@ -731,7 +741,7 @@ world.run([====[
         player={enabled=true,hideBlizzard=false,width=260,height=36,powerHeight=8,showPower=true,showName=true,showLevel=false,healthText='both'},
         target={enabled=false,hideBlizzard=true,width=220,height=36,powerHeight=8,showPower=true,showName=true,showLevel=true,healthText='percent'}}
     M.Initialize(v1)
-    assert(v1.layoutVersion==23 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.texts.bottomLeft.content=='none')
+    assert(v1.layoutVersion==24 and v1.player.barWidth==260 and v1.player.hideBlizzard==false and v1.player.texts.bottomLeft.content=='none')
     assert(v1.player.texts.right.content=='healthBoth' and v1.player.texts.right.size==14 and v1.player.texts.border.size==14 and v1.player.healthColorMode=='default')
     assert(v1.player.healthText==nil and v1.player.levelStyle==nil and v1.player.nameFontSize==nil,'old text keys removed')
     assert(v1.player.fontMedia == 'Mode' and v1.player.texture==nil and v1.player.backgroundColor==nil,'phase-1 background is not carried into the locked skin')
@@ -744,7 +754,7 @@ world.run([====[
     v5.player.healthHeight=22;v5.player.nameAlign='CENTER';v5.player.fontMedia='PTG Lato';v5.player.levelFontSize=nil;v5.player.healthFontSize=13
     v5.player.borderStyle='satin';v5.player.palette='slate'
     M.Initialize(v5)
-    assert(v5.layoutVersion==23 and v5.player.healthHeight==34 and v5.player.texts.border.align=='RIGHT' and v5.player.fontMedia == 'Mode')
+    assert(v5.layoutVersion==24 and v5.player.healthHeight==34 and v5.player.texts.border.align=='RIGHT' and v5.player.fontMedia == 'Mode')
     assert(v5.player.texts.bottomLeft.size==13 and v5.player.borderStyle==nil and v5.player.palette==nil)
     local v7={layoutVersion=7,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v7.player.nameAlign='LEFT';v7.player.fontMedia='PTG Lato';M.Initialize(v7)
@@ -757,10 +767,10 @@ world.run([====[
     v8.target.healthColorMode='reaction';v8.target.portraitRing='custom';v8.target.portraitRingColor={0,0,1};v8.target.nameColorMode='text'
     local v8b=addon.ProfileCodec.Copy(v8);v8b.target.healthColorMode='custom';v8b.target.healthColor={0.2,0.3,0.4};v8b.player.healthColorMode='mode'
     M.Initialize(v8);M.Initialize(v8b)
-    assert(v8.layoutVersion==23 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
+    assert(v8.layoutVersion==24 and v8.player.healthColorMode=='default' and v8.target.healthColorMode=='class')
     assert(v8b.target.healthColorMode=='custom' and v8b.target.healthColor[3]==0.4 and v8b.player.healthColorMode=='default')
     assert(v8.player.nameColorMode=='gradient' and v8.target.nameColorMode=='gradient','names adopt the default color')
-    assert(v8.player.portraitRing=='border' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'Steel Sheen ring unless custom')
+    assert(v8.player.portraitRing=='class' and v8.target.portraitRing=='custom' and v8.target.portraitRingColor[3]==1,'Class Color ring unless custom')
     local v8s=v8.player.texts;assert(v8s.border.content=='name' and v8s.bottomLeft.content=='level' and v8s.bottomLeft.colorMode=='custom' and v8s.bottomLeft.color[2]==1,'explicit level color kept')
     for _,key in ipairs(M.retiredKeys) do assert(v8.player[key]==nil and v8.target[key]==nil,'retired key removed: '..key) end
     -- Layout 9 -> 10: Mist and its glow give way to Champagne and the lifted shadow.
@@ -768,7 +778,7 @@ world.run([====[
     v9.player.nameColorMode='accent';v9.player.nameGlow=true;v9.player.nameGlowStrength=80;v9.player.nameLift=nil
     v9.target.nameColorMode='custom';v9.target.nameColor={0,1,0};v9.target.nameGlow=false
     M.Initialize(v9)
-    assert(v9.layoutVersion==23 and v9.player.nameColorMode=='gradient' and v9.player.liftedShadow==false and v9.player.nameLift==nil,'the lifted shadow came in at 10 and left at 21')
+    assert(v9.layoutVersion==24 and v9.player.nameColorMode=='gradient' and v9.player.liftedShadow==false and v9.player.nameLift==nil,'the lifted shadow came in at 10 and left at 21')
     assert(v9.player.nameGlow==nil and v9.player.nameGlowStrength==nil and v9.target.nameGlow==nil,'glow keys removed')
     assert(v9.target.nameColorMode=='custom' and v9.target.nameColor[2]==1,'custom name color kept')
     -- Layout 10 -> 11: Sky replaces the presets to try; the name lift becomes Lifted Shadow for all text.
@@ -776,30 +786,30 @@ world.run([====[
     v10.player.nameColorMode='lilac';v10.player.nameLift=false;v10.player.liftedShadow=nil;v10.player.mirrorText=nil
     v10.target.nameColorMode='class';v10.target.nameLift=true;v10.target.mirrorText=nil
     M.Initialize(v10)
-    assert(v10.layoutVersion==23 and v10.player.nameColorMode=='gradient' and v10.target.nameColorMode=='class','presets move to Sky, then Gradient; Class Color kept')
+    assert(v10.layoutVersion==24 and v10.player.nameColorMode=='gradient' and v10.target.nameColorMode=='class','presets move to Sky, then Gradient; Class Color kept')
     assert(v10.player.liftedShadow==false and v10.target.liftedShadow==false and v10.player.nameLift==nil and v10.target.nameLift==nil,'the lift carried over at 11, then version 21 turns it off (true was the default)')
     assert(v10.target.mirrorText==true,'matched Target copies the Player text layout, mirrored since version 15')
     local v11={layoutVersion=11,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
     v11.player.texture='flat';v11.target.texture='media:Smooth';M.Initialize(v11)
-    assert(v11.layoutVersion==23 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
+    assert(v11.layoutVersion==24 and v11.player.texture==nil and v11.target.texture==nil,'retired Bar Texture removed')
     -- Version 12 -> 13: new small-frame defaults, but a changed setting stays.
     local v12={layoutVersion=12,targettarget={scale=100,showPortrait=true,namePosition='above',nameAlign='CENTER',barWidth=110},
         focus={scale=120,showPortrait=true,barWidth=150,healthHeight=22,levelStyle='badge',nameFontSize=12}}
     M.Initialize(v12)
-    assert(v12.layoutVersion==23 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.texts.border.content=='none')
+    assert(v12.layoutVersion==24 and v12.targettarget.scale==75 and v12.targettarget.showPortrait==false and v12.targettarget.texts.border.content=='none')
     assert(v12.targettarget.texts.center.content=='name' and v12.focus.scale==120,'user changes kept: a centred name in the bar')
     local fs=v12.focus.texts;assert(v12.focus.barWidth==160 and v12.focus.healthHeight==22 and fs.bottomRight.content=='none' and fs.left.content=='name' and fs.left.size==11)
     assert(v12.targettarget.attach==true and v12.focustarget.attach==true and v12.focus.attach==false,'new keys take defaults')
     -- Version 13 -> 14: Mode Slate at 70% for frames still on the old Flat / 25%.
     local v13={layoutVersion=13,player={backgroundTexture='flat',barBackgroundOpacity=25},target={backgroundTexture='media:Smooth',barBackgroundOpacity=40}}
     M.Initialize(v13)
-    assert(v13.layoutVersion==23 and v13.player.backgroundTexture=='media:Mode BG' and v13.player.barBackgroundOpacity==60)
+    assert(v13.layoutVersion==24 and v13.player.backgroundTexture=='media:Mode BG' and v13.player.barBackgroundOpacity==60)
     assert(v13.target.backgroundTexture=='media:Smooth' and v13.target.barBackgroundOpacity==40,'chosen backgrounds stay')
     local v15={layoutVersion=15,player={namePosition='above'},target={namePosition='bar'}};M.Initialize(v15)
-    assert(v15.layoutVersion==23 and v15.player.texts.border.content=='name' and v15.player.texts.border.y==0,'version 16: names above sit on the border')
+    assert(v15.layoutVersion==24 and v15.player.texts.border.content=='name' and v15.player.texts.border.y==0,'version 16: names above sit on the border')
     assert(v15.target.texts.right.content=='name' and v15.target.texts.topRight.content=='healthPercent','a taken spot moves to its top row')
     local v14={layoutVersion=14,player={levelStyle='badge'},target={matchPlayer=true,mirrorText=false}};M.Initialize(v14)
-    assert(v14.layoutVersion==23 and v14.target.mirrorText==true and v14.player.texts.bottomLeft.content=='level','version 15: corner level, mirrored Target')
+    assert(v14.layoutVersion==24 and v14.target.mirrorText==true and v14.player.texts.bottomLeft.content=='level','version 15: corner level, mirrored Target')
     -- Version 16 -> 17: text slots. Every text moves to its matching slot, so nothing moves.
     local v16={layoutVersion=16,player={namePosition='above',nameOffsetY=2,nameOffsetX=-3,nameAlign='CENTER',levelPosition='health',levelOffsetY=1,
         healthText='current',healthTextPosition='LEFT',healthTextOffsetX=3,healthFontSize=13,powerText='both',powerTextPosition='RIGHT',powerFontSize=10},
@@ -807,7 +817,7 @@ world.run([====[
         focus={namePosition='bar',nameAlign='RIGHT',healthText='percent',healthTextPosition='RIGHT'}}
     M.Initialize(v16)
     local s=v16.player.texts
-    assert(v16.layoutVersion==23 and s.border.content=='name' and s.border.align=='CENTER' and s.border.x==-3 and s.border.y==2+4+3,'Above Frame: on the border, raised by the difference')
+    assert(v16.layoutVersion==24 and s.border.content=='name' and s.border.align=='CENTER' and s.border.x==-3 and s.border.y==2+4+3,'Above Frame: on the border, raised by the difference')
     assert(s.left.content=='healthCurrent' and s.left.x==3 and s.left.size==13 and s.right.content=='none','health text in its side slot')
     assert(s.bottomLeft.content=='level' and s.bottomLeft.y==1 and s.bottomLeft.colorMode=='default','a level beside the health text goes to the bottom corner')
     assert(s.powerRight.content=='powerBoth' and s.powerRight.size==10 and s.powerCenter.size==10)
@@ -818,12 +828,12 @@ world.run([====[
     -- Version 17 -> 18: the power and cast bars start with the textures they showed.
     local v17={layoutVersion=17,player={foregroundTexture='flat',backgroundTexture='slateHatch',barForegroundOpacity=80,barBackgroundOpacity=40,castBar={height=14}}}
     M.Initialize(v17)
-    local q17=v17.player;assert(v17.layoutVersion==23 and q17.powerForegroundTexture=='flat' and q17.powerBackgroundTexture=='slateHatch' and q17.powerForegroundOpacity==80 and q17.powerBackgroundOpacity==40)
+    local q17=v17.player;assert(v17.layoutVersion==24 and q17.powerForegroundTexture=='flat' and q17.powerBackgroundTexture=='slateHatch' and q17.powerForegroundOpacity==80 and q17.powerBackgroundOpacity==40)
     assert(q17.castBar.foregroundTexture=='flat' and q17.castBar.backgroundTexture=='slateHatch' and q17.castBar.height==14,'nothing changes on screen')
     assert(v17.target.powerForegroundTexture=='media:Mode Gradient' and v17.target.castBar.backgroundTexture=='media:Mode BG','new frames take the defaults')
     -- Version 18 -> 19: the Focus cast bar at the old 3px moves to 8px; a chosen gap stays.
     local v18={layoutVersion=18,focus={castBar={gap=3}},player={castBar={gap=3}}};M.Initialize(v18)
-    assert(v18.layoutVersion==23 and v18.focus.castBar.gap==8 and v18.player.castBar.gap==2 and v18.focus.castBar.fullWidth==true)
+    assert(v18.layoutVersion==24 and v18.focus.castBar.gap==8 and v18.player.castBar.gap==2 and v18.focus.castBar.fullWidth==true)
     local v18b={layoutVersion=18,focus={castBar={gap=5}}};M.Initialize(v18b);assert(v18b.focus.castBar.gap==5)
     -- Version 19 -> 20: the Mode design language. Values still at the old defaults
     -- take the new ones; anything chosen stays.
@@ -835,20 +845,20 @@ world.run([====[
         targettarget={powerHeight=6,healthHeight=16,barWidth=110}}
     M.Initialize(v19)
     local a,b,c=v19.player,v19.target,v19.targettarget
-    assert(v19.layoutVersion==23 and a.powerHeight==3 and a.foregroundTexture=='media:Mode Matte' and a.backgroundTexture=='media:Mode BG' and a.barBackgroundOpacity==60)
-    assert(a.powerForegroundTexture=='media:Mode Gradient' and a.nameColorMode=='gradient' and a.portraitRing=='border' and a.fontMedia == 'Mode')
-    assert(a.barWidth==184 and a.healthHeight==34 and a.portraitScale==140 and a.castBar.gap==2 and a.castBar.foregroundTexture=='media:Mode Cast' and a.castBar.backgroundTexture=='media:Mode BG')
+    assert(v19.layoutVersion==24 and a.powerHeight==3 and a.foregroundTexture=='media:Mode Matte' and a.backgroundTexture=='media:Mode BG' and a.barBackgroundOpacity==60)
+    assert(a.powerForegroundTexture=='media:Mode Gradient' and a.nameColorMode=='gradient' and a.portraitRing=='class' and a.fontMedia == 'Mode')
+    assert(a.barWidth==184 and a.healthHeight==34 and a.portraitScale==165 and a.castBar.gap==2 and a.castBar.foregroundTexture=='media:Mode Cast' and a.castBar.backgroundTexture=='media:Mode BG')
     assert(b.powerHeight==12 and b.foregroundTexture=='media:Smooth' and b.nameColorMode=='class' and b.portraitRing=='custom' and b.fontMedia=='Friz' and b.barWidth==200,'choices kept')
     assert(b.castBar.gap==6 and b.castBar.foregroundTexture=='flat' and c.powerHeight==3 and c.healthHeight==22 and c.barWidth==130)
     -- Version 20 -> 21: Portrait Size 140, no lifted shadow, cast icons on the portrait side; choices kept.
     local v20={layoutVersion=20,player={portraitScale=165,liftedShadow=true,castBar={icon='far'}},target={portraitScale=180,castBar={icon='none'}}}
     M.Initialize(v20)
-    assert(v20.layoutVersion==23 and v20.player.portraitScale==140 and v20.player.liftedShadow==false and v20.player.castBar.icon=='near')
+    assert(v20.layoutVersion==24 and v20.player.portraitScale==165 and v20.player.liftedShadow==false and v20.player.castBar.icon=='near')
     assert(v20.target.portraitScale==180 and v20.target.castBar.icon=='none','choices kept')
     -- Version 21 -> 22: 22px auras five to a row, 11px cast text; choices kept.
     local v21={layoutVersion=21,player={buffs={size=20,perRow=8},debuffs={size=30,perRow=3},castBar={fontSize=10}}}
     M.Initialize(v21)
-    assert(v21.layoutVersion==23 and v21.player.buffs.size==22 and v21.player.buffs.perRow==5 and v21.player.castBar.fontSize==11)
+    assert(v21.layoutVersion==24 and v21.player.buffs.size==22 and v21.player.buffs.perRow==5 and v21.player.castBar.fontSize==11)
     assert(v21.player.debuffs.size==30 and v21.player.debuffs.perRow==3 and v21.player.healthTextColor=='health')
     -- Text glow (Style.TextHalo): health numbers in Deep at 15%, names in Ink at 20%.
     local d0=M.db.player
@@ -870,7 +880,11 @@ world.run([====[
     -- Version 22 -> 23: solid empty bars (100) take the see-through 60; picked values stay.
     local v22={layoutVersion=22,player={barBackgroundOpacity=100,powerBackgroundOpacity=40},target={barBackgroundOpacity=80}}
     M.Initialize(v22)
-    assert(v22.layoutVersion==23 and v22.player.barBackgroundOpacity==60 and v22.player.powerBackgroundOpacity==40 and v22.target.barBackgroundOpacity==80)
+    assert(v22.layoutVersion==24 and v22.player.barBackgroundOpacity==60 and v22.player.powerBackgroundOpacity==40 and v22.target.barBackgroundOpacity==80)
+    -- Version 23 -> 24: a ring still on Metal takes Class Color; Custom and the ring's style stay.
+    local v23={layoutVersion=23,player={portraitRing='border',portraitRingStyle='thin',classSoftness=40,portraitScale=140},target={portraitRing='custom'},focus={portraitRing='class',portraitScale=140}}
+    M.Initialize(v23)
+    assert(v23.layoutVersion==24 and v23.player.portraitRing=='class' and v23.player.portraitRingStyle=='thin' and v23.player.classSoftness==nil and v23.player.portraitScale==165 and v23.focus.portraitScale==140 and v23.target.portraitRing=='custom' and v23.focus.portraitRing=='class')
     -- Health text by health (Style.PaintHealthText): Celadon at full, Rosewood at 30% and under.
     local S=addon.Style
     local function Is(c,token) return math.abs(c[1]-token[1])<1e-9 and math.abs(c[2]-token[2])<1e-9 end
@@ -884,15 +898,15 @@ world.run([====[
     -- Reset (the settings footer): every frame back to the defaults.
     local before=addon.ProfileCodec.Copy(M.db)
     assert(M:SetFrameOption('player','barWidth',300) and M:SetFrameOption('target','matchPlayer',false) and M.ResetToDefaults)
-    assert(M:ResetToDefaults() and M.db.player.barWidth==184 and M.db.target.matchPlayer==true and M.db.player.portraitScale==140)
+    assert(M:ResetToDefaults() and M.db.player.barWidth==184 and M.db.target.matchPlayer==true and M.db.player.portraitScale==165)
     for key,value in pairs(before) do M.db[key]=value end;M:Refresh()
     local v14b={layoutVersion=14,target={matchPlayer=false,mirrorText=false}};M.Initialize(v14b)
     assert(v14b.target.mirrorText==false,'an unmatched Target is left alone')
     local w13={layoutVersion=13,player={barWidth=230},target={matchPlayer=true,barWidth=180}};M.Initialize(w13)
     assert(w13.target.barWidth==230,'a matched Target keeps the width it showed')
     local kept={layoutVersion=12,player=addon.ProfileCodec.Copy(M.frameDefaults.player),target=addon.ProfileCodec.Copy(M.frameDefaults.target)}
-    kept.player.nameColorMode='class';kept.player.portraitRing='border';M.Initialize(kept)
-    assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='border','later choices are not migrated')
+    kept.player.nameColorMode='class';kept.player.portraitRing='custom';M.Initialize(kept)
+    assert(kept.player.nameColorMode=='class' and kept.player.portraitRing=='custom','later choices are not migrated')
     local bad=addon.ProfileCodec.Copy(M.db);bad.target.healthColorMode='x';assert(not pcall(M.Initialize,bad))
 ]====]
 , "unit_frames")
@@ -902,7 +916,7 @@ local restored = H.Load({ before = STUBS, saved = world.saved() })
 restored.run([====[
     local M=addon.UnitFrames
     assert(M.enabled and M.db.target.barWidth==300 and M.db.player.barWidth==240,'settings persist')
-    assert(M.frames.player and M.frames.target.width==350,'frames built at login (unmatched target keeps its width)')
+    assert(M.frames.player and M.frames.target.width==60+300+2,'frames built at login (unmatched target keeps its width)')
     assert(addon.PositionManager.elements.unitFramesTarget,'stand-in registered at login despite nil GetCenter before anchoring')
 ]====]
 , "unit_frames_restore")
@@ -930,13 +944,14 @@ restored.run([====[
         end
         error('missing toggle '..section..' / '..label)
     end
-    for section,list in pairs({Frame={'Scale','Frame Tools','Status'},Portrait={'Portrait Style','Portrait Size','Portrait Ring'},
+    for section,list in pairs({Frame={'Scale','Frame Tools','Status'},Portrait={'Portrait Style','Portrait Size'},
         ['Health Bar']={'Frame Width','Health Bar Height','Fill Direction','Health Color'},['Power Bar']={'Power Bar Height','Power Color'},
-        Text={'Name Color','Class Color Softness','Font','Text Color'}}) do
+        Text={'Name Color','Health Text Color','Font','Text Color'}}) do
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end
         assert(not Find(section,'Editing'),'Editing is in the preview header, not in each tab')
     end
     assert(not Find('Health Bar','Scale') and not Find('Frame','Health Bar Height') and not Find('Frame','Frame Width'),'one place for each setting')
+    assert(page.unitFrameRingStyle and page.unitFrameRingFinish and not Find('Portrait','Portrait Ring'),'Ring Style and Ring Finish replace Portrait Ring')
     -- Editing at the preview's top right, with whether the frame is on.
     assert(page.unitFrameEditSelect and Point(page.unitFrameEditSelect:GetParent())[1]=='TOPRIGHT' and page.unitFrameEditSelect:GetParent():GetParent()==page.previewArea)
     -- Each frame in the Editing list says On or Off beside its name.

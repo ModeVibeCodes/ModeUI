@@ -40,11 +40,13 @@ before the next starts.
 
 ### What each finished module carries now
 
-- **Unit Frames** (layout version 23): Mode Matte health, Mode Gradient power,
+- **Unit Frames** (layout version 24): Mode Matte health, Mode Gradient power,
   Mode Cast casts, Mode BG empty bars, Geist, Gradient names, health text
-  colored by health with a soft glow, a 3px Mode-Blizz portrait ring (its own
-  Ring Style and Ring Metal; Class Color and Custom are flat, Mode-BlizzEmpty) with a
-  1px shadow ring, Combined shields. See `docs/UNIT_FRAMES.md`.
+  colored by health with a soft glow, a 3px portrait ring in the true class or
+  reaction color (Ring Style, Mode-Blizz by default, in tones of the color;
+  Ring Finish: a metal, Class Color or Custom) between a 1px shadow ring and a 1px black line,
+  Combined shields; no Class Color Softness.
+  See `docs/UNIT_FRAMES.md`.
 - **Party Frames** (settings version 7): the `group` edge, 150 x 34 + 3, Mode
   Glass health (owner's pick), Shields tab (texture, color, opacity), Gradient
   names, aggro/target/dispel rim swaps, dispel Gradient. See
@@ -228,6 +230,22 @@ defaults). Class Color and Custom (and the combat red) draw as
 Mode-BlizzEmpty: the flat color, no lighting, where they used to tint the
 Steel 70%. Portrait Ring's first option reads Metal (was Steel; the saved id
 `border` is unchanged). Waiting on an in-game look.
+
+**Portrait ring, colored** (owner, November 18, 2026): from a reference ring
+(a reaction-colored band, lightly shaded, with fine black edges), compared pixel by pixel
+in the "Portrait Ring Lab" artifact. Every ring gets a 1px black line between
+its band and the portrait, on the band's inner pixel (the owner's pick, "In
+band": a 2px band, the line, the whole portrait; the ring keeps its size).
+Then, from the owner's in-game look, **Ring Style** (any style) and **Ring
+Finish** (Default, Silver, Steel, Gunmetal, Class Color, Custom) replace the
+Portrait Ring choice, and the default is Mode-Blizz in Class Color at
+Portrait Size 165 (Player and Target). A colored ring is its style's lighting
+in tones made from the color (`Style.ColorTones`; the owner's pick in the
+lab: Specular at Gradient Strength 100%). Class Color Softness is retired:
+class and reaction colors are their true colors (owner: "if wanting to change
+later I will bring it back"). Layout version 24 moves rings still on Metal to
+Class Color, Player and Target portraits at 140 to 165, and removes
+`classSoftness`. Waiting on an in-game look.
 
 ### Revision 2: type and text glow (November 17)
 

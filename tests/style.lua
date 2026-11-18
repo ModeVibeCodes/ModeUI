@@ -282,14 +282,19 @@ world.run([[
     assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
     local ring = Style.Ring(host, 66)
     assert(ring.portrait and ring.mask and ring.rim == 3 and ring.shadow, "portrait ring, 3px of metal and a shadow ring")
-    -- Mode-Blizz's specular layers in Silver by default; a color is Mode-BlizzEmpty.
+    assert(ring.line and ring.line.vertexColor[1] == Tone.shadow[1] and ring.line.vertexColor[3] == Tone.shadow[3], "the 1px black line inside the metal")    -- Mode-Blizz's specular layers in Silver by default; a color is Mode-BlizzEmpty.
     local silver = Tone.metal.silver
     assert(#ring.layers == 4 and ring.disc.vertexColor[1] == silver.dark[1] and ring.layers[4].texture.vertexColor[1] == silver.hi[1], "Mode-Blizz, Silver")
     for _, profile in ipairs(Style.EDGE_DATA.RingProfiles()) do assert(Style.ASSETS["Ring" .. profile], "ring art is registered") end
     Style.PaintRing(ring, nil, "steel")
     assert(ring.disc.vertexColor[1] == Tone.metal.steel.dark[1] and ring.layers[2].texture:IsShown(), "another metal")
     Style.PaintRing(ring, Tone.celadon)
-    assert(ring.disc.vertexColor[1] == Tone.celadon[1] and ring.disc:IsShown() and not ring.layers[2].texture:IsShown(), "Mode-BlizzEmpty: the flat color")
+    local function Near(a, b) return math.abs(a - b) < 1e-9 end
+    local cel = Style.ColorTones(Tone.celadon)
+    assert(Near(cel.mid[1], Tone.celadon[1]) and Near(cel.dark[2], Tone.celadon[2] * 0.55) and Near(cel.hi[3], Tone.celadon[3] + (1 - Tone.celadon[3]) * 0.6), "tones made from a color")
+    assert(Near(ring.disc.vertexColor[1], cel.dark[1]) and ring.layers[2].texture:IsShown() and Near(ring.layers[2].texture.vertexColor[1], Tone.celadon[1])
+        and Near(ring.layers[4].texture.vertexColor[1], cel.hi[1]), "a color: Specular lighting in its own tones")
+    assert(ring.line.vertexColor[1] == Tone.shadow[1] and ring.shadow.vertexColor[1] == Tone.shadow[1], "a colored ring keeps its black line and shadow")
     -- Every Mode border style draws on the ring; bevel's inner row sits 1px in.
     for _, choice in ipairs(Style.EdgeStyleChoices()) do
         Style.SetRingStyle(ring, choice.id)

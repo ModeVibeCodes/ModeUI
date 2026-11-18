@@ -5,6 +5,63 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Ring Style and Ring Finish, Class Color by default, true class colors (layout version 24)
+
+The owner asked for the portrait ring to read like a reference ring: a class
+or reaction color band, lightly shaded, with fine black edges. The comparison,
+with pixel samples and the shading options, is the "Portrait Ring Lab"
+artifact (November 18, 2026); the owner picked the black line "In band" and
+Specular shading at Gradient Strength 100% with no softness, then (in game)
+any Ring Style with any finish and Portrait Size 165.
+
+- Every portrait ring (`Style.Ring`) has a 1px black line between its band
+  and the portrait, in every Ring Style and color. It takes the band's inner
+  pixel, so the ring keeps its size, the portrait keeps its size and nothing
+  on the frame moves. Outside in: the 1px shadow ring, the 2px band, the 1px
+  black line, the portrait. The line replaces the dark disc that sat under
+  the portrait.
+- **Ring Style** and **Ring Finish** (Portrait tab) replace the Portrait Ring
+  choice: any Mode border style, then its finish, one of Default, Silver,
+  Steel, Gunmetal (Portrait Ring "border" with that Ring Metal), **Class
+  Color** or **Custom** (with Portrait Ring Color). The saved keys are
+  unchanged (`portraitRing`, `portraitRingStyle`, `portraitRingMetal`,
+  `portraitRingColor`; `M.RingFinish` and `M:SetRingFinish` map the one
+  choice onto them).
+- The default is **Mode-Blizz in Class Color**: the class color for players,
+  the reaction color for NPCs. A colored ring (Class Color, Custom and the
+  combat red) draws its Ring Style's own lighting in five tones made from the
+  color (`Style.ColorTones`: hi and light 60% and 30% toward white, the color
+  itself, dark and deep 45% and 65% toward black): Mode-Blizz's Specular,
+  Mode-Thin's and Mode-Round's Bevel, or Mode-BlizzEmpty's flat color.
+- **Portrait Size** is 165% on the Player and Target by default (the owner,
+  in game, November 18, 2026); the smaller frames keep 140%.
+- **Class Color Softness is retired.** Class and reaction colors are their
+  true colors everywhere on the unit frames: the ring, Class Color health,
+  class and reaction texts and names. The slider is gone from the Text tab.
+
+Version 23 to 24 moves a Portrait Ring still on Metal (the old default) to
+Class Color, a Player or Target Portrait Size still at 140 to 165, and
+removes `classSoftness`. Custom stays, and the saved Ring Style and Ring
+Metal are kept.
+
+Manual check (layout version 24):
+- **Navigation:** **Frames** › **Unit Frames**, the **Portrait** and
+  **Text** tabs, **Editing:** Player; then the game world.
+- **Action:** look at the Player and Target portraits with a hostile, a
+  neutral and a friendly NPC targeted. On the Portrait tab, try each **Ring
+  Style** with **Ring Finish** Class Color, then Silver, then Custom. Open
+  the **Text** tab.
+- **Required state:** out of combat, Unit Frames on, a profile last saved
+  on Metal at Portrait Size 140 (or a fresh one).
+- **Confirmation:** Portrait Size reads 165. Both rings are your class color
+  on the Player and red, yellow or green on the Target, at full strength (not
+  pastel), in Mode-Blizz's lighting (lighter near the top, darker through the
+  sides), with a thin black line outside the color and another between the
+  color and the portrait. Ring Style stays on screen for every finish and
+  changes the ring's lighting in the color too; Ring Finish lists Default,
+  Silver, Steel, Gunmetal, Class Color and Custom, and Custom shows Portrait
+  Ring Color. The Text tab has no Class Color Softness slider.
+
 ## Player auras move to Buffs & Debuffs (November 17, 2026)
 
 The owner asked for the Player frame's buffs and debuffs to be bars in the
@@ -139,7 +196,7 @@ from `Shared/Style`:
   overall size, so positions and attachments carry over.
 - **Portrait:** a `Style.Ring` (Mode-Blizz, no gap) centred on the block's
   portrait-side edge, drawn over the bars, which run under it. Portrait Ring:
-  Metal (default: **Ring Style**, any Mode border style, Mode-Blizz by default,
+  Metal (the default until layout version 24: **Ring Style**, any Mode border style, Mode-Blizz by default,
   in **Ring Metal**, Default being the style's own), Class Color or Custom
   (both Mode-BlizzEmpty, the flat color); the combat ring is Mode-BlizzEmpty
   red.
@@ -1173,7 +1230,7 @@ history of what was migrated.
 | Group | Keys (default; range or choices) |
 | --- | --- |
 | Text slots | `texts.<slot>`: `content` (see "Text slots"), `size` 6–24, `x`/`y` −100–100, `colorMode` default / custom, `color`; `texts.border.align` LEFT / CENTER / RIGHT. Player: `border` Name (12, RIGHT), `bottomLeft` Level (11), `right` Health Percent (11). Small frames: `left` Name (11), `right` Health Percent (10). |
-| Names | `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `classSoftness` 40 (0–100%) |
+| Names | `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `classSoftness` 40 (0–100%; retired at layout version 24) |
 
 History (layout version 11):
 
@@ -1183,8 +1240,8 @@ History (layout version 11):
 | Matching | `matchPlayer` (Target on): render with the Player's look and text layout; `mirrorText` (Target, off): mirror the Player's text alignment and horizontal offsets |
 | Layout | `scale` 100 (50–200%), `barWidth` 180 (100–400), `healthHeight` 26 (10–60), `showPower` (true), `powerHeight` 10 (2–30) |
 | Bars | `foregroundTexture` mode / flat / `media:<name>`, `backgroundTexture` flat / `media:<name>`, `barForegroundOpacity` 100 (10–100%), `barBackgroundOpacity` 25 (0–100%) |
-| Portrait | `showPortrait` (true), `portraitStyle` portrait / class, `portraitSide` left (Target right), `portraitScale` 150 (100–200% of the bar block), `portraitRing` class / border / custom, `portraitRingColor` Mist |
-| Name | `showName` (true), `namePosition` above / bar, `nameAlign` RIGHT / LEFT / CENTER, `nameFontSize` 12 (8–24), `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `nameOffsetX`/`nameOffsetY` 0 (−100–100), `classSoftness` 40 (0–100%) |
+| Portrait | `showPortrait` (true), `portraitStyle` portrait / class, `portraitSide` left (Target right), `portraitScale` 150 (100–200% of the bar block), `portraitRing` class (default since layout version 24) / border / custom, `portraitRingColor` Mist |
+| Name | `showName` (true), `namePosition` above / bar, `nameAlign` RIGHT / LEFT / CENTER, `nameFontSize` 12 (8–24), `nameColorMode` sky / champagne / lilac / frost / class / custom, `nameColor` Sky #91C6FF, `nameOffsetX`/`nameOffsetY` 0 (−100–100), `classSoftness` 40 (0–100%; retired at layout version 24) |
 | Level | `levelStyle` badge (shown) / none, `levelFontSize` 11 (6–24), `levelColor` #B9B9B9, `levelOffsetX`/`levelOffsetY` 0 |
 | Health | `healthColorMode` default / class / custom, `healthColor`, `healthText` percent / current / both / none, `healthTextPosition` RIGHT, `healthFontSize` 11 (8–24), `healthTextOffsetX`/`healthTextOffsetY` 0 |
 | Power | `powerColorMode` type / custom, `powerColor`, `powerText` none / percent / current / both, `powerTextPosition` CENTER, `powerFontSize` 9 (6–20), `powerTextOffsetX`/`powerTextOffsetY` 0 |

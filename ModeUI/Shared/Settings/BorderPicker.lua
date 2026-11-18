@@ -6,8 +6,9 @@ local Style = addon.Style
 -- dropdowns on one line of a settings page. style and metal: { get, set }
 -- (get returns the saved id: a style id or "none"; a metal id or "default").
 -- opts.none offers None (modules that could already hide their borders);
--- opts.labels names the two fields (default Border Style, Border Metal).
--- Returns the two fields.
+-- opts.labels names the two fields (default Border Style, Border Metal);
+-- opts.finishes adds choices after the metals ({ id, label }: the portrait
+-- ring's Class Color and Custom). Returns the two fields.
 function W.BorderPickers(page, style, metal, opts)
     local labels = opts and opts.labels or { "Border Style", "Border Metal" }
     local cells = page:Columns({ L[labels[1]], L[labels[2]] })
@@ -25,6 +26,8 @@ function W.BorderPickers(page, style, metal, opts)
         return button
     end
     local styles = Localized(Style.EdgeStyleChoices(opts and opts.none))
-    local metals = Localized(Style.EdgeMetalChoices())
+    local metals = Style.EdgeMetalChoices()
+    for _, choice in ipairs(opts and opts.finishes or {}) do metals[#metals + 1] = { id = choice.id, label = choice.label } end
+    metals = Localized(metals)
     return Picker(cells[1], styles, style.get, style.set), Picker(cells[2], metals, metal.get, metal.set)
 end

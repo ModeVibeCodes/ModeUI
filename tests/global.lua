@@ -231,7 +231,7 @@ world.run([==[
     assert(C:SetColor('ROGUE',{0.2,0.4,0.6}) and C:GetColor('ROGUE').b==0.6)
     assert(not C:SetColor('ROGUE',{2,0,0}) and not C:SetColor('EVOKER',{0,0,0}),'validated')
     -- Unit Frames recolor right away (class-colored health on the player).
-    U:SetFrameOption('player','healthColorMode','class');U:SetFrameOption('player','classSoftness',0)
+    U:SetFrameOption('player','healthColorMode','class')
     local bar=U.frames.player.health.statusBarColor
     assert(math.abs(bar[1]-0.2)<1e-9 and math.abs(bar[3]-0.6)<1e-9,'custom color on the frame')
     assert(C:SetColor('ROGUE',{0.9,0.1,0.1}) and math.abs(U.frames.player.health.statusBarColor[1]-0.9)<1e-9,'applies immediately')

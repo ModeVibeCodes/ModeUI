@@ -175,14 +175,13 @@ end
 -- frames as an enemy at level 60.
 local P = M.palette
 function M:UnitTextColor(f, unit, mode)
-    local fdb = self:FrameDB(unit)
     if f.ghost then
         if mode == "difficulty" then return Level.DifficultyColor(60) or P.hostile end
-        if mode == "class" then return self:SampleIdentity(unit, fdb) end
-        return self:Soften(unit == "player" and P.green or P.hostile, fdb)
+        if mode == "class" then return self:SampleIdentity(unit) end
+        return unit == "player" and P.green or P.hostile
     end
-    if mode == "reaction" then return self:IdentityColor(unit, true, fdb) end
-    if mode == "class" then return self:IdentityColor(unit, false, fdb) end
+    if mode == "reaction" then return self:IdentityColor(unit, true) end
+    if mode == "class" then return self:IdentityColor(unit) end
     if mode == "difficulty" then
         local level = Level.Number(unit)
         if level == -1 then return P.hostile end -- a skull: far above you

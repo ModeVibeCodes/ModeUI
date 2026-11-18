@@ -190,9 +190,6 @@ function M:BuildTextTab(ui)
         When(function() return ui.db().nameTextGlow end, function()
             ui.Choice("Name Glow Color", "nameTextGlowColor"); ui.Slider("Name Glow Strength", "nameTextGlowStrength", "%")
         end)
-        page:Group("Colors")
-        -- Pastel: class-colored names, class health and the class ring all use it.
-        ui.Slider("Class Color Softness", "classSoftness", "%")
         M:BuildTextKinds(ui)
     end)
 end

@@ -75,7 +75,8 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- shadow (no lifted copy), the cast bar icon on the portrait side.
 -- Version 22: health text colored by health, 22px auras five to a row, 11px cast text.
 -- Version 23: semi-transparent empty bars (Slate at 60%, no black plate behind).
-M.LAYOUT_VERSION = 23
+-- Version 24: the portrait ring in the class or reaction color (owner).
+M.LAYOUT_VERSION = 24
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 
 local Tone = addon.Style.Tone
@@ -108,6 +109,8 @@ M.choices = {
     -- Text glow colors (Style.TextHalo): Deep, Ink, Match Text.
     glowColor = addon.Style.GLOW_COLORS,
 }
+-- Ring Finish's choices after the metals (Settings.lua, M.RingFinish).
+M.ringFinishes = { M.choices.ring[2], M.choices.ring[3] }
 -- Setting key -> choice list.
 M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring", healthTextColor = "healthText",
     nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
@@ -149,14 +152,14 @@ local function Frame(side, extra)
         fillEdge = true,
         showPortrait = true, portraitStyle = "portrait", portraitSide = side,
         portraitScale = 140, -- portrait diameter as a % of the bar block
-        portraitRing = "border", portraitRingColor = Copy(M.ACCENT),
+        -- The ring in the class or reaction color, flat, with its black line
+        -- (owner, November 18, 2026); Metal draws the style and metal below.
+        portraitRing = "class", portraitRingColor = Copy(M.ACCENT),
         -- The ring's own Mode border style and metal (Style.SetRingStyle):
         -- Mode-Blizz in its Silver (owner, November 17, 2026).
         portraitRingStyle = "blizz", portraitRingMetal = "default",
         -- The color of names in text slots (TextSlots.lua places every text).
         nameColorMode = "gradient", nameColor = Copy(M.ACCENT),
-        -- Class/reaction colors are blended this far toward white (pastel).
-        classSoftness = 40,
         healthColorMode = "default", healthColor = Copy(M.palette.green),
         -- Health texts in the bars: colored by health (Style.PaintHealthText).
         healthTextColor = "health",
@@ -192,10 +195,12 @@ local function Small(scale, attach, width)
 end
 -- The Target mirrors the Player by default: health text on the left, level in
 -- its bottom right corner (owner, November 13, 2026).
-M.frameDefaults = { player = Frame("left"), target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse" }),
+-- The Player and Target portraits are 165% of the bar block (owner, November 18, 2026).
+M.frameDefaults = { player = Frame("left", { portraitScale = 165 }),
+    target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse", portraitScale = 165 }),
     targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false, 160)), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
-    powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 }, classSoftness = { 0, 100, 5 },
+    powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 },
     barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, powerForegroundOpacity = { 10, 100, 5 },
     powerBackgroundOpacity = { 0, 100, 5 }, attachOffsetX = { -200, 200, 1 }, attachOffsetY = { -200, 200, 1 },
     healthTextGlowStrength = { 5, 40, 5 }, nameTextGlowStrength = { 5, 40, 5 } }

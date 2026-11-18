@@ -134,8 +134,15 @@ as hi near the top, dark through the middle of the sides and light at the
 bottom. A bevel's inner row is a disc 1px inside the outer one, so Mode-Thin
 and Mode-Round show a lit 1px lip over a shaded band (on a circle the two
 differ only in their default metal); Mode-BlizzEmpty is the metal's mid,
-flat. The ring has its own Ring Style and Ring Metal. A colored ring (class,
-custom, the combat red) is the flat color alone, whatever the style.
+flat. The ring has its own Ring Style and Ring Metal. A colored ring (class or
+reaction, custom, the combat red) draws its style's own lighting
+in five tones made from the color (`Style.ColorTones`: hi and light 60% and
+30% toward white, the color, dark and deep 45% and 65% toward black); the
+unit frames draw Mode-Blizz in the true class or reaction color by default,
+with Ring Style and Ring Finish (a metal, Class Color or Custom) to change it. Every ring
+has a 1px black line between its band and the portrait, on the band's inner
+pixel (a 2px band, then the line), so the color or metal has a fine black edge
+on both sides and the ring keeps its size.
 
 The art is white and tinted in game: each lit band is a base ring in one metal
 tone with up to three lighting layers over it (each a ring whose alpha follows
@@ -159,7 +166,7 @@ layout moved for it).
 | `control` | thin | 1px | 1px | — | 2px | Mode-Thin | buttons, dropdowns, fields, the slide toggle |
 | `line` | thin | 1px flat color | 1px | — | 2px | Mode-Thin | aura dispel rims, item quality |
 | `empty` | thin | 1px or 2px, any color | 1px | — | 2-3px | Mode-BlizzEmpty | an element's only border in a custom color: proc ready, aggro |
-| `ring` | circle | 3px: any style's 2px lighting over the whole disc in a border metal, or one flat color | 1px | — | 4px | Mode-Blizz | portraits (`Style.Ring`) |
+| `ring` | circle | 2px: any style's 2px lighting over the whole disc, in a border metal or in tones of one color (class, reaction, custom; Mode-Blizz in the class color is the unit frames' default) | 1px | 1px, inside the band | 4px | Mode-Blizz | portraits (`Style.Ring`) |
 
 A 1px band on a heavy role (`SetRim(1)`: Minimap Map Border Thin) or a 2px band
 on a thin one (aura Border Size 2) keeps the role's other rings.
@@ -357,7 +364,7 @@ Phase 6 probe):
 
 | Element | Size |
 |---|---|
-| Player, target | 184 wide; 34 health + 1 + 3 power; portrait ring 140% of the bar block (58px), overlapping, Mode-Blizz Silver, no gap, the image cropped a little toward the face over a dark disc |
+| Player, target | 184 wide; 34 health + 1 + 3 power; portrait ring 165% of the bar block, overlapping, Mode-Blizz in the true class or reaction color with its 1px black line between band and portrait, the image cropped a little toward the face |
 | Target of target, focus, pet | 22 health + 3 power, 12px text; no portrait by default |
 | Boss | 24 health + 3 power; no portrait by default |
 | Cast bar under a frame | 14px with icon, 1–2px below (default 2), edges on the frame's edges; with a portrait it starts where the ring ends |
