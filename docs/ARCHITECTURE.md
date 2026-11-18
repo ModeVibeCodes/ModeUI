@@ -419,7 +419,8 @@ and an entry in the README's module table.
 screen of ModeUI settings that a **new** profile starts from; it never
 changes an existing profile, so nothing a player placed moves. The first is
 **Mode-Default** (label DPS / Tank), built from the owner's layout editor
-(plan and editor: https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT); a
+(plan and editor: https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT, copied to
+`design/layout-editor/`); a
 Healer layout comes later.
 
 - **Parts.** Each module adds its own part from `Modules/<Name>/Layouts.lua`

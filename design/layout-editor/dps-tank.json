@@ -1,0 +1,725 @@
+{
+  "character": {
+    "feet": -173,
+    "half": 54,
+    "head": 116,
+    "neck": 80,
+    "x": 0
+  },
+  "elements": {
+    "bags": {
+      "anchor": {
+        "point": "TOPLEFT",
+        "rel": "TOPRIGHT",
+        "to": "micro",
+        "x": 8,
+        "y": 0
+      },
+      "full": 7,
+      "group": "ab",
+      "grow": "right",
+      "h": 36,
+      "kind": "icons",
+      "label": "Bag Bar",
+      "lines": "down",
+      "per": 7,
+      "reach": 3,
+      "spacing": 4,
+      "typ": 6,
+      "w": 36
+    },
+    "bar1": {
+      "anchor": {
+        "point": "BOTTOMRIGHT",
+        "rel": "BOTTOM",
+        "to": "screen",
+        "x": -4,
+        "y": 8
+      },
+      "cd": true,
+      "full": 12,
+      "group": "ab",
+      "grow": "right",
+      "h": 30,
+      "kind": "icons",
+      "label": "Action Bar 1",
+      "lines": "down",
+      "per": 12,
+      "reach": 3,
+      "spacing": 2,
+      "typ": 12,
+      "w": 36
+    },
+    "bar2": {
+      "anchor": {
+        "point": "LEFT",
+        "rel": "RIGHT",
+        "to": "bar1",
+        "x": 8,
+        "y": 0
+      },
+      "full": 12,
+      "group": "ab",
+      "grow": "right",
+      "h": 30,
+      "kind": "icons",
+      "label": "Action Bar 2",
+      "lines": "down",
+      "per": 12,
+      "reach": 3,
+      "spacing": 2,
+      "typ": 12,
+      "w": 36
+    },
+    "bar3": {
+      "anchor": {
+        "point": "BOTTOM",
+        "rel": "TOP",
+        "to": "bar1",
+        "x": 0,
+        "y": 4
+      },
+      "full": 12,
+      "group": "ab",
+      "grow": "right",
+      "h": 30,
+      "kind": "icons",
+      "label": "Action Bar 3",
+      "lines": "down",
+      "per": 12,
+      "reach": 3,
+      "spacing": 2,
+      "typ": 12,
+      "w": 36
+    },
+    "bar4": {
+      "anchor": {
+        "point": "BOTTOM",
+        "rel": "TOP",
+        "to": "bar2",
+        "x": 0,
+        "y": 4
+      },
+      "full": 12,
+      "group": "ab",
+      "grow": "right",
+      "h": 30,
+      "kind": "icons",
+      "label": "Action Bar 4",
+      "lines": "down",
+      "per": 12,
+      "reach": 3,
+      "spacing": 2,
+      "typ": 12,
+      "w": 36
+    },
+    "bdBuffs": {
+      "anchor": {
+        "point": "TOPRIGHT",
+        "rel": "TOPLEFT",
+        "to": "minimap",
+        "x": -6,
+        "y": 0
+      },
+      "below": 11,
+      "full": 24,
+      "group": "bd",
+      "grow": "left",
+      "h": 24,
+      "kind": "icons",
+      "label": "B&D Buffs",
+      "lines": "down",
+      "per": 12,
+      "reach": 2,
+      "spacing": 4,
+      "typ": 14,
+      "w": 30
+    },
+    "bdDebuffs": {
+      "anchor": {
+        "point": "TOPRIGHT",
+        "rel": "BOTTOMLEFT",
+        "to": "minimap",
+        "x": -6,
+        "y": 82
+      },
+      "below": 11,
+      "full": 16,
+      "group": "bd",
+      "grow": "left",
+      "h": 24,
+      "kind": "icons",
+      "label": "B&D Debuffs",
+      "lines": "down",
+      "per": 12,
+      "reach": 2,
+      "spacing": 4,
+      "typ": 3,
+      "w": 30
+    },
+    "bdDefensives": {
+      "anchor": {
+        "point": "RIGHT",
+        "rel": "CENTER",
+        "to": "screen",
+        "x": -123,
+        "y": 166
+      },
+      "full": 4,
+      "group": "bd",
+      "grow": "left",
+      "h": 34,
+      "kind": "icons",
+      "label": "B&D Defensives",
+      "lines": "up",
+      "per": 4,
+      "reach": 3,
+      "spacing": 2,
+      "typ": 2,
+      "w": 40
+    },
+    "bdImportant": {
+      "anchor": {
+        "point": "BOTTOMRIGHT",
+        "rel": "TOPRIGHT",
+        "to": "bdPlayerDebuffs",
+        "x": 0,
+        "y": 6
+      },
+      "full": 2,
+      "group": "bd",
+      "grow": "left",
+      "h": 42,
+      "kind": "icons",
+      "label": "B&D Boss & Important",
+      "lines": "up",
+      "per": 6,
+      "reach": 3,
+      "spacing": 3,
+      "typ": 0,
+      "w": 48
+    },
+    "bdPlayerBuffs": {
+      "anchor": {
+        "point": "TOPRIGHT",
+        "rel": "BOTTOMRIGHT",
+        "to": "player",
+        "x": -6,
+        "y": -2
+      },
+      "full": 12,
+      "group": "bd",
+      "grow": "left",
+      "h": 20,
+      "kind": "icons",
+      "label": "B&D Player Buffs",
+      "lines": "down",
+      "per": 8,
+      "reach": 2,
+      "spacing": 2,
+      "typ": 5,
+      "w": 26
+    },
+    "bdPlayerDebuffs": {
+      "anchor": {
+        "point": "TOPRIGHT",
+        "rel": "TOPRIGHT",
+        "to": "player",
+        "x": 2,
+        "y": 131
+      },
+      "full": 8,
+      "group": "bd",
+      "grow": "left",
+      "h": 36,
+      "kind": "icons",
+      "label": "B&D Player Debuffs",
+      "lines": "down",
+      "per": 6,
+      "reach": 3,
+      "spacing": 3,
+      "typ": 1,
+      "w": 42
+    },
+    "buffs": {
+      "anchor": {
+        "point": "BOTTOM",
+        "rel": "TOP",
+        "to": "castBar",
+        "x": 0,
+        "y": 1
+      },
+      "full": 10,
+      "group": "cdm",
+      "grow": "centerH",
+      "h": 24,
+      "kind": "icons",
+      "label": "Tracked Buffs",
+      "lines": "up",
+      "per": 10,
+      "spacing": 1,
+      "typ": 5,
+      "w": 30
+    },
+    "castBar": {
+      "anchor": {
+        "point": "BOTTOM",
+        "rel": "TOP",
+        "to": "resources",
+        "x": 0,
+        "y": 1
+      },
+      "group": "cdm",
+      "h": 12,
+      "kind": "bar",
+      "label": "Cast Bar",
+      "match": "essential"
+    },
+    "chat": {
+      "anchor": {
+        "point": "BOTTOMLEFT",
+        "rel": "BOTTOMLEFT",
+        "to": "screen",
+        "x": 8,
+        "y": 8
+      },
+      "group": "ui",
+      "h": 190,
+      "kind": "chat",
+      "label": "Chat",
+      "tab": 24,
+      "w": 400
+    },
+    "damageMeter": {
+      "anchor": {
+        "point": "BOTTOMRIGHT",
+        "rel": "BOTTOMRIGHT",
+        "to": "screen",
+        "x": -8,
+        "y": 8
+      },
+      "group": "ui",
+      "header": 20,
+      "kind": "meter",
+      "label": "Damage Meter",
+      "rowH": 23,
+      "rows": 6,
+      "title": "Damage Done",
+      "w": 230
+    },
+    "defensives": {
+      "anchor": {
+        "point": "BOTTOMRIGHT",
+        "rel": "TOPRIGHT",
+        "to": "player",
+        "x": 0,
+        "y": -12
+      },
+      "cd": true,
+      "full": 5,
+      "group": "new",
+      "grow": "left",
+      "h": 24,
+      "kind": "icons",
+      "label": "Defensives",
+      "lines": "up",
+      "per": 3,
+      "spacing": 2,
+      "typ": 3,
+      "w": 30
+    },
+    "emphasized": {
+      "anchor": {
+        "point": "BOTTOM",
+        "rel": "TOP",
+        "to": "buffs",
+        "x": 0,
+        "y": 1
+      },
+      "full": 4,
+      "group": "new",
+      "grow": "centerH",
+      "h": 40,
+      "kind": "icons",
+      "label": "Emphasized Buffs",
+      "lines": "up",
+      "per": 4,
+      "spacing": 2,
+      "typ": 2,
+      "w": 46
+    },
+    "essential": {
+      "anchor": {
+        "point": "CENTER",
+        "rel": "BOTTOM",
+        "to": "screen",
+        "x": 0,
+        "y": 300
+      },
+      "cd": true,
+      "full": 12,
+      "group": "cdm",
+      "grow": "centerH",
+      "h": 40,
+      "kind": "icons",
+      "label": "Essential Cooldowns",
+      "lines": "down",
+      "per": 7,
+      "spacing": 2,
+      "typ": 9,
+      "w": 46
+    },
+    "focus": {
+      "anchor": {
+        "point": "BOTTOMLEFT",
+        "rel": "TOPLEFT",
+        "to": "target",
+        "x": 0,
+        "y": 64
+      },
+      "barWidth": 120,
+      "cast": {
+        "gap": 8,
+        "h": 12,
+        "rim": 1
+      },
+      "group": "uf",
+      "health": 20,
+      "kind": "uf",
+      "label": "Focus Frame",
+      "portrait": false,
+      "power": 3,
+      "rim": 1,
+      "scale": 100
+    },
+    "healingMeter": {
+      "anchor": {
+        "point": "BOTTOM",
+        "rel": "TOP",
+        "to": "damageMeter",
+        "x": 0,
+        "y": 4
+      },
+      "group": "ui",
+      "header": 20,
+      "kind": "meter",
+      "label": "Healing Meter",
+      "match": "damageMeter",
+      "rowH": 23,
+      "rows": 3,
+      "title": "Healing Done",
+      "w": 182
+    },
+    "leftBuffs": {
+      "anchor": {
+        "point": "CENTER",
+        "rel": "CENTER",
+        "to": "screen",
+        "x": -150,
+        "y": 0
+      },
+      "full": 6,
+      "group": "new",
+      "grow": "centerV",
+      "h": 24,
+      "kind": "icons",
+      "label": "Left Buffs",
+      "lines": "left",
+      "per": 6,
+      "spacing": 1,
+      "typ": 3,
+      "w": 30
+    },
+    "mapButtons": {
+      "anchor": {
+        "point": "TOP",
+        "rel": "BOTTOM",
+        "to": "minimap",
+        "x": 0,
+        "y": -6
+      },
+      "full": 6,
+      "group": "ui",
+      "grow": "right",
+      "h": 22,
+      "kind": "icons",
+      "label": "Minimap Addon Buttons",
+      "lines": "down",
+      "per": 6,
+      "reach": 1,
+      "spacing": 3,
+      "typ": 4,
+      "w": 26
+    },
+    "micro": {
+      "anchor": {
+        "point": "TOPLEFT",
+        "rel": "TOPLEFT",
+        "to": "screen",
+        "x": 8,
+        "y": -8
+      },
+      "full": 16,
+      "group": "ab",
+      "grow": "right",
+      "h": 40,
+      "kind": "icons",
+      "label": "Micro Menu",
+      "lines": "down",
+      "per": 8,
+      "reach": 3,
+      "spacing": 4,
+      "typ": 16,
+      "w": 32
+    },
+    "minimap": {
+      "anchor": {
+        "point": "TOPRIGHT",
+        "rel": "TOPRIGHT",
+        "to": "screen",
+        "x": -8,
+        "y": -8
+      },
+      "diff": 0,
+      "group": "ui",
+      "kind": "map",
+      "label": "Minimap",
+      "size": 176
+    },
+    "party": {
+      "anchor": {
+        "point": "RIGHT",
+        "rel": "CENTER",
+        "to": "screen",
+        "x": -440,
+        "y": 40
+      },
+      "group": "uf",
+      "h": 28,
+      "kind": "party",
+      "label": "Party Frames",
+      "members": 4,
+      "spacing": 1,
+      "w": 135
+    },
+    "pet": {
+      "anchor": {
+        "point": "BOTTOMLEFT",
+        "rel": "TOPLEFT",
+        "to": "bar3",
+        "x": 0,
+        "y": 4
+      },
+      "full": 10,
+      "group": "ab",
+      "grow": "right",
+      "h": 24,
+      "kind": "icons",
+      "label": "Pet Bar",
+      "lines": "up",
+      "per": 10,
+      "reach": 3,
+      "spacing": 2,
+      "typ": 0,
+      "w": 30
+    },
+    "player": {
+      "anchor": {
+        "point": "CENTER",
+        "rel": "BOTTOM",
+        "to": "screen",
+        "x": -317,
+        "y": 300
+      },
+      "barWidth": 184,
+      "group": "uf",
+      "health": 34,
+      "kind": "uf",
+      "label": "Player Frame",
+      "portrait": true,
+      "power": 3,
+      "rim": 2,
+      "scale": 100,
+      "side": "left"
+    },
+    "resources": {
+      "anchor": {
+        "point": "BOTTOM",
+        "rel": "TOP",
+        "to": "essential",
+        "x": 0,
+        "y": 1
+      },
+      "group": "cdm",
+      "kind": "block",
+      "label": "Power + Combo Points",
+      "match": "essential",
+      "rows": [
+        10,
+        8
+      ]
+    },
+    "rightBuffs": {
+      "anchor": {
+        "point": "CENTER",
+        "rel": "CENTER",
+        "to": "screen",
+        "x": 150,
+        "y": 0
+      },
+      "full": 6,
+      "group": "new",
+      "grow": "centerV",
+      "h": 24,
+      "kind": "icons",
+      "label": "Right Buffs",
+      "lines": "right",
+      "per": 6,
+      "spacing": 1,
+      "typ": 3,
+      "w": 30
+    },
+    "stance": {
+      "anchor": {
+        "point": "BOTTOMRIGHT",
+        "rel": "TOPRIGHT",
+        "to": "bar4",
+        "x": 0,
+        "y": 4
+      },
+      "full": 10,
+      "group": "ab",
+      "grow": "left",
+      "h": 24,
+      "kind": "icons",
+      "label": "Stance Bar",
+      "lines": "up",
+      "per": 10,
+      "reach": 3,
+      "spacing": 2,
+      "typ": 2,
+      "w": 30
+    },
+    "target": {
+      "anchor": {
+        "point": "CENTER",
+        "rel": "BOTTOM",
+        "to": "screen",
+        "x": 317,
+        "y": 300
+      },
+      "auras": {
+        "full": 8,
+        "per": 5,
+        "side": "left",
+        "size": 22,
+        "typ": 3
+      },
+      "barWidth": 184,
+      "cast": {
+        "gap": 2,
+        "h": 14,
+        "rim": 2
+      },
+      "group": "uf",
+      "health": 34,
+      "kind": "uf",
+      "label": "Target Frame",
+      "portrait": true,
+      "power": 3,
+      "rim": 2,
+      "scale": 100,
+      "side": "right"
+    },
+    "targettarget": {
+      "anchor": {
+        "point": "TOPRIGHT",
+        "rel": "BOTTOMRIGHT",
+        "to": "target",
+        "x": 0,
+        "y": -2
+      },
+      "barWidth": 130,
+      "group": "uf",
+      "health": 22,
+      "kind": "uf",
+      "label": "Target of Target",
+      "portrait": false,
+      "power": 3,
+      "rim": 1,
+      "scale": 75
+    },
+    "ultra": {
+      "anchor": {
+        "point": "CENTER",
+        "rel": "CENTER",
+        "to": "screen",
+        "x": 110,
+        "y": 115
+      },
+      "fs": 22,
+      "full": 2,
+      "group": "new",
+      "grow": "centerH",
+      "h": 48,
+      "kind": "icons",
+      "label": "Ultra Emphasized Buffs",
+      "lines": "up",
+      "per": 2,
+      "spacing": 2,
+      "typ": 1,
+      "w": 54
+    },
+    "utility": {
+      "anchor": {
+        "point": "TOP",
+        "rel": "BOTTOM",
+        "to": "essential",
+        "x": 0,
+        "y": -82
+      },
+      "cd": true,
+      "full": 12,
+      "group": "cdm",
+      "grow": "centerH",
+      "h": 30,
+      "kind": "icons",
+      "label": "Utility Cooldowns",
+      "lines": "down",
+      "per": 6,
+      "spacing": 2,
+      "typ": 5,
+      "w": 36
+    }
+  },
+  "layout": "dps-tank",
+  "notes": "",
+  "overrides": {
+    "1440": {
+      "essential": {
+        "x": 0,
+        "y": 325
+      },
+      "party": {
+        "x": -440,
+        "y": -1
+      },
+      "player": {
+        "x": -317,
+        "y": 325
+      },
+      "target": {
+        "x": 317,
+        "y": 325
+      },
+      "ultra": {
+        "x": 135,
+        "y": 115
+      }
+    }
+  },
+  "proposal": 5,
+  "savedAt": "2026-11-18T20:49:03.516Z",
+  "screen": "1440",
+  "version": 1
+}

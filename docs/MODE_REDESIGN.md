@@ -336,7 +336,8 @@ https://claude.ai/artifact/QgDguMeW25MVA4hvH5EuVu. Built on branch
 ### Revision: Mode-Default layout and ModeCDM default bars (November 18, 2026)
 
 Planned with the owner over six rounds in a layout editor (the owner saved
-the final layout there): https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT.
+the final layout there): https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT
+(a copy of the page and the saved layout: `design/layout-editor/`).
 Built on branch `t3/mode-default-layout`.
 
 - **Built:** the layout registry (`Shared/Runtime/Layouts.lua`; ARCHITECTURE.md,
