@@ -59,10 +59,24 @@ end
 -- of the host's rect. Only a surface that re-snaps as it moves uses it
 -- (Style.SnapEdges: the settings window, on show, page layout, scroll and
 -- drag); a host that moves by itself (a nameplate) keeps the plain anchor.
+-- A frame the game forbids to addon code (an aura container's button while
+-- auras are secret, and the Mode icon on it) can't be asked its parent; it
+-- isn't part of a snapping surface, so the walk stops there (owner's
+-- in-game report, November 18, 2026: "Edge.lua:65: Attempt to access
+-- forbidden object").
+local function Parent(frame)
+    if not (frame and frame.GetParent) then return nil end
+    if frame.IsForbidden then
+        local ok, forbidden = pcall(frame.IsForbidden, frame)
+        if not ok or forbidden then return nil end
+    end
+    local ok, parent = pcall(frame.GetParent, frame)
+    return ok and parent or nil
+end
 local function Under(frame, root)
     for _ = 1, 40 do
         if frame == root then return true end
-        frame = frame and frame.GetParent and frame:GetParent()
+        frame = Parent(frame)
         if not frame then return false end
     end
     return false

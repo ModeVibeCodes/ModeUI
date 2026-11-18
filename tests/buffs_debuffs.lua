@@ -245,6 +245,15 @@ H.Load({ before = STUBS }).run([==[
     for i = 1, 7 do assert(M:AddCustomBar()) end
     assert(#M.db.customBars == 8 and M:AddCustomBar() == nil, 'eight custom bars at most')
 
+    -- While auras are secret the game forbids its aura buttons (and the Mode
+    -- icon on them) to addon code: snapping the settings window's borders
+    -- walks past them instead of erroring (Edge.lua:65, November 18).
+    local inner = M.containers.buffs.groups.buffs_all.button.modeIcon.inner
+    inner.IsForbidden = function() return true end
+    inner.GetParent = function() error('Attempt to access forbidden object from code tainted by an AddOn') end
+    assert(pcall(addon.Style.SnapEdges, CreateFrame('Frame')), 'snapping skips forbidden frames')
+    inner.IsForbidden, inner.GetParent = nil, nil
+
     -- Combat: changes wait.
     testCombat, testLockdown = true, true
     assert(not M:SetBarOption('buffs', 'max', 10) and not M:AddCustomBar())
