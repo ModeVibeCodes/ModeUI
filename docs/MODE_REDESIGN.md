@@ -245,9 +245,9 @@ static renders).
   Font setting leaves it alone). Waiting on an in-game look.
 - **Text glow, Halo** (owner's picks): Deep for health numbers and stack
   counts (10-15%) and cooldown numbers (20%), Ink for unit frame names, Match
-  Text offered. Built on branch `t3/mode-revisions-text-glow` for Unit
-  Frames (health numbers Deep 15%, names Ink 20%, each with Glow, Color and
-  Strength on the Text tab); not committed or confirmed in game. Next: stack
+  Text offered. Built for Unit Frames (health numbers Deep 15%, names Ink
+  20%, each with Glow, Color and Strength on the Text tab) and merged to
+  main on the owner's word, November 17. Next: stack
   counts and cooldown numbers (Action Bars, Cooldown Manager). Blizzard's
   cooldown numbers are written by the client, not Lua, so their glow needs a
   way to follow the text first. Party Frames and Nameplates keep the capsule
