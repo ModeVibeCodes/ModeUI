@@ -393,7 +393,7 @@ viewer or another resource bar, and the viewers and custom bars can attach
 to a resource bar. A bar with nothing to show (Combo Points on a Warrior)
 still holds its place, so the bars under it don't move.
 
-**Look.** Every box is a status bar in the `frameThin` edge outside it (no masks): Mode Gradient (base and lift) over Mode BG at 60%, so the world shows through, with Geist Bold text. A bar's stand-in holds its edges, so a bar matched to the cooldowns lines up with their edges, and combo point boxes are Spacing apart between their shadows. Border: Mode or None.
+**Look.** Every box is a status bar in the `frameThin` edge outside it (no masks; drawn in pieces, so thin bars keep whole corners and 1px sides: DESIGN_LANGUAGE.md, "Pieces"): Mode Gradient (base and lift) over Mode BG at 60%, so the world shows through, with Geist Bold text. A bar's stand-in holds its edges, so a bar matched to the cooldowns lines up with their edges, and combo point boxes are Spacing apart between their shadows. Border: Mode or None.
 
 **How values are handled.** Health and power can be secret: they go only
 to the status bars, `AbbreviateNumbers` and the text setters, and percent
@@ -483,7 +483,8 @@ Shared: `Domain.Power.ManaType`, `ReadType`, `HasAlternateMana` and
 - **Required state:** a Rogue with a target; the Cooldown Manager switched
   on; Blizzard's default UI scale.
 - **Confirmation:** every bar shows its whole Gunmetal border (top, bottom,
-  both ends, round corners) at 16, 10 and 8 (8 draws at 10) and at Height 10;
+  both ends, round corners) at 16, 10 and 8 (8 draws at 10) and at Height 10,
+  Separate Resources (each bar its own border) as well as Group Resources;
   Power 16, Combo Points 10; the 40 line shows on Power only, never on
   Combo Points' bar or preview; the text sits in the middle of each bar;
   no Lua errors.

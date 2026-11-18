@@ -43,6 +43,30 @@ local function Around(texture, holder, out, drop)
     texture:SetPoint("BOTTOMRIGHT", holder, "BOTTOMRIGHT", out, -out - (drop or 0))
 end
 
+-- Pieces: a ring drawn as eight textures, four corners 1:1 and four edges,
+-- instead of one sliced texture (what Blizzard's NineSlice frames do). The
+-- client draws a sliced texture on a region shorter than its art (64 rows)
+-- scaled down: corners shrink to specks and a 1px edge to a fraction of a
+-- pixel (owner, in game, November 18, 2026: thin resource bars showed only
+-- corner specks). A border on a thin host opts in (opts.pieces).
+local function Pieces(parts, holder, out, spec)
+    local m, u, v = spec.margin, spec.margin / spec.w, spec.margin / spec.h
+    local tl, t, tr, l, r, bl, b, br = parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7], parts[8]
+    for _, part in ipairs(parts) do part:ClearAllPoints() end
+    tl:SetPoint("TOPLEFT", holder, "TOPLEFT", -out, out); tl:SetSize(m, m); tl:SetTexCoord(0, u, 0, v)
+    tr:SetPoint("TOPRIGHT", holder, "TOPRIGHT", out, out); tr:SetSize(m, m); tr:SetTexCoord(1 - u, 1, 0, v)
+    bl:SetPoint("BOTTOMLEFT", holder, "BOTTOMLEFT", -out, -out); bl:SetSize(m, m); bl:SetTexCoord(0, u, 1 - v, 1)
+    br:SetPoint("BOTTOMRIGHT", holder, "BOTTOMRIGHT", out, -out); br:SetSize(m, m); br:SetTexCoord(1 - u, 1, 1 - v, 1)
+    t:SetPoint("TOPLEFT", holder, "TOPLEFT", m - out, out); t:SetPoint("TOPRIGHT", holder, "TOPRIGHT", out - m, out)
+    t:SetHeight(m); t:SetTexCoord(u, 1 - u, 0, v)
+    b:SetPoint("BOTTOMLEFT", holder, "BOTTOMLEFT", m - out, -out); b:SetPoint("BOTTOMRIGHT", holder, "BOTTOMRIGHT", out - m, -out)
+    b:SetHeight(m); b:SetTexCoord(u, 1 - u, 1 - v, 1)
+    l:SetPoint("TOPLEFT", holder, "TOPLEFT", -out, out - m); l:SetPoint("BOTTOMLEFT", holder, "BOTTOMLEFT", -out, m - out)
+    l:SetWidth(m); l:SetTexCoord(0, u, v, 1 - v)
+    r:SetPoint("TOPRIGHT", holder, "TOPRIGHT", out, out - m); r:SetPoint("BOTTOMRIGHT", holder, "BOTTOMRIGHT", out, m - out)
+    r:SetWidth(m); r:SetTexCoord(1 - u, 1, v, 1 - v)
+end
+
 local Edge = {}
 Edge.__index = Edge
 -- Every border, so a window can re-lay them after its scale changes.
@@ -84,12 +108,14 @@ end
 
 -- A border of role `preset` for `host`. opts: level (frame levels above the
 -- host, default 2), style and metal (default: the role's style and that
--- style's metal), color (a flat role's color), rim (the band's width, 1 or 2).
+-- style's metal), color (a flat role's color), rim (the band's width, 1 or 2),
+-- pieces (each ring as eight textures: for hosts shorter than the art).
 function Style.Edge(host, preset, opts)
     local def = assert(D.PRESETS[preset], "Style.Edge: unknown preset " .. tostring(preset))
     opts = opts or {}
     local edge = setmetatable({ host = host, preset = preset, def = def, rim = opts.rim or def.rim, color = opts.color,
-        styleId = Style.EdgeStyle(opts.style) or def.style, metalId = opts.metal, textures = {} }, Edge)
+        styleId = Style.EdgeStyle(opts.style) or def.style, metalId = opts.metal, textures = {}, parts = {},
+        pieces = opts.pieces == true }, Edge)
     local holder = CreateFrame("Frame", nil, host)
     holder:SetAllPoints(host)
     holder:EnableMouse(false)
@@ -119,19 +145,26 @@ function Edge:Build()
     for i, ring in ipairs(rings) do
         local texture = self.textures[i]
         if not texture then texture = self.holder:CreateTexture(nil, "ARTWORK"); self.textures[i] = texture end
-        if ring.kind == "band" then
-            band = ring.profile and band + 1 or 0
-            texture:SetDrawLayer("ARTWORK", math.max(0, band))
-        else
-            texture:SetDrawLayer("BORDER", sub[ring.kind])
+        -- One texture, or eight (the first is the ring's own: its top left corner).
+        local parts = self.parts[i] or { texture }
+        self.parts[i] = parts
+        for p = 2, self.pieces and 8 or 1 do parts[p] = parts[p] or self.holder:CreateTexture(nil, "ARTWORK") end
+        if ring.kind == "band" then band = ring.profile and band + 1 or 0 end
+        for p = 1, self.pieces and 8 or 1 do
+            local part = parts[p]
+            if ring.kind == "band" then part:SetDrawLayer("ARTWORK", math.max(0, band))
+            else part:SetDrawLayer("BORDER", sub[ring.kind]) end
+            Style.ApplyAsset(part, "Edge" .. ring.key)
+            if self.pieces and part.ClearTextureSlice then part:ClearTextureSlice() end
+            part:Show()
         end
-        Style.ApplyAsset(texture, "Edge" .. ring.key)
-        texture:Show()
         if ring.kind == "shadow" then self.shadow = texture
         elseif ring.kind == "gap" then self.gap = texture
         elseif not self.rimTexture then self.rimTexture = texture end
     end
-    for i = #rings + 1, #self.textures do self.textures[i]:Hide() end
+    for i = #rings + 1, #self.textures do
+        for _, part in ipairs(self.parts[i] or { self.textures[i] }) do part:Hide() end
+    end
     self:Layout()
     self:Paint()
 end
@@ -170,7 +203,10 @@ function Edge:Layout()
     PixelGrid(self.holder, px)
     self:Place()
     if self.below then PixelGrid(self.below, px) end
-    for i, ring in ipairs(self.rings) do Around(self.textures[i], self.holder, ring.out) end
+    for i, ring in ipairs(self.rings) do
+        if self.pieces then Pieces(self.parts[i], self.holder, ring.out, D.SHAPES[ring.shape])
+        else Around(self.textures[i], self.holder, ring.out) end
+    end
     local depth = (self.def.gap == true and 1 or 0) + self.rim
     if self.soft then Around(self.soft, self.below, depth + 6, 1) end
     return depth
@@ -218,18 +254,19 @@ function Edge:Paint()
     local flat = self.tint or (self.def.flat and (self.color or Tone.mono.rimStrong))
         or (D.STYLES[self.styleId].light == "flat" and metal.mid)
     for i, ring in ipairs(self.rings) do
-        local texture = self.textures[i]
-        if ring.kind == "shadow" then
-            if self.highlight then Style.Paint(texture, self.highlight)
-            else Style.Paint(texture, Tone.shadow, Tone.shadowAlpha) end
-        elseif ring.kind == "gap" then
-            Style.Paint(texture, Tone.shadow)
-        elseif flat then
-            texture:SetShown(not ring.profile)
-            if not ring.profile then Style.Paint(texture, flat) end
-        else
-            texture:Show()
-            Style.Paint(texture, metal[ring.tone])
+        for _, texture in ipairs(self.parts[i]) do
+            if ring.kind == "shadow" then
+                if self.highlight then Style.Paint(texture, self.highlight)
+                else Style.Paint(texture, Tone.shadow, Tone.shadowAlpha) end
+            elseif ring.kind == "gap" then
+                Style.Paint(texture, Tone.shadow)
+            elseif flat then
+                texture:SetShown(not ring.profile)
+                if not ring.profile then Style.Paint(texture, flat) end
+            else
+                texture:Show()
+                Style.Paint(texture, metal[ring.tone])
+            end
         end
     end
     if self.soft then Style.Paint(self.soft, Tone.shadow, Tone.softAlpha) end
@@ -292,7 +329,9 @@ end
 -- the client may keep secret, through SetAlphaFromBoolean).
 function Edge:Regions()
     local list = {}
-    for i = 1, #self.rings do list[#list + 1] = self.textures[i] end
+    for i = 1, #self.rings do
+        for _, texture in ipairs(self.parts[i]) do list[#list + 1] = texture end
+    end
     if self.soft then list[#list + 1] = self.soft end
     return list
 end

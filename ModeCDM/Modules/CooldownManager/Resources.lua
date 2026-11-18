@@ -23,7 +23,8 @@ local PM = addon.PositionManager
 local function NewBox(parent)
     local box = CreateFrame("Frame", nil, parent)
     box.bar = Kit.Bar(box)
-    box.edge = Style.Edge(box, M.EDGE)
+    -- Pieces: a sliced ring on a host this thin draws as specks (Style.Edge).
+    box.edge = Style.Edge(box, M.EDGE, { pieces = true })
     return box
 end
 -- How far a bar's edges reach past its boxes, in px units.
@@ -47,7 +48,7 @@ function M:NewResourceFrame(parent)
     local frame = CreateFrame("Frame", nil, parent)
     frame.boxes, frame.dividers = {}, {}
     frame.outer = CreateFrame("Frame", nil, frame)
-    frame.outer.edge = Style.Edge(frame.outer, M.EDGE)
+    frame.outer.edge = Style.Edge(frame.outer, M.EDGE, { pieces = true })
     frame.textLayer = CreateFrame("Frame", nil, frame)
     frame.textLayer:SetAllPoints(frame)
     frame.text = Kit.Text(frame.textLayer)

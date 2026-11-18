@@ -114,6 +114,29 @@ world.run([[
         end
         edge:SetStyle(nil)
     end
+    -- Pieces: each ring as four 1:1 corners and four edges (a sliced texture on
+    -- a host shorter than its art is drawn scaled down to specks).
+    local thin = CreateFrame("Frame", nil, UIParent)
+    thin:SetSize(300, 10)
+    local pieced = Style.Edge(thin, "frameThin", { pieces = true, style = "round", metal = "gunmetal" })
+    local D = Style.EDGE_DATA
+    for i, ring in ipairs(pieced.rings) do
+        local parts, spec = pieced.parts[i], D.SHAPES[ring.shape]
+        assert(#parts == 8 and parts[1] == pieced.textures[i], ring.key .. ": eight pieces, the first the ring's own")
+        for _, part in ipairs(parts) do
+            assert(part.texture == Style.AssetPath("Edge" .. ring.key) and part:IsShown() and part.slice == nil, ring.key .. ": unsliced art")
+        end
+        local tl, top, right = parts[1], parts[2], parts[5]
+        assert(tl.width == spec.margin and tl.height == spec.margin and tl.points[1][4] == -ring.out and tl.points[1][5] == ring.out, ring.key .. ": a 1:1 corner")
+        assert(tl.texCoord[2] == spec.margin / spec.w and tl.texCoord[4] == spec.margin / spec.h, ring.key .. ": the corner's texels")
+        assert(top.height == spec.margin and top.points[1][4] == spec.margin - ring.out and top.points[2][4] == ring.out - spec.margin, ring.key .. ": the top edge between the corners")
+        assert(right.width == spec.margin and right.texCoord[3] == spec.margin / spec.h, ring.key .. ": the side stretches the middle rows")
+    end
+    pieced:SetTint(Tone.celadon)
+    for _, part in ipairs(pieced.parts[2]) do assert(part:IsShown() == not pieced.rings[2].profile) end
+    assert(#pieced:Regions() == 8 * #pieced.rings, "every piece fades with the border")
+    pieced:SetStyle("blizz")
+    assert(#pieced.parts[1] == 8 and pieced.parts[1][2].texture == Style.AssetPath("Edge" .. pieced.rings[1].key), "a new style keeps its pieces")
     -- Snapping (Style.SnapEdges): at a UI scale that isn't pixel perfect a host
     -- sits between pixels; a snapped edge's holder moves onto whole pixels.
     local oldPixelUtil = PixelUtil

@@ -48,7 +48,7 @@ local function Block(host)
     local block = host.block
     if block then return block end
     block = CreateFrame("Frame", nil, host)
-    block.edge = Style.Edge(block, M.EDGE)
+    block.edge = Style.Edge(block, M.EDGE, { pieces = true })
     block.lines = {}
     host.block = block
     return block

@@ -296,6 +296,13 @@ https://claude.ai/artifact/QgDguMeW25MVA4hvH5EuVu. Built on branch
   Tick Marks, a typed value, one tick plus **+ Add Tick Mark** (up to five),
   each bar's own (Power's tick no longer shows in Combo Points' preview);
   **Full Combo Points Color**. Waiting on the next in-game look.
+- **Second in-game look (same day):** much better; the grouped block shows
+  its border, but Separate Resources still showed corner specks only. Cause:
+  the client draws a sliced texture on a region shorter than its art (64
+  rows) scaled down. Fix: `Style.Edge` can draw a ring in pieces (four 1:1
+  corners, four edges; DESIGN_LANGUAGE.md, "Pieces"), used by the resource
+  bars. The same cause may explain the thin icon and settings rims the owner
+  noted earlier; those keep their sliced borders until the owner says.
 
 ## Decisions
 

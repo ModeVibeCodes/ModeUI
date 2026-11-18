@@ -188,6 +188,16 @@ host must be tall enough for two slice margins on each ring
 its floor (its saved height is kept); bars inside a shared border have no
 floor of their own.
 
+**Pieces** (`Style.Edge(host, role, { pieces = true })`). The client draws a
+sliced texture on a region shorter than its art (64 rows) scaled down: the
+corners shrink to specks and a 1px edge to a fraction of a pixel, so the
+border all but vanishes (owner, in game, November 18, 2026, on the resource
+bars). A border on a thin host draws each ring as eight textures instead,
+four corners 1:1 and four edges between them (the middle rows stretched down
+the sides, as the slicing does), like Blizzard's NineSlice frames. The
+resource bars use pieces; other borders keep one sliced texture per ring
+until an in-game look says they need it too.
+
 **Rim Color** (the Cooldown Manager's resource bars): one picker in place of
 Border Metal: Default Metal, Silver, Steel, Gunmetal (saved in `edgeMetal`),
 Bar Color or Custom, which paint the band flat in that color (`Edge:SetTint`).
