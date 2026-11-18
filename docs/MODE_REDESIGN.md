@@ -287,6 +287,15 @@ https://claude.ai/artifact/QgDguMeW25MVA4hvH5EuVu. Built on branch
   Nameplates) with no visible change.
 - **Open:** a smaller Mode-Round ring so Mode-Round bars can be thinner than
   10px; the Combo Points default layout (Grouped assumed).
+- **First in-game look (owner, November 18, 2026; Rogue):** loads clean;
+  dark mode, text, Full Color, Group Resources, Alternate Mana off and Edit
+  Mode work. Fixed the same day as settings version 7: the borders showed
+  only corner specks (at Blizzard's default UI scale a bar sat between
+  pixels; bars now snap onto whole pixels, `ResourceSnap.lua`); heights
+  16/10/8; the text always centered with Show Text; Tick Marks behind Show
+  Tick Marks, a typed value, one tick plus **+ Add Tick Mark** (up to five),
+  each bar's own (Power's tick no longer shows in Combo Points' preview);
+  **Full Combo Points Color**. Waiting on the next in-game look.
 
 ## Decisions
 

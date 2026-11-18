@@ -48,7 +48,10 @@ addon:RegisterModule("cooldownManager", M)
 -- Gunmetal, Dark mode, thinner (Power 10, Combo Points and Alternate Mana 6),
 -- the combo point count on; Rim Color, Tick Marks, Grouped or Separated combo
 -- points and Group Resources added (ResourceInit.lua, Migrations.lua).
-M.VERSION = 6
+-- Version 7 (owner's first in-game look, November 18, 2026): heights 16/10/8,
+-- the text always centered behind Show Text, Tick Marks a list of one to five
+-- behind Show Tick Marks.
+M.VERSION = 7
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone

@@ -15,6 +15,7 @@
     <Script file="Glow.lua"/>
     <Script file="Visibility.lua"/>
     <Script file="Resources.lua"/>
+    <Script file="ResourceSnap.lua"/>
     <Script file="ResourceGroup.lua"/>
     <Script file="ResourceMarks.lua"/>
     <Script file="ResourceUpdate.lua"/>

@@ -3,9 +3,10 @@ local addon = ns.ModeUI or {}
 local M = addon.CooldownManager
 if not M then return end
 
--- Tick Marks (owner, November 17, 2026): up to three static lines on Power
--- and Alternate Mana at power values you choose (40 Energy), each shown only
--- for its power type, so a Druid's Energy mark hides in Bear Form. A mark
+-- Tick Marks (owner, November 17 and 18, 2026): with Show Tick Marks on,
+-- one to five static lines on Power or Alternate Mana (each bar its own) at
+-- power values you choose (40 Energy), each shown only for its power type,
+-- so a Druid's Energy mark hides in Bear Form. A mark
 -- sits at value / max of the bar's width. Forever documents the player's
 -- maximum power as readable (UnitPowerMax is secret only for units the player
 -- doesn't control); should it come secret, the last readable maximum for that
@@ -13,23 +14,28 @@ if not M then return end
 -- and the saved values are used: the current power is never read here.
 local Kit, Public, Number = addon.Kit, addon.IsPublic, addon.IsNumber
 
+-- Hides every mark a frame has (the preview draws each bar in one frame).
+local function HideMarks(frame)
+    for _, mark in ipairs(frame.marks or {}) do mark:Hide() end
+end
+
 -- The marks' textures, over the bar's fill (made as they're needed).
 function M:LayoutResourceMarks(frame, id)
     local style = self.db.resources[id]
     local box = frame.boxes[1]
-    if not (style.marks and box) then return end
+    HideMarks(frame)
+    frame.markKey = nil
+    if not (style.marks and style.marksShow and box) then return end
     local layer = box.markLayer
     if not layer then layer = CreateFrame("Frame", nil, box); box.markLayer = layer end
     layer:ClearAllPoints(); layer:SetAllPoints(box.bar)
     layer:SetFrameLevel(box.bar:GetFrameLevel() + 2)
     frame.marks = frame.marks or {}
-    for i = 1, self.MARK_SLOTS do
+    for i = 1, #style.marks do
         local mark = frame.marks[i]
         if not mark then mark = layer:CreateTexture(nil, "OVERLAY"); mark:SetTexture(Kit.FLAT); frame.marks[i] = mark end
         Kit.Tint(mark, style.markColor, 1)
-        mark:Hide()
     end
-    frame.markKey = nil
 end
 
 -- Places the marks for the power shown now: `token` (MANA, ENERGY, ...) and
@@ -37,7 +43,7 @@ end
 -- Placed again only when the power type or its maximum changes.
 function M:UpdateResourceMarks(frame, id, token, okMax, max)
     local style = self.db.resources[id]
-    if not (style.marks and frame.marks) then return end
+    if not (style.marks and style.marksShow and frame.marks) then return end
     frame.markMax = frame.markMax or {}
     local kind = type(token) == "string" and token or "?"
     if okMax and Public(max) and Number(max, 1) then frame.markMax[kind] = max end

@@ -72,8 +72,8 @@ function M:LayoutResourceGroup()
     -- The block, not its bars, keeps to the border's floor: Power grows.
     local floor = M.ResourceFloor(style, px)
     if total < floor then heights[1] = heights[1] + floor - total; total = floor end
-    host:ClearAllPoints(); host:SetAllPoints(mover)
     mover:SetSize(width, total + 2 * reach)
+    self:PlaceResourceFrame(host, mover)
     local block = Block(host)
     block:ClearAllPoints()
     block:SetPoint("TOPLEFT", host, "TOPLEFT", reach, -reach)
@@ -90,12 +90,13 @@ function M:LayoutResourceGroup()
         if id == "power" then
             self:LayoutResourceFrame(frame, id, inner, px, false, { inBlock = true, height = h, x = reach, y = reach, textHost = "box" })
         else
+            self:UnsnapResourceFrame(frame)
             frame:ClearAllPoints()
             frame:SetPoint("TOPLEFT", block, "TOPLEFT", 0, -y)
             frame:SetSize(inner, h)
             frame:SetFrameLevel(host:GetFrameLevel())
-            -- Texts of the thin strips sit on the block (the count at its left end).
-            self:LayoutResourceFrame(frame, id, inner, px, false, { inBlock = true, height = h, textHost = block })
+            -- Each text sits in the middle of its own strip.
+            self:LayoutResourceFrame(frame, id, inner, px, false, { inBlock = true, height = h })
         end
         -- The 1px black line under every bar but the last.
         local line = block.lines[i]

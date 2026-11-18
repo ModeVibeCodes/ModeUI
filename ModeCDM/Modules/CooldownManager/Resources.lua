@@ -17,7 +17,6 @@ if not M then return end
 -- same functions; ResourceGroup.lua lays out Group Resources.
 local Kit, L, Style = addon.Kit, addon.L, addon.Style
 local PM = addon.PositionManager
-local PAD = 4 -- pixels between a text and the end of its bar
 
 -- One box: a status bar (Kit.Bar: fill, background and the lift) in the
 -- Mode edge.
@@ -191,24 +190,20 @@ function M:LayoutResourceFrame(frame, id, width, px, sample, opts)
     return h + 2 * reach
 end
 
--- The text: at Text Anchor on the bar (Left, Center or Right), PAD pixels
--- in from that end, then moved by its offsets; on `host` when given (a box
--- or a Grouped block). Nothing is measured: the text can be secret.
+-- The text: in the middle of the bar (owner, November 18, 2026), moved by
+-- its offsets; on `host` when given (Power's box in a Grouped block), and
+-- shown with Show Text. Nothing is measured: the text can be secret.
 function M:LayoutResourceText(frame, style, width, h, px, host)
     local text = frame.text
     local look = { outline = style.outline, shadow = style.shadow, slug = style.slug, textColor = style.textColor }
     local path, size = Style.Weighted(Kit.FontPath(style, self.id), "bold"), style.textSize
     Kit.Font(text, look, size, path, px)
-    local anchor = style.textAnchor
-    local inset = PAD * px + (host and 0 or M.ResourceReach(style, px))
-    local dx = (anchor == "LEFT" and inset) or (anchor == "RIGHT" and -inset) or 0
     local function Snap(v) return math.floor(v / px + 0.5) * px end
     text:ClearAllPoints()
-    text:SetPoint(anchor, host or frame, anchor, dx + Snap(style.textX), Snap(style.textY))
-    text:SetJustifyH(anchor)
-    local shown = style.text ~= "none"
-    text:SetShown(shown)
-    Kit.LayoutLift(text, look, size, path, px, false, anchor)
+    text:SetPoint("CENTER", host or frame, "CENTER", Snap(style.textX), Snap(style.textY))
+    text:SetJustifyH("CENTER")
+    text:SetShown(style.textShow == true)
+    Kit.LayoutLift(text, look, size, path, px, false, "CENTER")
     frame.textLayer:SetFrameLevel(frame:GetFrameLevel() + 6)
     return width
 end
@@ -280,13 +275,13 @@ function M:LayoutResource(id)
     local frame, mover = self.resourceFrames and self.resourceFrames[id], self.resourceMovers and self.resourceMovers[id]
     if not frame then return end
     if self:ResourceGrouped(id) then self:LayoutResourceGroup(); return end
-    -- Back on its own stand-in (it may have sat in a block).
-    frame:ClearAllPoints(); frame:SetAllPoints(mover)
     if frame.block then frame.block:Hide() end
     local px = Kit.PixelSize(mover)
     local width = self:ResourceWidth(id, px)
     local style = self.db.resources[id]
     mover:SetSize(width, M.ResourceBarHeight(style, px) + 2 * M.ResourceReach(style, px))
+    -- Back on its own stand-in (it may have sat in a block), on whole pixels.
+    self:PlaceResourceFrame(frame, mover)
     self:LayoutResourceFrame(frame, id, width, px, false)
     self:UpdateResource(id)
 end

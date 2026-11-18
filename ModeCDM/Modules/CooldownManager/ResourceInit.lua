@@ -22,18 +22,20 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 M.resources = { "power", "combo", "mana", "health" }
 -- segmented: one box per point. colorModes: the Bar Color choices it offers.
--- texts: the Text choices it offers. marks: Tick Marks at power values.
--- group: joins the Grouped block (Group Resources; Power hosts it).
-local VALUE_TEXTS = { "none", "current", "percent", "both", "currentMax" }
+-- texts: the Text formats it offers (Show Text turns the text on or off).
+-- marks: Tick Marks at power values. group: joins the Grouped block (Group
+-- Resources; Power hosts it).
+local VALUE_TEXTS = { "current", "percent", "both", "currentMax" }
 M.resourceSpecs = {
     power = { label = "Power", colorModes = { "power", "class", "custom" }, texts = VALUE_TEXTS, marks = true, group = true },
-    combo = { label = "Combo Points", segmented = true, colorModes = { "custom", "class" }, texts = { "none", "current" }, group = true },
+    combo = { label = "Combo Points", segmented = true, colorModes = { "custom", "class" }, texts = { "current" }, group = true },
     mana = { label = "Alternate Mana", colorModes = { "power", "class", "custom" }, texts = VALUE_TEXTS, marks = true, group = true },
     health = { label = "Health", colorModes = { "class", "custom" }, texts = VALUE_TEXTS },
 }
 -- Group Resources: Power, Combo Points and Alternate Mana in one border.
 M.resourceGroup = { "power", "combo", "mana" }
-M.MARK_SLOTS = 3
+-- Tick Marks: one to start, up to five with Add Tick Mark (owner, November 18, 2026).
+M.MARK_MAX = 5
 function M:IsResource(id) return type(id) == "string" and self.resourceSpecs[id] ~= nil end
 function M:ResourceLabel(id) return L[self.resourceSpecs[id].label] end
 
@@ -96,37 +98,41 @@ local function Style(show, height, colorMode, color, text, size, extra)
         -- new value), the 1px line where the fill ends, and the gap between
         -- combo points.
         reverse = false, smooth = true, fillEdge = true, spacing = 2,
-        text = text, textAnchor = "CENTER", textSize = size, textX = 0, textY = 0, textColor = Copy(Tone.textBright),
+        -- The text sits in the middle of its bar (owner, November 18, 2026).
+        textShow = true, text = text, textSize = size, textX = 0, textY = 0, textColor = Copy(Tone.textBright),
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, slug = true,
         visibility = "always", opacity = 100, fadeOpacity = 0,
     }
     for key, value in pairs(extra or {}) do style[key] = value end
     return style
 end
--- Tick Marks: three slots, each a power value (0: off) and the power type it
--- shows on ("any" or a token), so a Druid's 40 Energy hides in Bear Form.
+-- Tick Marks (off until Show Tick Marks): one to five ticks, each a power
+-- value (0: none) and the power type it shows on ("any" or a token), so a
+-- Druid's 40 Energy hides in Bear Form.
 local function Marks()
-    local marks = {}
-    for i = 1, M.MARK_SLOTS do marks[i] = { value = 0, power = "any" } end
-    return { marks = marks, markColor = Copy(Tone.ivory), markWidth = 1 }
+    return { marksShow = false, marks = { { value = 0, power = "any" } }, markColor = Copy(Tone.ivory), markWidth = 1 }
 end
 M.resourceDefaults = {
-    power = Style(true, 10, "power", Tone.power, "current", 11, Marks()),
+    power = Style(true, 16, "power", Tone.power, "current", 11, Marks()),
     -- Combo Points: Grouped (one border, a line between points) or Separated
-    -- (a border per point); a Full color when every point is lit.
-    combo = Style(true, 6, "custom", Tone.reaction.hostile, "current", 10, { textAnchor = "LEFT", layout = "grouped",
+    -- (a border per point); Full Combo Points Color once every point is lit.
+    combo = Style(true, 10, "custom", Tone.reaction.hostile, "current", 10, { layout = "grouped",
         dividerWidth = 1, dividerColor = Copy(Tone.shadow), fullShow = false, fullColor = Copy(Tone.ivory) }),
-    mana = Style(true, 6, "power", Tone.power, "none", 9, Marks()),
+    mana = Style(true, 8, "power", Tone.power, "current", 9, Marks()),
     health = Style(false, 14, "class", Tone.reaction.friendly, "percent", 11),
 }
--- Version 5's heights, combo text and anchor (MigrateV5 moves a value still at them).
-M.V5_RESOURCE = { height = { power = 14, combo = 10, mana = 8 }, comboText = "none", comboAnchor = "CENTER" }
+-- Alternate Mana starts without its text.
+M.resourceDefaults.mana.textShow = false
+-- Version 5's heights and combo text (MigrateV5 moves a value still at them).
+M.V5_RESOURCE = { height = { power = 14, combo = 10, mana = 8 }, comboText = "none" }
+-- Version 6's heights (MigrateV6 moves a height still at them).
+M.V6_RESOURCE = { height = { power = 10, combo = 6, mana = 6 } }
 
 M.resourceRanges = { width = { 40, 600, 1 }, height = { 4, 40, 1 }, spacing = { 0, 12, 1 },
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 },
     textSize = { 6, 32, 1 }, textX = { -60, 60, 1 }, textY = { -40, 40, 1 },
     opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, markWidth = { 1, 2, 1 }, dividerWidth = { 1, 2, 1 } }
-M.MARK_RANGE = { 0, 1000, 1 }
+M.MARK_RANGE = { 0, 100000, 1 }
 M.resourceColorKeys = { barColor = true, textColor = true, rimCustom = true, darkTextColor = true, markColor = true,
     dividerColor = true, fullColor = true }
 M.resourceAlphaKeys = { opacity = true, fadeOpacity = true }
@@ -134,7 +140,7 @@ M.resourceAlphaKeys = { opacity = true, fadeOpacity = true }
 M.resourceIdentityKeys = { show = true, width = true, height = true, matchWidth = true }
 
 local COLOR_LABELS = { power = "Power Type", class = "Class Color", custom = "Custom" }
-local TEXT_LABELS = { none = "None", current = "Current", percent = "Percent", both = "Current and Percent",
+local TEXT_LABELS = { current = "Current", percent = "Percent", both = "Current and Percent",
     currentMax = "Current / Max" }
 local function List(ids, labels)
     local list = {}
@@ -151,7 +157,6 @@ M.resourceChoices = {
     resourceLayout = { { id = "separate", label = "Separate Resources" }, { id = "grouped", label = "Group Resources" } },
     markPower = { { id = "any", label = "Any Power" }, { id = "ENERGY", label = "Energy" }, { id = "RAGE", label = "Rage" },
         { id = "MANA", label = "Mana" }, { id = "FOCUS", label = "Focus" } },
-    textAnchor = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } },
     reverse = { { id = false, label = "Left to Right" }, { id = true, label = "Right to Left" } },
     visibility = M.choices.visibility,
 }
@@ -196,17 +201,18 @@ local function Set(list)
     for _, item in ipairs(list) do set[type(item) == "table" and item.id or item] = true end
     return set
 end
-local ALLOWED = { border = Set(M.resourceChoices.border), textAnchor = Set(M.resourceChoices.textAnchor),
+local ALLOWED = { border = Set(M.resourceChoices.border),
     visibility = Set(M.resourceChoices.visibility), edgeStyle = Set(M.resourceChoices.edgeStyle),
     edgeMetal = Set(M.resourceChoices.edgeMetal), rimColor = Set(M.resourceChoices.rimColor),
     barMode = Set(M.resourceChoices.barMode), darkText = Set(M.resourceChoices.darkText), layout = Set(M.resourceChoices.layout) }
 local MARK_POWER = Set(M.resourceChoices.markPower)
 local function Whole(value, range) return Number(value, range[1], range[2]) and value == math.floor(value) end
 
--- Tick Marks: exactly the slots, each a whole value (0: off) and a power type.
+-- Tick Marks: a list of one to MARK_MAX, each a whole value (0: none) and a power type.
 local function ValidateMarks(marks, id)
-    assert(#marks == M.MARK_SLOTS, "Invalid resource bar tick marks: " .. id)
-    for key in pairs(marks) do assert(Public(key) and Whole(key, { 1, M.MARK_SLOTS }), "Invalid resource bar tick marks: " .. id) end
+    local count = #marks
+    assert(count >= 1 and count <= M.MARK_MAX, "Invalid resource bar tick marks: " .. id)
+    for key in pairs(marks) do assert(Public(key) and Whole(key, { 1, count }), "Invalid resource bar tick marks: " .. id) end
     for _, mark in ipairs(marks) do
         assert(Public(mark) and type(mark) == "table" and Whole(mark.value, M.MARK_RANGE) and MARK_POWER[mark.power],
             "Invalid resource bar tick mark: " .. id)

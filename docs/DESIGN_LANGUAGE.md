@@ -22,7 +22,11 @@ texture paths or font files outside `Shared/Style/`) and `tests/style.lua`
   laid out in whole UI units, which at a UI scale that isn't pixel perfect
   (Blizzard's default) fall between pixels, so its borders snap onto the
   nearest whole pixels (`Style.SnapEdges`, redone on show, page layout,
-  scroll, drag and popups) and button faces follow the snapped rect.
+  scroll, drag and popups) and button faces follow the snapped rect. The
+  Cooldown Manager's resource bars do the same in game: each bar's frame
+  hangs from its Edit Mode stand-in nudged onto whole pixels and is checked
+  again as the stand-in moves (owner, in game, November 18, 2026: their 1px
+  bands showed only specks at the corners until then).
 - **No masks for borders.** Rim art covers its own inner corner, so content
   under a border is never masked. (A frame's own shape, the minimap's
   rectangle, is the one mask, through `Style.SetShapeMask`.)

@@ -129,21 +129,40 @@ function M:CreateResourcePage(parent)
                 ui.Color(lines[2], "dividerColor")
             end)
         end)
-        -- Tick Marks: a line at a power value, for one power type.
+        -- Tick Marks: this bar's own lines at power values, each for one
+        -- power type; one to start, more with Add Tick Mark.
         ui.When(function() return M.resourceSpecs[Id()].marks == true end, function()
             page:Group(L["Tick Marks"])
-            page.resourceMarkSliders = {}
-            for i = 1, M.MARK_SLOTS do
-                local cells = ui.Columns({ string.format(L["Tick %d"], i), "Shows On" })
-                page.resourceMarkSliders[i] = ui.Slider(cells[1], nil, nil, function() local marks = db().marks; return marks and marks[i].value or 0 end,
-                    function(value) M:SetResourceMark(Id(), i, "value", math.floor(value + 0.5)) end, M.MARK_RANGE)
-                ui.Select(cells[2], 160, function() return M.resourceChoices.markPower end, nil,
-                    function() local marks = db().marks; return marks and marks[i].power or "any" end, function(value) M:SetResourceMark(Id(), i, "power", value) end)
-            end
-            local look = ui.Columns({ "Tick Width", "Tick Color" })
-            ui.Slider(look[1], "markWidth", "px")
-            ui.Color(look[2], "markColor")
-            W.Tip(ui.Note("0 turns a tick off. A tick shows only while its power type is shown."))
+            page.resourceMarkToggles = ui.Toggles({ { "Show Tick Marks", "marksShow" } })
+            ui.When(function() return db().marksShow == true end, function()
+                page.resourceMarkInputs, page.resourceMarkRemove = {}, {}
+                local function Mark(i) local marks = db().marks; return marks and marks[i] end
+                for i = 1, M.MARK_MAX do
+                    ui.When(function() return Mark(i) ~= nil end, function()
+                        local cells = ui.Columns({ string.format(L["Tick %d"], i), "Shows On" })
+                        local input = W.NumericInput(cells[1], function() local mark = Mark(i); return mark and mark.value or 0 end,
+                            function(value) M:SetResourceMark(Id(), i, "value", math.floor(value + 0.5)) end, M.MARK_RANGE[1], M.MARK_RANGE[2], 80)
+                        input:SetPoint("LEFT")
+                        Refresh(function() input:Refresh() end)
+                        page.resourceMarkInputs[i] = input
+                        if i > 1 then
+                            local remove = W.Button(cells[1], L["Remove"], 80, 24, "secondary")
+                            remove:SetPoint("LEFT", input, "RIGHT", 8, 0)
+                            remove:SetScript("OnClick", function() M:RemoveResourceMark(Id(), i) end)
+                            page.resourceMarkRemove[i] = remove
+                        end
+                        ui.Select(cells[2], 160, function() return M.resourceChoices.markPower end, nil,
+                            function() local mark = Mark(i); return mark and mark.power or "any" end, function(value) M:SetResourceMark(Id(), i, "power", value) end)
+                    end)
+                end
+                ui.When(function() local marks = db().marks; return marks ~= nil and #marks < M.MARK_MAX end, function()
+                    page.resourceAddMarkButton = ui.Button("+ Add Tick Mark", 160, function() M:AddResourceMark(Id()) end)
+                end)
+                local look = ui.Columns({ "Tick Width", "Tick Color" })
+                ui.Slider(look[1], "markWidth", "px")
+                ui.Color(look[2], "markColor")
+                W.Tip(ui.Note("These ticks are this bar's own. Type a power value (0 hides the tick); a tick shows only while its power type is shown."))
+            end)
         end)
         page:Group(L["Placement"])
         local edit = page:Row(L["Edit Mode"], 48)
@@ -163,5 +182,22 @@ function M:SetResourceMark(id, index, key, value)
     local marks = addon.ProfileCodec.Copy(self.db.resources[id].marks)
     if type(marks) ~= "table" or type(marks[index]) ~= "table" then return false end
     marks[index][key] = value
+    return self:SetResourceOption(id, "marks", marks)
+end
+
+-- Add Tick Mark: one more (up to MARK_MAX), on the last one's power type.
+function M:AddResourceMark(id)
+    local marks = addon.ProfileCodec.Copy(self.db.resources[id].marks)
+    if type(marks) ~= "table" or #marks >= self.MARK_MAX then return false end
+    local last = marks[#marks]
+    marks[#marks + 1] = { value = 0, power = type(last) == "table" and last.power or "any" }
+    return self:SetResourceOption(id, "marks", marks)
+end
+
+-- Remove: a tick goes (the first one always stays).
+function M:RemoveResourceMark(id, index)
+    local marks = addon.ProfileCodec.Copy(self.db.resources[id].marks)
+    if type(marks) ~= "table" or #marks <= 1 or type(marks[index]) ~= "table" then return false end
+    table.remove(marks, index)
     return self:SetResourceOption(id, "marks", marks)
 end

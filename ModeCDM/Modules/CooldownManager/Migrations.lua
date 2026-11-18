@@ -273,7 +273,36 @@ local function MigrateV5(db)
             if style.edgeMetal == "default" then style.edgeMetal = defaults.edgeMetal end
             if old.height[id] and style.height == old.height[id] then style.height = defaults.height end
             if id == "combo" and style.text == old.comboText then style.text = defaults.text end
-            if id == "combo" and style.textAnchor == old.comboAnchor then style.textAnchor = defaults.textAnchor end
+        end
+    end
+end
+
+-- Version 6 -> 7 (owner's first in-game look, November 18, 2026): heights
+-- still at version 6's defaults take 16/10/8; the text is always centered,
+-- with Show Text in place of the None format; Tick Marks become a list (the
+-- ticks in use, else the first slot) behind Show Tick Marks, on when a tick
+-- was in use.
+local function MigrateV6(db)
+    local old = M.V6_RESOURCE
+    for _, id in ipairs(M.resources) do
+        local style, defaults = type(db.resources) == "table" and db.resources[id], M.resourceDefaults[id]
+        if type(style) == "table" and Public(style) then
+            if old.height[id] and style.height == old.height[id] then style.height = defaults.height end
+            if style.textShow == nil and style.text ~= nil then
+                style.textShow = style.text ~= "none"
+                if style.text == "none" then style.text = defaults.text end
+            end
+            style.textAnchor = nil
+            local marks = style.marks
+            if defaults.marks and type(marks) == "table" and Public(marks) then
+                local used = {}
+                for _, mark in ipairs(marks) do
+                    if type(mark) == "table" and Public(mark) and Number(mark.value, 1) then used[#used + 1] = mark end
+                end
+                if style.marksShow == nil then style.marksShow = #used > 0 end
+                if #used == 0 and type(marks[1]) == "table" then used[1] = marks[1] end
+                if #used > 0 then style.marks = used end
+            end
         end
     end
 end
@@ -324,6 +353,7 @@ function M.Initialize(db)
     end
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
+    if db.version == 6 then MigrateV6(db); db.version = 7 end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end
