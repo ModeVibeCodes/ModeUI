@@ -303,6 +303,17 @@ https://claude.ai/artifact/QgDguMeW25MVA4hvH5EuVu. Built on branch
   corners, four edges; DESIGN_LANGUAGE.md, "Pieces"), used by the resource
   bars. The same cause may explain the thin icon and settings rims the owner
   noted earlier; those keep their sliced borders until the owner says.
+- **Cast Bar built (November 18, 2026; owner: "It is working, can we
+  implement the player cast bar"):** the player's cast bar in ModeCDM
+  (settings version 8), in the resource bars' look as tuned in game (pieces,
+  whole pixels, Mode-Round Gunmetal, Rim Color, Dark with the Comet head
+  alone), above Essential (Buff Icons at their old default move above it),
+  icon hidden by default in its own border, Spell Name and Timer each placed
+  on its own, any Bar Color, Show Interrupted. Shared first: the Blizzard
+  frame fade (`Kit.NativeFade`, from Unit Frames), the interrupt hold
+  (`Kit.CastInterrupted`, from Nameplates) and the claim (`Kit.PlayerCast`);
+  Unit Frames' Player cast bar steps aside while it's on. See
+  COOLDOWN_MANAGER.md, "Cast Bar". Waiting on an in-game look.
 
 ## Decisions
 

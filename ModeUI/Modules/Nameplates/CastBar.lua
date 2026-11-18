@@ -24,7 +24,7 @@ local Kit, Domain, Style = addon.Kit, addon.Domain, addon.Style
 local RIM = Style.EDGE_PRESETS.frameThin.rim
 local Cast, UnitColor = Domain.Cast, Domain.UnitColor
 local TIMER_STEP = 0.1
-M.CAST_HOLD, M.CAST_HOLD_FADE = 1, 0.3
+M.CAST_HOLD, M.CAST_HOLD_FADE = Kit.CAST_HOLD, Kit.CAST_HOLD_FADE
 -- The timer's room on a line it shares with the spell name, in font sizes.
 M.CAST_TIMER_EMS = 2.5
 
@@ -205,25 +205,10 @@ function M:HoldCast(plate)
     bar:SetScript("OnUpdate", HoldTick)
 end
 
--- A secret interruptedBy (a GUID) is never nil, so it still means an interrupt.
-local function Given(value) return not addon.IsPublic(value) or (value ~= nil and value ~= "") end
-
--- What stopped the cast: true for an interrupt. UNIT_SPELLCAST_INTERRUPTED is
--- one; a channel or empowered cast reports its interrupt on its stop event
--- (interruptedBy set, or complete false), as Blizzard's cast bars read them.
-local function Interrupted(event, ...)
-    if event == "UNIT_SPELLCAST_INTERRUPTED" then return true end
-    if event == "UNIT_SPELLCAST_CHANNEL_STOP" then return Given(select(3, ...)) end
-    if event == "UNIT_SPELLCAST_EMPOWER_STOP" then
-        local complete = select(3, ...)
-        return addon.IsPublic(complete) and complete == false
-    end
-    return false
-end
-
--- Cast events: `...` is the payload after the unit (castGUID, spellID, ...).
+-- Cast events: `...` is the payload after the unit (castGUID, spellID, ...);
+-- what counts as an interrupt is shared (Kit.CastInterrupted).
 function M:OnCastEvent(plate, event, ...)
-    if plate.castInfo and Interrupted(event, ...) then self:HoldCast(plate); return end
+    if plate.castInfo and Kit.CastInterrupted(event, ...) then self:HoldCast(plate); return end
     self:UpdateCast(plate)
 end
 

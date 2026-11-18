@@ -50,7 +50,8 @@ end
 -- A frame laid out inside another (a bar in a Grouped block) leaves the check.
 function M:UnsnapResourceFrame(frame) frame.snapMover, frame.snapX, frame.snapY = nil, nil, nil end
 
--- The check: every CHECK_EVERY seconds, each shown bar on its own stand-in.
+-- The check: every CHECK_EVERY seconds, each shown bar on its own stand-in
+-- (the resource bars and the Cast Bar).
 function M:WatchResourcePixels()
     if self.resourceSnapper then return end
     local snapper, wait = CreateFrame("Frame"), 0
@@ -63,6 +64,8 @@ function M:WatchResourcePixels()
             local frame = M.resourceFrames[id]
             if frame and frame.snapMover and frame:IsShown() then M:SnapResourceFrame(frame) end
         end
+        local cast = M.castFrame
+        if cast and cast.snapMover and cast:IsShown() then M:SnapResourceFrame(cast) end
     end)
     self.resourceSnapper = snapper
 end

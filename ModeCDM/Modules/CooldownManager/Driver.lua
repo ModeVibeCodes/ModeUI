@@ -17,6 +17,7 @@ function M:OnInitialize()
     self.Initialize(self.db)
     -- Set by the version 4 migration, which can only see this module's table.
     if self.db.movePlaces then self:MovePlaces(); self.db.movePlaces = nil end
+    if self.db.moveBuffIcons then self:MoveBuffIconsForCast(); self.db.moveBuffIcons = nil end
     self:RebuildAssignments()
     self:AddBarTargets()
     -- SharedMedia fonts and bar textures can register after login.
@@ -25,7 +26,9 @@ function M:OnInitialize()
         if id == self.id and self.window then self:RefreshWindow() end
     end)
     -- Resource bars in Class Color follow the Class Colors module.
-    addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function() if self.active then self:RefreshResources() end end)
+    addon.RegisterMessage(self, addon.Messages.CLASS_COLORS_CHANGED, function()
+        if self.active then self:RefreshResources(); self:UpdateCast() end
+    end)
     SLASH_MODEUICDM1 = self.SLASH
     SlashCmdList.MODEUICDM = function() self:ToggleWindow() end
 end
@@ -36,6 +39,7 @@ function M:OnEnable()
     addon.ReloadManager:Clear("cooldownManager")
     self:Build()
     self:SetResourceEvents(true)
+    self:SetCastEvents(true)
     self:HookProcs()
     -- Blizzard's Cooldown Manager loads with the game, normally before
     -- ModeUI; if not yet, its viewers are hooked when it does.
@@ -71,25 +75,31 @@ function M:OnDisable()
     self.active = false
     Events:OffAll(self)
     self:SetResourceEvents(false)
+    self:SetCastEvents(false)
     if self.built then
         for _, id in ipairs(self:BarIds()) do self:UpdateAlpha(id) end
         self:RefreshGlows()
         self:RenderMovers()
         self:HideSpellIcons()
         self:RefreshResources()
+        self:RefreshCast()
         addon.ReloadManager:Request("cooldownManager", L["Cooldown Manager: reload to give Blizzard's cooldowns back their own look and place."])
     end
     if self.fader then self.fader:Hide() end
     if self.page then self.page:Refresh() end
 end
 
-function M:OnCombatStateChanged() if self.active then self:UpdateFade() end end
+function M:OnCombatStateChanged()
+    if self.active then self:UpdateFade() end
+    -- The Cast Bar's hold on Blizzard's cast bar waits for combat to end.
+    if self.castNativeWaiting and not addon.InCombat() then self:SyncCastNative() end
+end
 
 function M:SetEditMode(enabled)
     local editing = enabled and self.active or false
     if editing == (self.editing or false) then return end
     self.editing = editing
-    if self.built then self:RenderMovers(); self:RenderResourceMovers(); self:UpdateFade() end
+    if self.built then self:RenderMovers(); self:RenderResourceMovers(); self:RenderCastMover(); self:UpdateFade() end
 end
 
 -- Lays every viewer out and skins it again. The revision tells a later
@@ -109,9 +119,11 @@ function M:Refresh()
         self:RefreshGlows()
     end
     self:RefreshResources()
+    self:RefreshCast()
     if addon.EditMode then addon.EditMode:RefreshElements() end
     if self.page then self.page:Refresh() end
     if self.resourcePage then self.resourcePage:Refresh() end
+    if self.castPage then self.castPage:Refresh() end
 end
 
 function M:CanConfigure() return not addon.InCombat() end
@@ -281,6 +293,7 @@ function M:OpenSettings(elementId)
     for _, id in ipairs(self.resources) do
         if self.ResourceElementId(id) == elementId then self:SelectResource(id) end
     end
+    if elementId == self.CAST_ELEMENT then self:SelectCast() end
 end
 
 function M:Status()

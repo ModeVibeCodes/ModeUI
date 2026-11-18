@@ -13,10 +13,14 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- spells taken out of Blizzard's viewers. See docs/COOLDOWN_MANAGER.md.
 -- Resource Bars (your health, power, a Druid's mana in forms and combo
 -- points) live here too, in the same window: see ResourceInit.lua.
--- Files: Init (this), ResourceInit, Migrations, Driver, Custom, Spells,
--- Items, Racials, Blizzard, Layout, Skin, Bars, Text, Glow, Visibility, Resources,
--- ResourceUpdate, SpellMenu, GlowPopout, TextPopout, Picker, Preview,
--- ResourcePreview, Settings, SettingsTabs, ResourceSettings, Window.
+-- The player's Cast Bar too: see CastInit.lua.
+-- Files: Init (this), ResourceInit, CastInit, Migrations, Driver, Custom,
+-- Spells, Items, Racials, Blizzard, Layout, Skin, Bars, Text, Glow,
+-- Visibility, Resources, ResourceSnap, ResourceGroup, ResourceMarks,
+-- ResourceUpdate, CastBar, SpellMenu, GlowPopout, TextPopout, Picker,
+-- Preview, PreviewDrag, ResourcePreview, CastPreview, SettingsHelpers,
+-- Settings, SettingsTabs, ResourceSettings, ResourceSettingsLook,
+-- CastSettings, Window.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Cooldown Manager"], standalone = true, defaultEnabled = false,
     configDescription = L["Blizzard's Cooldown Manager in the Mode look, with custom bars of your own."],
@@ -51,7 +55,9 @@ addon:RegisterModule("cooldownManager", M)
 -- Version 7 (owner's first in-game look, November 18, 2026): heights 16/10/8,
 -- the text always centered behind Show Text, Tick Marks a list of one to five
 -- behind Show Tick Marks.
-M.VERSION = 7
+-- Version 8 (owner, November 18, 2026): the Cast Bar above Essential; Buff
+-- Icons at their old default move above it.
+M.VERSION = 8
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone

@@ -128,12 +128,16 @@ function M:StopCast(f)
     box:Hide()
 end
 
+-- Whether another module draws this unit's cast bar now: the Player's steps
+-- aside while ModeCDM's Cast Bar is on (Kit.PlayerCast).
+function M:CastClaimed(unit) return unit == "player" and Kit.PlayerCast.ClaimedBy(self.id) ~= nil end
+
 -- Shows the unit's cast or channel, or hides the bar when it has none.
 function M:UpdateCast(unit)
     local f = self.frames and self.frames[unit]
     if not f or not f.castBox then return end
     local cdb = self.db[unit].castBar
-    local info = self:FrameOn(unit) and cdb.enabled and Cast.Read(unit)
+    local info = self:FrameOn(unit) and cdb.enabled and not self:CastClaimed(unit) and Cast.Read(unit)
     if not info then self:StopCast(f); return end
     local box, bar = f.castBox, f.castBox.bar
     box.info, box.unit, box.timerOn, box.timerNext = info, unit, cdb.showTimer, 0
@@ -151,8 +155,9 @@ end
 function M:PaintCastSample(g, unit)
     local box, cdb = g.castBox, self.db[unit].castBar
     if not box then return end
-    box:SetShown(cdb.enabled)
-    if not cdb.enabled then return end
+    local shown = cdb.enabled and not self:CastClaimed(unit)
+    box:SetShown(shown)
+    if not shown then return end
     local bar = box.bar
     bar:SetMinMaxValues(0, 1); bar:SetValue(self.CAST_SAMPLE.value)
     Kit.PaintCastBar(bar, false, false, cdb.color, cdb.lockedColor)

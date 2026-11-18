@@ -283,6 +283,11 @@ Phase 6 probe):
   with a spark.
 - **Spark (Comet):** a thin oval head (4px wide) with a 21px trail in the bar's
   color lightened 45%. Cast, channel, nameplate cast and timer bars.
+  The Cooldown Manager's Cast Bar (the player's, on its own) takes the
+  resource bars' look instead: Mode-Round in Gunmetal drawn in pieces, Mode
+  Gradient over Mode BG, Dark by default with the Comet head alone
+  (`Comet:SetTrail(false)`; a light trail on a dark fill read odd), and the
+  spell icon in its own border.
 - **Shields (Combined):** below max health the shield attaches to the end of
   health and stops at the end of the bar (no finish line when cut off); at full
   health the whole shield fills back from max, 9% lighter. Texture Mode Shield

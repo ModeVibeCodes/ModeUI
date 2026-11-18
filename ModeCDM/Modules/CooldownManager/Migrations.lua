@@ -354,6 +354,10 @@ function M.Initialize(db)
     if db.version == 4 then MigrateV4(db); db.version = 5 end
     if db.version == 5 then MigrateV5(db); db.version = 6 end
     if db.version == 6 then MigrateV6(db); db.version = 7 end
+    -- Version 7 -> 8: the Cast Bar sits above Essential, where Buff Icons
+    -- sat; a Buff Icons place still at that default moves above the cast bar
+    -- on start (kept outside this table: CastBar.lua, MoveBuffIconsForCast).
+    if db.version == 7 then db.moveBuffIcons = true; db.version = 8 end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end
@@ -368,4 +372,6 @@ function M.Initialize(db)
     -- Resource Bars (ResourceInit.lua): added without a version step; a
     -- profile saved before them takes their defaults.
     M.ValidateResources(db)
+    -- The Cast Bar (CastInit.lua): the same.
+    M.ValidateCast(db)
 end

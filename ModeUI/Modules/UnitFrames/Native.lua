@@ -5,7 +5,9 @@ if not M then return end
 -- Blizzard's own unit frames. They keep running so pets, class resources,
 -- target auras and cast bars still work; ModeUI fades their art and releases
 -- their clicks while a ModeUI frame that replaces them is on with Hide
--- Blizzard set. Nothing is reparented and no events are unregistered.
+-- Blizzard set. Nothing is reparented and no events are unregistered. The
+-- fade is shared (Shared/Kit/Native.lua, Kit.NativeFade), so ModeCDM's Cast
+-- Bar can keep Blizzard's Player cast bar faded too.
 --
 -- `parts` are the frame's art children (faded; the frame keeps running); a
 -- frame without parts fades whole. `also` are whole frames that sit on it and
@@ -25,61 +27,7 @@ M.nativeCast = { player = "PlayerCastingBarFrame", target = "TargetFrameSpellBar
 -- Blizzard's Target of Target debuff icons take the mouse for their tooltips
 -- (TargetofTargetDebuffFrameTemplate, enableMouse), so a faded one lets go too.
 local DEBUFFS = 4
-local Number = M.Number
-
--- An Alpha animation's from and to alpha replace a region's own alpha while it
--- plays, so the SetAlpha(0) fade can't hide it. Blizzard's cast bars play one
--- on every interrupt (CastingBarFrameAnimsTemplate HoldFadeOutAnim: alpha 1
--- for 1s, then a fade), which showed a faded Target or Player cast bar. While
--- a region is faded, the Alpha animations that act on the region itself run
--- from 0 to 0; they still play and finish (the cast bar hides itself when its
--- animation ends), unseen. Animations on its children need nothing: a child
--- never shows through a parent at alpha 0.
-local function MuteAnimations(self, region, muted)
-    if not muted then
-        for _, entry in ipairs(self.nativeAnims[region] or {}) do
-            entry.anim:SetFromAlpha(entry.from); entry.anim:SetToAlpha(entry.to)
-        end
-        self.nativeAnims[region] = nil
-        return
-    end
-    if self.nativeAnims[region] or not region.GetAnimationGroups then return end
-    local entries = {}
-    for _, group in ipairs({ region:GetAnimationGroups() }) do
-        for _, anim in ipairs({ group:GetAnimations() }) do
-            if anim:GetObjectType() == "Alpha" and anim:GetTarget() == region then
-                local from, to = anim:GetFromAlpha(), anim:GetToAlpha()
-                if Number(from, 0, 1) and Number(to, 0, 1) then
-                    entries[#entries + 1] = { anim = anim, from = from, to = to }
-                    anim:SetFromAlpha(0); anim:SetToAlpha(0)
-                end
-            end
-        end
-    end
-    self.nativeAnims[region] = entries
-end
-
-local function Fade(self, region, hidden)
-    MuteAnimations(self, region, hidden)
-    if hidden then
-        local alpha = region:GetAlpha()
-        if self.nativeAlpha[region] == nil then self.nativeAlpha[region] = Number(alpha, 0, 1) and alpha or 1 end
-        self.nativeHidden[region] = true
-        if not self.nativeHooks[region] and hooksecurefunc then
-            self.nativeHooks[region] = true
-            -- Blizzard may restore alpha later; keep the region faded while hidden.
-            hooksecurefunc(region, "SetAlpha", function(r)
-                if self.nativeHidden[r] and not self.fading then
-                    self.fading = true; r:SetAlpha(0); self.fading = false
-                end
-            end)
-        end
-        self.fading = true; region:SetAlpha(0); self.fading = false
-    else
-        self.nativeHidden[region] = nil
-        region:SetAlpha(self.nativeAlpha[region] or 1); self.nativeAlpha[region] = nil
-    end
-end
+local Faded = addon.Kit.NativeFade.Fadable
 
 local function Release(self, frame, released)
     if not frame.EnableMouse then return end
@@ -94,7 +42,6 @@ local function Release(self, frame, released)
     end
 end
 
-local function Faded(region) return type(region) == "table" and region.SetAlpha and region.GetAlpha end
 -- A whole frame (a Target of Target): faded, and it and its debuffs let go of the mouse.
 local function Whole(name, faded, released)
     local frame = _G[name]
@@ -136,8 +83,7 @@ function M:SyncNative()
     end
     local combo = self.db.comboPoints
     if self:FrameOn("target") and combo.enabled and combo.hideBlizzard and Faded(_G.ComboFrame) then faded[_G.ComboFrame] = true end
-    for region in pairs(self.nativeHidden) do if not faded[region] then Fade(self, region, false) end end
-    for region in pairs(faded) do if not self.nativeHidden[region] then Fade(self, region, true) end end
+    addon.Kit.NativeFade:Sync("unitFrames", faded)
     for frame in pairs(self.nativeMouse) do if not released[frame] then Release(self, frame, false) end end
     for frame in pairs(released) do if self.nativeMouse[frame] == nil then Release(self, frame, true) end end
 end

@@ -33,7 +33,7 @@ end
 function M:SelectBar(id)
     if not self:HasBar(id) then return false end
     self.selectedBar = id
-    self.selectedResource = nil
+    self.selectedResource, self.selectedCast = nil, nil
     if self.page and self.page.SetEditing then self.page.SetEditing(id) end
     if self.window then self:ShowSelectedPage(); self:RefreshList() end
     return true
@@ -41,17 +41,34 @@ end
 -- Shows a resource bar's settings.
 function M:SelectResource(id)
     if not self:IsResource(id) then return false end
-    self.selectedResource = id
+    self.selectedResource, self.selectedCast = id, nil
+    if self.window then self:ShowSelectedPage(); self:RefreshList() end
+    return true
+end
+-- Shows the Cast Bar's settings.
+function M:SelectCast()
+    self.selectedCast, self.selectedResource = true, nil
     if self.window then self:ShowSelectedPage(); self:RefreshList() end
     return true
 end
 
--- One page shows at a time: the resource bar page while a resource bar is
--- chosen (built the first time), else the cooldown page.
+-- One page shows at a time: the Cast Bar page or the resource bar page while
+-- one is chosen (each built the first time), else the cooldown page.
 function M:ShowSelectedPage()
     local window = self.window
     if not window then return end
-    if self:IsResource(self.selectedResource) then
+    if self.castPage then self.castPage:SetShown(self.selectedCast == true) end
+    if self.selectedCast then
+        if not self.castPage then
+            local page = self:CreateCastPage(window.pageHost)
+            if W.ApplyModeModuleLayout then W.ApplyModeModuleLayout(page, self.id) end
+            page.modeMediaScope = self.id
+            if page.SelectSectionTab then page:SelectSectionTab(1) end
+        end
+        if self.page then self.page:Hide() end
+        if self.resourcePage then self.resourcePage:Hide() end
+        self.castPage:Show(); self.castPage:Refresh(); self.castPage:Layout()
+    elseif self:IsResource(self.selectedResource) then
         if not self.resourcePage then
             local page = self:CreateResourcePage(window.pageHost)
             if W.ApplyModeModuleLayout then W.ApplyModeModuleLayout(page, self.id) end
@@ -200,7 +217,7 @@ function M:RefreshList()
     if not window then return end
     local list, rows, y = window.list, window.rows, 0
     local room = #self.db.customBars < self.MAX_CUSTOM
-    local count = #self.viewers + #self.resources + #self.db.customBars
+    local count = #self.viewers + #self.resources + #self.db.customBars + 1
     local fixed = 4 * 24 + 3 * 12
     local step = math.max(24, math.min(ROW, math.floor((HEIGHT - HEADER_HEIGHT - 22 - fixed) / count)))
     local function Row(index, id, resource)
@@ -212,7 +229,8 @@ function M:RefreshList()
             row.status = W.Label(row, "", nil, 0, 0, 34, T.muted)
             row.status:SetJustifyH("RIGHT")
             row:SetScript("OnClick", function()
-                if row.resource then M:SelectResource(row.barId) else M:SelectBar(row.barId) end
+                if row.resource == "cast" then M:SelectCast()
+                elseif row.resource then M:SelectResource(row.barId) else M:SelectBar(row.barId) end
             end)
             -- - deletes a custom bar, after asking.
             row.delete = W.Button(row, "-", 22, 20, "quiet")
@@ -221,14 +239,17 @@ function M:RefreshList()
             rows[index] = row
         end
         row.barId, row.resource = id, resource
-        local style = resource and self.db.resources[id] or self.db[id]
+        -- `resource`: true for a resource bar, "cast" for the Cast Bar.
+        local cast = resource == "cast"
+        local style = (cast and self.db.castBar) or (resource and self.db.resources[id]) or self.db[id]
         local custom = not resource and self:IsCustom(id)
-        row.label:SetText(resource and self:ResourceLabel(id) or self:Label(id))
+        row.label:SetText((cast and L[self.CAST_LABEL]) or (resource and self:ResourceLabel(id)) or self:Label(id))
         row.status:SetText(style.show and "" or L["Off"])
         row.status:ClearAllPoints(); row.status:SetPoint("RIGHT", custom and -30 or -10, 0)
         row.delete:SetShown(custom); row.delete:SetEnabled(self:CanConfigure())
-        if resource then row:SetSelected(id == self.selectedResource)
-        else row:SetSelected(not self:IsResource(self.selectedResource) and id == self.selectedBar) end
+        if cast then row:SetSelected(self.selectedCast == true)
+        elseif resource then row:SetSelected(not self.selectedCast and id == self.selectedResource)
+        else row:SetSelected(not self.selectedCast and not self:IsResource(self.selectedResource) and id == self.selectedBar) end
         row:SetHeight(step - 2)
         row:ClearAllPoints(); row:SetPoint("TOPLEFT", 0, -y); row:Show()
         y = y + step
@@ -250,6 +271,7 @@ function M:RefreshList()
     y = y + 12
     Place(window.resourceCaption, 24)
     for _, id in ipairs(self.resources) do index = index + 1; Row(index, id, true) end
+    index = index + 1; Row(index, "cast", "cast")
     for i = index + 1, #rows do rows[i]:Hide() end
     local add = room and self:CanConfigure()
     window.addCooldown:SetEnabled(add); window.addBuff:SetEnabled(add)
@@ -261,14 +283,17 @@ function M:EditingChoices()
     local list = {}
     for _, id in ipairs(self:BarIds()) do list[#list + 1] = { id = id, label = self:Label(id) } end
     for _, id in ipairs(self.resources) do list[#list + 1] = { id = "resource:" .. id, label = self:ResourceLabel(id) } end
+    list[#list + 1] = { id = "cast", label = L[self.CAST_LABEL] }
     return list
 end
 function M:EditingValue()
+    if self.selectedCast then return "cast", L[self.CAST_LABEL] end
     if self:IsResource(self.selectedResource) then return "resource:" .. self.selectedResource, self:ResourceLabel(self.selectedResource) end
     local id = self.selectedBar or "essential"
     return id, self:Label(id)
 end
 function M:SelectEditing(value)
+    if value == "cast" then return self:SelectCast() end
     local resource = type(value) == "string" and value:match("^resource:(.+)$")
     if resource then return self:SelectResource(resource) end
     return self:SelectBar(value)
@@ -297,4 +322,5 @@ function M:RefreshWindow()
     self:RefreshList()
     if self.page and self.page:IsShown() then self.page:Refresh(); self.page:Layout() end
     if self.resourcePage and self.resourcePage:IsShown() then self.resourcePage:Refresh(); self.resourcePage:Layout() end
+    if self.castPage and self.castPage:IsShown() then self.castPage:Refresh(); self.castPage:Layout() end
 end

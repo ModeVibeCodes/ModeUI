@@ -488,3 +488,75 @@ Shared: `Domain.Power.ManaType`, `ReadType`, `HasAlternateMana` and
   Power 16, Combo Points 10; the 40 line shows on Power only, never on
   Combo Points' bar or preview; the text sits in the middle of each bar;
   no Lua errors.
+
+## Cast Bar
+
+November 18, 2026 (owner). The player's cast bar on its own, in the same
+`/mcdm` window: **Cast Bar** under Resource Bars in the list. Only the
+player's: Target, Focus and nameplate cast bars stay where they are. While
+it is on (the Cooldown Manager on and **Show Bar**), Unit Frames' Player
+cast bar steps aside and Blizzard's Player cast bar stays faded; switch it
+off and both behave as before. Checked against the mock client only
+(`tests/cast_bar.lua`); **native acceptance is pending**.
+
+It takes the resource bars' look as tuned in game: the `frameThin` edge in
+Mode-Round and Gunmetal, drawn in pieces and on whole pixels, Rim Color, and
+Dark mode (the fill in darkFill, the Comet's head alone, the text in your
+class color). Defaults: above Essential Cooldowns, Match Width on, 18px, the
+icon hidden, Spell Name on the left and Timer on the right, Show Interrupted
+on. Buff Icons, which sat above Essential, hang above the cast bar.
+
+| Tab | Settings |
+|---|---|
+| Bar | **Show Bar**, Status; **Width**, **Height**; **Icon** (Hidden, Left, Right; the spell icon, a square of the bar's height in its own border) and **Icon Gap**; **Show Interrupted**; **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
+| Look | **Border** (Mode or None), **Border Style**, **Rim Color** (Default Metal, Silver, Steel, Gunmetal, Bar Color, Custom) and **Custom Rim Color**; **Bar Mode** (Color or Dark), **Bar Texture**, **Bar Color** (any color), **Not Interruptible**, **Interrupted**; **Dark Text Color** (Class Color, Bar Color, Custom) and **Custom Text Color**; **Bar Background**, **Background Opacity**; **Spark** |
+| Text | **Spell Name** and **Timer**, each: **Show**, **Anchor** (Left, Center, Right), **Offset X/Y**; **Size**, **Text Color** (Color mode); **Font**, **Outline**, **Text Shadow**, **Slug Text** |
+| Visibility | **Opacity**. It shows while you cast, and with a sample in Edit Mode. |
+
+**Casts.** `Domain.Cast.Read("player")` each cast event; the cast's times go
+only to `SetMinMaxValues` (the bar is given the time each frame), its name to
+`SetText`, its icon to `SetTexture`, Not Interruptible to
+`SetVertexColorFromBoolean`. A channel drains: the fill from the right in the
+background color over the cast color. **Show Interrupted** holds an
+interrupted cast full in the Interrupted color with "Interrupted" for 1s,
+then fades over 0.3s (Blizzard's HoldFadeOutAnim; `Kit.CastInterrupted`, as on
+nameplates).
+
+**Placement.** An Edit Mode element (`ModeUICastBar`, position
+`cooldownManagerCastBar`) like the others: it attaches to any ModeUI element
+and they to it; Match Width in the Edit Mode window.
+
+**Saved settings.** `modules.cooldownManager.castBar`, added without a
+version step (a profile from before it takes the defaults; bad data stops
+startup). Version 8 moves a saved Buff Icons place still at its old default
+(above Essential, no offset) above the cast bar, once.
+
+| File | Job |
+|---|---|
+| `CastInit.lua` | defaults, ranges, choices, Rim Color, validation; the Edit Mode target and default place |
+| `CastBar.lua` | the frames, layout, paint, casts and Show Interrupted, events, the claim and Blizzard's fade, the stand-in |
+| `CastPreview.lua`, `CastSettings.lua` | the preview and the page (`SettingsHelpers.lua`: the row helpers it shares with the resource page) |
+
+Shared: `Kit.PlayerCast`, `Kit.NativeFade` (`Shared/Kit/Native.lua`),
+`Kit.CastInterrupted`, `Kit.CAST_HOLD` (`Shared/Kit/Cast.lua`),
+`Comet:SetTrail` (`Shared/Style/Bar.lua`), `Style.Edge` pieces.
+
+### In-game check: Cast Bar (November 18, 2026)
+
+- **Navigation:** type `/mcdm`, then click **Cast Bar** under **Resource
+  Bars** in the window's list.
+- **Action:** cast a spell with a cast time, then a channel; cast one and
+  move to interrupt it. Then set **Icon** to **Left** (Bar tab), **Bar Mode**
+  to **Color** and pick a **Bar Color** (Look tab), set **Spell Name**
+  **Anchor** to **Center** (Text tab). Click **Edit Mode** in the window's
+  header and look above Essential, then **Exit**. Turn **Show Bar** off and
+  cast again; turn it back on.
+- **Required state:** the Cooldown Manager and Unit Frames switched on, out
+  of combat for the settings, then casting in and out of combat.
+- **Confirmation:** one cast bar above Essential, matching its width, with
+  its whole Gunmetal border; dark with only the Comet's head, the spell name
+  left and seconds right in your class color; an interrupt holds red with
+  "Interrupted" for a second, then fades; no Unit Frames Player cast bar and
+  no Blizzard cast bar while it's on; with Show Bar off, Unit Frames' Player
+  cast bar shows the cast again; Buff Icons sit above the cast bar; no Lua
+  errors.

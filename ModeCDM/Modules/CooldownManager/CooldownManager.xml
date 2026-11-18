@@ -1,6 +1,7 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="Init.lua"/>
     <Script file="ResourceInit.lua"/>
+    <Script file="CastInit.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Custom.lua"/>
@@ -19,6 +20,7 @@
     <Script file="ResourceGroup.lua"/>
     <Script file="ResourceMarks.lua"/>
     <Script file="ResourceUpdate.lua"/>
+    <Script file="CastBar.lua"/>
     <Script file="SpellMenu.lua"/>
     <Script file="GlowPopout.lua"/>
     <Script file="TextPopout.lua"/>
@@ -26,9 +28,12 @@
     <Script file="Preview.lua"/>
     <Script file="PreviewDrag.lua"/>
     <Script file="ResourcePreview.lua"/>
+    <Script file="CastPreview.lua"/>
+    <Script file="SettingsHelpers.lua"/>
     <Script file="Settings.lua"/>
     <Script file="SettingsTabs.lua"/>
     <Script file="ResourceSettings.lua"/>
     <Script file="ResourceSettingsLook.lua"/>
+    <Script file="CastSettings.lua"/>
     <Script file="Window.lua"/>
 </Ui>

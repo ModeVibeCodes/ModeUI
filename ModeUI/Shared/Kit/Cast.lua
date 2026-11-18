@@ -22,6 +22,28 @@ function Kit.PaintCastBar(bar, channel, notInterruptible, color, lockedColor)
     end
 end
 
+-- An interrupted cast stays on its bar, full, in the Interrupted color, then
+-- fades: the hold Blizzard's own cast bars play (CastingBarFrameAnimsTemplate
+-- HoldFadeOutAnim, 1s and a 0.3s fade). Nameplates and ModeCDM's Cast Bar.
+Kit.CAST_HOLD, Kit.CAST_HOLD_FADE = 1, 0.3
+
+-- A secret interruptedBy (a GUID) is never nil, so it still means an interrupt.
+local function Given(value) return not addon.IsPublic(value) or (value ~= nil and value ~= "") end
+
+-- What stopped a cast: true for an interrupt. `...` is the payload after the
+-- unit (castGUID, spellID, ...). UNIT_SPELLCAST_INTERRUPTED is one; a channel
+-- or empowered cast reports its interrupt on its stop event (interruptedBy
+-- set, or complete false), as Blizzard's cast bars read them.
+function Kit.CastInterrupted(event, ...)
+    if event == "UNIT_SPELLCAST_INTERRUPTED" then return true end
+    if event == "UNIT_SPELLCAST_CHANNEL_STOP" then return Given(select(3, ...)) end
+    if event == "UNIT_SPELLCAST_EMPOWER_STOP" then
+        local complete = select(3, ...)
+        return addon.IsPublic(complete) and complete == false
+    end
+    return false
+end
+
 -- Writes the seconds left of `info` (from Domain.Cast.Read) to `text`: from
 -- public cast times, else the cast's duration object (may be secret); empty
 -- if neither is readable.
