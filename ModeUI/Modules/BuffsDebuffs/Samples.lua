@@ -11,6 +11,7 @@ local Kit = addon.Kit
 local ICON = "Interface\\Icons\\"
 M.SAMPLES = {
     buffs = {
+        { icon = "Spell_Shadow_ShadowWard", cats = { "tracked", "mine", "short" }, time = "15" },
         { icon = "Spell_Holy_PowerWordShield", cats = { "bigdef", "mine", "cancelable", "short" }, time = "8" },
         { icon = "Spell_Nature_StoneClawTotem", cats = { "extdef", "short" }, time = "10" },
         { icon = "Spell_Nature_Bloodlust", cats = { "important", "short" }, time = "32" },
@@ -67,11 +68,35 @@ function M:SampleList(bar)
     return shown
 end
 
--- The rim: the debuff type's color with By Type, else the bar's metal.
+-- The rim: the debuff type's color with By Type, else the bar's custom
+-- color or its metal.
 local function Rim(bar, sample)
     if bar.byType and bar.kind == "debuffs" then
         return addon.Style.Tone.debuffType[sample.type] or addon.Style.Tone.metal.gunmetal.mid
     end
+    return bar.borderTint and bar.borderColor or nil
+end
+
+-- A sample icon (Kit.AuraIcon with an outside text) in the bar's look,
+-- showing `sample`.
+function M:SampleIcon(host)
+    local icon = Kit.AuraIcon(host)
+    icon.outside = Kit.Text(icon)
+    return icon
+end
+function M:PaintSample(icon, bar, px, sample)
+    local _, _, path = self:LayoutIcon(icon, bar, px)
+    icon.art:SetTexture(ICON .. sample.icon)
+    Kit.Write(icon.count, bar.count and sample.count or "")
+    icon.cooldown:Hide()
+    local shownTime = bar.timer ~= "none" and sample.time or ""
+    icon.timer:SetText(bar.timer == "center" and shownTime or "")
+    self:LayoutOutside(icon.outside, bar, px, path, icon)
+    icon.outside:SetText(shownTime)
+    Kit.TintAuraRim(icon, Rim(bar, sample))
+    local glow = bar.glow ~= "none" and (bar.glowColor == "custom" and bar.glowCustomColor
+        or (bar.kind == "debuffs" and (addon.Style.Tone.debuffType[sample.type] or addon.Style.Tone.metal.gunmetal.mid))) or nil
+    Kit.GlowAura(icon, glow, bar.glow)
 end
 
 -- Lays a bar's samples into `host` from its start corner. pool holds the
@@ -90,23 +115,8 @@ function M:PaintSamples(host, pool, bar, px)
     if bar.timer == "below" and dy > 0 then shift = room elseif bar.timer == "above" and dy < 0 then shift = -room end
     for index, sample in ipairs(samples) do
         local icon = pool[index]
-        if not icon then
-            icon = Kit.AuraIcon(host)
-            icon.outside = Kit.Text(icon)
-            pool[index] = icon
-        end
-        local _, _, path = self:LayoutIcon(icon, bar, px)
-        icon.art:SetTexture(ICON .. sample.icon)
-        Kit.Write(icon.count, bar.count and sample.count or "")
-        icon.cooldown:Hide()
-        local shownTime = bar.timer ~= "none" and sample.time or ""
-        icon.timer:SetText(bar.timer == "center" and shownTime or "")
-        self:LayoutOutside(icon.outside, bar, px, path, icon)
-        icon.outside:SetText(shownTime)
-        Kit.TintAuraRim(icon, Rim(bar, sample))
-        local glow = bar.glow ~= "none" and (bar.glowColor == "custom" and bar.glowCustomColor
-            or (bar.kind == "debuffs" and (addon.Style.Tone.debuffType[sample.type] or addon.Style.Tone.metal.gunmetal.mid))) or nil
-        Kit.GlowAura(icon, glow, bar.glow)
+        if not icon then icon = self:SampleIcon(host); pool[index] = icon end
+        self:PaintSample(icon, bar, px, sample)
         local slot, line = (index - 1) % bar.perRow, math.floor((index - 1) / bar.perRow)
         local column, row = horizontal and slot or line, horizontal and line or slot
         icon:ClearAllPoints()

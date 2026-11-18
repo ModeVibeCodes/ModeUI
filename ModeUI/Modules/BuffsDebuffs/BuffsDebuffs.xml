@@ -11,5 +11,6 @@
     <Script file="Settings.lua"/>
     <Script file="SettingsBar.lua"/>
     <Script file="SettingsLook.lua"/>
+    <Script file="SettingsText.lua"/>
     <Script file="Blacklist.lua"/>
 </Ui>

@@ -8,7 +8,8 @@ if not M then return end
 -- (Domain.Auras.NeverSecret), so the picker says which those are. Click
 -- + Add or Remove Auras, then click an aura on you now to hide it, or a
 -- hidden one to bring it back; any spell can be added by ID. The picker
--- closes on a click elsewhere, its close button, or combat.
+-- closes on a click elsewhere, its close button, or combat. Opened for a bar
+-- (Bars tab, Spells You Add) the same picker holds that bar's own buffs.
 local Auras, Spells, Style = addon.Domain.Auras, addon.Domain.Cooldowns, addon.Style
 local WIDTH, PAD, SIZE, GAP, COLUMNS = 320, 14, 32, 6, 8
 local INNER = WIDTH - 2 * PAD
@@ -28,6 +29,30 @@ function M:AddBlacklistByID(id)
     if #self.db.blacklist >= self.MAX_BLACKLIST then return false, L["The blacklist is full."] end
     if not self:AddBlacklist(id) then return false, L["That spell can't be added."] end
     return true, string.format(L["Hid %s."], Spells.SpellName(id))
+end
+
+-- Spells You Add by ID, for a bar.
+function M:AddBarSpellByID(barId, id)
+    if not self:CanConfigure() then return false, L["Not in combat."] end
+    if not addon.IsNumber(id, 1, 10000000) or id ~= math.floor(id) or not Spells.SpellName(id) then return false, L["No spell has that ID."] end
+    if self:HasBarSpell(barId, id) then return false, L["That spell is added already."] end
+    if #self.db.bars[barId].spells >= self.MAX_SPELLS then return false, L["The list is full."] end
+    if not self:AddBarSpell(barId, id) then return false, L["That spell can't be added."] end
+    return true, string.format(L["Added %s."], Spells.SpellName(id))
+end
+
+-- What the picker edits: the blacklist, or a bar's Spells You Add.
+local function Target(self, picker)
+    local bar = picker.target and self.db.bars[picker.target]
+    if bar then
+        local id = picker.target
+        return { held = bar.spells, has = function(spell) return self:HasBarSpell(id, spell) end,
+            add = function(spell) return self:AddBarSpell(id, spell) end, remove = function(spell) return self:RemoveBarSpell(id, spell) end,
+            byId = function(spell) return self:AddBarSpellByID(id, spell) end, buffsOnly = true }
+    end
+    return { held = self.db.blacklist, has = function(spell) return self:IsBlacklisted(spell) end,
+        add = function(spell) return self:AddBlacklist(spell) end, remove = function(spell) return self:RemoveBlacklist(spell) end,
+        byId = function(spell) return self:AddBlacklistByID(spell) end }
 end
 
 function M:BuildBlacklistTab(page, c)
@@ -77,7 +102,7 @@ function M:Picker()
     picker.idResult = W.Label(picker.byId, "", nil, 214, -24, INNER - 214, T.muted)
     local function Add()
         local id = tonumber((picker.idInput:GetText() or ""):match("^%s*(%d+)%s*$") or "")
-        local ok, message = M:AddBlacklistByID(id)
+        local ok, message = Target(M, picker).byId(id)
         if ok then picker.idInput:SetText("") end
         picker.idResult:SetText(message)
         M:RefreshPicker(true)
@@ -110,18 +135,23 @@ local function Button(picker, index)
     button:SetScript("OnEnter", function() button.highlight:Show(); picker.hover:SetText(button.where) end)
     button:SetScript("OnLeave", function() button.highlight:Hide(); picker.hover:SetText("") end)
     button:SetScript("OnClick", function()
-        if button.held then M:RemoveBlacklist(button.spell) else M:AddBlacklist(button.spell) end
+        local target = Target(M, picker)
+        if button.held then target.remove(button.spell) else target.add(button.spell) end
         M:RefreshPicker()
     end)
     picker.buttons[index] = button
     return button
 end
 
--- Opens the picker under `anchor`.
-function M:OpenPicker(anchor)
-    if not self:CanConfigure() then return false end
+-- Opens the picker under `anchor`: for the blacklist, or for bar `barId`'s
+-- Spells You Add.
+function M:OpenPicker(anchor, barId)
+    if not self:CanConfigure() or (barId ~= nil and not self:HasBar(barId)) then return false end
     local picker = self:Picker()
-    picker.anchor = anchor
+    picker.anchor, picker.target = anchor, barId
+    picker.title:SetText(barId and (L["Spells You Add"] .. " · " .. self:BarLabel(barId)) or L["Blacklist"])
+    picker.heldLabel:SetText(barId and L["Added (click to remove)"] or L["Hidden (click to show again)"])
+    picker.addLabel:SetText(barId and L["Buffs on you now (click to add)"] or L["On you now (click to hide)"])
     picker:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
     picker:ClearAllPoints(); picker:SetPoint("TOP", anchor, "BOTTOM", 0, -8)
     picker:Show()
@@ -134,9 +164,12 @@ end
 function M:RefreshPicker(keepResult)
     local picker = self.picker
     if not picker or not picker:IsShown() then return end
-    local held = self.db.blacklist
+    local target = Target(self, picker)
+    local held = target.held
     local add = {}
-    for _, aura in ipairs(Auras.Spells("player")) do if not self:IsBlacklisted(aura.id) then add[#add + 1] = aura end end
+    for _, aura in ipairs(Auras.Spells("player")) do
+        if not target.has(aura.id) and not (target.buffsOnly and aura.harmful) then add[#add + 1] = aura end
+    end
     local index, top = 0, 76
     local function Grid(list, isHeld)
         for i, item in ipairs(list) do
@@ -146,7 +179,10 @@ function M:RefreshPicker(keepResult)
             button.spell, button.held = id, isHeld
             button.icon:SetTexture((isHeld and Spells.SpellIcon(id)) or item.icon or Spells.SpellIcon(id) or QUESTION)
             local name = Spells.SpellName(id) or tostring(id)
-            if isHeld then
+            if isHeld and picker.target then
+                button.rim:SetTint(nil)
+                button.where = name .. " · " .. id
+            elseif isHeld then
                 local reach, text = self:BlacklistReach(id)
                 button.rim:SetTint(reach == "all" and Style.Tone.celadon or Style.Tone.rosewood)
                 button.where = name .. " · " .. id .. " · " .. text

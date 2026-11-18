@@ -4,9 +4,11 @@ if not M then return end
 
 -- One icon in its bar's look: a Kit.AuraIconParts frame (the container's
 -- buttons carry one on a child; Edit Mode and the preview use Kit.AuraIcon)
--- sized Width x Height, in the bar's Border Style, Metal and Size, the art
--- a Border Gap inside the band and cropped by Icon Zoom, with the bar's
--- time text and stack count (each its own size, color, place and offset).
+-- sized Width x Height, in the bar's Border Style, Metal (or a custom
+-- color) and Size, moved by its offsets and pushed out or in by Border
+-- Shift, the art a Border Padding inside the band and cropped by Icon Zoom,
+-- with the bar's time text and stack count (each its own size, color, place
+-- and offset).
 local Kit, Style = addon.Kit, addon.Style
 
 function M.TypeColor(name)
@@ -48,6 +50,14 @@ local function LayoutArt(icon, bar, px, width, height)
     icon.art:SetSize(side, side)
     icon.art:SetTexCoord(0, 1, 0, 1)
     icon.cooldown:ClearAllPoints(); icon.cooldown:SetAllPoints(icon.clip)
+    -- The band: Border Shift pushes it out (+) or in (-) from the icon's
+    -- edge, Border Offset X/Y moves it; the art stays put.
+    local band = (icon.edge.rim - bar.borderShift) * px
+    local x, y = bar.borderX * px, bar.borderY * px
+    icon.inner:ClearAllPoints()
+    icon.inner:SetPoint("TOPLEFT", icon, "TOPLEFT", band + x, -band + y)
+    icon.inner:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -band + x, band + y)
+    icon.edge:Layout()
     -- Layers, bottom up: the icon frame's black back, the art, the swipe
     -- and GCD flash, the border, the texts. The art's frame must sit above
     -- the icon frame: at the same level the back drew over it (owner's
@@ -87,6 +97,7 @@ function M:LayoutIcon(icon, bar, px)
     Kit.LayoutAuraIcon(icon, width, height, px, self:TextStyle(bar), path)
     Kit.AuraBorderStyle(icon, bar.edgeStyle, Metal(bar))
     LayoutArt(icon, bar, px, width, height)
+    icon.edge:SetTint(bar.borderTint and bar.borderColor or nil)
     icon.cooldown:SetShown(bar.swipe)
     LayoutTexts(self, icon, bar, px, path)
     return width, height, path
@@ -105,7 +116,8 @@ end
 
 local function Hex(c) return string.format("%.3f,%.3f,%.3f", c[1], c[2], c[3]) end
 -- What only changes where icons go, not how they look (set in place).
-local LIVE = { show = true, cats = true, sort = true, max = true, perRow = true, grow = true, wrap = true, spacing = true }
+local LIVE = { show = true, cats = true, sort = true, max = true, perRow = true, grow = true, wrap = true, spacing = true,
+    spells = true, otherCats = true }
 -- Everything a bar's buttons bake in when they're made.
 function M:LookKey(id, px)
     local bar, db = self.db.bars[id], self.db

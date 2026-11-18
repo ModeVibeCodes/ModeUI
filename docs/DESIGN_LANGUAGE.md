@@ -87,7 +87,7 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Power (`powerType`) | Mana `#4096FF`, Rage, Energy, Focus, Happiness (Mode-toned), any other type a neutral gray |
 | Threat (`threat`) | aggro `#FF4848`, losing or pulling `#FFA040` |
 | Stats (`stat`) | the Character window's stats: Strength `#E85C50`, Agility `#FFD140`, Stamina `#E8B04B`, Intellect and mana regen `#4096FF`, Spirit and healing `#7FDB97`, physical power `#FF8A3D`, spell power `#B07CFF`, crit `#FF6B6B`, hit `#FFB12F`, haste `#7FDBFF`, avoidance `#9AD0EC`, armor `#B9B9B9` |
-| Other | cooldown text `#FFB12F`; quest lines in tooltips `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
+| Other | cooldown text `#FFB12F`; quest lines in tooltips `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`), the owner's picks (November 18, 2026); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
 
 `Style.LEGACY` holds the pre-Mode defaults that saved settings still hold or
 migrations recognize (the Onyx palette `Kit.palette` / `Kit.onyx` alias it,

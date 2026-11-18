@@ -44,6 +44,13 @@ function M:Custom(id)
     for index, entry in ipairs(self.db.customBars) do if entry.id == id then return entry, index end end
 end
 function M:HasBar(id) return self.db.bars[id] ~= nil and (self.FIXED_KIND[id] ~= nil or self:Custom(id) ~= nil) end
+-- A preset bar (Defensives): a custom bar that keeps its kind.
+function M:Preset(id)
+    local custom = self:Custom(id)
+    return custom and custom.preset and self.PRESETS[custom.preset] or nil
+end
+-- Whether the bar's kind can change (custom bars that aren't presets).
+function M:KindChangeable(id) return self:Custom(id) ~= nil and self:Preset(id) == nil end
 function M:BarLabel(id)
     local custom = self:Custom(id)
     return custom and custom.name or L[self.FIXED_LABELS[id] or id]
@@ -73,10 +80,16 @@ function M:Commit(candidate)
     return true
 end
 
--- One setting of one bar. Changing what a bar shows starts it on All of
--- that kind; changing the way it grows keeps its rows across.
+-- One setting of one bar. Switching a bar between buffs and debuffs keeps
+-- the kinds it had picked for each (owner, November 18, 2026: an accidental
+-- switch shouldn't lose them); a kind never picked starts on All. Changing
+-- the way it grows keeps its rows across.
+local LISTS = { cats = true, otherCats = true, spells = true }
 function M:SetBarOption(id, key, value)
-    if not self:CanConfigure() or not self:HasBar(id) or key == "cats" then return false end
+    if not self:CanConfigure() or not self:HasBar(id) or LISTS[key] then return false end
+    if key == "kind" and not self:KindChangeable(id) then return false end
+    local preset = self:Preset(id)
+    if preset and preset[key] ~= nil then return false end
     local candidate = Copy(self.db)
     local bar = candidate.bars[id]
     if bar[key] == nil then return false end
@@ -85,7 +98,10 @@ function M:SetBarOption(id, key, value)
         bar.height = addon.Style.IconHeight(value)
     end
     bar[key] = value
-    if key == "kind" then bar.cats = { all = true }; bar.byType = value == "debuffs"; bar.cancel = value == "buffs" end
+    if key == "kind" and value ~= self.db.bars[id].kind then
+        bar.cats, bar.otherCats = bar.otherCats or { all = true }, bar.cats
+        bar.byType = value == "debuffs"; bar.cancel = value == "buffs"
+    end
     if key == "grow" and self.HORIZONTAL[value] == self.HORIZONTAL[bar.wrap] then
         bar.wrap = self.HORIZONTAL[value] and "down" or "right"
     end
@@ -184,6 +200,29 @@ function M:RemoveBlacklist(spellID)
     local kept = {}
     for _, held in ipairs(candidate.blacklist) do if held ~= spellID then kept[#kept + 1] = held end end
     candidate.blacklist = kept
+    return self:Commit(candidate)
+end
+
+-- Spells You Add: a bar's own buffs (includeSpellIDs).
+function M:HasBarSpell(id, spellID)
+    for _, held in ipairs(self.db.bars[id] and self.db.bars[id].spells or {}) do if held == spellID then return true end end
+    return false
+end
+function M:AddBarSpell(id, spellID)
+    if not self:CanConfigure() or not self:HasBar(id) or not addon.IsNumber(spellID, 1, 10000000)
+        or spellID ~= math.floor(spellID) then return false end
+    if self:HasBarSpell(id, spellID) or #self.db.bars[id].spells >= self.MAX_SPELLS then return false end
+    local candidate = Copy(self.db)
+    local spells = candidate.bars[id].spells
+    spells[#spells + 1] = spellID
+    return self:Commit(candidate)
+end
+function M:RemoveBarSpell(id, spellID)
+    if not self:CanConfigure() or not self:HasBarSpell(id, spellID) then return false end
+    local candidate = Copy(self.db)
+    local kept = {}
+    for _, held in ipairs(candidate.bars[id].spells) do if held ~= spellID then kept[#kept + 1] = held end end
+    candidate.bars[id].spells = kept
     return self:Commit(candidate)
 end
 
