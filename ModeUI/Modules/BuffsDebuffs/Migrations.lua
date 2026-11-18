@@ -9,7 +9,7 @@ local Style = addon.Style
 local Public, Number = addon.IsPublic, addon.IsNumber
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
-local BOOLEANS = { show = true, swipe = true, count = true, tooltip = true, cancel = true, byType = true }
+local BOOLEANS = { show = true, swipe = true, count = true, tooltip = true, cancel = true, byType = true, borderTint = true }
 local CHOICES = { kind = "kind", sort = "sort", grow = "grow", wrap = "wrap", timer = "timer", glow = "glow", glowColor = "glowColor" }
 local function InList(list, value)
     for _, choice in ipairs(list) do if choice.id == value then return true end end
@@ -38,13 +38,29 @@ function M.ValidateBar(bar, defaults, fixedKind, where)
     end
     assert(Public(bar.edgeStyle) and Style.EdgeStyle(bar.edgeStyle) ~= nil, "Invalid " .. where .. ".edgeStyle")
     assert(bar.edgeMetal == "default" or (Public(bar.edgeMetal) and Style.Tone.metal[bar.edgeMetal] ~= nil), "Invalid " .. where .. ".edgeMetal")
-    assert(Color(bar.glowCustomColor) and Color(bar.timerColor) and Color(bar.countColor), "Invalid " .. where .. " colors")
+    assert(Color(bar.glowCustomColor) and Color(bar.timerColor) and Color(bar.countColor) and Color(bar.borderColor),
+        "Invalid " .. where .. " colors")
+    assert(type(bar.spells) == "table" and #bar.spells <= M.MAX_SPELLS, "Invalid " .. where .. ".spells")
+    local seen = {}
+    for index, id in ipairs(bar.spells) do
+        assert(Number(id, 1, 10000000) and id == math.floor(id) and not seen[id], "Invalid " .. where .. ".spells." .. index)
+        seen[id] = true
+    end
     local point = false
     for _, name in ipairs(M.POINTS) do if bar.countPoint == name then point = true end end
     assert(point, "Invalid " .. where .. ".countPoint")
     assert(type(bar.cats) == "table", "Invalid " .. where .. ".cats")
     for id, on in pairs(bar.cats) do
         assert(on == true and M.categoryById[bar.kind][id] ~= nil, "Invalid " .. where .. ".cats." .. tostring(id))
+    end
+    -- The kinds picked before the bar last switched between buffs and
+    -- debuffs, kept so switching back restores them.
+    if bar.otherCats ~= nil then
+        local other = bar.kind == "buffs" and "debuffs" or "buffs"
+        assert(type(bar.otherCats) == "table", "Invalid " .. where .. ".otherCats")
+        for id, on in pairs(bar.otherCats) do
+            assert(on == true and M.categoryById[other][id] ~= nil, "Invalid " .. where .. ".otherCats." .. tostring(id))
+        end
     end
 end
 
@@ -57,6 +73,7 @@ local function ValidateCustomList(db)
             and not seen[entry.id], "Invalid buffs and debuffs custom bar " .. index)
         assert(Public(entry.name) and type(entry.name) == "string" and entry.name ~= "" and #entry.name <= 40,
             "Invalid buffs and debuffs custom bar name " .. index)
+        assert(entry.preset == nil or M.PRESETS[entry.preset] ~= nil, "Invalid buffs and debuffs custom bar preset " .. index)
         seen[entry.id] = true
     end
 end
@@ -70,10 +87,49 @@ local function ValidateBlacklist(list)
     end
 end
 
+-- Version 3 (owner, November 18, 2026): white time text and green stacks,
+-- Player Debuffs (All) without Boss Debuffs, and Defensives a preset in the
+-- owner's look (no right-click cancel), each only where still at the old
+-- default.
+local OLD_ALL = { "cc", "dispellable", "boss", "Magic", "Curse", "Disease", "Poison", "Bleed", "other" }
+local OLD_DEFENSIVES = { width = 40, spacing = 4, crop = 10, edgeStyle = "blizzEmpty", edgeMetal = "default", borderSize = 1,
+    tooltip = true }
+local function Exactly(cats, list)
+    if type(cats) ~= "table" then return false end
+    local count = 0
+    for _ in pairs(cats) do count = count + 1 end
+    if count ~= #list then return false end
+    for _, id in ipairs(list) do if cats[id] ~= true then return false end end
+    return true
+end
+function M.MigrateV3(db)
+    local Tone = Style.Tone
+    local bars = type(db.bars) == "table" and db.bars or {}
+    for _, bar in pairs(bars) do
+        if type(bar) == "table" then
+            if Style.SameColor(bar.timerColor, Tone.cooldown) or Style.SameColor(bar.timerColor, Tone.textBright) then
+                bar.timerColor = Copy(Tone.mono.white)
+            end
+            if Style.SameColor(bar.countColor, Tone.textBright) then bar.countColor = Copy(Tone.auraStack) end
+        end
+    end
+    if type(bars.playerDebuffs) == "table" and Exactly(bars.playerDebuffs.cats, OLD_ALL) then bars.playerDebuffs.cats.boss = nil end
+    local first = type(db.customBars) == "table" and db.customBars[1]
+    local bar = type(first) == "table" and first.id == "custom1" and first.name == M.firstCustom.name and bars.custom1
+    if type(bar) == "table" and bar.kind == "buffs" then
+        first.preset = M.firstCustom.preset
+        local new = M.firstCustom.bar
+        for key, old in pairs(OLD_DEFENSIVES) do if bar[key] == old then bar[key] = new[key] end end
+        bar.cancel = false
+        if Exactly(bar.cats, { "bigdef", "extdef", "important" }) then bar.cats.tracked = true end
+    end
+    db.settingsVersion = 3
+end
+
 function M.Initialize(db)
     -- A new profile starts with the owner's Defensives bar.
     if db.settingsVersion == nil and db.customBars == nil then
-        db.customBars = { { id = "custom1", name = M.firstCustom.name } }
+        db.customBars = { { id = "custom1", name = M.firstCustom.name, preset = M.firstCustom.preset } }
         db.bars = db.bars or {}
         db.bars.custom1 = db.bars.custom1 or Copy(M.firstCustom.bar)
         db.nextCustom = 2
@@ -95,6 +151,7 @@ function M.Initialize(db)
         if db.outline == false then db.outline = "none" elseif db.outline == true then db.outline = "outline" end
         db.settingsVersion = 2
     end
+    if db.settingsVersion == 2 then M.MigrateV3(db) end
     for key, value in pairs(M.defaults) do
         if db[key] == nil then db[key] = Copy(value) end
     end
@@ -108,7 +165,8 @@ function M.Initialize(db)
     ValidateCustomList(db)
     for _, entry in ipairs(db.customBars) do
         if db.bars[entry.id] == nil then db.bars[entry.id] = Copy(M.customDefaults) end
-        M.ValidateBar(db.bars[entry.id], M.customDefaults, nil, "bar " .. entry.id)
+        local preset = entry.preset and M.PRESETS[entry.preset]
+        M.ValidateBar(db.bars[entry.id], M.customDefaults, preset and preset.kind, "bar " .. entry.id)
     end
     ValidateBlacklist(db.blacklist)
     for _, key in ipairs({ "shadow", "liftedShadow", "slug" }) do

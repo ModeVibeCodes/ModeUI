@@ -2,11 +2,10 @@ local _, addon = ...
 local M, W, L = addon.BuffsDebuffs, addon.ConfigWidgets, addon.L
 if not M then return end
 
--- The Look tab: the icons (width and height, spacing, zoom), the border
--- (style, metal, size, gap, rims by type), the time text and the stack count
--- (each where it sits, its size, color and offset with 1px nudges) and the
--- glow, for the bar picked at the top (owner, November 17, 2026: text and
--- border options on every bar).
+-- The Look tab: the icons (width and height, spacing, zoom) the border
+-- (style, metal or a custom color, size, padding, shift and offsets, rims by
+-- type) and the glow, for the bar picked at the top (owner, November 17
+-- and 18, 2026). The texts have their own tab (SettingsText.lua).
 local function Bar() return M.db.bars[M:EditingBar()] end
 local function Set(key) return function(value) M:SetBarOption(M:EditingBar(), key, value) end end
 local function Toggle(label, key) return { label = label, get = function() return Bar()[key] end, set = Set(key) } end
@@ -20,12 +19,11 @@ local function BarOwner()
     return owner
 end
 
-local POINT_LABELS = { TOPLEFT = "Top Left", TOP = "Top", TOPRIGHT = "Top Right", LEFT = "Left", CENTER = "Center",
-    RIGHT = "Right", BOTTOMLEFT = "Bottom Left", BOTTOM = "Bottom", BOTTOMRIGHT = "Bottom Right" }
+M.BarOwner = BarOwner
 
 -- An offset pair as two sliders and 1px nudge arrows.
-local function Offsets(page, c, keyX, keyY)
-    local cells = c.Columns({ "Offset X", "Offset Y" })
+function M.Offsets(page, c, keyX, keyY, titles)
+    local cells = c.Columns(titles or { "Offset X", "Offset Y" })
     c.SliderIn(cells[1], M.ranges[keyX], function() return Bar()[keyX] end, Set(keyX), "px")
     c.SliderIn(cells[2], M.ranges[keyY], function() return Bar()[keyY] end, Set(keyY), "px")
     return W.Nudge(page:Row(L["Nudge"], 40), function() return Bar()[keyX] end, function() return Bar()[keyY] end,
@@ -46,7 +44,11 @@ function M:BuildLookTab(page, c)
     page.spacingSlider = c.SliderIn(fit[1], M.ranges.spacing, function() return Bar().spacing end, Set("spacing"), "px")
     page.cropSlider = c.SliderIn(fit[2], M.ranges.crop, function() return Bar().crop end, Set("crop"), "%")
     page.iconToggles = c.Toggles({ Toggle("Timer Swipe", "swipe"), Toggle("Tooltips", "tooltip") })
-    c.When(function() return Bar().kind == "buffs" end, function()
+    -- Right-click cancel: buff bars, not a preset that has none (Defensives).
+    c.When(function()
+        local preset = M:Preset(M:EditingBar())
+        return Bar().kind == "buffs" and not (preset and preset.cancel ~= nil)
+    end, function()
         page.cancelToggles = c.Toggles({ Toggle("Right-Click Cancels", "cancel") })
     end)
 
@@ -55,34 +57,20 @@ function M:BuildLookTab(page, c)
     page.borderStyleSelect, page.borderMetalSelect = W.BorderPickers(page,
         { get = function() return Bar().edgeStyle end, set = Set("edgeStyle") },
         { get = function() return Bar().edgeMetal end, set = Set("edgeMetal") })
-    page.borderSizePills = c.Pills("Border Size", { { id = 1, label = "1px" }, { id = 2, label = "2px" } },
-        function() return Bar().borderSize end, Set("borderSize"), 70)
-    local gap = c.Columns({ "Border Gap" })
-    page.borderGapSlider = c.SliderIn(gap[1], M.ranges.borderGap, function() return Bar().borderGap end, Set("borderGap"), "px")
+    -- The Mode art comes in a 1 and a 2px band.
+    local band = c.Columns({ "Border Size", "Border Padding" })
+    page.borderSizeSlider = c.SliderIn(band[1], M.ranges.borderSize, function() return Bar().borderSize end, Set("borderSize"), "px")
+    page.borderGapSlider = c.SliderIn(band[2], M.ranges.borderGap, function() return Bar().borderGap end, Set("borderGap"), "px")
+    local shift = c.Columns({ "Border Shift" })
+    page.borderShiftSlider = c.SliderIn(shift[1], M.ranges.borderShift, function() return Bar().borderShift end, Set("borderShift"), "px")
+    c.Note("Border Shift pushes the border out from the icon (+) or in over it (-); the offsets move it.", 32)
+    page.borderNudge = M.Offsets(page, c, "borderX", "borderY", { "Border Offset X", "Border Offset Y" })
+    page.borderTintToggles = c.Toggles({ Toggle("Custom Border Color", "borderTint") })
+    c.When(function() return Bar().borderTint end, function()
+        W.ColorRow(page, BarOwner(), L["Border Color"], "borderColor")
+    end)
     c.When(function() return Bar().kind == "debuffs" end, function()
         page.typeToggles = c.Toggles({ Toggle("Rim Colored by Debuff Type", "byType") })
-    end)
-
-    page:Group(L["Time Text"])
-    page.timerPills = c.Pills("Time Text", M.choices.timer, function() return Bar().timer end, Set("timer"), 84)
-    c.When(function() return Bar().timer ~= "none" end, function()
-        local look = c.Columns({ "Size" })
-        page.timerSizeSlider = c.SliderIn(look[1], M.ranges.timerSize, function() return Bar().timerSize end, Set("timerSize"))
-        W.ColorRow(page, BarOwner(), L["Color"], "timerColor")
-        page.timerNudge = Offsets(page, c, "timerX", "timerY")
-    end)
-
-    page:Group(L["Stack Count"])
-    page.countToggles = c.Toggles({ Toggle("Show Stack Count", "count") })
-    c.When(function() return Bar().count end, function()
-        local labels = setmetatable({}, { __index = function(_, key) return L[POINT_LABELS[key] or key] end })
-        local buttons, refresh = W.AnchorPicker(page:Row(L["Corner"], W.ANCHOR_PICKER_HEIGHT + 16),
-            function() return Bar().countPoint end, Set("countPoint"), labels, { center = true })
-        c.Refresh(refresh); page.countCorner = buttons
-        local look = c.Columns({ "Size" })
-        page.countSizeSlider = c.SliderIn(look[1], M.ranges.countSize, function() return Bar().countSize end, Set("countSize"))
-        W.ColorRow(page, BarOwner(), L["Color"], "countColor")
-        page.countNudge = Offsets(page, c, "countX", "countY")
     end)
 
     page:Group(L["Glow"])

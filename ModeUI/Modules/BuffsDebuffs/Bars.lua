@@ -26,12 +26,19 @@ local function SortMethod(choice)
     return methods.Default
 end
 
--- The blacklist as the game's spell set.
-function M:BlacklistSet()
-    if #self.db.blacklist == 0 then return nil end
+-- The blacklist as the game's spell set, with `extra` (a bar's own spells,
+-- which its other buff kinds leave out).
+function M:BlacklistSet(extra)
+    if #self.db.blacklist == 0 and not (extra and #extra > 0) then return nil end
     local set = {}
     for _, id in ipairs(self.db.blacklist) do set[id] = true end
+    for _, id in ipairs(extra or {}) do set[id] = true end
     return set
+end
+-- What a bar's candidate filters depend on (sent again when it changes).
+function M:CandidateKey(id)
+    local bar = self.db.bars[id]
+    return table.concat(self.db.blacklist, ",") .. "|" .. (bar.cats.tracked and table.concat(bar.spells, ",") or "")
 end
 
 -- The aura groups a bar shows: { key, filter, candidates }, in order. All
@@ -42,10 +49,19 @@ end
 function M:Groups(id)
     local bar = self.db.bars[id]
     local base = bar.kind == "buffs" and "HELPFUL" or "HARMFUL"
-    local blacklist = self:BlacklistSet()
+    local tracked = bar.kind == "buffs" and bar.cats.tracked and #bar.spells > 0
+    local blacklist = self:BlacklistSet(tracked and bar.spells or nil)
     local groups, before = {}, {}
     for _, category in ipairs(self.categories[bar.kind]) do
-        if bar.cats[category.id] and not category.enchant and (category.all or not bar.cats.all) then
+        local wanted = bar.cats[category.id] and not category.enchant and (category.all or not bar.cats.all)
+        if category.spells then
+            -- Spells You Add: only the bar's list, the blacklist still wins.
+            if wanted and tracked then
+                local include = {}
+                for _, spell in ipairs(bar.spells) do if not self:IsBlacklisted(spell) then include[spell] = true end end
+                groups[#groups + 1] = { key = id .. "_" .. category.id, filter = base, candidates = { includeSpellIDs = include } }
+            end
+        elseif wanted then
             local filter = base
             if category.token then filter = filter .. "|" .. category.token end
             for _, token in ipairs(before) do filter = filter .. "|!" .. token end
@@ -94,7 +110,8 @@ local function Initializer(self, id, px)
             button.modeOutside = outside
             button:SetDurationText(outside, options)
         end
-        if typed then Kit.DispelAuraRim(button, typed, nil, icon) end
+        -- (LayoutIcon already took a Custom Border Color.)
+        if typed then Kit.DispelAuraRim(button, typed, bar.borderTint and bar.borderColor or nil, icon) end
         -- The glow: by debuff type through the game's colors, or a fixed color.
         if bar.glow ~= "none" then
             local gcd = bar.glow == "gcd"
@@ -154,7 +171,7 @@ local function Container(self, id, px)
     end)
     if not ok then return nil end
     container.lookKey = look
-    container.blacklistKey = table.concat(self.db.blacklist, ",")
+    container.blacklistKey = self:CandidateKey(id)
     self.containers[id] = container
     return container
 end
@@ -167,7 +184,7 @@ local function Configure(self, id, container, px)
     local sort, direction = SortMethod(bar.sort), AuraContainerSortDirection and AuraContainerSortDirection.Normal
     -- Candidate filters make the game read every aura again, so they're only
     -- sent when the blacklist changed.
-    local blacklist = table.concat(self.db.blacklist, ",")
+    local blacklist = self:CandidateKey(id)
     local candidates = container.blacklistKey ~= blacklist
     container.blacklistKey = blacklist
     for _, key in ipairs(container.groupKeys) do

@@ -20,6 +20,7 @@ in-game recheck (see [In-game gate](#in-game-gate)).
 | `6a16676` | First in-game look: Icon Width and Height, Icon Zoom (crop), Border Size and Gap, time and stack text settings, Player Debuffs 42 wide with a 2px border, the `BuffFrame.lua:177` error fixed (settings version 2) |
 | `dfdc340` | Every icon drew black: the art's clip frame layered above the icon frame |
 | `6c11507` | Player Debuffs (Boss & Important), the (All) label, the bar picker's buttons on their own row |
+| November 18 | Second look: Spells You Add, Defensives a preset in the owner's look, kinds kept across a switch, Boss off in (All), ON/OFF in the bar list, Which Auras under the preview, Bar Behavior, border padding, shift, offsets and color, the Texts tab with a sample aura, white time and green stacks (settings version 3) |
 
 ## What the owner asked for
 
@@ -36,6 +37,15 @@ in-game recheck (see [In-game gate](#in-game-gate)).
   and stacks: place, size, color, offsets), Player Debuffs much bigger (42
   wide) with a 2px border and cropped icons, Border Size and offsets on every
   border, and the BuffFrame error fixed.
+- After the second look (owner, November 18): the Defensives bar didn't show
+  a personal defensive; Defensives keeps its kind (an accidental switch to
+  Debuffs lost its picks); Boss Debuffs off in Player Debuffs (All); ON/OFF
+  in the bar list; Which Auras under the preview, the preview a little
+  bigger and naming the bar; Max Shown and Per Row with Grow under **Bar
+  Behavior**; **Border Padding** (was Border Gap), a Border Size slider,
+  border offsets, shift and a custom color; Defensives in the owner's look;
+  the time and stack settings on one **Icon Texts** card in a **Texts** tab
+  with a sample aura; white time text and green (`#53F24F`) stacks.
 
 ## Decisions (owner, November 17, 2026)
 
@@ -171,12 +181,15 @@ forbids anchoring frames to a container, so other bars anchor to movers.
 | Buffs | All Buffs, Weapon Enchants; 32 max, 10 a row | Blizzard's Buff Frame (`frame:BuffFrame`), top right on top right | 32 x 28, 4px apart, grows left, rows down, time below |
 | Debuffs | All Debuffs; 16 max, 10 a row | Buffs' top right, 4 right and 147 down | as Buffs, rims by debuff type |
 | Player Buffs | Important, Heals Over Time, Yours; 12 max, 8 a row | under the ModeUI Player Frame's right end (top right on bottom right, -6, -2) | 24 x 20, 2px apart, grows left, time on the icon |
-| Player Debuffs (All) | Crowd Control, Dispellable by You, Boss, Magic, Curse, Disease, Poison, Bleed, Other; 8 max, 6 a row | above the ModeUI Player Frame (top right on top right, 2, 131) | 42 x 36 (owner, after the first in-game look), 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
+| Player Debuffs (All) | Crowd Control, Dispellable by You, Magic, Curse, Disease, Poison, Bleed, Other (Boss Debuffs off by default, owner November 18); 8 max, 6 a row | above the ModeUI Player Frame (top right on top right, 2, 131) | 42 x 36 (owner, after the first in-game look), 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
 | Player Debuffs (Boss & Important) (owner, November 17) | Important (`IMPORTANT`), Boss (that aren't Important); 6 max, 6 a row | 6px above Player Debuffs (All), right edges lined up (bottom right on its top right, 0, 6) | 48 x 42, 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
-| Defensives (custom) | Big and External Defensives, Important; 4 max | left of center (-151, 27) | 40 x 34, Mode-BlizzEmpty, Soft glow in Aura Gold, time on the icon |
+| Defensives (custom, a preset) | Spells You Add, Big and External Defensives, Important; 4 max | left of center (-151, 27) | 42 x 34, 2px apart, Icon Zoom 8, Mode-Thin Silver 2px, Soft glow in Aura Gold, time on the icon, swipe, no tooltips, no right-click cancel (owner, November 18) |
 
-Player Debuffs (All) still shows Boss debuffs too (the owner's picks); untick
-Boss there to see them only in the Boss & Important bar. Player Buffs' rows
+Boss Debuffs can still be picked in Player Debuffs (All). Defensives is a
+**preset**: a custom bar (renamed, deleted, styled like any) that always
+shows buffs and has no right-click cancel. Switching another custom bar
+between Buffs and Debuffs keeps what each kind had picked (`otherCats`).
+Player Buffs' rows
 go down (the canvas had Up, which would cover the frame
 once a second row starts). Custom bars: **+ New Bar** (eight at most),
 renamed, deleted (what hangs from one moves to where it is).
@@ -185,7 +198,10 @@ renamed, deleted (what hangs from one moves to where it is).
 
 One aura group per kind picked, in this order (an aura shows once):
 
-- Buffs: Big Defensives (`BIG_DEFENSIVE`), External Defensives
+- Buffs: Spells You Add (the bar's own list, up to 24, as
+  `includeSpellIDs`, which the game applies to buffs on the player; the
+  bar's other kinds leave them out with `excludeSpellIDs`), Big Defensives
+  (`BIG_DEFENSIVE`), External Defensives
   (`EXTERNAL_DEFENSIVE`), Important (`IMPORTANT`), Heals Over Time
   (`RAID_IN_COMBAT`), Yours (`PLAYER`), Cancelable (`CANCELABLE`), Under a
   Minute (`maxDuration` 60), All Buffs; Weapon Enchants are the container's
@@ -206,10 +222,12 @@ One aura group per kind picked, in this order (an aura shows once):
 Styled once in `initializeFrame` (`Bars.lua`, the look in `Icons.lua`): the
 button is the cell (the icon plus room for time text under or over it: its
 size and 2px); the Mode icon (`Kit.AuraIconParts`) on a child frame, Width x
-Height, in the bar's Border Style, Metal and Size. The art is cropped by
+Height, in the bar's Border Style, Metal (or **Custom Border Color**) and
+Size, pushed out or in by **Border Shift** and moved by **Border Offset
+X/Y** (the band's frame moves; the art stays). The art is cropped by
 size, not texture coordinates (the game sets each aura's texture itself): a
 square **Icon Zoom**% wider than the visible part on each side, centered in a
-frame that clips it (`SetClipsChildren`), a **Border Gap** inside the band.
+frame that clips it (`SetClipsChildren`), a **Border Padding** inside the band.
 That frame sits one level above the icon frame, whose black back drew over
 the art at the same level (every icon black in game, fixed November 17).
 Time text below, above or on the icon and the stack count in any corner,
@@ -246,29 +264,44 @@ a buff; as your debuff the game may still show it").
 In ModeUI's Edit Mode each shown bar's container waits and its holder fills
 with sample auras in its look (`Samples.lua`); the mover shows over them.
 The page (split layout, Auras icon) previews the bar being edited with the
-same samples. Tabs: **Bars** (bar picker, + New Bar, name, Delete Bar, Show
-This Bar, Shows for custom bars, Which Auras, Sort, Max Shown, Per Row, Grow,
-New Rows Go), **Look** (Icon Width, Icon Height, Spacing, Icon Zoom, Timer
-Swipe, Tooltips, Right-Click Cancels; Border Style, Border Metal, Border
-Size, Border Gap, Rim Colored by Debuff Type; Time Text: Below, Above, On
-Icon or None, Size, Color, Offset X/Y and Nudge; Stack Count: Show, Corner,
-Size, Color, Offset X/Y and Nudge; Glow, Glow Color, Custom Color),
-**Blacklist** (+ Add or Remove Auras), **Module** (Text: Font, Outline,
-Shadow; Reset to Defaults).
+same samples, at up to 125%, under its name and ON or OFF; in the preview
+pane the bar's **Which Auras** card (a button per kind) fills the room under
+it (on the Bars tab only when the window has no pane). The bar list marks
+every bar ON or OFF. Tabs: **Bars** (bar picker, + New Bar and Delete Bar on
+their own row, name, Show This Bar, Shows for custom bars that aren't
+presets; Spells You Add on buff bars: + Add or Remove Spells; Bar Behavior:
+Sort, Max Shown, Per Row, Grow, New Rows Go), **Look** (Icon Width, Icon
+Height, Spacing, Icon Zoom, Timer Swipe, Tooltips, Right-Click Cancels;
+Border Style, Border Metal, Border Size, Border Padding, Border Shift,
+Border Offset X/Y and Nudge, Custom Border Color and Border Color, Rim
+Colored by Debuff Type; Glow, Glow Color, Custom Color), **Texts** (the Icon
+Texts card with a sample aura at its in-game size in the top right: Time
+Text Below, Above, On Icon or None, Time Size, Time Color, Time Offset X/Y
+and Nudge; Show Stack Count, Stack Corner, Stack Size, Stack Color, Stack
+Offset X/Y and Nudge), **Blacklist** (+ Add or Remove Auras), **Module**
+(Text: Font, Outline, Shadow; Reset to Defaults). The blacklist picker also
+edits a bar's Spells You Add (buffs on you, or by spell ID).
 
 ### Saved settings
 
-`ModeUIDB` profile `modules.buffsDebuffs` (settings version 2): `bars[id]`
-(show, kind, cats, sort, max, perRow, width, height, spacing, crop, grow,
-wrap, timer, timerSize, timerColor, timerX, timerY, swipe, count, countPoint,
-countSize, countColor, countX, countY, tooltip, cancel, edgeStyle, edgeMetal,
-borderSize, borderGap, byType, glow, glowColor, glowCustomColor),
-`customBars` ({ id, name }), `nextCustom`, `blacklist`, and the text keys
+`ModeUIDB` profile `modules.buffsDebuffs` (settings version 3): `bars[id]`
+(show, kind, cats, otherCats, spells, sort, max, perRow, width, height,
+spacing, crop, grow, wrap, timer, timerSize, timerColor, timerX, timerY,
+swipe, count, countPoint, countSize, countColor, countX, countY, tooltip,
+cancel, edgeStyle, edgeMetal, borderSize, borderGap (Border Padding),
+borderShift, borderX, borderY, borderTint, borderColor, byType, glow,
+glowColor, glowCustomColor), `customBars` ({ id, name, preset }),
+`nextCustom`, `blacklist`, and the text keys
 (font, fontMedia, outline: none, outline or thick; shadow, liftedShadow,
 slug, textColor, timerColor). Places under `positions`. Version 2 gives each
 bar its height (the design rule from its width) and text sizes, makes Player
 Debuffs 42 wide with a 2px border where still at the old 30 and 1px, and
-turns the outline into a choice. Unit Frames keeps `player.buffs` and
+turns the outline into a choice. Version 3 (`M.MigrateV3`) makes time
+text white and stacks green where still at the old colors, takes Boss
+Debuffs out of Player Debuffs (All) when it still had the old picks, and
+makes the profile's first custom bar, when it's still the Defensives bar,
+the preset in the owner's look (each value only where still at the old
+default; right-click cancel off). Unit Frames keeps `player.buffs` and
 `player.debuffs` untouched; `M.Adopt` (a module hook in
 `DB:ValidateProfile`) turns this module on once when either showed.
 
@@ -280,7 +313,9 @@ custom bars, blacklist), `Placement.lua` (sizes, movers, holders),
 `Icons.lua` (an icon's look: size, crop, border, texts), `Bars.lua`
 (containers, groups, buttons), `Blizzard.lua` (the stand-in), `Samples.lua`,
 `Preview.lua`, `Settings.lua`, `SettingsBar.lua` (Bars tab),
-`SettingsLook.lua` (Look tab, Module text), `Blacklist.lua`. Shared: `Runtime/DB.lua` (Adopt), `Domain/Auras.lua`
+`SettingsLook.lua` (Look tab, Module text), `SettingsText.lua` (Texts
+tab), `Blacklist.lua` (Blacklist tab, the picker). Shared:
+`Style/Tone.lua` (`auraStack`), `Runtime/DB.lua` (Adopt), `Domain/Auras.lua`
 (`NeverSecret`, `Spells`), `Kit/AuraIcon.lua` (`DispelAuraRim` on a child),
 `Kit/AuraContainer.lua` (`AuraTimeFormatter(hours)`), the Auras icon
 (`tools/mode_icons.lua`, `Style.ICONS`). Unit Frames: `Auras.lua`
@@ -316,9 +351,13 @@ module doesn't change).
 
 - **An aura can show twice.** A boss debuff with a type shows under both Boss
   and its type in a bar that picks both (`isBossAura = false` isn't safe to
-  send). Player Debuffs (All) keeps Boss Debuffs (the owner's picks), so boss
-  debuffs show there and in Player Debuffs (Boss & Important); untick Boss in
-  (All) to stop it.
+  send). Across bars nothing is left out: a boss debuff in Player Debuffs
+  (Boss & Important) still shows in Player Debuffs (All) under its type or
+  Other, since no filter can say "not a boss aura".
+- **Big Defensive is the game's flag.** Forever may not flag every class's
+  personal defensive (owner, November 18: the Defensives bar stayed empty);
+  in game `/dump C_UnitAuras.AuraIsBigDefensive(spellID)` tells. Spells You
+  Add shows any buff on you by spell ID whatever its flags.
 - **The blacklist and your own debuffs.** The game skips spell filters for
   harmful auras on the player unless the spell is never secret; the picker
   marks which.
@@ -330,9 +369,11 @@ module doesn't change).
 - **Combat:** settings changes and Edit Mode moves wait until combat ends;
   the bars themselves keep updating (the containers are Blizzard's).
 - **Enrage** isn't offered as a type: unconfirmed as a candidate filter key.
-- **Open (owner, November 17):** "offsets" for borders was built as **Border
-  Gap** (the space between the art and the band); what "shift" should do was
-  asked and isn't built yet.
+- **Border Size** is a slider from 1 to 2px: the Mode art comes in those
+  two bands.
+- **Border Shift** was read as pushing the band out from the icon or in over
+  it, and **Border Offset X/Y** as moving it (owner, November 18); Border
+  Padding (formerly Border Gap) is the room between the art and the band.
 
 ## In-game gate
 
@@ -377,3 +418,22 @@ into `main` before this recheck; still to confirm):
    click **+ New Bar**. Required state: out of combat. Confirmation: no
    clipped box beside the dropdown; **+ New Bar** and **Delete Bar** sit on
    the row under it (**Delete Bar** only for your own bars).
+
+After the second look (owner, November 18; nothing below run in game yet):
+
+7. **Defensives.** Navigation: `/modeui`, **Interface** › **Buffs &
+   Debuffs**, **Bars** tab, **Bar**: Defensives. Action: use your personal
+   defensive; if the bar stays empty, click **+ Add or Remove Spells** while
+   it's up and click it under "Buffs on you now". Required state: out of
+   combat to edit. Confirmation: the defensive shows on Defensives; the bar
+   has no **Shows** choice and no **Right-Click Cancels**.
+8. **Settings layout.** Same page. Action: open the **Bar** list; look under
+   the preview; open **Look** and **Texts**. Required state: out of combat.
+   Confirmation: each bar has ON or OFF; Which Auras under the preview;
+   **Bar Behavior** holds Sort, Max Shown, Per Row, Grow; the Texts tab's
+   **Icon Texts** card has a sample aura at the top right that follows the
+   text settings.
+9. **Border options.** **Look** tab. Action: move **Border Size**, **Border
+   Padding**, **Border Shift**, the border offsets; turn on **Custom Border
+   Color**. Required state: out of combat. Confirmation: the preview and the
+   bar follow.
