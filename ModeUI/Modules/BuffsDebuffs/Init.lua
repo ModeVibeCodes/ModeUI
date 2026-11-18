@@ -8,8 +8,9 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- custom aura containers on the player (the game reads the auras, so bars keep
 -- working while auras are secret), shows the kinds of aura you pick, and is
 -- placed in ModeUI's Edit Mode, anchored to anything.
--- Files: Init (this), Migrations, Driver, Bars, Blizzard, Placement, Samples,
--- Preview, Blacklist, Settings, SettingsBar.
+-- Files: Init (this), Migrations, Driver, Placement, Icons, Bars, Blizzard,
+-- Samples, Preview, Settings, SettingsBar, SettingsLook, SettingsText,
+-- Blacklist.
 local L, Style = addon.L, addon.Style
 local Tone = Style.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -21,7 +22,7 @@ addon.BuffsDebuffs = M
 -- The ID is also the saved-settings key (ModeUIDB profile modules.buffsDebuffs).
 addon:RegisterModule("buffsDebuffs", M)
 
-M.SETTINGS_VERSION = 2
+M.SETTINGS_VERSION = 3
 -- The five bars every profile has, then custom bars ("custom1"...).
 M.FIXED = { "buffs", "debuffs", "playerBuffs", "playerDebuffs", "playerImportant" }
 M.FIXED_LABELS = { buffs = "Buffs", debuffs = "Debuffs", playerBuffs = "Player Buffs", playerDebuffs = "Player Debuffs (All)",
@@ -29,6 +30,7 @@ M.FIXED_LABELS = { buffs = "Buffs", debuffs = "Debuffs", playerBuffs = "Player B
 M.FIXED_KIND = { buffs = "buffs", debuffs = "debuffs", playerBuffs = "buffs", playerDebuffs = "debuffs", playerImportant = "debuffs" }
 M.MAX_CUSTOM = 8
 M.MAX_BLACKLIST = 64
+M.MAX_SPELLS = 24 -- Spells You Add, per bar
 function M.ElementId(id) return "buffsDebuffs" .. id:gsub("^%l", string.upper) end
 function M.FrameName(id) return "ModeUIBuffsDebuffs" .. id:gsub("^%l", string.upper) .. "Mover" end
 -- The four bars are targets any element can anchor to ("ModeUI" tells them
@@ -43,9 +45,13 @@ end
 -- Other kinds use the container's candidate filters: a dispel type
 -- (includeDispelTypes), no type (excludeDispelTypes), boss auras (isBossAura)
 -- or short ones (maxDuration). All is the whole kind on its own; Weapon
--- Enchants are the container's item enchantments.
+-- Enchants are the container's item enchantments. Spells You Add are the
+-- bar's own list (includeSpellIDs, which the game allows for buffs on you;
+-- owner, November 18, 2026: a personal defensive the game doesn't flag as a
+-- Big Defensive); the bar's other buff kinds leave them out.
 M.categories = {
     buffs = {
+        { id = "tracked", label = "Spells You Add", spells = true },
         { id = "bigdef", label = "Big Defensives", token = "BIG_DEFENSIVE" },
         { id = "extdef", label = "External Defensives", token = "EXTERNAL_DEFENSIVE" },
         { id = "important", label = "Important", token = "IMPORTANT" },
@@ -83,7 +89,8 @@ local function Bar(kind, cats, o)
         grow = "left", wrap = "down", timer = "below", swipe = true, count = true, tooltip = true, cancel = kind == "buffs",
         edgeStyle = "blizz", edgeMetal = "default", borderSize = 1, borderGap = 0, crop = 10, byType = kind == "debuffs",
         glow = "none", glowColor = "custom", glowCustomColor = Copy(Tone.auraGlow),
-        timerX = 0, timerY = 0, countPoint = "BOTTOMRIGHT", countX = 0, countY = 0, countColor = Copy(Tone.textBright) }
+        timerX = 0, timerY = 0, countPoint = "BOTTOMRIGHT", countX = 0, countY = 0, countColor = Copy(Tone.auraStack),
+        borderX = 0, borderY = 0, borderShift = 0, borderTint = false, borderColor = Copy(Tone.metal.silver.mid), spells = {} }
     for _, id in ipairs(cats) do bar.cats[id] = true end
     for key, value in pairs(o or {}) do bar[key] = value end
     M.FillSizes(bar)
@@ -92,30 +99,36 @@ end
 M.Bar = Bar
 -- Height and text sizes that follow the icon unless set (owner, November 17,
 -- 2026: width and height both adjustable, 4 or 6px shorter by default, the
--- design rule; Style.IconHeight). Time text on the icon is the cooldown color,
--- under or over it the bright text color.
+-- design rule; Style.IconHeight). Time text is white, stacks green (owner,
+-- November 18, 2026).
 function M.FillSizes(bar)
     if bar.height == nil then bar.height = Style.IconHeight(bar.width) end
     if bar.timerSize == nil then bar.timerSize = bar.timer == "center" and math.max(8, math.floor(bar.height * 0.45 + 0.5)) or 10 end
     if bar.countSize == nil then bar.countSize = math.max(8, math.floor(bar.height * 0.4 + 0.5)) end
-    if bar.timerColor == nil then bar.timerColor = Copy(bar.timer == "center" and Tone.cooldown or Tone.textBright) end
+    if bar.timerColor == nil then bar.timerColor = Copy(Tone.mono.white) end
 end
 M.barDefaults = {
     buffs = Bar("buffs", { "all", "enchant" }, { max = 32, perRow = 10 }),
     debuffs = Bar("debuffs", { "all" }, { max = 16, perRow = 10 }),
     playerBuffs = Bar("buffs", { "mine", "important", "hots" }, { max = 12, perRow = 8, width = 24, spacing = 2, timer = "center" }),
-    -- Owner, after the first in-game look: much bigger (42 wide) with a 2px border.
-    playerDebuffs = Bar("debuffs", { "cc", "dispellable", "boss", "Magic", "Curse", "Disease", "Poison", "Bleed", "other" },
+    -- Owner, after the first in-game look: much bigger (42 wide) with a 2px
+    -- border; Boss Debuffs off (owner, November 18, 2026: they live in Boss &
+    -- Important; still a choice here).
+    playerDebuffs = Bar("debuffs", { "cc", "dispellable", "Magic", "Curse", "Disease", "Poison", "Bleed", "other" },
         { max = 8, perRow = 6, width = 42, spacing = 3, timer = "center", edgeStyle = "blizzEmpty", borderSize = 2 }),
     -- Owner, November 17, 2026: a preset for Boss and Important debuffs, in
     -- Player Debuffs' look a little bigger (48 x 42), just above it.
     playerImportant = Bar("debuffs", { "important", "boss" },
         { max = 6, perRow = 6, width = 48, spacing = 3, timer = "center", edgeStyle = "blizzEmpty", borderSize = 2 }),
 }
--- A new custom bar, and the one every profile starts with (Defensives).
+-- A new custom bar, and the one every profile starts with: Defensives, a
+-- preset (it always shows buffs; owner, November 18, 2026: 42 x 34, 2px
+-- apart, Mode-Thin Silver 2px, no right-click cancel, no tooltips).
 M.customDefaults = Bar("buffs", { "all" }, { max = 8, perRow = 8, width = 36 })
-M.firstCustom = { name = "Defensives", bar = Bar("buffs", { "bigdef", "extdef", "important" },
-    { max = 4, perRow = 6, width = 40, timer = "center", edgeStyle = "blizzEmpty", glow = "soft" }) }
+M.PRESETS = { defensives = { kind = "buffs", cancel = false } }
+M.firstCustom = { name = "Defensives", preset = "defensives", bar = Bar("buffs", { "tracked", "bigdef", "extdef", "important" },
+    { max = 4, perRow = 6, width = 42, height = 34, spacing = 2, crop = 8, timer = "center", edgeStyle = "thin",
+        edgeMetal = "silver", borderSize = 2, glow = "soft", cancel = false, tooltip = false }) }
 
 -- Places (owner's canvas layout): Buffs in Blizzard's Buff Frame spot (its
 -- Edit Mode place), Debuffs under them, Player Buffs under the ModeUI Player
@@ -144,7 +157,8 @@ for id, bar in pairs(M.barDefaults) do M.defaults.bars[id] = Copy(bar) end
 
 M.ranges = { max = { 1, 32, 1 }, perRow = { 1, 16, 1 }, width = { 16, 64, 1 }, height = { 12, 64, 1 }, spacing = { 0, 12, 1 },
     borderSize = { 1, 2, 1 }, borderGap = { 0, 4, 1 }, crop = { 0, 30, 1 }, timerSize = { 6, 32, 1 }, countSize = { 6, 32, 1 },
-    timerX = { -30, 30, 1 }, timerY = { -30, 30, 1 }, countX = { -30, 30, 1 }, countY = { -30, 30, 1 } }
+    timerX = { -30, 30, 1 }, timerY = { -30, 30, 1 }, countX = { -30, 30, 1 }, countY = { -30, 30, 1 },
+    borderX = { -8, 8, 1 }, borderY = { -8, 8, 1 }, borderShift = { -4, 4, 1 } }
 M.POINTS = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
 M.choices = {
     kind = { { id = "buffs", label = "Buffs" }, { id = "debuffs", label = "Debuffs" } },

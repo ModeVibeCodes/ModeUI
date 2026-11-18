@@ -75,6 +75,9 @@ local Tone = {
         Enrage = Hex("FF5555"), Bleed = Hex("C82D2D"), crowdControl = Hex("FF5948") },
     -- A custom aura glow (group frames).
     auraGlow = Hex("FFD15C"),
+    -- Stack counts on Buffs & Debuffs bars (owner, November 18, 2026); their
+    -- time text is mono.white.
+    auraStack = Hex("53F24F"),
     -- Incoming heals on group frames.
     healPrediction = Hex("5CD684"),
     -- The unit frames' plain-text name colors (owner's picks; Sky the default).

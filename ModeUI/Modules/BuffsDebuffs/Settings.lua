@@ -3,11 +3,13 @@ local M, W, T, L = addon.BuffsDebuffs, addon.ConfigWidgets, addon.InterfaceTheme
 if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
--- preview of the bar being edited sits beside the tabs: Bars (which bar, what
--- it shows, how it grows), Look (icons, border, glow) and Blacklist. Pick the
--- bar at the top of Bars or Look; + New Bar adds one of your own. Bars move
--- in Edit Mode (the window header). SettingsBar.lua builds Bars and Look,
--- Blacklist.lua the Blacklist tab.
+-- preview of the bar being edited sits beside the tabs (with its Which Auras
+-- card under it): Bars (which bar, its own spells, how it behaves), Look
+-- (icons, border, glow), Texts (time and stacks), Blacklist and Module.
+-- Pick the bar at the top of a tab (the list marks each ON or OFF); + New
+-- Bar adds one of your own. Bars move in Edit Mode (the window header).
+-- SettingsBar.lua, SettingsLook.lua, SettingsText.lua and Blacklist.lua
+-- build the tabs.
 
 -- Control builders the settings files share. Each takes the host it fills.
 function M:SettingsControls(page)
@@ -65,9 +67,14 @@ function M:EditingBar()
     if not (self.editingBar and self:HasBar(self.editingBar)) then self.editingBar = "buffs" end
     return self.editingBar
 end
+-- Each bar with whether it shows (owner, November 18, 2026).
 function M:BarChoices()
     local list = {}
-    for _, id in ipairs(self:BarIds()) do list[#list + 1] = { id = id, label = self:BarLabel(id) } end
+    for _, id in ipairs(self:BarIds()) do
+        local on = self.db.bars[id].show
+        local tag = addon.Style.ColorText(on and L["ON"] or L["OFF"], on and addon.Style.Tone.celadon or T.muted)
+        list[#list + 1] = { id = id, label = self:BarLabel(id) .. "   " .. tag }
+    end
     return list
 end
 
@@ -110,8 +117,14 @@ local NOTES = {
     playerDebuffs = "Your Player frame's debuffs (they moved here from Unit Frames).",
     playerImportant = "Boss and Important debuffs on you, a little bigger, just above Player Debuffs (All).",
 }
+local PRESET_NOTES = {
+    defensives = "Your big and external defensives, important buffs and the spells you add (a preset: it always shows buffs).",
+}
 function M:BarNote()
-    return L[NOTES[self:EditingBar()] or "A bar of your own: pick what it shows, then place it in Edit Mode."]
+    local id = self:EditingBar()
+    local custom = self:Custom(id)
+    local note = NOTES[id] or (custom and custom.preset and PRESET_NOTES[custom.preset])
+    return L[note or "A bar of your own: pick what it shows, then place it in Edit Mode."]
 end
 
 function M:CreateConfigPage(parent)
@@ -124,6 +137,7 @@ function M:CreateConfigPage(parent)
     if page.UpdatePreviewLayout then page:UpdatePreviewLayout() end
     self:BuildBarsTab(page, c)
     self:BuildLookTab(page, c)
+    self:BuildTextsTab(page, c)
     self:BuildBlacklistTab(page, c)
     page:Section(L["Module"], nil, false)
     self:BuildTextGroup(page, c)

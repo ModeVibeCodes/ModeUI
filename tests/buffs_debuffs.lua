@@ -106,6 +106,9 @@ H.Load({ before = STUBS }).run([==[
     local function Point(f) return f.points[#f.points] end
     assert(M and M.title == 'Buffs & Debuffs' and M.category == 'frames' and not M.enabled, 'off on a fresh profile, in Interface')
     assert(#M.db.customBars == 1 and M.db.customBars[1].name == 'Defensives' and M.db.bars.custom1.cats.bigdef, 'starts with Defensives')
+    assert(M.db.customBars[1].preset == 'defensives' and M.db.bars.custom1.cats.tracked and M:Preset('custom1'), 'Defensives is a preset')
+    assert(addon.Style.SameColor(M.db.bars.buffs.timerColor, addon.Style.Tone.mono.white)
+        and addon.Style.SameColor(M.db.bars.buffs.countColor, addon.Style.Tone.auraStack), 'white time text, green stacks')
     assert(M.db.blacklist[1] == 104280 and M.db.blacklist[2] == 57724, 'Well Fed and Sated hidden')
     assert(#containers == 0 and not BuffFrame.unregistered, 'nothing built while off')
     addon:SetModuleEnabled('buffsDebuffs', true)
@@ -141,10 +144,11 @@ H.Load({ before = STUBS }).run([==[
     -- Player Debuffs: every kind in order, each leaving out the tokens before it.
     local pd = M.containers.playerDebuffs.groups
     assert(table.concat(M.containers.playerDebuffs.order, ',') ==
-        'playerDebuffs_cc,playerDebuffs_dispellable,playerDebuffs_boss,playerDebuffs_Magic,playerDebuffs_Curse,playerDebuffs_Disease,playerDebuffs_Poison,playerDebuffs_Bleed,playerDebuffs_other')
+        'playerDebuffs_cc,playerDebuffs_dispellable,playerDebuffs_Magic,playerDebuffs_Curse,playerDebuffs_Disease,playerDebuffs_Poison,playerDebuffs_Bleed,playerDebuffs_other',
+        'Boss Debuffs off in (All): they live in Boss & Important')
     assert(pd.playerDebuffs_cc.filter == 'HARMFUL|CROWD_CONTROL' and pd.playerDebuffs_dispellable.filter == 'HARMFUL|RAID|!CROWD_CONTROL')
     assert(pd.playerDebuffs_Magic.filter == 'HARMFUL|!CROWD_CONTROL|!RAID' and pd.playerDebuffs_Magic.candidates.includeDispelTypes.Magic)
-    assert(pd.playerDebuffs_boss.candidates.isBossAura == true and pd.playerDebuffs_Magic.candidates.isBossAura == nil)
+    assert(pd.playerDebuffs_boss == nil and pd.playerDebuffs_Magic.candidates.isBossAura == nil)
     assert(pd.playerDebuffs_other.candidates.excludeDispelTypes.Bleed and pd.playerDebuffs_other.candidates.excludeDispelTypes.Magic)
     assert(pd.playerDebuffs_cc.button.timerRegion == pd.playerDebuffs_cc.button.modeIcon.timer, 'time on the icon')
     assert(pd.playerDebuffs_cc.button.modeIcon.edge.styleId == 'blizzEmpty', 'the owner picked Mode-BlizzEmpty')
@@ -160,9 +164,19 @@ H.Load({ before = STUBS }).run([==[
     assert(pii.width == 48 and pii.height == 42 and pii.edge.rim == 2 and pii.edge.styleId == 'blizzEmpty')
     local above = M.movers.playerImportant.points[1]
     assert(above[1] == 'BOTTOMRIGHT' and above[2] == M.movers.playerDebuffs and above[3] == 'TOPRIGHT' and above[5] == 6, '6px above (All)')
-    -- Defensives glow Aura Gold.
+    -- Defensives (owner's look): 42 x 34, Mode-Thin Silver 2px, no cancel, no tooltip, glowing.
     local def = M.containers.custom1.groups.custom1_bigdef.button
     assert(def.modeIcon.glow:IsShown(), 'soft glow')
+    assert(def.modeIcon.width == 42 and def.modeIcon.height == 34 and def.modeIcon.edge.styleId == 'thin' and def.modeIcon.edge.rim == 2)
+    assert(def.cancel == nil and def.clicks == false and M.containers.custom1.groups.custom1_tracked == nil, 'no cancel; no spells yet')
+    -- Spells You Add: the bar's own buffs, left out of its other kinds.
+    assert(M:AddBarSpell('custom1', 21562) and not M:AddBarSpell('custom1', 21562) and not M:AddBarSpell('buffs', 0.5))
+    local tracked = M.containers.custom1.groups.custom1_tracked
+    assert(tracked and tracked.filter == 'HELPFUL' and tracked.candidates.includeSpellIDs[21562], 'the game keeps the bar to its spells')
+    assert(M.containers.custom1.order[1] == 'custom1_tracked', 'first in line')
+    assert(M.containers.custom1.groups.custom1_bigdef.candidates.excludeSpellIDs[21562], 'shown once')
+    assert(M:RemoveBarSpell('custom1', 21562) and #M.db.bars.custom1.spells == 0)
+    assert(not M:SetBarOption('custom1', 'kind', 'debuffs') and not M:SetBarOption('custom1', 'cancel', true), 'the preset keeps its kind, no cancel')
 
     -- Blizzard's frames step aside: unregistered, their parts hidden (and
     -- kept hidden) where they are, since Blizzard's layout calls
@@ -187,6 +201,14 @@ H.Load({ before = STUBS }).run([==[
     assert(Point(ab.modeIcon.count)[1] == 'TOPLEFT' and not M:SetBarOption('buffs', 'countPoint', 'MIDDLE'))
     assert(M:SetBarOption('buffs', 'borderGap', 2) and M.containers.buffs.groups.buffs_all.button.modeIcon.clip.points[1][4] == 3, 'the art 2px inside the band')
     assert(M:SetBarOption('buffs', 'timer', 'below') and M:SetBarOption('buffs', 'timerY', 0) and M:SetBarOption('buffs', 'countPoint', 'BOTTOMRIGHT') and M:SetBarOption('buffs', 'borderGap', 0))
+    -- The border: shifted out 2px and moved 1px right, then a custom color.
+    assert(M:SetBarOption('buffs', 'borderShift', 2) and M:SetBarOption('buffs', 'borderX', 1))
+    local inner = M.containers.buffs.groups.buffs_all.button.modeIcon.inner
+    assert(inner.points[1][4] == (1 - 2) + 1 and inner.points[2][4] == -(1 - 2) + 1, 'the band out 2px, 1px right')
+    assert(not M:SetBarOption('buffs', 'borderShift', 9), 'shift in range')
+    assert(M:SetBarOption('buffs', 'borderTint', true)
+        and M.containers.buffs.groups.buffs_all.button.modeIcon.edge.tint == M.db.bars.buffs.borderColor, 'custom border color')
+    assert(M:SetBarOption('buffs', 'borderTint', false) and M:SetBarOption('buffs', 'borderShift', 0) and M:SetBarOption('buffs', 'borderX', 0))
     assert(M:SetOption('outline', 'thick') and M.db.outline == 'thick' and not M:SetOption('outline', 'bold') and not M:SetOption('max', 3))
     assert(M:SetOption('outline', 'none'))
 
@@ -216,11 +238,21 @@ H.Load({ before = STUBS }).run([==[
     local id = M:AddCustomBar()
     assert(id == 'custom2' and M.containers.custom2 and M.db.customBars[2].name == 'Bar 2' and _G.ModeUIBuffsDebuffsCustom2Mover)
     assert(M:RenameCustomBar(id, 'Boss') and M:BarLabel(id) == 'Boss' and not M:RenameCustomBar(id, '  '))
-    assert(M:SetBarOption(id, 'kind', 'debuffs') and M.db.bars[id].cats.all and M.db.bars[id].byType and not M.db.bars[id].cancel)
+    assert(M:SetCategory(id, 'mine', true) and M:SetBarOption(id, 'kind', 'debuffs') and M.db.bars[id].cats.all and M.db.bars[id].byType and not M.db.bars[id].cancel)
+    assert(M:SetBarOption(id, 'kind', 'buffs') and M.db.bars[id].cats.mine and not M.db.bars[id].cats.all, 'switching back keeps the kinds picked')
     assert(addon.PositionManager:Element('buffsDebuffsCustom1').allowedTargets.buffsDebuffsCustom2, 'other bars may anchor to it')
     assert(M:DeleteCustomBar(id) and not M.containers.custom2 and not addon.PositionManager:Element('buffsDebuffsCustom2'))
     for i = 1, 7 do assert(M:AddCustomBar()) end
     assert(#M.db.customBars == 8 and M:AddCustomBar() == nil, 'eight custom bars at most')
+
+    -- While auras are secret the game forbids its aura buttons (and the Mode
+    -- icon on them) to addon code: snapping the settings window's borders
+    -- walks past them instead of erroring (Edge.lua:65, November 18).
+    local inner = M.containers.buffs.groups.buffs_all.button.modeIcon.inner
+    inner.IsForbidden = function() return true end
+    inner.GetParent = function() error('Attempt to access forbidden object from code tainted by an AddOn') end
+    assert(pcall(addon.Style.SnapEdges, CreateFrame('Frame')), 'snapping skips forbidden frames')
+    inner.IsForbidden, inner.GetParent = nil, nil
 
     -- Combat: changes wait.
     testCombat, testLockdown = true, true
@@ -251,21 +283,45 @@ H.Load({ before = STUBS }).run([==[
     assert(page and page:IsShown() and page.barSelect and page.categoryGrids.buffs and page.categoryGrids.debuffs and page.borderStyleSelect, 'page built')
     local tabs = {}
     for _, section in ipairs(page.sections) do tabs[#tabs + 1] = section.title end
-    assert(table.concat(tabs, ',') == 'Bars,Look,Blacklist,Module', 'four tabs')
-    assert(page.heightSlider and page.cropSlider and page.borderGapSlider and page.timerSizeSlider and page.timerNudge and page.countCorner and page.countNudge and page.outlinePills, 'size, border and text controls')
+    assert(table.concat(tabs, ',') == 'Bars,Look,Texts,Blacklist,Module', 'five tabs')
+    assert(page.heightSlider and page.cropSlider and page.borderGapSlider and page.borderSizeSlider and page.borderShiftSlider
+        and page.borderNudge and page.borderTintToggles, 'size and border controls')
+    assert(page.timerSizeSlider and page.timerNudge and page.countCorner and page.countNudge and page.outlinePills and page.maxSlider and page.growPills, 'text and behavior controls')
+    -- The sample aura on the Texts tab follows the text settings.
+    local sample = page.textSample
+    assert(sample and sample.icon.count:GetText() == '3' and sample.icon.outside:GetText() == '12', 'a sample with both texts')
+    assert(M:SetBarOption('buffs', 'timer', 'center') and sample.icon.timer:GetText() == '12' and M:SetBarOption('buffs', 'timer', 'below'))
+    -- The bar list marks each bar on or off.
+    local choices = M:BarChoices()
+    assert(choices[1].label:find('ON', 1, true) and choices[1].label:find('Buffs', 1, true))
+    assert(M:SetBarOption('debuffs', 'show', false) and M:BarChoices()[2].label:find('OFF', 1, true) and M:SetBarOption('debuffs', 'show', true))
     -- + New Bar and Delete Bar sit under the dropdown (which spans its row), Delete only for your own bars.
     local _, add, delete = page.barSelectParts()
     assert(add:GetParent().row ~= page.barSelect:GetParent().row and not delete:IsShown(), 'buttons on their own row')
     page.SetEditing('custom1'); assert(delete:IsShown()); page.SetEditing('buffs')
     local view = page.configPreview
-    assert(view and view.pool[1] and view.pool[1]:IsShown() and view.caption:GetText():find('Buffs', 1, true), 'the preview shows Buffs')
+    assert(view and view.pool[1] and view.pool[1]:IsShown() and view.name:GetText() == 'Buffs' and view.state:GetText() == 'ON', 'the preview names the bar')
+    assert(view.caption:GetText():find('All Buffs', 1, true))
+    assert(page.previewSplit and view.card and view.card.buttons[1]:IsShown() and view.card.buttons[1].label:GetText() == 'Spells You Add', 'Which Auras under the preview')
+    assert(not page.categoryGrids.buffs[1]:IsVisible(), 'not also on the Bars tab')
     page.SetEditing('playerDebuffs')
-    assert(view.caption:GetText():find('Player Debuffs', 1, true) and view.pool[1].art.texture:find('Possession'))
+    assert(view.name:GetText() == 'Player Debuffs (All)' and view.pool[1].art.texture:find('Possession'))
+    local boss
+    for _, button in ipairs(view.card.buttons) do if button.category == 'boss' then boss = button end end
+    assert(boss and not boss.selected); boss:GetScript('OnClick')(boss)
+    assert(M.db.bars.playerDebuffs.cats.boss, 'Boss Debuffs back on from the preview card'); boss:GetScript('OnClick')(boss)
+    assert(not M.db.bars.playerDebuffs.cats.boss)
     assert(view.pool[1].edge.tint ~= nil, 'debuff samples take their type color')
     assert(M:OpenPicker(page.blacklistButton) and M.picker:IsShown(), 'the blacklist picker')
     assert(M.picker.buttons[1].spell == 104280 and M.picker.buttons[3].spell == 21562, 'hidden first, then auras on you')
     local ok = M:AddBlacklistByID(21562)
     assert(ok and M:IsBlacklisted(21562) and not M:AddBlacklistByID(999999), 'by ID')
+    assert(M:RemoveBlacklist(21562))
+    -- The same picker for a bar's Spells You Add: buffs on you only.
+    assert(M:OpenPicker(page.spellsButton, 'custom1') and M.picker.target == 'custom1')
+    assert(M.picker.buttons[1].spell == 21562 and not M.picker.buttons[2]:IsShown(), 'only the buff on you')
+    M.picker.buttons[1]:GetScript('OnClick')(M.picker.buttons[1])
+    assert(M:HasBarSpell('custom1', 21562) and M:AddBarSpellByID('custom1', 1459) and M:HasBarSpell('custom1', 1459), 'added from the picker and by ID')
 ]==], "buffs_debuffs_page")
 
 -- The Player frame's auras move here: a profile whose Player frame showed
@@ -289,11 +345,36 @@ local v1 = { schemaVersion = 2, activeProfile = 'Default', profiles = { Default 
 H.Load({ before = STUBS, saved = v1 }).run([==[
     local M = addon.BuffsDebuffs
     local bars = M.db.bars
-    assert(M.db.settingsVersion == 2 and M.db.outline == 'none')
+    assert(M.db.settingsVersion == 3 and M.db.outline == 'none')
     assert(bars.playerDebuffs.width == 42 and bars.playerDebuffs.height == 36 and bars.playerDebuffs.borderSize == 2, 'Player Debuffs grow')
-    assert(bars.playerDebuffs.timerSize == 16 and addon.Style.SameColor(bars.playerDebuffs.timerColor, addon.Style.Tone.cooldown))
+    assert(bars.playerDebuffs.timerSize == 16 and addon.Style.SameColor(bars.playerDebuffs.timerColor, addon.Style.Tone.mono.white))
     assert(bars.playerBuffs.width == 42 and bars.playerBuffs.height == 36 and bars.playerBuffs.borderSize == 1, 'other bars keep their border')
     assert(bars.buffs.height == 28 and bars.buffs.timerSize == 10 and bars.buffs.crop == 10 and bars.buffs.borderGap == 0)
 ]==], "buffs_debuffs_v2")
+
+-- Version 2 -> 3: white time text and green stacks where still at the old
+-- defaults, Boss Debuffs out of Player Debuffs (All) when it still had the
+-- old picks, and Defensives a preset in the owner's look (no cancel).
+local v2 = { schemaVersion = 2, activeProfile = 'Default', profiles = { Default = { modules = { buffsDebuffs = {
+    enabled = true, settingsVersion = 2, customBars = { { id = 'custom1', name = 'Defensives' } }, nextCustom = 2,
+    bars = {
+        playerDebuffs = { cats = { cc = true, dispellable = true, boss = true, Magic = true, Curse = true, Disease = true,
+            Poison = true, Bleed = true, other = true }, timer = 'center', timerColor = { 1, 0.694, 0.184 }, countColor = { 0.949, 0.949, 0.949 } },
+        debuffs = { cats = { boss = true }, timerColor = { 0.2, 0.4, 0.6 } },
+        custom1 = { kind = 'buffs', cats = { bigdef = true, extdef = true, important = true }, width = 40, height = 34, spacing = 4,
+            crop = 10, edgeStyle = 'blizzEmpty', edgeMetal = 'default', borderSize = 1, cancel = true, tooltip = true, timer = 'center' } } } } } } }
+H.Load({ before = STUBS, saved = v2 }).run([==[
+    local M = addon.BuffsDebuffs
+    local bars, Tone, Same = M.db.bars, addon.Style.Tone, addon.Style.SameColor
+    assert(M.db.settingsVersion == 3)
+    assert(not bars.playerDebuffs.cats.boss and bars.playerDebuffs.cats.cc, 'Boss Debuffs out of (All)')
+    assert(bars.debuffs.cats.boss, 'picks of your own stay')
+    assert(Same(bars.playerDebuffs.timerColor, Tone.mono.white) and Same(bars.playerDebuffs.countColor, Tone.auraStack))
+    assert(Same(bars.debuffs.timerColor, { 0.2, 0.4, 0.6 }), 'a color you picked stays')
+    local d = bars.custom1
+    assert(M.db.customBars[1].preset == 'defensives' and d.width == 42 and d.height == 34 and d.spacing == 2 and d.crop == 8)
+    assert(d.edgeStyle == 'thin' and d.edgeMetal == 'silver' and d.borderSize == 2 and d.cancel == false and d.tooltip == false)
+    assert(d.cats.tracked and d.cats.bigdef, 'Spells You Add joins the preset')
+]==], "buffs_debuffs_v3")
 
 print("buffs and debuffs: all checks passed")
