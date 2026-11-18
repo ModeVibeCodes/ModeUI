@@ -217,6 +217,7 @@ All in `Shared/Runtime/`, loaded in this order:
 | `ProfileCodec.lua` | bounded copy, export and import of settings tables | `addon.ProfileCodec.Copy(value)` and friends |
 | `DB.lua` | `ModeUIDB`: defaults, schema check and migration, never reset; each module's `Initialize(db)` validates its own settings; one-time PTG import | `addon:InitializeDatabase()`, `addon.Database` |
 | `Profiles.lua` | account-wide named profiles; switching applies on reload | `addon.Profiles` |
+| `Layouts.lua` | built-in layouts: a whole screen of settings a new profile starts from; each module adds its own part; once per account a seeded layout becomes its own profile at `PLAYER_LOGIN` | `addon.Layouts:Register(id, spec)`, `:Contribute(id, moduleId, fn(db, ctx))`, `:Build(id, variant)`, `addon.Profiles:CreateFromLayout(name, id)`; see "Layouts" below |
 | `Reload.lua` | reload requests and the reasons shown to the user | `addon.ReloadManager:Request(key, reason)`, `:Clear(key)`, `:Reload()` |
 | `Lifecycle.lua` | categories and the module registry; enable/disable; combat broadcast | `addon:RegisterCategory(id, def)`, `addon:RegisterModule(id, module)`, `addon:SetModuleEnabled(id, on)`, `addon:BroadcastCombatState(inCombat)` |
 | `API.lua` | the `ModeUI-Core` LibStub API for companion addons and probes, loaded after `Shared/Style/` (read only, except `Companion`) | `LibStub("ModeUI-Core").Style`, `.Domain`, `.IsPublic`, `.IsNumber`, `.InCombat`, `.Ready()`, `.Companion(name)` (ModeUI's addon table, for the companions it lists) |
@@ -411,6 +412,45 @@ module is built.
 
 Every module gets design notes in `docs/<NAME>.md` (like `docs/UNIT_FRAMES.md`)
 and an entry in the README's module table.
+
+## Layouts
+
+`Shared/Runtime/Layouts.lua` (owner, November 18, 2026). A layout is a whole
+screen of ModeUI settings that a **new** profile starts from; it never
+changes an existing profile, so nothing a player placed moves. The first is
+**Mode-Default** (label DPS / Tank), built from the owner's layout editor
+(plan and editor: https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT); a
+Healer layout comes later.
+
+- **Parts.** Each module adds its own part from `Modules/<Name>/Layouts.lua`
+  (ModeCDM from its own folder): `addon.Layouts:Contribute("mode-default",
+  moduleId, function(db, ctx) ... end)`. `db` is the module's settings in a
+  fresh profile (defaults filled in); `ctx.Place(elementId, target, point,
+  relativePoint, x, y)` writes an Edit Mode place (explicit points: no
+  built-in gap), `ctx.Match(elementId, axis, target)` a Match Width or Height
+  pick, and `ctx.V{ ["1080"] = a, ["1440"] = b }` picks by screen. A part
+  never touches another module's settings. Modules in the layout today:
+  Unit Frames, Party Frames, Buffs & Debuffs, Action Bars, Damage Meters,
+  Minimap and the Cooldown Manager. Chat is left out: a chat window's size
+  and place are Blizzard's Edit Mode settings, and whether an addon may set
+  them safely is still to be researched.
+- **Screens.** A layout has places for 1080p and 1440p at the pixel-perfect
+  scale (1 UI unit = 1 pixel); a profile takes the set nearest the UI height
+  when it is built (1440's from 1260 up). Changing UI scale later moves
+  nothing.
+- **Building.** `Layouts:Build(id, variant)` makes a new profile from
+  defaults, runs each installed module's part, then checks the whole profile
+  as an import is checked (`Database:ValidateProfile`). A module that isn't
+  installed (ModeCDM missing) is skipped.
+- **Profiles.** `Profiles:CreateFromLayout(name, id)`; the Profiles page has
+  **New from DPS / Tank Layout** (an empty name takes "Mode-Default", made
+  unique). A layout marked `seed` becomes its own profile once per account
+  at `PLAYER_LOGIN` (when every companion has registered), recorded in
+  `ModeUIDB.builtLayouts`; it is never made active, and a deleted one is not
+  made again.
+- **Tests.** `tests/layouts.lua` builds the whole layout at both screens,
+  checks every place hangs from a known target, seeding once, and ModeUI
+  starting with the profile active; each module's own test checks its part.
 
 ## Companion addons
 

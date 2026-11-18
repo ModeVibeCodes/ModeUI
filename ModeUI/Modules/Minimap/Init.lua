@@ -13,7 +13,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- and bottom (one mask per size and difference, square: the edge's rim
 -- covers the corners; see tools/build_minimap_masks.lua). Turning the
 -- module off asks for a reload, which gives Blizzard's minimap back. See docs/MINIMAP.md.
--- Files: Init (this), Adopt, Shape, Text, Tiles, Container, Driver,
+-- Files: Init (this), Layouts, Adopt, Shape, Text, Tiles, Container, Driver,
 -- Settings, SettingsWidgets.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Minimap"], category = "interface", defaultEnabled = false,

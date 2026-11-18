@@ -15,7 +15,7 @@ local world = H.Load({ before = STUBS })
 world.run([==[
     local M, PM, Kit, Tone, UF = addon.CooldownManager, addon.PositionManager, addon.Kit, addon.Style.Tone, addon.UnitFrames
     local db = M.db.castBar
-    assert(M.db.version == M.VERSION and M.VERSION == 8, 'settings version 8')
+    assert(M.db.version == M.VERSION and M.VERSION == 9, 'settings version 9')
     assert(db.show and db.edgeStyle == 'round' and db.edgeMetal == 'gunmetal' and db.rimColor == 'metal' and db.barMode == 'dark', 'Mode-Round, Gunmetal, Dark')
     assert(db.icon == 'none' and db.showInterrupted and db.darkText == 'class' and db.matchWidth and db.height == 18, 'icon hidden, Show Interrupted, class-colored text')
     assert(M.defaultPositions.buffIcon.target == M.CAST_ELEMENT and M.castPosition.target == 'cooldownManagerEssential' and M.castPosition.placement == 'above')
@@ -141,7 +141,9 @@ world.run([==[
     -- The window: Cast Bar under Resource Bars, its page and preview.
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
-    local row = window.rows[9]
+    -- After the viewers, the custom bars (the five default bars) and the resource bars.
+    local base = #M.viewers + #M.db.customBars
+    local row = window.rows[base + 5]
     assert(row and row.label.text == 'Cast Bar' and row.resource == 'cast', 'Cast Bar in the list')
     assert(M.castPage == nil, 'built on first use')
     row.scripts.OnClick(row)
@@ -151,7 +153,7 @@ world.run([==[
     assert(page.castStatus.text:find('Shows your casts') ~= nil and M:EditingValue() == 'cast')
     assert(M:SetCastOption('icon', 'left') and view.bar.icon:IsShown(), 'the preview follows the settings')
     assert(page.castRimPicker and page.castBorderStylePicker and page.castIconPills and page.castTextSizeSlider, 'its controls')
-    window.rows[5].scripts.OnClick(window.rows[5])
+    window.rows[base + 1].scripts.OnClick(window.rows[base + 1])
     assert(M.resourcePage:IsShown() and not page:IsShown() and not M.selectedCast, 'a resource bar instead')
     M:SelectEditing('cast'); assert(page:IsShown() and not M.resourcePage:IsShown(), 'Editing picks it too')
     window.rows[1].scripts.OnClick(window.rows[1])
@@ -189,7 +191,7 @@ cdm.version, cdm.castBar, cdm.moveBuffIcons = 7, nil, nil
 profile.positions.cooldownManagerBuffIcon = { target = 'cooldownManagerEssential', placement = 'above', x = 0, y = 0 }
 H.Load({ before = STUBS, saved = seven }).run([==[
     local M = addon.CooldownManager
-    assert(M.db.version == 8 and M.db.moveBuffIcons == nil and M.db.castBar.show and M.db.castBar.icon == 'none', 'version 8; the cast bar from its defaults')
+    assert(M.db.version == 9 and M.db.moveBuffIcons == nil and M.db.castBar.show and M.db.castBar.icon == 'none', 'version 8 (then 9); the cast bar from its defaults')
     assert(addon.db.positions.cooldownManagerBuffIcon.target == M.CAST_ELEMENT, 'Buff Icons above the cast bar')
 ]==], "version 8")
 local moved = restored.saved()

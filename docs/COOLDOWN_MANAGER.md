@@ -32,7 +32,7 @@ on the shared settings widgets:
   the close button. Edit Mode hides the window and brings it back when it
   ends.
 - **List** on the left: **Spells and Abilities** (the four viewers), then
-  **Cooldown Bars** and **Buff Bars** (your custom bars, up to ten), each
+  **Cooldown Bars** and **Buff Bars** (your custom bars, up to fifteen), each
   heading with a **+** on its right that makes a new bar of that kind, and
   each custom bar with a **-** that deletes it after asking (**Delete Bar**
   in the confirmation). **Resource Bars** come last. A bar that's off says so.
@@ -45,7 +45,7 @@ on the shared settings widgets:
 
 | Part | Look and behavior |
 |---|---|
-| Placement | Each bar has a stand-in in ModeUI's Edit Mode (`ModeUICooldownEssential`, ..., `ModeUICooldownCustom1`), one full line long, anchored to the screen or to any ModeUI element (another Cooldown Manager bar, a resource bar, your unit frames, ...). Anchored, it sits 1 px off its target's edge, pixel-perfect at any UI scale; the nudge buttons move it from there. **Match Width** and **Match Height** in the Edit Mode window size its line to what it's anchored on, separately, and follow that element when its size changes (the size is pushed on change, never polled). The first line never moves; more lines grow outside it. Essential starts at the bottom middle, 300 px up, Utility under it, Tracked Buffs on top, Tracked Bars to the right; custom bars in the middle of the screen. Icons are wider than tall (Essential and Cooldown Bars 40 by 34; Utility, Tracked Buffs and Buff Bars 32 by 28), and each line leaves room for the icons' edges, so a matched width includes them. |
+| Placement | Each bar has a stand-in in ModeUI's Edit Mode (`ModeUICooldownEssential`, ..., `ModeUICooldownCustom1`), one full line long, anchored to the screen or to any ModeUI element (another Cooldown Manager bar, a resource bar, your unit frames, ...). Anchored, it sits 1 px off its target's edge, pixel-perfect at any UI scale; the nudge buttons move it from there. **Match Width** and **Match Height** in the Edit Mode window size its line to what it's anchored on, separately, and follow that element when its size changes (the size is pushed on change, never polled). The first line never moves; more lines grow outside it. Essential starts at the bottom middle, 300 px up, Utility under it, Tracked Buffs on top, Tracked Bars to the right; custom bars in the middle of the screen (the default bars in their own places). Icons are wider than tall (Essential and Cooldown Bars 40 by 34; Utility, Tracked Buffs and Buff Bars 32 by 28), and each line leaves room for the icons' edges, so a matched width includes them. |
 | Growth | **Centered Horizontal** (default), **Centered Vertical**, **Horizontal Right**, **Horizontal Left**, **Vertical Down** or **Vertical Up**, with **New Lines** going Down or Up for rows, Right or Left for columns (Tracked Buffs and Bars: Up). **Icons per Line** (12; bars 1; custom bars 8), Spacing (2 px, between the edges' shadows), Width and Height. Spells Blizzard hides (an inactive buff) leave no gap. |
 | Icons | The Mode look (`docs/DESIGN_LANGUAGE.md`, "Cooldown icons"): the icon fills the item, cropped, over a **Mode Button** face in Background Color (Mono panel, 100%), with the `frameThin` edge outside it (Mode-Blizz by default: a 1px Silver Specular band, its shadow ring). **Border**: **Mode** or **None** (no edge, and its room given back); with Mode, **Border Style** and **Border Metal**. Tracked Bars' icons and bar boxes take the same edge. Blizzard's round mask and frame art come off; no mask goes on Blizzard's textures. |
 | Cooldown | **Desaturate on Cooldown** (on): an icon goes gray while its spell is on a real cooldown (not the global cooldown) and takes its color back within a fifth of a second of the cooldown ending: the game sends no event then, so icons on a real cooldown are asked about again by one small ticker that runs only while one is cooling; off, icons keep full color. A flat swipe in Swipe Color at Swipe Opacity (70%). While a spell's effect is up Blizzard shows the effect's time in a full-color gold swipe; ModeUI shows the spell's own cooldown instead, gray, straight away. **Show Aura Time** brings Blizzard's gold swipe back. **Edge**, **Bling**, **Ready Flash**, **Out of Range Tint** (the Mode Rosewood tint on an out-of-range spell instead of Blizzard's red; off keeps full color) and, on buffs, **Debuff Border**. Blizzard's out-of-range shade, cut to its round mask, stays faded: repainted it showed as a solid red block, and Blizzard leaves it shown on an icon with no spell yet. |
@@ -80,7 +80,34 @@ in up to three sections (pointing at one names it and says what a click does):
 The bar's Bar tab has its **Name**, how many spells it holds and **Delete
 Bar** (its spells go back to their viewers). A tracked spell you stop
 tracking in Blizzard's window stays in the bar, faded and gray in the
-preview, and comes back when you track it again.
+preview, and comes back when you track it again. A new bar is numbered
+among your own bars (Cooldown Bar 1, Buff Bar 1, ...); the default bars
+below have names of their own.
+
+### Default bars
+
+Five custom bars the owner designed (November 18, 2026; `Presets.lua`).
+A new profile starts with them; version 9 adds them to an older profile
+after its own bars, while there's room (fifteen custom bars at most). They
+start empty: add spells with their **+** slot like any custom bar. Each is an
+ordinary custom bar (rename it, change it or delete it); a deleted one stays
+deleted. Each keeps its own defaults (**Reset to Defaults**, the look a
+spell's glow starts from) and its own default place in Edit Mode, its
+`point` on the target's `relativePoint` with no gap added:
+
+| Bar | Kind | Icons | Per line | Growth, New Lines | Spacing | Default place |
+|---|---|---|---|---|---|---|
+| Defensive Cooldowns | Cooldown | 30 by 24 | 3 | Horizontal Left, Up | 2 | bottom right on the ModeUI Player Frame's top right, 12 down |
+| Emphasized Buffs | Buff | 46 by 40 | 4 | Centered Horizontal, Up | 2 | bottom on Tracked Buffs' top, 1 up |
+| Left Buffs | Buff | 30 by 24 | 6 | Centered Vertical, Left | 1 | screen center, 150 left |
+| Right Buffs | Buff | 30 by 24 | 6 | Centered Vertical, Right | 1 | screen center, 150 right |
+| Ultra Emphasized Buffs | Buff | 54 by 48 | 2 | Centered Horizontal, Up | 2 | screen center, 110 right and 115 up |
+
+Everything else is its kind's default; Ultra Emphasized Buffs also has
+Cooldown text 22 and Count text 18. Saved like any custom bar, with
+`preset = "defensives"` (`"emphasized"`, `"leftBuffs"`, `"rightBuffs"`,
+`"ultra"`) in its `customBars` entry: one of those five, of its kind, once
+per profile.
 
 ### Adding to Essential and Utility
 
@@ -196,14 +223,15 @@ custom bar (`custom1`, ...), `customBars` (each bar's ID, name, kind and
 spells in order) and `nextCustom`. Version 2 replaced Lines, First Icon and
 Center Lines with Growth and New Lines, and the ready glow's switch and style
 with the Off Cooldown glow's style (a flash, as before); the migration keeps
-your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), `order = { essential = { "102", "101", ... } }`, a viewer's spell order once you move one, `racials` (the bar racials show on: `"utility"` by default, `"essential"`, a custom Cooldown Bar's ID or `"none"`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Version 5 (the Mode design language) moves values still at a version 4 default to the new ones and keeps anything you chose: Rounded and Square borders become the Mode edge (Border Size and Border Color retire), the old sizes (42 by 34, 36 by 28, bars 220 by 22) become the new ones, the #040404 background at 75% Mono panel at 100%, Expressway Geist with no outline, gold procs Celadon (Blizzard becomes Border), green glows Celadon or Ivory, the cyan ready glow Ivory (Pixel becomes Mode Glow), text sizes and colors, Mode Gradient on Mode BG with the spark for bars, and the cyan bar color Class Color (a color you picked stays, as Custom). A spell's own glow keeps its style and takes the new color if it still had the old default. Resource bars: Mode Gradient on Mode BG at 60%, Geist, the hostile red for combo points, and Border Color retires. Bad data stops startup; nothing is reset.
+your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), `order = { essential = { "102", "101", ... } }`, a viewer's spell order once you move one, `racials` (the bar racials show on: `"utility"` by default, `"essential"`, a custom Cooldown Bar's ID or `"none"`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Version 5 (the Mode design language) moves values still at a version 4 default to the new ones and keeps anything you chose: Rounded and Square borders become the Mode edge (Border Size and Border Color retire), the old sizes (42 by 34, 36 by 28, bars 220 by 22) become the new ones, the #040404 background at 75% Mono panel at 100%, Expressway Geist with no outline, gold procs Celadon (Blizzard becomes Border), green glows Celadon or Ivory, the cyan ready glow Ivory (Pixel becomes Mode Glow), text sizes and colors, Mode Gradient on Mode BG with the spark for bars, and the cyan bar color Class Color (a color you picked stays, as Custom). A spell's own glow keeps its style and takes the new color if it still had the old default. Resource bars: Mode Gradient on Mode BG at 60%, Geist, the hostile red for combo points, and Border Color retires. Versions 6 and 7 are under Resource Bars, version 8 under Cast Bar. Version 9 (owner, November 18, 2026) adds the five default bars a profile doesn't hold, after its own bars, with new IDs from `nextCustom`, while there's room (up to 15 custom bars); its own bars are never touched. A new profile starts at version 9 with them as `custom1` to `custom5` (`nextCustom` 6). Bad data stops startup; nothing is reset.
 
 ## Files
 
 | File | Job |
 |---|---|
 | `Init.lua` | declaration (standalone), the viewers and custom bar kinds, defaults, ranges, choices |
-| `Migrations.lua` | `Initialize(db)`: version 1 to 2, validation |
+| `Presets.lua` | the five default bars: their defaults, places, validation and the version 9 step |
+| `Migrations.lua` | `Initialize(db)`: version 1 to 9, validation |
 | `Driver.lua` | lifecycle, `/mcdm`, events, settings changes, per-spell switches, copy and reset, status |
 | `Custom.lua` | the bar list, custom bars, what Essential and Utility took, and which spell shows where |
 | `Spells.lua`, `Items.lua`, `Racials.lua` | custom spells, items and racials on ModeUI's own icons |
@@ -216,6 +244,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `SpellMenu.lua`, `Picker.lua`, `Preview.lua`, `PreviewDrag.lua` | the preview, its spell menu, the + slot's list, and dragging spells to move them |
 | `Settings.lua`, `SettingsTabs.lua` | the settings page |
 | `Window.lua` | the module's own window |
+| `Layouts.lua` | ModeCDM's part of the Mode-Default layout |
 
 Shared pieces it uses or added: `Shared/Domain/Cooldowns.lua`,
 `Shared/Domain/Items.lua`, `Shared/Kit/Slot.lua` (icon cropping and glows; the old slot art is gone), `Style.Edge` and `Edge:Regions()` (a glow's rim fades with a secret buff state), `Kit.OutlineFlags` (a thick outline), `Shared/Kit/Glows.lua`
@@ -560,3 +589,73 @@ Shared: `Kit.PlayerCast`, `Kit.NativeFade` (`Shared/Kit/Native.lua`),
   no Blizzard cast bar while it's on; with Show Bar off, Unit Frames' Player
   cast bar shows the cast again; Buff Icons sit above the cast bar; no Lua
   errors.
+
+## Mode-Default layout
+
+ModeCDM's part of ModeUI's built-in Mode-Default layout (DPS / Tank, the
+owner's layout editor, November 18, 2026; `Layouts.lua`, registered with
+`addon.Layouts:Contribute("mode-default", "cooldownManager", ...)`). It
+writes only the new Mode-Default profile; the profile in use never changes.
+Places are an element's `point` on the target's `relativePoint`, in UI units
+(a pixel each at the pixel-perfect scale), with no gap added. "1440" is a UI
+1260 units tall or more; anything shorter takes the 1080 values.
+
+| Element | Settings | Place (1080 / 1440) |
+|---|---|---|
+| Cooldown Manager | switched on | |
+| Essential Cooldowns | 46 by 40, 7 per line, Spacing 2, Centered Horizontal, New Lines Down | center on the screen's bottom, 300 / 325 up |
+| Utility Cooldowns | 36 by 30, 6 per line, Spacing 2, Centered Horizontal, Down | top on Essential's bottom, 82 down |
+| Resource Bars | Group Resources; Power 10, Combo Points 8, Alternate Mana 8, Dark; Health off; Power's Match Width on, matched to Essential (Edit Mode's pick) | Power: bottom on Essential's top, 1 up |
+| Cast Bar | height 12, Match Width on, matched to Essential; Icon Hidden | bottom on Power's top, 1 up |
+| Tracked Buffs | 30 by 24, 10 per line, Spacing 1, Centered Horizontal, New Lines Up | bottom on the Cast Bar's top, 1 up |
+| Defensive Cooldowns | its defaults (above) | bottom right on the ModeUI Player Frame's top right, 12 down |
+| Emphasized Buffs | its defaults | bottom on Tracked Buffs' top, 1 up |
+| Left Buffs / Right Buffs | their defaults | screen center, 150 left / 150 right |
+| Ultra Emphasized Buffs | its defaults | screen center, 110 / 135 right and 115 up |
+
+Stand-ins as built: each bar's stand-in is one line of its icons, every icon
+with its 2px edge on each side, Spacing apart: Essential 362 by 44, Utility
+250 by 34, Defensive Cooldowns 106 by 28, Emphasized Buffs 206 by 44, Ultra
+Emphasized Buffs 118 by 52. A line of an odd pixel count is rounded up to an
+even one so a centered line lands on whole pixels: Tracked Buffs are 350 by
+28 (349 in the editor) and Left and Right Buffs 34 by 174 (173); all three
+hang by their middle, so the extra pixel splits half a pixel to each side and
+no offset can make up for it. Power's grouped block is Essential's 362 wide
+and its bars plus the edges tall (14 with Power alone; each Combo Points or
+Alternate Mana strip adds its height and a 1px line); it hangs by its bottom,
+so it grows upward and the Cast Bar (12 plus its edges, 16) and Tracked
+Buffs ride above it.
+
+### In-game check: Mode-Default layout (November 18, 2026)
+
+- **Navigation:** type `/modeui`, click **Profiles**.
+- **Action:** pick **Mode-Default** in **Profile**, click **Switch to This
+  Profile**, then **Reload** at the bottom left of the window. Type
+  `/mcdm`; click **Edit Mode** in the window's header and look at the
+  bars, then **Exit**.
+- **Required state:** ModeCDM and ModeUI installed, logged in once after
+  updating (the Mode-Default profile is made at login), Unit Frames on, a
+  class with a power bar; out of combat.
+- **Confirmation:** the window lists Defensive Cooldowns under **Cooldown
+  Bars** and Emphasized Buffs, Left Buffs, Right Buffs and Ultra Emphasized
+  Buffs under **Buff Bars**; in Edit Mode Essential sits low in the middle
+  (300 up at 1080, 325 at 1440) with Utility 82 below it, and above Essential,
+  1 pixel apart each, the grouped resource bars and the Cast Bar as wide as
+  Essential, then Tracked Buffs, then Emphasized Buffs; Defensive Cooldowns
+  sit just above the Player frame's bars at its right; Left and Right Buffs
+  stand either side of the screen's middle; no Lua errors. Switching back to
+  your old profile shows it as it was.
+
+### In-game check: default bars (November 18, 2026)
+
+- **Navigation:** type `/mcdm`, click **Ultra Emphasized Buffs** under **Buff
+  Bars** in the window's list.
+- **Action:** change its **Width**, then click **Reset to Defaults** on the
+  Copy & Apply tab; click the **-** beside it, then **Delete Bar**; type
+  `/reload` and open `/mcdm` again.
+- **Required state:** a profile from before this update (version 8) with the
+  Cooldown Manager on; out of combat.
+- **Confirmation:** after the update the profile's own bars come first and
+  the five default bars follow them; Reset to Defaults brings back Cooldown
+  text 22 and keeps the width you set; the deleted bar doesn't come back
+  after the reload.

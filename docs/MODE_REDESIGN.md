@@ -333,6 +333,33 @@ https://claude.ai/artifact/QgDguMeW25MVA4hvH5EuVu. Built on branch
   Unit Frames' Player cast bar steps aside while it's on. See
   COOLDOWN_MANAGER.md, "Cast Bar". Waiting on an in-game look.
 
+### Revision: Mode-Default layout and ModeCDM default bars (November 18, 2026)
+
+Planned with the owner over six rounds in a layout editor (the owner saved
+the final layout there): https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT.
+Built on branch `t3/mode-default-layout`.
+
+- **Built:** the layout registry (`Shared/Runtime/Layouts.lua`; ARCHITECTURE.md,
+  "Layouts") and the **Mode-Default** profile (DPS / Tank), made once per
+  account at login and never switched to on its own. It sets Unit Frames
+  (Player and Target either side of Essential, the Player's name on the left
+  of its border, a small Focus with its cast bar above the Target, Target of
+  Focus off), Party Frames (thin, left of the Player), the Cooldown Manager
+  (Essential 46 × 40 seven to a row level with the unit frames, Utility,
+  grouped resources, the cast bar and Tracked Buffs stacked on Essential),
+  Action Bars (a centered 2 × 2 grid of four bars), Damage Meters (bottom
+  right), the Minimap (top right, as wide as the meters) with Buffs &
+  Debuffs' Buffs and Debuffs beside it. Places for 1080p and 1440p (the
+  center block 25 higher). Icons are 6 wider than tall throughout.
+- **Built:** ModeCDM settings version 9: five default bars (Defensive
+  Cooldowns, Emphasized Buffs, Left Buffs, Right Buffs, Ultra Emphasized
+  Buffs), ordinary custom bars with a preset tag; up to 15 custom bars.
+- **Open:** chat's size and place (Blizzard Edit Mode; research first); the
+  6px rule as ModeUI's general icon rule (`Style.IconHeight`); a Max Icons
+  setting for Essential; the Healer layout (the owner's notes are in the
+  editor's Healer tab).
+- Checked against the mock client only; waiting on the owner's in-game look.
+
 ## Decisions
 
 From the plan's "Decisions for you" (owner's answers):

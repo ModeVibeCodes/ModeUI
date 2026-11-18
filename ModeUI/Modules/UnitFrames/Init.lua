@@ -7,7 +7,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Forever runs the mainline client, so unit values can be secret. They are only
 -- handed to widgets/formatters Blizzard documents as accepting secret values;
 -- never compared, tested or used in arithmetic here. See docs/UNIT_FRAMES.md.
--- Files: Init (this), TextSlots, Migrations, Driver, Native, Layout, Texts, Build, Update,
+-- Files: Init (this), Layouts, TextSlots, Migrations, Driver, Native, Layout, Texts, Build, Update,
 -- Combo, CastBar, Auras, Status, Preview, Settings, SettingsExtra, SettingsText.
 local L = addon.L
 local M = { title = L["Unit Frames"], category = "frames", defaultEnabled = true, layout = "strip",

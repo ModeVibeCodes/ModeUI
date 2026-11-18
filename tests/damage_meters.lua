@@ -772,4 +772,66 @@ H.Load({ before = STUBS }).run([==[
     addon:SetEditMode(false)
 ]==], "anchor near")
 
+-- Mode-Default layout (Layouts.lua): Damage Done in the bottom-right corner,
+-- 230 wide and 6 rows (172 tall), Healing Done (3 rows, 100 tall) on it 4
+-- units up, matching its width; Window 3 off. The same at 1080 and 1440.
+-- Then in use (after a reload): the windows are exactly that size, in those
+-- places, their edge inside them.
+local layout = H.Load({ before = STUBS })
+layout.run([==[
+    local M = addon.DamageMeters
+    for _, variant in ipairs({ '1080', '1440' }) do
+        local profile = assert(addon.Layouts:Build('mode-default', variant))
+        local db = profile.modules.damageMeters
+        assert(db.enabled == true and db.version == M.VERSION, 'on: ' .. variant)
+        local one, two, three = db.window1, db.window2, db.window3
+        assert(one.show and one.meterType == 'damageDone' and one.group == 'none', 'Window 1: Damage Done')
+        assert(two.show and two.meterType == 'healingDone' and two.group == 'none' and two.matchWidth, 'Window 2: Healing Done, Match Width')
+        assert(three.show == false, 'Window 3 off')
+        for window, rows in pairs({ window1 = 6, window2 = 3 }) do
+            local s = db[window]
+            assert(s.width == 230 and s.rows == rows and s.rowHeight == 23 and s.spacing == 1 and s.padding == 1, window .. ' size')
+            assert(s.header == true and s.headerHeight == 20, window .. ' header')
+        end
+        assert(M.Geometry(one, 1).width == 230 and M.Geometry(one, 1).height == 172, 'Window 1 is 230 x 172')
+        assert(M.Geometry(two, 1).width == 230 and M.Geometry(two, 1).height == 100, 'Window 2 is 230 x 100')
+        local p1, p2 = profile.positions.damageMetersWindow1, profile.positions.damageMetersWindow2
+        assert(p1.target == 'screen' and p1.point == 'BOTTOMRIGHT' and p1.relativePoint == 'BOTTOMRIGHT' and p1.x == -8 and p1.y == 8,
+            'Window 1 in the bottom-right corner')
+        assert(p2.target == 'damageMetersWindow1' and p2.point == 'BOTTOM' and p2.relativePoint == 'TOP' and p2.x == 0 and p2.y == 4,
+            'Window 2 on Window 1')
+        assert(profile.positions.damageMetersWindow3 == nil, 'Window 3 keeps its default place')
+        assert(profile.sizeMatches.damageMetersWindow2.width == 'damageMetersWindow1', 'Match Width picks Window 1')
+    end
+    -- The meters' part of the layout into the profile in use (the whole
+    -- Mode-Default profile also turns on modules this world doesn't stub).
+    local built, saved = addon.Layouts:Build('mode-default', '1080'), ModeUIDB.profiles[ModeUIDB.activeProfile]
+    local Copy = addon.ProfileCodec.Copy
+    saved.modules.damageMeters = Copy(built.modules.damageMeters)
+    for _, id in ipairs({ 'damageMetersWindow1', 'damageMetersWindow2' }) do saved.positions[id] = Copy(built.positions[id]) end
+    saved.sizeMatches.damageMetersWindow2 = Copy(built.sizeMatches.damageMetersWindow2)
+]==], "mode-default layout")
+
+H.Load({ before = STUBS, saved = layout.saved() }).run([==[
+    local M = addon.DamageMeters
+    assert(M.enabled, 'the layout in use')
+    local PM = addon.PositionManager
+    assert(PM:GetSizeMatchTarget('damageMetersWindow2', 'width') == 'damageMetersWindow1')
+    local one, two = ModeUIDamageMeter1, ModeUIDamageMeter2
+    assert(one:GetWidth() == 230 and one:GetHeight() == 172 and two:GetWidth() == 230 and two:GetHeight() == 100, 'sizes on screen')
+    -- The `window` edge sits inside the window, so 230 is what shows.
+    assert(addon.Style.EdgeReach('window') == 3 and one.g.border == 3, 'edge inside the window')
+    local m1, m2 = ModeUIDamageMeter1Mover, ModeUIDamageMeter2Mover
+    -- Where each stand-in hangs (the mock places by points); the windows hang from them.
+    local function Only(frame) assert(#frame.points == 1); return frame.points[1] end
+    local p1, p2 = Only(m1), Only(m2)
+    assert(p1[1] == 'BOTTOMRIGHT' and p1[2] == UIParent and p1[3] == 'BOTTOMRIGHT' and p1[4] == -8 and p1[5] == 8,
+        'Window 1: 8 from the right and the bottom')
+    assert(p2[1] == 'BOTTOM' and p2[2] == m1 and p2[3] == 'TOP' and p2[4] == 0 and p2[5] == 4, 'Window 2: 4 above Window 1, centered on it')
+    assert(m1:GetWidth() == 230 and m1:GetHeight() == 172 and m2:GetWidth() == 230, 'stand-ins the windows\' size')
+    local w1, w2 = Only(one), Only(two)
+    assert(w1[1] == 'TOPLEFT' and w1[2] == m1 and w1[4] == 0 and w1[5] == 0 and w2[2] == m2, 'each window on its stand-in')
+    assert(not ModeUIDamageMeter3:IsShown(), 'Window 3 off')
+]==], "mode-default in use")
+
 print("damage meters: all checks passed")

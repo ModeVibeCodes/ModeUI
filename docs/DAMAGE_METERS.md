@@ -349,6 +349,26 @@ Bar Color and the title's Mode cyan → Ivory and Graphite text; the timer's
 #B9B9B9 → Graphite muted; Other Color #78808C → Graphite muted; each text's
 Expressway → the Mode typeface. Anything the user picked stays.
 
+## Mode-Default layout
+
+`Layouts.lua` adds the meters' part of the built-in Mode-Default layout (DPS /
+Tank, `Shared/Runtime/Layouts.lua`; the owner's layout editor, November 18,
+2026). The same at 1080 and 1440:
+
+| Window | Settings | Place |
+|---|---|---|
+| Window 1 | on, Damage Done, Width 230, Rows 6, Row Height 23, Spacing 1, Padding 1, Header on (20): 230 x 172 | `damageMetersWindow1`: BOTTOMRIGHT on the screen's BOTTOMRIGHT, -8, 8 |
+| Window 2 | on, Healing Done, Rows 3, the rest as Window 1: 230 x 100 | `damageMetersWindow2`: BOTTOM on Window 1's TOP, 0, 4; Match Width on, picked on Window 1 (`sizeMatches`) |
+| Window 3 | off | its default |
+
+Window 2 stacks by its own place and Match Width rather than Group With, so
+it keeps its own settings and stays movable; it is centered on Window 1 at
+the same (even) width, so the sides line up to the pixel. The `window` edge
+sits inside the window (3 px: shadow ring and 2px band), so what shows is
+exactly Width wide: 230, the minimap's outer width in this layout
+(docs/MINIMAP.md, "Mode-Default layout"). Heights: 3 + 20 + 1 + 1 + 6 x 23 +
+5 x 1 + 1 + 3 = 172, and 100 for 3 rows (both even, nothing added).
+
 ## Files
 
 | File | Job |
@@ -356,6 +376,7 @@ Expressway → the Mode typeface. Anything the user picked stays.
 | `Shared/Domain/DamageMeter.lua` | guarded `C_DamageMeter` reads, meter types, sessions, spells, class atlases, clock text |
 | `Shared/Kit/Text.lua` | `Kit.ShortNumber(value, decimals)`: abbreviated numbers with set decimals, secret-safe |
 | `Init.lua` | declaration, windows, positions, colors, defaults, ranges, choices |
+| `Layouts.lua` | the meters' part of the Mode-Default layout |
 | `Migrations.lua` | `Initialize(db)`: validation, the migrations, group loops |
 | `Group.lua` | groups: the head of a group, the settings a window draws with, where a grouped window hangs; Match Width and Match Height |
 | `Driver.lua` | lifecycle, events, the render throttle (4 a second, timer every 0.5s in combat), show rules, settings changes |

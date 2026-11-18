@@ -12,10 +12,10 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Blizzard's party frames give way while these are on. Unit values can be
 -- secret and only reach widgets documented as accepting them. See
 -- docs/PARTY_FRAMES.md.
--- Files: Init (this), Migrations, Driver, Native, Header, Layout, Build,
+-- Files: Init (this), AuraInit, Layouts, Migrations, Driver, Native, Header, Layout, Build,
 -- Update, Icons, Auras, AuraContainers, Dispel, Samples, Ghost, Picker,
 -- Preview, PreviewTools, Settings, SettingsPower, SettingsElements,
--- SettingsAuras. Aura declarations: AuraInit.
+-- SettingsAuras. Aura declarations: AuraInit; the Mode-Default layout: Layouts.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Party Frames"], category = "frames", defaultEnabled = false, layout = "split",
     configDescription = L["You and your party in the Mode look, with an aura manager. Configure outside combat."],

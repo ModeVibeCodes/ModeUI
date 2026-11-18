@@ -735,3 +735,56 @@ local saved = world.saved()
 saved.profiles.Default.modules.partyFrames.auras.heals.anchor = 'NOWHERE'
 assert(not pcall(H.Load, { before = STUBS, saved = saved }), 'invalid aura group refused')
 print("party frames: all checks passed")
+
+-- The Mode-Default layout (DPS / Tank, Modules/PartyFrames/Layouts.lua): the
+-- values it writes at both screen heights, then the stand-in Edit Mode moves
+-- in a world that uses the profile.
+local layoutWorld = H.Load({ before = STUBS })
+layoutWorld.run([==[
+    local M = addon.PartyFrames
+    local ICONS = { heals = '18x12', defensives = '22x16', dispellable = '20x14', otherDebuffs = '20x14', magic = '20x14',
+        curse = '20x14', disease = '20x14', poison = '20x14', bleed = '20x14', crowdControl = '24x18', buffs = '16x10',
+        tracked1 = '16x10', tracked2 = '16x10', tracked3 = '16x10' }
+    for variant, y in pairs({ ['1080'] = 40, ['1440'] = -1 }) do
+        local profile = assert(addon.Layouts:Build('mode-default', variant))
+        local db, p = profile.modules.partyFrames, profile.positions.partyFrames
+        assert(db.enabled == true and db.width == 136 and db.healthHeight == 22 and db.powerHeight == 3 and db.powerStyle == 'below')
+        assert(db.spacing == 1 and db.growth == 'down' and db.showPlayer == false and db.powerShown == 'healers')
+        for group, size in pairs(ICONS) do
+            local a = db.auras[group]
+            assert(a.width .. 'x' .. a.height == size and a.width - a.height == 6, group)
+        end
+        -- Everything else keeps its default.
+        assert(db.auras.heals.anchor == 'BOTTOMRIGHT' and db.auras.heals.max == 3 and db.scale == 100 and db.sortBy == 'group')
+        -- Every member 28 tall with its rim: 22 health, the 1px line, 3 power, 1px rim top and bottom.
+        local g = M.Geometry({ db = db }, 1)
+        assert(g.height == 28 and g.width == 136 and g.healthHeight == 22 and g.innerHeight == 26)
+        -- The stand-in is a full party (5 x 28 + 4 = 144); the four members take
+        -- its top 115, their middle at y, so its own middle is 14.5 lower (rounded).
+        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -440 and p.y == y - 14,
+            variant .. ': ' .. tostring(p.x) .. ',' .. tostring(p.y))
+    end
+]==], "party_layout")
+-- Only this module's part (and its places) go into the Default profile, so
+-- the check stays on these frames whatever other modules add to the layout.
+local used = layoutWorld.saved()
+local built, default = used.profiles['Mode-Default'], used.profiles.Default
+default.modules.partyFrames = built.modules.partyFrames
+for _, id in ipairs({ 'partyFrames' }) do default.positions[id] = built.positions[id] end
+H.Load({ before = STUBS, saved = used }).run([==[
+    local M = addon.PartyFrames
+    assert(M.active and M.ghost, 'party frames on')
+    local ghost = M.ghost
+    local x, y = ghost:GetCenter()
+    local ux, uy = UIParent:GetCenter()
+    assert(ghost:GetWidth() == 136 and ghost:GetHeight() == 144, 'room for five')
+    local right, top = x + 68 - ux, y + 72 - uy
+    assert(right == -440 and top == 98, 'right edge at -440, the top 58 over 40')
+    -- Four members from the top: 4 x 28 + 3 = 115, their middle half a pixel over 40.
+    assert(top - 115 / 2 == 40.5)
+    -- The secure header starts at the stand-in's top left (its edges from UIParent's BOTTOMLEFT).
+    local point, _, relative, hx, hy = unpack(M.header.anchor)
+    assert(point == 'TOPLEFT' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() and hy == ghost:GetBottom() + 144)
+    assert(M.header:GetAttribute('showPlayer') == false and M.header:GetAttribute('point') == 'TOP', 'four members, from the top')
+]==], "party_layout_world")
+print("party frames: Mode-Default layout checks passed")

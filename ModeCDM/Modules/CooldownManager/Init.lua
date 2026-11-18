@@ -14,13 +14,15 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- Resource Bars (your health, power, a Druid's mana in forms and combo
 -- points) live here too, in the same window: see ResourceInit.lua.
 -- The player's Cast Bar too: see CastInit.lua.
--- Files: Init (this), ResourceInit, CastInit, Migrations, Driver, Custom,
--- Spells, Items, Racials, Blizzard, Layout, Skin, Bars, Text, Glow,
+-- The five default bars (Defensive Cooldowns and four buff bars): see
+-- Presets.lua. Its part of the Mode-Default layout: Layouts.lua.
+-- Files: Init (this), ResourceInit, CastInit, Presets, Migrations, Driver,
+-- Custom, Spells, Items, Racials, Blizzard, Layout, Skin, Bars, Text, Glow,
 -- Visibility, Resources, ResourceSnap, ResourceGroup, ResourceMarks,
 -- ResourceUpdate, CastBar, SpellMenu, GlowPopout, TextPopout, Picker,
 -- Preview, PreviewDrag, ResourcePreview, CastPreview, SettingsHelpers,
 -- Settings, SettingsTabs, ResourceSettings, ResourceSettingsLook,
--- CastSettings, Window.
+-- CastSettings, Window, Layouts.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Cooldown Manager"], standalone = true, defaultEnabled = false,
     configDescription = L["Blizzard's Cooldown Manager in the Mode look, with custom bars of your own."],
@@ -57,7 +59,10 @@ addon:RegisterModule("cooldownManager", M)
 -- behind Show Tick Marks.
 -- Version 8 (owner, November 18, 2026): the Cast Bar above Essential; Buff
 -- Icons at their old default move above it.
-M.VERSION = 8
+-- Version 9 (owner, November 18, 2026): the five default bars (Presets.lua)
+-- join a profile after its own bars, while there's room; up to 15 custom
+-- bars. A new profile starts with them.
+M.VERSION = 9
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone
@@ -82,7 +87,7 @@ M.customKinds = {
 -- each other or a custom bar, by Spell ID and items; the viewers each
 -- takes spells from, its own first.
 M.entryViewers = { essential = { "essential", "utility" }, utility = { "utility", "essential" } }
-M.MAX_CUSTOM, M.MAX_ENTRIES, M.MAX_NAME = 10, 40, 32
+M.MAX_CUSTOM, M.MAX_ENTRIES, M.MAX_NAME = 15, 40, 32
 
 -- Element (and saved position) IDs and frame names.
 local function Capital(id) return id:sub(1, 1):upper() .. id:sub(2) end

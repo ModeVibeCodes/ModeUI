@@ -8,7 +8,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- fight (Current, Overall or an earlier one), size, bars, text and when it
 -- shows. Blizzard's own meter is hidden while this is on (Hide Blizzard's
 -- Meter); it keeps recording. See docs/DAMAGE_METERS.md.
--- Files: Init (this), Migrations, Driver, Group, Layout, Window, Controls,
+-- Files: Init (this), Layouts, Migrations, Driver, Group, Layout, Window, Controls,
 -- Render, Menu, Breakdown, Blizzard, Preview, Settings.
 local L, Kit = addon.L, addon.Kit
 local DM = addon.Domain.DamageMeter

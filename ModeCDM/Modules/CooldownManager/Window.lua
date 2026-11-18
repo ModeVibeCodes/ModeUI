@@ -219,7 +219,8 @@ function M:RefreshList()
     local room = #self.db.customBars < self.MAX_CUSTOM
     local count = #self.viewers + #self.resources + #self.db.customBars + 1
     local fixed = 4 * 24 + 3 * 12
-    local step = math.max(24, math.min(ROW, math.floor((HEIGHT - HEADER_HEIGHT - 22 - fixed) / count)))
+    -- 22 at the least: fifteen custom bars (MAX_CUSTOM) still fit the list.
+    local step = math.max(22, math.min(ROW, math.floor((HEIGHT - HEADER_HEIGHT - 22 - fixed) / count)))
     local function Row(index, id, resource)
         local row = rows[index]
         if not row then

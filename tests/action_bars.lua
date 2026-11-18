@@ -705,4 +705,47 @@ saved.profiles.Default.modules.actionBars.bar1.width = "wide"
 local ok = pcall(H.Load, { before = STUBS, saved = saved })
 assert(not ok, "invalid action bar settings are refused")
 
+-- The Mode-Default layout (Layouts.lua): a centered 2 x 2 grid on the bottom
+-- edge, pet and stance bars on it, the micro menu top left; the same at 1080
+-- and 1440.
+H.Load({ before = STUBS }).run([==[
+    local M = addon.ActionBars
+    for _, variant in ipairs({ '1080', '1440' }) do
+        local profile = assert(addon.Layouts:Build('mode-default', variant))
+        local db, pos, id = profile.modules.actionBars, profile.positions, M.elementIds
+        assert(db.enabled == true)
+        for _, bar in ipairs({ 'bar1', 'bar2', 'bar3', 'bar4' }) do
+            local s = db[bar]
+            assert(s.show and s.width == 36 and s.height == 30 and s.spacing == 2 and s.buttons == 12 and s.perLine == 12
+                and s.orientation == 'horizontal' and s.start == 'TOPLEFT', bar)
+            local g = M.Geometry(s, 12, 1)
+            assert(g.width == 526 and g.height == 36, bar .. ' is 526 x 36')
+        end
+        assert(not db.bar5.show and not db.bar6.show and not db.bar7.show and not db.bar8.show)
+        for _, bar in ipairs({ 'pet', 'stance' }) do
+            local s = db[bar]
+            assert(s.show and s.width == 30 and s.height == 24 and s.spacing == 2 and s.perLine == 10 and s.buttons == 10, bar)
+        end
+        assert(db.pet.start == 'TOPLEFT' and db.stance.start == 'TOPRIGHT')
+        local pet = M.Geometry(db.pet, 10, 1)
+        assert(pet.width == 378 and pet.height == 30)
+        local micro = db.micro
+        assert(micro.perLine == 8 and micro.width == 32 and micro.height == 40 and micro.spacing == 4 and micro.start == 'TOPLEFT')
+        local g = M.Geometry(micro, 12, 1)
+        assert(g.width == 332 and g.height == 96 and g.points[9][3] < g.points[1][3], 'the second row of 8 goes below the first')
+        local function Is(element, target, point, rel, x, y)
+            local p = pos[element]
+            assert(p and p.target == target and p.point == point and p.relativePoint == rel and p.x == x and p.y == y, element)
+        end
+        Is(id.bar1, 'screen', 'BOTTOMRIGHT', 'BOTTOM', -4, 8)
+        Is(id.bar2, id.bar1, 'LEFT', 'RIGHT', 8, 0)
+        Is(id.bar3, id.bar1, 'BOTTOM', 'TOP', 0, 4)
+        Is(id.bar4, id.bar2, 'BOTTOM', 'TOP', 0, 4)
+        Is(id.pet, id.bar3, 'BOTTOMLEFT', 'TOPLEFT', 0, 4)
+        Is(id.stance, id.bar4, 'BOTTOMRIGHT', 'TOPRIGHT', 0, 4)
+        Is(id.micro, 'screen', 'TOPLEFT', 'TOPLEFT', 8, -8)
+        Is(id.bags, id.micro, 'TOPLEFT', 'TOPRIGHT', 8, 0)
+    end
+]==], "mode-default layout")
+
 print("action bars: all checks passed")

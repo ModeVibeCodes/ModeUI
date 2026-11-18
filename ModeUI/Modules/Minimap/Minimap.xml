@@ -1,5 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="Init.lua"/>
+    <Script file="Layouts.lua"/>
     <Script file="Adopt.lua"/>
     <Script file="Shape.lua"/>
     <Script file="Text.lua"/>

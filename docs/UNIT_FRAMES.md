@@ -5,6 +5,38 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Mode-Default layout (November 18, 2026)
+
+The unit frames' part of the built-in **Mode-Default** layout (DPS / Tank,
+`Shared/Runtime/Layouts.lua`), from the owner's layout editor, is in
+`Modules/UnitFrames/Layouts.lua`. It only builds the new Mode-Default
+profile; no existing profile changes. The same at 1080 and 1440 except the
+height (y) of the row:
+
+- **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -317,
+  y 300 (1080) or 325 (1440). The name on the top border aligned Left
+  (`player.texts.border.align = "LEFT"`).
+- **Target** (`unitFramesTarget`): its CENTER on the screen's BOTTOM, x 317,
+  the same y. It still matches and mirrors the Player (defaults), so its name
+  sits on the right end of its border. Its buffs start at the Top Left and
+  grow Right (`target.buffs.anchor = "TOPLEFT"`, `grow = "right"`).
+- **Focus** (`unitFramesFocus`): Frame Width 120, 20px health, 3px power,
+  Scale 100, no portrait, buffs and debuffs off, its cast bar on, 12 tall and
+  8 below the frame (122 x 26 with its 1px rim). The editor hung its bottom
+  left 64 over the Target's top left corner; unit frames are placed on the
+  screen only (`allowedTargets = { "screen" }` in `Build.lua`), so the layout
+  writes that spot from the screen: BOTTOMLEFT on the screen's BOTTOM, x 194
+  (317 less half the Target's 246), y 399 (1080) or 424 (1440) (the Target's
+  top, y + 35, plus 64). Moving the Target later does not move the Focus.
+- **Target of Focus** off. **Target of Target** keeps its defaults (attached
+  under the Target frame).
+
+Player and Target are 246 x 70 in Edit Mode (their stand-ins,
+`ModeUI<Name>UnitFramePreview`, are the frames' size): the 70px ring (165% of
+the 42px bar block: 34 health, the 1px line, 3 power, the 2px rim) and the
+184px bars. The Player's cast bar steps aside when the Cooldown Manager's
+cast bar is on, as before.
+
 ## Ring Style and Ring Finish, Class Color by default, true class colors (layout version 24)
 
 The owner asked for the portrait ring to read like a reference ring: a class

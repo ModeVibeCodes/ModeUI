@@ -115,11 +115,14 @@ function M:EnsureBarFrames(id)
     self.movers[id] = mover
     local custom, index = self:Custom(id)
     local PM, eid = addon.PositionManager, self.ElementId(id)
+    -- A default bar has its own place (Presets.lua); other custom bars
+    -- start in the middle of the screen.
+    local place = custom and (self.PresetPosition(custom.preset) or self.CustomPosition(index)) or self.defaultPositions[id]
     -- Anchors to any ModeUI element (the other bars, resource bars, unit
     -- frames, action bars...) and to frames picked with Anchor To, 1 physical
     -- pixel off the side it hangs from.
     local ok, reason = PM:RegisterElement(eid, mover, { moduleId = self.id,
-        defaultPosition = custom and self.CustomPosition(index) or self.defaultPositions[id],
+        defaultPosition = place,
         anyTarget = true, gapPixels = 1,
         canDrag = function() return self.active == true and self:HasBar(id) and self.db[id].show end,
         label = custom and custom.name or L[self.viewerSpecs[id].label] })

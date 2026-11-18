@@ -168,6 +168,33 @@ still show only in a party.
   through `SetAlphaFromBoolean`. Without a calculator the shield uses
   `UnitGetTotalAbsorbs` and no overshield shows.
 
+## Mode-Default layout (November 18, 2026)
+
+The party frames' part of the built-in **Mode-Default** layout (DPS / Tank,
+`Shared/Runtime/Layouts.lua`), from the owner's layout editor, is in
+`Modules/PartyFrames/Layouts.lua`. It only builds the new Mode-Default
+profile; no existing profile changes.
+
+- On, without you (`showPlayer = false`: you have your own frame), growing
+  Down, Spacing 1, power bars for Healers only (`powerShown = "healers"`).
+- Each member 136 wide and 28 tall with its rim: 22 health, the 1px line, 3
+  power (Below Health) and the 1px rim top and bottom. Below Health keeps the
+  power row for everyone, so every member is 28; a member without a power bar
+  fills it with health. The editor drew 135 wide, but members are always an
+  even number of pixels (`Layout.lua`, Geometry), so 135 would draw 136.
+- Aura icons by the owner's 6px rule (6 wider than tall): Healing Buffs 18 x
+  12, Defensives 22 x 16, Dispellable by You, Other Debuffs and each debuff
+  type 20 x 14, Crowd Control 24 x 18, Group Buffs and the Tracked Buffs
+  groups 16 x 10. Everything else keeps its default.
+- Place: the right edge at x -440 from the screen's centre (the Player
+  portrait's outer edge: -317 less half its 246 width), the four members'
+  middle at y 40 (1080) or -1 (1440). The Edit Mode stand-in is always sized
+  for five (5 x 28 + 4 = 144 tall) and the header fills it from the top, so
+  without you the four members (115 tall) take its top part. The layout
+  writes the stand-in's RIGHT on the screen's CENTER at x -440, y 26 (1080)
+  or -15 (1440): 14.5 under the group's middle, rounded, so the group's middle
+  sits half a pixel over the editor's.
+
 ## Saved settings
 
 `ModeUIDB` profile `modules.partyFrames` (version 7) and the position

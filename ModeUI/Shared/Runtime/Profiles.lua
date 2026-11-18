@@ -64,6 +64,19 @@ function P:Create(name, source)
     return Result(true, source and ("Copied " .. source .. " to " .. clean .. ".") or ("Created " .. clean .. "."))
 end
 
+-- New profile from a built-in layout (Shared/Runtime/Layouts.lua), at the
+-- places for this UI height (1080p or 1440p).
+function P:CreateFromLayout(name, layout)
+    local clean, reason = NewName(name)
+    if not clean then return Result(false, reason) end
+    local spec = addon.Layouts:Get(layout)
+    if not spec then return Result(false, "Layout not found.") end
+    local profile, why = addon.Layouts:Build(layout, addon.Layouts:CurrentVariant())
+    if not profile then return Result(false, "Couldn't build the " .. spec.label .. " layout: " .. tostring(why)) end
+    Root().profiles[clean] = profile
+    return Result(true, "Created " .. clean .. " from the " .. spec.label .. " layout. Switch to it to use it.")
+end
+
 function P:Rename(old, name)
     if not self:Exists(old) then return Result(false, "Profile not found.") end
     local clean, reason = NewName(name)

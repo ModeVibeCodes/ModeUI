@@ -40,10 +40,11 @@ function M:Label(id)
     return bar and bar.name or tostring(id)
 end
 function M:KindOf(id) local bar = self:Custom(id); return bar and bar.kind end
+-- A bar's defaults: a viewer's, a default bar's own (Presets.lua) or its kind's.
 function M:Defaults(id)
     if self.styleDefaults[id] then return self.styleDefaults[id] end
-    local kind = self:KindOf(id)
-    return kind and self.customDefaults[kind]
+    local bar = self:Custom(id)
+    return bar and self.BarDefaults(bar)
 end
 function M:IsBar(id) return self.viewerSpecs[id] ~= nil and self.viewerSpecs[id].bar == true end
 function M:IsBuff(id)
@@ -168,7 +169,8 @@ function M:AddCustomBar(kind)
     local candidate = Copy(self.db)
     local id = "custom" .. candidate.nextCustom
     local count = 1
-    for _, bar in ipairs(candidate.customBars) do if bar.kind == kind then count = count + 1 end end
+    -- Numbered among your own bars: the default bars have names of their own.
+    for _, bar in ipairs(candidate.customBars) do if bar.kind == kind and not bar.preset then count = count + 1 end end
     candidate.nextCustom = candidate.nextCustom + 1
     candidate.customBars[#candidate.customBars + 1] = { id = id, kind = kind, entries = {},
         name = string.format("%s %d", L[self.customKinds[kind].label], count) }

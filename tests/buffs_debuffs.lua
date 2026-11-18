@@ -377,4 +377,41 @@ H.Load({ before = STUBS, saved = v2 }).run([==[
     assert(d.cats.tracked and d.cats.bigdef, 'Spells You Add joins the preset')
 ]==], "buffs_debuffs_v3")
 
+-- The Mode-Default layout (Layouts.lua): Buffs and Debuffs by the minimap,
+-- outer edges on its outer edges; the same at 1080 and 1440.
+H.Load({ before = STUBS }).run([==[
+    local M = addon.BuffsDebuffs
+    for _, variant in ipairs({ '1080', '1440' }) do
+        local profile = assert(addon.Layouts:Build('mode-default', variant))
+        local db, pos = profile.modules.buffsDebuffs, profile.positions
+        local b, d, pb = db.bars.buffs, db.bars.debuffs, db.bars.playerBuffs
+        assert(db.enabled == true)
+        for _, bar in ipairs({ b, d }) do
+            assert(bar.width == 30 and bar.height == 24 and bar.perRow == 12 and bar.grow == 'left' and bar.wrap == 'down'
+                and bar.spacing == 4 and bar.timer == 'below' and bar.timerSize == 10, 'Buffs and Debuffs icons')
+        end
+        assert(b.max == 24 and d.max == 16 and pb.width == 26 and pb.height == 20)
+        assert(db.bars.playerDebuffs.width == 42 and db.bars.playerImportant.width == 48, 'player debuff bars unchanged')
+        assert(db.customBars[1].preset == 'defensives' and db.customBars[1].id == 'custom1')
+        local def = db.bars.custom1
+        assert(def.width == 40 and def.height == 34 and def.max == 4 and def.borderSize == 2)
+        -- Two rows of cells 24 + 10 + 2 tall, 4 apart: the Debuffs element is 76 tall.
+        local w, h = M:BarSize(d, 1)
+        assert(w == 12 * 30 + 11 * 4 and h == 2 * 36 + 4)
+        local function Is(id, target, point, rel, x, y)
+            local p = pos[M.ElementId(id)]
+            assert(p and p.target == target and p.point == point and p.relativePoint == rel and p.x == x and p.y == y,
+                id .. ' placed ' .. tostring(p and p.x) .. ',' .. tostring(p and p.y))
+        end
+        Is('buffs', 'modeMinimap', 'TOPRIGHT', 'TOPLEFT', -10, 2)
+        Is('debuffs', 'modeMinimap', 'TOPRIGHT', 'BOTTOMLEFT', -10, 73)
+        Is('custom1', 'screen', 'RIGHT', 'CENTER', -124, 166)
+        assert(pos[M.ElementId('playerBuffs')] == nil, 'Player Buffs keep their default place')
+    end
+    -- The bars may anchor to the minimap (anyTarget).
+    addon:SetModuleEnabled('buffsDebuffs', true)
+    local element = addon.PositionManager:Element(M.ElementId('buffs'))
+    assert(element and element.allowedTargets.modeMinimap, 'Buffs may anchor to the minimap')
+]==], "buffs_debuffs_layout")
+
 print("buffs and debuffs: all checks passed")

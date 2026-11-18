@@ -21,6 +21,7 @@ Shared\Runtime\Feedback.lua
 Shared\Runtime\ProfileCodec.lua
 Shared\Runtime\DB.lua
 Shared\Runtime\Profiles.lua
+Shared\Runtime\Layouts.lua
 Shared\Runtime\Reload.lua
 Shared\Runtime\Lifecycle.lua
 Shared\Style\Tone.lua

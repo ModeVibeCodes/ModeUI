@@ -104,6 +104,23 @@ follow (Expressway → the Mode typeface, Button Size 22 → 26, Spacing 2 → 3
 Picked values stay. Positions are ModeUI Edit Mode
 positions: `modeMinimap`, `modeMinimapQueue`, `modeMinimapButtons`.
 
+## Mode-Default layout
+
+`Layouts.lua` adds the minimap's part of the built-in Mode-Default layout
+(DPS / Tank, `Shared/Runtime/Layouts.lua`; the owner's layout editor,
+November 18, 2026). The same at 1080 and 1440: on, Size 224, Wider Than Tall
+By 0 (square), Map Border Mode, Text Layout On Map; `modeMinimap` TOPRIGHT on
+the screen's TOPRIGHT, -11, -11; the group-finder eye and the addon buttons
+keep their default places (the buttons in their row below the map).
+
+The `frame` edge sits outside the map: its 1px shadow ring and 2px band (Map
+Border Mode) reach 3 px past each side (its black line is inside the map;
+the soft drop below is left out). The Minimap element is the map itself,
+224 x 224 with text On Map, its top-right corner 11 from the screen's; what
+shows is 230 x 230, its top-right corner 8 from the screen's, like the damage meters' right edge. 230 is the
+damage meters' width in this layout (their edge sits inside them), so the
+two show exactly as wide.
+
 ## Manual checks (in game)
 
 New texture files need a full client restart, not just `/reload`.

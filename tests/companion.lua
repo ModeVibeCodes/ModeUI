@@ -7,7 +7,8 @@
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root .. "tests/cooldown_manager_stubs.lua")
 
--- With ModeCDM loaded alongside: on, with a custom bar and a size of its own.
+-- With ModeCDM loaded alongside: on, with a custom bar (after the five
+-- default bars) and a size of its own.
 local first = H.Load({ before = STUBS .. "\nMakeViewers()" })
 first.run([==[
     local M = addon.CooldownManager
@@ -15,7 +16,7 @@ first.run([==[
     assert(LibStub('ModeUI-Core').Companion('ModeCDM') == addon, "ModeCDM gets ModeUI's addon table")
     assert(LibStub('ModeUI-Core').Companion('SomethingElse') == nil and LibStub('ModeUI-Core').Companion() == nil, 'nobody else does')
     addon:SetModuleEnabled('cooldownManager', true)
-    assert(M:AddCustomBar('cooldown') == 'custom1' and M:SetOption('essential', 'width', 50))
+    assert(M:AddCustomBar('cooldown') == 'custom6' and M:SetOption('essential', 'width', 50))
     assert(SLASH_MODEUICDM1 == '/mcdm')
 ]==], "with ModeCDM")
 local saved = first.saved()
@@ -25,8 +26,8 @@ local alone = H.Load({ before = STUBS, saved = saved, companions = false })
 alone.run([==[
     assert(addon.initialized and addon.modules.cooldownManager == nil and addon.CooldownManager == nil, 'no Cooldown Manager without ModeCDM')
     local kept = addon.db.modules.cooldownManager
-    assert(kept and kept.enabled == true and kept.essential.width == 50 and #kept.customBars == 1, 'its settings kept, untouched')
-    assert(addon.db.positions.cooldownManagerCustom1 ~= nil, 'its places kept')
+    assert(kept and kept.enabled == true and kept.essential.width == 50 and #kept.customBars == 6, 'its settings kept, untouched')
+    assert(addon.db.positions.cooldownManagerCustom6 ~= nil, 'its places kept')
     assert(SLASH_MODEUICDM1 == nil, 'no /mcdm')
 ]==], "ModeUI alone")
 local afterAlone = alone.saved()
@@ -40,8 +41,8 @@ late.run([==[
     local M = addon.CooldownManager
     assert(M and addon.moduleOrder[#addon.moduleOrder] == 'cooldownManager' and #addon.lateModules == 0, 'registered late, started')
     assert(M.db == addon.db.modules.cooldownManager and M.db.version == M.VERSION, 'settings checked and migrated')
-    assert(M.db.essential.fontMedia == 'Mode' and M.db.essential.width == 40 and #M.db.customBars == 1, 'old defaults moved, choices kept')
-    assert(M.enabled and M.active and M.built and ModeUICooldownEssential and ModeUICooldownCustom1, 'on, as saved')
+    assert(M.db.essential.fontMedia == 'Mode' and M.db.essential.width == 40 and #M.db.customBars == 6, 'old defaults moved, choices kept')
+    assert(M.enabled and M.active and M.built and ModeUICooldownEssential and ModeUICooldownCustom6, 'on, as saved')
     assert(Point(ItemsOf(EssentialCooldownViewer)[1])[2] == M.holders.essential, "Blizzard's icons on ModeUI's bars")
     assert(SLASH_MODEUICDM1 == '/mcdm')
     -- A profile switch or import checks the companion's settings like any module's.

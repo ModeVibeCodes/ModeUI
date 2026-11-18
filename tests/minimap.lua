@@ -295,4 +295,44 @@ restored.run([==[
     assert(not M.enabled and M.db.difference == 8 and M.db.buttons.mail.corner == 'TOPLEFT' and M.db.borderColor == 'black', 'settings persist')
     assert(Minimap:GetParent() == MinimapCluster.MinimapContainer, 'nothing moved while off')
 ]==], "minimap_restore")
+
+-- Mode-Default layout (Layouts.lua): a square 224 map in the top-right
+-- corner, text On Map, the addon buttons below it. Its `frame` edge reaches
+-- 3 past the map, so it shows 230 wide: the damage meters' width in this
+-- layout. The same at 1080 and 1440. Then in use (after a reload): the
+-- Minimap element is the 224 x 224 map, 11 from the top and right (230 shows, 8 in).
+local layout = H.Load({ before = STUBS })
+layout.run([==[
+    local M = addon.Minimap
+    for _, variant in ipairs({ '1080', '1440' }) do
+        local profile = assert(addon.Layouts:Build('mode-default', variant))
+        local db = profile.modules.minimap
+        assert(db.enabled == true and db.version == M.VERSION, 'on: ' .. variant)
+        assert(db.size == 224 and db.difference == 0 and db.border == 'mode' and db.textLayout == 'map', 'square 224, Mode edge, On Map')
+        assert(db.size + 2 * addon.Style.EdgeReach('frame') == 230, 'shows 230 wide, as the meters')
+        local p = profile.positions.modeMinimap
+        assert(p.target == 'screen' and p.point == 'TOPRIGHT' and p.relativePoint == 'TOPRIGHT' and p.x == -11 and p.y == -11, 'top-right corner: what shows 8 in, as the meters')
+        assert(profile.positions.modeMinimapButtons == nil and profile.positions.modeMinimapQueue == nil, 'buttons and eye keep their places')
+        assert(profile.modules.damageMeters.window1.width == db.size + 2 * addon.Style.EdgeReach('frame'), 'the meters match it')
+    end
+    -- The minimap's part of the layout into the profile in use (the whole
+    -- Mode-Default profile also turns on modules this world doesn't stub).
+    local built, saved = addon.Layouts:Build('mode-default', '1080'), ModeUIDB.profiles[ModeUIDB.activeProfile]
+    saved.modules.minimap = addon.ProfileCodec.Copy(built.modules.minimap)
+    saved.positions.modeMinimap = addon.ProfileCodec.Copy(built.positions.modeMinimap)
+]==], "mode-default layout")
+
+H.Load({ before = STUBS, saved = layout.saved() }).run([==[
+    local M = addon.Minimap
+    assert(M.enabled and M.map:GetWidth() == 224 and M.map:GetHeight() == 224 and Minimap:GetWidth() == 224, 'a 224 square')
+    assert(M.mover:GetWidth() == 224 and M.mover:GetHeight() == 224, 'the Minimap element is the map')
+    assert(M.edge.rim == 2 and M.edge:Outset() == 3 and M.edge.rings[1].out == 3, 'the edge 3 outside the map: 230 shows')
+    -- Its top-right corner on the screen's, 11 in (the mock places by points).
+    local p = M.mover.points[#M.mover.points]
+    assert(#M.mover.points == 1 and p[1] == 'TOPRIGHT' and p[2] == UIParent and p[3] == 'TOPRIGHT' and p[4] == -11 and p[5] == -11,
+        '11 from the top and the right')
+    local buttons = addon.PositionManager:GetPosition('modeMinimapButtons')
+    assert(buttons.target == 'modeMinimap' and buttons.placement == 'below', 'addon buttons below it')
+]==], "mode-default in use")
+
 print("minimap: all checks passed")

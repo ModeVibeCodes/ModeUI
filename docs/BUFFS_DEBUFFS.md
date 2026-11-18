@@ -305,9 +305,37 @@ default; right-click cancel off). Unit Frames keeps `player.buffs` and
 `player.debuffs` untouched; `M.Adopt` (a module hook in
 `DB:ValidateProfile`) turns this module on once when either showed.
 
+### Mode-Default layout
+
+`Layouts.lua` adds this module's part of the built-in Mode-Default layout
+(DPS / Tank, `Shared/Runtime/Layouts.lua`); it only writes a new profile. The
+same at 1080 and 1440. The module is on.
+
+| Bar | Settings | Place |
+|---|---|---|
+| Buffs | 30 x 24, 12 per row, 24 max, Grow Left, New Rows Down, Spacing 4, time below | TOPRIGHT on the Minimap's TOPLEFT, (-10, 2) |
+| Debuffs | the same, 16 max | TOPRIGHT on the Minimap's BOTTOMLEFT, (-10, 73) |
+| Player Buffs | 26 x 20 | its default |
+| Defensives (`custom1`) | 40 x 34, 4 max | RIGHT on the screen's CENTER, (-124, 166) |
+
+Player Debuffs (All) and Boss & Important keep their defaults. The owner's
+layout editor drew each icon as its size plus 2px of edge each side (3 for a
+2px border), rows 39 tall, and the minimap as what shows of it. In game a
+bar's element is its cells exactly: the border is inside Width x Height, only
+the icon's 1px shadow shows past it, and a cell with the time below is the
+icon plus Time Size + 2 (36 tall here). The Minimap element is the map alone,
+its edge 3px past it. So the places put outer edges on outer edges: 6px from
+the minimap's edge is -(6 + 3 + 1) = -10; Buffs' icon tops on the minimap's
+top is 3 - 1 = 2; Debuffs' two rows (2 x 36 + 4 = 76, `M:BarSize`) end on
+the minimap's bottom at 76 - 3 = 73 (the editor's 82 counted 39-tall rows);
+Defensives' right edge at -123 is -124 for the element. Icons show 2px
+smaller each way than the editor drew them (32 x 26 with the shadow, not
+34 x 28; Defensives 42 x 36, not 46 x 40).
+
 ### Files
 
 `Modules/BuffsDebuffs/`: `Init.lua` (declaration, bars, kinds, defaults),
+`Layouts.lua` (its part of the Mode-Default layout),
 `Migrations.lua` (validation, Adopt), `Driver.lua` (lifecycle, setters,
 custom bars, blacklist), `Placement.lua` (sizes, movers, holders),
 `Icons.lua` (an icon's look: size, crop, border, texts), `Bars.lua`

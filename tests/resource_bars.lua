@@ -232,16 +232,18 @@ world.run([==[
     -- The window: Resource Bars in the list, their own page and preview.
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
-    assert(window.resourceCaption:IsShown() and window.rows[5].label.text == 'Power' and window.rows[8].label.text == 'Health')
-    assert(window.rows[6].label.text == 'Combo Points' and window.rows[7].label.text == 'Alternate Mana')
+    -- After the viewers and the custom bars (the five default bars).
+    local base = #M.viewers + #M.db.customBars
+    assert(window.resourceCaption:IsShown() and window.rows[base + 1].label.text == 'Power' and window.rows[base + 4].label.text == 'Health')
+    assert(window.rows[base + 2].label.text == 'Combo Points' and window.rows[base + 3].label.text == 'Alternate Mana')
     assert(M.resourcePage == nil, 'resource page built on first use')
-    window.rows[6].scripts.OnClick(window.rows[6])
+    window.rows[base + 2].scripts.OnClick(window.rows[base + 2])
     local page = M.resourcePage
-    assert(page and page:IsShown() and not M.page:IsShown() and window.rows[6].selected and not window.rows[1].selected, 'Combo Points page')
+    assert(page and page:IsShown() and not M.page:IsShown() and window.rows[base + 2].selected and not window.rows[1].selected, 'Combo Points page')
     local view = M.resourcePreview
     assert(view.bar.count == 5 and view.bar.boxes[3].bar.value == 3 and view.bar:IsShown(), 'preview: five points, three lit')
     assert(page.resourceStatus.text == 'Shows now. Move it in Edit Mode.', 'a Rogue has combo points')
-    window.rows[5].scripts.OnClick(window.rows[5])
+    window.rows[base + 1].scripts.OnClick(window.rows[base + 1])
     assert(M:ResourceEditing() == 'power' and view.bar.count == 1 and view.bar.boxes[1].bar.value == 65 and view.bar.text.text == '13.2K', 'preview: Power, sample values')
     -- Tick Marks on the page: a text field per tick, Add Tick Mark; each bar's own.
     assert(M:SetResourceOption('power', 'marksShow', true) and M:SetResourceMark('power', 1, 'value', 40) and view.bar.marks[1]:IsShown(), 'the preview shows Power ticks')
@@ -252,9 +254,9 @@ world.run([==[
     assert(#db.power.marks == 2 and page.resourceMarkRemove[2], 'Add Tick Mark')
     page.resourceMarkRemove[2].scripts.OnClick(page.resourceMarkRemove[2])
     assert(#db.power.marks == 1, 'Remove')
-    window.rows[6].scripts.OnClick(window.rows[6])
+    window.rows[base + 2].scripts.OnClick(window.rows[base + 2])
     assert(not view.bar.marks[1]:IsShown(), "Combo Points' preview shows no Power tick")
-    window.rows[5].scripts.OnClick(window.rows[5])
+    window.rows[base + 1].scripts.OnClick(window.rows[base + 1])
     -- Border Style and Rim Color: in Border on the Look tab, while the border shows.
     local borderGroup, rows = nil, {}
     for _, row in ipairs(page.rows) do
@@ -373,7 +375,7 @@ cdm5.resources.health.edgeMetal = 'steel'
 H.Load({ before = STUBS, saved = five }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 8 and M.db.resourceLayout == 'separate', 'version 8, Separate Resources')
+    assert(M.db.version == 9 and M.db.resourceLayout == 'separate', 'version 9, Separate Resources')
     assert(db.power.height == 16 and db.mana.height == 8 and db.combo.height == 12, 'default heights move; a chosen one stays')
     assert(db.power.edgeStyle == 'round' and db.power.edgeMetal == 'gunmetal' and db.health.edgeMetal == 'steel', 'Mode-Round in Gunmetal; a chosen metal stays')
     assert(db.combo.text == 'current' and db.combo.textShow and db.combo.textAnchor == nil and db.combo.layout == 'grouped', 'the count on, grouped points')
@@ -395,7 +397,7 @@ r6.mana.marks = { { value = 0, power = 'MANA' }, { value = 0, power = 'any' }, {
 H.Load({ before = STUBS, saved = six }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 8, 'version 8')
+    assert(M.db.version == 9, 'version 9')
     assert(db.power.height == 16 and db.combo.height == 10 and db.mana.height == 7, 'version 6 heights move; a chosen one stays')
     assert(db.mana.textShow == false and db.mana.text == 'current' and db.power.textShow and db.combo.textShow, 'None becomes Show Text off')
     assert(db.combo.textAnchor == nil and db.power.textAnchor == nil, 'the anchor goes: always in the middle')

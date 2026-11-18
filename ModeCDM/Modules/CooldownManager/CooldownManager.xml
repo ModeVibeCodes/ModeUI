@@ -2,6 +2,7 @@
     <Script file="Init.lua"/>
     <Script file="ResourceInit.lua"/>
     <Script file="CastInit.lua"/>
+    <Script file="Presets.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Custom.lua"/>
@@ -36,4 +37,5 @@
     <Script file="ResourceSettingsLook.lua"/>
     <Script file="CastSettings.lua"/>
     <Script file="Window.lua"/>
+    <Script file="Layouts.lua"/>
 </Ui>

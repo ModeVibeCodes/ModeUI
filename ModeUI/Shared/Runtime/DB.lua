@@ -11,8 +11,10 @@ addon.Database = D
 
 -- Account-wide keys; everything else in a schema 1 table belonged to the profile.
 D.accountKeys = { schemaVersion = true, profiles = true, activeProfile = true, pendingProfile = true,
-    failedProfile = true, window = true, importedFrom = true, mediaRegistry = true, optimizationOriginals = true }
-D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {} }
+    failedProfile = true, window = true, importedFrom = true, mediaRegistry = true, optimizationOriginals = true,
+    -- Built-in layouts already made into a profile once (Shared/Runtime/Layouts.lua).
+    builtLayouts = true }
+D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {}, builtLayouts = {} }
 D.profileDefaults = {
     -- Shared media read by the Mode widgets and the unit frames' "Use Global
     -- Setting" choices. ModeUI has no page to change them yet.

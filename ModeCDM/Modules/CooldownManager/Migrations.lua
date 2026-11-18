@@ -146,11 +146,12 @@ local function ValidRacials(db)
 end
 
 -- Custom bars: at most MAX_CUSTOM, each with a unique "customN" ID below
--- nextCustom, a name, a kind and its spells (unique cooldown ID keys).
+-- nextCustom, a name, a kind and its spells (unique cooldown ID keys); a
+-- default bar's preset tag (Presets.lua), once per profile, gives its defaults.
 local function ValidCustom(db)
     assert(type(db.customBars) == "table" and #db.customBars <= M.MAX_CUSTOM, "Invalid cooldown manager custom bars")
     assert(Whole(db.nextCustom, { 1, 100000 }), "Invalid cooldown manager custom bar counter")
-    local ids = {}
+    local ids, presets = {}, {}
     for index, bar in pairs(db.customBars) do
         assert(type(index) == "number" and index >= 1 and index <= #db.customBars and type(bar) == "table", "Invalid cooldown manager custom bar")
         local number = type(bar.id) == "string" and tonumber(bar.id:match("^custom(%d+)$"))
@@ -161,8 +162,10 @@ local function ValidCustom(db)
             "Invalid cooldown manager custom bar name: " .. bar.id)
         -- On custom bars, spells and items by ID go on Cooldown Bars only.
         ValidList(bar.entries, bar.id, bar.kind == "cooldown")
-        if db[bar.id] == nil then db[bar.id] = Copy(M.customDefaults[bar.kind]) end
-        Validate(db[bar.id], bar.id, M.customDefaults[bar.kind], false)
+        M.ValidPreset(bar, presets)
+        local defaults = M.BarDefaults(bar)
+        if db[bar.id] == nil then db[bar.id] = Copy(defaults) end
+        Validate(db[bar.id], bar.id, defaults, false)
     end
 end
 
@@ -308,7 +311,8 @@ local function MigrateV6(db)
 end
 
 function M.Initialize(db)
-    if db.version == nil then db.version = M.VERSION end
+    -- A new profile: version 8's settings, then the version 9 step's bars.
+    if db.version == nil then db.version = 8 end
     if db.version == 1 then
         for _, viewer in ipairs(M.viewers) do if type(db[viewer]) == "table" then GrowthFromV1(db[viewer]) end end
         db.version = 2
@@ -358,6 +362,9 @@ function M.Initialize(db)
     -- sat; a Buff Icons place still at that default moves above the cast bar
     -- on start (kept outside this table: CastBar.lua, MoveBuffIconsForCast).
     if db.version == 7 then db.moveBuffIcons = true; db.version = 8 end
+    -- Version 8 -> 9: the five default bars the profile doesn't hold, after
+    -- its own (Presets.lua); its bars stay as they are.
+    if db.version == 8 then M.SeedPresets(db); db.version = 9 end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end

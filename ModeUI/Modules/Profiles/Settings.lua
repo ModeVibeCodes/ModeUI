@@ -82,6 +82,18 @@ function M:CreateConfigPage(parent)
         if ok then selected = P:Name(text) end
         return ok
     end)
+    -- Built-in layouts (Shared/Runtime/Layouts.lua): a new profile with the
+    -- whole screen laid out; an empty name takes the layout's own.
+    local layoutInputs = {}
+    for _, id in ipairs(addon.Layouts.order) do
+        local spec = addon.Layouts:Get(id)
+        layoutInputs[id] = InputAction("New from " .. spec.label .. " Layout", spec.profileName, "Create", function(text)
+            local name = text:match("^%s*$") and P:UniqueName(spec.profileName) or text
+            local ok = P:CreateFromLayout(name, id)
+            if ok then selected = P:Name(name) end
+            return ok
+        end)
+    end
     -- Results of profile actions (created, imported, reload to switch): kept.
     local status = W.Tip(Label(page:Row("Status", 56), T.muted))
     local note = W.Label(page:Row("About Profiles", 96), "A profile holds all of ModeUI's settings: which modules are on, Unit Frames and their Edit Mode positions, Optimizations and Class Colors. Changes save to the active profile as you make them. Switching applies after a reload, so the frames start cleanly from the new settings; use Reload in the header, or reload when you close the window. Play The Game Tools keeps its own, separate profiles.", nil, 0, -4, 420, T.muted)
@@ -158,6 +170,7 @@ function M:CreateConfigPage(parent)
     page.profileSelect, page.profileSwitch, page.profileCancel, page.profileDelete = choose, switch, cancel, delete
     page.renameInput, page.renameButton, page.duplicateInput, page.duplicateButton = renameInput, rename, duplicateInput, duplicate
     page.createInput, page.createButton, page.profileStatus, page.activeLabel = createInput, create, status, active
+    page.layoutInputs = layoutInputs
     page.exportButton, page.importName, page.importButton, page.profileEditor = export, importName, import, edit
     page.selectedProfile = Selected
     function page.selectProfile(name) selected = name; page:Refresh() end

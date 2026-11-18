@@ -1146,3 +1146,58 @@ restored.run([====[
 ]====]
 , "unit_frames_page")
 print("unit frames: all checks passed")
+
+-- The Mode-Default layout (DPS / Tank, Modules/UnitFrames/Layouts.lua): the
+-- values it writes at both screen heights, then the frames in a world that
+-- uses the profile, measured where Edit Mode sees them (the stand-ins).
+local layoutWorld = H.Load({ before = STUBS })
+layoutWorld.run([====[
+    local M=addon.UnitFrames
+    for variant,y in pairs({ ['1080']=300, ['1440']=325 }) do
+        local profile=assert(addon.Layouts:Build('mode-default',variant))
+        local db,pos=profile.modules.unitFrames,profile.positions
+        assert(db.enabled==true and db.player.texts.border.content=='name' and db.player.texts.border.align=='LEFT','the Player name on the border, left')
+        assert(db.target.matchPlayer==true and db.target.mirrorText==true and db.target.buffs.enabled==true
+            and db.target.buffs.anchor=='TOPLEFT' and db.target.buffs.grow=='right','Target buffs top left, growing right')
+        local f=db.focus
+        assert(f.barWidth==120 and f.healthHeight==20 and f.powerHeight==3 and f.scale==100 and f.showPortrait==false)
+        assert(f.buffs.enabled==false and f.debuffs.enabled==false and f.castBar.enabled==true and f.castBar.height==12 and f.castBar.gap==8)
+        assert(db.focustarget.enabled==false and db.targettarget.enabled==true and db.targettarget.attach==true,'Target of Focus off, Target of Target as it was')
+        local function At(id,target,point,relative,x,yy)
+            local p=pos[id]
+            assert(p and p.target==target and p.point==point and p.relativePoint==relative and p.x==x and p.y==yy,
+                id..' '..variant..': '..tostring(p and p.point)..' '..tostring(p and p.x)..','..tostring(p and p.y))
+        end
+        At('unitFramesPlayer','screen','CENTER','BOTTOM',-317,y)
+        At('unitFramesTarget','screen','CENTER','BOTTOM',317,y)
+        -- 64 over the Target's top left corner (246 x 70), from the screen.
+        At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',194,y+99)
+        assert(pos.unitFramesTargetTarget==nil and pos.unitFramesFocusTarget==nil)
+        -- The sizes behind those numbers.
+        local edge=addon.Style.EdgeDepth
+        local pg=M:Geometry(db.player,1,edge('frame'))
+        local fg=M:Geometry(db.focus,1,edge('frameThin'))
+        assert(pg.width==246 and pg.height==70 and fg.width==122 and fg.height==26)
+    end
+    -- Made into its own profile once at login (1080 here: the mock UI is 800 tall).
+    assert(ModeUIDB.profiles['Mode-Default'].positions.unitFramesFocus.y==399)
+]====], "unit_frames_layout")
+-- Only this module's part (and its places) go into the Default profile, so
+-- the check stays on these frames whatever other modules add to the layout.
+local used = layoutWorld.saved()
+local built, default = used.profiles['Mode-Default'], used.profiles.Default
+default.modules.unitFrames = built.modules.unitFrames
+for _, id in ipairs({ 'unitFramesPlayer', 'unitFramesTarget', 'unitFramesFocus' }) do default.positions[id] = built.positions[id] end
+H.Load({ before = STUBS, saved = used }).run([====[
+    local M=addon.UnitFrames
+    assert(M.active and M.ghosts.player and M.ghosts.focus,'the frames are on')
+    local function Box(f) local x,y=f:GetCenter();local w,h=f:GetWidth(),f:GetHeight();return x-w/2,y-h/2,x+w/2,y+h/2,w,h end
+    local _,uy=UIParent:GetCenter();local ux=UIParent:GetCenter();local bottom=uy-UIParent:GetHeight()/2
+    local pl,pb,pr,pt,pw,ph=Box(M.ghosts.player)
+    local tl,tb,tr,tt,tw,th=Box(M.ghosts.target)
+    local fl,fb,fr,ft,fw,fh=Box(M.ghosts.focus)
+    assert(pw==246 and ph==70 and tw==246 and th==70 and fw==122 and fh==26,'Edit Mode measures the frames the editor drew')
+    assert((pl+pr)/2-ux==-317 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==317 and (tb+tt)/2-bottom==300)
+    assert(fl==tl and fb==tt+64,'the Focus 64 over the Target top left')
+]====], "unit_frames_layout_world")
+print("unit frames: Mode-Default layout checks passed")

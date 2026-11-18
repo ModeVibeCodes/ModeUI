@@ -5,7 +5,9 @@
 -- the + slot's list, order, moving, deleting), visibility, Edit Mode and its
 -- way back to the window, copy and reset, switching off, late loading, the
 -- version 1 migration, persistence and the no-writes rule on Blizzard's
--- frames. Simulated client; not WoW rendering, security or taint.
+-- frames, the five default bars (a new profile, the version 9 step, Reset
+-- to Defaults, refusals) and ModeCDM's part of the Mode-Default layout.
+-- Simulated client; not WoW rendering, security or taint.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root .. "tests/cooldown_manager_stubs.lua")
 
@@ -17,7 +19,20 @@ world.run([==[
     local first = ItemsOf(essential)[1]
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
     assert(M.db.essential.width == 40 and M.db.essential.height == 34 and M.db.utility.width == 32 and M.db.utility.height == 28, 'icons wider than tall (Mode sizes)')
-    assert(M.db.version == 8 and M.db.essential.border == 'mode' and #M.db.customBars == 0 and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    assert(M.db.version == 9 and M.db.essential.border == 'mode' and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    -- A new profile starts with the five default bars (Presets.lua), in order.
+    assert(#M.db.customBars == 5 and M.db.nextCustom == 6, 'the five default bars')
+    local want = { { 'defensives', 'Defensive Cooldowns', 'cooldown', 30, 24, 3, 'left', 'up', 2 },
+        { 'emphasized', 'Emphasized Buffs', 'buff', 46, 40, 4, 'centerH', 'up', 2 },
+        { 'leftBuffs', 'Left Buffs', 'buff', 30, 24, 6, 'centerV', 'left', 1 },
+        { 'rightBuffs', 'Right Buffs', 'buff', 30, 24, 6, 'centerV', 'right', 1 },
+        { 'ultra', 'Ultra Emphasized Buffs', 'buff', 54, 48, 2, 'centerH', 'up', 2 } }
+    for i, w in ipairs(want) do
+        local bar, style = M.db.customBars[i], M.db['custom' .. i]
+        assert(bar.id == 'custom' .. i and bar.preset == w[1] and bar.name == w[2] and bar.kind == w[3] and #bar.entries == 0, w[1])
+        assert(style.width == w[4] and style.height == w[5] and style.perLine == w[6] and style.grow == w[7] and style.lineGrowth == w[8] and style.spacing == w[9], w[1] .. ' shape')
+    end
+    assert(M.db.custom5.cooldownSize == 22 and M.db.custom5.countSize == 18 and M.db.custom2.cooldownSize == 10, 'Ultra: big text')
     assert(M.db.essential.desaturate and not M.db.essential.auraSwipe and next(M.db.essential.spells) == nil, 'gray on cooldown; glows off on every spell')
     assert(M.db.essential.procGlow == 'border' and M.db.essential.readyGlow == 'mode', 'looks a glow starts with')
     local Tone = addon.Style.Tone
@@ -205,62 +220,82 @@ world.run([==[
     assert(M:SetOption('buffBar', 'barColorMode', 'class'))
     assert(Point(ItemsOf(bars)[2])[5] == 20, 'Tracked Bars add lines upward')
 
+    -- The default bars: their own places in Edit Mode, on the bars and frames they hang from.
+    local function Placed(id, target, point, relativePoint, x, y)
+        local p = PM:GetPosition(id)
+        return p.target == target and p.point == point and p.relativePoint == relativePoint and p.x == x and p.y == y
+    end
+    assert(Placed('cooldownManagerCustom1', 'unitFramesPlayer', 'BOTTOMRIGHT', 'TOPRIGHT', 0, -12), 'Defensive Cooldowns on the Player frame')
+    assert(Placed('cooldownManagerCustom2', 'cooldownManagerBuffIcon', 'BOTTOM', 'TOP', 0, 1), 'Emphasized Buffs on Tracked Buffs')
+    assert(Placed('cooldownManagerCustom3', 'screen', 'CENTER', 'CENTER', -150, 0) and Placed('cooldownManagerCustom4', 'screen', 'CENTER', 'CENTER', 150, 0))
+    assert(Placed('cooldownManagerCustom5', 'screen', 'CENTER', 'CENTER', 110, 115), 'Ultra Emphasized Buffs')
+    assert(Point(ModeUICooldownCustom2)[2] == ModeUICooldownBuffIcon and Point(ModeUICooldownCustom2)[5] == 1, 'no gap added to an explicit place')
+    assert(ModeUICooldownCustom1.width == 106 and ModeUICooldownCustom1.height == 28 and ModeUICooldownCustom5.width == 118, 'one line of their icons')
+    -- Reset to Defaults on a default bar: its own defaults, its size kept.
+    assert(M:SetOption('custom5', 'cooldownSize', 12) and M:SetOption('custom5', 'border', 'none') and M:ResetViewer('custom5'))
+    assert(M.db.custom5.cooldownSize == 22 and M.db.custom5.border == 'mode' and M.db.custom5.width == 54 and M.db.custom5.height == 48, "the preset's defaults")
+    assert(M:Defaults('custom1').perLine == 3 and M:GlowDefaults('custom2', 'buff').style == 'mode', 'its defaults')
+    -- Renamed and deleted like any custom bar; a deleted one stays deleted.
+    assert(M:RenameCustomBar('custom1', 'Walls') and M.db.customBars[1].preset == 'defensives', 'renamed, still the preset')
+    for i = 1, 5 do assert(M:DeleteCustomBar('custom' .. i), 'deleted') end
+    assert(#M.db.customBars == 0 and M.db.nextCustom == 6 and addon.db.positions.cooldownManagerCustom2 == nil)
+
     -- Custom bars: Blizzard's own icons move onto them.
     local c1 = M:AddCustomBar('cooldown')
-    assert(c1 == 'custom1' and M:Custom(c1).name == 'Cooldown Bar 1' and ModeUICooldownCustom1 and M.db.custom1.perLine == 8, 'a new Cooldown Bar')
-    assert(PM:GetPosition('cooldownManagerCustom1').target == 'screen', 'placed in Edit Mode like the viewers')
+    assert(c1 == 'custom6' and M:Custom(c1).name == 'Cooldown Bar 1' and ModeUICooldownCustom6 and M.db.custom6.perLine == 8, 'a new Cooldown Bar')
+    assert(PM:GetPosition('cooldownManagerCustom6').target == 'screen', 'placed in Edit Mode like the viewers')
     local byKey = {}
     for _, viewer in ipairs({ essential, utility, buffs }) do for _, item in ipairs(ItemsOf(viewer)) do byKey[item:GetCooldownID()] = item end end
     assert(M:AddEntry(c1, '102') and M:AddEntry(c1, '201'))
-    assert(Point(byKey[102])[2] == M.holders.custom1 and Point(byKey[201])[2] == M.holders.custom1, 'icons move onto the custom bar')
+    assert(Point(byKey[102])[2] == M.holders.custom6 and Point(byKey[201])[2] == M.holders.custom6, 'icons move onto the custom bar')
     assert(M.placedCount.essential == 4 and M.placedCount.utility == 2, 'their viewers close up (Utility keeps Berserking)')
     assert(Point(byKey[102])[4] == 140 and Point(byKey[201])[4] == 186, 'in the order added, centered')
     assert(M:MoveEntry(c1, '201', -1) and Point(byKey[201])[4] == 140, 'Earlier')
     assert(not M:AddEntry(c1, '301'), 'a Cooldown Bar takes no buffs')
     local c2 = M:AddCustomBar('buff')
-    assert(c2 == 'custom2' and M:Custom(c2).name == 'Buff Bar 1' and M:AddEntry(c2, '301') and not M:AddEntry(c2, '101'))
-    assert(Point(byKey[301])[2] == M.holders.custom2, 'a buff on a Buff Bar')
+    assert(c2 == 'custom7' and M:Custom(c2).name == 'Buff Bar 1' and M:AddEntry(c2, '301') and not M:AddEntry(c2, '101'))
+    assert(Point(byKey[301])[2] == M.holders.custom7, 'a buff on a Buff Bar')
     local c3 = M:AddCustomBar('cooldown')
     assert(M:Custom(c3).name == 'Cooldown Bar 2' and M:AddEntry(c3, '102'))
-    assert(#M:Custom(c1).entries == 1 and Point(byKey[102])[2] == M.holders.custom3, 'a spell moves between custom bars')
+    assert(#M:Custom(c1).entries == 1 and Point(byKey[102])[2] == M.holders.custom8, 'a spell moves between custom bars')
     assert(M:SetSpellSwitch(c3, '102', 'hide', true) and byKey[102].alpha == 0, 'hidden on its custom bar')
     assert(M:RenameCustomBar(c3, '  Burst ') and M:Label(c3) == 'Burst' and not M:RenameCustomBar(c3, ''))
-    assert(PM:Element('cooldownManagerCustom3').label == 'Burst', 'Edit Mode handle renamed')
-    assert(M:SetOption(c3, 'activeGlow', 'mode') and M.db.custom3.activeGlow == 'mode', 'custom bars have every setting')
+    assert(PM:Element('cooldownManagerCustom8').label == 'Burst', 'Edit Mode handle renamed')
+    assert(M:SetOption(c3, 'activeGlow', 'mode') and M.db.custom8.activeGlow == 'mode', 'custom bars have every setting')
     -- Anchoring: any ModeUI element and the custom bars, 1px off the side.
     local E = PM:Element('cooldownManagerEssential')
-    assert(E.allowedTargets.actionBarsBar1 and E.allowedTargets.cooldownManagerCustom3, 'other ModeUI elements and custom bars as targets')
+    assert(E.allowedTargets.actionBarsBar1 and E.allowedTargets.cooldownManagerCustom8, 'other ModeUI elements and custom bars as targets')
     assert(Point(ModeUICooldownUtility)[2] == ModeUICooldownEssential and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
-    assert(PM:AnchorTo('cooldownManagerCustom1', 'cooldownManagerCustom3', 'below'))
-    local hang = Point(ModeUICooldownCustom1)
-    assert(hang[2] == ModeUICooldownCustom3 and hang[5] == -1, 'anchored with the 1px gap')
-    assert(addon:SetEditMode(true) and PM:Nudge('cooldownManagerCustom1', 0, -2) and Point(ModeUICooldownCustom1)[5] == -3, 'nudged from there')
+    assert(PM:AnchorTo('cooldownManagerCustom6', 'cooldownManagerCustom8', 'below'))
+    local hang = Point(ModeUICooldownCustom6)
+    assert(hang[2] == ModeUICooldownCustom8 and hang[5] == -1, 'anchored with the 1px gap')
+    assert(addon:SetEditMode(true) and PM:Nudge('cooldownManagerCustom6', 0, -2) and Point(ModeUICooldownCustom6)[5] == -3, 'nudged from there')
     assert(addon:SetEditMode(false)); ModeUIConfigWindow:Hide()
     -- Match Width: the icons resize to fill the parent's width, pixel perfect.
-    assert(M:SetOption(c1, 'perLine', 5) and ModeUICooldownCustom1.width == 5 * 44 + 4 * 2)
-    assert(PM:CanMatchSize('cooldownManagerCustom1', 'width') and PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', true) and M.db.custom1.matchWidth)
-    PM:RefreshAnchorSize('cooldownManagerCustom1')
-    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width, 'width matched')
+    assert(M:SetOption(c1, 'perLine', 5) and ModeUICooldownCustom6.width == 5 * 44 + 4 * 2)
+    assert(PM:CanMatchSize('cooldownManagerCustom6', 'width') and PM:SetSizeMatchValue('cooldownManagerCustom6', 'width', true) and M.db.custom6.matchWidth)
+    PM:RefreshAnchorSize('cooldownManagerCustom6')
+    assert(ModeUICooldownCustom6.width == ModeUICooldownCustom8.width, 'width matched')
     assert(byKey[201].width == 68 and Point(byKey[201])[4] == 149, 'icons split the width on whole pixels')
-    assert(M:SetOption(c3, 'perLine', 6)); PM:RefreshAnchorSize('cooldownManagerCustom1')
-    assert(ModeUICooldownCustom1.width == ModeUICooldownCustom3.width and ModeUICooldownCustom3.width == 6 * 44 + 5 * 2, 'follows the parent')
+    assert(M:SetOption(c3, 'perLine', 6)); PM:RefreshAnchorSize('cooldownManagerCustom6')
+    assert(ModeUICooldownCustom6.width == ModeUICooldownCustom8.width and ModeUICooldownCustom8.width == 6 * 44 + 5 * 2, 'follows the parent')
     -- A picked element, not what it hangs from: anchored to Cooldown Bar 2, it
     -- takes Essential's width and follows it.
-    assert(PM:SetSizeMatchTarget('cooldownManagerCustom1', 'width', 'cooldownManagerEssential'))
-    assert(Point(ModeUICooldownCustom1)[2] == ModeUICooldownCustom3 and ModeUICooldownCustom1.width == ModeUICooldownEssential.width, "Essential's width, still anchored to Cooldown Bar 2")
+    assert(PM:SetSizeMatchTarget('cooldownManagerCustom6', 'width', 'cooldownManagerEssential'))
+    assert(Point(ModeUICooldownCustom6)[2] == ModeUICooldownCustom8 and ModeUICooldownCustom6.width == ModeUICooldownEssential.width, "Essential's width, still anchored to Cooldown Bar 2")
     -- (the mock passes no size change through anchors: the observer's OnSizeChanged is run by hand)
-    assert(M:SetOption('essential', 'perLine', 10)); PM:RefreshAnchorSize('cooldownManagerCustom1')
-    assert(ModeUICooldownCustom1.width == 10 * 44 + 9 * 2, 'follows Essential')
-    assert(M:SetOption('essential', 'perLine', 12)); PM:RefreshAnchorSize('cooldownManagerCustom1')
-    assert(ModeUICooldownCustom1.width == ModeUICooldownEssential.width)
-    assert(not PM:SetSizeMatchTarget('cooldownManagerCustom1', 'width', 'cooldownManagerCustom1') and not PM:SetSizeMatchTarget('cooldownManagerCustom1', 'width', 'screen'), 'not itself, not the screen')
-    assert(PM:SetSizeMatchValue('cooldownManagerCustom1', 'width', false) and ModeUICooldownCustom1.width == 5 * 44 + 4 * 2)
-    assert(PM:GetSizeMatchTarget('cooldownManagerCustom1', 'width') == 'cooldownManagerCustom3' and addon.db.sizeMatches.cooldownManagerCustom1 == nil, 'off forgets the pick')
+    assert(M:SetOption('essential', 'perLine', 10)); PM:RefreshAnchorSize('cooldownManagerCustom6')
+    assert(ModeUICooldownCustom6.width == 10 * 44 + 9 * 2, 'follows Essential')
+    assert(M:SetOption('essential', 'perLine', 12)); PM:RefreshAnchorSize('cooldownManagerCustom6')
+    assert(ModeUICooldownCustom6.width == ModeUICooldownEssential.width)
+    assert(not PM:SetSizeMatchTarget('cooldownManagerCustom6', 'width', 'cooldownManagerCustom6') and not PM:SetSizeMatchTarget('cooldownManagerCustom6', 'width', 'screen'), 'not itself, not the screen')
+    assert(PM:SetSizeMatchValue('cooldownManagerCustom6', 'width', false) and ModeUICooldownCustom6.width == 5 * 44 + 4 * 2)
+    assert(PM:GetSizeMatchTarget('cooldownManagerCustom6', 'width') == 'cooldownManagerCustom8' and addon.db.sizeMatches.cooldownManagerCustom6 == nil, 'off forgets the pick')
     assert(M:SetOption(c1, 'perLine', 8))
     assert(M:RemoveEntry(c1, '201') and Point(byKey[201])[2] == M.holders.utility, 'Remove from Bar sends it back')
     assert(M:DeleteCustomBar(c3) and Point(byKey[102])[2] == holder and byKey[102].alpha == 1, 'deleting gives the spells back')
-    assert(addon.db.positions.cooldownManagerCustom3 == nil and not ModeUICooldownCustom3:IsShown() and M.db.custom3 == nil)
-    assert(PM:GetPosition('cooldownManagerCustom1').target == 'screen' and not E.allowedTargets.cooldownManagerCustom3, 'what hung from it moves to the screen')
+    assert(addon.db.positions.cooldownManagerCustom8 == nil and not ModeUICooldownCustom8:IsShown() and M.db.custom8 == nil)
+    assert(PM:GetPosition('cooldownManagerCustom6').target == 'screen' and not E.allowedTargets.cooldownManagerCustom8, 'what hung from it moves to the screen')
 
     -- Custom spells by ID: ModeUI's own icon on a Cooldown Bar.
     assert(not M:AddCustomSpell(c1, 'abc') and not M:AddCustomSpell(c1, '950000'), 'not a spell ID; no such spell')
@@ -268,7 +303,7 @@ world.run([==[
     assert(ok and sid == 9001 and M:Custom(c1).entries[1] == 's9001', 'added as s9001')
     assert(not M:AddCustomSpell(c1, '9001') and not M:AddCustomSpell(c2, '9001'), 'once per bar; not on a Buff Bar')
     local own = M.spellIcons[c1].s9001
-    assert(own:IsShown() and Point(own)[2] == M.holders.custom1 and M.placedCount.custom1 == 1, 'its own icon, on the bar')
+    assert(own:IsShown() and Point(own)[2] == M.holders.custom6 and M.placedCount.custom6 == 1, 'its own icon, on the bar')
     assert(own.Icon.texture == 'icon:9001' and M.dress[own].art.edge.holder:IsShown() and own.Icon.points[1][4] == 0, 'skinned like the rest')
     assert(own.Cooldown.durationObject.duration == 'cd:9001', 'cooldown from its duration object')
     assert(own.Cooldown.countdown.font[2] == 13, 'the cooldown numbers styled')
@@ -294,9 +329,9 @@ world.run([==[
     assert(Point(charged)[4] > Point(own)[4], 'in the order added')
     -- Unknown spells hide; hidden spells wait unseen; removed ones go.
     knownSpells[9002] = false; FireEvent('SPELLS_CHANGED')
-    assert(not charged:IsShown() and M.placedCount.custom1 == 1, 'a spell you do not know is not shown')
+    assert(not charged:IsShown() and M.placedCount.custom6 == 1, 'a spell you do not know is not shown')
     knownSpells[9002] = nil; FireEvent('SPELLS_CHANGED'); assert(charged:IsShown())
-    assert(M:SetSpellSwitch(c1, 's9002', 'hide', true) and charged.alpha == 0 and M.placedCount.custom1 == 1)
+    assert(M:SetSpellSwitch(c1, 's9002', 'hide', true) and charged.alpha == 0 and M.placedCount.custom6 == 1)
     assert(M:RemoveEntry(c1, 's9002') and not charged:IsShown() and M.spellIcons[c1].s9002 == nil, 'Remove from Bar')
     own.scripts.OnEnter(own); assert(GameTooltip.spell == 9001, 'its tooltip')
 
@@ -362,13 +397,13 @@ world.run([==[
     assert(popout:IsShown() and popout.kind == 'buff' and popout.title.text == 'Buff Glow' and view.glowKind == 'buff', 'buff glow popout')
     assert(popout.styleRow:IsShown() and popout.colorRow:IsShown() and not popout.whenRow:IsShown() and not popout.linesRow:IsShown())
     popout.styleButtons[3].scripts.OnClick(popout.styleButtons[3])
-    assert(M.db.custom2.spells['301'].buff.style == 'pixel' and menu.glowBoxes.buff.selected, 'choosing a look switches the glow on')
+    assert(M.db.custom7.spells['301'].buff.style == 'pixel' and menu.glowBoxes.buff.selected, 'choosing a look switches the glow on')
     assert(popout.linesRow:IsShown() and popout.thicknessRow:IsShown() and not popout.pulseRow:IsShown(), 'Pixel shows its lines and thickness')
     popout.swatch.scripts.OnClick(popout.swatch)
     ColorPickerFrame.r, ColorPickerFrame.g, ColorPickerFrame.b = 1, 0, 0; ColorPickerFrame.swatchFunc()
-    assert(M.db.custom2.spells['301'].buff.color[1] == 1 and M.db.custom2.spells['301'].buff.color[2] == 0, "Blizzard's color picker sets its color")
+    assert(M.db.custom7.spells['301'].buff.color[1] == 1 and M.db.custom7.spells['301'].buff.color[2] == 0, "Blizzard's color picker sets its color")
     popout.onBox.scripts.OnClick(popout.onBox)
-    assert(M.db.custom2.spells['301'] == nil, 'Glow On off')
+    assert(M.db.custom7.spells['301'] == nil, 'Glow On off')
     popout.close.scripts.OnClick(popout.close)
     assert(not popout:IsShown() and view.glowKind == nil)
     menu.later.scripts.OnClick(menu.later)
@@ -531,7 +566,7 @@ world.run([==[
     window.cdmButton.scripts.OnClick(window.cdmButton); assert(cdmToggles == 2, 'Open CDM')
     -- Edit Mode steps the window aside and brings it back, not ModeUI's.
     window.editButton.scripts.OnClick(window.editButton)
-    assert(addon.editMode and not window:IsShown() and ModeUICooldownCustom1:IsShown(), 'Edit Mode with the custom bar')
+    assert(addon.editMode and not window:IsShown() and ModeUICooldownCustom6:IsShown(), 'Edit Mode with the custom bar')
     addon:SetEditMode(false)
     assert(window:IsShown() and not ModeUIConfigWindow:IsShown(), 'back to the Cooldown Manager window')
     window:Hide(); M:OpenSettings('cooldownManagerUtility')
@@ -539,15 +574,15 @@ world.run([==[
 
     -- Copy and reset, then the no-writes rule.
     assert(M:SetOption('essential', 'border', 'none') and M:SetOption('essential', 'edgeStyle', 'round') and M:CopyStyleToAll('essential'))
-    assert(M.db.custom1.border == 'none' and M.db.custom1.edgeStyle == 'round' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
-    assert(M:ResetViewer(c1) and M.db.custom1.border == 'mode' and M.db.custom1.edgeStyle == 'blizz')
+    assert(M.db.custom6.border == 'none' and M.db.custom6.edgeStyle == 'round' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
+    assert(M:ResetViewer(c1) and M.db.custom6.border == 'mode' and M.db.custom6.edgeStyle == 'blizz')
     assert(#blizzardWrites == 0, 'wrote to Blizzard frames: ' .. table.concat(blizzardWrites, ', '))
 
     -- Switching off: icons back at full, a reload for the look.
     assert(M:SetSpellSwitch('essential', '105', 'hide', true))
     addon:SetModuleEnabled('cooldownManager', false)
     assert(ItemsOf(essential)[5].alpha == 1 and addon.ReloadManager:IsPending(), 'full icons; reload offered')
-    assert(not M.spellIcons.custom1.s9001:IsShown(), "ModeUI's own icons hide while off")
+    assert(not M.spellIcons.custom6.s9001:IsShown(), "ModeUI's own icons hide while off")
     addon:SetModuleEnabled('cooldownManager', true)
     assert(Point(ItemsOf(essential)[1])[2] == holder and #blizzardWrites == 0)
 ]==], "cooldown manager")
@@ -566,11 +601,12 @@ H.Load({ before = STUBS }).run([==[
 local restored = H.Load({ before = STUBS .. "\nMakeViewers()", saved = world.saved() })
 restored.run([==[
     local M = addon.CooldownManager
-    assert(M.enabled and M.db.essential.border == 'none' and #M.db.customBars == 2 and M.db.nextCustom == 6 and M.db.racials == 'utility', 'settings persist')
+    assert(M.enabled and M.db.essential.border == 'none' and #M.db.customBars == 2 and M.db.nextCustom == 11 and M.db.racials == 'utility', 'settings persist')
+    assert(not M.PresetBar(M.db, 'defensives'), 'a deleted default bar stays deleted')
     assert(M.db.essential.edgeStyle == 'round' and M.dress[ItemsOf(EssentialCooldownViewer)[1]].art.edge.styleId == 'round', 'Border Style persists')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
-    assert(Point(buff)[2] == M.holders.custom2, 'custom bars hold their spells after a reload')
-    assert(M.spellIcons.custom1.s9001:IsShown() and M.spellIcons.custom1.s9003, 'custom spells too')
+    assert(Point(buff)[2] == M.holders.custom7, 'custom bars hold their spells after a reload')
+    assert(M.spellIcons.custom6.s9001:IsShown() and M.spellIcons.custom6.s9003, 'custom spells too')
 ]==], "restore")
 
 -- A version 5 profile from before Border Style and Border Metal takes their
@@ -581,9 +617,9 @@ do
     for key, style in pairs(db) do if type(style) == "table" and style.border then style.edgeStyle, style.edgeMetal = nil, nil end end
     H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
         local M = addon.CooldownManager
-        assert(M.db.version == 8 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
+        assert(M.db.version == 9 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
         for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'blizz' and M.db[viewer].edgeMetal == 'default', viewer .. ' takes the default border') end
-        assert(M.db.custom1.edgeStyle == 'blizz' and M.db.custom2.edgeMetal == 'default', 'custom bars too')
+        assert(M.db.custom6.edgeStyle == 'blizz' and M.db.custom7.edgeMetal == 'default', 'custom bars too')
     ]==], "fill border style")
 end
 
@@ -595,10 +631,10 @@ v1.profiles.Default.modules.cooldownManager = { enabled = true, version = 1,
     buffIcon = { orientation = "horizontal", start = "BOTTOMLEFT", center = true, readyGlow = false, readyStyle = "glow" } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 8 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'v1 also takes the Mode edge')
+    assert(db.version == 9 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'v1 also takes the Mode edge')
     assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
     assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow look kept, as a flash')
-    assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 0)
+    assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 5, 'and the five default bars (version 9)')
     assert(db.utility.grow == 'up' and db.utility.lineGrowth == 'left', 'columns from the bottom right')
     assert(db.buffIcon.grow == 'centerH' and db.buffIcon.lineGrowth == 'up' and db.buffIcon.readyGlow == 'mode', 'None is no longer a look')
 ]==], "migrate v1")
@@ -610,12 +646,12 @@ local old = v2.profiles.Default.modules.cooldownManager
 old.version = 2
 old.essential.border, old.essential.borderColor = "rounded", { 16 / 255, 16 / 255, 16 / 255 }
 old.utility.border, old.utility.borderColor = "square", { 1, 0, 0 }
-old.custom1.border = "rounded"
+old.custom6.border = "rounded"
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v2 }).run([==[
     local db, Kit = addon.CooldownManager.db, addon.Kit
-    assert(db.version == 8 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'old default to the Mode edge')
+    assert(db.version == 9 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'old default to the Mode edge')
     assert(db.utility.border == 'mode' and db.utility.borderColor == nil and db.utility.borderSize == nil, 'Square becomes the Mode edge; size and color retire')
-    assert(db.custom1.border == 'mode', 'custom bars too')
+    assert(db.custom6.border == 'mode', 'custom bars too')
 ]==], "migrate v2")
 
 -- Version 3: default sizes move (now to 40 by 34 and 32 by 28); Utility's default
@@ -625,12 +661,12 @@ local before = v3.profiles.Default.modules.cooldownManager
 before.version = 3
 before.essential.width, before.essential.height = 42, 36
 before.utility.width, before.utility.height = 40, 30
-before.custom2.width, before.custom2.height = 35, 30
+before.custom7.width, before.custom7.height = 35, 30
 v3.profiles.Default.positions.cooldownManagerUtility = { target = "cooldownManagerEssential", placement = "below", x = 0, y = -4 }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v3 }).run([==[
     local M, PM = addon.CooldownManager, addon.PositionManager
     local db = M.db
-    assert(db.version == 8 and db.essential.width == 40 and db.essential.height == 34 and db.custom2.width == 32 and db.custom2.height == 28, 'default sizes move')
+    assert(db.version == 9 and db.essential.width == 40 and db.essential.height == 34 and db.custom7.width == 32 and db.custom7.height == 28, 'default sizes move')
     assert(db.utility.width == 40 and db.utility.height == 30 and db.movePlaces == nil, 'a chosen size stays')
     assert(PM:GetPosition('cooldownManagerUtility').y == 0 and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
 ]==], "migrate v3")
@@ -649,13 +685,13 @@ E.spells = { ["101"] = { proc = { style = "pixel", color = { 1, 210 / 255, 90 / 
 U.width, U.height, U.backgroundColor, U.fontMedia = 36, 28, { 1, 0, 0 }, "Friz Quadrata"
 B.width, B.height, B.barTexture, B.barBackground, B.barBackgroundOpacity, B.showSpark = 220, 22, "mode", "slate", 70, false
 B.barColor, B.barColorMode = { 0, 240 / 255, 1 }, nil
-four.custom1.barColor, four.custom1.barColorMode = { 0.2, 0.4, 0.6 }, nil
+four.custom6.barColor, four.custom6.barColorMode = { 0.2, 0.4, 0.6 }, nil
 four.resources = { power = { barTexture = "mode", barBackground = "slate", barBackgroundOpacity = 70, borderColor = { 0.25, 0.27, 0.3 },
     fontMedia = "Expressway", outline = true }, combo = { barColor = { 240 / 255, 84 / 255, 84 / 255 } } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
     local db, Tone, Same = addon.CooldownManager.db, addon.Style.Tone, addon.Style.SameColor
     local E, U, B = db.essential, db.utility, db.buffBar
-    assert(db.version == 8 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
+    assert(db.version == 9 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
     assert(E.width == 40 and E.height == 34 and U.width == 32 and U.height == 28 and B.height == 16, 'default sizes move')
     assert(Same(E.backgroundColor, Tone.mono.panel) and E.backgroundOpacity == 100 and E.fontMedia == 'Mode' and not E.outline)
     assert(E.procGlow == 'border' and Same(E.procColor, Tone.celadon) and E.readyGlow == 'mode' and Same(E.readyColor, Tone.ivory), 'glow looks')
@@ -663,7 +699,7 @@ H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
     assert(E.cooldownSize == 13 and E.countSize == 11 and Same(E.countColor, Tone.textBright), 'text sizes and colors')
     assert(Same(U.backgroundColor, { 1, 0, 0 }) and U.fontMedia == 'Friz Quadrata', 'chosen values stay')
     assert(B.barTexture == 'media:Mode Gradient' and B.barBackground == 'media:Mode BG' and B.barBackgroundOpacity == 100 and B.showSpark, 'Mode bars')
-    assert(B.barColorMode == 'class' and db.custom1.barColorMode == 'custom' and Same(db.custom1.barColor, { 0.2, 0.4, 0.6 }), 'cyan becomes class; a chosen color stays, as Custom')
+    assert(B.barColorMode == 'class' and db.custom6.barColorMode == 'custom' and Same(db.custom6.barColor, { 0.2, 0.4, 0.6 }), 'cyan becomes class; a chosen color stays, as Custom')
     local power, combo = db.resources.power, db.resources.combo
     assert(power.barTexture == 'media:Mode Gradient' and power.barBackground == 'media:Mode BG' and power.barBackgroundOpacity == 60, 'resource bars')
     assert(power.borderColor == nil and power.fontMedia == 'Mode' and not power.outline and Same(combo.barColor, Tone.reaction.hostile))
@@ -679,6 +715,8 @@ Refused(function(db) db.essential.width = 500 end, "width")
 Refused(function(db) db.essential.spells = { abc = { hide = true } } end, "spell key")
 Refused(function(db) db.essential.grow = "centerV"; db.essential.lineGrowth = "down" end, "line growth")
 Refused(function(db) db.customBars[1].kind = "aura" end, "custom kind")
+Refused(function(db) db.customBars[2].preset = "bogus" end, "an unknown default bar")
+Refused(function(db) db.customBars[2].preset = "defensives" end, "a default bar of the other kind")
 Refused(function(db) db.customBars[2].id = db.customBars[1].id end, "custom id")
 Refused(function(db) db.customBars[1].entries = { "12", "12" } end, "custom entries")
 Refused(function(db) db.customBars[2].entries = { "s9001" } end, "a spell by ID on a Buff Bar")
@@ -690,7 +728,7 @@ Refused(function(db) db.order = { custom9 = { "101" } } end, "an order for no vi
 Refused(function(db) db.racials = "buffIcon" end, "racials on Tracked Buffs")
 Refused(function(db) db.extras.essential = { "s9001", "s9001" } end, "Essential's spells twice")
 Refused(function(db) db.essential.edgeStyle = "nope" end, "a Border Style")
-Refused(function(db) db.custom1.edgeMetal = "gold" end, "a Border Metal")
+Refused(function(db) db.custom6.edgeMetal = "gold" end, "a Border Metal")
 local function Text(look) return { ["101"] = { text = { count = look } } } end
 local function Copy(t) local c = {}; for k, v in pairs(t) do c[k] = type(v) == "table" and Copy(v) or v end; return c end
 local good = { show = true, size = 12, anchor = "TOP", x = 0, y = 0, color = { 1, 1, 1 }, font = "game", fontMedia = "Expressway", outline = "thick", shadow = true }
@@ -710,5 +748,79 @@ end
 Refused(function(db) local look = Copy(good); look.outline = "double"; db.essential.spells = Text(look) end, "a text outline")
 Refused(function(db) local look = Copy(good); look.size = 90; db.essential.spells = Text(look) end, "a text size")
 Refused(function(db) db.essential.spells = { ["101"] = { text = { bogus = good } } } end, "a text part")
+
+-- Version 8 -> 9: the default bars join after the profile's own, with new
+-- IDs; its bars, IDs and counter carry on. Only while there's room (15).
+do
+    local saved = restored.saved()
+    saved.profiles.Default.modules.cooldownManager.version = 8
+    H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
+        local M, PM = addon.CooldownManager, addon.PositionManager
+        local bars = M.db.customBars
+        assert(M.db.version == 9 and #bars == 7 and bars[1].id == 'custom6' and bars[2].id == 'custom7' and #bars[1].entries == 2, 'its own bars first, kept')
+        for i, tag in ipairs(M.presetOrder) do assert(bars[i + 2].id == 'custom' .. (10 + i) and bars[i + 2].preset == tag, tag .. ' added') end
+        assert(M.db.nextCustom == 16 and M.db.custom15.width == 54 and M.db.essential.border == 'none', 'the counter carries on; nothing else changes')
+        assert(PM:GetPosition('cooldownManagerCustom12').target == 'cooldownManagerBuffIcon', 'in its own place')
+        -- The same check on a profile already at version 9 adds nothing back.
+        local copy = addon.ProfileCodec.Copy(M.db)
+        table.remove(copy.customBars, 3); copy.custom11 = nil
+        M.Initialize(copy)
+        assert(#copy.customBars == 6 and not M.PresetBar(copy, 'defensives'), 'a deleted default bar stays deleted')
+        local function Own(count)
+            local db = { version = 8, customBars = {}, nextCustom = count + 1 }
+            for i = 1, count do db.customBars[i] = { id = 'custom' .. i, kind = 'cooldown', name = 'Bar ' .. i, entries = {} } end
+            M.Initialize(db)
+            return db
+        end
+        local ten = Own(10)
+        assert(#ten.customBars == 15 and ten.customBars[11].preset == 'defensives' and ten.customBars[15].id == 'custom15' and ten.nextCustom == 16, 'ten bars: all five join')
+        local twelve = Own(12)
+        assert(#twelve.customBars == 15 and twelve.customBars[15].preset == 'leftBuffs' and not M.PresetBar(twelve, 'ultra'), 'twelve: the first three, while there is room')
+        local dup = addon.ProfileCodec.Copy(ten)
+        dup.customBars[13].preset = 'emphasized'
+        assert(not pcall(M.Initialize, dup), 'a default bar twice is refused')
+    ]==], "version 9")
+end
+
+-- The Mode-Default layout (DPS / Tank), as a new profile: ModeCDM's part.
+H.Load({ before = STUBS .. "\nMakeViewers()" }).run([==[
+    local M = addon.CooldownManager
+    for _, variant in ipairs({ '1080', '1440' }) do
+        local profile = assert(addon.Layouts:Build('mode-default', variant))
+        local db, at, matches = profile.modules.cooldownManager, profile.positions, profile.sizeMatches
+        local function Placed(id, target, point, relativePoint, x, y)
+            local p = at[id]
+            return p and p.target == target and p.point == point and p.relativePoint == relativePoint and p.x == x and p.y == y
+        end
+        local function Shape(style, w, h, per, spacing, grow, lines)
+            return style.width == w and style.height == h and style.perLine == per and style.spacing == spacing and style.grow == grow and style.lineGrowth == lines
+        end
+        assert(db.enabled and db.version == M.VERSION, variant .. ': on')
+        assert(Shape(db.essential, 46, 40, 7, 2, 'centerH', 'down') and Placed('cooldownManagerEssential', 'screen', 'CENTER', 'BOTTOM', 0, variant == '1440' and 325 or 300), 'Essential')
+        assert(Shape(db.utility, 36, 30, 6, 2, 'centerH', 'down') and Placed('cooldownManagerUtility', 'cooldownManagerEssential', 'TOP', 'BOTTOM', 0, -82), 'Utility')
+        local r = db.resources
+        assert(db.resourceLayout == 'grouped' and r.power.height == 10 and r.combo.height == 8 and r.mana.height == 8 and not r.health.show, 'Group Resources')
+        assert(r.power.barMode == 'dark' and r.combo.barMode == 'dark' and r.mana.barMode == 'dark' and r.power.matchWidth, 'Dark, Match Width')
+        assert(matches.cooldownManagerResourcePower.width == 'cooldownManagerEssential', "Power matches Essential's width")
+        assert(Placed('cooldownManagerResourcePower', 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 1), 'Power on Essential')
+        assert(db.castBar.height == 12 and db.castBar.matchWidth and db.castBar.icon == 'none' and matches.cooldownManagerCastBar.width == 'cooldownManagerEssential', 'Cast Bar')
+        assert(Placed('cooldownManagerCastBar', 'cooldownManagerResourcePower', 'BOTTOM', 'TOP', 0, 1), 'Cast Bar on Power')
+        assert(Shape(db.buffIcon, 30, 24, 10, 1, 'centerH', 'up') and Placed('cooldownManagerBuffIcon', 'cooldownManagerCastBar', 'BOTTOM', 'TOP', 0, 1), 'Tracked Buffs')
+        assert(#db.customBars == 5 and db.nextCustom == 6, 'the five default bars')
+        local function Bar(tag) local bar = M.PresetBar(db, tag); return M.ElementId(bar.id), db[bar.id] end
+        local id, style = Bar('defensives')
+        assert(Shape(style, 30, 24, 3, 2, 'left', 'up') and Placed(id, 'unitFramesPlayer', 'BOTTOMRIGHT', 'TOPRIGHT', 0, -12), 'Defensive Cooldowns')
+        id, style = Bar('emphasized')
+        assert(Shape(style, 46, 40, 4, 2, 'centerH', 'up') and Placed(id, 'cooldownManagerBuffIcon', 'BOTTOM', 'TOP', 0, 1), 'Emphasized Buffs')
+        id, style = Bar('leftBuffs')
+        assert(Shape(style, 30, 24, 6, 1, 'centerV', 'left') and Placed(id, 'screen', 'CENTER', 'CENTER', -150, 0), 'Left Buffs')
+        id, style = Bar('rightBuffs')
+        assert(Shape(style, 30, 24, 6, 1, 'centerV', 'right') and Placed(id, 'screen', 'CENTER', 'CENTER', 150, 0), 'Right Buffs')
+        id, style = Bar('ultra')
+        assert(Shape(style, 54, 48, 2, 2, 'centerH', 'up') and style.cooldownSize == 22 and style.countSize == 18, 'Ultra Emphasized Buffs')
+        assert(Placed(id, 'screen', 'CENTER', 'CENTER', variant == '1440' and 135 or 110, 115), 'Ultra further out at 1440')
+    end
+    assert(not M.db.enabled and M.db.essential.width == 40 and addon.db.positions.cooldownManagerEssential == nil, 'the profile in use is untouched')
+]==], "mode-default layout")
 
 print("cooldown manager: all checks passed")
