@@ -91,7 +91,7 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Power (`powerType`) | Mana `#4096FF`, Rage, Energy, Focus, Happiness (Mode-toned), any other type a neutral gray |
 | Threat (`threat`) | aggro `#FF4848`, losing or pulling `#FFA040` |
 | Stats (`stat`) | the Character window's stats: Strength `#E85C50`, Agility `#FFD140`, Stamina `#E8B04B`, Intellect and mana regen `#4096FF`, Spirit and healing `#7FDB97`, physical power `#FF8A3D`, spell power `#B07CFF`, crit `#FF6B6B`, hit `#FFB12F`, haste `#7FDBFF`, avoidance `#9AD0EC`, armor `#B9B9B9` |
-| Other | cooldown text `#FFB12F`; quest lines in tooltips `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`), the owner's picks (November 18, 2026); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
+| Other | cooldown text `#FFB12F`; quest lines in tooltips and the quest and gossip windows' button rims `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`), the owner's picks (November 18, 2026); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
 
 `Style.LEGACY` holds the pre-Mode defaults that saved settings still hold or
 migrations recognize (the Onyx palette `Kit.palette` / `Kit.onyx` alias it,
@@ -165,7 +165,7 @@ layout moved for it).
 | `card` | thin | 1px | — | 1px | 2px | Mode-Thin | settings cards (a window border without the shadow) |
 | `control` | thin | 1px | 1px | — | 2px | Mode-Thin | buttons, dropdowns, fields, the slide toggle |
 | `line` | thin | 1px flat color | 1px | — | 2px | Mode-Thin | aura dispel rims, item quality |
-| `empty` | thin | 1px or 2px, any color | 1px | — | 2-3px | Mode-BlizzEmpty | an element's only border in a custom color: proc ready, aggro |
+| `empty` | thin | 1px or 2px, any color | 1px | — | 2-3px | Mode-BlizzEmpty | an element's only border in a custom color: proc ready, aggro, quest and gossip buttons |
 | `ring` | circle | 2px: any style's 2px lighting over the whole disc, in a border metal or in tones of one color (class, reaction, custom; Mode-Blizz in the class color is the unit frames' default) | 1px | 1px, inside the band | 4px | Mode-Blizz | portraits (`Style.Ring`) |
 
 A 1px band on a heavy role (`SetRim(1)`: Minimap Map Border Thin) or a 2px band
@@ -395,7 +395,11 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   secondary; hover lights the glyph and the outer line Ivory.
 - **Buttons:** Mode Button faces in Graphite raised inside the `control`
   edge, Geist SemiBold; hover lights the outer line Ivory; disabled text is
-  muted. **Fields** and **dropdowns:** a Graphite base inside the `control`
+  muted. The quest and gossip windows' buttons (Accept, Decline, Complete
+  Quest, Continue, Goodbye) take the `empty` edge in the quest tone
+  (`#FFB12F`) instead, the same reach, so they stand apart from the page
+  (owner, November 17, 2026); disabled, the rim goes Graphite rim.
+  **Fields** and **dropdowns:** a Graphite base inside the `control`
   edge, Ivory with focus, hover or an open menu; a dropdown's menu is a Mode
   window.
 - **Tabs:** text tabs in Geist SemiBold: the chosen one Ivory with a 2px
@@ -411,7 +415,8 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   **Scroll bars:** a 4px Graphite track and thumb (rimStrong).
 - **Item quality:** the `line` edge in the quality color, inside the slot.
 - **Text on Graphite:** dark parchment text (quest, gossip, books) takes the
-  Graphite text color. A window whose content draws under its border frame
+  Graphite text color, its color fixed so dark inline codes (Blizzard's black
+  quest titles) give way too; this holds with Window Text off. A window whose content draws under its border frame
   (the World Map), or a see-through one (Background Opacity under 100), has
   no soft drop, which would shade it.
 - **Chat:** each window a Mode window on its message box (the `window` edge
