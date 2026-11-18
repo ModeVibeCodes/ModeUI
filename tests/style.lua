@@ -114,6 +114,29 @@ world.run([[
         end
         edge:SetStyle(nil)
     end
+    -- Pieces: each ring as four 1:1 corners and four edges (a sliced texture on
+    -- a host shorter than its art is drawn scaled down to specks).
+    local thin = CreateFrame("Frame", nil, UIParent)
+    thin:SetSize(300, 10)
+    local pieced = Style.Edge(thin, "frameThin", { pieces = true, style = "round", metal = "gunmetal" })
+    local D = Style.EDGE_DATA
+    for i, ring in ipairs(pieced.rings) do
+        local parts, spec = pieced.parts[i], D.SHAPES[ring.shape]
+        assert(#parts == 8 and parts[1] == pieced.textures[i], ring.key .. ": eight pieces, the first the ring's own")
+        for _, part in ipairs(parts) do
+            assert(part.texture == Style.AssetPath("Edge" .. ring.key) and part:IsShown() and part.slice == nil, ring.key .. ": unsliced art")
+        end
+        local tl, top, right = parts[1], parts[2], parts[5]
+        assert(tl.width == spec.margin and tl.height == spec.margin and tl.points[1][4] == -ring.out and tl.points[1][5] == ring.out, ring.key .. ": a 1:1 corner")
+        assert(tl.texCoord[2] == spec.margin / spec.w and tl.texCoord[4] == spec.margin / spec.h, ring.key .. ": the corner's texels")
+        assert(top.height == spec.margin and top.points[1][4] == spec.margin - ring.out and top.points[2][4] == ring.out - spec.margin, ring.key .. ": the top edge between the corners")
+        assert(right.width == spec.margin and right.texCoord[3] == spec.margin / spec.h, ring.key .. ": the side stretches the middle rows")
+    end
+    pieced:SetTint(Tone.celadon)
+    for _, part in ipairs(pieced.parts[2]) do assert(part:IsShown() == not pieced.rings[2].profile) end
+    assert(#pieced:Regions() == 8 * #pieced.rings, "every piece fades with the border")
+    pieced:SetStyle("blizz")
+    assert(#pieced.parts[1] == 8 and pieced.parts[1][2].texture == Style.AssetPath("Edge" .. pieced.rings[1].key), "a new style keeps its pieces")
     -- Snapping (Style.SnapEdges): at a UI scale that isn't pixel perfect a host
     -- sits between pixels; a snapped edge's holder moves onto whole pixels.
     local oldPixelUtil = PixelUtil
@@ -122,6 +145,18 @@ world.run([[
     local control = CreateFrame("Button", nil, root)
     control:SetSize(191, 24); control.centerX, control.centerY = 300.5, 200.2
     local snapped, plain = Style.Edge(control, "control"), Style.Edge(host, "control")
+    Style.SnapEdges(root)
+    -- A host inside a frame the game forbids (an aura icon on Blizzard's
+    -- containers): its parent can't be read, so the walk stops; no error.
+    local walled = CreateFrame("Frame", nil, UIParent)
+    walled.GetParent = function() error("Attempt to access forbidden object from code tainted by an AddOn") end
+    local aura = CreateFrame("Frame", nil, walled); aura:SetSize(30, 30)
+    local auraEdge = Style.Edge(aura, "control")
+    assert(pcall(Style.SnapEdges, root) and auraEdge.snap == false, "a forbidden parent ends the walk")
+    local hidden = CreateFrame("Frame", nil, UIParent); hidden.IsForbidden = function() return true end
+    local inner = CreateFrame("Frame", nil, hidden); inner:SetSize(30, 30)
+    local innerEdge = Style.Edge(inner, "control")
+    assert(pcall(Style.SnapEdges, root) and innerEdge.snap == false, "so does a forbidden frame")
     Style.SnapEdges(root)
     local k = control:GetEffectiveScale() / (768 / 1440)
     local low, high = snapped.holder.points[1], snapped.holder.points[2]
@@ -141,6 +176,11 @@ world.run([[
     assert(Style.EdgeReach("frame") == 3 and Style.EdgeReach("window") == 3 and Style.EdgeReach("frameThin") == 2
         and Style.EdgeReach("group") == 1 and Style.EdgeReach("control") == 2 and Style.EdgeReach("card") == 2, "reach by role")
     assert(Style.EdgeDepth("frame") == 2 and Style.EdgeDepth("frameThin") == 1 and Style.EdgeDepth("card") == 2, "band and outside black line")
+    -- Height floors: two slice margins per ring (cut 4/6, round 6/12) less the ring's reach outside the host.
+    assert(Style.EdgeMinHeight("frameThin", "blizz") == 6 and Style.EdgeMinHeight("frameThin", "thin") == 6
+        and Style.EdgeMinHeight("frameThin", "blizzEmpty") == 6 and Style.EdgeMinHeight("frameThin", "round") == 10, "thin floors")
+    assert(Style.EdgeMinHeight("frame", "blizz") == 12 and Style.EdgeMinHeight("frame", "round") == 24, "heavy floors (the inside black line)")
+    assert(Style.EdgeMinHeight("frameThin", nil) == 6, "the role's own style")
     local frame = Style.Edge(host, "frame")
     assert(frame.rings[#frame.rings].kind == "gap" and frame.rings[#frame.rings].out == 0, "the black line inside the host's edge")
     assert(frame.styleId == "blizz" and frame:Metal() == Tone.metal.silver, "frames: Mode-Blizz, Silver")

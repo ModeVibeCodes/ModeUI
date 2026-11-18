@@ -23,4 +23,6 @@ addon.Messages = {
     CLASS_COLORS_CHANGED = "ModeUI_ClassColorsChanged",
     -- (status) after a profile was created, switched, renamed, deleted or imported.
     PROFILES_CHANGED = "ModeUI_ProfilesChanged",
+    -- () after a module claimed or let go of the player's cast bar (Kit.PlayerCast).
+    PLAYER_CAST_CLAIMED = "ModeUI_PlayerCastClaimed",
 }

@@ -68,6 +68,7 @@ Shared\Kit\Points.lua
 Shared\Kit\Fonts.xml
 Shared\Kit\Text.lua
 Shared\Kit\Cast.lua
+Shared\Kit\Native.lua
 Shared\Kit\AuraIcon.lua
 Shared\Kit\AuraContainer.lua
 Shared\Placement\DisplayModes.lua

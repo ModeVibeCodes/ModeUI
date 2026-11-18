@@ -22,7 +22,11 @@ texture paths or font files outside `Shared/Style/`) and `tests/style.lua`
   laid out in whole UI units, which at a UI scale that isn't pixel perfect
   (Blizzard's default) fall between pixels, so its borders snap onto the
   nearest whole pixels (`Style.SnapEdges`, redone on show, page layout,
-  scroll, drag and popups) and button faces follow the snapped rect.
+  scroll, drag and popups) and button faces follow the snapped rect. The
+  Cooldown Manager's resource bars do the same in game: each bar's frame
+  hangs from its Edit Mode stand-in nudged onto whole pixels and is checked
+  again as the stand-in moves (owner, in game, November 18, 2026: their 1px
+  bands showed only specks at the corners until then).
 - **No masks for borders.** Rim art covers its own inner corner, so content
   under a border is never masked. (A frame's own shape, the minimap's
   rectangle, is the one mask, through `Style.SetShapeMask`.)
@@ -176,6 +180,28 @@ Windows, Chat, Damage Meters, Tooltip and Bags.
 An aura rim the game colors by dispel type goes flat first
 (`Kit.DispelAuraRim`), so no lighting layer covers the type's color.
 
+**Height floor.** Every ring's corners are drawn 1:1 from sliced art, so a
+host must be tall enough for two slice margins on each ring
+(`Style.EdgeMinHeight(role, style)`): in `frameThin`, 6px for the cut styles
+(Mode-Blizz, Mode-BlizzEmpty, Mode-Thin) and 10px for Mode-Round; in `frame`,
+12px cut and 24px round. A thin bar in its own border draws no shorter than
+its floor (its saved height is kept); bars inside a shared border have no
+floor of their own.
+
+**Pieces** (`Style.Edge(host, role, { pieces = true })`). The client draws a
+sliced texture on a region shorter than its art (64 rows) scaled down: the
+corners shrink to specks and a 1px edge to a fraction of a pixel, so the
+border all but vanishes (owner, in game, November 18, 2026, on the resource
+bars). A border on a thin host draws each ring as eight textures instead,
+four corners 1:1 and four edges between them (the middle rows stretched down
+the sides, as the slicing does), like Blizzard's NineSlice frames. The
+resource bars use pieces; other borders keep one sliced texture per ring
+until an in-game look says they need it too.
+
+**Rim Color** (the Cooldown Manager's resource bars): one picker in place of
+Border Metal: Default Metal, Silver, Steel, Gunmetal (saved in `edgeMetal`),
+Bar Color or Custom, which paint the band flat in that color (`Edge:SetTint`).
+
 Highlight: the outer shadow ring takes the accent (1px), so the metal band keeps
 its look. Target uses Ivory; focus uses Rosewood. Group frames tint their band
 instead, so their size never changes.
@@ -223,9 +249,18 @@ Phase 6 probe):
 - **Tracked bars:** 220 x 16; the icon 4px wider than the bar is tall, in the
   `frameThin` edge, 2px from the bar's own edge; Mode Gradient (base and lift)
   in your class color (Custom: Ivory) over solid Mode BG, with the Comet spark.
-- **Resource bars:** each box in the `frameThin` edge, Mode Gradient over Mode
-  BG at 60%, Geist Bold text; combo points in the hostile red, Spacing between
-  the shadows.
+- **Resource bars** (owner, November 17, 2026): each bar in the `frameThin`
+  edge, Mode-Round in Gunmetal, Mode Gradient over Mode BG at 60%, Geist Bold
+  text. Power 10px, Combo Points and Alternate Mana 6px (drawn at the border's
+  floor). **Dark** by default: every fill in `darkFill`, combo points too, the
+  fill end line kept, the text in the bar's own color (Power Type; Class
+  Color or Custom the options). Combo points in the hostile red, **Grouped**
+  (one edge, a 1px Divider Color line between points) or **Separated** (an
+  edge each, Spacing between the shadows), the count on their left. **Tick
+  Marks**: up to three 1px Ivory lines at power values, each for one power
+  type. **Group Resources** puts Power, Combo Points and Alternate Mana in one
+  edge with a 1px black line between them, like the unit frames' bar block;
+  only the block has a floor, so its strips can be thinner.
 
 ## Bars (`Style.Bar`)
 
@@ -248,6 +283,11 @@ Phase 6 probe):
   with a spark.
 - **Spark (Comet):** a thin oval head (4px wide) with a 21px trail in the bar's
   color lightened 45%. Cast, channel, nameplate cast and timer bars.
+  The Cooldown Manager's Cast Bar (the player's, on its own) takes the
+  resource bars' look instead: Mode-Round in Gunmetal drawn in pieces, Mode
+  Gradient over Mode BG, Dark by default with the Comet head alone
+  (`Comet:SetTrail(false)`; a light trail on a dark fill read odd), and the
+  spell icon in its own border.
 - **Shields (Combined):** below max health the shield attaches to the end of
   health and stops at the end of the bar (no finish line when cut off); at full
   health the whole shield fills back from max, 9% lighter. Texture Mode Shield

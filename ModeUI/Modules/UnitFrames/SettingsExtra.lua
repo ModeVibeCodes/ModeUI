@@ -76,6 +76,11 @@ function M:BuildCastTab(ui)
     local n = Nested(ui, C, function(key, value) M:SetCastOption(ui.Editing(), key, value) end)
     ui.Tab("Cast Bar", function()
         page.unitFrameCastToggles = n.Toggles({ n.Toggle("Show Cast Bar", "enabled") }); ui.Mark("cast")
+        -- ModeCDM's Cast Bar draws the player's casts while it's on.
+        When(function() return M:CastClaimed(ui.Editing()) end, function()
+            page.unitFrameCastClaimed = W.Tip(ui.Note("Cast Bar in the Cooldown Manager",
+                "The Cooldown Manager's Cast Bar shows your casts while it's on, so this one steps aside. Turn it off in /mcdm (Cast Bar, Show Bar) to use this one.", 52))
+        end)
         -- Only the Player, Target and Focus have a Blizzard cast bar to hide.
         When(function() return C().enabled and M.nativeCast[ui.Editing()] ~= nil end, function()
             n.Toggles({ n.Toggle("Hide Blizzard Cast Bar", "hideBlizzard") })

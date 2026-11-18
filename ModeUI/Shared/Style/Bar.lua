@@ -182,6 +182,9 @@ function Comet:SetColor(color)
     self.trail:SetVertexColor(trail[1], trail[2], trail[3], 1)
 end
 function Comet:SetShown(shown) self.clip:SetShown(shown) end
+-- The trail on or off: a Dark mode cast bar shows the head alone (owner,
+-- November 17, 2026: a light trail on a dark fill read odd).
+function Comet:SetTrail(shown) self.trail:SetShown(shown ~= false) end
 function Bar:SetEndLine(shown) self.showEndLine = shown and true or false; self:LayoutStyle() end
 
 -- Positions the end line and the spark on the fill's leading edge, in whole pixels.

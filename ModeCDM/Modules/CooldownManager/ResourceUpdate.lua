@@ -14,6 +14,7 @@ if not M then return end
 local Kit, Domain = addon.Kit, addon.Domain
 local Health, Power, Resource, UnitColor = Domain.Health, Domain.Power, Domain.ClassResource, Domain.UnitColor
 local Call = Domain.Query.Call
+local Tone = addon.Style.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- Smooth eases the bar toward a new value (Enum.StatusBarInterpolation,
@@ -61,6 +62,37 @@ function M.PaintResource(frame, color, opacity)
     for i = 1, frame.count or 0 do frame.boxes[i].bar:SetStatusBarColor(color[1], color[2], color[3], opacity) end
 end
 
+-- Bar Mode (owner, November 17, 2026): Dark is the unit frames' dark mode,
+-- the fill in darkFill (combo points too) with its end line, and the text in
+-- the bar's own color (Power Type), your class color or a custom one.
+function M:ResourceFill(id, color)
+    return self.db.resources[id].barMode == "dark" and Tone.darkFill or color
+end
+function M:ResourceTextColor(id, barColor)
+    local style = self.db.resources[id]
+    if style.barMode ~= "dark" then return style.textColor end
+    if style.darkText == "custom" then return style.darkTextColor end
+    if style.darkText == "class" then
+        local class = UnitColor.PlayerClass("player")
+        if class then return { class.r, class.g, class.b } end
+    end
+    return barColor
+end
+-- Colors the text, only when its color changes (power updates come often).
+function M:PaintResourceText(frame, id, barColor)
+    local c = self:ResourceTextColor(id, barColor)
+    local key = string.format("%.3f,%.3f,%.3f", c[1], c[2], c[3])
+    if frame.textKey == key then return end
+    frame.textKey = key
+    frame.text:SetTextColor(c[1], c[2], c[3], 1)
+end
+-- Fill, rim and text for a bar whose color is `color`.
+function M:PaintResourceLook(frame, id, color, opacity)
+    M.PaintResource(frame, self:ResourceFill(id, color), opacity)
+    self:PaintResourceEdges(frame, id, color)
+    self:PaintResourceText(frame, id, color)
+end
+
 -- Whether a bar has anything to show for this character now.
 function M:ResourceActive(id)
     if id == "combo" then return Resource.Active() end
@@ -82,14 +114,19 @@ function M:UpdateResource(id)
     if id == "combo" then
         local ok, value = Resource.Read()
         Kit.FillResourcePoints(frame.boxes, frame.count, ok, value)
-        M.PaintResource(frame, self:ResourceColor(id), opacity)
+        -- The Full color layers light only at the maximum (Resources.lua).
+        for i = 1, frame.count do
+            local full = frame.boxes[i].full
+            if full and full:IsShown() then if ok then pcall(full.SetValue, full, value) else full:SetValue(frame.count - 1) end end
+        end
+        self:PaintResourceLook(frame, id, self:ResourceColor(id), opacity)
         if style.text == "current" and ok then
             if not pcall(Kit.Formatted, frame.text, "%d", value) then Kit.Write(frame.text, "") end
         else Kit.Write(frame.text, "") end
     elseif id == "health" then
         local okMax, max, okValue, value = Health.Read("player")
         Fill(frame.boxes[1].bar, okMax, max, okValue, value, style.smooth)
-        M.PaintResource(frame, self:ResourceColor(id), opacity)
+        self:PaintResourceLook(frame, id, self:ResourceColor(id), opacity)
         self.ResourceValueText(frame.text, style.text, Health.Percent, okValue, value, okMax, max)
     else
         local powerType, token
@@ -97,7 +134,8 @@ function M:UpdateResource(id)
         else powerType, token = Power.Read("player") end
         local okMax, max, okValue, value = Power.ReadType("player", powerType)
         Fill(frame.boxes[1].bar, okMax, max, okValue, value, style.smooth)
-        M.PaintResource(frame, self:ResourceColor(id, token), opacity)
+        self:PaintResourceLook(frame, id, self:ResourceColor(id, token), opacity)
+        self:UpdateResourceMarks(frame, id, token, okMax, max)
         self.ResourceValueText(frame.text, style.text, function(unit, curve) return Power.Percent(unit, powerType, curve) end,
             okValue, value, okMax, max)
     end
@@ -165,6 +203,10 @@ end
 local function Changed(self, id, alphaOnly)
     if self.active then
         if alphaOnly then self:UpdateFade()
+        -- With Group Resources on, a change to one bar of the block (Power
+        -- switched off breaks it up) lays every bar out again.
+        elseif self.db.resourceLayout == "grouped" and self.resourceSpecs[id].group then
+            self:RefreshResources(); self:UpdateFade()
         else self:LayoutResource(id); self:RenderResourceMovers(); self:UpdateFade() end
     end
     if not alphaOnly and addon.EditMode then addon.EditMode:RefreshElements() end
@@ -200,7 +242,12 @@ end
 
 -- Owner for the shared font and color widgets; id() names the bar.
 function M:ResourceAppearanceOwner(id)
-    local appearance = setmetatable({}, { __index = function(_, key) return M.db.resources[id()][key] end })
+    -- A color another bar has (a tick color on Combo Points) reads white: its row is hidden there.
+    local appearance = setmetatable({}, { __index = function(_, key)
+        local value = M.db.resources[id()][key]
+        if value == nil and M.resourceColorKeys[key] then return addon.Style.Tone.mono.white end
+        return value
+    end })
     local owner = { db = { appearance = appearance } }
     function owner.CanConfigure() return M:CanConfigure() end
     function owner.GetFonts() return addon.Media:GetFonts() end

@@ -148,6 +148,11 @@ from `Shared/Style`:
   (`Style.Shield`) on health, from Blizzard's heal prediction calculator
   (`UNIT_ABSORB_AMOUNT_CHANGED`, `UNIT_HEAL_PREDICTION`); **Shields** on the
   Health Bar tab turns them off.
+- **The Player's cast bar steps aside** while the Cooldown Manager's Cast Bar
+  (ModeCDM) is on: it claims the player's cast (`Kit.PlayerCast`), and the
+  Cast Bar tab says so. Blizzard's Player cast bar stays faded while either
+  holds it (`Kit.NativeFade`, shared since November 18, 2026). Without ModeCDM
+  nothing changes. Target and Focus cast bars are untouched.
 - **Cast bar:** a `frameThin` block, black inside, Mode Cast over Mode BG, with
   the Comet spark (`Style.Comet`). Its 2px gap is clear space between the two
   borders' shadow rings, and with a portrait it starts where the ring ends.

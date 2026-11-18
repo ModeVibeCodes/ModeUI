@@ -126,7 +126,14 @@ end
 function M:OnInitialize()
     self.Initialize(self.db)
     self.frames, self.ghosts, self.watched = {}, {}, {}
-    self.nativeHidden, self.nativeAlpha, self.nativeHooks, self.nativeMouse, self.nativeAnims = {}, {}, {}, {}, {}
+    self.nativeMouse = {}
+    -- ModeCDM's Cast Bar claiming the player's cast: the Player cast bar steps aside.
+    addon.RegisterMessage(self, addon.Messages.PLAYER_CAST_CLAIMED, function()
+        if not self.frames then return end
+        self:UpdateCast("player")
+        if self.RenderGhosts then self:RenderGhosts() end
+        if self.page and self.page.Refresh then self.page:Refresh() end
+    end)
     local function OnEvent(_, event, unit) self:OnEvent(event, unit) end
     self.events = CreateFrame("Frame")
     self.events:SetScript("OnEvent", OnEvent)

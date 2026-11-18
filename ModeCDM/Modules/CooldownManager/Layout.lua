@@ -100,6 +100,7 @@ function M:Build()
     self.movers, self.holders, self.anchorSizes = {}, {}, {}
     self:SyncBarFrames()
     self:BuildResources()
+    self:BuildCast()
 end
 
 function M:EnsureBarFrames(id)

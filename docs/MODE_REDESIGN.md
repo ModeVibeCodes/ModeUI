@@ -267,6 +267,54 @@ static renders).
   faces follow the snapped rect. In-game frames keep the plain anchor.
   Waiting on an in-game look.
 
+### Revision: ModeCDM resource bars and player cast bar (November 17, 2026)
+
+Plan and mockups (owner-approved over four rounds):
+https://claude.ai/artifact/QgDguMeW25MVA4hvH5EuVu. Built on branch
+`t3/mcdm-bars` (worktree `ModeUI-mcdm`), one gated step at a time.
+
+- **Built, waiting on the in-game gate:** ModeCDM settings version 6. Resource
+  bars in Mode-Round and Gunmetal, Dark mode (text in Power Type), thinner
+  (Power 10, Combo Points and Alternate Mana 6) with border height floors
+  (`Style.EdgeMinHeight`; Mode-Round draws thin bars at 10px), Rim Color
+  (metals, Bar Color, Custom), Tick Marks per power type, Grouped or
+  Separated combo points with Divider Width and Color, the count on, Full
+  Color, and Group Resources. See `docs/COOLDOWN_MANAGER.md`.
+- **Next:** the player cast bar moves into ModeCDM (Mode-Round, Dark, icon
+  hidden, above Essential; the Unit Frames Player cast bar steps aside while
+  it is on; Target and Focus untouched). First the shared pieces move to
+  `Shared/` (the Blizzard bar fade from Unit Frames, the interrupt hold from
+  Nameplates) with no visible change.
+- **Open:** a smaller Mode-Round ring so Mode-Round bars can be thinner than
+  10px; the Combo Points default layout (Grouped assumed).
+- **First in-game look (owner, November 18, 2026; Rogue):** loads clean;
+  dark mode, text, Full Color, Group Resources, Alternate Mana off and Edit
+  Mode work. Fixed the same day as settings version 7: the borders showed
+  only corner specks (at Blizzard's default UI scale a bar sat between
+  pixels; bars now snap onto whole pixels, `ResourceSnap.lua`); heights
+  16/10/8; the text always centered with Show Text; Tick Marks behind Show
+  Tick Marks, a typed value, one tick plus **+ Add Tick Mark** (up to five),
+  each bar's own (Power's tick no longer shows in Combo Points' preview);
+  **Full Combo Points Color**. Waiting on the next in-game look.
+- **Second in-game look (same day):** much better; the grouped block shows
+  its border, but Separate Resources still showed corner specks only. Cause:
+  the client draws a sliced texture on a region shorter than its art (64
+  rows) scaled down. Fix: `Style.Edge` can draw a ring in pieces (four 1:1
+  corners, four edges; DESIGN_LANGUAGE.md, "Pieces"), used by the resource
+  bars. The same cause may explain the thin icon and settings rims the owner
+  noted earlier; those keep their sliced borders until the owner says.
+- **Cast Bar built (November 18, 2026; owner: "It is working, can we
+  implement the player cast bar"):** the player's cast bar in ModeCDM
+  (settings version 8), in the resource bars' look as tuned in game (pieces,
+  whole pixels, Mode-Round Gunmetal, Rim Color, Dark with the Comet head
+  alone), above Essential (Buff Icons at their old default move above it),
+  icon hidden by default in its own border, Spell Name and Timer each placed
+  on its own, any Bar Color, Show Interrupted. Shared first: the Blizzard
+  frame fade (`Kit.NativeFade`, from Unit Frames), the interrupt hold
+  (`Kit.CastInterrupted`, from Nameplates) and the claim (`Kit.PlayerCast`);
+  Unit Frames' Player cast bar steps aside while it's on. See
+  COOLDOWN_MANAGER.md, "Cast Bar". Waiting on an in-game look.
+
 ## Decisions
 
 From the plan's "Decisions for you" (owner's answers):
