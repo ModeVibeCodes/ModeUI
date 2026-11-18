@@ -83,11 +83,20 @@ end
 -- of the host's rect. Only a surface that re-snaps as it moves uses it
 -- (Style.SnapEdges: the settings window, on show, page layout, scroll and
 -- drag); a host that moves by itself (a nameplate) keeps the plain anchor.
+-- A host inside a frame the game forbids to addons (an aura icon on
+-- Blizzard's containers) can't be walked up: GetParent errors, so the walk
+-- stops there; such a host is never in the settings window.
 local function Under(frame, root)
     for _ = 1, 40 do
         if frame == root then return true end
-        frame = frame and frame.GetParent and frame:GetParent()
-        if not frame then return false end
+        if not (frame and frame.GetParent) then return false end
+        if frame.IsForbidden then
+            local okForbidden, forbidden = pcall(frame.IsForbidden, frame)
+            if not okForbidden or forbidden == true then return false end
+        end
+        local ok, parent = pcall(frame.GetParent, frame)
+        if not ok then return false end
+        frame = parent
     end
     return false
 end

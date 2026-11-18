@@ -146,6 +146,18 @@ world.run([[
     control:SetSize(191, 24); control.centerX, control.centerY = 300.5, 200.2
     local snapped, plain = Style.Edge(control, "control"), Style.Edge(host, "control")
     Style.SnapEdges(root)
+    -- A host inside a frame the game forbids (an aura icon on Blizzard's
+    -- containers): its parent can't be read, so the walk stops; no error.
+    local walled = CreateFrame("Frame", nil, UIParent)
+    walled.GetParent = function() error("Attempt to access forbidden object from code tainted by an AddOn") end
+    local aura = CreateFrame("Frame", nil, walled); aura:SetSize(30, 30)
+    local auraEdge = Style.Edge(aura, "control")
+    assert(pcall(Style.SnapEdges, root) and auraEdge.snap == false, "a forbidden parent ends the walk")
+    local hidden = CreateFrame("Frame", nil, UIParent); hidden.IsForbidden = function() return true end
+    local inner = CreateFrame("Frame", nil, hidden); inner:SetSize(30, 30)
+    local innerEdge = Style.Edge(inner, "control")
+    assert(pcall(Style.SnapEdges, root) and innerEdge.snap == false, "so does a forbidden frame")
+    Style.SnapEdges(root)
     local k = control:GetEffectiveScale() / (768 / 1440)
     local low, high = snapped.holder.points[1], snapped.holder.points[2]
     assert(low[1] == "BOTTOMLEFT" and high[1] == "TOPRIGHT" and low[2] == control, "corner to corner on the host")
