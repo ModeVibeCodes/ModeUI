@@ -92,25 +92,29 @@ end)
 -- level with Essential's second row (Modules/PartyFrames/Layouts.lua); the
 -- ring hangs past the column's left edge, clear of it. The Target is the same
 -- size, mirrored, its block 1px right of the Player's; it doesn't match the
--- Player, so the mana frame and its texts stay the Player's. Names (12) on the
--- border at the top right of both (nothing hangs from these frames here);
--- inside the bar the Player's mana percent at the right, the Target's current
--- health at the left (12). The Target's buffs (18 wide, 7 to a row) sit over
--- its name, starting at its top right; its cast bar (12 tall) 1px under its
--- block, and the Focus (136 x 20, no portrait) 1px under that, left edges
--- lined up, its own cast bar 1px under it. Every join 1px apart: the two
--- shadows share one pixel. Target of Target is off. Unit frames place only on
--- the screen (Build.lua, RegisterPosition), so each place is worked out from
--- the frames' sizes.
+-- Player, so the mana frame and its texts stay the Player's, but its height
+-- is matched to the Player's (Edit Mode's Match Height), so the two are the
+-- same height to the pixel whatever Frame Height the Player gets. Names (12)
+-- just above the border (nothing hangs from these frames here): the Player's
+-- at the top right, the Target's at the top left; inside the bar the
+-- Player's mana percent at the right, the Target's current health at the left
+-- (12). The Target's buffs (18 wide) sit at its top right, 1px over the
+-- block like the name, three to a row so a row ends before a name of up to
+-- about 11 letters (a name's width can't be measured: it may be secret);
+-- more rows go up. Its cast bar (12 tall) 1px under its block, and the Focus
+-- (136 x 20, no portrait) 1px under that, left edges lined up, its own cast
+-- bar 1px under it. Every join 1px apart: the two shadows share one pixel.
+-- Target of Target is off. Unit frames place only on the screen (Build.lua,
+-- RegisterPosition), so each place is worked out from the frames' sizes.
 local HEALER = { health = 26, width = 142, portrait = 145, right = -323, partyTop = { ["1080"] = 29, ["1440"] = -126 },
-    text = 12, focus = { width = 134, health = 14, power = 3 }, cast = 12, buffs = { size = 18, perRow = 7 } }
+    text = 12, focus = { width = 134, health = 14, power = 3 }, cast = 12, buffs = { size = 18, perRow = 3, max = 9 } }
 
 -- Every health slot and the border empty, then each text in its slot; the
--- border's text aligned right.
-local function Texts(fdb, slots)
+-- border's text at `align`.
+local function Texts(fdb, align, slots)
     local texts = fdb.texts
     for _, slot in ipairs(M.healthSlots) do texts[slot].content = "none" end
-    texts.border.content, texts.border.align = "none", "RIGHT"
+    texts.border.content, texts.border.align = "none", align
     for slot, text in pairs(slots) do texts[slot].content, texts[slot].size = text[1], text[2] end
 end
 
@@ -122,13 +126,14 @@ addon.Layouts:Contribute("healer", "unitFrames", function(db, ctx)
         fdb.healthHeight, fdb.showPower, fdb.barWidth, fdb.portraitScale = HEALER.health, false, HEALER.width, HEALER.portrait
     end
     player.barShows = "mana"
-    -- Names on the border at the top right; the value inside the bar; no level.
-    Texts(player, { border = { "name", HEALER.text }, right = { "powerPercent", HEALER.text } })
-    Texts(target, { border = { "name", HEALER.text }, left = { "healthCurrent", HEALER.text } })
-    -- The Target's buffs from its top right, growing left: on the name's side,
-    -- so they sit over it (Auras.lua, AuraOrigin).
+    -- Names just above the border; the value inside the bar; no level.
+    Texts(player, "RIGHT", { border = { "name", HEALER.text }, right = { "powerPercent", HEALER.text } })
+    Texts(target, "LEFT", { border = { "name", HEALER.text }, left = { "healthCurrent", HEALER.text } })
+    -- The Target's buffs from its top right, growing left, beside its name
+    -- (the other side, so they aren't lifted over it: Auras.lua, AuraOrigin);
+    -- Y -1 puts them 1px over the block, on the name's line.
     local buffs = target.buffs
-    buffs.size, buffs.perRow, buffs.max = HEALER.buffs.size, HEALER.buffs.perRow, HEALER.buffs.perRow
+    buffs.size, buffs.perRow, buffs.max, buffs.y = HEALER.buffs.size, HEALER.buffs.perRow, HEALER.buffs.max, -1
     buffs.anchor, buffs.grow = "TOPRIGHT", "left"
     for _, fdb in ipairs({ target, focus }) do
         local cast = fdb.castBar
@@ -145,6 +150,9 @@ addon.Layouts:Contribute("healer", "unitFrames", function(db, ctx)
     local y = blockBottom - g.blockY + g.height / 2
     ctx.Place(M.elementIds.player, "screen", "CENTER", "CENTER", HEALER.right - g.width / 2, y)
     ctx.Place(M.elementIds.target, "screen", "CENTER", "CENTER", HEALER.right + 1 + g.width / 2, y)
+    -- The Target's height is the Player's (Match Height).
+    target.matchHeight = true
+    ctx.Match(M.elementIds.target, "height", M.elementIds.player)
     -- The Target's cast bar: its rim (1px) round the bar, Gap -1 off the block.
     local castBottom = blockBottom - (target.castBar.gap + 2) - (target.castBar.height + 2)
     ctx.Place(M.elementIds.focus, "screen", "TOPLEFT", "CENTER", HEALER.right + 1, castBottom - 1)

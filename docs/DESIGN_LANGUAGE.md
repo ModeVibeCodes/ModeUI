@@ -373,9 +373,12 @@ Phase 6 probe):
   text's own color (added light, 22%, `Style.TextGlow`), 5px past the digits,
   its width from the format (characters × 0.62 × size), on the text's
   justified side.
-- **Placement:** the name sits on the top border, 9px in from the side
-  opposite the portrait, lifted so the rim runs near its baseline. Health is
-  right-aligned inside the health bar (padded past a portrait on that side).
+- **Placement:** the name sits just above the top border, 9px in from the
+  side opposite the portrait: its line's bottom 1px over the frame's edge,
+  on the border's shadow pixel, so no letter crosses the rim (owner,
+  November 19, 2026; it used to sit on the rim, its baseline on the rim's
+  middle). Health is right-aligned inside the health bar (padded past a
+  portrait on that side).
 
 ## Sizes
 

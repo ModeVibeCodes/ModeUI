@@ -345,10 +345,11 @@ ol.steps h3 { margin: 0 0 2px; }
     add({ id: "target", label: "Target", r: tFrame, status: "value", solid: [tBlock, tRing],
       html: unitFrame({ w: tFrame[2] - tFrame[0], h: tFrame[3] - tFrame[1], side: "right", fill: TONE.hostile, pct: busy ? 0.63 : 1, name: "Defias Pillager", value: busy ? "11.6K" : "18.4K", ring: TONE.hostile, nameColor: "#f2f2f2" }) });
     // Every join 1px apart: the two shadows share one pixel (Mode's rule everywhere in the layout).
-    // Target buffs over its name: 18 x 14, 7 to a row, from its top right (past the ring's tuck) growing left.
-    var tb = busy ? 7 : 2, tbRight = tBlock[2] - 2 - (UF.ring - (r + 2) + 2), tbW = 7 * 18 + 6;
-    var tbR = [tbRight - tbW, blockTop + 12, tbRight, blockTop + 12 + 14];
-    add({ id: "targetBuffs", label: "Target buffs", group: "target", r: tbR, status: "value", html: iconRow(tb, 7, 18, 14, 19, 15, "thin", { rtl: true, lineW: tbW }) });
+    // Target buffs at its top right (past the ring's tuck), growing left, 1px over the block on the name's
+    // line: 18 x 14, three to a row so a row ends before the name (top left); more rows go up.
+    var tb = busy ? 7 : 2, tbRight = tBlock[2] - 2 - (UF.ring - (r + 2) + 2), tbW = 3 * 18 + 2;
+    var tbR = [tbRight - tbW, blockTop + 1, tbRight, blockTop + 1 + 14];
+    add({ id: "targetBuffs", label: "Target buffs", group: "target", r: tbR, status: "value", html: iconRow(tb, 3, 18, 14, 19, 15, "thin", { rtl: true, lineW: tbW, up: true }) });
     // Target cast bar under the visible bar: 12 tall in a 1px rim, Gap -1 (one shared shadow pixel).
     var tcR = [tLeft, blockBottom - 1 - 14, tLeft + UF.visible, blockBottom - 1];
     add({ id: "targetCast", label: "Target cast bar", group: "target", r: tcR, status: "feature", html: castBar(UF.visible, 14, busy ? 0.55 : 0.3, "Fireball", "1.2", TONE.hostile) });
@@ -472,9 +473,10 @@ ol.steps h3 { margin: 0 0 2px; }
     var vy = Math.round((UF.block - 12) / 2), tuck = r + 2;
     if (o.side === "left") s += txt(0, vy, 12, o.value, "#f2f2f2", "right:4px;left:auto;font-weight:600");
     else s += txt(4, vy, 12, o.value, "#f2f2f2", "font-weight:600");
-    // The name (12) on the border at the top right: its baseline on the top rim.
-    var nameRight = o.side === "left" ? 4 : tuck;
-    s += txt(0, -9, 12, o.name, o.nameColor, "right:" + nameRight + "px;left:auto;font-weight:600");
+    // The name (12) just above the border, its line's bottom 1px over the block: the Player's at the top
+    // right, the Target's at the top left (each on the side away from its ring).
+    if (o.side === "left") s += txt(0, -14, 12, o.name, o.nameColor, "right:2px;left:auto;font-weight:600");
+    else s += txt(2, -14, 12, o.name, o.nameColor, "font-weight:600");
     s += "</div>";
     var rx = o.side === "left" ? 0 : o.w - UF.ring;
     s += '<div class="ring" style="left:' + rx + "px;top:0;width:" + UF.ring + "px;height:" + UF.ring + "px;box-shadow:0 0 0 1px #000;background:" + o.ring + ';padding:2px">' +
@@ -639,7 +641,7 @@ ol.steps h3 { margin: 0 0 2px; }
   var SPEC = [
     ["Unit Frames"],
     ["Player", "<b>Mana frame</b> (Show: Mana): the bar shows your mana, no health, no power bar. <b>Frame Height 26</b> (your pick in game; the slider was Health Bar Height): a 30px bar block, a little shorter than the DPS 32. Frame Width 142, so 136 shows past the 44px ring (Portrait Size 145), the party column's width: 180 × 44. Mode-Thin Steel, no Drop Shadow. Name (12) on the border at the top right, mana % (12) inside at the right, level off. Place: block's right edge on the party column's right edge (x −323), 1px above the first member (you); the ring hangs past the column's left edge, clear of it.", "206 × 46, health 28, no power, Portrait 145, at (−256, 300 from bottom)", "feature", "Show: Health / Mana is new; the slider is renamed Frame Height."],
-    ["Target", "Same size as the Player (180 × 44), mirrored (ring on the right), health in reaction color, not matching the Player. Its block 1px right of the Player's. Name (12) on the border at the top right; <b>current health</b> (12) inside at the left. Buffs over the name: 18 × 14, 7 to a row, from its top right growing left. Cast bar under the bar's visible length (136), 12 tall, Gap −1 (1px off the block). Debuffs off (as now).", "206 × 46 at (256, 300 from bottom); buffs 22 wide (cropped 22 × 18) at the top left", "feature", "Cast Bar Gap down to −1 is new (today 0 is the least: 2px apart). A one-line range change."],
+    ["Target", "Same size as the Player (180 × 44), mirrored (ring on the right), health in reaction color, not matching the Player's look but <b>matching its height</b> (Edit Mode's Match Height: the same height to the pixel whatever Frame Height the Player gets). Its block 1px right of the Player's. Name (12) just above the border at the <b>top left</b>; <b>current health</b> (12) inside at the left. Buffs at the top right, 1px over the block on the name's line, 18 × 14, three to a row so a row ends before a name of about 11 letters, more rows going up (up to 9). Cast bar under the bar's visible length (136), 12 tall, Gap −1 (1px off the block). Debuffs off (as now).", "206 × 46 at (256, 300 from bottom); buffs 22 wide (cropped 22 × 18) at the top left", "feature", "Cast Bar Gap down to −1 is new (today 0 is the least: 2px apart). A one-line range change."],
     ["Target of Target", "Off.", "On", "value", ""],
     ["Focus", "136 × 20 (health 14, power 3, no portrait), 1px under the Target's cast bar, left edge on the Target's (x −322), its cast bar 12 tall, Gap −1. Focus places on the screen (unit frames take no anchors), worked out from the Target's size.", "122 × 26, 64 over the Target's top left", "value", ""],
     ["Party Frames"],
@@ -743,7 +745,8 @@ ol.steps h3 { margin: 0 0 2px; }
     ["Party look", "Mode Matte, Background Opacity 70."],
     ["1px rule", "Every join shares one shadow pixel. Cast Bar Gap −1 needs a range change (today 0)."],
     ["Frame height", "Frame Height 26 for the Player and Target (180 × 44, a 30px block, a 44px ring); the slider is labeled Frame Height, and Show: Health / Mana is two pills."],
-    ["Frame texts", "Names on the border at the top right of both; the Target shows current health inside at the left; values 12."],
+    ["Frame texts", "Names just above the border (in every profile now: no letter crosses the rim): the Player's at the top right, the Target's at the top left. The Target shows current health inside at the left; values 12. The Target's buffs at its top right, three to a row."],
+    ["Same height", "The Target matches the Player's height (Match Height)."],
     ["Party when solo", "Show When Solo on: alone, the column shows your own frame."],
   ];
   var QS = [

@@ -37,13 +37,14 @@ function M:SlotSettings(fdb, slot)
     return s, -s.x, FLIP[s.align] or s.align
 end
 
--- Where the bottom of border text sits, up from the health bar's top: its
--- baseline on the middle of the top rim, so the letters sit on the border and
--- their descenders (a quarter of the font size) dip over it.
+-- Where the bottom of border text sits, up from the health bar's top: just
+-- above the top border, the line's bottom 1px over the block's edge (on the
+-- border's shadow pixel), so no letter crosses the rim (owner, November 19,
+-- 2026; it used to sit on the rim, descenders dipping over it). `size` is
+-- kept for callers; the line's bottom no longer depends on it.
 function M:BorderBottom(g, size, y)
     local px = g.px
-    local descent = math.floor(size * 0.25 / px + 0.5) * px
-    return g.pad - g.border / 2 - descent + math.floor(y / px + 0.5) * px
+    return g.pad + px + math.floor(y / px + 0.5) * px
 end
 
 -- Text never reaches the portrait (owner, November 13, 2026). A text on the

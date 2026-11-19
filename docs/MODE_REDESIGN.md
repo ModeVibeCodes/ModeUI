@@ -465,11 +465,15 @@ branch `t3/healer-layout`.
     166 x 30 (a 20px block); after the owner's first look the same day,
     Frame Height 26 (the Health Bar Height slider, renamed **Frame Height**):
     180 x 44, a 30px block, 136 of bar past the 44px ring, on the party
-    column 1px over it, right ends lined up at x -323; the name on the
-    border at the top right, mana percent inside; the Target the same size
-    1px beside it, its name on the border at the top right, current health
-    inside, its buffs over the name; the Focus 1px under the Target's cast
-    bar, left edges lined up; Target of Target off.
+    column 1px over it, right ends lined up at x -323; the name just above
+    the border at the top right, mana percent inside; the Target the same
+    size 1px beside it, its height matched to the Player's (Match Height:
+    the owner saw it a touch taller in game), its name just above the
+    border at the top left, current health inside, its buffs at the top
+    right on the name's line, three to a row; the Focus 1px under the
+    Target's cast bar, left edges lined up; Target of Target off. Names On
+    the Border now sit just above the border in every profile (owner;
+    DESIGN_LANGUAGE.md, "Placement").
   - Party frames 136 x 64, you shown (alone too: Show When Solo),
     Mode-Thin Gunmetal, Mode Matte at
     Background Opacity 70, name top left with the role icon on its end

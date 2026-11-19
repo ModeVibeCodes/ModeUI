@@ -23,19 +23,31 @@
   block is that plus its 2px rim each side (and the power bar, when shown).
 - **Cast Bar Gap** goes down to -1: the bar 1px from the frame, the two
   shadows sharing one pixel, as Mode's icons and frames do.
+- **Names just above the border** (owner, in every profile;
+  DESIGN_LANGUAGE.md, "Placement"): a text On the Border sits with its
+  line's bottom 1px over the bar block's edge, on the border's shadow pixel
+  (`BorderBottom`: the bars' rim + 1px + its Y offset), so no letter crosses
+  the rim. It used to sit on the rim, descenders dipping over it. Higher,
+  the ring curves away, so a name on the portrait side starts a little
+  closer to it (28px in from the bars on a default Target, was 31); auras
+  lifted over the name follow it.
 - **Healer layout** (`Modules/UnitFrames/Layouts.lua`, new profiles only):
   the Player a mana frame at Frame Height 26 (the owner's pick in game, a
   little shorter than Mode-Default's 28), no power bar: a 30px bar block
   with a 44px ring (Portrait Size 145), and Frame Width 142, so 136 of bar
-  shows past the ring, the party column's width; 180 x 44. The name (12) on
-  the border at the top right (nothing hangs from these frames here), Power
-  Percent (12) inside at the right, no level. Its block's right edge on the
-  party column's (x -323), 1px over the first member; the ring hangs past
-  the column's left edge, clear of it. The Target the same size, mirrored,
-  not matching the Player: the name on the border at the top right, Health
-  Current (12) inside at the left; its block 1px right of the Player's; its
-  buffs 18 wide, 7 to a row, from its top right growing left, so they sit
-  over the name (AuraOrigin); its cast bar 12 tall, Gap -1, icon hidden.
+  shows past the ring, the party column's width; 180 x 44. The name (12)
+  just above the border at the top right (nothing hangs from these frames
+  here), Power Percent (12) inside at the right, no level. Its block's right
+  edge on the party column's (x -323), 1px over the first member; the ring
+  hangs past the column's left edge, clear of it. The Target the same size,
+  mirrored, not matching the Player's look but matching its height (Edit
+  Mode's Match Height, so the two stay the same height to the pixel at any
+  Frame Height the Player gets): the name just above the border at the top
+  left, Health Current (12) inside at the left; its block 1px right of the
+  Player's; its buffs 18 wide at its top right, growing left, Y -1 (1px
+  over the block, on the name's line), three to a row so a row ends before
+  a name of about 11 letters (a name can't be measured: it may be secret),
+  more rows going up, up to 9; its cast bar 12 tall, Gap -1, icon hidden.
   The Focus 136 x 20 (Frame Width 134, Health 14, Power 3, no portrait), 1px
   under the Target's cast bar, left edges lined up, its cast bar 12 tall,
   Gap -1. Target of Target and Target of Focus off. Mode-Thin Steel, no text

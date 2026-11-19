@@ -89,11 +89,18 @@ world.run([==[
         local tg = UF:Geometry(setmetatable({ showPortrait = true }, { __index = uf.target }), 1, addon.Style.EdgeDepth('frame'))
         assert(tg.width == g.width and tg.height == g.height and tp.y == pp.y and tp.x - tg.width / 2 == -322, 'Target 1px beside')
         local tb = uf.target.buffs
-        assert(tb.size == 18 and tb.perRow == 7 and tb.anchor == 'TOPRIGHT' and tb.grow == 'left', 'Target buffs from its top right')
+        assert(tb.size == 18 and tb.perRow == 3 and tb.max == 9 and tb.anchor == 'TOPRIGHT' and tb.grow == 'left' and tb.y == -1,
+            'Target buffs at its top right, three to a row, 1px over the block')
+        -- Three 18px buffs (56) from past the ring leave the left of the bar to the name.
+        local tw = tg.width - tg.portrait / 2 - 2 * tg.pad - (tg.tuck + 2)
+        assert(tw - (3 * 18 + 2) >= 70, 'room for a name of about 11 letters: ' .. tw - (3 * 18 + 2))
+        -- The Target's height is the Player's (Match Height).
+        assert(uf.target.matchHeight and profile.sizeMatches.unitFramesTarget.height == 'unitFramesPlayer', 'Target matches the Player height')
         -- Names (12) on the border at the top right; inside, the Player's mana percent and the Target's current health.
         for _, unit in ipairs({ 'player', 'target' }) do
             local s = uf[unit].texts
-            assert(s.border.content == 'name' and s.border.align == 'RIGHT' and s.border.size == 12, unit .. ': name on the border')
+            assert(s.border.content == 'name' and s.border.align == (unit == 'player' and 'RIGHT' or 'LEFT') and s.border.size == 12,
+                unit .. ': name above the border (Player right, Target left)')
         end
         assert(uf.player.texts.right.content == 'powerPercent' and uf.target.texts.left.content == 'healthCurrent' and uf.target.texts.left.size == 12)
         assert(uf.target.castBar.gap == -1 and uf.target.castBar.height == 12 and not uf.targettarget.enabled)
@@ -162,6 +169,18 @@ H.Load({ before = STUBS, saved = switching.saved() }).run([==[
     local tl, tb, tr, tt, tw, th = Box(M.ghosts.target)
     assert(pw == 180 and ph == 44 and tw == 180 and th == 44, 'Edit Mode measures the frames as built')
     assert(pr - ux == -323 and tl - ux == -322 and pb == tb, 'side by side, 1px apart')
+    -- Match Height: a Player made shorter takes the Target with it.
+    -- (The client tells the Target of the Player's new size through OnSizeChanged,
+    -- which the mock doesn't fire: refresh the match as that event does.)
+    local PM = addon.PositionManager
+    assert(M:SetFrameOption('player', 'healthHeight', 24)); PM:RefreshAnchorSize('unitFramesTarget')
+    local _, pb2, _, pt2 = Box(M.ghosts.player)
+    local _, tb2, _, tt2 = Box(M.ghosts.target)
+    assert(pt2 - pb2 == 40 and tt2 - tb2 == 40, 'the Target follows the Player height: ' .. (pt2 - pb2) .. ' and ' .. (tt2 - tb2))
+    assert(M:SetFrameOption('player', 'healthHeight', 26)); PM:RefreshAnchorSize('unitFramesTarget')
+    local _, pb3, _, pt3 = Box(M.ghosts.player)
+    local _, tb3, _, tt3 = Box(M.ghosts.target)
+    assert(pt3 - pb3 == 44 and tt3 - tb3 == 44 and M.frames.target.texts.border.justifyH == 'LEFT', 'back to 44; the Target name at the left')
     local p = M.frames.player
     units.player.mana, units.player.manaMax = 300, 900
     M:Update('player')

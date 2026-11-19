@@ -234,7 +234,7 @@ world.run([====[
     assert(Point(b1)[1]=='BOTTOMRIGHT' and Point(b1)[2]==t.health and Point(b1)[3]=='TOPRIGHT' and Point(b1)[4]==clear and Point(b1)[5]==2+2,'on the bar block, clear of the ring')
     -- With the name on the right too, the row sits over the name instead of on it.
     assert(M:SetTextOption('player','border','align','LEFT'))
-    local q=Point(b1);assert(q[5]==(2-1-3)+14+2,'over the name on the border')
+    local q=Point(b1);assert(q[5]==(2+1)+14+2,'over the name just above the border')
     local h=b1.height
     assert(b1.width==22 and h<22 and Point(b2)[4]==clear-(22+2) and Point(b2)[5]==q[5],'cropped, growing left')
     assert(M:SetAuraOption('target','buffs','perRow',1) and Point(b2)[4]==clear and Point(b2)[5]==q[5]+h+2,'a new row above')
@@ -390,16 +390,16 @@ world.run([====[
     assert(p.textLayer:GetFrameLevel()>ring:GetFrameLevel(),'text above the portrait')
     -- On the Border (default): the baseline on the top rim's middle (bottom = 2 - 1 - 3
     -- descent = -2), clear of the ring at its height (31 in from the bars' start).
-    local np=Point(p.texts.border);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==31 and np[5]==-2 and p.texts.border.justifyH=='RIGHT','name sitting on the border')
+    local np=Point(p.texts.border);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==28 and np[5]==3 and p.texts.border.justifyH=='RIGHT','name just above the border (1px over the block)')
     assert(p.texts.border.font[1]:find('Geist%-SemiBold') and p.texts.right.font[1]:find('Geist%-Bold'),'Geist: names on the border in SemiBold, text in the bars in Bold')
     assert(t.texts.border.justifyH=='LEFT','the mirrored Target has its name on the left')
     -- Mirror Player Text off: the Player's slots as they are, each clear of the Target's own portrait.
     assert(M:SetFrameOption('target','mirrorText',false) and t.texts.border.justifyH=='RIGHT' and not t.texts.left:IsShown())
     local th=Point(t.texts.right);assert(th[1]=='RIGHT' and th[2]==t.health and th[4]==-35,'health on the right, like the Player, clear of the ring')
     local tl=Point(t.texts.bottomLeft);assert(tl[1]=='BOTTOMLEFT' and tl[4]==4 and tl[5]==1,'level bottom left, away from the portrait')
-    -- The name clears the ring at its own height: on the border, 31px in from the bars.
-    assert(Point(t.texts.border,2)[4]==-31 and Point(p.texts.border,2)[4]==0,'name clear of the portrait at its own height')
-    assert(M:SetFrameOption('target','mirrorText',true) and Point(t.texts.border)[4]==0 and Point(t.texts.border,2)[4]==-31)
+    -- The name clears the ring at its own height: on the border, 28px in from the bars (just above the border the ring curves away).
+    assert(Point(t.texts.border,2)[4]==-28 and Point(p.texts.border,2)[4]==0,'name clear of the portrait at its own height')
+    assert(M:SetFrameOption('target','mirrorText',true) and Point(t.texts.border)[4]==0 and Point(t.texts.border,2)[4]==-28)
     assert(p.texts.bottomLeft.color[1]==P.muted[1],'the level muted by default')
     -- Bar text never reaches the portrait: 2px before the ring's outer edge across
     -- its own line (at the bars' middle: 35 + 35 + 2 - 37 = 35 from the bars' start),
@@ -621,8 +621,8 @@ world.run([====[
     assert(Point(t.texts.left)[1]=='LEFT' and Point(t.texts.left)[2]==t.health and Point(t.texts.left)[4]==4-5,'mirrored offsets')
     assert(M:SetFrameOption('target','mirrorText',false) and Point(t.texts.right)[4]==-35,'toward its portrait an offset stops at the line')
     assert(M:SetFrameOption('target','mirrorText',true))
-    assert(M:SetTextOption('player','border','x',3) and M:SetTextOption('player','border','y',4) and Point(p.texts.border)[5]==-2+4 and Point(p.texts.border)[4]==31,'a little higher, still clear of the ring')
-    assert(M:SetTextOption('player','border','y',11) and Point(p.texts.border)[5]==-2+11 and Point(p.texts.border)[4]==24,'higher, where the ring curves away: closer')
+    assert(M:SetTextOption('player','border','x',3) and M:SetTextOption('player','border','y',4) and Point(p.texts.border)[5]==3+4 and Point(p.texts.border)[4]==27,'a little higher, still clear of the ring')
+    assert(M:SetTextOption('player','border','y',11) and Point(p.texts.border)[5]==3+11 and Point(p.texts.border)[4]==15,'higher, where the ring curves away: closer')
     for _,key in ipairs({'x','y'}) do assert(M:SetTextOption('player','border',key,0) and M:SetTextOption('player','right',key,0)) end
     assert(M:SetTextOption('player','bottomLeft','colorMode','custom') and M:SetTextOption('player','bottomLeft','color',{1,0,0}) and M:SetTextOption('player','bottomLeft','size',14))
     assert(p.texts.bottomLeft.color[1]==1 and p.texts.bottomLeft.font[2]==14 and p.texts.right.font[2]==11,'each slot its own color and size')
