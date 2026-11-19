@@ -91,6 +91,14 @@ The cast bar sits **Below** or **Above** the health bar, with its own offsets.
 The raid marker has a **Size**. Anchors are picked with the anchor compass
 (`W.AnchorPicker`).
 
+## Mode-Default layout
+
+`Layouts.lua` adds the nameplates' part of the built-in Mode-Default layout
+(DPS / Tank, `Shared/Runtime/Layouts.lua`; owner, November 18, 2026): the
+module on, and aura icons at **Aura Spacing** 1 for Enemy and Friendly, so
+neighbours share one shadow pixel like every icon in the layout. Everything
+else keeps its default.
+
 ## Enemy and friendly plates
 
 Every plate is an **enemy** plate (a unit you can attack) or a **friendly** one,

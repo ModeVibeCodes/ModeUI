@@ -428,6 +428,13 @@ Built on branch `t3/mode-default-layout`.
   soft drop read as a dark band under Player Buffs and above Defensive
   Cooldowns. Unit Frames gets **Drop Shadow** (Border group, Player and
   Target; on by default), off in the layout.
+- **Sixth round (owner, November 18, 2026):** Target of Target's border
+  showed only corner specks: every unit frame border and cast bar border is
+  drawn in pieces (all profiles). Aura icons uniform in the layout: every
+  Buffs & Debuffs bar Mode-Thin at Spacing 1 (border sizes kept), unit frame
+  auras at Spacing 1, and a nameplate part (Aura Spacing 1). Confirmation:
+  Target of Target shows its whole rim; every aura row has one dark pixel
+  between icons.
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
 

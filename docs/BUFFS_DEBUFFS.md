@@ -313,12 +313,16 @@ same at 1080 and 1440. The module is on.
 
 | Bar | Settings | Place |
 |---|---|---|
-| Buffs | 30 x 24, 12 per row, 24 max, Grow Left, New Rows Down, Spacing 4, time below | TOPRIGHT on the Minimap's TOPLEFT, (-10, 2) |
-| Debuffs | the same, 16 max | TOPRIGHT on the Minimap's BOTTOMLEFT, (-10, 73) |
-| Player Buffs | 30 x 24, 5 per row, Spacing 1 | TOPRIGHT on ModeUI Player Frame Bars' BOTTOMRIGHT (the bar block), (0, -1) |
+| Buffs | 30 x 24, 12 per row, 24 max, Grow Left, New Rows Down, time below | TOPRIGHT on the Minimap's TOPLEFT, (-10, 2) |
+| Debuffs | the same, 16 max | TOPRIGHT on the Minimap's BOTTOMLEFT, (-10, 70) |
+| Player Buffs | 30 x 24, 5 per row | TOPRIGHT on ModeUI Player Frame Bars' BOTTOMRIGHT (the bar block), (0, -1) |
 | Defensives (`custom1`) | 40 x 34, 4 max | RIGHT on the screen's CENTER, (-124, 166) |
 
-Player Debuffs (All) and Boss & Important keep their defaults. The owner's
+Every bar (these, Player Debuffs (All), Boss & Important and any custom bar)
+is Mode-Thin in its own metal at Spacing 1, so neighbours share one shadow
+pixel as the Cooldown Manager's icons do (owner, November 18, 2026); border
+sizes stay each bar's own (2px on Player Debuffs, Boss & Important and
+Defensives). Player Debuffs (All) and Boss & Important otherwise keep their defaults. The owner's
 layout editor drew each icon as its size plus 2px of edge each side (3 for a
 2px border), rows 39 tall, and the minimap as what shows of it. In game a
 bar's element is its cells exactly: the border is inside Width x Height, only
@@ -326,8 +330,8 @@ the icon's 1px shadow shows past it, and a cell with the time below is the
 icon plus Time Size + 2 (36 tall here). The Minimap element is the map alone,
 its edge 3px past it. So the places put outer edges on outer edges: 6px from
 the minimap's edge is -(6 + 3 + 1) = -10; Buffs' icon tops on the minimap's
-top is 3 - 1 = 2; Debuffs' two rows (2 x 36 + 4 = 76, `M:BarSize`) end on
-the minimap's bottom at 76 - 3 = 73 (the editor's 82 counted 39-tall rows);
+top is 3 - 1 = 2; Debuffs' two rows (2 x 36 + 1 = 73, `M:BarSize`) end on
+the minimap's bottom at 73 - 3 = 70;
 Defensives' right edge at -123 is -124 for the element. Player Buffs (owner's
 tuning, November 18, 2026) hang from the Player frame's bar block
 (`unitFramesPlayerBars`, its band on the block's edge), so Portrait Size,

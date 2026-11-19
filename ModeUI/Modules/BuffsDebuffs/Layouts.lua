@@ -34,16 +34,20 @@ local function Bar(bar, values) for key, value in pairs(values) do bar[key] = va
 addon.Layouts:Contribute("mode-default", "buffsDebuffs", function(db, ctx)
     db.enabled = true
     local bars = db.bars
-    local row = { width = 30, height = 24, perRow = 12, grow = "left", wrap = "down", spacing = 4, timer = "below" }
+    local row = { width = 30, height = 24, perRow = 12, grow = "left", wrap = "down", timer = "below" }
     Bar(bars.buffs, row); bars.buffs.max = 24
     Bar(bars.debuffs, row); bars.debuffs.max = 16
-    Bar(bars.playerBuffs, { width = 30, height = 24, perRow = 5, spacing = 1 })
+    Bar(bars.playerBuffs, { width = 30, height = 24, perRow = 5 })
     local defensives
     for _, entry in ipairs(db.customBars) do
         if entry.preset == "defensives" and not defensives then defensives = entry.id end
     end
     assert(defensives, "no Defensives bar")
     Bar(bars[defensives], { width = 40, height = 34, max = 4 })
+    -- Every bar uniform (owner, November 18, 2026): Mode-Thin in its own metal,
+    -- icons 1px apart so neighbours share one shadow pixel, as the Cooldown
+    -- Manager's do. Border sizes stay each bar's own.
+    for _, bar in pairs(bars) do bar.edgeStyle, bar.edgeMetal, bar.spacing = "thin", "default", 1 end
 
     local x = -(GAP + MAP_EDGE + SHADOW)
     -- Buffs: the icons' tops on the minimap's top.

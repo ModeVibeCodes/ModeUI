@@ -1167,6 +1167,9 @@ layoutWorld.run([====[
         assert(db.player.barWidth==166 and db.target.barWidth==166,'18 shorter')
         assert(db.player.portraitScale==145 and db.target.portraitScale==145,'Portrait Size 145')
         assert(db.player.dropShadow==false and db.target.dropShadow==false,'no soft drop under the border')
+        for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
+            assert(db[unit].buffs.spacing==1 and db[unit].debuffs.spacing==1,unit..': aura icons 1px apart')
+        end
         assert(t.topRight.size==11 and t.bottomRight.size==10 and t.bottomLeft.size==10,'room in the bar: 11, 10 and 10')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
             assert(db[unit].nameTextGlow==false and db[unit].healthTextGlow==false,unit..': no text glow')
@@ -1215,6 +1218,12 @@ H.Load({ before = STUBS, saved = used }).run([====[
     -- The bar blocks are targets: the stand-ins' blocks, by name.
     assert(_G.ModeUIPlayerUnitFrameBars==M.ghosts.player.panel and _G.ModeUITargetUnitFrameBars==M.ghosts.target.panel,'bar block targets')
     assert(addon.Positioning:Resolve('unitFramesPlayerBars')==M.ghosts.player.panel,'the Player block resolves')
+    -- Every frame's border in pieces (Target of Target showed only corner specks).
+    for _,unit in ipairs({'player','target','targettarget','focus'}) do
+        local fr=M.frames[unit]
+        assert(fr.panel.edge.pieces and #fr.panel.edge.parts[1]==8,unit..': border in pieces')
+        if fr.castBox then assert(fr.castBox.edge.pieces,unit..': cast bar border in pieces') end
+    end
     -- Drop Shadow off: the soft drop is hidden; switching it on shows it again.
     local edge=M.frames.player.panel.edge
     assert(edge.below and not edge.below:IsShown(),'no soft drop in Mode-Default')

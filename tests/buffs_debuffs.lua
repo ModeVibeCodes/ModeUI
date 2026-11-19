@@ -393,23 +393,28 @@ H.Load({ before = STUBS }).run([==[
         assert(db.enabled == true)
         for _, bar in ipairs({ b, d }) do
             assert(bar.width == 30 and bar.height == 24 and bar.perRow == 12 and bar.grow == 'left' and bar.wrap == 'down'
-                and bar.spacing == 4 and bar.timer == 'below' and bar.timerSize == 10, 'Buffs and Debuffs icons')
+                and bar.spacing == 1 and bar.timer == 'below' and bar.timerSize == 10, 'Buffs and Debuffs icons')
         end
         assert(b.max == 24 and d.max == 16 and pb.width == 30 and pb.height == 24 and pb.perRow == 5 and pb.spacing == 1, 'Player Buffs 30 x 24, five to a row, sharing shadows')
         assert(db.bars.playerDebuffs.width == 42 and db.bars.playerImportant.width == 48, 'player debuff bars unchanged')
         assert(db.customBars[1].preset == 'defensives' and db.customBars[1].id == 'custom1')
         local def = db.bars.custom1
         assert(def.width == 40 and def.height == 34 and def.max == 4 and def.borderSize == 2)
-        -- Two rows of cells 24 + 10 + 2 tall, 4 apart: the Debuffs element is 76 tall.
+        -- Every bar Mode-Thin in its own metal, 1px apart (owner, November 18, 2026); border sizes stay.
+        for id, bar in pairs(db.bars) do
+            assert(bar.edgeStyle == 'thin' and bar.edgeMetal == 'default' and bar.spacing == 1, id .. ': Mode-Thin, 1px apart')
+        end
+        assert(db.bars.playerDebuffs.borderSize == 2 and db.bars.custom1.borderSize == 2, 'border sizes kept')
+        -- Two rows of cells 24 + 10 + 2 tall, 1 apart: the Debuffs element is 73 tall.
         local w, h = M:BarSize(d, 1)
-        assert(w == 12 * 30 + 11 * 4 and h == 2 * 36 + 4)
+        assert(w == 12 * 30 + 11 and h == 2 * 36 + 1)
         local function Is(id, target, point, rel, x, y)
             local p = pos[M.ElementId(id)]
             assert(p and p.target == target and p.point == point and p.relativePoint == rel and p.x == x and p.y == y,
                 id .. ' placed ' .. tostring(p and p.x) .. ',' .. tostring(p and p.y))
         end
         Is('buffs', 'modeMinimap', 'TOPRIGHT', 'TOPLEFT', -10, 2)
-        Is('debuffs', 'modeMinimap', 'TOPRIGHT', 'BOTTOMLEFT', -10, 73)
+        Is('debuffs', 'modeMinimap', 'TOPRIGHT', 'BOTTOMLEFT', -10, 70)
         Is('custom1', 'screen', 'RIGHT', 'CENTER', -124, 166)
         -- Under the Player frame's bottom border, sharing its shadow pixel, right edges lined up.
         Is('playerBuffs', 'unitFramesPlayerBars', 'TOPRIGHT', 'BOTTOMRIGHT', 0, -1)

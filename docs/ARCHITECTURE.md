@@ -432,7 +432,8 @@ Healer layout comes later.
   pick, and `ctx.V{ ["1080"] = a, ["1440"] = b }` picks by screen. A part
   never touches another module's settings. Modules in the layout today:
   Unit Frames, Party Frames, Buffs & Debuffs, Action Bars, Damage Meters,
-  Minimap and the Cooldown Manager. Chat is left out: a chat window's size
+  Minimap, Nameplates and the Cooldown Manager (every other module is on,
+  with its defaults: `allModules`). Chat is left out: a chat window's size
   and place are Blizzard's Edit Mode settings, and whether an addon may set
   them safely is still to be researched.
 - **Every module on.** A layout marked `allModules` switches every module

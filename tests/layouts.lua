@@ -11,7 +11,7 @@ world.run([==[
     local L, P = addon.Layouts, addon.Profiles
     local spec = assert(L:Get('mode-default'))
     assert(spec.label == 'DPS / Tank' and spec.profileName == 'Mode-Default' and spec.seed, 'the DPS / Tank layout')
-    local MODULES = { 'actionBars', 'buffsDebuffs', 'cooldownManager', 'damageMeters', 'minimap', 'partyFrames', 'unitFrames' }
+    local MODULES = { 'actionBars', 'buffsDebuffs', 'cooldownManager', 'damageMeters', 'minimap', 'nameplates', 'partyFrames', 'unitFrames' }
     local parts = {}
     for _, part in ipairs(L.parts['mode-default']) do parts[#parts + 1] = part.module end
     table.sort(parts)

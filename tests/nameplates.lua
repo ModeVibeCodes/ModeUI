@@ -1156,4 +1156,12 @@ local broken = world.saved()
 broken.profiles.Default.modules.nameplates.enemy.width = 'wide'
 local ok = pcall(H.Load, { before = STUBS, saved = broken })
 assert(not ok, 'invalid nameplate settings are refused, not reset')
+-- The Mode-Default layout's part: aura icons 1px apart (owner, November 18, 2026).
+H.Load({ before = STUBS }).run([==[
+    for _, variant in ipairs({ '1080', '1440' }) do
+        local profile = assert(addon.Layouts:Build('mode-default', variant))
+        local db = profile.modules.nameplates
+        assert(db.enabled == true and db.enemy.auraSpacing == 1 and db.friendly.auraSpacing == 1, 'nameplate auras 1px apart')
+    end
+]==], "nameplates_layout")
 print("nameplates: all checks passed")

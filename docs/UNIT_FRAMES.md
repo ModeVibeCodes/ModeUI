@@ -22,7 +22,10 @@ height (y) of the row:
   glow (name and health) off on every frame. **Drop Shadow** off on Player
   and Target (a new Border setting, on by default: the Mode Frame border's
   soft drop), so the icons on their borders keep a crisp 1px shadow line
-  instead of sitting in the drop's dark halo. Without a power bar the health
+  instead of sitting in the drop's dark halo. Aura icons (buffs and debuffs)
+  at Spacing 1 on every frame, sharing one shadow pixel. Every frame's border
+  and cast bar border are drawn in pieces in every profile (Target of Target
+  showed only corner specks; DESIGN_LANGUAGE.md, "Pieces"). Without a power bar the health
   bar fills the block, so a Bottom slot sits on the frame's bottom edge.
 - **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -256,
   y 300 (1080) or 325 (1440): its band 10px from Essential Cooldowns' band

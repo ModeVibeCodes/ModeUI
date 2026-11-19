@@ -27,7 +27,10 @@ function M:BuildFace(f, panelName)
     Style.ApplyAsset(panel.hairline, "Solid")
     f.health, f.power = Bar(panel), Bar(panel)
     f.health.shield = Style.Shield(f.health)
-    panel.edge = Style.Edge(panel.inner, M.EdgePreset(f.unit))
+    -- In pieces: a frame's block is shorter than the ring art, whose sliced
+    -- corners shrink to specks (owner, November 18, 2026, on Target of
+    -- Target; docs/DESIGN_LANGUAGE.md, "Pieces").
+    panel.edge = Style.Edge(panel.inner, M.EdgePreset(f.unit), { pieces = true })
     local ring = Style.Ring(f, 64)
     f.portrait = ring.frame
     f.portrait.ring, f.portrait.icon = ring, ring.portrait
