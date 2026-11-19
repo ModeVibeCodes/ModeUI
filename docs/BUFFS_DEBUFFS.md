@@ -346,6 +346,24 @@ pieces, each piece registered for the dispel color (DESIGN_LANGUAGE.md,
 smaller each way than the editor drew them (32 x 26 with the shadow, not
 34 x 28; Defensives 42 x 36, not 46 x 40).
 
+### Healer layout
+
+`Layouts.lua` adds this module's part of the Mode-Healer layout (owner,
+November 19, 2026; new profiles only). Everything as Mode-Default but:
+
+- **Player Debuffs** on the right of the screen: 6px right of ModeCDM's Right
+  Buffs bar (its right edge at 155; the bar's 1px shadow sits outside its
+  element, so the element starts at 162), growing right, six to a row, the
+  first row centered on Right Buffs' middle (y -16). Placed on the screen,
+  not anchored to Right Buffs: ModeCDM is optional, and a ModeUI bar can't
+  anchor to a companion's bar yet.
+- **Boss & Important** over Player Debuffs (6 up, its default gap), left
+  edges lined up, growing right.
+- **Defensives** at the top half's middle, growing right. Centered growth
+  doesn't exist (Blizzard's aura flow layout has no alignment and the aura
+  count is secret), so a full row of four (163 wide) is centered: its left
+  edge at x -82, y 170.
+
 ### Files
 
 `Modules/BuffsDebuffs/`: `Init.lua` (declaration, bars, kinds, defaults),

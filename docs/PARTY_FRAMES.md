@@ -168,6 +168,39 @@ still show only in a party.
   through `SetAlphaFromBoolean`. Without a calculator the shield uses
   `UnitGetTotalAbsorbs` and no overshield shows.
 
+## Role After Name, Healer layout (November 19, 2026)
+
+- **After Name** (Text and Icons tab, Role element; `roleAfterName`, off by
+  default): the role icon hangs from the name's end, its Offset X and Y
+  counted from there. The name then takes no width (`SetWidth(0)`: the
+  client sizes it to its text; a character name is at most 12 letters) and
+  the icon is anchored to its right end. Nothing reads either size back, so
+  a secret name still draws; whether the client places the icon right for a
+  secret name is the in-game check. With the name hidden the icon keeps its
+  own place.
+- **Healer layout** (`Modules/PartyFrames/Layouts.lua`, new profiles only):
+  you and your party (Show Player on), 136 x 64 each (135 x 65 asked; members
+  are an even number of pixels): Health 58, the line, Power 3 on healers.
+  Mode-Thin Gunmetal, Mode Matte in Dark, Background Opacity 70. The name
+  (11) at the top left, 4px in, with the role icon (10) 2px after it; health
+  percent (12) in the middle. Debuffs (Other Debuffs and each dispel type)
+  at the bottom left, 20 x 18, up to 3 each; Dispellable by You on its own
+  anchor (Left, inside, Y -1) so it starts its own row 1px over the debuffs,
+  22 x 20, up to 2 (three would reach the health text); Healing Buffs at the
+  bottom right, 22 x 18, up to 3. Group Buffs, Tracked Buffs and Defensives
+  hidden (Defensives until its double icon is fixed). Gradient Opacity 35.
+  The right edge at x -323; the last member's bottom edge level with
+  Essential's second row (bands lined up, shadows on one pixel): the
+  stand-in's middle at y -133 at 1080 and -288 at 1440.
+- **Not yet:** one cap of 3 for the whole bottom-left row (each group keeps
+  its own maximum today, so several types can show more than 3 together).
+- **Defensives showing twice** (owner): no spell list is involved. With
+  Which Auras on Big and External (the default), the two Blizzard aura
+  groups (`defensives1`, `defensives2`, one per flag) each run their own
+  filter, so an aura with both flags shows in both. Profiles built before
+  Mode-Default round 7 are still on Big and External. Fix to come after the
+  in-game `/dump` check (the Healer prototype's Blizzard API tab).
+
 ## Mode-Default layout (November 18, 2026)
 
 The party frames' part of the built-in **Mode-Default** layout (DPS / Tank,

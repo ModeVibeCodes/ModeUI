@@ -31,7 +31,9 @@ local PLAYER_BARS = "unitFramesPlayerBars"
 
 local function Bar(bar, values) for key, value in pairs(values) do bar[key] = value end end
 
-addon.Layouts:Contribute("mode-default", "buffsDebuffs", function(db, ctx)
+-- What both layouts share: the bars' sizes and look, Player Buffs off, Buffs
+-- and Debuffs by the minimap. Returns the Defensives bar's id.
+local function Common(db, ctx)
     db.enabled = true
     local bars = db.bars
     local row = { width = 30, height = 24, perRow = 12, grow = "left", wrap = "down", timer = "below" }
@@ -58,6 +60,37 @@ addon.Layouts:Contribute("mode-default", "buffsDebuffs", function(db, ctx)
     -- under the second row reaches the element's bottom).
     local _, height = M:BarSize(bars.debuffs, 1)
     ctx.Place(M.ElementId("debuffs"), MAP, "TOPRIGHT", "BOTTOMLEFT", x, height - MAP_EDGE)
-    ctx.Place(M.ElementId(defensives), "screen", "RIGHT", "CENTER", -123 - SHADOW, 166)
     ctx.Place(M.ElementId("playerBuffs"), PLAYER_BARS, "TOPRIGHT", "BOTTOMRIGHT", 0, -SHADOW)
+    return defensives
+end
+
+addon.Layouts:Contribute("mode-default", "buffsDebuffs", function(db, ctx)
+    local defensives = Common(db, ctx)
+    ctx.Place(M.ElementId(defensives), "screen", "RIGHT", "CENTER", -123 - SHADOW, 166)
+end)
+
+-- The Healer layout (owner, November 19, 2026; design/healer-layout/): Player
+-- Debuffs on the right of the screen, 6px right of ModeCDM's Right Buffs bar,
+-- growing right, six to a row, the first row centered on that column's middle;
+-- Boss & Important over it (6 up, its default gap), left edges lined up,
+-- growing right; Defensives in the top half, centered at (0, 170), growing
+-- right. Right Buffs sits on the screen at (138, -16), 34 wide with its edges
+-- (ModeCDM's healer part), so its right edge is at 155 and this place needs
+-- no anchor to it (ModeCDM is optional, and a ModeUI bar can't anchor to a
+-- companion's yet). Centered growth doesn't exist (Blizzard's aura flow
+-- layout has none, and the count is secret), so Defensives' four icons (163
+-- wide) are centered as a full row: x -82.
+local HEALER = { rightBuffsEdge = 155, gap = 6, middle = -16, defensives = { x = -82, y = 170 } }
+
+addon.Layouts:Contribute("healer", "buffsDebuffs", function(db, ctx)
+    local defensives = Common(db, ctx)
+    local bars = db.bars
+    bars.playerDebuffs.grow, bars.playerDebuffs.perRow, bars.playerDebuffs.wrap = "right", 6, "down"
+    bars.playerImportant.grow, bars.playerImportant.wrap = "right", "down"
+    bars[defensives].grow = "right"
+    local _, rowHeight = M:CellSize(bars.playerDebuffs, 1)
+    ctx.Place(M.ElementId("playerDebuffs"), "screen", "TOPLEFT", "CENTER", HEALER.rightBuffsEdge + HEALER.gap + SHADOW,
+        HEALER.middle + rowHeight / 2)
+    ctx.Place(M.ElementId("playerImportant"), M.ElementId("playerDebuffs"), "BOTTOMLEFT", "TOPLEFT", 0, 6)
+    ctx.Place(M.ElementId(defensives), "screen", "LEFT", "CENTER", HEALER.defensives.x, HEALER.defensives.y)
 end)

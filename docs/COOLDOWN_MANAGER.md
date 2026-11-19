@@ -590,6 +590,30 @@ Shared: `Kit.PlayerCast`, `Kit.NativeFade` (`Shared/Kit/Native.lua`),
   cast bar shows the cast again; Buff Icons sit above the cast bar; no Lua
   errors.
 
+## Healer layout (November 19, 2026)
+
+ModeCDM's part of ModeUI's Mode-Healer layout (`Layouts.lua`,
+`Contribute("healer", ...)`; new profiles only), the same bars in the same
+look as Mode-Default but for these:
+
+- **Essential** 42 x 34 (4px bigger), seven to a line, two lines when full
+  (14; there is no line limit), at the same place.
+- **Utility** 70 under Essential's first line (33 under the second).
+- **Resources apart** (Separate Resources): Power off (the Player frame shows
+  your mana) and Alternate Mana off. **Combo Points** a 6px strip in
+  Mode-Thin Gunmetal (Mode-Round can't draw a bar under 10), as wide as
+  Essential, 1px on it; only a Druid in Cat Form has them as a healer.
+- **Cast Bar** 16 tall, as wide as Essential, at a fixed place 8 over
+  Essential (1px over the Combo Points strip's place), so it never moves
+  when combo points come and go. Tracked Buffs and Emphasized Buffs stack on
+  it as before.
+- **Defensive Cooldowns** hidden (Show off, not deleted). A new profile's
+  default bars hold no spells, so defensives stay where Blizzard's Cooldown
+  Manager categories put them: add them to Essential in Blizzard's settings.
+- **Left Buffs and Right Buffs** at x -138 and 138, y -16 (12 closer to the
+  center and 16 lower), clear of the Target's portrait ring. Player Debuffs
+  (Buffs & Debuffs) counts from Right Buffs' right edge, 155.
+
 ## Mode-Default layout
 
 ModeCDM's part of ModeUI's built-in Mode-Default layout (DPS / Tank, the

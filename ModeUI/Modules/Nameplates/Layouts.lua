@@ -8,7 +8,9 @@ if not M or not addon.Layouts then return end
 -- (an aura icon's border is inside its size, only its 1px shadow ring past
 -- it). Everything else keeps its default. See docs/NAMEPLATES.md,
 -- "Mode-Default layout".
-addon.Layouts:Contribute("mode-default", "nameplates", function(db)
+local function Part(db)
     db.enabled = true
     for _, kind in ipairs(M.kinds) do db[kind].auraSpacing = 1 end
-end)
+end
+-- The Healer layout keeps this part as it is (owner, November 19, 2026).
+for _, layout in ipairs({ "mode-default", "healer" }) do addon.Layouts:Contribute(layout, "nameplates", Part) end

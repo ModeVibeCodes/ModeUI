@@ -3,10 +3,11 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 18, 2026 (Phases 0-8
+machine or in a new session. Last updated November 19, 2026 (Phases 0-8
 built and confirmed November 15. The revisions and tweaks phase is under way:
-borders, type, ModeCDM's bars and the Mode-Default layout, each waiting on
-its in-game gate; see the revisions below).
+borders, type, ModeCDM's bars, the Mode-Default layout (finalized November
+18) and the Healer layout (built November 19, waiting on its in-game gate);
+see the revisions below).
 
 ## Goal
 
@@ -447,6 +448,50 @@ Built on branch `t3/mode-default-layout`.
   predates the tuning; the Healer step syncs it first.
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
+
+### Revision: Healer layout (November 19, 2026)
+
+Planned with the owner in a prototype (to-scale 1080p and 1440p previews
+with overlap and 1px-join checks, every value against DPS / Tank, the
+Blizzard API inventory, the party defensives finding, the plan):
+https://claude.ai/artifact/HLq3CPadopGaUukoaT8GHt (copied to
+`design/healer-layout/`). The owner answered every question there; built on
+branch `t3/healer-layout`.
+
+- **Built:** the **Mode-Healer** layout and profile (`Register("healer")`,
+  seeded once per account like Mode-Default, never switched to), each
+  module's part (ARCHITECTURE.md, "Layouts"; module docs, "Healer layout"):
+  - A Player **mana frame** (Unit Frames' new **Bar Shows**: Mana) 166 x 30,
+    its 20px block with 136 of bar past the ring, on the party column 1px
+    over it, right ends lined up at x -323; the Target the same size 1px
+    beside it; the Focus 1px under the Target's cast bar, left edges lined
+    up; Target of Target off.
+  - Party frames 136 x 64, you shown, Mode-Thin Gunmetal, Mode Matte at
+    Background Opacity 70, name top left with the role icon on its end
+    (Party Frames' new **After Name**), health percent centered, debuffs,
+    Dispellable (up to 2) and Healing Buffs inside the bottom edge, the
+    dispel gradient at 35; the column's bottom edge level with Essential's
+    second row (owner's rule, at both screens).
+  - ModeCDM: Essential 42 x 34, Utility 70 under it, Power and Alternate
+    Mana off, Combo Points a 6px Mode-Thin strip on Essential, the Cast Bar
+    16 tall at a fixed place over it, Defensive Cooldowns hidden, Left and
+    Right Buffs at x -138 and 138, y -16.
+  - Buffs & Debuffs: Player Debuffs 6px right of Right Buffs (placed on the
+    screen), Boss & Important over it, Defensives at 0, 170 (a full row of
+    four centered). Everything else as Mode-Default.
+  - Every join 1px apart (the two shadows on one pixel): Unit Frames' Cast
+    Bar Gap goes down to -1 for it.
+- **Tests:** `tests/layouts_healer.lua` (both screens: every place, every
+  alignment and 1px join, ModeUI starting with the profile active);
+  `tests/unit_frames.lua` (Bar Shows, secret mana); `tests/party_frames.lua`
+  (After Name).
+- **Still to come (plan):** the party Defensives double icon (two aura
+  groups, one per flag, both showing an aura with both flags; fix after the
+  in-game `/dump` check); one cap of 3 for the party's bottom-left debuff
+  row; centered growth for Buffs & Debuffs bars (research first); letting a
+  ModeUI bar anchor to a ModeCDM bar.
+- Checked against the mock client only; waiting on the owner's in-game look
+  (UNIT_FRAMES.md, "Bar Shows", has the manual check).
 
 ## Decisions
 

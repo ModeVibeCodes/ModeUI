@@ -46,8 +46,8 @@ world.run([==[
 -- Profiles ---------------------------------------------------------------
 world.run([==[
     local P=addon.Profiles
-    -- Mode-Default: the DPS / Tank layout, made into a profile once at login (Shared/Runtime/Layouts.lua).
-    assert(table.concat(P:List(),',')=='Default,Mode-Default' and P:Active()=='Default' and ModeUIDB.builtLayouts['mode-default'])
+    -- Mode-Default and Mode-Healer: the DPS / Tank and Healer layouts, each made into a profile once at login (Shared/Runtime/Layouts.lua).
+    assert(table.concat(P:List(),',')=='Default,Mode-Default,Mode-Healer' and P:Active()=='Default' and ModeUIDB.builtLayouts['mode-default'] and ModeUIDB.builtLayouts.healer)
     assert(not P:Create('','x') and not P:Create('Bad|Name') and not P:Create(string.rep('x',49)),'names validated')
     assert(P:Create('Raid'),'new profile from defaults')
     assert(ModeUIDB.profiles.Raid.modules.unitFrames.player.barWidth==184,'defaults, not a copy')

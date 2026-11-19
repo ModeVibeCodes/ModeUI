@@ -110,9 +110,11 @@
         local d=units[u];if issecretvalue(d.health) then return Secret('pct') end
         return d.health/d.max*100
     end
-    function UnitPowerPercent(u,_,_,curve)
+    function UnitPowerPercent(u,t,_,curve)
         assert(curve==CurveConstants.ScaleTo100,'power percent uses the 0-100 curve')
-        local d=units[u];if issecretvalue(d.power) then return Secret('ppct') end
+        local d=units[u]
+        if t==0 and d.mana~=nil then if issecretvalue(d.mana) then return Secret('mpct') end return d.mana/d.manaMax*100 end
+        if issecretvalue(d.power) then return Secret('ppct') end
         return d.power/d.powerMax*100
     end
     function AbbreviateNumbers(v) if issecretvalue(v) then return Secret('abbr') end return tostring(v) end

@@ -420,12 +420,21 @@ screen of ModeUI settings that a **new** profile starts from; it never
 changes an existing profile, so nothing a player placed moves. The first is
 **Mode-Default** (label DPS / Tank), built from the owner's layout editor
 (plan and editor: https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT, copied to
-`design/layout-editor/`); a
-Healer layout comes later.
+`design/layout-editor/`). The second is **Mode-Healer** (label Healer,
+owner, November 19, 2026), from the prototype at
+https://claude.ai/artifact/HLq3CPadopGaUukoaT8GHt (copied to
+`design/healer-layout/`): a Player mana frame over the party column left of
+center, the party column ending level with Essential's second row.
 
 - **Parts.** Each module adds its own part from `Modules/<Name>/Layouts.lua`
   (ModeCDM from its own folder): `addon.Layouts:Contribute("mode-default",
-  moduleId, function(db, ctx) ... end)`. `db` is the module's settings in a
+  moduleId, function(db, ctx) ... end)`, and one for `"healer"`. A module
+  whose part is the same in both (Action Bars, Damage Meters, Minimap,
+  Nameplates) contributes one function to both; the others share what is
+  common in a local function. A healer place that depends on another
+  module's size (the party column on Essential, the Player frame on the
+  party column, Player Debuffs on Right Buffs) is a number in each part, and
+  `tests/layouts_healer.lua` checks the two agree. `db` is the module's settings in a
   fresh profile (defaults filled in); `ctx.Place(elementId, target, point,
   relativePoint, x, y)` writes an Edit Mode place (explicit points: no
   built-in gap), `ctx.Match(elementId, axis, target)` a Match Width or Height
@@ -438,8 +447,8 @@ Healer layout comes later.
   them safely is still to be researched.
 - **Every module on.** A layout marked `allModules` switches every module
   on in the profile it builds (all but `alwaysOn` and planned ones), before
-  the parts run; Mode-Default does (owner, November 18, 2026), and the
-  Healer layout will.
+  the parts run; Mode-Default and Mode-Healer do (owner, November 18 and
+  19, 2026).
 - **Screens.** A layout has places for 1080p and 1440p at the pixel-perfect
   scale (1 UI unit = 1 pixel); a profile takes the set nearest the UI height
   when it is built (1440's from 1260 up). Changing UI scale later moves
@@ -449,14 +458,16 @@ Healer layout comes later.
   as an import is checked (`Database:ValidateProfile`). A module that isn't
   installed (ModeCDM missing) is skipped.
 - **Profiles.** `Profiles:CreateFromLayout(name, id)`; the Profiles page has
-  **New from DPS / Tank Layout** (an empty name takes "Mode-Default", made
-  unique). A layout marked `seed` becomes its own profile once per account
+  **New from DPS / Tank Layout** and **New from Healer Layout** (an empty
+  name takes the layout's profile name, made unique). A layout marked `seed` becomes its own profile once per account
   at `PLAYER_LOGIN` (when every companion has registered), recorded in
   `ModeUIDB.builtLayouts`; it is never made active, and a deleted one is not
   made again.
 - **Tests.** `tests/layouts.lua` builds the whole layout at both screens,
   checks every place hangs from a known target, seeding once, and ModeUI
   starting with the profile active; each module's own test checks its part.
+  `tests/layouts_healer.lua` does the same for Mode-Healer and checks its
+  alignments (widths, 1px joins, the column on Essential's second row).
 
 ## Companion addons
 

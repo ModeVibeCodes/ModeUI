@@ -12,10 +12,12 @@ if not M or not addon.Layouts then return end
 -- past it. The same at 1080 and 1440. See docs/MINIMAP.md, "Mode-Default layout".
 local SIZE = 224
 
-addon.Layouts:Contribute("mode-default", "minimap", function(db, ctx)
+local function Part(db, ctx)
     db.enabled = true
     db.size, db.difference, db.border, db.textLayout = SIZE, 0, "mode", "map"
     -- The element is the map; its edge shows 3 past it, so 11 in puts what
     -- shows 8 from the top and right, like the meters' outer edge below it.
     ctx.Place(M.ELEMENT_ID, "screen", "TOPRIGHT", "TOPRIGHT", -11, -11)
-end)
+end
+-- The Healer layout keeps this part as it is (owner, November 19, 2026).
+for _, layout in ipairs({ "mode-default", "healer" }) do addon.Layouts:Contribute(layout, "minimap", Part) end

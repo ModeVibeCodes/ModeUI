@@ -1,0 +1,755 @@
+<title>Healer Layout Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Saira+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a tabbed working page. Preview = a to-scale screen (1080p / 1440p) plus a magnified healer cluster;
+   Spec, API and Plan are reading tabs. Deliberately single-theme (dark): it previews an in-game UI,
+   so its colors follow ModeUI's Style.Tone values. */
+:root {
+  color-scheme: dark;
+  --void: #0c0d0f;
+  --panel: #15171a;
+  --raised: #1d2024;
+  --line: #2b2e33;
+  --text: #dadada;
+  --muted: #8d9198;
+  --ivory: #efe6d2;
+  --brand: #e2b866;
+  --celadon: #b4cdb6;
+  --rosewood: #cf6a6f;
+  --mana: #4096ff;
+  --gm-hi: #a5a9af; --gm-light: #7c8086; --gm-mid: #4e5156; --gm-dark: #2c2e31;
+  --st-light: #a3a6ab; --st-mid: #6e7176;
+  --hostile: #e5484d; --neutral: #f2c744; --friendly: #46c46b;
+  --magic: #3399ff; --curse: #aa55ff; --poison: #55bb55; --disease: #cc8833;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Saira Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--void); color: var(--text); font: 14px/1.55 var(--font-ui); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 56px; }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+h1 { font: 700 30px/1.1 var(--font-display); letter-spacing: .01em; margin: 0; color: var(--ivory); text-wrap: balance; }
+h1 small { display: block; font: 500 13px/1.4 var(--font-ui); color: var(--muted); letter-spacing: 0; margin-top: 6px; }
+h2 { font: 600 21px/1.2 var(--font-display); color: var(--ivory); margin: 28px 0 8px; text-wrap: balance; }
+h3 { font: 600 16px/1.3 var(--font-display); color: var(--text); margin: 20px 0 6px; letter-spacing: .02em; }
+p { margin: 6px 0 10px; max-width: 75ch; }
+.lede { color: var(--muted); max-width: 80ch; }
+code { font: 12.5px var(--font-mono); background: var(--raised); padding: 1px 5px; border-radius: 3px; color: #e6e1d6; overflow-wrap: anywhere; }
+a { color: #9cc7ff; }
+nav.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+nav.tabs a { font: 600 13px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: none; padding: 7px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+nav.tabs a[aria-current="page"] { color: var(--void); background: var(--ivory); border-color: var(--ivory); }
+nav.tabs a:focus-visible, button:focus-visible, .seg button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.tab { padding-top: 6px; }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin: 16px 0 12px; }
+.ctl { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { font: 600 12.5px var(--font-ui); color: var(--text); background: var(--panel); border: 0; padding: 6px 11px; cursor: pointer; letter-spacing: 0; text-transform: none; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ivory); color: var(--void); }
+.chk { display: inline-flex; align-items: center; gap: 6px; font: 500 13px var(--font-ui); color: var(--text); text-transform: none; letter-spacing: 0; cursor: pointer; }
+.chk input { accent-color: var(--brand); }
+
+/* Stages */
+.stage { position: relative; width: 100%; overflow: hidden; background: #22262b; border: 1px solid var(--line); border-radius: 4px; }
+.stage .screen { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.screen { background:
+    radial-gradient(ellipse at 50% 38%, rgba(120,140,110,.22), transparent 60%),
+    linear-gradient(180deg, #3a4448 0%, #2d3634 46%, #26302a 47%, #1f2722 100%); overflow: hidden; }
+.cap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; font-size: 12.5px; color: var(--muted); margin: 6px 2px 0; }
+.cap b { color: var(--text); font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 18px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; min-width: 0; }
+.panel h3 { margin-top: 0; }
+
+/* In-game elements (screen units = pixels at the pixel-perfect scale) */
+.el { position: absolute; }
+.el .tag { display: none; position: absolute; left: 0; top: -1px; transform: translateY(-100%); font: 600 calc(10px / var(--k)) var(--font-ui); white-space: nowrap; padding: 0 calc(3px / var(--k)); border-radius: calc(2px / var(--k)); background: rgba(12,13,15,.85); color: var(--text); z-index: 30; pointer-events: none; }
+.show-out .el.out { outline: calc(1px / var(--k)) dashed rgba(239,230,210,.55); outline-offset: 0; }
+.show-out .el.out.st-value { outline-color: rgba(180,205,182,.95); }
+.show-out .el.out.st-feature { outline-color: rgba(226,184,102,1); }
+.show-labels .el .tag { display: block; }
+.ghost { position: absolute; border: calc(1.5px / var(--k)) dashed rgba(207,106,111,.9); background: rgba(207,106,111,.08); z-index: 25; pointer-events: none; display: none; }
+.ghost span { position: absolute; left: 2px; bottom: 100%; font: 600 calc(10px / var(--k)) var(--font-ui); color: var(--rosewood); white-space: nowrap; }
+.show-ghost .ghost { display: block; }
+.dim { position: absolute; z-index: 28; pointer-events: none; display: none; }
+.show-dims .dim { display: block; }
+.dim.h { border-top: calc(1px / var(--k)) solid #ffd15c; }
+.dim.v { border-left: calc(1px / var(--k)) solid #ffd15c; }
+.dim i { position: absolute; font: 600 calc(10px / var(--k)) var(--font-mono); font-style: normal; color: #ffd15c; background: rgba(12,13,15,.85); padding: 0 calc(3px / var(--k)); white-space: nowrap; }
+.dim.h i { left: 50%; transform: translate(-50%, -110%); }
+.dim.v i { top: 50%; transform: translate(4%, -50%); left: 2px; }
+.conflict-box { position: absolute; z-index: 29; pointer-events: none; background: rgba(229,72,77,.35); outline: calc(1.5px / var(--k)) solid #ff4848; }
+
+/* Icons and bars */
+.ic { position: absolute; border-radius: 3px; overflow: hidden; }
+.ic.round { border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--gm-light), inset 0 0 0 2px #000; border-radius: 4px; }
+.ic.thin { box-shadow: 0 0 0 1px #000, inset 0 0 0 1px var(--st-light), inset 0 0 0 2px rgba(0,0,0,.85); border-radius: 1px; }
+.ic.thin.gm { box-shadow: 0 0 0 1px #000, inset 0 0 0 1px var(--gm-light), inset 0 0 0 2px rgba(0,0,0,.85); }
+.ic.blizz { box-shadow: 0 0 0 1px #000, inset 0 0 0 2px #9a9ea4, inset 0 0 0 3px #000; border-radius: 2px; }
+.ic .cd { position: absolute; inset: 0; display: grid; place-items: center; font: 700 11px var(--font-display); color: #ff3948; text-shadow: 0 1px 0 #000, 0 0 2px #000; }
+.ic .st { position: absolute; right: 2px; bottom: 0; font: 700 9px var(--font-display); color: #fff; text-shadow: 0 1px 0 #000, 0 0 2px #000; }
+.ic .tm { position: absolute; left: 0; right: 0; bottom: -12px; text-align: center; font: 600 9px var(--font-display); color: #ddd; text-shadow: 0 1px 0 #000; }
+.box { position: absolute; background: rgba(8,9,10,.78); box-shadow: 0 0 0 1px #000, inset 0 0 0 1px var(--gm-mid); border-radius: 2px; }
+.txt { position: absolute; font-family: var(--font-display); color: #f2f2f2; text-shadow: 0 1px 0 #000, 1px 0 0 rgba(0,0,0,.6); white-space: nowrap; line-height: 1; }
+.ring { position: absolute; border-radius: 50%; }
+.empty-slot { position: absolute; border: 1px dashed rgba(239,230,210,.35); border-radius: 2px; display: grid; place-items: center; font: 600 8px var(--font-ui); color: rgba(239,230,210,.6); text-align: center; line-height: 1.1; }
+
+/* Lists and tables */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 18px; height: 10px; border: 1.5px dashed; vertical-align: -1px; margin-right: 6px; }
+.chip { display: inline-block; font: 600 11px var(--font-ui); letter-spacing: .04em; padding: 1px 7px; border-radius: 10px; white-space: nowrap; border: 1px solid; }
+.chip.same { color: var(--muted); border-color: #3a3e44; }
+.chip.value { color: var(--celadon); border-color: rgba(180,205,182,.45); }
+.chip.feature { color: var(--brand); border-color: rgba(226,184,102,.5); }
+.chip.off { color: #a7a1a1; border-color: #4a3e3f; }
+.chip.risk { color: var(--rosewood); border-color: rgba(207,106,111,.5); }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font: 600 11.5px var(--font-ui); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); background: var(--panel); position: sticky; top: 0; }
+tr.mod td { background: var(--raised); font: 600 13px var(--font-display); color: var(--ivory); letter-spacing: .04em; text-transform: uppercase; padding-block: 6px; }
+td.num { font-variant-numeric: tabular-nums; }
+ul.plain { padding-left: 18px; margin: 6px 0 10px; }
+ul.plain li { margin: 4px 0; max-width: 80ch; }
+.conflicts { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+.conflicts li { padding: 7px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; }
+.conflicts li:last-child { border-bottom: 0; }
+.conflicts .why { grid-column: 2; color: var(--muted); font-size: 12.5px; }
+.ok { color: var(--celadon); }
+.api { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.api article { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px 16px; min-width: 0; }
+.api article h3 { margin: 0 0 4px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kv { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 4px 12px; font-size: 13px; margin-top: 6px; }
+.kv dt { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding-top: 2px; }
+.kv dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { .kv { grid-template-columns: minmax(0, 1fr); } .kv dt { padding-top: 6px; } }
+ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 10px; }
+ol.steps > li { counter-increment: s; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px 16px 10px 52px; position: relative; min-width: 0; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 14px; top: 11px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 14px var(--font-display); color: var(--void); background: var(--ivory); }
+ol.steps h3 { margin: 0 0 2px; }
+.files { font: 12px var(--font-mono); color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
+.q { padding: 10px 0; border-bottom: 1px solid var(--line); max-width: 90ch; }
+.q b { color: var(--ivory); }
+.rec { display: block; margin-top: 4px; color: var(--celadon); font-size: 13px; }
+.rec::before { content: "Recommended: "; font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) { nav.tabs a, .seg button { transition: background .12s, color .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Healer Layout Prototype<small>The second built-in ModeUI layout, next to Mode-Default (DPS / Tank). Built from the owner's notes of November 19, 2026, and built in the addon the same day on branch t3/healer-layout; waiting on the in-game check.</small></h1>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#preview" data-tab="preview">Preview</a>
+      <a href="#spec" data-tab="spec">Spec</a>
+      <a href="#api" data-tab="api">Blizzard API</a>
+      <a href="#plan" data-tab="plan">Plan</a>
+    </nav>
+  </header>
+
+  <!-- PREVIEW -->
+  <section id="tab-preview" class="tab">
+    <div class="controls">
+      <div class="ctl">Screen <span class="seg" id="seg-res"><button id="res-1080" aria-pressed="true" data-v="1080">1080p</button><button id="res-1440" aria-pressed="false" data-v="1440">1440p</button></span></div>
+      <div class="ctl">State <span class="seg" id="seg-state"><button id="st-calm" aria-pressed="false" data-s="calm">Calm</button><button id="st-busy" aria-pressed="true" data-s="busy">Busy (every slot full)</button></span></div>
+      <label class="chk"><input type="checkbox" id="opt-out" checked> Outlines</label>
+      <label class="chk"><input type="checkbox" id="opt-labels"> Labels</label>
+      <label class="chk"><input type="checkbox" id="opt-dims" checked> Measurements</label>
+      <label class="chk"><input type="checkbox" id="opt-ghost"> DPS / Tank places</label>
+      <label class="chk"><input type="checkbox" id="opt-conf" checked> Overlaps</label>
+    </div>
+    <div class="stage" id="stage-full"></div>
+    <div class="cap"><span id="cap-full"></span><span>To scale: 1 UI unit = 1 pixel (pixel-perfect scale). Outlines show what changes.</span></div>
+    <div class="legend">
+      <span><i class="sw" style="border-color: rgba(239,230,210,.55)"></i>Same as DPS / Tank</span>
+      <span><i class="sw" style="border-color: rgba(180,205,182,.95)"></i>New value (existing setting)</span>
+      <span><i class="sw" style="border-color: #e2b866"></i>Needs a new feature</span>
+      <span><i class="sw" style="border-color: #cf6a6f"></i>DPS / Tank place (toggle)</span>
+    </div>
+
+    <div class="grid2">
+      <div class="min0">
+        <div class="stage" id="stage-detail"></div>
+        <div class="cap"><span><b>Healer cluster, magnified</b>: Player, Target, Focus, the party column and Essential's left end.</span><label class="chk"><input type="checkbox" id="opt-grid"> Pixel grid</label></div>
+      </div>
+      <div class="panel">
+        <h3>Overlap check <span id="conf-scope" style="color:var(--muted);font:500 12px var(--font-ui)"></span></h3>
+        <ul class="conflicts" id="conflicts"></ul>
+        <h3 style="margin-top:16px">Alignment checks</h3>
+        <ul class="conflicts" id="aligns"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPEC -->
+  <section id="tab-spec" class="tab" hidden>
+    <h2>Every value in the Healer layout</h2>
+    <p class="lede">Positions are Edit Mode places at 1080p, measured from the screen's center (x right, y up) unless a row says otherwise. Sizes are what Edit Mode measures. 1440p uses the same values except where noted. "DPS / Tank" is the finalized Mode-Default (round 7).</p>
+    <div class="tbl"><table id="spec-table"><thead><tr><th style="width:17%">Element</th><th style="width:34%">Healer</th><th style="width:28%">DPS / Tank today</th><th style="width:21%">Change</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <!-- API -->
+  <section id="tab-api" class="tab" hidden>
+    <h2>Blizzard API inventory</h2>
+    <p class="lede">What each change touches in the Forever client, checked against the Forever UI source (Gethe/wow-ui-source, <code>forever</code> branch), <code>docs/API_COMPATIBILITY.md</code> and ModeUI's own code. Nothing here has been run in game. "Unverified" marks what needs an in-game check before it is relied on.</p>
+    <div class="api" id="api-list"></div>
+    <h2>Why defensives show twice on party frames</h2>
+    <div class="panel">
+      <p><b>No spell list or rank tracking is involved.</b> The Defensives group shows auras by Blizzard's own per-spell flags (<code>HELPFUL|BIG_DEFENSIVE</code>, <code>HELPFUL|EXTERNAL_DEFENSIVE</code>), so tracking a single rank wouldn't change anything.</p>
+      <p><b>Most likely cause:</b> with <b>Which Auras</b> set to <b>Big and External</b> (the module default), ModeUI adds two Blizzard aura groups, <code>defensives1</code> and <code>defensives2</code>, one per flag (<code>Modules/PartyFrames/AuraContainers.lua:118-122</code>, <code>AuraInit.lua:56-61</code>). Blizzard's container checks every group's filter on its own (<code>Blizzard_AuraContainerGroups.lua</code>, <code>UpdateAuraInGroups</code>), so a defensive carrying both flags, or a spell that applies one aura per flag, fills both groups side by side. Blizzard's own raid frames avoid this: they show only the top big defensive and keep it out of the buff list (<code>Blizzard_PrivateAurasUI.lua</code>).</p>
+      <p><b>Your saved profiles agree.</b> In your live SavedVariables, the active profile is on <b>Big Defensives</b>. The saved <b>Mode-Default</b> and <b>Default</b> profiles are still on <b>Big and External</b>; that Mode-Default was built before round 7 switched the layout to Big only.</p>
+      <h3>Confirm in game (out of combat; aura fields are secret in combat)</h3>
+      <ul class="plain">
+        <li><code>/dump C_UnitAuras.GetUnitAuras("party1","HELPFUL|BIG_DEFENSIVE")</code>, then the same with <code>HELPFUL|EXTERNAL_DEFENSIVE</code>. The same <code>auraInstanceID</code> in both lists means one aura is being shown by both groups. Two different IDs mean one spell applies two auras.</li>
+        <li><code>/dump C_UnitAuras.AuraIsBigDefensive(spellId)</code> and <code>/dump C_Spell.IsExternalDefensive(spellId)</code> for the doubled spell. Both are in Forever's API documentation.</li>
+      </ul>
+      <h3>Fix options</h3>
+      <ul class="plain">
+        <li><b>Settings only:</b> set Big Defensives in the old profiles, or rebuild Mode-Default from its layout.</li>
+        <li><b>Code (recommended):</b> when both flags are on, give the second group <code>HELPFUL|BIG_DEFENSIVE|!EXTERNAL_DEFENSIVE</code>. Forever's AuraUtil documents the <code>!</code> negation prefix. Whether it works for these two flags inside a container is <span class="chip risk">unverified</span>. It needs no reading of secret aura data.</li>
+        <li><b>Like Blizzard:</b> one center slot sorted by <code>AuraContainerSortMethod.BigDefensive</code>. A slot takes one filter string, so this covers one flag unless the split above is added.</li>
+        <li><b>Not workable:</b> deduplicating by spell ID or name in Lua. Container aura data is secret in the world.</li>
+      </ul>
+      <p>The Healer layout hides Defensives for now, as you asked. The fix applies to every profile, so it is its own step in the plan.</p>
+    </div>
+  </section>
+
+  <!-- PLAN -->
+  <section id="tab-plan" class="tab" hidden>
+    <h2>Implementation plan</h2>
+    <p class="lede">One focused, tested step at a time, each gated in game before the next. Work on branch <code>t3/healer-layout</code>, merged to <code>main</code> after the gate. The layout writes new profiles only, so nothing in Mode-Default or any existing profile moves.</p>
+    <ol class="steps" id="steps"></ol>
+    <h2>Decided (November 19, 2026)</h2>
+    <div id="decided"></div>
+    <h2>Still open</h2>
+    <div id="questions"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  // ---------------------------------------------------------------- data
+  var VARS = {
+    "1080": { W: 1920, H: 1080, cdmY: 300, ultraX: 110, dpsParty: 22, dpsFocusY: 387 },
+    "1440": { W: 2560, H: 1440, cdmY: 325, ultraX: 135, dpsParty: -19, dpsFocusY: 412 }
+  };
+  // The healer cluster: party right edge at x -323 (the owner's Edit Mode reading). Its height comes from
+  // Essential: the last member's bottom edge sits level with Essential's second row (owner, November 19, 2026),
+  // at both screens. You are shown: five members fill the stand-in.
+  var PARTY = { right: -323, w: 136, h: 64, gap: 1, shown: 5 };
+  // Left and Right Buffs: slightly closer to the center and 16 lower than DPS / Tank (owner, November 19, 2026).
+  // 138: at 1440 the Target's ring sits beside the Left Buffs column, and 140 would touch it by 1px.
+  var SIDE_BUFFS = { x: 138, y: -16 };
+  var UF = { block: 20, ring: 30, visible: 136, gap: 1 };
+  var CLS = { priest: "#ffffff", warrior: "#c69b6d", mage: "#3fc7eb", rogue: "#fff468", hunter: "#aad372" };
+  var TONE = { magic: "#3399ff", curse: "#aa55ff", poison: "#55bb55", disease: "#cc8833", hostile: "#e5484d", neutral: "#f2c744", mana: "#4096ff" };
+
+  // ---------------------------------------------------------------- helpers
+  function art(h, s) { s = s || 0; return "background:radial-gradient(circle at " + (30 + s * 7 % 40) + "% 30%,hsl(" + h + ",75%,72%),hsl(" + h + ",62%,38%) 55%,hsl(" + (h + 20) + ",55%,14%));"; }
+  function icon(x, y, w, h, hue, cls, extra) {
+    return '<div class="ic ' + cls + '" style="left:' + x + "px;top:" + y + "px;width:" + w + "px;height:" + h + "px;" + art(hue, x + y) + (extra && extra.style || "") + '">' + (extra && extra.inner || "") + "</div>";
+  }
+  function txt(x, y, size, text, color, extra) { return '<div class="txt" style="left:' + x + "px;top:" + y + "px;font-size:" + size + "px;color:" + (color || "#f2f2f2") + ";" + (extra || "") + '">' + text + "</div>"; }
+  function slot(x, y, w, h, label) { return '<div class="empty-slot" style="left:' + x + "px;top:" + y + "px;width:" + w + "px;height:" + h + 'px">' + (label || "") + "</div>"; }
+  var HUES = [12, 48, 200, 280, 120, 330, 30, 170, 60, 220, 0, 95, 250, 300, 140];
+
+  // An icon bar drawn in element-local coordinates: n cells in rows of `per`, each `cw` x `ch` apart by `step`.
+  function iconRow(n, per, cw, ch, stepX, stepY, cls, opt) {
+    opt = opt || {};
+    var s = "";
+    for (var i = 0; i < n; i++) {
+      var col = i % per, row = Math.floor(i / per);
+      var inLine = Math.min(per, n - row * per);
+      var x = opt.center ? Math.round((opt.lineW - (inLine * cw + (inLine - 1) * (stepX - cw))) / 2) + col * stepX : (opt.rtl ? opt.lineW - cw - col * stepX : col * stepX);
+      var y = opt.up ? -row * stepY : row * stepY;
+      var inner = opt.cd && i % 3 === 1 ? '<span class="cd">' + (i % 2 ? "8" : "21") + "</span>" : "";
+      if (opt.timer) inner += '<span class="tm">' + (i % 2 ? "4m" : "12m") + "</span>";
+      if (opt.stack && i === 0) inner += '<span class="st">3</span>';
+      s += icon(x, y, cw, ch, HUES[(i + (opt.hue || 0)) % HUES.length], cls, { inner: inner, style: opt.tint ? "box-shadow:0 0 0 1px #000, inset 0 0 0 1px " + opt.tint(i) + ", inset 0 0 0 2px rgba(0,0,0,.85);" : "" });
+    }
+    return s;
+  }
+
+  // ---------------------------------------------------------------- model
+  // Every rect is [x0, y0, x1, y1] in UI units from the screen's center, y up.
+  function build(v, busy) {
+    var V = VARS[v], W = V.W, H = V.H;
+    function B(y) { return y - H / 2; } // bottom-based to center-based
+    var els = [], dims = [], ghosts = [], solids = [];
+    function add(e) { els.push(e); (e.solid || [e.r]).forEach(function (r) { solids.push({ id: e.id, label: e.label, r: r, group: e.group || e.id }); }); return e; }
+
+    // ---- Party frames: you and 4 members, 136 x 64, 1 apart, right edge -323, stand-in middle -91 (-132 at 1440).
+    var standH = 5 * PARTY.h + 4 * PARTY.gap;
+    // Essential's second row: its cells (icon, band, shadow) end 56 under the first line's middle. The last
+    // member's shadow lands on that row's shadow, so their bands line up: the member's bottom is 1 higher.
+    var e2Bottom = B(V.cdmY) - 19 - 37;
+    var pBottom = e2Bottom + 1, pTop = pBottom + standH, pLeft = PARTY.right - PARTY.w;
+    var pMiddle = pBottom + standH / 2;
+    var members = [
+      { name: "Mode", cls: "priest", role: "healer", hp: busy ? 0.71 : 1, heals: busy ? 2 : 0, deb: busy ? 1 : 0, disp: 0, mana: busy ? 0.46 : 0.88 },
+      { name: "Brakka", cls: "warrior", role: "tank", hp: busy ? 0.58 : 1, heals: busy ? 3 : 1, deb: busy ? 3 : 0, disp: busy ? 2 : 0, dispType: "magic" },
+      { name: "Ilsevere", cls: "mage", role: "dps", hp: busy ? 0.34 : 1, heals: busy ? 2 : 0, deb: busy ? 2 : 0, disp: busy ? 1 : 0, dispType: "curse" },
+      { name: "Quill", cls: "rogue", role: "dps", hp: busy ? 0.81 : 0.93, heals: busy ? 1 : 0, deb: busy ? 1 : 0, disp: 0 },
+      { name: "Thornwick", cls: "hunter", role: "dps", hp: busy ? 0.12 : 1, heals: busy ? 3 : 0, deb: busy ? 3 : 0, disp: busy ? 2 : 0, dispType: "poison" }
+    ];
+    var pr = [pLeft, pTop - (PARTY.shown * PARTY.h + (PARTY.shown - 1) * PARTY.gap), PARTY.right, pTop];
+    var partyHTML = "";
+    members.forEach(function (m, i) {
+      var top = i * (PARTY.h + PARTY.gap), w = PARTY.w, h = PARTY.h;
+      var innerW = w - 2, innerH = h - 2;
+      var fill = Math.round(innerW * m.hp);
+      // A healer keeps the 3px power row (Below Health), a 1px line over it.
+      var hH = m.mana != null ? innerH - 4 : innerH;
+      var s = '<div class="box" style="left:0;top:' + top + "px;width:" + w + "px;height:" + h + 'px;box-shadow:0 0 0 1px #000, inset 0 0 0 1px var(--gm-light);border-radius:1px;background:#121314">';
+      // Mode Matte health (flat, no glass sheen), the empty part at 70% opacity.
+      s += '<div style="position:absolute;left:1px;top:1px;width:' + fill + "px;height:" + hH + 'px;background:#2b2d30"></div>';
+      s += '<div style="position:absolute;left:' + (1 + fill) + "px;top:1px;width:" + (innerW - fill) + "px;height:" + hH + 'px;background:rgba(98,50,53,.7)"></div>';
+      if (m.mana != null) s += '<div style="position:absolute;left:1px;top:' + (1 + hH) + "px;width:" + innerW + 'px;height:1px;background:#000"></div><div style="position:absolute;left:1px;top:' + (2 + hH) + "px;width:" + Math.round(innerW * m.mana) + 'px;height:3px;background:#4096ff"></div>';
+      if (m.disp) s += '<div style="position:absolute;left:1px;top:1px;width:' + innerW + "px;height:" + Math.round(innerH * 0.72) + "px;background:linear-gradient(180deg," + hexA(TONE[m.dispType], 0.35) + ',transparent)"></div>';
+      // Name at the top left, the role icon right after it.
+      s += '<div class="txt" style="left:4px;top:4px;font-size:11px;color:' + CLS[m.cls] + ';display:flex;align-items:center;gap:3px">' + m.name + roleIcon(m.role) + "</div>";
+      s += txt(0, Math.round(h / 2 - 6), 12, Math.round(m.hp * 100) + "%", "#f2f2f2", "width:" + w + "px;text-align:center;font-weight:600");
+      // Inside icons sit 2px in (the member's 1px band, then the icon's shadow on its inner line).
+      // Debuffs bottom left (20 x 18), dispellable on the row above (22 x 20, up to 2), healing buffs bottom right (22 x 18).
+      var IN = 2;
+      for (var d = 0; d < m.deb; d++) s += icon(IN + d * 21, h - IN - 18, 20, 18, HUES[(d + i * 3) % 15], "thin", { style: "box-shadow:0 0 0 1px #000, inset 0 0 0 1px #c82d2d, inset 0 0 0 2px rgba(0,0,0,.85);" });
+      for (var q = 0; q < m.disp; q++) s += icon(IN + q * 23, h - IN - 18 - 1 - 20, 22, 20, HUES[(q + 7) % 15], "thin", { style: "box-shadow:0 0 0 1px #000, inset 0 0 0 1px " + TONE[m.dispType] + ", inset 0 0 0 2px rgba(0,0,0,.85);" });
+      for (var b = 0; b < m.heals; b++) s += icon(w - IN - 22 - b * 23, h - IN - 18, 22, 18, [120, 95, 150][b], "thin");
+      s += "</div>";
+      partyHTML += s;
+    });
+    add({ id: "party", label: "Party Frames", group: "party", r: pr, status: "feature", html: partyHTML, solid: [pr] });
+
+    // ---- Player: the bar block as wide as the party column (136 visible past the ring), 1px above it.
+    var r = UF.ring / 2;
+    var blockBottom = pTop + UF.gap, blockTop = blockBottom + UF.block, cy = blockBottom + UF.block / 2;
+    var pBlock = [PARTY.right - UF.visible - r, blockBottom, PARTY.right, blockTop];
+    var pRing = [pBlock[0] - r, cy - r, pBlock[0] + r, cy + r];
+    var pFrame = [pRing[0], pRing[1], pBlock[2], pRing[3]];
+    add({ id: "player", label: "Player (mana frame)", r: pFrame, status: "feature", solid: [pBlock, pRing],
+      html: unitFrame({ w: pFrame[2] - pFrame[0], h: pFrame[3] - pFrame[1], side: "left", fill: TONE.mana, pct: busy ? 0.46 : 0.88, name: "Mode", value: busy ? "46%" : "88%", ring: CLS.priest, nameColor: CLS.priest }) });
+
+    // ---- Target: same size, mirrored, its block 1px right of the Player's.
+    var tLeft = PARTY.right + UF.gap;
+    var tBlock = [tLeft, blockBottom, tLeft + UF.visible + r, blockTop];
+    var tRing = [tBlock[2] - r, cy - r, tBlock[2] + r, cy + r];
+    var tFrame = [tBlock[0], tRing[1], tRing[2], tRing[3]];
+    add({ id: "target", label: "Target", r: tFrame, status: "value", solid: [tBlock, tRing],
+      html: unitFrame({ w: tFrame[2] - tFrame[0], h: tFrame[3] - tFrame[1], side: "right", fill: TONE.hostile, pct: busy ? 0.63 : 1, name: "Defias Pillager", value: busy ? "63%" : "100%", ring: TONE.hostile, nameColor: "#f2f2f2" }) });
+    // Every join 1px apart: the two shadows share one pixel (Mode's rule everywhere in the layout).
+    // Target buffs above it: 18 x 14, 7 to a row, from its left end, y -1 (they start 2 up by default).
+    var tb = busy ? 7 : 2;
+    var tbR = [tLeft + 2, blockTop + 1, tLeft + 2 + 7 * 18 + 6, blockTop + 1 + 14];
+    add({ id: "targetBuffs", label: "Target buffs", group: "target", r: tbR, status: "value", html: iconRow(tb, 7, 18, 14, 19, 15, "thin") });
+    // Target cast bar under the visible bar: 12 tall in a 1px rim, Gap -1 (one shared shadow pixel).
+    var tcR = [tLeft, blockBottom - 1 - 14, tLeft + UF.visible, blockBottom - 1];
+    add({ id: "targetCast", label: "Target cast bar", group: "target", r: tcR, status: "feature", html: castBar(UF.visible, 14, busy ? 0.55 : 0.3, "Fireball", "1.2", TONE.hostile) });
+    // Focus under the Target's cast bar, its left edge on the Target's, 1px apart.
+    var fTop = tcR[1] - 1;
+    var fR = [tLeft, fTop - 20, tLeft + UF.visible, fTop];
+    add({ id: "focus", label: "Focus", r: fR, status: "value", html: focusFrame(UF.visible, 20, busy) });
+    var fcR = [tLeft, fR[1] - 1 - 14, tLeft + UF.visible, fR[1] - 1];
+    add({ id: "focusCast", label: "Focus cast bar", group: "focus", r: fcR, status: "value", html: castBar(UF.visible, 14, 0.7, "Shadow Bolt", "0.6", TONE.neutral) });
+
+    // ---- ModeCDM
+    var eY = B(V.cdmY), eOuterW = 46, eOuterH = 38, eStep = 45;
+    var eLineW = 7 * eOuterW - 6, eRows = busy ? 14 : 10;
+    var eR = [-eLineW / 2, eY - eOuterH / 2, eLineW / 2, eY + eOuterH / 2];
+    var eAll = [eR[0], eR[1] - (eOuterH - 1), eR[2], eR[3]];
+    add({ id: "essential", label: "Essential Cooldowns", r: eR, status: "value", solid: [eAll], html: iconRow(eRows, 7, eOuterW, eOuterH, eStep, eOuterH - 1, "round", { center: true, lineW: eLineW, cd: true }) });
+    // Combo Points: a thin 6px bar in Mode-Thin (Mode-Round can't draw under 10) just above Essential. The Cast
+    // Bar keeps a fixed place over it, so nothing moves when a class has no combo points.
+    var resR = [eR[0], eR[3] + 1, eR[2], eR[3] + 7];
+    add({ id: "combo", label: "Combo Points", r: resR, status: "value", html: slot(0, 0, eLineW, 6, "") + (busy ? comboPips(eLineW, 6, 3, 5) : "") });
+    var cR = [eR[0], resR[3] + 1, eR[2], resR[3] + 19];
+    add({ id: "cast", label: "Cast Bar (ModeCDM)", r: cR, status: "value", html: castBar(eLineW, 18, busy ? 0.62 : 0.4, "Greater Heal", "1.4", "#f2b13c", true) });
+    var trR = [-(10 * 34 - 9) / 2, cR[3] + 1, (10 * 34 - 9) / 2, cR[3] + 29];
+    add({ id: "tracked", label: "Tracked Buffs", r: trR, status: "same", html: iconRow(busy ? 6 : 2, 10, 34, 28, 33, 27, "round", { center: true, lineW: trR[2] - trR[0], hue: 4 }) });
+    var emR = [-(4 * 42 - 3) / 2, trR[3] + 1, (4 * 42 - 3) / 2, trR[3] + 35];
+    add({ id: "emph", label: "Emphasized Buffs", r: emR, status: "same", html: iconRow(busy ? 3 : 1, 4, 42, 34, 41, 33, "round", { center: true, lineW: emR[2] - emR[0], hue: 9 }) });
+    var row = eOuterH - 1;
+    var uTop = eR[1] - 70, uLineW = 6 * 40 - 5;
+    var uR = [-uLineW / 2, uTop - 34, uLineW / 2, uTop];
+    add({ id: "utility", label: "Utility Cooldowns", r: uR, status: "value", html: iconRow(busy ? 6 : 4, 6, 40, 34, 39, 33, "round", { center: true, lineW: uLineW, cd: true, hue: 6 }) });
+    var lbN = busy ? 6 : 3, lbH = lbN * 28 - (lbN - 1);
+    var sx = SIDE_BUFFS.x, sy = SIDE_BUFFS.y;
+    var lbR = [-sx - 17, sy - lbH / 2, -sx + 17, sy + lbH / 2];
+    add({ id: "leftBuffs", label: "Left Buffs", r: lbR, status: "value", html: iconRow(lbN, 1, 34, 28, 33, 27, "round", { hue: 2 }) });
+    var rbR = [sx - 17, sy - lbH / 2, sx + 17, sy + lbH / 2];
+    add({ id: "rightBuffs", label: "Right Buffs", r: rbR, status: "value", html: iconRow(lbN, 1, 34, 28, 33, 27, "round", { hue: 11 }) });
+    var ulN = busy ? 2 : 1, ulW = 2 * 58 + 2;
+    var ulR = [V.ultraX - ulW / 2, 115 - 26, V.ultraX + ulW / 2, 115 + 26];
+    add({ id: "ultra", label: "Ultra Emphasized Buffs", r: ulR, status: "same", html: iconRow(ulN, 2, 58, 52, 60, 52, "round", { center: true, lineW: ulW, hue: 13 }) });
+
+    // ---- Buffs & Debuffs
+    // Player Debuffs: 6px clear of Right Buffs (7 with its icons' shadow), centered on that column's middle.
+    var pdN = busy ? 8 : 2, pdLeft = rbR[2] + 7, pdTop = sy + 18;
+    var pdRows = Math.ceil(pdN / 6);
+    var pdR = [pdLeft, pdTop - pdRows * 36 - (pdRows - 1), pdLeft + 6 * 42 + 5, pdTop];
+    add({ id: "playerDebuffs", label: "Player Debuffs", r: pdR, status: "feature", html: iconRow(pdN, 6, 42, 36, 43, 37, "thin", { tint: function (i) { return [TONE.magic, TONE.poison, "#c82d2d", TONE.curse][i % 4]; }, hue: 3 }) });
+    var piN = busy ? 3 : 1;
+    var piR = [pdLeft, pdTop + 6, pdLeft + 6 * 48 + 5, pdTop + 6 + 42];
+    add({ id: "playerImportant", label: "Boss & Important", r: piR, status: "value", html: iconRow(piN, 6, 48, 42, 49, 43, "thin", { tint: function () { return TONE.hostile; }, hue: 10 }) });
+    var dfN = busy ? 4 : 1, dfW = 4 * 40 + 3;
+    var dfR = [-dfW / 2, 170 - 17, dfW / 2, 170 + 17];
+    add({ id: "defensives", label: "Defensives (Buffs & Debuffs)", r: dfR, status: "feature", html: iconRow(dfN, 4, 40, 34, 41, 35, "thin", { center: true, lineW: dfW, hue: 8 }) });
+
+    // ---- Unchanged
+    var mmR = [W / 2 - 238, H / 2 - 238, W / 2 - 8, H / 2 - 8];
+    add({ id: "minimap", label: "Minimap", r: mmR, status: "same", html: '<div class="box" style="inset:0;background:radial-gradient(circle at 40% 40%,#5d6b4f,#36402f 60%,#232a20);box-shadow:0 0 0 1px #000, inset 0 0 0 2px #9a9ea4, inset 0 0 0 3px #000"></div>' });
+    var bW = 12 * 30 + 11;
+    var bufN = busy ? 24 : 9, bufRows = Math.ceil(bufN / 12);
+    var bufR = [W / 2 - 245 - bW, H / 2 - 9 - (2 * 36 + 1), W / 2 - 245, H / 2 - 9];
+    add({ id: "buffs", label: "Buffs", r: bufR, status: "same", html: iconRow(bufN, 12, 30, 24, 31, 37, "thin", { rtl: true, lineW: bW, timer: true, hue: 5 }) });
+    var debN = busy ? 16 : 2;
+    var debR = [W / 2 - 245 - bW, H / 2 - 238, W / 2 - 245, H / 2 - 165];
+    add({ id: "debuffs", label: "Debuffs", r: debR, status: "same", html: iconRow(debN, 12, 30, 24, 31, 37, "thin", { rtl: true, lineW: bW, timer: true, hue: 1, tint: function (i) { return [TONE.magic, TONE.curse, TONE.poison, TONE.disease][i % 4]; } }) });
+    var dm1 = [W / 2 - 238, -H / 2 + 8, W / 2 - 8, -H / 2 + 180], dm2 = [W / 2 - 238, -H / 2 + 184, W / 2 - 8, -H / 2 + 284];
+    add({ id: "meter1", label: "Damage Done", r: dm1, status: "same", html: meter(230, 172, "Damage Done", 6) });
+    add({ id: "meter2", label: "Healing Done", r: dm2, status: "same", html: meter(230, 100, "Healing Done", 3) });
+    var chR = [-W / 2 + 8, -H / 2 + 8, -W / 2 + 408, -H / 2 + 222];
+    add({ id: "chat", label: "Chat (Blizzard Edit Mode)", r: chR, status: "same", html: chat(400, 214) });
+    var bars = [["bar1", -434, 8, -4, 38], ["bar2", 4, 8, 434, 38], ["bar3", -434, 42, -4, 72], ["bar4", 4, 42, 434, 72]];
+    bars.forEach(function (b, i) { add({ id: b[0], label: "Action Bar " + (i + 1), group: "bars", r: [b[1], B(b[2]), b[3], B(b[4])], status: "same", html: iconRow(12, 12, 28, 24, 36, 0, "blizz", { hue: i * 3, style: "" }).replace(/left:(\d+)px;top:0px/g, function (m0, x) { return "left:" + (3 + +x) + "px;top:3px"; }) }); });
+    add({ id: "pet", label: "Pet Bar", group: "bars", r: [-434, B(76), -56, B(106)], status: "same", html: iconRow(10, 10, 30, 24, 38, 0, "blizz", { hue: 7 }).replace(/top:0px/g, "top:3px").replace(/left:(\d+)px/g, function (m0, x) { return "left:" + (3 + +x) + "px"; }) });
+    add({ id: "stance", label: "Stance Bar", group: "bars", r: [322, B(76), 434, B(106)], status: "same", html: iconRow(3, 3, 30, 24, 38, 0, "blizz", { hue: 12 }).replace(/top:0px/g, "top:3px").replace(/left:(\d+)px/g, function (m0, x) { return "left:" + (3 + +x) + "px"; }) });
+    var microW = 16 * 34 + 15 * 2;
+    add({ id: "micro", label: "Micro Menu (on mouseover)", r: [-W / 2 + 8, H / 2 - 36, -W / 2 + 8 + microW, H / 2 - 8], status: "same", html: slot(0, 0, microW, 28, "Micro Menu, on mouseover") });
+    add({ id: "bags", label: "Bag Bar (on mouseover)", r: [-W / 2 + 16 + microW, H / 2 - 36, -W / 2 + 16 + microW + 7 * 34 + 12, H / 2 - 8], status: "same", html: slot(0, 0, 7 * 34 + 12, 28, "Bags, on mouseover") });
+
+    // ---- Measurements
+    dims.push({ kind: "h", x0: pLeft, x1: PARTY.right, y: pr[1] - 18, label: "136 party" });
+    dims.push({ kind: "h", x0: pRing[2], x1: PARTY.right, y: blockTop + 6, label: "136 mana bar" });
+    dims.push({ kind: "v", x: pLeft - 8, y0: pTop - PARTY.h, y1: pTop, label: "64" });
+    dims.push({ kind: "h", x0: tLeft, x1: tRing[0], y: tbR[3] + 6, label: "136 health bar" });
+    dims.push({ kind: "v", x: tRing[2] + 6, y0: blockBottom, y1: blockTop, label: "20 block · 30 ring" });
+    dims.push({ kind: "v", x: fR[0] - 8, y0: fR[1], y1: fR[3], label: "20" });
+
+    // ---- DPS / Tank places, for comparison
+    var dpsY = B(V.cdmY);
+    ghosts.push({ label: "DPS Player", r: [-256 - 103, dpsY - 23, -256 + 103, dpsY + 23] });
+    ghosts.push({ label: "DPS Target", r: [256 - 103, dpsY - 23, 256 + 103, dpsY + 23] });
+    var gTop = V.dpsParty + (5 * 36 + 4) / 2;
+    ghosts.push({ label: "DPS Party", r: [-359 - 136, gTop - (4 * 36 + 3), -359, gTop] });
+    ghosts.push({ label: "DPS Focus", r: [153, B(V.dpsFocusY), 153 + 122, B(V.dpsFocusY) + 26] });
+    ghosts.push({ label: "DPS Essential", r: [-144, dpsY - 17, 144, dpsY + 17] });
+
+    dims.push({ kind: "h", x0: pLeft, x1: eR[0] + 30, y: e2Bottom, label: "party bottom = Essential row 2" });
+    return { els: els, dims: dims, ghosts: ghosts, solids: solids, V: V,
+      refs: { pBlock: pBlock, pRing: pRing, tBlock: tBlock, tRing: tRing, party: pr, pTop: pTop, pMiddle: pMiddle, e2Bottom: e2Bottom, focus: fR, fCast: fcR, tCast: tcR, tBuffs: tbR,
+        essential: eR, combo: resR, cast: cR, tracked: trR, emph: emR, utility: uR, pd: pdR, rb: rbR, pi: piR, df: dfR } };
+  }
+
+  function comboPips(w, h, lit, max) {
+    var s = '<div class="box" style="left:0;top:0;width:' + w + "px;height:" + h + 'px;background:#0b0c0d;box-shadow:0 0 0 1px #000, inset 0 0 0 1px var(--gm-light);border-radius:1px">';
+    var inW = w - 2, pip = (inW - (max - 1)) / max;
+    for (var i = 0; i < max; i++) s += '<div style="position:absolute;top:1px;bottom:1px;left:' + (1 + i * (pip + 1)) + "px;width:" + pip + "px;background:" + (i < lit ? "#f05454" : "transparent") + '"></div>';
+    return s + "</div>";
+  }
+  function hexA(hex, a) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")"; }
+  function roleIcon(role) {
+    var c = role === "tank" ? "#5aa0ff" : role === "healer" ? "#46c46b" : "#e5484d";
+    var g = role === "tank" ? "M5 1 L9 2.5 V5.5 C9 8 7 9.5 5 10 C3 9.5 1 8 1 5.5 V2.5 Z" : "M2 9 L8 3 M6.5 1.8 L8.6 1.4 L8.2 3.5 M2.6 6.8 L3.8 8 M1.4 8.6 L2.2 9.4";
+    return '<svg width="10" height="11" viewBox="0 0 10 11" aria-hidden="true" style="flex:none"><path d="' + g + '" fill="' + (role === "tank" ? c : "none") + '" stroke="' + (role === "tank" ? "#000" : c) + '" stroke-width="' + (role === "tank" ? 0.8 : 1.6) + '" stroke-linecap="round"/></svg>';
+  }
+  function unitFrame(o) {
+    var r = UF.ring / 2, bw = o.w - r, by = (o.h - UF.block) / 2;
+    var bx = o.side === "left" ? r : 0;
+    var s = '<div class="box" style="left:' + bx + "px;top:" + by + "px;width:" + bw + "px;height:" + UF.block + 'px;background:#0e0f10;box-shadow:0 0 0 1px #000, inset 0 0 0 1px var(--st-light), inset 0 0 0 2px #000;border-radius:1px">';
+    var inW = bw - 4, fillW = Math.round(inW * o.pct);
+    var fx = o.side === "left" ? 2 : 2 + inW - fillW;
+    s += '<div style="position:absolute;left:' + fx + "px;top:2px;width:" + fillW + "px;height:16px;background:linear-gradient(180deg," + hexA(o.fill, 1) + "," + hexA(o.fill, 0.55) + ')"></div>';
+    var tuck = r + 4;
+    if (o.side === "left") {
+      s += txt(tuck, 3, 11, o.name, o.nameColor, "font-weight:600");
+      s += txt(0, 4, 10, o.value, "#f2f2f2", "right:4px;left:auto;font-weight:600");
+    } else {
+      s += txt(4, 4, 10, o.value, "#f2f2f2", "font-weight:600");
+      s += txt(0, 3, 11, o.name, o.nameColor, "right:" + tuck + "px;left:auto;font-weight:600");
+    }
+    s += "</div>";
+    var rx = o.side === "left" ? 0 : o.w - UF.ring;
+    s += '<div class="ring" style="left:' + rx + "px;top:0;width:" + UF.ring + "px;height:" + UF.ring + "px;box-shadow:0 0 0 1px #000;background:" + o.ring + ';padding:2px">' +
+      '<div style="width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 1px #000;background:radial-gradient(circle at 50% 38%,#d9b48f 0 22%,#7a5a44 23% 40%,#2b2523 70%)"></div></div>';
+    return s;
+  }
+  function focusFrame(w, h, busy) {
+    var s = '<div class="box" style="left:0;top:0;width:' + w + "px;height:" + h + 'px;background:#0e0f10;box-shadow:0 0 0 1px #000, inset 0 0 0 1px var(--st-light);border-radius:1px">';
+    var inW = w - 2, fill = Math.round(inW * (busy ? 0.77 : 1));
+    s += '<div style="position:absolute;left:1px;top:1px;width:' + fill + 'px;height:14px;background:linear-gradient(180deg,#f2c744,rgba(242,199,68,.55))"></div>';
+    s += '<div style="position:absolute;left:1px;top:15px;width:' + inW + 'px;height:1px;background:#000"></div>';
+    s += '<div style="position:absolute;left:1px;top:16px;width:' + Math.round(inW * 0.6) + 'px;height:3px;background:#4096ff"></div>';
+    s += txt(4, 3, 10, "Scarlet Cultist", "#f2f2f2", "font-weight:600") + txt(0, 3, 10, busy ? "77%" : "100%", "#f2f2f2", "right:4px;left:auto;font-weight:600");
+    return s + "</div>";
+  }
+  function castBar(w, h, pct, label, time, color, round) {
+    var s = '<div class="box" style="left:0;top:0;width:' + w + "px;height:" + h + "px;background:#0b0c0d;" + (round ? "border-radius:" + Math.floor(h / 2) + "px;box-shadow:0 0 0 1px #000, inset 0 0 0 1px var(--gm-light), inset 0 0 0 2px #000" : "box-shadow:0 0 0 1px #000, inset 0 0 0 1px var(--st-light)") + '">';
+    var inset = round ? 2 : 1, fw = Math.round((w - 2 * inset) * pct);
+    s += '<div style="position:absolute;left:' + inset + "px;top:" + inset + "px;width:" + fw + "px;bottom:" + inset + "px;background:linear-gradient(90deg," + hexA(color, 0.25) + "," + hexA(color, 0.95) + ");border-radius:" + (round ? Math.floor(h / 2) : 0) + 'px"></div>';
+    var fs = round ? 11 : 10;
+    s += txt(6, Math.round((h - fs) / 2), fs, label, "#f2f2f2", "font-weight:600") + txt(0, Math.round((h - fs) / 2), fs, time, "#f2f2f2", "right:6px;left:auto;font-weight:600");
+    return s + "</div>";
+  }
+  function meter(w, h, title, rows) {
+    var s = '<div class="box" style="inset:0;background:rgba(8,9,10,.82)">' + txt(6, 6, 11, title, "#efe6d2", "font-weight:600");
+    var cols = ["#3fc7eb", "#c69b6d", "#fff468", "#aad372", "#ffffff", "#f48cba"];
+    for (var i = 0; i < rows; i++) {
+      var y = 24 + i * 24, pw = Math.round((w - 10) * (1 - i * 0.13));
+      s += '<div style="position:absolute;left:5px;top:' + y + "px;width:" + pw + "px;height:22px;background:" + hexA(cols[i % 6], 0.55) + '"></div>' + txt(9, y + 6, 10, ["Ilsevere", "Brakka", "Quill", "Thornwick", "Mode", "Lumen"][i % 6]);
+    }
+    return s + "</div>";
+  }
+  function chat(w, h) {
+    var lines = ["[Party] Brakka: pulling the next pack", "[Party] Ilsevere: oom after this one", "You receive loot: Linen Cloth x2", "[Party] Quill: sap on skull"];
+    var s = '<div style="position:absolute;left:0;top:0;width:90px;height:22px;background:rgba(8,9,10,.7);box-shadow:inset 0 0 0 1px var(--gm-mid)">' + txt(8, 6, 11, "General", "#efe6d2") + "</div>";
+    s += '<div class="box" style="left:0;top:24px;width:' + w + "px;height:" + (h - 24) + 'px;background:rgba(8,9,10,.45)">';
+    lines.forEach(function (l, i) { s += txt(8, h - 24 - 22 - (lines.length - 1 - i) * 15, 11, l, i === 2 ? "#5cd684" : "#9cc7ff"); });
+    return s + "</div>";
+  }
+
+  // ---------------------------------------------------------------- render
+  function renderScreen(m, k) {
+    var V = m.V, el = document.createElement("div");
+    el.className = "screen";
+    el.style.width = V.W + "px"; el.style.height = V.H + "px";
+    el.style.setProperty("--k", k);
+    function place(node, r) { node.style.left = (r[0] + V.W / 2) + "px"; node.style.top = (V.H / 2 - r[3]) + "px"; node.style.width = (r[2] - r[0]) + "px"; node.style.height = (r[3] - r[1]) + "px"; }
+    var html = [];
+    m.els.forEach(function (e) {
+      var d = document.createElement("div");
+      d.className = "el out st-" + e.status;
+      place(d, e.r);
+      d.innerHTML = e.html + '<span class="tag">' + e.label + "</span>";
+      el.appendChild(d);
+    });
+    m.ghosts.forEach(function (g) { var d = document.createElement("div"); d.className = "ghost"; place(d, g.r); d.innerHTML = "<span>" + g.label + "</span>"; el.appendChild(d); });
+    m.dims.forEach(function (dm) {
+      var d = document.createElement("div"); d.className = "dim " + dm.kind;
+      if (dm.kind === "h") place(d, [dm.x0, dm.y, dm.x1, dm.y]); else place(d, [dm.x, dm.y0, dm.x, dm.y1]);
+      d.innerHTML = "<i>" + dm.label + "</i>"; el.appendChild(d);
+    });
+    if (state.conf) m.conflicts.forEach(function (c) { var d = document.createElement("div"); d.className = "conflict-box"; place(d, c.r); el.appendChild(d); });
+    return el;
+  }
+
+  // Overlaps between solid parts of different elements (shared edges don't count).
+  var IGNORE = { "party|player": 0, "target|targetBuffs": 0 };
+  function overlaps(m) {
+    var out = [], s = m.solids;
+    for (var i = 0; i < s.length; i++) for (var j = i + 1; j < s.length; j++) {
+      var a = s[i], b = s[j];
+      if (a.id === b.id || a.group === b.group || a.group === b.id || b.group === a.id) continue;
+      var x0 = Math.max(a.r[0], b.r[0]), y0 = Math.max(a.r[1], b.r[1]), x1 = Math.min(a.r[2], b.r[2]), y1 = Math.min(a.r[3], b.r[3]);
+      if (x1 > x0 && y1 > y0) out.push({ a: a.label, b: b.label, r: [x0, y0, x1, y1], w: x1 - x0, h: y1 - y0 });
+    }
+    return out;
+  }
+  var ADVICE = {
+    "Target|Left Buffs": "With 4 or more buffs in the Left Buffs column, its top reaches the Target's portrait ring. Options: Left Buffs and Right Buffs at y -16 (the column then ends at the ring's bottom), or 5 to a column.",
+    "Left Buffs|Target": "With 4 or more buffs in the Left Buffs column, its top reaches the Target's portrait ring. Options: Left Buffs and Right Buffs at y -16, or 5 to a column."
+  };
+
+  var state = { v: "1080", busy: true, out: true, labels: false, dims: true, ghost: false, conf: true, grid: false };
+  try { var saved = JSON.parse(localStorage.getItem("healer-proto") || "{}"); for (var key in saved) if (key in state) state[key] = saved[key]; } catch (e) {}
+  function save() { try { localStorage.setItem("healer-proto", JSON.stringify(state)); } catch (e) {} }
+
+  function draw() {
+    var m = build(state.v, state.busy);
+    m.conflicts = overlaps(m);
+    var full = document.getElementById("stage-full"), detail = document.getElementById("stage-detail");
+    var cls = (state.out ? " show-out" : "") + (state.labels ? " show-labels" : "") + (state.dims ? " show-dims" : "") + (state.ghost ? " show-ghost" : "");
+    // Full screen
+    var fw = full.clientWidth || 1000, k = fw / m.V.W;
+    full.style.height = Math.round(m.V.H * k) + "px";
+    full.innerHTML = "";
+    var sc = renderScreen(m, k); sc.className += cls; sc.style.transform = "scale(" + k + ")"; full.appendChild(sc);
+    // Detail: the cluster.
+    var R = m.refs, pad = 14;
+    var region = [R.pRing[0] - pad - 40, R.party[1] - pad, R.essential[0] + 60, R.pBlock[3] + 34 + pad];
+    var dw = detail.clientWidth || 600, rw = region[2] - region[0], rh = region[3] - region[1];
+    var k2 = dw / rw;
+    detail.style.height = Math.round(rh * k2) + "px";
+    detail.innerHTML = "";
+    var sd = renderScreen(m, k2); sd.className += cls;
+    sd.style.transform = "scale(" + k2 + ") translate(" + (-(region[0] + m.V.W / 2)) + "px," + (-(m.V.H / 2 - region[3])) + "px)";
+    if (state.grid) { var g = document.createElement("div"); g.style.cssText = "position:absolute;inset:0;z-index:27;pointer-events:none;background-image:linear-gradient(90deg,rgba(0,0,0,.4) 28%,transparent 28%),linear-gradient(180deg,rgba(0,0,0,.4) 28%,transparent 28%);background-size:1px 1px"; sd.appendChild(g); }
+    detail.appendChild(sd);
+    document.getElementById("cap-full").innerHTML = "<b>" + state.v + "p</b> · " + m.V.W + " × " + m.V.H + " UI units · " + (state.busy ? "Busy: every slot full" : "Calm: a typical moment");
+    // Conflicts
+    var ul = document.getElementById("conflicts");
+    document.getElementById("conf-scope").textContent = "(" + state.v + "p, " + (state.busy ? "Busy" : "Calm") + ")";
+    ul.innerHTML = m.conflicts.length ? m.conflicts.map(function (c) {
+      return '<li><span class="chip risk">' + c.w.toFixed(0) + " × " + c.h.toFixed(0) + "</span><span><b>" + c.a + "</b> and <b>" + c.b + '</b></span><span class="why">' + (ADVICE[c.a + "|" + c.b] || "These two overlap here.") + "</span></li>";
+    }).join("") : '<li><span class="chip value">clear</span><span class="ok">No element overlaps another in this state.</span></li>';
+    var A = [];
+    function chk(ok, text) { A.push('<li><span class="chip ' + (ok ? "value" : "risk") + '">' + (ok ? "ok" : "off") + "</span><span>" + text + "</span></li>"); }
+    chk(R.pBlock[2] === R.party[2], "Player bar block's right edge on the party column's right edge (x " + R.party[2] + ").");
+    chk(R.pRing[2] === R.party[0], "Mana bar shows 136 past the ring, the party column's width: ring edge on the column's left edge (x " + R.party[0] + ").");
+    chk(R.party[1] === R.e2Bottom + 1, "Last party member's bottom edge level with Essential's second row (y " + R.party[1] + "; party middle " + R.pMiddle + ").");
+    chk(R.pBlock[1] - R.party[3] === 1, "1px between the Player block and the first party member (you).");
+    chk(R.tBlock[0] - R.pBlock[2] === 1, "1px between the Player and Target blocks, same height (y " + R.pBlock[1] + " to " + R.pBlock[3] + ").");
+    chk(R.tBuffs[1] - R.tBlock[3] === 1 && R.tBlock[1] - R.tCast[3] === 1, "Target buffs and cast bar 1px from the Target block.");
+    chk(R.focus[0] === R.tBlock[0] && R.tCast[1] - R.focus[3] === 1 && R.focus[1] - R.fCast[3] === 1, "Focus 1px under the Target's cast bar, left edges lined up (x " + R.tBlock[0] + "); its cast bar 1px under it.");
+    chk(R.combo[1] - R.essential[3] === 1 && R.cast[1] - R.combo[3] === 1 && R.tracked[1] - R.cast[3] === 1 && R.emph[1] - R.tracked[3] === 1, "Essential, Combo Points, Cast Bar, Tracked Buffs and Emphasized Buffs each 1px apart.");
+    chk(R.pd[0] - R.rb[2] === 7, "Player Debuffs 6px right of Right Buffs (icons' shadows included).");
+    chk(R.pi[0] === R.pd[0], "Boss & Important above Player Debuffs, left edges lined up.");
+    chk(Math.abs(R.df[0] + R.df[2]) < 0.01 && (R.df[1] + R.df[3]) / 2 === 170, "Defensives centered at 0, 170.");
+    document.getElementById("aligns").innerHTML = A.join("");
+  }
+
+  // ---------------------------------------------------------------- controls
+  function seg(id, attr, setter) {
+    var box = document.getElementById(id);
+    box.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button"); if (!b) return;
+      setter(b.getAttribute(attr)); sync(); save(); draw();
+    });
+  }
+  function sync() {
+    document.querySelectorAll("#seg-res button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === state.v)); });
+    document.querySelectorAll("#seg-state button").forEach(function (b) { b.setAttribute("aria-pressed", String((b.dataset.s === "busy") === state.busy)); });
+    [["opt-out", "out"], ["opt-labels", "labels"], ["opt-dims", "dims"], ["opt-ghost", "ghost"], ["opt-conf", "conf"], ["opt-grid", "grid"]].forEach(function (p) { document.getElementById(p[0]).checked = state[p[1]]; });
+  }
+  seg("seg-res", "data-v", function (v) { state.v = v; });
+  seg("seg-state", "data-s", function (s) { state.busy = s === "busy"; });
+  [["opt-out", "out"], ["opt-labels", "labels"], ["opt-dims", "dims"], ["opt-ghost", "ghost"], ["opt-conf", "conf"], ["opt-grid", "grid"]].forEach(function (p) {
+    document.getElementById(p[0]).addEventListener("change", function (ev) { state[p[1]] = ev.target.checked; save(); draw(); });
+  });
+  var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(draw, 80); });
+
+  // ---------------------------------------------------------------- tabs
+  var TABS = ["preview", "spec", "api", "plan"];
+  function showTab() {
+    var t = location.hash.replace("#", ""); if (TABS.indexOf(t) < 0) t = "preview";
+    TABS.forEach(function (id) { document.getElementById("tab-" + id).hidden = id !== t; });
+    document.querySelectorAll("nav.tabs a").forEach(function (a) { if (a.dataset.tab === t) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    if (t === "preview") draw();
+  }
+  window.addEventListener("hashchange", showTab);
+
+  // ---------------------------------------------------------------- spec
+  var SPEC = [
+    ["Unit Frames"],
+    ["Player", "<b>Mana frame</b>: the bar shows your mana, no health, no power bar. Bar block 20 tall (16 bar + 2px rim each side, 5/8 of the DPS 32), Frame Width 140, so 136 shows past the ring, the party column's width. Portrait on (Portrait Size 145: a 30px ring). Mode-Thin Steel, no Drop Shadow. Name at the left (11), mana % at the right (10), level off. Place: block's right edge on the party column's right edge (x −323), 1px above the first member (you); frame center x −406.", "206 × 46, health 28, no power, Portrait 145, at (−256, 300 from bottom)", "feature", "Mana frame toggle is new (Bar Shows: Health / Mana)."],
+    ["Target", "Same size as the Player, mirrored (ring on the right), health in reaction color. Its block 1px right of the Player's (x −322 to −171). Buffs above it at the left end, 18 × 14, 7 to a row, 1px apart, Y −1 so they sit 1px off the block. Cast bar under the bar's visible length (136), 12 tall, Gap −1 (1px off the block). Debuffs off (as now).", "206 × 46 at (256, 300 from bottom); buffs 22 wide (cropped 22 × 18) at the top left", "feature", "Cast Bar Gap down to −1 is new (today 0 is the least: 2px apart). A one-line range change."],
+    ["Target of Target", "Off.", "On", "value", ""],
+    ["Focus", "136 × 20 (health 14, power 3, no portrait), 1px under the Target's cast bar, left edge on the Target's (x −322), its cast bar 12 tall, Gap −1. Focus places on the screen (unit frames take no anchors), worked out from the Target's size.", "122 × 26, 64 over the Target's top left", "value", ""],
+    ["Party Frames"],
+    ["Members", "136 × 64 (members are drawn an even number of pixels: 135 → 136, 65 → 64). Health 58, the line, a 3px power row on healers. Mode-Thin Gunmetal. Vertical, 1px apart. <b>You are shown</b> (Show Player on), so five members fill the stand-in. Health in Dark, texture <b>Mode Matte</b>, Background Opacity <b>70</b> (a little less see-through).", "136 × 36, Mode-Blizz, Mode Glass, opacity 60, you left out", "value", ""],
+    ["Place", "Right edge x −323 (your reading). The last member's bottom edge is level with Essential's second row: their shadows share a pixel and their bands line up. So the stand-in's middle is y −133 at 1080 (members from 29 down to −295) and −288 at 1440 (Essential sits 25 higher off the bottom there). The Player, Target and Focus follow.", "Right edge −359, middle 22 (1080) / −19 (1440)", "value", "This replaces the −91 reading and the DPS-style −41 at 1440: the rule ties the column to Essential at both screens."],
+    ["Name", "Top left, 11, class color.", "Left, 12, after the role icon", "value", ""],
+    ["Role icon", "Right after the name text, anchored to the name's end.", "Left, before the name", "feature", "New: a name sized to its text, the icon on its right end."],
+    ["Health text", "Center, 12, percent.", "Right, 11", "value", ""],
+    ["Debuffs", "Bottom left, 20 × 18, 1px apart, up to 3, growing right (Other Debuffs and the dispel-type groups share this row). Inside icons sit 2px in, so each icon's shadow lands on the member's inner line.", "20 × 14, Other Debuffs 2, each type 2", "value", "A shared cap of 3 for the whole row is new."],
+    ["Dispellable", "The row above the debuffs, 1px apart from it, 22 × 20, <b>up to 2</b>, growing right. Its own anchor (Left, inside, Y −1) so it sits on its own row. Two icons end 8px short of the health text.", "20 × 14, in the same bottom-left row", "value", ""],
+    ["Healing buffs", "Bottom right, 22 × 18, up to 3, growing left. Three debuffs and three healing buffs leave 2px between the rows (no overlap). On your own frame they cover the 3px mana row where they sit; your mana shows on the Player frame.", "Off", "value", ""],
+    ["Group buffs, Tracked", "Hidden.", "Hidden", "same", ""],
+    ["Defensives", "Hidden until the double icon is fixed (see Blizzard API).", "Big Defensives, 22 × 16 center", "value", ""],
+    ["Dispel overlay", "On: top edge gradient (reach 72%), Gradient Opacity 35.", "Gradient Opacity 56", "value", ""],
+    ["Spacing check", "Every member is 1px apart (shared shadow pixel); every inside icon is 2px in from the member edge; icons in a row are 1px apart; dispellable and debuff rows 1px apart; no aura reaches the name, the role icon or the health text with up to 3 debuffs, 2 dispellable and 3 healing buffs.", "", "same", ""],
+    ["ModeCDM"],
+    ["Essential Cooldowns", "42 × 34 (4px bigger), 7 to a line, two lines when full (14). Same place: 300 from the bottom (325 at 1440). Each line 316 wide with its edges.", "38 × 30, 288 wide", "value", ""],
+    ["Defensive Cooldowns", "Not used: hidden. Its spells (none in a new profile) stay where Blizzard's Cooldown Manager categories put them, so add defensives to Essential in Blizzard's settings.", "36 × 30 on the Player frame's top border", "value", ""],
+    ["Utility Cooldowns", "Centered, growing from the center, 70 under Essential's first line (its Edit Mode offset; 33 under the second line).", "69 under the first line (36 under the second)", "value", ""],
+    ["Left Buffs, Right Buffs", "At x ∓138 (12 closer to the center) and y −16 (16 lower). Same size and growth. 138 rather than 140: at 1440 the Target's ring sits beside the Left Buffs column, and 140 touches it by 1px.", "At x ∓150, y 0", "value", ""],
+    ["Power (mana)", "Hidden: the Player frame shows mana.", "Shown, 10 tall, class color", "value", ""],
+    ["Combo Points", "Thinner: 6 tall in Mode-Thin Gunmetal (Mode-Round can't draw a bar under 10), as wide as Essential, 1px above it. With Power hidden the resources stop grouping, so Combo Points gets its own place on Essential. Only a Druid in Cat Form has them as a healer.", "8 tall in the Power block on Essential", "value", ""],
+    ["Cast Bar", "16 tall (4px bigger), as wide as Essential, on Essential at a fixed offset (8 up: 1px over the 6px Combo Points slot), so it never moves when combo points come and go. It anchors to Essential, since Power no longer hosts the block.", "12 tall, on the Power block", "value", ""],
+    ["Tracked, Emphasized, Ultra Emphasized", "Same sizes and places, stacked on the Cast Bar as now.", "", "same", ""],
+    ["Buffs & Debuffs"],
+    ["Player Debuffs", "Right of the screen: 6px right of the Right Buffs bar, growing right, 6 to a row (42 × 36 as now), centered on the Right Buffs column's middle (y −16).", "Default place", "feature", "Anchoring a ModeUI bar to a ModeCDM bar is new; the same place works from the screen without it."],
+    ["Boss & Important", "Above Player Debuffs, 6 up (its default gap), left edges lined up, growing right.", "6px above Player Debuffs (its default)", "value", ""],
+    ["Defensives", "At (0, 170), growing out from the center.", "Right of center at (−124, 166), growing left", "feature", "Centered growth is new and needs research."],
+    ["Buffs, Debuffs, Player Buffs", "Same: by the minimap; Player Buffs off.", "", "same", ""],
+    ["Everything else"],
+    ["Action Bars, Micro Menu, Bag Bar", "Same sizes and places.", "", "same", ""],
+    ["Minimap, Damage Meters, Chat, Nameplates", "Same.", "", "same", ""]
+  ];
+  var tb = document.querySelector("#spec-table tbody"), rows = [];
+  var LABEL = { same: "Same", value: "New value", feature: "New feature" };
+  SPEC.forEach(function (r) {
+    if (r.length === 1) { rows.push('<tr class="mod"><td colspan="4">' + r[0] + "</td></tr>"); return; }
+    rows.push("<tr><td><b>" + r[0] + "</b></td><td>" + r[1] + "</td><td>" + (r[2] || "—") + '</td><td><span class="chip ' + r[3] + '">' + LABEL[r[3]] + "</span>" + (r[4] ? '<div style="margin-top:4px;font-size:12.5px;color:var(--muted)">' + r[4] + "</div>" : "") + "</td></tr>");
+  });
+  tb.innerHTML = rows.join("");
+
+  // ---------------------------------------------------------------- API
+  var API = [
+    { t: "Player mana frame", tag: "feature", have: "<code>showPower = false</code> already gives the power bar's height to health (<code>UnitFrames/Layout.lua:40,130</code>). Power texts can already sit in the bar's text slots (<code>TextSlots.lua:36-40</code>), and the player's power events are registered (<code>Driver.lua:202,285</code>).",
+      need: "A per-frame key (Bar Shows: Health / Mana) in <code>M.ownKeys</code>, so a Target that matches the Player doesn't turn into a mana frame. While on: health no longer feeds the bar; mana does, through <code>Power.ReadType(unit, Power.ManaType())</code>, so a Druid in a form still shows mana. Shields and heal prediction hidden, color from <code>Power.Color(\"MANA\")</code>, a mana sample in the stand-in, and the By Health text color replaced (it reads <code>UnitHealthPercent</code>).",
+      api: "<code>UnitPower</code>, <code>UnitPowerPercent</code>: secret when unit power is restricted. <code>UnitPowerMax</code>: secret when max power is restricted. <code>UnitPowerType</code>: never secret. Values go only to <code>StatusBar:SetMinMaxValues</code> / <code>SetValue</code> and <code>FontString:SetText</code> / <code>SetFormattedText</code>, which take secrets. Percent: <code>UnitPowerPercent(unit, type, false, CurveConstants.ScaleTo100)</code>.",
+      risk: "Whether <code>UnitPowerPercent</code> takes a color curve like <code>UnitHealthPercent</code> does is unverified (its documentation only says \"optional curve\")." },
+    { t: "Target, Target of Target, Focus", tag: "value", have: "<code>matchPlayer</code> and <code>mirrorText</code> are on by default. <code>barWidth</code> is the Target's own key. Target of Target: <code>enabled = false</code>.",
+      need: "Only the layout's arithmetic. Unit frames place only on the screen (<code>Build.lua:79</code>, <code>allowedTargets = { \"screen\" }</code>), so the Focus's place is worked out from the Target's size, as Mode-Default does.",
+      api: "Secure unit buttons (<code>SecureUnitButtonTemplate</code>), created and placed out of combat only.",
+      risk: "Change the Player's size later and the Focus stays where it was: it has no anchor to the Target." },
+    { t: "Party frame layout and look", tag: "value", have: "Every value exists: <code>width</code>, <code>healthHeight</code>, <code>edgeStyle = \"thin\"</code> / <code>edgeMetal = \"gunmetal\"</code>, <code>nameAnchor = \"TOPLEFT\"</code>, <code>healthTextAnchor = \"CENTER\"</code> / <code>healthTextSize = 12</code>, <code>growth = \"down\"</code>, the aura groups' sizes, places and maxima, <code>dispel[type].gradient</code> and <code>dispelGradientOpacity = 35</code> (<code>Dispel.lua:17-26</code>).",
+      need: "Groups that share an anchor and place go into one container and continue one row (<code>Auras.lua:27-34</code>). Dispellable needs its own anchor to sit above the debuffs: Left, inside, y −2 does it with no new code. A shared cap of 3 for the whole debuff row is new.",
+      api: "Blizzard's aura containers (<code>Blizzard_AuraContainer</code>), as now. Party Frames place only on the screen (<code>Ghost.lua:75</code>).",
+      risk: "Members are drawn an even number of pixels, so 135 × 65 becomes 136 × 64." },
+    { t: "Role icon after the name", tag: "feature", have: "Today the name has a fixed width (<code>nameWidth</code>; names can be secret, so it is never measured, <code>Layout.lua:222</code>) and the role icon sits in front of it.",
+      need: "A name with one anchor and no fixed width, so the client sizes it to its text, and the role icon anchored to the name's right end. ModeUI never reads either one's size.",
+      api: "<code>UnitName</code>, <code>UnitGroupRolesAssigned</code>: secret when unit identity is restricted (a secret role already hides the icon). <code>FontString:SetText</code> takes a secret and marks the text secret. <code>GetStringWidth</code> / <code>GetUnboundedStringWidth</code> are secret only when anchoring is secret. Anchoring to a secret-sized region is resolved by the client, so it should render. Role art: <code>roleicon-tiny-tank</code> / <code>-healer</code> / <code>-dps</code>.",
+      risk: "Unverified in game: how a name with secret text sizes, and whether the icon then draws where expected. A self-sized name has no maximum width, so a long name can push the icon past the frame, and secret text can't be shortened in Lua. The fallback is the icon before the name, as now." },
+    { t: "Party defensives (double icons)", tag: "risk", have: "Hidden in this layout.", need: "A fix for every profile: when both flags are on, the second group takes <code>HELPFUL|BIG_DEFENSIVE|!EXTERNAL_DEFENSIVE</code>.", api: "<code>C_UnitAuras.AuraIsBigDefensive</code>, <code>C_Spell.IsExternalDefensive</code>, filter strings with the <code>!</code> prefix (Forever AuraUtil).", risk: "Whether negation works on these flags inside a container is unverified. See below." },
+    { t: "ModeCDM: Essential, Utility, Cast Bar, resources", tag: "value", have: "Icon sizes, <code>perLine = 7</code>, <code>resources.power.show</code>, <code>castBar.height</code>, the custom bars' <code>show</code>.",
+      need: "With Power hidden the resources stop grouping (<code>ResourceGroup.lua:19</code>), so the Cast Bar anchors to Essential and Combo Points takes its own place under it. The Defensive Cooldowns bar is hidden (<code>show = false</code>) rather than deleted, so you can turn it back on. Utility's offset counts Essential's second line.",
+      api: "Blizzard_CooldownViewer, as now. What Essential and Utility hold is Blizzard's Cooldown Manager categories, set in Blizzard's settings; profiles don't store them.",
+      risk: "No setting limits Essential to two lines: a 15th tracked spell starts a third. The Combo Points slot stays empty for every healer but a Druid in Cat Form." },
+    { t: "Buffs & Debuffs: Player Debuffs by a ModeCDM bar", tag: "feature", have: "Boss & Important already hangs 6px above Player Debuffs by default (<code>BuffsDebuffs/Init.lua:146</code>). ModeCDM can anchor to ModeUI elements.",
+      need: "The other way is new. Buffs & Debuffs registers its bars before ModeCDM adds its targets, ModeCDM only lets its own bars use them (<code>Custom.lua:162</code>), and the Position Manager refuses targets it doesn't allow (<code>Positioning.lua:105</code>). Recommended first: place Player Debuffs on the screen where the Right Buffs bar ends (the Right Buffs bar is itself on the screen at 150, 0), and add cross-addon anchoring later as its own feature.",
+      api: "None from Blizzard. ModeUI's Edit Mode targets and <code>PM:AllowTarget</code>.",
+      risk: "ModeCDM's custom bar ids depend on the profile, and ModeCDM is optional: an anchored bar needs a fallback place." },
+    { t: "Buffs & Debuffs: Defensives growing from the center", tag: "feature", have: "Growth: Right, Left, Up, Down.",
+      need: "Centered growth. The bars are Blizzard's aura container flow layout, which has axis, anchor point, direction, padding and line size, but no alignment. How many auras show is secret, so Lua can't work out the row's width to center it.",
+      api: "<code>Blizzard_AuraContainerFlowLayout.lua</code> (Forever).",
+      risk: "Whether a CENTER anchor point centers a row is unverified. Fallback: place the bar so a full row of 4 is centered on 0 (one defensive then shows left of center)." }
+  ];
+  var TAGS = { feature: "New feature", value: "Existing settings", risk: "Bug fix" };
+  document.getElementById("api-list").innerHTML = API.map(function (a) {
+    return '<article><h3>' + a.t + ' <span class="chip ' + a.tag + '">' + TAGS[a.tag] + "</span></h3><dl class=\"kv\"><dt>Already there</dt><dd>" + a.have + "</dd><dt>New code</dt><dd>" + a.need + "</dd><dt>Blizzard API</dt><dd>" + a.api + "</dd><dt>Risks</dt><dd>" + a.risk + "</dd></dl></article>";
+  }).join("");
+
+  // ---------------------------------------------------------------- plan
+  var STEPS = [
+    ["Register the Healer layout", "<code>addon.Layouts:Register(\"healer\", { label = \"Healer\", profileName = \"Mode-Healer\", seed = true, allModules = true })</code>. The Profiles page then offers <b>New from Healer Layout</b> beside <b>New from DPS / Tank Layout</b>, and the profile is made once per account at login (never switched to). Each module adds a <code>Contribute(\"healer\", ...)</code> beside its Mode-Default part, sharing helpers so values aren't copied twice.", "Shared/Runtime/Layouts.lua · Modules/*/Layouts.lua · ModeCDM/Modules/CooldownManager/Layouts.lua"],
+    ["Healer parts from existing settings", "Party Frames (Show Player, size, Mode-Thin Gunmetal, Mode Matte at Background Opacity 70, name, health text, aura sizes and places, Dispellable on its own anchor up to 2, dispel gradient 35, the column's bottom level with Essential's second row), Target / Target of Target / Focus (every join 1px apart; Cast Bar Gap −1 needs its range lowered from 0), ModeCDM (Essential 42 × 34, Power off, Combo Points 6px Mode-Thin on Essential, Cast Bar 16 at a fixed place above it, Defensive Cooldowns hidden, Utility 70, Left and Right Buffs at ∓138, −16), Buffs & Debuffs (Player Debuffs and Boss & Important on the right, placed on the screen; Defensives at 0, 170), everything else as Mode-Default. Tests: <code>tests/layouts.lua</code> builds Healer at 1080 and 1440 and checks every alignment on the Preview tab.", "tests/layouts.lua and each module's test"],
+    ["Mana frame (Unit Frames)", "Bar Shows: Health / Mana for Player (and any frame), in the Bars group. Mana through <code>Power.ReadType</code>, mana color, shields and heal prediction hidden, Health text slots show mana, a mana stand-in sample. The Healer layout's Player turns it on and gets its 20px block, Frame Width 140 and its place.", "Modules/UnitFrames: Init.lua · Update.lua · Texts.lua · Settings.lua · Layouts.lua; docs/UNIT_FRAMES.md"],
+    ["Role icon after the name (Party Frames)", "A new Role Icon place, After Name: the name sized to its text, the icon on its end. Gated in game with a secret-name check (a party member in combat, in an instance). Fallback: before the name.", "Modules/PartyFrames: Layout.lua · Icons.lua · SettingsElements.lua; docs/PARTY_FRAMES.md"],
+    ["Defensives double icon fix (all profiles)", "Second group <code>HELPFUL|BIG_DEFENSIVE|!EXTERNAL_DEFENSIVE</code> when both flags are on, after the <code>/dump</code> check on the Blizzard API tab confirms the cause. Healer keeps Defensives hidden until you say.", "Modules/PartyFrames/AuraContainers.lua · AuraInit.lua · tests/party_frames.lua"],
+    ["Shared debuff cap and centered growth", "A cap of 3 for the party's bottom-left debuff row, and research into centered growth for Buffs & Debuffs (the CENTER anchor point first). Until then Defensives sits so a full row of 4 is centered.", "Modules/PartyFrames/AuraContainers.lua · Modules/BuffsDebuffs/Bars.lua"],
+    ["Cross-addon anchors (later)", "Let a ModeUI bar anchor to a ModeCDM bar (a generic <code>PM:AllowTarget</code> step when a companion adds a target), with a fallback place when ModeCDM is off. Then Player Debuffs can follow Right Buffs if you move it.", "Shared/Placement/PositionManager.lua · ModeCDM/Modules/CooldownManager/Custom.lua"],
+    ["Docs and the in-game gate", "<code>docs/ARCHITECTURE.md</code> (Layouts), <code>docs/MODE_REDESIGN.md</code> (a Healer revision), each module doc's Healer layout section. Manual check: <b>Navigation:</b> <code>/modeui</code>, then <b>Profiles</b>. <b>Action:</b> under <b>Manage</b>, leave <b>New from Healer Layout</b> as <b>Mode-Healer</b> and click <b>Create</b>; pick <b>Mode-Healer</b> in <b>Profile</b>, click <b>Switch to This Profile</b>, then <b>Reload</b>. <b>Required state:</b> ModeUI and ModeCDM updated, a healer in a party with a target and a focus, out of combat, 1080p. <b>Confirmation:</b> what the Preview tab shows at 1080p.", "docs/"]
+  ];
+  document.getElementById("steps").innerHTML = STEPS.map(function (s) { return "<li><h3>" + s[0] + "</h3><p>" + s[1] + '</p><div class="files">' + s[2] + "</div></li>"; }).join("");
+
+  var DECIDED = [
+    ["Party frames show you", "Show Player on: five members, you first."],
+    ["Utility", "70 from Essential's first line."],
+    ["1440p", "The cluster moves down 41, as the DPS / Tank party frames did: party middle −132."],
+    ["Left and Right Buffs", "12 closer to the center (x ∓138) and 16 lower (y −16); Player Debuffs and Boss & Important follow Right Buffs."],
+    ["Party place", "Right edge at x −323; the last member's bottom level with Essential's second row (this sets the height at both screens, in place of −91 and the −41 at 1440)."],
+    ["Party size", "136 × 64."],
+    ["Dispellable", "Up to 2, 22 × 20; the other aura sizes as you gave them."],
+    ["Combo Points", "Thin (6px, Mode-Thin) just above Essential; the Cast Bar keeps a fixed place over it."],
+    ["Party look", "Mode Matte, Background Opacity 70."],
+    ["1px rule", "Every join shares one shadow pixel. Two settings need it: Target buffs Y −1, and Cast Bar Gap −1 (a range change, today 0)."]
+  ];
+  var QS = [
+    ["Defensive Cooldowns bar", "Hide the preset bar in this profile (you can turn it back on) or delete it.", "Hide it."],
+    ["Profile name", "Mode-Healer, made once per account at login like Mode-Default.", "Mode-Healer."]
+  ];
+  document.getElementById("questions").innerHTML = QS.map(function (q) { return '<div class="q"><b>' + q[0] + ".</b> " + q[1] + '<span class="rec">' + q[2] + "</span></div>"; }).join("");
+  document.getElementById("decided").innerHTML = DECIDED.map(function (q) { return '<div class="q"><span class="chip value">decided</span> <b>' + q[0] + ".</b> " + q[1] + "</div>"; }).join("");
+
+  sync();
+  showTab();
+})();
+</script>

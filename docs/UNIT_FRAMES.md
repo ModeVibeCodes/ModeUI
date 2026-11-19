@@ -5,6 +5,44 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Bar Shows: a mana frame, Cast Bar Gap -1, Healer layout (November 19, 2026)
+
+- **Bar Shows** (Player, Health Bar tab, Bar group: Health or Mana;
+  `barShows`, a frame's own key, so a Target matching the Player keeps
+  health). A mana frame's bar shows the unit's mana: the mana power type
+  (`Domain.Power.ReadType(unit, Power.ManaType())`), so a Druid in Bear or
+  Cat Form keeps mana under Rage or Energy, in the mana color
+  (`Power.Color("MANA")`), with no shields. Health texts still show health;
+  power texts show the bar's mana. `UNIT_POWER_FREQUENT` and
+  `UNIT_MAXPOWER` (already registered) update it; `UNIT_HEALTH` leaves the
+  bar alone. Values may be secret and only reach `StatusBar:SetMinMaxValues`
+  / `SetValue` and the FontString setters. A new key fills from its default
+  (Health), so nothing changes in a saved profile.
+- **Cast Bar Gap** goes down to -1: the bar 1px from the frame, the two
+  shadows sharing one pixel, as Mode's icons and frames do.
+- **Healer layout** (`Modules/UnitFrames/Layouts.lua`, new profiles only):
+  the Player a mana frame, its bar block 20 tall (Health Bar Height 16, no
+  power bar) with a 30px ring (Portrait Size 145) and Frame Width 140, so
+  136 of bar shows past the ring, the party column's width; 166 x 30. Name
+  (11) on the left, Power Percent (10) on the right, no level. Its block's
+  right edge on the party column's (x -323), 1px over the first member. The
+  Target the same size, mirrored, not matching the Player (Name right,
+  Health Percent left), its block 1px right of the Player's; its buffs 18
+  wide, 7 to a row, Y -1 (1px over the block); its cast bar 12 tall, Gap -1,
+  icon hidden. The Focus 136 x 20 (Frame Width 134, Health 14, Power 3, no
+  portrait), 1px under the Target's cast bar, left edges lined up, its cast
+  bar 12 tall, Gap -1. Target of Target and Target of Focus off. Mode-Thin
+  Steel, no text glow, no Drop Shadow, as in Mode-Default.
+- In-game check: **Navigation:** `/modeui`, then **Profiles**. **Action:**
+  pick **Mode-Healer** in **Profile**, click **Switch to This Profile**, then
+  **Reload**. **Required state:** a mana user in a party, with a target and a
+  focus, out of combat, 1080p. **Confirmation:** the Player frame is a blue
+  mana bar with your name on the left and mana percent on the right; it sits
+  on the party frames, its right end on theirs; the Target sits 1px to its
+  right; the Focus hangs 1px under the Target's cast bar. Then `/modeui`,
+  **Frames**, **Unit Frames**, Player, **Health Bar**: **Bar Shows** reads
+  Mana; set it to Health and the bar shows health again.
+
 ## Mode-Default layout (November 18, 2026)
 
 The unit frames' part of the built-in **Mode-Default** layout (DPS / Tank,

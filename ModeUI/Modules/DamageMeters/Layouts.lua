@@ -15,7 +15,7 @@ if not M or not addon.Layouts then return end
 local WIDTH = 230
 local ROWS = { window1 = 6, window2 = 3 }
 
-addon.Layouts:Contribute("mode-default", "damageMeters", function(db, ctx)
+local function Part(db, ctx)
     db.enabled = true
     for window, rows in pairs(ROWS) do
         local style = db[window]
@@ -29,4 +29,6 @@ addon.Layouts:Contribute("mode-default", "damageMeters", function(db, ctx)
     ctx.Place(M.elementIds.window1, "screen", "BOTTOMRIGHT", "BOTTOMRIGHT", -8, 8)
     ctx.Place(M.elementIds.window2, M.elementIds.window1, "BOTTOM", "TOP", 0, 4)
     ctx.Match(M.elementIds.window2, "width", M.elementIds.window1)
-end)
+end
+-- The Healer layout keeps this part as it is (owner, November 19, 2026).
+for _, layout in ipairs({ "mode-default", "healer" }) do addon.Layouts:Contribute(layout, "damageMeters", Part) end

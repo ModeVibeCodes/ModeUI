@@ -42,6 +42,23 @@ end
 -- Ultra Emphasized Buffs further out on a 1440 screen.
 local SIZES = { defensives = { 36, 30 }, emphasized = { 38, 30 } }
 
+-- The five default bars (Presets.lua) at their sizes here, in the layout's
+-- look, at their default places but for `places` (each a place's changes).
+local function Presets(db, ctx, places)
+    places.ultra = places.ultra or { x = ctx.V({ ["1080"] = 110, ["1440"] = 135 }) }
+    for _, tag in ipairs(M.presetOrder) do
+        local bar = M.PresetBar(db, tag)
+        assert(bar, "the " .. tag .. " bar is missing")
+        local style, defaults = db[bar.id], M.presetDefaults[tag]
+        for key in pairs(M.presets[tag].style) do style[key] = Copy(defaults[key]) end
+        if SIZES[tag] then style.width, style.height = SIZES[tag][1], SIZES[tag][2] end
+        Look(style)
+        local place = Copy(M.presets[tag].place)
+        for key, value in pairs(places[tag] or {}) do place[key] = value end
+        ctx.Place(M.ElementId(bar.id), place.target, place.point, place.relativePoint, place.x, place.y)
+    end
+end
+
 addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     db.enabled = true
     Shape(db.essential, 38, 30, 7, "centerH", "down")
@@ -76,16 +93,54 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     ctx.Place(M.ElementId("buffIcon"), CAST, "BOTTOM", "TOP", 0, 1)
 
     -- The default bars at their sizes and places here.
-    local places = { ultra = { x = ctx.V({ ["1080"] = 110, ["1440"] = 135 }) }, defensives = { target = "unitFramesPlayerBars", x = 1, y = 0 } }
-    for _, tag in ipairs(M.presetOrder) do
-        local bar = M.PresetBar(db, tag)
-        assert(bar, "the " .. tag .. " bar is missing")
-        local style, defaults = db[bar.id], M.presetDefaults[tag]
-        for key in pairs(M.presets[tag].style) do style[key] = Copy(defaults[key]) end
-        if SIZES[tag] then style.width, style.height = SIZES[tag][1], SIZES[tag][2] end
-        Look(style)
-        local place = Copy(M.presets[tag].place)
-        for key, value in pairs(places[tag] or {}) do place[key] = value end
-        ctx.Place(M.ElementId(bar.id), place.target, place.point, place.relativePoint, place.x, place.y)
-    end
+    Presets(db, ctx, { defensives = { target = "unitFramesPlayerBars", x = 1, y = 0 } })
+end)
+
+-- The Healer layout (owner, November 19, 2026; design/healer-layout/): the
+-- same bars in the same look, with a bigger Essential and no Power bar (the
+-- Player frame shows your mana). From the bottom up: Utility 70 under
+-- Essential's first line (33 under its second); Essential 42 x 34 (4px
+-- bigger), seven to a line, at the same place; on it a thin Combo Points
+-- strip (6px, Mode-Thin: Mode-Round can't draw under 10) and the Cast Bar
+-- (16 tall) at a fixed place over that strip, so nothing moves when a class
+-- has no combo points; then Tracked Buffs and Emphasized Buffs as before.
+-- With Power off the resources stand apart, so the Cast Bar hangs from
+-- Essential. Defensive Cooldowns is hidden (its spells, none in a new
+-- profile, stay where Blizzard's Cooldown Manager categories put them), and
+-- Alternate Mana too. Left and Right Buffs sit 12 closer to the center and
+-- 16 lower (x -138 and 138, y -16), clear of the Target's portrait ring.
+local COMBO = M.ResourceElementId("combo")
+local HEALER = { essential = { 42, 34 }, utility = 70, combo = 6, cast = 16, side = { x = 138, y = -16 } }
+
+addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
+    db.enabled = true
+    Shape(db.essential, HEALER.essential[1], HEALER.essential[2], 7, "centerH", "down")
+    ctx.Place(E, "screen", "CENTER", "BOTTOM", 0, ctx.V({ ["1080"] = 300, ["1440"] = 325 }))
+    Shape(db.utility, 36, 30, 6, "centerH", "down")
+    ctx.Place(M.ElementId("utility"), E, "TOP", "BOTTOM", 0, -HEALER.utility)
+    Look(db.buffBar)
+
+    -- Resources apart: Power and Alternate Mana off, Combo Points a 6px
+    -- Mode-Thin Gunmetal strip as wide as Essential, 1px over it.
+    db.resourceLayout = "separate"
+    local bars = db.resources
+    bars.power.show, bars.mana.show, bars.health.show = false, false, false
+    local combo = bars.combo
+    combo.height, combo.barMode, combo.matchWidth = HEALER.combo, "color", true
+    combo.edgeStyle, combo.edgeMetal = "thin", "gunmetal"
+    ctx.Match(COMBO, "width", E)
+    ctx.Place(COMBO, E, "BOTTOM", "TOP", 0, 1)
+
+    -- The Cast Bar over the strip's place (1 + 6 + 1), as wide as Essential; its icon hidden.
+    local cast = db.castBar
+    cast.height, cast.matchWidth, cast.icon = HEALER.cast, true, "none"
+    ctx.Match(CAST, "width", E)
+    ctx.Place(CAST, E, "BOTTOM", "TOP", 0, 1 + HEALER.combo + 1)
+    Shape(db.buffIcon, 30, 24, 10, "centerH", "up")
+    ctx.Place(M.ElementId("buffIcon"), CAST, "BOTTOM", "TOP", 0, 1)
+
+    local side = HEALER.side
+    Presets(db, ctx, { leftBuffs = { x = -side.x, y = side.y }, rightBuffs = { x = side.x, y = side.y } })
+    -- Defensive Cooldowns: hidden, not deleted, so it can come back.
+    db[M.PresetBar(db, "defensives").id].show = false
 end)

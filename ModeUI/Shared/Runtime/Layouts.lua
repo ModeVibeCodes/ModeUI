@@ -118,3 +118,7 @@ addon.Events:On(L, "PLAYER_LOGIN", function() L:Seed() end)
 
 -- Mode's own layout for damage dealers and tanks, with every module on.
 L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-Default", seed = true, allModules = true })
+-- Mode's healer layout (owner, November 19, 2026; the prototype in
+-- design/healer-layout/): a mana frame over the party column left of
+-- center, everything else as DPS / Tank but the Cooldown Manager's middle.
+L:Register("healer", { label = "Healer", profileName = "Mode-Healer", seed = true, allModules = true })

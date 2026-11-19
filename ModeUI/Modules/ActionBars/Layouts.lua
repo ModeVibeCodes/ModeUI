@@ -18,7 +18,7 @@ local ID = M.elementIds
 
 local function Set(style, values) for key, value in pairs(values) do style[key] = value end end
 
-addon.Layouts:Contribute("mode-default", "actionBars", function(db, ctx)
+local function Part(db, ctx)
     db.enabled = true
     for _, bar in ipairs({ "bar1", "bar2", "bar3", "bar4" }) do
         Set(db[bar], { show = true, width = 28, height = 24, spacing = 2, buttons = 12, perLine = 12, orientation = "horizontal" })
@@ -42,4 +42,6 @@ addon.Layouts:Contribute("mode-default", "actionBars", function(db, ctx)
     ctx.Place(ID.stance, ID.bar4, "BOTTOMRIGHT", "TOPRIGHT", 0, 4)
     ctx.Place(ID.micro, "screen", "TOPLEFT", "TOPLEFT", 8, -8)
     ctx.Place(ID.bags, ID.micro, "TOPLEFT", "TOPRIGHT", 8, 0)
-end)
+end
+-- The Healer layout keeps this part as it is (owner, November 19, 2026).
+for _, layout in ipairs({ "mode-default", "healer" }) do addon.Layouts:Contribute(layout, "actionBars", Part) end
