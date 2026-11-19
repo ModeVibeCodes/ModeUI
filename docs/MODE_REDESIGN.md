@@ -435,6 +435,10 @@ Built on branch `t3/mode-default-layout`.
   auras at Spacing 1, and a nameplate part (Aura Spacing 1). Confirmation:
   Target of Target shows its whole rim; every aura row has one dark pixel
   between icons.
+- **Seventh round (owner, November 18, 2026; the last before the owner
+  finalizes the profile):** party frames 8px taller (36 per member), only Big
+  Defensives among their buffs, their edges in pieces (all profiles); every
+  unit frame border Mode-Thin Steel; Player Buffs off.
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
 

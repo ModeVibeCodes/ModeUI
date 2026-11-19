@@ -315,7 +315,7 @@ same at 1080 and 1440. The module is on.
 |---|---|---|
 | Buffs | 30 x 24, 12 per row, 24 max, Grow Left, New Rows Down, time below | TOPRIGHT on the Minimap's TOPLEFT, (-10, 2) |
 | Debuffs | the same, 16 max | TOPRIGHT on the Minimap's BOTTOMLEFT, (-10, 70) |
-| Player Buffs | 30 x 24, 5 per row | TOPRIGHT on ModeUI Player Frame Bars' BOTTOMRIGHT (the bar block), (0, -1) |
+| Player Buffs | off (Show Bar; owner, November 18, 2026: Buffs by the minimap show them), 30 x 24, 5 per row | TOPRIGHT on ModeUI Player Frame Bars' BOTTOMRIGHT (the bar block), (0, -1) |
 | Defensives (`custom1`) | 40 x 34, 4 max | RIGHT on the screen's CENTER, (-124, 166) |
 
 Every bar (these, Player Debuffs (All), Boss & Important and any custom bar)

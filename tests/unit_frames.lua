@@ -1169,6 +1169,7 @@ layoutWorld.run([====[
         assert(db.player.dropShadow==false and db.target.dropShadow==false,'no soft drop under the border')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
             assert(db[unit].buffs.spacing==1 and db[unit].debuffs.spacing==1,unit..': aura icons 1px apart')
+            assert(db[unit].edgeStyle=='thin' and db[unit].edgeMetal=='steel',unit..': Mode-Thin Steel')
         end
         assert(t.topRight.size==11 and t.bottomRight.size==10 and t.bottomLeft.size==10,'room in the bar: 11, 10 and 10')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do

@@ -203,6 +203,7 @@ world.run([==[
 
     -- Secret values reach only widgets that accept them.
     local p1 = M.members[2]
+    assert(p1.panel.edge.pieces and #p1.panel.edge.parts[1] == 8 and p1.powerEdge.pieces, 'party edges in pieces (owner, November 18, 2026)')
     assert(p1.health.value.label == 'p1hp' and p1.health.high.label == 'p1max', 'secret health straight to the bar')
     assert(p1.texts.name.text.label == 'p1name', 'secret name straight to SetText')
     assert(p1.healPrediction.value.label == 'heals' and Point(p1.healPrediction)[2] == p1.health:GetStatusBarTexture(), 'heals ride on health')
@@ -753,21 +754,26 @@ layoutWorld.run([==[
     for variant, y in pairs({ ['1080'] = 40, ['1440'] = -1 }) do
         local profile = assert(addon.Layouts:Build('mode-default', variant))
         local db, p = profile.modules.partyFrames, profile.positions.partyFrames
-        assert(db.enabled == true and db.width == 136 and db.healthHeight == 22 and db.powerHeight == 3 and db.powerStyle == 'below')
+        assert(db.enabled == true and db.width == 136 and db.healthHeight == 30 and db.powerHeight == 3 and db.powerStyle == 'below')
         assert(db.spacing == 1 and db.growth == 'down' and db.showPlayer == false and db.powerShown == 'healers')
         assert(db.healthColorMode == 'default', 'health in Dark (owner, November 18, 2026)')
         for group, size in pairs(ICONS) do
             local a = db.auras[group]
             assert(a.width .. 'x' .. a.height == size and a.width - a.height == 6, group)
         end
+        -- Buffs: Big Defensives only (owner, November 18, 2026); debuffs keep their defaults.
+        for _, group in ipairs(M.buffGroups) do
+            assert(db.auras[group].show == (group == 'defensives'), group .. ': only the defensives show')
+        end
+        assert(db.auras.defensives.filter == 'big' and db.auras.dispellable.show and db.auras.otherDebuffs.show, 'Big Defensives; debuffs as they were')
         -- Everything else keeps its default.
         assert(db.auras.heals.anchor == 'BOTTOMRIGHT' and db.auras.heals.max == 3 and db.scale == 100 and db.sortBy == 'group')
-        -- Every member 28 tall with its rim: 22 health, the 1px line, 3 power, 1px rim top and bottom.
+        -- Every member 36 tall with its rim: 30 health, the 1px line, 3 power, 1px rim top and bottom.
         local g = M.Geometry({ db = db }, 1)
-        assert(g.height == 28 and g.width == 136 and g.healthHeight == 22 and g.innerHeight == 26)
-        -- The stand-in is a full party (5 x 28 + 4 = 144); the four members take
-        -- its top 115, their middle at y, so its own middle is 14.5 lower (rounded).
-        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -359 and p.y == y - 14,
+        assert(g.height == 36 and g.width == 136 and g.healthHeight == 30 and g.innerHeight == 34)
+        -- The stand-in is a full party (5 x 36 + 4 = 184); the four members take
+        -- its top 147, their middle at y, so its own middle is 18.5 lower (rounded).
+        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -359 and p.y == y - 18,
             variant .. ': ' .. tostring(p.x) .. ',' .. tostring(p.y))
     end
 ]==], "party_layout")
@@ -783,14 +789,14 @@ H.Load({ before = STUBS, saved = used }).run([==[
     local ghost = M.ghost
     local x, y = ghost:GetCenter()
     local ux, uy = UIParent:GetCenter()
-    assert(ghost:GetWidth() == 136 and ghost:GetHeight() == 144, 'room for five')
-    local right, top = x + 68 - ux, y + 72 - uy
-    assert(right == -359 and top == 98, 'right edge at -359 (the Player portrait), the top 58 over 40')
-    -- Four members from the top: 4 x 28 + 3 = 115, their middle half a pixel over 40.
-    assert(top - 115 / 2 == 40.5)
+    assert(ghost:GetWidth() == 136 and ghost:GetHeight() == 184, 'room for five')
+    local right, top = x + 68 - ux, y + 92 - uy
+    assert(right == -359 and top == 114, 'right edge at -359 (the Player portrait), the top 74 over 40')
+    -- Four members from the top: 4 x 36 + 3 = 147, their middle half a pixel over 40.
+    assert(top - 147 / 2 == 40.5)
     -- The secure header starts at the stand-in's top left (its edges from UIParent's BOTTOMLEFT).
     local point, _, relative, hx, hy = unpack(M.header.anchor)
-    assert(point == 'TOPLEFT' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() and hy == ghost:GetBottom() + 144)
+    assert(point == 'TOPLEFT' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() and hy == ghost:GetBottom() + 184)
     assert(M.header:GetAttribute('showPlayer') == false and M.header:GetAttribute('point') == 'TOP', 'four members, from the top')
 ]==], "party_layout_world")
 print("party frames: Mode-Default layout checks passed")

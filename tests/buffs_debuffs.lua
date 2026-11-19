@@ -395,7 +395,7 @@ H.Load({ before = STUBS }).run([==[
             assert(bar.width == 30 and bar.height == 24 and bar.perRow == 12 and bar.grow == 'left' and bar.wrap == 'down'
                 and bar.spacing == 1 and bar.timer == 'below' and bar.timerSize == 10, 'Buffs and Debuffs icons')
         end
-        assert(b.max == 24 and d.max == 16 and pb.width == 30 and pb.height == 24 and pb.perRow == 5 and pb.spacing == 1, 'Player Buffs 30 x 24, five to a row, sharing shadows')
+        assert(b.max == 24 and d.max == 16 and pb.width == 30 and pb.height == 24 and pb.perRow == 5 and pb.spacing == 1 and pb.show == false, 'Player Buffs 30 x 24, five to a row, sharing shadows, off')
         assert(db.bars.playerDebuffs.width == 42 and db.bars.playerImportant.width == 48, 'player debuff bars unchanged')
         assert(db.customBars[1].preset == 'defensives' and db.customBars[1].id == 'custom1')
         local def = db.bars.custom1

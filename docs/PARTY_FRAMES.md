@@ -188,6 +188,13 @@ profile; no existing profile changes.
   groups 16 x 10. Everything else keeps its default.
 - Health in **Dark** (`healthColorMode = "default"`; owner's tuning,
   November 18, 2026).
+- 8px taller (owner, November 18, 2026): 30 health, so each member is 36
+  tall with its rim (the stand-in 5 x 36 + 4 = 184). Buffs: only
+  **Defensives** shows, set to **Big Defensives**; Healing Buffs, Group Buffs
+  and the Tracked Buffs groups are off. Debuffs keep their defaults.
+- Every member's edges (the frame, an inset power bar, the dispel rim) are
+  drawn in pieces in every profile: a member is shorter than the ring art,
+  whose sliced corners read square (DESIGN_LANGUAGE.md, "Pieces").
 - Place: the right edge at x -359 from the screen's centre (the Player
   portrait's outer edge: -256 less half its 206 width), the four members'
   middle at y 40 (1080) or -1 (1440). The Edit Mode stand-in is always sized

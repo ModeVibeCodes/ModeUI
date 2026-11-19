@@ -37,7 +37,9 @@ addon.Layouts:Contribute("mode-default", "buffsDebuffs", function(db, ctx)
     local row = { width = 30, height = 24, perRow = 12, grow = "left", wrap = "down", timer = "below" }
     Bar(bars.buffs, row); bars.buffs.max = 24
     Bar(bars.debuffs, row); bars.debuffs.max = 16
-    Bar(bars.playerBuffs, { width = 30, height = 24, perRow = 5 })
+    -- Player Buffs off (owner, November 18, 2026): Buffs by the minimap show
+    -- them; the bar keeps its size and place for whoever turns it on.
+    Bar(bars.playerBuffs, { show = false, width = 30, height = 24, perRow = 5 })
     local defensives
     for _, entry in ipairs(db.customBars) do
         if entry.preset == "defensives" and not defensives then defensives = entry.id end

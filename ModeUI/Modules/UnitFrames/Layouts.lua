@@ -51,6 +51,8 @@ addon.Layouts:Contribute("mode-default", "unitFrames", function(db, ctx)
     for _, unit in ipairs(FRAMES) do db[unit].nameTextGlow, db[unit].healthTextGlow = false, false end
     -- No soft drop under the border: the icons on it keep a crisp 1px shadow line.
     db.player.dropShadow, db.target.dropShadow = false, false
+    -- Every frame's (and cast bar's) border in Mode-Thin Steel.
+    for _, unit in ipairs(FRAMES) do db[unit].edgeStyle, db[unit].edgeMetal = "thin", "steel" end
     -- Aura icons 1px apart: neighbours share one shadow pixel (the border is inside the icon).
     for _, unit in ipairs(FRAMES) do db[unit].buffs.spacing, db[unit].debuffs.spacing = 1, 1 end
     db.target.buffs.anchor, db.target.buffs.grow = "TOPLEFT", "right"

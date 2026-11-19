@@ -23,7 +23,8 @@ height (y) of the row:
   and Target (a new Border setting, on by default: the Mode Frame border's
   soft drop), so the icons on their borders keep a crisp 1px shadow line
   instead of sitting in the drop's dark halo. Aura icons (buffs and debuffs)
-  at Spacing 1 on every frame, sharing one shadow pixel. Every frame's border
+  at Spacing 1 on every frame, sharing one shadow pixel. Every frame's (and
+  its cast bar's) border in **Mode-Thin Steel**. Every frame's border
   and cast bar border are drawn in pieces in every profile (Target of Target
   showed only corner specks; DESIGN_LANGUAGE.md, "Pieces"). Without a power bar the health
   bar fills the block, so a Bottom slot sits on the frame's bottom edge.

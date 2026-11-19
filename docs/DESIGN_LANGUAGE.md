@@ -203,7 +203,7 @@ bars). A border on a thin host draws each ring as eight textures instead,
 four corners 1:1 and four edges between them (the middle rows stretched down
 the sides, as the slicing does), like Blizzard's NineSlice frames. The
 resource bars, the Cooldown Manager's icons and bars, the nameplates'
-health and cast boxes, the unit frames' blocks and cast bars, every aura
+health and cast boxes, the unit and party frames' blocks and cast bars, every aura
 icon (nameplates, party frames, unit frames, Buffs & Debuffs) and the chat's controls (its tabs, edit field,
 compartment and Scroll to Bottom; the tabs' corners showed square) use
 pieces (owner, November 18, 2026); other

@@ -23,9 +23,12 @@ function M:BuildFace(f)
     panel.hairline = panel:CreateTexture(nil, "BACKGROUND", nil, 0)
     Style.ApplyAsset(panel.hairline, "Solid")
     f.health, f.power = Kit.Bar(panel), Kit.Bar(panel)
-    panel.edge = Style.Edge(panel.inner, "group")
+    -- Edges in pieces: a member is shorter than the ring art, whose sliced
+    -- corners shrink and read square (owner, November 18, 2026;
+    -- docs/DESIGN_LANGUAGE.md, "Pieces").
+    panel.edge = Style.Edge(panel.inner, "group", { pieces = true })
     -- Inset power bars wear an edge of their own.
-    f.powerEdge = Style.Edge(f.power, "group")
+    f.powerEdge = Style.Edge(f.power, "group", { pieces = true })
     -- Incoming heals: a bar on the health bar that takes its range, so a
     -- (possibly secret) amount draws at the right length without arithmetic.
     f.healPrediction = Kit.Bar(f.health)

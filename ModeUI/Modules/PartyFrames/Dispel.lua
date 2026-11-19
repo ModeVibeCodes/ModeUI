@@ -74,7 +74,7 @@ local function SlotInitializer(self, f, kind)
         set.inner = CreateFrame("Frame", nil, button)
         local b = f.geometry.border
         set.inner:SetPoint("TOPLEFT", f.panel, "TOPLEFT", b, -b); set.inner:SetPoint("BOTTOMRIGHT", f.panel, "BOTTOMRIGHT", -b, b)
-        set.rim = Style.Edge(set.inner, "group", { level = 3, style = self.db.edgeStyle })
+        set.rim = Style.Edge(set.inner, "group", { level = 3, style = self.db.edgeStyle, pieces = true })
         set.rim:SetStyle(self.db.edgeStyle, self.db.edgeMetal)
         set.rim:SetTint(color)
         set.rim:SetShown(effects.border)
