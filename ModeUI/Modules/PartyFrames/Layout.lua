@@ -214,14 +214,19 @@ function M:LayoutElements(f)
     local px = g.px
     local path = Kit.FontPath(db, self.id)
     f.fontPath = path
+    local afterName = self:RoleAfterName()
     for element, text in pairs(f.texts) do
         local size, anchor = db[element .. "Size"], db[element .. "Anchor"]
         local h = Horizontal(anchor)
         local justify = h == "" and "CENTER" or h
         self:PlaceAt(f, text, anchor, db[element .. "Place"], db[element .. "X"], db[element .. "Y"])
         -- Widths come from settings, never from measuring (names can be secret).
+        -- With the role icon after the name, the name takes no width: the
+        -- client sizes it to its text (a name is at most 12 letters) and the
+        -- icon hangs from its end; nothing reads that size back.
         local share = element == "name" and db.nameWidth / 100 or 1
-        text:SetWidth(math.max(px, math.floor(g.innerWidth * share / px) * px - 2 * px))
+        if element == "name" and afterName then text:SetWidth(0)
+        else text:SetWidth(math.max(px, math.floor(g.innerWidth * share / px) * px - 2 * px)) end
         -- Names in SemiBold and health text in Bold (Geist weights; another
         -- font keeps its one weight).
         local weighted = element == "name" and Style.Weighted(path, "semibold")
@@ -239,6 +244,16 @@ function M:LayoutElements(f)
     for element, icon in pairs(f.icons) do
         local size = math.max(px, math.floor(db[element .. "Size"] / px + 0.5) * px)
         icon:SetSize(size, size)
-        self:PlaceAt(f, icon, db[element .. "Anchor"], db[element .. "Place"], db[element .. "X"], db[element .. "Y"])
+        if element == "role" and afterName then
+            -- After Name: the icon's left on the name's end, its offset from there.
+            local function Round(v) return math.floor(v / px + 0.5) * px end
+            icon:ClearAllPoints()
+            icon:SetPoint("LEFT", f.texts.name, "RIGHT", Round(db.roleX), Round(db.roleY))
+        else
+            self:PlaceAt(f, icon, db[element .. "Anchor"], db[element .. "Place"], db[element .. "X"], db[element .. "Y"])
+        end
     end
 end
+
+-- Role icon After Name (owner, November 19, 2026): on while the name shows.
+function M:RoleAfterName() return self.db.roleAfterName == true and self.db.nameShow == true end

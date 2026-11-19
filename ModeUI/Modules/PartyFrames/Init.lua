@@ -153,7 +153,8 @@ M.defaults = {
     -- Text.
     nameColorMode = "gradient", nameColor = Copy(P.text), healthText = "percent", healthTextColor = "health", healthTextGlow = true, nameWidth = 60,
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = false,
-    textColor = Copy(P.text), hideDamagerRole = false,
+    -- After Name: the role icon on the name's end (its Offset X and Y from there).
+    textColor = Copy(P.text), hideDamagerRole = false, roleAfterName = false,
     -- Aura rims, glows and dispel effects by type (Blizzard's DebuffTypeColor family).
     auraMagicColor = Copy(Tone.debuffType.Magic), auraCurseColor = Copy(Tone.debuffType.Curse),
     auraDiseaseColor = Copy(Tone.debuffType.Disease), auraPoisonColor = Copy(Tone.debuffType.Poison),

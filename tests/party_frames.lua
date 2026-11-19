@@ -319,6 +319,16 @@ world.run([==[
     assert(M:SetElementOption('name', 'anchor', 'CENTER') and Point(p1.texts.name)[1] == 'CENTER' and p1.texts.name.justifyH == 'CENTER')
     assert(M:SetElementOption('name', 'show', false) and not p1.texts.name:IsShown() and M:SetElementOption('name', 'show', true))
     assert(not M:SetElementOption('name', 'anchor', 'MIDDLE') and not M:SetElementOption('bogus', 'show', true))
+    -- Role After Name (owner, November 19, 2026): the name sizes to its text
+    -- (width 0, one anchor) and the role icon hangs from its end at Offset X/Y;
+    -- with the name hidden the icon goes back to its own anchor.
+    assert(M.db.roleAfterName == false and M:SetOption('roleAfterName', true))
+    assert(M:SetElementOption('name', 'anchor', 'TOPLEFT') and M:SetElementOption('role', 'x', 2) and M:SetElementOption('role', 'y', 0))
+    q = Point(p1.icons.role); assert(q[1] == 'LEFT' and q[2] == p1.texts.name and q[3] == 'RIGHT' and q[4] == 2 and q[5] == 0, 'role on the name end')
+    assert(p1.texts.name:GetWidth() == 0 and #p1.texts.name.points == 1, 'the name takes its text width')
+    assert(M:SetElementOption('name', 'show', false) and Point(p1.icons.role)[2] == p1.panel, 'no name: the role keeps its own place')
+    assert(M:SetElementOption('name', 'show', true) and M:SetOption('roleAfterName', false) and p1.texts.name:GetWidth() > 0)
+    assert(Point(p1.icons.role)[2] == p1.panel and M:SetElementOption('name', 'anchor', 'CENTER'))
     assert(M:SetElementOption('healthText', 'show', true) and p1.texts.healthText.text.secret, 'secret percent text')
     assert(M:SetOption('healthText', 'percentPlain') and p1.texts.healthText.text.formatted == '%.0f', 'percent with no sign')
 
