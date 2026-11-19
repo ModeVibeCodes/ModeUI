@@ -439,6 +439,12 @@ Built on branch `t3/mode-default-layout`.
   finalizes the profile):** party frames 8px taller (36 per member), only Big
   Defensives among their buffs, their edges in pieces (all profiles); every
   unit frame border Mode-Thin Steel; Player Buffs off.
+- **Finalized (owner, November 18, 2026: "Everything looks good"):** the
+  Mode-Default layout as of round 7 is the DPS / Tank default going forward
+  (Target buffs on, as built). Merged to `main`. A profile built from it
+  earlier keeps its old values; **New from DPS / Tank Layout** makes it anew.
+  The layout editor's saved DPS / Tank record (`design/layout-editor/`)
+  predates the tuning; the Healer step syncs it first.
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
 
