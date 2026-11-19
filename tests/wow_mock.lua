@@ -260,6 +260,7 @@ function methods:SetSnapToPixelGrid(value) self.snapToPixelGrid = value end
 function methods:SetTexelSnappingBias(value) self.texelSnappingBias = value end
 function methods:GetFrameLevel() return self.frameLevel or (self.parent and self.parent:GetFrameLevel() + 1 or 0) end
 function methods:SetMovable() end
+function methods:SetToplevel(value) self.toplevel = value end
 function methods:SetClampedToScreen(value) self.clamped=value end
 function methods:SetClampRectInsets(...) self.clampInsets={...} end
 function methods:SetHighlightTexture(texture, blendMode)

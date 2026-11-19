@@ -34,17 +34,24 @@ world.run([==[
             local p = profile.positions[id]
             assert(p.target == 'screen' and p.relativePoint == 'BOTTOM' and p.y == y, id .. ' at ' .. y)
         end
-        assert(profile.positions.unitFramesPlayer.x == -276 and profile.positions.unitFramesTarget.x == 276, 'frames either side')
+        assert(profile.positions.unitFramesPlayer.x == -268 and profile.positions.unitFramesTarget.x == 268, 'frames either side: ' .. tostring(profile.positions.unitFramesPlayer.x))
+        -- Every module on (allModules), Profiles always on.
+        for id, module in pairs(addon.modules) do
+            local db = profile.modules[id]
+            if db and db.enabled ~= nil and not module.alwaysOn then assert(db.enabled == true, id .. ' on: ' .. variant) end
+        end
         -- What the places count on (owner's tuning, November 18, 2026): Essential
         -- is 288 wide with its edges, so the frames' bands sit 10 from its band;
-        -- the Player frame is 246 x 70 with its bar block 14 in from top and
-        -- bottom (Defensive Cooldowns and Player Buffs share its shadow pixel).
+        -- the Player frame is 230 x 52 with its 32px bar block 10 in from top
+        -- and bottom, 34 with its shadow as an Essential icon is with its edge
+        -- (Defensive Cooldowns and Player Buffs share its shadow pixel).
         local cdm, uf = profile.modules.cooldownManager, profile.modules.unitFrames
         local essential = addon.CooldownManager.Geometry(cdm.essential, 1, 1)
         assert(essential.width == 288 and essential.reach == 2, 'Essential 288 wide')
         local g = addon.UnitFrames:Geometry(uf.player, 1, addon.Style.EdgeDepth('frame'))
-        assert(g.width == 246 and g.height == 70 and g.blockY == 14, 'Player 246 x 70, block 14 in')
-        assert(276 - 246 / 2 - (288 / 2 - 1) == 10, '10px between the bands')
+        assert(g.width == 230 and g.height == 52 and g.blockY == 10 and g.blockHeight == 32, 'Player 230 x 52, block 10 in')
+        assert(g.blockHeight + 2 == essential.h + 2 * essential.reach, 'as tall as an Essential icon')
+        assert(268 - 230 / 2 - (288 / 2 - 1) == 10, '10px between the bands')
         -- Minimap and meters show exactly as wide (the minimap's edge sits outside it).
         assert(profile.modules.damageMeters.window1.width == profile.modules.minimap.size + 2 * addon.Style.EdgeReach('frame'),
             'minimap as wide as the meters')

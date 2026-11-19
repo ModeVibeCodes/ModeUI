@@ -12,6 +12,8 @@ local Style = addon.Style
 -- Class and reaction colors are their true colors: Class Color Softness (a
 -- pastel blend toward white) was retired at layout version 24 (owner).
 local REACTION_COLORS = { hostile = P.hostile, neutral = P.neutral, friendly = P.green }
+-- How much of a character portrait is cropped from each side (PaintPortrait).
+M.PORTRAIT_CROP = 0.16
 -- Class color for players (or Mode reaction colors when allowed), else nil.
 function M:IdentityColor(unit, reactionOnly)
     if not reactionOnly then
@@ -88,10 +90,10 @@ end
 function M:PaintPortrait(f, unit, sampleUnit)
     local fdb = self:FrameDB(unit)
     if not fdb.showPortrait then return end
-    -- Character portraits: cropped 10% at the sides and bottom, 4% at the top,
-    -- so the face fills the ring a little more.
+    -- Character portraits: centered and cropped 16% on every side, so the
+    -- face fills most of the ring (owner, November 18, 2026).
     if Portrait.Apply(f.portrait.icon, sampleUnit or unit, fdb.portraitStyle) == "portrait" then
-        f.portrait.icon:SetTexCoord(0.1, 0.9, 0.04, 0.84)
+        f.portrait.icon:SetTexCoord(M.PORTRAIT_CROP, 1 - M.PORTRAIT_CROP, M.PORTRAIT_CROP, 1 - M.PORTRAIT_CROP)
     end
 end
 

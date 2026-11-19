@@ -5,7 +5,8 @@ local _, addon = ...
 -- (Modules/<Name>/Layouts.lua, or a companion's), so a layout never reaches
 -- into another module's settings. A layout builds a new profile; it never
 -- changes an existing one, so nothing the player placed moves.
---   addon.Layouts:Register(id, { label = "DPS / Tank", profileName = "Mode-Default", seed = true })
+--   addon.Layouts:Register(id, { label = "DPS / Tank", profileName = "Mode-Default", seed = true, allModules = true })
+-- `allModules`: every module (but alwaysOn and planned ones) starts on.
 --   addon.Layouts:Contribute(id, moduleId, function(db, ctx) ... end)
 --   addon.Layouts:Build(id, variant) -> profile, or nil and a reason
 -- `db` is the module's settings in a fresh profile (its defaults filled in);
@@ -70,6 +71,12 @@ function L:Build(id, variant)
     variant = variant == "1440" and "1440" or "1080"
     local profile, reason = addon.Database:NewProfile()
     if not profile then return nil, reason end
+    if spec.allModules then
+        for moduleId, module in pairs(addon.modules) do
+            local db = profile.modules[moduleId]
+            if type(db) == "table" and db.enabled ~= nil and not module.alwaysOn and not module.planned then db.enabled = true end
+        end
+    end
     local ctx = Context(profile, variant)
     for _, part in ipairs(self.parts[id]) do
         local db = addon.modules[part.module] and profile.modules[part.module]
@@ -109,5 +116,5 @@ end
 
 addon.Events:On(L, "PLAYER_LOGIN", function() L:Seed() end)
 
--- Mode's own layout for damage dealers and tanks.
-L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-Default", seed = true })
+-- Mode's own layout for damage dealers and tanks, with every module on.
+L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-Default", seed = true, allModules = true })

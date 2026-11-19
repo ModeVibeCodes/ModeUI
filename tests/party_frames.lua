@@ -762,7 +762,7 @@ layoutWorld.run([==[
         assert(g.height == 28 and g.width == 136 and g.healthHeight == 22 and g.innerHeight == 26)
         -- The stand-in is a full party (5 x 28 + 4 = 144); the four members take
         -- its top 115, their middle at y, so its own middle is 14.5 lower (rounded).
-        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -399 and p.y == y - 14,
+        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -383 and p.y == y - 14,
             variant .. ': ' .. tostring(p.x) .. ',' .. tostring(p.y))
     end
 ]==], "party_layout")
@@ -780,7 +780,7 @@ H.Load({ before = STUBS, saved = used }).run([==[
     local ux, uy = UIParent:GetCenter()
     assert(ghost:GetWidth() == 136 and ghost:GetHeight() == 144, 'room for five')
     local right, top = x + 68 - ux, y + 72 - uy
-    assert(right == -399 and top == 98, 'right edge at -399 (the Player portrait), the top 58 over 40')
+    assert(right == -383 and top == 98, 'right edge at -383 (the Player portrait), the top 58 over 40')
     -- Four members from the top: 4 x 28 + 3 = 115, their middle half a pixel over 40.
     assert(top - 115 / 2 == 40.5)
     -- The secure header starts at the stand-in's top left (its edges from UIParent's BOTTOMLEFT).

@@ -13,12 +13,15 @@ local Kit, Style = addon.Kit, addon.Style
 local Tint, Text, Bar = Kit.Tint, Kit.Text, Kit.Bar
 local RIM = Style.EDGE_PRESETS.frameThin.rim
 
--- A box: the bar area one rim inside it, the edge round that area.
+-- A box: the bar area one rim inside it, the edge round that area. The edge
+-- is drawn in pieces: a plate's bars are shorter than the ring art, whose
+-- sliced corners shrank and looked square (owner, November 18, 2026;
+-- docs/DESIGN_LANGUAGE.md, "Pieces").
 local function Box(parent)
     local box = CreateFrame("Frame", nil, parent)
     box.inner = CreateFrame("Frame", nil, box)
     box.bar = Bar(box)
-    box.edge = Style.Edge(box.inner, "frameThin")
+    box.edge = Style.Edge(box.inner, "frameThin", { pieces = true })
     return box
 end
 local function LiftedText(layer)

@@ -480,7 +480,8 @@ world.run([====[
     assert(M:SetRingFinish('player','custom') and M.RingFinish(M.db.player)=='custom' and M.db.player.portraitRingMetal=='steel')
     assert(M:SetRingFinish('player','default') and M:SetRingFinish('player','class') and not M:SetRingFinish('player','gold'))
     assert(M:SetFrameOption('player','portraitRing','border') and pr.layers[2].texture:IsShown())
-    assert(p.portrait.icon.texture=='portrait:player' and p.portrait.icon.texCoord[1]==0.1 and p.portrait.icon.texCoord[3]==0.04,'the portrait cropped a little toward the face')
+    local tc=p.portrait.icon.texCoord
+    assert(p.portrait.icon.texture=='portrait:player' and tc[1]==0.16 and tc[2]==0.84 and tc[3]==0.16 and tc[4]==0.84,'the portrait centered, cropped 16% each side')
     assert(p.texts.bottomLeft:GetText()=='60' and p.texts.right:GetText()=='90%')
 
     -- Colors: health Default/Class/Custom, name Accent/Class/Custom, ring Class/Default/Custom.
@@ -1161,6 +1162,10 @@ layoutWorld.run([====[
         assert(db.enabled==true and t.border.content=='none' and t.right.content=='none','the border and the right side left free')
         assert(t.topRight.content=='name' and t.topRight.size==12 and t.bottomRight.content=='healthPercent' and t.bottomRight.size==11,'name top right, health bottom right')
         assert(t.bottomLeft.content=='level','the level stays')
+        assert(db.player.healthHeight==24 and db.player.powerHeight==3,'24 health, the line and 3 power: as tall as an Essential icon')
+        for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
+            assert(db[unit].nameTextGlow==false and db[unit].healthTextGlow==false,unit..': no text glow')
+        end
         assert(db.target.matchPlayer==true and db.target.mirrorText==true and db.target.buffs.enabled==true
             and db.target.buffs.anchor=='TOPLEFT' and db.target.buffs.grow=='right','Target buffs top left, growing right')
         local f=db.focus
@@ -1172,19 +1177,19 @@ layoutWorld.run([====[
             assert(p and p.target==target and p.point==point and p.relativePoint==relative and p.x==x and p.y==yy,
                 id..' '..variant..': '..tostring(p and p.point)..' '..tostring(p and p.x)..','..tostring(p and p.y))
         end
-        At('unitFramesPlayer','screen','CENTER','BOTTOM',-276,y)
-        At('unitFramesTarget','screen','CENTER','BOTTOM',276,y)
-        -- 64 over the Target's top left corner (246 x 70), from the screen.
-        At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',153,y+99)
+        At('unitFramesPlayer','screen','CENTER','BOTTOM',-268,y)
+        At('unitFramesTarget','screen','CENTER','BOTTOM',268,y)
+        -- 64 over the Target's top left corner (230 x 52), from the screen.
+        At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',153,y+90)
         assert(pos.unitFramesTargetTarget==nil and pos.unitFramesFocusTarget==nil)
         -- The sizes behind those numbers.
         local edge=addon.Style.EdgeDepth
         local pg=M:Geometry(db.player,1,edge('frame'))
         local fg=M:Geometry(db.focus,1,edge('frameThin'))
-        assert(pg.width==246 and pg.height==70 and fg.width==122 and fg.height==26)
+        assert(pg.width==230 and pg.height==52 and fg.width==122 and fg.height==26)
     end
     -- Made into its own profile once at login (1080 here: the mock UI is 800 tall).
-    assert(ModeUIDB.profiles['Mode-Default'].positions.unitFramesFocus.y==399)
+    assert(ModeUIDB.profiles['Mode-Default'].positions.unitFramesFocus.y==390)
 ]====], "unit_frames_layout")
 -- Only this module's part (and its places) go into the Default profile, so
 -- the check stays on these frames whatever other modules add to the layout.
@@ -1200,8 +1205,8 @@ H.Load({ before = STUBS, saved = used }).run([====[
     local pl,pb,pr,pt,pw,ph=Box(M.ghosts.player)
     local tl,tb,tr,tt,tw,th=Box(M.ghosts.target)
     local fl,fb,fr,ft,fw,fh=Box(M.ghosts.focus)
-    assert(pw==246 and ph==70 and tw==246 and th==70 and fw==122 and fh==26,'Edit Mode measures the frames the editor drew')
-    assert((pl+pr)/2-ux==-276 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==276 and (tb+tt)/2-bottom==300)
+    assert(pw==230 and ph==52 and tw==230 and th==52 and fw==122 and fh==26,'Edit Mode measures the frames as built')
+    assert((pl+pr)/2-ux==-268 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==268 and (tb+tt)/2-bottom==300)
     assert(fl==tl and fb==tt+64,'the Focus 64 over the Target top left')
 ]====], "unit_frames_layout_world")
 print("unit frames: Mode-Default layout checks passed")

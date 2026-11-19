@@ -17,8 +17,8 @@ if not M or not addon.Layouts then return end
 -- a power bar fills it with health.
 local WIDTH, HEALTH, POWER, SPACING = 136, 22, 3, 1
 -- The right edge lines up with the Player portrait's outer edge (the Player
--- frame's centre x -276 less half its 246 width); the group's middle at:
-local RIGHT_X, MIDDLE = -399, { ["1080"] = 40, ["1440"] = -1 }
+-- frame's centre x -268 less half its 230 width); the group's middle at:
+local RIGHT_X, MIDDLE = -383, { ["1080"] = 40, ["1440"] = -1 }
 local ICONS = { heals = { 18, 12 }, defensives = { 22, 16 }, dispellable = { 20, 14 }, otherDebuffs = { 20, 14 },
     crowdControl = { 24, 18 }, buffs = { 16, 10 } }
 for group in pairs(M.groupDispelType) do ICONS[group] = { 20, 14 } end

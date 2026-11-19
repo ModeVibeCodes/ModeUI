@@ -14,7 +14,11 @@ frame and fades Blizzard's art. Each plate has:
   the approved Nameplates probe): the bar inside the `frameThin` edge, in each
   kind's **Border Style** and **Border Metal** (Mode-Round by default: Soft
   round corners, a 1px Silver bevel, a 1px shadow ring). The rim art sits outside the bar and
-  covers its own corners, so nothing is masked. Health fills in **Mode BG**
+  covers its own corners, so nothing is masked. Each ring is drawn in pieces
+  (DESIGN_LANGUAGE.md, "Pieces"; owner, November 18, 2026): a plate's bars
+  are shorter than the ring art, whose sliced corners shrank and looked
+  square. Aura icons keep their sliced ring (their dispel color needs one
+  texture). Health fills in **Mode BG**
   on Mode BG (Slate); the cast bar has its own **Cast Bar** texture (**Mode
   Cast**) and the **Comet** spark on the fill's leading edge (a channel's on
   its left), hidden while an interrupted cast is held.

@@ -13,14 +13,19 @@ The unit frames' part of the built-in **Mode-Default** layout (DPS / Tank,
 profile; no existing profile changes. The same at 1080 and 1440 except the
 height (y) of the row:
 
-- **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -276,
+- **Size** (owner's tuning, November 18, 2026): Player (and the Target, which
+  matches it) as tall as an Essential Cooldowns icon: 24 health, the 1px
+  line, 3 power and the 2px rim make a 32px bar block, 34 with its shadow, as
+  a 30px icon is with its 2px edge each side. The ring (165%) is 52, so each
+  frame is 230 x 52. Text glow (name and health) off on every frame.
+- **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -268,
   y 300 (1080) or 325 (1440): its band 10px from Essential Cooldowns' band
-  (owner's tuning, November 18, 2026; Essential is 288 wide with its edges,
-  its band 143 out past the shadow pixel: 143 + 10 + 123). Texts: the name moves from the
+  (Essential is 288 wide with its edges, its band 143 out past the shadow
+  pixel: 143 + 10 + 115, half the frame's width). Texts: the name moves from the
   border to **Top Right** (size 12) and the health text from Right to
   **Bottom Right** (size 11), inside the health bar, so Defensive Cooldowns
   own the top border's right end; the level stays at Bottom Left.
-- **Target** (`unitFramesTarget`): its CENTER on the screen's BOTTOM, x 276,
+- **Target** (`unitFramesTarget`): its CENTER on the screen's BOTTOM, x 268,
   the same y. It still matches and mirrors the Player (defaults), so its name
   sits at the top left and its health text at the bottom left. Its buffs
   start at the Top Left and grow Right (`target.buffs.anchor = "TOPLEFT"`,
@@ -31,15 +36,17 @@ height (y) of the row:
   left 64 over the Target's top left corner; unit frames are placed on the
   screen only (`allowedTargets = { "screen" }` in `Build.lua`), so the layout
   writes that spot from the screen: BOTTOMLEFT on the screen's BOTTOM, x 153
-  (276 less half the Target's 246), y 399 (1080) or 424 (1440) (the Target's
-  top, y + 35, plus 64). Moving the Target later does not move the Focus.
+  (268 less half the Target's 230), y 390 (1080) or 415 (1440) (the Target's
+  top, y + 26, plus 64). Moving the Target later does not move the Focus.
 - **Target of Focus** off. **Target of Target** keeps its defaults (attached
   under the Target frame).
 
-Player and Target are 246 x 70 in Edit Mode (their stand-ins,
-`ModeUI<Name>UnitFramePreview`, are the frames' size): the 70px ring (165% of
-the 42px bar block: 34 health, the 1px line, 3 power, the 2px rim) and the
-184px bars. The Player's cast bar steps aside when the Cooldown Manager's
+Player and Target are 230 x 52 in Edit Mode (their stand-ins,
+`ModeUI<Name>UnitFramePreview`, are the frames' size): the 52px ring (165% of
+the 32px bar block: 24 health, the 1px line, 3 power, the 2px rim) and the
+184px bars. Character portraits everywhere are centered and cropped 16% on
+every side, so the face fills most of the ring (owner, November 18, 2026;
+was 10% at the sides and bottom, 4% at the top). The Player's cast bar steps aside when the Cooldown Manager's
 cast bar is on, as before.
 
 ## Ring Style and Ring Finish, Class Color by default, true class colors (layout version 24)

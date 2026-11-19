@@ -608,7 +608,7 @@ Places are an element's `point` on the target's `relativePoint`, in UI units
 | Resource Bars | Group Resources; Power 10, Combo Points 8, Alternate Mana 8, all Bar Mode Color (Power in Class Color, Combo Points and Alternate Mana in their own colors); Health off; Power's Match Width on, matched to Essential (Edit Mode's pick) | Power: bottom on Essential's top, 1 up |
 | Cast Bar | height 12, Match Width on, matched to Essential; Icon Hidden | bottom on Power's top, 1 up |
 | Tracked Buffs | 30 by 24, 10 per line, Centered Horizontal, New Lines Up | bottom on the Cast Bar's top, 1 up |
-| Defensive Cooldowns | 36 by 30, otherwise its defaults (above) | bottom right on the ModeUI Player Frame's top right, (1, -14): on the frame's top border |
+| Defensive Cooldowns | 36 by 30, otherwise its defaults (above) | bottom right on the ModeUI Player Frame's top right, (1, -10): on the frame's top border |
 | Emphasized Buffs | 38 by 30, otherwise its defaults | bottom on Tracked Buffs' top, 1 up |
 | Left Buffs / Right Buffs | their defaults | screen center, 150 left / 150 right |
 | Ultra Emphasized Buffs | its defaults | screen center, 110 / 135 right and 115 up |
@@ -617,9 +617,9 @@ Every icon bar (the four viewers and the five default bars) also takes the
 owner's tuning (November 18, 2026, tested at 1080p): Mode-Round in Gunmetal,
 Border Size 1, Spacing -1 (neighbours share one shadow pixel) and cooldown
 numbers in `cooldownHot` (#FF3948). Defensive Cooldowns sit on the Player
-frame's top border: the frame's band starts 14 under its element's top (the
-70px ring round the 42px bar block), and the bar's stand-in ends in its
-icons' shadow ring, so at -14 the two share one shadow pixel; +1 lines the
+frame's top border: the frame's band starts 10 under its element's top (the
+52px ring round the 32px bar block), and the bar's stand-in ends in its
+icons' shadow ring, so at -10 the two share one shadow pixel; +1 lines the
 icons' band up with the frame's right end.
 
 Stand-ins as built: each bar's stand-in is one line of its icons, every icon

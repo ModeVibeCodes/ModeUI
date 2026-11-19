@@ -202,8 +202,13 @@ border all but vanishes (owner, in game, November 18, 2026, on the resource
 bars). A border on a thin host draws each ring as eight textures instead,
 four corners 1:1 and four edges between them (the middle rows stretched down
 the sides, as the slicing does), like Blizzard's NineSlice frames. The
-resource bars use pieces; other borders keep one sliced texture per ring
-until an in-game look says they need it too.
+resource bars, the Cooldown Manager's icons and bars, and the nameplates'
+health and cast boxes use pieces (owner, November 18, 2026); other borders
+keep one sliced texture per ring until an in-game look says they need it
+too. Aura icons on Blizzard's aura containers (nameplates, party frames,
+Buffs & Debuffs) keep the sliced ring: the container recolors exactly one
+rim texture by dispel type (`AddDispelTypeTexture`), and pieces would make
+it eight.
 
 **Rim Color** (the Cooldown Manager's resource bars): one picker in place of
 Border Metal: Default Metal, Silver, Steel, Gunmetal (saved in `edgeMetal`),
@@ -373,7 +378,7 @@ Phase 6 probe):
 
 | Element | Size |
 |---|---|
-| Player, target | 184 wide; 34 health + 1 + 3 power; portrait ring 165% of the bar block, overlapping, Mode-Blizz in the true class or reaction color with its 1px black line between band and portrait, the image cropped a little toward the face |
+| Player, target | 184 wide; 34 health + 1 + 3 power; portrait ring 165% of the bar block, overlapping, Mode-Blizz in the true class or reaction color with its 1px black line between band and portrait, the image centered and cropped 16% on every side so the face fills the ring (owner, November 18, 2026) |
 | Target of target, focus, pet | 22 health + 3 power, 12px text; no portrait by default |
 | Boss | 24 health + 3 power; no portrait by default |
 | Cast bar under a frame | 14px with icon, 1–2px below (default 2), edges on the frame's edges; with a portrait it starts where the ring ends |

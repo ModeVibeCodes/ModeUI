@@ -435,6 +435,10 @@ Healer layout comes later.
   Minimap and the Cooldown Manager. Chat is left out: a chat window's size
   and place are Blizzard's Edit Mode settings, and whether an addon may set
   them safely is still to be researched.
+- **Every module on.** A layout marked `allModules` switches every module
+  on in the profile it builds (all but `alwaysOn` and planned ones), before
+  the parts run; Mode-Default does (owner, November 18, 2026), and the
+  Healer layout will.
 - **Screens.** A layout has places for 1080p and 1440p at the pixel-perfect
   scale (1 UI unit = 1 pixel); a profile takes the set nearest the UI height
   when it is built (1440's from 1260 up). Changing UI scale later moves

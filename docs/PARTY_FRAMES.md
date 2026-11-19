@@ -188,12 +188,12 @@ profile; no existing profile changes.
   groups 16 x 10. Everything else keeps its default.
 - Health in **Dark** (`healthColorMode = "default"`; owner's tuning,
   November 18, 2026).
-- Place: the right edge at x -399 from the screen's centre (the Player
-  portrait's outer edge: -276 less half its 246 width), the four members'
+- Place: the right edge at x -383 from the screen's centre (the Player
+  portrait's outer edge: -268 less half its 230 width), the four members'
   middle at y 40 (1080) or -1 (1440). The Edit Mode stand-in is always sized
   for five (5 x 28 + 4 = 144 tall) and the header fills it from the top, so
   without you the four members (115 tall) take its top part. The layout
-  writes the stand-in's RIGHT on the screen's CENTER at x -399, y 26 (1080)
+  writes the stand-in's RIGHT on the screen's CENTER at x -383, y 26 (1080)
   or -15 (1440): 14.5 under the group's middle, rounded, so the group's middle
   sits half a pixel over the editor's.
 

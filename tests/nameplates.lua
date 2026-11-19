@@ -158,6 +158,7 @@ world.run([==[
     -- The bar inside the frameThin edge: the rim art sits outside the bar, nothing behind it.
     local box = plate.healthBox
     assert(box.edge.preset == 'frameThin' and box.edge.host == box.inner and box.rims == nil and box.bands == nil, 'the frameThin edge')
+    assert(box.edge.pieces and #box.edge.parts[1] == 8 and plate.castBox.edge.pieces, 'health and cast edges in pieces (owner, November 18, 2026)')
     assert(box.edge.holder:GetFrameLevel() > box.bar:GetFrameLevel(), 'edge over the bar')
     assert(math.abs(box:GetHeight() - (M.db.enemy.healthHeight + 2)) < 1e-9 and Point(box.inner)[4] == 1, 'the bar one rim inside the box')
     assert(plate.castBox.edge.preset == 'frameThin' and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')

@@ -21,11 +21,11 @@ local SHADOW = 1 -- an aura icon's shadow ring, past its Width x Height
 local MAP_EDGE = addon.Style.EdgeReach("frame") -- the minimap's edge past the map: 3
 local MAP = "modeMinimap" -- the Minimap's Edit Mode element (Modules/Minimap/Init.lua)
 local GAP = 6 -- between the bars' icons and the minimap's edge
--- The Player frame's bar block ends 14 above its element's bottom (the 70px
--- ring round the 42px block; Modules/UnitFrames/Layout.lua, Geometry), its
--- band on the block's edge: icons 13 up share the band's shadow pixel. Five
+-- The Player frame's bar block ends 10 above its element's bottom (the 52px
+-- ring round the 32px block; Modules/UnitFrames/Layout.lua, Geometry), its
+-- band on the block's edge: icons 9 up share the band's shadow pixel. Five
 -- to a row stay clear of the portrait ring.
-local PLAYER, PLAYER_BLOCK = "unitFramesPlayer", 14
+local PLAYER, PLAYER_BLOCK = "unitFramesPlayer", 10
 
 local function Bar(bar, values) for key, value in pairs(values) do bar[key] = value end end
 

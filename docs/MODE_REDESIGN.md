@@ -396,6 +396,17 @@ Built on branch `t3/mode-default-layout`.
     mouseover; party frames are dark. Then `/mcdm`, any bar, **Look**:
     **Border Size** shows, and **Border Color** appears with Border Style
     Mode-BlizzEmpty.
+- **Second round (owner, November 18, 2026):** Player and Target as tall as
+  an Essential icon (24 health + the line + 3 power: a 32px block, 34 with
+  its shadow; frames 230 x 52, at x ±268, party frames at -383); text glow
+  off on every unit frame; every module on in the layout (`allModules`, for
+  the Healer layout too); nameplate health and cast borders in pieces (aura
+  icons keep the sliced ring: their dispel color needs one texture);
+  character portraits centered and cropped 16% each side. In-game check as
+  above (delete and recreate Mode-Default), plus: **Confirmation:** the
+  Player and Target bars line up with Essential's icons top and bottom;
+  Bags, Chat, Nameplates, Tooltip and Windows are on; nameplate borders show
+  whole rounded corners; the portrait's face fills the ring.
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
 
