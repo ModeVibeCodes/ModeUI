@@ -352,8 +352,8 @@ smaller each way than the editor drew them (32 x 26 with the shadow, not
 November 19, 2026; new profiles only). Everything as Mode-Default but:
 
 - **Player Debuffs** on the right of the screen: 6px right of ModeCDM's Right
-  Buffs bar (its right edge at 155; the bar's 1px shadow sits outside its
-  element, so the element starts at 162), growing right, six to a row, the
+  Buffs bar (its right edge at 139; the bar's 1px shadow sits outside its
+  element, so the element starts at 146), growing right, six to a row, the
   first row centered on Right Buffs' middle (y -16). Placed on the screen,
   not anchored to Right Buffs: ModeCDM is optional, and a ModeUI bar can't
   anchor to a companion's bar yet.

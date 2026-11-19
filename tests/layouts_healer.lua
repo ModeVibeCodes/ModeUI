@@ -48,7 +48,7 @@ world.run([==[
         -- bottom 1px over Essential's second line's (its shadow on that row's shadow).
         local party = m.partyFrames
         local pg = PF.Geometry({ db = party }, 1)
-        assert(pg.width == 136 and pg.height == 64 and party.showPlayer and party.spacing == 1, 'members 136 x 64, you shown')
+        assert(pg.width == 136 and pg.height == 64 and party.showPlayer and party.showSolo and party.spacing == 1, 'members 136 x 64, you shown, solo too')
         assert(party.edgeStyle == 'thin' and party.edgeMetal == 'gunmetal' and party.foregroundTexture == 'media:Mode Matte'
             and party.backgroundOpacity == 70, 'Mode-Thin Gunmetal, Mode Matte at 70')
         local column = PF.MAX_MEMBERS * pg.height + (PF.MAX_MEMBERS - 1) * party.spacing
@@ -79,7 +79,7 @@ world.run([==[
         local uf = m.unitFrames
         assert(uf.player.barShows == 'mana' and not uf.player.showPower and uf.target.barShows == 'health' and not uf.target.matchPlayer)
         local g = UF:Geometry(uf.player, 1, addon.Style.EdgeDepth('frame'))
-        assert(g.blockHeight == 20 and g.portrait == 30 and g.width == 166 and g.height == 30, 'Player 166 x 30, a 20px block')
+        assert(uf.player.healthHeight == 26 and g.blockHeight == 30 and g.portrait == 44 and g.width == 180 and g.height == 44, 'Player 180 x 44: Frame Height 26, a 30px block')
         assert(g.width - g.portrait == pg.width, 'the bar past the ring as wide as the party column')
         local pp, tp, fp = pos.unitFramesPlayer, pos.unitFramesTarget, pos.unitFramesFocus
         assert(pp.point == 'CENTER' and pp.relativePoint == 'CENTER' and tp.point == 'CENTER' and tp.relativePoint == 'CENTER')
@@ -88,7 +88,14 @@ world.run([==[
         -- Target: the same size, its block 1px right of the Player's.
         local tg = UF:Geometry(setmetatable({ showPortrait = true }, { __index = uf.target }), 1, addon.Style.EdgeDepth('frame'))
         assert(tg.width == g.width and tg.height == g.height and tp.y == pp.y and tp.x - tg.width / 2 == -322, 'Target 1px beside')
-        assert(uf.target.buffs.size == 18 and uf.target.buffs.perRow == 7 and uf.target.buffs.y == -1, 'Target buffs 1px over it')
+        local tb = uf.target.buffs
+        assert(tb.size == 18 and tb.perRow == 7 and tb.anchor == 'TOPRIGHT' and tb.grow == 'left', 'Target buffs from its top right')
+        -- Names (12) on the border at the top right; inside, the Player's mana percent and the Target's current health.
+        for _, unit in ipairs({ 'player', 'target' }) do
+            local s = uf[unit].texts
+            assert(s.border.content == 'name' and s.border.align == 'RIGHT' and s.border.size == 12, unit .. ': name on the border')
+        end
+        assert(uf.player.texts.right.content == 'powerPercent' and uf.target.texts.left.content == 'healthCurrent' and uf.target.texts.left.size == 12)
         assert(uf.target.castBar.gap == -1 and uf.target.castBar.height == 12 and not uf.targettarget.enabled)
         -- Focus: 136 x 20, 1px under the Target's cast bar (12 + its 1px rim), left edges lined up.
         local fg = UF:Geometry(uf.focus, 1, addon.Style.EdgeDepth('frameThin'))
@@ -107,17 +114,19 @@ world.run([==[
         local ids = {}
         for _, bar in ipairs(cdm.customBars) do if bar.preset then ids[bar.preset] = bar.id end end
         assert(cdm[ids.defensives].show == false, 'Defensive Cooldowns hidden')
-        At(CDM.ElementId(ids.leftBuffs), 'screen', 'CENTER', 'CENTER', -138, -16)
-        At(CDM.ElementId(ids.rightBuffs), 'screen', 'CENTER', 'CENTER', 138, -16)
+        At(CDM.ElementId(ids.leftBuffs), 'screen', 'CENTER', 'CENTER', -122, -16)
+        At(CDM.ElementId(ids.rightBuffs), 'screen', 'CENTER', 'CENTER', 122, -16)
         -- Right Buffs' right edge (34 wide with its edges) is where Player Debuffs counts from.
         local rb = CDM.Geometry(cdm[ids.rightBuffs], 1, 1)
-        assert(138 + (cdm[ids.rightBuffs].width + 2 * rb.reach) / 2 == 155, 'Right Buffs ends at 155')
+        assert(122 + (cdm[ids.rightBuffs].width + 2 * rb.reach) / 2 == 139, 'Right Buffs ends at 139')
+        -- Left Buffs clear of the Target's ring (its right edge 1px past the block's 1px gap, the frame's right end).
+        assert(-122 - (cdm[ids.leftBuffs].width + 2 * rb.reach) / 2 > tp.x + tg.width / 2, 'Left Buffs clear of the Target ring')
 
         -- Buffs & Debuffs: Player Debuffs 6px right of Right Buffs (its 1px
         -- shadow outside), its first row centered on y -16; Boss & Important over it; Defensives at 0, 170.
         local bd = m.buffsDebuffs.bars
         assert(bd.playerDebuffs.grow == 'right' and bd.playerDebuffs.perRow == 6 and bd.playerImportant.grow == 'right')
-        At(BD.ElementId('playerDebuffs'), 'screen', 'TOPLEFT', 'CENTER', 162, -16 + 18)
+        At(BD.ElementId('playerDebuffs'), 'screen', 'TOPLEFT', 'CENTER', 146, -16 + 18)
         At(BD.ElementId('playerImportant'), BD.ElementId('playerDebuffs'), 'BOTTOMLEFT', 'TOPLEFT', 0, 6)
         local defensives
         for _, entry in ipairs(m.buffsDebuffs.customBars) do if entry.preset == 'defensives' then defensives = entry.id end end
@@ -151,13 +160,13 @@ H.Load({ before = STUBS, saved = switching.saved() }).run([==[
     local ux, uy = UIParent:GetCenter()
     local pl, pb, pr, pt, pw, ph = Box(M.ghosts.player)
     local tl, tb, tr, tt, tw, th = Box(M.ghosts.target)
-    assert(pw == 166 and ph == 30 and tw == 166 and th == 30, 'Edit Mode measures the frames as built')
+    assert(pw == 180 and ph == 44 and tw == 180 and th == 44, 'Edit Mode measures the frames as built')
     assert(pr - ux == -323 and tl - ux == -322 and pb == tb, 'side by side, 1px apart')
     local p = M.frames.player
     units.player.mana, units.player.manaMax = 300, 900
     M:Update('player')
     assert(p.health:GetValue() == 300 and not p.power:IsShown(), 'mana on the bar, no power bar')
-    assert(p.texts.right:GetText() == '33%' and p.texts.left:GetText() ~= nil, 'the mana percent on the right, the name on the left')
+    assert(p.texts.right:GetText() == '33%' and p.texts.border:GetText() ~= nil, 'the mana percent on the right, the name on the border')
     local essential = addon.PositionManager:GetPosition('cooldownManagerEssential')
     assert(essential and essential.y == 300, 'its places in use')
 ]==], "healer in use")

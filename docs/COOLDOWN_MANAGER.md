@@ -610,9 +610,9 @@ look as Mode-Default but for these:
 - **Defensive Cooldowns** hidden (Show off, not deleted). A new profile's
   default bars hold no spells, so defensives stay where Blizzard's Cooldown
   Manager categories put them: add them to Essential in Blizzard's settings.
-- **Left Buffs and Right Buffs** at x -138 and 138, y -16 (12 closer to the
-  center and 16 lower), clear of the Target's portrait ring. Player Debuffs
-  (Buffs & Debuffs) counts from Right Buffs' right edge, 155.
+- **Left Buffs and Right Buffs** at x -122 and 122, y -16 (28 closer to the
+  center and 16 lower), 3px clear of the Target's 44px portrait ring.
+  Player Debuffs (Buffs & Debuffs) counts from Right Buffs' right edge, 139.
 
 ## Mode-Default layout
 

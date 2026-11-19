@@ -46,10 +46,11 @@ addon.Layouts:Contribute("mode-default", "partyFrames", function(db, ctx)
 end)
 
 -- The Healer layout (owner, November 19, 2026; design/healer-layout/): you
--- and your party in a column under the Player mana frame, 136 x 64 each
--- (135 x 65 asked; members are an even number of pixels): 58 health, the
--- line and a 3px power row on healers. Mode-Thin Gunmetal, Mode Matte health
--- in Dark on a slightly firmer empty bar (70). The name at the top left with
+-- and your party (you alone too: Show When Solo) in a column under the
+-- Player mana frame, 136 x 64 each (135 x 65 asked; members are an even
+-- number of pixels): 58 health, the line and a 3px power row on healers.
+-- Mode-Thin Gunmetal, Mode Matte health in Dark on a slightly firmer empty
+-- bar (70). The name at the top left with
 -- the role icon on its end, health percent in the middle (12). Inside the
 -- bottom edge: debuffs at the left (20 x 18, up to 3, growing right),
 -- Dispellable by You on the row above them (22 x 20, up to 2: three would
@@ -72,6 +73,8 @@ addon.Layouts:Contribute("healer", "partyFrames", function(db, ctx)
     db.enabled = true
     db.width, db.healthHeight, db.powerHeight, db.powerStyle = HEALER.width, HEALER.health, HEALER.power, "below"
     db.spacing, db.growth, db.showPlayer, db.powerShown = SPACING, "down", true, "healers"
+    -- Shown when solo too (owner, November 19, 2026): your own frame in the column.
+    db.showSolo = true
     db.healthColorMode, db.foregroundTexture, db.backgroundOpacity = "default", "media:Mode Matte", 70
     db.edgeStyle, db.edgeMetal = "thin", "gunmetal"
     -- Name top left (4 in from the edges), the role icon 2px after it; health in the middle.

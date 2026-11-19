@@ -246,8 +246,9 @@ ol.steps h3 { margin: 0 0 2px; }
   var PARTY = { right: -323, w: 136, h: 64, gap: 1, shown: 5 };
   // Left and Right Buffs: slightly closer to the center and 16 lower than DPS / Tank (owner, November 19, 2026).
   // 138: at 1440 the Target's ring sits beside the Left Buffs column, and 140 would touch it by 1px.
-  var SIDE_BUFFS = { x: 138, y: -16 };
-  var UF = { block: 20, ring: 30, visible: 136, gap: 1 };
+  var SIDE_BUFFS = { x: 122, y: -16 };
+  // Frame Height 26 (owner, November 19, 2026): a 30px bar block and a 44px ring (Portrait Size 145).
+  var UF = { block: 30, ring: 44, visible: 136, gap: 1 };
   var CLS = { priest: "#ffffff", warrior: "#c69b6d", mage: "#3fc7eb", rogue: "#fff468", hunter: "#aad372" };
   var TONE = { magic: "#3399ff", curse: "#aa55ff", poison: "#55bb55", disease: "#cc8833", hostile: "#e5484d", neutral: "#f2c744", mana: "#4096ff" };
 
@@ -342,12 +343,12 @@ ol.steps h3 { margin: 0 0 2px; }
     var tRing = [tBlock[2] - r, cy - r, tBlock[2] + r, cy + r];
     var tFrame = [tBlock[0], tRing[1], tRing[2], tRing[3]];
     add({ id: "target", label: "Target", r: tFrame, status: "value", solid: [tBlock, tRing],
-      html: unitFrame({ w: tFrame[2] - tFrame[0], h: tFrame[3] - tFrame[1], side: "right", fill: TONE.hostile, pct: busy ? 0.63 : 1, name: "Defias Pillager", value: busy ? "63%" : "100%", ring: TONE.hostile, nameColor: "#f2f2f2" }) });
+      html: unitFrame({ w: tFrame[2] - tFrame[0], h: tFrame[3] - tFrame[1], side: "right", fill: TONE.hostile, pct: busy ? 0.63 : 1, name: "Defias Pillager", value: busy ? "11.6K" : "18.4K", ring: TONE.hostile, nameColor: "#f2f2f2" }) });
     // Every join 1px apart: the two shadows share one pixel (Mode's rule everywhere in the layout).
-    // Target buffs above it: 18 x 14, 7 to a row, from its left end, y -1 (they start 2 up by default).
-    var tb = busy ? 7 : 2;
-    var tbR = [tLeft + 2, blockTop + 1, tLeft + 2 + 7 * 18 + 6, blockTop + 1 + 14];
-    add({ id: "targetBuffs", label: "Target buffs", group: "target", r: tbR, status: "value", html: iconRow(tb, 7, 18, 14, 19, 15, "thin") });
+    // Target buffs over its name: 18 x 14, 7 to a row, from its top right (past the ring's tuck) growing left.
+    var tb = busy ? 7 : 2, tbRight = tBlock[2] - 2 - (UF.ring - (r + 2) + 2), tbW = 7 * 18 + 6;
+    var tbR = [tbRight - tbW, blockTop + 12, tbRight, blockTop + 12 + 14];
+    add({ id: "targetBuffs", label: "Target buffs", group: "target", r: tbR, status: "value", html: iconRow(tb, 7, 18, 14, 19, 15, "thin", { rtl: true, lineW: tbW }) });
     // Target cast bar under the visible bar: 12 tall in a 1px rim, Gap -1 (one shared shadow pixel).
     var tcR = [tLeft, blockBottom - 1 - 14, tLeft + UF.visible, blockBottom - 1];
     add({ id: "targetCast", label: "Target cast bar", group: "target", r: tcR, status: "feature", html: castBar(UF.visible, 14, busy ? 0.55 : 0.3, "Fireball", "1.2", TONE.hostile) });
@@ -429,7 +430,7 @@ ol.steps h3 { margin: 0 0 2px; }
     dims.push({ kind: "h", x0: pRing[2], x1: PARTY.right, y: blockTop + 6, label: "136 mana bar" });
     dims.push({ kind: "v", x: pLeft - 8, y0: pTop - PARTY.h, y1: pTop, label: "64" });
     dims.push({ kind: "h", x0: tLeft, x1: tRing[0], y: tbR[3] + 6, label: "136 health bar" });
-    dims.push({ kind: "v", x: tRing[2] + 6, y0: blockBottom, y1: blockTop, label: "20 block · 30 ring" });
+    dims.push({ kind: "v", x: tRing[2] + 6, y0: blockBottom, y1: blockTop, label: "30 block · 44 ring" });
     dims.push({ kind: "v", x: fR[0] - 8, y0: fR[1], y1: fR[3], label: "20" });
 
     // ---- DPS / Tank places, for comparison
@@ -465,15 +466,15 @@ ol.steps h3 { margin: 0 0 2px; }
     var s = '<div class="box" style="left:' + bx + "px;top:" + by + "px;width:" + bw + "px;height:" + UF.block + 'px;background:#0e0f10;box-shadow:0 0 0 1px #000, inset 0 0 0 1px var(--st-light), inset 0 0 0 2px #000;border-radius:1px">';
     var inW = bw - 4, fillW = Math.round(inW * o.pct);
     var fx = o.side === "left" ? 2 : 2 + inW - fillW;
-    s += '<div style="position:absolute;left:' + fx + "px;top:2px;width:" + fillW + "px;height:16px;background:linear-gradient(180deg," + hexA(o.fill, 1) + "," + hexA(o.fill, 0.55) + ')"></div>';
-    var tuck = r + 4;
-    if (o.side === "left") {
-      s += txt(tuck, 3, 11, o.name, o.nameColor, "font-weight:600");
-      s += txt(0, 4, 10, o.value, "#f2f2f2", "right:4px;left:auto;font-weight:600");
-    } else {
-      s += txt(4, 4, 10, o.value, "#f2f2f2", "font-weight:600");
-      s += txt(0, 3, 11, o.name, o.nameColor, "right:" + tuck + "px;left:auto;font-weight:600");
-    }
+    var barH = UF.block - 4;
+    s += '<div style="position:absolute;left:' + fx + "px;top:2px;width:" + fillW + "px;height:" + barH + "px;background:linear-gradient(180deg," + hexA(o.fill, 1) + "," + hexA(o.fill, 0.55) + ')"></div>';
+    // The value inside the bar (12): the Player's on the right, the Target's on the left, clear of the ring.
+    var vy = Math.round((UF.block - 12) / 2), tuck = r + 2;
+    if (o.side === "left") s += txt(0, vy, 12, o.value, "#f2f2f2", "right:4px;left:auto;font-weight:600");
+    else s += txt(4, vy, 12, o.value, "#f2f2f2", "font-weight:600");
+    // The name (12) on the border at the top right: its baseline on the top rim.
+    var nameRight = o.side === "left" ? 4 : tuck;
+    s += txt(0, -9, 12, o.name, o.nameColor, "right:" + nameRight + "px;left:auto;font-weight:600");
     s += "</div>";
     var rx = o.side === "left" ? 0 : o.w - UF.ring;
     s += '<div class="ring" style="left:' + rx + "px;top:0;width:" + UF.ring + "px;height:" + UF.ring + "px;box-shadow:0 0 0 1px #000;background:" + o.ring + ';padding:2px">' +
@@ -595,7 +596,7 @@ ol.steps h3 { margin: 0 0 2px; }
     chk(R.party[1] === R.e2Bottom + 1, "Last party member's bottom edge level with Essential's second row (y " + R.party[1] + "; party middle " + R.pMiddle + ").");
     chk(R.pBlock[1] - R.party[3] === 1, "1px between the Player block and the first party member (you).");
     chk(R.tBlock[0] - R.pBlock[2] === 1, "1px between the Player and Target blocks, same height (y " + R.pBlock[1] + " to " + R.pBlock[3] + ").");
-    chk(R.tBuffs[1] - R.tBlock[3] === 1 && R.tBlock[1] - R.tCast[3] === 1, "Target buffs and cast bar 1px from the Target block.");
+    chk(R.tBlock[1] - R.tCast[3] === 1 && R.tBuffs[0] >= R.tBlock[0], "Target cast bar 1px under its block; its buffs over its name, inside its width.");
     chk(R.focus[0] === R.tBlock[0] && R.tCast[1] - R.focus[3] === 1 && R.focus[1] - R.fCast[3] === 1, "Focus 1px under the Target's cast bar, left edges lined up (x " + R.tBlock[0] + "); its cast bar 1px under it.");
     chk(R.combo[1] - R.essential[3] === 1 && R.cast[1] - R.combo[3] === 1 && R.tracked[1] - R.cast[3] === 1 && R.emph[1] - R.tracked[3] === 1, "Essential, Combo Points, Cast Bar, Tracked Buffs and Emphasized Buffs each 1px apart.");
     chk(R.pd[0] - R.rb[2] === 7, "Player Debuffs 6px right of Right Buffs (icons' shadows included).");
@@ -637,12 +638,12 @@ ol.steps h3 { margin: 0 0 2px; }
   // ---------------------------------------------------------------- spec
   var SPEC = [
     ["Unit Frames"],
-    ["Player", "<b>Mana frame</b>: the bar shows your mana, no health, no power bar. Bar block 20 tall (16 bar + 2px rim each side, 5/8 of the DPS 32), Frame Width 140, so 136 shows past the ring, the party column's width. Portrait on (Portrait Size 145: a 30px ring). Mode-Thin Steel, no Drop Shadow. Name at the left (11), mana % at the right (10), level off. Place: block's right edge on the party column's right edge (x −323), 1px above the first member (you); frame center x −406.", "206 × 46, health 28, no power, Portrait 145, at (−256, 300 from bottom)", "feature", "Mana frame toggle is new (Bar Shows: Health / Mana)."],
-    ["Target", "Same size as the Player, mirrored (ring on the right), health in reaction color. Its block 1px right of the Player's (x −322 to −171). Buffs above it at the left end, 18 × 14, 7 to a row, 1px apart, Y −1 so they sit 1px off the block. Cast bar under the bar's visible length (136), 12 tall, Gap −1 (1px off the block). Debuffs off (as now).", "206 × 46 at (256, 300 from bottom); buffs 22 wide (cropped 22 × 18) at the top left", "feature", "Cast Bar Gap down to −1 is new (today 0 is the least: 2px apart). A one-line range change."],
+    ["Player", "<b>Mana frame</b> (Show: Mana): the bar shows your mana, no health, no power bar. <b>Frame Height 26</b> (your pick in game; the slider was Health Bar Height): a 30px bar block, a little shorter than the DPS 32. Frame Width 142, so 136 shows past the 44px ring (Portrait Size 145), the party column's width: 180 × 44. Mode-Thin Steel, no Drop Shadow. Name (12) on the border at the top right, mana % (12) inside at the right, level off. Place: block's right edge on the party column's right edge (x −323), 1px above the first member (you); the ring hangs past the column's left edge, clear of it.", "206 × 46, health 28, no power, Portrait 145, at (−256, 300 from bottom)", "feature", "Show: Health / Mana is new; the slider is renamed Frame Height."],
+    ["Target", "Same size as the Player (180 × 44), mirrored (ring on the right), health in reaction color, not matching the Player. Its block 1px right of the Player's. Name (12) on the border at the top right; <b>current health</b> (12) inside at the left. Buffs over the name: 18 × 14, 7 to a row, from its top right growing left. Cast bar under the bar's visible length (136), 12 tall, Gap −1 (1px off the block). Debuffs off (as now).", "206 × 46 at (256, 300 from bottom); buffs 22 wide (cropped 22 × 18) at the top left", "feature", "Cast Bar Gap down to −1 is new (today 0 is the least: 2px apart). A one-line range change."],
     ["Target of Target", "Off.", "On", "value", ""],
     ["Focus", "136 × 20 (health 14, power 3, no portrait), 1px under the Target's cast bar, left edge on the Target's (x −322), its cast bar 12 tall, Gap −1. Focus places on the screen (unit frames take no anchors), worked out from the Target's size.", "122 × 26, 64 over the Target's top left", "value", ""],
     ["Party Frames"],
-    ["Members", "136 × 64 (members are drawn an even number of pixels: 135 → 136, 65 → 64). Health 58, the line, a 3px power row on healers. Mode-Thin Gunmetal. Vertical, 1px apart. <b>You are shown</b> (Show Player on), so five members fill the stand-in. Health in Dark, texture <b>Mode Matte</b>, Background Opacity <b>70</b> (a little less see-through).", "136 × 36, Mode-Blizz, Mode Glass, opacity 60, you left out", "value", ""],
+    ["Members", "136 × 64 (members are drawn an even number of pixels: 135 → 136, 65 → 64). Health 58, the line, a 3px power row on healers. Mode-Thin Gunmetal. Vertical, 1px apart. <b>You are shown</b> (Show Player on, and Show When Solo), so five members fill the stand-in. Health in Dark, texture <b>Mode Matte</b>, Background Opacity <b>70</b> (a little less see-through).", "136 × 36, Mode-Blizz, Mode Glass, opacity 60, you left out", "value", ""],
     ["Place", "Right edge x −323 (your reading). The last member's bottom edge is level with Essential's second row: their shadows share a pixel and their bands line up. So the stand-in's middle is y −133 at 1080 (members from 29 down to −295) and −288 at 1440 (Essential sits 25 higher off the bottom there). The Player, Target and Focus follow.", "Right edge −359, middle 22 (1080) / −19 (1440)", "value", "This replaces the −91 reading and the DPS-style −41 at 1440: the rule ties the column to Essential at both screens."],
     ["Name", "Top left, 11, class color.", "Left, 12, after the role icon", "value", ""],
     ["Role icon", "Right after the name text, anchored to the name's end.", "Left, before the name", "feature", "New: a name sized to its text, the icon on its right end."],
@@ -658,7 +659,7 @@ ol.steps h3 { margin: 0 0 2px; }
     ["Essential Cooldowns", "42 × 34 (4px bigger), 7 to a line, two lines when full (14). Same place: 300 from the bottom (325 at 1440). Each line 316 wide with its edges.", "38 × 30, 288 wide", "value", ""],
     ["Defensive Cooldowns", "Not used: hidden. Its spells (none in a new profile) stay where Blizzard's Cooldown Manager categories put them, so add defensives to Essential in Blizzard's settings.", "36 × 30 on the Player frame's top border", "value", ""],
     ["Utility Cooldowns", "Centered, growing from the center, 70 under Essential's first line (its Edit Mode offset; 33 under the second line).", "69 under the first line (36 under the second)", "value", ""],
-    ["Left Buffs, Right Buffs", "At x ∓138 (12 closer to the center) and y −16 (16 lower). Same size and growth. 138 rather than 140: at 1440 the Target's ring sits beside the Left Buffs column, and 140 touches it by 1px.", "At x ∓150, y 0", "value", ""],
+    ["Left Buffs, Right Buffs", "At x ∓122 (28 closer to the center) and y −16 (16 lower). Same size and growth. 122: the taller Target's 44px ring reaches x −142, so the Left Buffs column (from −139) stays 3px clear of it.", "At x ∓150, y 0", "value", ""],
     ["Power (mana)", "Hidden: the Player frame shows mana.", "Shown, 10 tall, class color", "value", ""],
     ["Combo Points", "Thinner: 6 tall in Mode-Thin Gunmetal (Mode-Round can't draw a bar under 10), as wide as Essential, 1px above it. With Power hidden the resources stop grouping, so Combo Points gets its own place on Essential. Only a Druid in Cat Form has them as a healer.", "8 tall in the Power block on Essential", "value", ""],
     ["Cast Bar", "16 tall (4px bigger), as wide as Essential, on Essential at a fixed offset (8 up: 1px over the 6px Combo Points slot), so it never moves when combo points come and go. It anchors to Essential, since Power no longer hosts the block.", "12 tall, on the Power block", "value", ""],
@@ -734,13 +735,16 @@ ol.steps h3 { margin: 0 0 2px; }
     ["Party frames show you", "Show Player on: five members, you first."],
     ["Utility", "70 from Essential's first line."],
     ["1440p", "The cluster moves down 41, as the DPS / Tank party frames did: party middle −132."],
-    ["Left and Right Buffs", "12 closer to the center (x ∓138) and 16 lower (y −16); Player Debuffs and Boss & Important follow Right Buffs."],
+    ["Left and Right Buffs", "16 lower (y −16) and, with the taller frames, 28 closer to the center (x ∓122); Player Debuffs and Boss & Important follow Right Buffs."],
     ["Party place", "Right edge at x −323; the last member's bottom level with Essential's second row (this sets the height at both screens, in place of −91 and the −41 at 1440)."],
     ["Party size", "136 × 64."],
     ["Dispellable", "Up to 2, 22 × 20; the other aura sizes as you gave them."],
     ["Combo Points", "Thin (6px, Mode-Thin) just above Essential; the Cast Bar keeps a fixed place over it."],
     ["Party look", "Mode Matte, Background Opacity 70."],
-    ["1px rule", "Every join shares one shadow pixel. Two settings need it: Target buffs Y −1, and Cast Bar Gap −1 (a range change, today 0)."]
+    ["1px rule", "Every join shares one shadow pixel. Cast Bar Gap −1 needs a range change (today 0)."],
+    ["Frame height", "Frame Height 26 for the Player and Target (180 × 44, a 30px block, a 44px ring); the slider is labeled Frame Height, and Show: Health / Mana is two pills."],
+    ["Frame texts", "Names on the border at the top right of both; the Target shows current health inside at the left; values 12."],
+    ["Party when solo", "Show When Solo on: alone, the column shows your own frame."],
   ];
   var QS = [
     ["Defensive Cooldowns bar", "Hide the preset bar in this profile (you can turn it back on) or delete it.", "Hide it."],

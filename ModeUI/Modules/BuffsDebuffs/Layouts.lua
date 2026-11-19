@@ -74,13 +74,13 @@ end)
 -- growing right, six to a row, the first row centered on that column's middle;
 -- Boss & Important over it (6 up, its default gap), left edges lined up,
 -- growing right; Defensives in the top half, centered at (0, 170), growing
--- right. Right Buffs sits on the screen at (138, -16), 34 wide with its edges
--- (ModeCDM's healer part), so its right edge is at 155 and this place needs
+-- right. Right Buffs sits on the screen at (122, -16), 34 wide with its edges
+-- (ModeCDM's healer part), so its right edge is at 139 and this place needs
 -- no anchor to it (ModeCDM is optional, and a ModeUI bar can't anchor to a
 -- companion's yet). Centered growth doesn't exist (Blizzard's aura flow
 -- layout has none, and the count is secret), so Defensives' four icons (163
 -- wide) are centered as a full row: x -82.
-local HEALER = { rightBuffsEdge = 155, gap = 6, middle = -16, defensives = { x = -82, y = 170 } }
+local HEALER = { rightBuffsEdge = 139, gap = 6, middle = -16, defensives = { x = -82, y = 170 } }
 
 addon.Layouts:Contribute("healer", "buffsDebuffs", function(db, ctx)
     local defensives = Common(db, ctx)

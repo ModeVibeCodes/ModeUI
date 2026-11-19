@@ -204,14 +204,21 @@ function M:CreateConfigPage(parent)
         When(function() return Matched() end, function()
             W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look; its width and fill direction stay its own. Turn off Match Player Frame on the Frame tab to customize the rest.", 52))
         end)
-        -- The Player can be a mana frame: its bar shows mana, not health.
+        -- The Player can be a mana frame: its bar shows mana, not health (owner,
+        -- November 19, 2026: two pills, Show: Health or Mana).
         When(function() return editing == "player" end, function()
             page:Group("Bar")
-            Choice("Bar Shows", "barShows")
+            local choices = {}
+            for _, item in ipairs(M.choices.barShows) do choices[#choices + 1] = { label = item.label, value = item.id, width = 96 } end
+            local buttons, refresh = W.Exclusive(page:Row("Show", 48), choices, function() return db().barShows end, Set("barShows"))
+            page.refreshers[#page.refreshers + 1] = refresh
+            page.unitFrameShow = buttons
         end)
         page:Group("Size")
         Slider("Frame Width", "barWidth", "px")
-        Style(function() Slider("Health Bar Height", "healthHeight", "px"); Mark("health") end)
+        -- Frame Height (owner, November 19, 2026; was Health Bar Height): the
+        -- health bar's height, the bar block's inside its 2px rim.
+        Style(function() Slider("Frame Height", "healthHeight", "px"); Mark("health") end)
         Choice("Fill Direction", "fillDirection")
         Style(function()
             Toggles({ { "Fill End Line", "fillEdge" }, { "Shields", "showShields" } })

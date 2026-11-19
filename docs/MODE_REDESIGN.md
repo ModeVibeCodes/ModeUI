@@ -461,12 +461,17 @@ branch `t3/healer-layout`.
 - **Built:** the **Mode-Healer** layout and profile (`Register("healer")`,
   seeded once per account like Mode-Default, never switched to), each
   module's part (ARCHITECTURE.md, "Layouts"; module docs, "Healer layout"):
-  - A Player **mana frame** (Unit Frames' new **Bar Shows**: Mana) 166 x 30,
-    its 20px block with 136 of bar past the ring, on the party column 1px
-    over it, right ends lined up at x -323; the Target the same size 1px
-    beside it; the Focus 1px under the Target's cast bar, left edges lined
-    up; Target of Target off.
-  - Party frames 136 x 64, you shown, Mode-Thin Gunmetal, Mode Matte at
+  - A Player **mana frame** (Unit Frames' new **Show**: Mana), at first
+    166 x 30 (a 20px block); after the owner's first look the same day,
+    Frame Height 26 (the Health Bar Height slider, renamed **Frame Height**):
+    180 x 44, a 30px block, 136 of bar past the 44px ring, on the party
+    column 1px over it, right ends lined up at x -323; the name on the
+    border at the top right, mana percent inside; the Target the same size
+    1px beside it, its name on the border at the top right, current health
+    inside, its buffs over the name; the Focus 1px under the Target's cast
+    bar, left edges lined up; Target of Target off.
+  - Party frames 136 x 64, you shown (alone too: Show When Solo),
+    Mode-Thin Gunmetal, Mode Matte at
     Background Opacity 70, name top left with the role icon on its end
     (Party Frames' new **After Name**), health percent centered, debuffs,
     Dispellable (up to 2) and Healing Buffs inside the bottom edge, the
@@ -475,7 +480,7 @@ branch `t3/healer-layout`.
   - ModeCDM: Essential 42 x 34, Utility 70 under it, Power and Alternate
     Mana off, Combo Points a 6px Mode-Thin strip on Essential, the Cast Bar
     16 tall at a fixed place over it, Defensive Cooldowns hidden, Left and
-    Right Buffs at x -138 and 138, y -16.
+    Right Buffs at x -122 and 122, y -16 (clear of the taller Target ring).
   - Buffs & Debuffs: Player Debuffs 6px right of Right Buffs (placed on the
     screen), Boss & Important over it, Defensives at 0, 170 (a full row of
     four centered). Everything else as Mode-Default.
@@ -483,7 +488,7 @@ branch `t3/healer-layout`.
     Bar Gap goes down to -1 for it.
 - **Tests:** `tests/layouts_healer.lua` (both screens: every place, every
   alignment and 1px join, ModeUI starting with the profile active);
-  `tests/unit_frames.lua` (Bar Shows, secret mana); `tests/party_frames.lua`
+  `tests/unit_frames.lua` (Show: Mana, secret mana); `tests/party_frames.lua`
   (After Name).
 - **Still to come (plan):** the party Defensives double icon (two aura
   groups, one per flag, both showing an aura with both flags; fix after the
@@ -491,7 +496,7 @@ branch `t3/healer-layout`.
   row; centered growth for Buffs & Debuffs bars (research first); letting a
   ModeUI bar anchor to a ModeCDM bar.
 - Checked against the mock client only; waiting on the owner's in-game look
-  (UNIT_FRAMES.md, "Bar Shows", has the manual check).
+  (UNIT_FRAMES.md, "Show: Health or Mana", has the manual check).
 
 ## Decisions
 

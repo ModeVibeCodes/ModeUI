@@ -5,9 +5,9 @@
 
 # Interface: Unit Frames (Player and Target)
 
-## Bar Shows: a mana frame, Cast Bar Gap -1, Healer layout (November 19, 2026)
+## Show: Health or Mana (a mana frame), Frame Height, Cast Bar Gap -1, Healer layout (November 19, 2026)
 
-- **Bar Shows** (Player, Health Bar tab, Bar group: Health or Mana;
+- **Show** (Player, Health Bar tab, Bar group: two pills, Health or Mana;
   `barShows`, a frame's own key, so a Target matching the Player keeps
   health). A mana frame's bar shows the unit's mana: the mana power type
   (`Domain.Power.ReadType(unit, Power.ManaType())`), so a Druid in Bear or
@@ -18,30 +18,44 @@
   bar alone. Values may be secret and only reach `StatusBar:SetMinMaxValues`
   / `SetValue` and the FontString setters. A new key fills from its default
   (Health), so nothing changes in a saved profile.
+- **Frame Height** (owner): the Health Bar tab's Health Bar Height slider is
+  now labeled Frame Height. It sets the same key (`healthHeight`): the bar
+  block is that plus its 2px rim each side (and the power bar, when shown).
 - **Cast Bar Gap** goes down to -1: the bar 1px from the frame, the two
   shadows sharing one pixel, as Mode's icons and frames do.
 - **Healer layout** (`Modules/UnitFrames/Layouts.lua`, new profiles only):
-  the Player a mana frame, its bar block 20 tall (Health Bar Height 16, no
-  power bar) with a 30px ring (Portrait Size 145) and Frame Width 140, so
-  136 of bar shows past the ring, the party column's width; 166 x 30. Name
-  (11) on the left, Power Percent (10) on the right, no level. Its block's
-  right edge on the party column's (x -323), 1px over the first member. The
-  Target the same size, mirrored, not matching the Player (Name right,
-  Health Percent left), its block 1px right of the Player's; its buffs 18
-  wide, 7 to a row, Y -1 (1px over the block); its cast bar 12 tall, Gap -1,
-  icon hidden. The Focus 136 x 20 (Frame Width 134, Health 14, Power 3, no
-  portrait), 1px under the Target's cast bar, left edges lined up, its cast
-  bar 12 tall, Gap -1. Target of Target and Target of Focus off. Mode-Thin
-  Steel, no text glow, no Drop Shadow, as in Mode-Default.
-- In-game check: **Navigation:** `/modeui`, then **Profiles**. **Action:**
-  pick **Mode-Healer** in **Profile**, click **Switch to This Profile**, then
-  **Reload**. **Required state:** a mana user in a party, with a target and a
-  focus, out of combat, 1080p. **Confirmation:** the Player frame is a blue
-  mana bar with your name on the left and mana percent on the right; it sits
-  on the party frames, its right end on theirs; the Target sits 1px to its
-  right; the Focus hangs 1px under the Target's cast bar. Then `/modeui`,
-  **Frames**, **Unit Frames**, Player, **Health Bar**: **Bar Shows** reads
-  Mana; set it to Health and the bar shows health again.
+  the Player a mana frame at Frame Height 26 (the owner's pick in game, a
+  little shorter than Mode-Default's 28), no power bar: a 30px bar block
+  with a 44px ring (Portrait Size 145), and Frame Width 142, so 136 of bar
+  shows past the ring, the party column's width; 180 x 44. The name (12) on
+  the border at the top right (nothing hangs from these frames here), Power
+  Percent (12) inside at the right, no level. Its block's right edge on the
+  party column's (x -323), 1px over the first member; the ring hangs past
+  the column's left edge, clear of it. The Target the same size, mirrored,
+  not matching the Player: the name on the border at the top right, Health
+  Current (12) inside at the left; its block 1px right of the Player's; its
+  buffs 18 wide, 7 to a row, from its top right growing left, so they sit
+  over the name (AuraOrigin); its cast bar 12 tall, Gap -1, icon hidden.
+  The Focus 136 x 20 (Frame Width 134, Health 14, Power 3, no portrait), 1px
+  under the Target's cast bar, left edges lined up, its cast bar 12 tall,
+  Gap -1. Target of Target and Target of Focus off. Mode-Thin Steel, no text
+  glow, no Drop Shadow, as in Mode-Default.
+- In-game check: a Mode-Healer profile made before these values keeps its
+  old ones (layouts only write new profiles). **Navigation:** `/modeui`,
+  then **Profiles**. **Action:** if **Mode-Healer** is the profile in use,
+  switch to another first; pick **Mode-Healer** in **Profile**, click
+  **Delete**; under **Manage**, leave **New from Healer Layout** empty and
+  click **Create**; pick **Mode-Healer**, click **Switch to This Profile**,
+  then **Reload**. **Required state:** a mana user with a target and a
+  focus, out of combat, 1080p (alone is fine: the party frames show you).
+  **Confirmation:** the Player frame is a blue mana bar about as tall as
+  Mode-Default's, your name on its border at the top right and mana percent
+  inside at the right; it sits on the party frames, its right end on
+  theirs; the Target sits 1px to its right with its name on the border and
+  current health inside at the left; the Focus hangs 1px under the Target's
+  cast bar. Then `/modeui`, **Frames**, **Unit Frames**, Player, **Health
+  Bar**: **Show** reads Mana (pick Health and the bar shows health again),
+  and the slider reads **Frame Height** 26.
 
 ## Mode-Default layout (November 18, 2026)
 

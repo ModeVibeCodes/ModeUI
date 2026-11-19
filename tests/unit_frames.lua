@@ -963,12 +963,12 @@ restored.run([====[
         error('missing toggle '..section..' / '..label)
     end
     for section,list in pairs({Frame={'Scale','Frame Tools','Status'},Portrait={'Portrait Style','Portrait Size'},
-        ['Health Bar']={'Frame Width','Health Bar Height','Fill Direction','Health Color'},['Power Bar']={'Power Bar Height','Power Color'},
+        ['Health Bar']={'Frame Width','Frame Height','Fill Direction','Health Color'},['Power Bar']={'Power Bar Height','Power Color'},
         Text={'Name Color','Health Text Color','Font','Text Color'}}) do
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end
         assert(not Find(section,'Editing'),'Editing is in the preview header, not in each tab')
     end
-    assert(not Find('Health Bar','Scale') and not Find('Frame','Health Bar Height') and not Find('Frame','Frame Width'),'one place for each setting')
+    assert(not Find('Health Bar','Scale') and not Find('Frame','Frame Height') and not Find('Frame','Frame Width'),'one place for each setting')
     assert(page.unitFrameRingStyle and page.unitFrameRingFinish and not Find('Portrait','Portrait Ring'),'Ring Style and Ring Finish replace Portrait Ring')
     -- Editing at the preview's top right, with whether the frame is on.
     assert(page.unitFrameEditSelect and Point(page.unitFrameEditSelect:GetParent())[1]=='TOPRIGHT' and page.unitFrameEditSelect:GetParent():GetParent()==page.previewArea)
@@ -979,7 +979,7 @@ restored.run([====[
     assert(page.unitFramePowerForeground and page.unitFramePowerBackgroundOpacity and page.unitFrameCastForeground and page.unitFrameCastBackground)
     assert(page.unitFrameForeground:GetParent().row.section.title=='Health Bar' and page.unitFramePowerForeground:GetParent().row.section.title=='Power Bar')
     -- Width and height side by side: both stacked, pairable sliders in Size.
-    assert(Row('Health Bar','Frame Width').pairable and Row('Health Bar','Health Bar Height').pairable)
+    assert(Row('Health Bar','Frame Width').pairable and Row('Health Bar','Frame Height').pairable)
     assert(page.unitFrameForeground:GetParent().rowLabel:GetText()=='Foreground' and page.unitFrameBackgroundOpacity:GetParent().rowLabel:GetText()=='Background Opacity')
     -- Slider drags apply the first step at once, then at most one value every
     -- W.LIVE_SECONDS; the last value always applies (no rebuild on every step).
@@ -1045,7 +1045,7 @@ restored.run([====[
     -- Target Matches Player lives on the Target's Frame tab only.
     page.SetEditing('target')
     assert(Visible(Toggle('Frame','Mirror Player Text')) and Visible(Row('Frame','Target Matches Player')),'match and mirror on the Target\'s Frame tab')
-    assert(not Visible(Row('Frame','Scale')) and Visible(Row('Health Bar','Frame Width')) and Visible(Row('Health Bar','Fill Direction')) and not Visible(Row('Health Bar','Health Bar Height')),'a matched Target keeps its own width and fill')
+    assert(not Visible(Row('Frame','Scale')) and Visible(Row('Health Bar','Frame Width')) and Visible(Row('Health Bar','Fill Direction')) and not Visible(Row('Health Bar','Frame Height')),'a matched Target keeps its own width and fill')
     assert(Visible(Row('Power Bar','Target Matches Player')) and not Visible(Toggle('Power Bar','Show Power Bar')))
     page.SetEditing('player');assert(not Visible(Toggle('Frame','Mirror Player Text')),'only the Target matches')
     -- Class Resource: the Target's own settings, editable even while it matches the Player.
@@ -1134,7 +1134,7 @@ restored.run([====[
     -- The settings look: labels above controls, and two dropdowns or sliders share a
     -- line in a card; width and height of the health bar side by side.
     page.SetEditing('player');page:SelectSectionTab(page.sections[2]);page:Layout()
-    local widthRow,heightRow,fillRow=Row('Health Bar','Frame Width'),Row('Health Bar','Health Bar Height'),Row('Health Bar','Fill Direction')
+    local widthRow,heightRow,fillRow=Row('Health Bar','Frame Width'),Row('Health Bar','Frame Height'),Row('Health Bar','Fill Direction')
     assert(widthRow.stacked and widthRow.pairable and heightRow.pairable and fillRow.pairable)
     -- Tiles four across: too narrow to share a line, so each control takes the tile's width.
     assert(heightRow.offset>widthRow.offset and fillRow.offset>heightRow.offset and math.abs(widthRow.width-heightRow.width)<1,'one per line in a narrow tile')
@@ -1148,7 +1148,7 @@ restored.run([====[
     assert(M:SetFrameOption('player','showPortrait',true));page.SetEditing('target')
     assert(M:SetFrameOption('target','barWidth',150) and M.db.player.barWidth==184 and M.frames.target.geometry.width<M.frames.player.geometry.width,'its own width')
     assert(M:SetFrameOption('target','barWidth',184))
-    assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Frame','Scale')) and Visible(Row('Health Bar','Health Bar Height')))
+    assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Frame','Scale')) and Visible(Row('Health Bar','Frame Height')))
     assert(M:SetFrameOption('target','barWidth',220) and M.db.player.barWidth==184)
     assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))
     page.SetEditing('player');assert(page.unitFrameEditing()=='player' and Visible(Row('Frame','Scale')))

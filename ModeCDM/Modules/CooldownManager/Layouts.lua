@@ -107,10 +107,11 @@ end)
 -- With Power off the resources stand apart, so the Cast Bar hangs from
 -- Essential. Defensive Cooldowns is hidden (its spells, none in a new
 -- profile, stay where Blizzard's Cooldown Manager categories put them), and
--- Alternate Mana too. Left and Right Buffs sit 12 closer to the center and
--- 16 lower (x -138 and 138, y -16), clear of the Target's portrait ring.
+-- Alternate Mana too. Left and Right Buffs sit 28 closer to the center and
+-- 16 lower (x -122 and 122, y -16): 3px clear of the Target's 44px portrait
+-- ring, whose right edge is at x -142.
 local COMBO = M.ResourceElementId("combo")
-local HEALER = { essential = { 42, 34 }, utility = 70, combo = 6, cast = 16, side = { x = 138, y = -16 } }
+local HEALER = { essential = { 42, 34 }, utility = 70, combo = 6, cast = 16, side = { x = 122, y = -16 } }
 
 addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     db.enabled = true

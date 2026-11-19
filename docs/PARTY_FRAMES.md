@@ -179,7 +179,8 @@ still show only in a party.
   secret name is the in-game check. With the name hidden the icon keeps its
   own place.
 - **Healer layout** (`Modules/PartyFrames/Layouts.lua`, new profiles only):
-  you and your party (Show Player on), 136 x 64 each (135 x 65 asked; members
+  you and your party (Show Player on; Show When Solo on, so alone you see
+  your own frame), 136 x 64 each (135 x 65 asked; members
   are an even number of pixels): Health 58, the line, Power 3 on healers.
   Mode-Thin Gunmetal, Mode Matte in Dark, Background Opacity 70. The name
   (11) at the top left, 4px in, with the role icon (10) 2px after it; health
