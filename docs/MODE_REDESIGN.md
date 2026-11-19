@@ -424,6 +424,10 @@ Built on branch `t3/mode-default-layout`.
   `tests/layouts.lua` sweeps Portrait Size 100-200, Health Height 10-60 and
   Frame Width 161-260 and checks neither touches the ring (five buffs in a
   row need Frame Width 161 or more).
+- **Fifth round (owner, November 18, 2026):** the Player and Target frames'
+  soft drop read as a dark band under Player Buffs and above Defensive
+  Cooldowns. Unit Frames gets **Drop Shadow** (Border group, Player and
+  Target; on by default), off in the layout.
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
 

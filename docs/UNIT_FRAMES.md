@@ -19,7 +19,10 @@ height (y) of the row:
   icon is with its 2px edge each side. Portrait Size 145 makes the ring 46;
   Frame Width 166 (Player and Target; 18 under the default) makes each frame
   206 x 46. Text
-  glow (name and health) off on every frame. Without a power bar the health
+  glow (name and health) off on every frame. **Drop Shadow** off on Player
+  and Target (a new Border setting, on by default: the Mode Frame border's
+  soft drop), so the icons on their borders keep a crisp 1px shadow line
+  instead of sitting in the drop's dark halo. Without a power bar the health
   bar fills the block, so a Bottom slot sits on the frame's bottom edge.
 - **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -256,
   y 300 (1080) or 325 (1440): its band 10px from Essential Cooldowns' band

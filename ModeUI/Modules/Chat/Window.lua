@@ -226,7 +226,7 @@ function M:SkinScrollButton(frame, px)
         if button[key] then Skin.Fade(button[key](button)) end
     end
     if button.Flash then Skin.Suppress(button.Flash) end
-    local parts = Skin.Box(button, "control", { inset = CONTROL })
+    local parts = Skin.Box(button, "control", { inset = CONTROL, pieces = true })
     if not parts.icon then
         parts.icon = button:CreateTexture(nil, "ARTWORK")
         parts.regions[parts.icon] = true
@@ -259,7 +259,7 @@ end
 function M:SkinEditBox(frame, px)
     local edit = frame.editBox
     if not edit then return end
-    local parts = Skin.Box(edit, "control", { inset = CONTROL, style = EDIT_STYLE })
+    local parts = Skin.Box(edit, "control", { inset = CONTROL, style = EDIT_STYLE, pieces = true })
     Skin.FadeTextures(edit)
     for _, key in ipairs({ "focusLeft", "focusMid", "focusRight" }) do Skin.Fade(edit[key]) end
     local function Paint()

@@ -44,7 +44,7 @@ function M:BuildCompartment()
     if self.compartment then return self.compartment end
     local box = CreateFrame("Frame", "ModeUIChatButtons", UIParent)
     box:SetFrameStrata("MEDIUM")
-    box.parts = Skin.Box(box, "control", { inset = CONTROL })
+    box.parts = Skin.Box(box, "control", { inset = CONTROL, pieces = true })
     box.dividers = {}
     self.compartment = box
     for _, entry in ipairs(self:CompartmentButtons()) do

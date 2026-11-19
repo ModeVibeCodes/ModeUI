@@ -190,7 +190,22 @@ world.run([==[
     assert(Point(t1.edgeFrame)[2] == t1.pane and Point(t1.edgeFrame)[4] == 2, 'the edge inside the pane')
     local tf = Point(t1.face)
     assert(tf[2] == t1.pane and tf[4] == 2 and tf[5] == -2 and Point(t1.lift)[4] == 2, 'the face stops under the rim: no square corners past the round ones')
-    assert(Point(ChatFrame1Tab.Text)[2] == t1.pane, 'text on the pane\'s middle')
+    assert(Point(ChatFrame1Tab.Text)[1] == 'CENTER' and Point(ChatFrame1Tab.Text)[2] == t1.pane, 'text on the pane\'s middle')
+    -- Mode-Thin, each ring in pieces: a pane is shorter than the sliced art.
+    assert(t1.modeEdge.styleId == 'thin' and t1.modeEdge.pieces and #t1.modeEdge.parts[1] == 8, 'tab edge: Mode-Thin in pieces')
+    local fieldEdge = Skin.parts[ChatFrame1EditBox].modeEdge
+    assert(fieldEdge.pieces and scroll.modeEdge.pieces and M.compartment.parts.modeEdge.pieces, 'chat controls in pieces')
+    assert(not panel.modeEdge.pieces, 'the window keeps its sliced rings')
+    -- A whisper tab (Blizzard's temporary tab with a conversation icon): its
+    -- name left on the pane, clear of the 16px icon.
+    local icon = ChatFrame2Tab:CreateTexture(); icon:SetSize(16, 16); icon:Show()
+    ChatFrame2Tab.conversationIcon = icon
+    M:PaintTabState(ChatFrame2Tab, false)
+    local wp = Point(ChatFrame2Tab.Text)
+    assert(wp[1] == 'LEFT' and wp[2] == t2.pane and wp[3] == 'LEFT' and wp[4] == 6 + 16 and ChatFrame2Tab.Text.justifyH == 'LEFT', 'whisper name left-aligned')
+    ChatFrame2Tab.conversationIcon = nil
+    M:PaintTabState(ChatFrame2Tab, false)
+    assert(Point(ChatFrame2Tab.Text)[1] == 'CENTER', 'other tabs centered again')
     -- Tab width: sized to the text in the Mode face (7 letters at 13).
     assert(ChatFrame1Tab:GetWidth() == math.ceil(7 * 13 * 0.6) + 20, 'General fits')
     ChatFrame1Tab.Text:SetFont('Fonts/FRIZQT__.TTF', 9, ''); PanelTemplates_TabResize(ChatFrame1Tab, 0)

@@ -137,7 +137,8 @@ local TILED = { Panel = true, Title = true }
 -- a frame of its own that follows the painted box (`opts.level` levels above
 -- the host). `opts.style`/`opts.metal`: the edge's Border Style and Border
 -- Metal (a module's choice; later changes go through parts.modeEdge:SetStyle);
--- `opts.color`: a flat role's color (the `empty` edge's).
+-- `opts.color`: a flat role's color (the `empty` edge's); `opts.pieces`: each
+-- ring as eight textures, for a host shorter than the art (Style.Edge).
 -- Made once; returns the host's parts.
 function Skin.Box(host, preset, opts)
     opts = opts or {}
@@ -162,7 +163,8 @@ function Skin.Box(host, preset, opts)
         -- `opts.inset`: pixels the edge sits inside the box (its reach puts
         -- the whole border within the box).
         parts.edgeInset = opts.inset or 0
-        parts.modeEdge = Style.Edge(frame, preset, { level = 1, style = opts.style, metal = opts.metal, color = opts.color })
+        parts.modeEdge = Style.Edge(frame, preset, { level = 1, style = opts.style, metal = opts.metal, color = opts.color,
+            pieces = opts.pieces })
     end
     return parts
 end

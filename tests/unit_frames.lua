@@ -25,6 +25,7 @@ world.run([====[
     assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='gradient' and M.db.player.portraitRing=='class')
     local PS=M.db.player.texts
     assert(PS.border.content=='name' and PS.border.align=='RIGHT' and PS.border.size==12 and M.db.player.classSoftness==nil,'Class Color Softness retired')
+    assert(M.db.player.dropShadow==true and M.db.target.dropShadow==true,'Drop Shadow on by default')
     for _,key in ipairs(M.retiredKeys) do assert(M.frameDefaults.player[key]==nil and M.db.player[key]==nil,'retired: '..key) end
     -- The locked Onyx skin and the Sky, Champagne, Lilac and Frost name colors.
     local function Hex(c) return string.format('%02X%02X%02X',math.floor(c[1]*255+0.5),math.floor(c[2]*255+0.5),math.floor(c[3]*255+0.5)) end
@@ -1165,6 +1166,7 @@ layoutWorld.run([====[
         assert(db.player.healthHeight==28 and db.player.showPower==false,'28 health, no power bar: as tall as an Essential icon')
         assert(db.player.barWidth==166 and db.target.barWidth==166,'18 shorter')
         assert(db.player.portraitScale==145 and db.target.portraitScale==145,'Portrait Size 145')
+        assert(db.player.dropShadow==false and db.target.dropShadow==false,'no soft drop under the border')
         assert(t.topRight.size==11 and t.bottomRight.size==10 and t.bottomLeft.size==10,'room in the bar: 11, 10 and 10')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
             assert(db[unit].nameTextGlow==false and db[unit].healthTextGlow==false,unit..': no text glow')
@@ -1213,6 +1215,12 @@ H.Load({ before = STUBS, saved = used }).run([====[
     -- The bar blocks are targets: the stand-ins' blocks, by name.
     assert(_G.ModeUIPlayerUnitFrameBars==M.ghosts.player.panel and _G.ModeUITargetUnitFrameBars==M.ghosts.target.panel,'bar block targets')
     assert(addon.Positioning:Resolve('unitFramesPlayerBars')==M.ghosts.player.panel,'the Player block resolves')
+    -- Drop Shadow off: the soft drop is hidden; switching it on shows it again.
+    local edge=M.frames.player.panel.edge
+    assert(edge.below and not edge.below:IsShown(),'no soft drop in Mode-Default')
+    assert(M:SetFrameOption('player','dropShadow',true) and edge.below:IsShown(),'Drop Shadow on')
+    assert(M.frames.target.panel.edge.below:IsShown(),'the matched Target follows')
+    assert(M:SetFrameOption('player','dropShadow',false) and not edge.below:IsShown())
     -- No power bar: the health bar fills the block, so Bottom Right sits on the frame's bottom right.
     local f=M.frames.player
     local g=f.geometry

@@ -49,6 +49,8 @@ addon.Layouts:Contribute("mode-default", "unitFrames", function(db, ctx)
     texts.border.content, texts.right.content = "none", "none"
     texts.bottomLeft.size = SIZES.level
     for _, unit in ipairs(FRAMES) do db[unit].nameTextGlow, db[unit].healthTextGlow = false, false end
+    -- No soft drop under the border: the icons on it keep a crisp 1px shadow line.
+    db.player.dropShadow, db.target.dropShadow = false, false
     db.target.buffs.anchor, db.target.buffs.grow = "TOPLEFT", "right"
     local focus = db.focus
     focus.barWidth, focus.healthHeight, focus.powerHeight, focus.scale = 120, 20, 3, 100

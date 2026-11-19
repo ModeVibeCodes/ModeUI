@@ -144,6 +144,10 @@ function M:CreateConfigPage(parent)
             page.unitFrameBorder, page.unitFrameBorderMetal = W.BorderPickers(page,
                 { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
                 { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
+            -- The heavy border's soft drop (Player and Target only).
+            When(function() return editing == "player" or editing == "target" end, function()
+                Toggles({ { "Drop Shadow", "dropShadow" } })
+            end)
         end)
         -- Target of Target and Target of Focus can attach to their parent frame
         -- (offsets in screen pixels); detached, they move in Edit Mode.

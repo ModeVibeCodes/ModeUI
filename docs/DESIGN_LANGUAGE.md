@@ -158,7 +158,7 @@ layout moved for it).
 
 | Role | Size | Band | Shadow | Black line | Reach | Default style | Use |
 |---|---|---|---|---|---|---|---|
-| `frame` | heavy | 2px | 1px + soft drop | 1px, inside the host | 3px | Mode-Blizz | player, target, action buttons, the minimap |
+| `frame` | heavy | 2px | 1px + soft drop (Player and Target: **Drop Shadow**, off in the Mode-Default layout, where icons sit on their borders) | 1px, inside the host | 3px | Mode-Blizz | player, target, action buttons, the minimap |
 | `frameThin` | thin | 1px | 1px | — | 2px | Mode-Blizz | minor and boss frames, cast bars, nameplates, icons, auras |
 | `group` | thin | 1px | — | — | 1px | Mode-Blizz | party and raid frames (1px apart) |
 | `window` | heavy | 2px | 1px + soft drop | 1px, inside the host | 3px | Mode-Thin | every window and panel, the settings window, popups |
@@ -204,7 +204,9 @@ four corners 1:1 and four edges between them (the middle rows stretched down
 the sides, as the slicing does), like Blizzard's NineSlice frames. The
 resource bars, the Cooldown Manager's icons and bars, the nameplates'
 health and cast boxes and every aura icon (nameplates, party frames, unit
-frames, Buffs & Debuffs) use pieces (owner, November 18, 2026); other
+frames, Buffs & Debuffs) and the chat's controls (its tabs, edit field,
+compartment and Scroll to Bottom; the tabs' corners showed square) use
+pieces (owner, November 18, 2026); other
 borders keep one sliced texture per ring until an in-game look says they
 need it too. An aura icon on Blizzard's aura containers hands each of its
 rim's eight pieces to `AddDispelTypeTexture` (`Edge:RimTextures()`): the

@@ -189,7 +189,10 @@ local function Frame(side, extra)
         fillDirection = "standard",
         -- The frame's and its cast bar's border (docs/DESIGN_LANGUAGE.md,
         -- "Choosing a border"): Mode-Blizz in its own metal (owner, November 17, 2026).
-        edgeStyle = "blizz", edgeMetal = "default" }
+        edgeStyle = "blizz", edgeMetal = "default",
+        -- Player and Target: the Mode Frame border's soft drop (owner, November
+        -- 18, 2026: off where icons sit on the border, as in Mode-Default).
+        dropShadow = true }
     for key, value in pairs(extra or {}) do frame[key] = value end
     return frame
 end

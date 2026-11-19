@@ -104,6 +104,7 @@ function M:ApplyLayout(f, unit)
     local g = self:Geometry(fdb, self:PixelSize(f), Style.EdgeDepth(M.EdgePreset(unit)))
     f.geometry = g
     f.panel.edge:SetStyle(fdb.edgeStyle, fdb.edgeMetal)
+    f.panel.edge:SetDrop(fdb.dropShadow)
     if f.castBox then f.castBox.edge:SetStyle(fdb.edgeStyle, fdb.edgeMetal) end
     local near, far, sign = Sides(fdb)
     f:SetSize(g.width, g.height)

@@ -6,7 +6,8 @@ if not M then return end
 -- middle and right pieces, their active and highlight copies) is faded;
 -- ModeUI draws a pane resting on the window's edge (Blizzard anchors each
 -- tab's bottom to the box's top): a Mode control, its `control` edge inside
--- it, in Graphite raised:
+-- it (Mode-Thin, each ring in pieces: a pane is shorter than the sliced art,
+-- which the client would shrink to square corners), in Graphite raised:
 --   Glass  Mode Glass (its base and lift) at 75%, so the world shows through
 --   Solid  the Mode Button face
 -- The selected tab stands Tab Height tall in the chosen tone, its label and
@@ -16,7 +17,9 @@ if not M then return end
 -- (selected, others, idle) is Fade.lua's job.
 -- Tab text is measured only for General, Combat Log and other named windows,
 -- to size the tab to the Mode face; whisper tab names can be secret and are
--- never measured.
+-- never measured. A whisper tab's name (Blizzard's fixed width, justified
+-- left, its conversation icon to its left) sits left on the pane, clear of the
+-- icon; the other names sit on the pane's middle.
 local Skin, Kit, Style = addon.Skin, addon.Kit, addon.Style
 local C = Skin.mode
 local CONTROL = Style.EdgeReach("control")
@@ -25,11 +28,13 @@ local ART = { "Left", "Middle", "Right", "ActiveLeft", "ActiveMiddle", "ActiveRi
     "HighlightLeft", "HighlightMiddle", "HighlightRight" }
 -- PanelTemplates_TabResize's side padding (SharedUIPanelTemplates).
 local TAB_SIDES_PADDING = 20
+-- A whisper tab's inset from the pane's left, before its icon.
+local WHISPER_INSET = 6
 
 local function Parts(tab)
     local parts = Skin.parts[tab]
     if parts and parts.pane then return parts end
-    parts = Skin.Box(tab, "control", { inset = CONTROL })
+    parts = Skin.Box(tab, "control", { inset = CONTROL, style = "thin", pieces = true })
     -- The pane's place (an empty texture the face and edge follow).
     parts.pane = tab:CreateTexture(nil, "BACKGROUND", nil, -8)
     parts.pane:SetAlpha(0)
@@ -89,7 +94,7 @@ end
 
 -- The pane: the tab's width less half the gap each side, resting on the
 -- edge; Tab Height tall when selected, tucked Tuck Depth lower otherwise.
--- The text sits on the pane's middle.
+-- The text sits on the pane's middle, a whisper tab's on its left.
 function M:PaintPane(tab, selected)
     local parts = Skin.parts[tab]
     if not parts or not parts.pane then return end
@@ -106,11 +111,20 @@ function M:PaintPane(tab, selected)
     local glass = self.db.glassTabs
     Skin.PaintBox(parts, pane, glass and "Glass" or "Button", selected and C.chosen or C.face, glass and 0.75 or 1, true,
         selected and "accent" or nil)
-    -- Text on the pane's middle; the whisper icon, anchored to the text, follows.
+    -- The text; the conversation icon, anchored to its left, follows. Only
+    -- Blizzard's temporary (whisper) tabs have one.
     local text = TextOf(tab)
     if text then
         text:ClearAllPoints()
-        text:SetPoint("CENTER", pane, "CENTER", 0, 0)
+        local icon = tab.conversationIcon
+        if icon then
+            local width = icon.IsShown and icon:IsShown() and icon:GetWidth()
+            width = addon.IsNumber(width, 1, 64) and Snap(width, px) or 0
+            if text.SetJustifyH then text:SetJustifyH("LEFT") end
+            text:SetPoint("LEFT", pane, "LEFT", Snap(WHISPER_INSET, px) + width, 0)
+        else
+            text:SetPoint("CENTER", pane, "CENTER", 0, 0)
+        end
     end
 end
 
