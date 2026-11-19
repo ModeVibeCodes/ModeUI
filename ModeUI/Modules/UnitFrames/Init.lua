@@ -120,12 +120,15 @@ M.choices = {
 }
 -- Ring Finish's choices after the metals (Settings.lua, M.RingFinish).
 M.ringFinishes = { M.choices.ring[2], M.choices.ring[3] }
+-- Bar Shows (owner, November 19, 2026: the Healer layout's "mana frame"):
+-- the health bar shows the unit's health, or its mana (Update.lua).
+M.choices.barShows = { { id = "health", label = "Health" }, { id = "mana", label = "Mana" } }
 -- Setting key -> choice list.
 M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring", healthTextColor = "healthText",
     nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
     fillDirection = "fill", edgeStyle = "edgeStyle", edgeMetal = "edgeMetal", portraitRingStyle = "edgeStyle",
     portraitRingMetal = "edgeMetal", healthTextGlowColor = "glowColor",
-    nameTextGlowColor = "glowColor" }
+    nameTextGlowColor = "glowColor", barShows = "barShows" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -134,6 +137,8 @@ M.Number = addon.IsNumber
 local function Frame(side, extra)
     -- 184 wide, 34px health, a 66px portrait in its 70px ring (docs/DESIGN_LANGUAGE.md, "Sizes").
     local frame = { enabled = true, hideBlizzard = true, scale = 100, barWidth = 184, healthHeight = 34,
+        -- What the health bar shows: health, or mana (a "mana frame": Bar Shows).
+        barShows = "health",
         -- Target only: mirror the Player frame's look (side and visibility stay its own).
         matchPlayer = false,
         -- Edit Mode's Match Width and Match Height (Layout.lua, MatchedFrame):
@@ -237,7 +242,9 @@ M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", heig
     fullWidth = true, width = 160,
     foregroundTexture = "media:Mode Cast", backgroundTexture = "media:Mode BG",
     showText = true, showTimer = true, fontSize = 11, outline = true, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
-M.castRanges = { height = { 6, 40, 1 }, gap = { 0, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
+-- Gap -1: the bar 1px from the frame, the two shadows sharing one pixel, as
+-- Mode's icons and frames do (owner, November 19, 2026).
+M.castRanges = { height = { 6, 40, 1 }, gap = { -1, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
 M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "Hidden" } }
 M.castChoices = { position = "castPosition", icon = "castIcon" }
@@ -301,7 +308,8 @@ function M.StatusDefaults(unit)
     defaults.combatIcon = player or unit == "target"
     return defaults
 end
--- Frame Width (barWidth) too, so a matched Target can be wider or narrower.
-M.ownKeys = { castBar = true, buffs = true, debuffs = true, barWidth = true, status = true }
+-- Frame Width (barWidth) too, so a matched Target can be wider or narrower;
+-- Bar Shows, so a Player mana frame never turns a matched Target into one.
+M.ownKeys = { castBar = true, buffs = true, debuffs = true, barWidth = true, status = true, barShows = true }
 M.defaults = { layoutVersion = M.LAYOUT_VERSION, comboPoints = Copy(M.comboDefaults) }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end

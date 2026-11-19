@@ -151,7 +151,7 @@ function M:ApplyLayout(f, unit)
     Kit.FillEdge(h, fdb.fillEdge, reverse, g.px)
     -- Combined shields (Style.Shield) run with the health fill.
     h.reverse = reverse
-    h.shield:SetShown(fdb.showShields)
+    h.shield:SetShown(M.ShowsShields(fdb))
     h.shield:Layout()
     -- Border over the bars, then the ring, then text.
     panel.edge.holder:SetFrameLevel(h:GetFrameLevel() + 3)

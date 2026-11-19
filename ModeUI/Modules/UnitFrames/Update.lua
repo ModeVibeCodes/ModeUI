@@ -75,13 +75,18 @@ local function PaintHealth(bar, color, alpha)
     if bar.shield then bar.shield:Paint() end
 end
 
+-- A mana frame (Bar Shows: Mana): the health bar shows the unit's mana.
+function M.ShowsMana(fdb) return fdb.barShows == "mana" end
+-- Shields ride on health, so a mana frame has none.
+function M.ShowsShields(fdb) return fdb.showShields and not M.ShowsMana(fdb) end
+
 -- Combined shields from Blizzard's heal prediction calculator; amounts may be
 -- secret and only reach the shield's bars (Style.Shield).
 function M:UpdateShield(unit)
     local f = self.frames and self.frames[unit]
     if not f or not self:FrameOn(unit) then return end
     local shield = f.health.shield
-    if not self:FrameDB(unit).showShields then shield:SetShown(false); return end
+    if not M.ShowsShields(self:FrameDB(unit)) then shield:SetShown(false); return end
     if f.calculator == nil then f.calculator = Domain.Group.NewCalculator() or false end
     shield:SetShown(true)
     shield:Update(unit, Domain.Group.Prediction(unit, f.calculator or nil))
@@ -100,13 +105,15 @@ end
 function M:PaintSample(g, unit)
     local fdb = self:FrameDB(unit)
     local identity = self:SampleIdentity(unit)
-    local color = self:HealthColor(unit, identity)
+    local mana = M.ShowsMana(fdb)
+    local color = mana and Domain.Power.Color("MANA") or self:HealthColor(unit, identity)
     local alpha = fdb.barForegroundOpacity / 100
     PaintHealth(g.health, color, alpha)
-    g.health:SetMinMaxValues(0, 100); g.health:SetValue(75)
+    g.health:SetMinMaxValues(0, 100); g.health:SetValue(mana and 60 or 75)
     -- A sample shield that fits in the missing health.
-    g.health.shield:SetShown(fdb.showShields)
-    if fdb.showShields then g.health.shield:Update(nil, { max = 100, shield = 15, total = 15 }) end
+    local shields = M.ShowsShields(fdb)
+    g.health.shield:SetShown(shields)
+    if shields then g.health.shield:Update(nil, { max = 100, shield = 15, total = 15 }) end
     local power = fdb.powerColorMode == "custom" and fdb.powerColor or P.mana
     g.power:SetMinMaxValues(0, 100); g.power:SetValue(60)
     g.power:SetStatusBarColor(power[1], power[2], power[3], fdb.powerForegroundOpacity / 100)
@@ -126,28 +133,47 @@ function M:UpdateHealth(unit)
     local f = self.frames and self.frames[unit]
     if not f or not self:FrameOn(unit) then return end
     local okMax, max, okValue, value = Health.Read(unit)
-    if okMax then pcall(f.health.SetMinMaxValues, f.health, 0, max) end
-    if okValue then pcall(f.health.SetValue, f.health, value) end
-    local color = self:HealthColor(unit)
-    PaintHealth(f.health, color, self:FrameDB(unit).barForegroundOpacity / 100)
+    -- A mana frame's bar is UpdatePower's; its health texts still show health.
+    if not M.ShowsMana(self:FrameDB(unit)) then
+        if okMax then pcall(f.health.SetMinMaxValues, f.health, 0, max) end
+        if okValue then pcall(f.health.SetValue, f.health, value) end
+        local color = self:HealthColor(unit)
+        PaintHealth(f.health, color, self:FrameDB(unit).barForegroundOpacity / 100)
+    end
     self:UpdateHealthTexts(f, unit, okValue, value)
     self:UpdateShield(unit)
+end
+
+-- A mana frame's bar: the unit's mana, whatever power it shows now (a Druid
+-- in a form keeps mana under Rage or Energy), in the mana color. Values may be
+-- secret and only reach the StatusBar.
+function M:UpdateManaBar(f, unit)
+    local manaType = Power.ManaType()
+    local okMax, max, okValue, value = Power.ReadType(unit, manaType)
+    if okMax then pcall(f.health.SetMinMaxValues, f.health, 0, max) end
+    if okValue then pcall(f.health.SetValue, f.health, value) end
+    PaintHealth(f.health, Power.Color("MANA"), self:FrameDB(unit).barForegroundOpacity / 100)
+    return manaType, okValue, value
 end
 
 function M:UpdatePower(unit)
     local f = self.frames and self.frames[unit]
     local fdb = self:FrameDB(unit)
     if not f or not self:FrameOn(unit) then return end
+    local mana = M.ShowsMana(fdb)
     -- Power texts can sit on the health bar, so they update without a power bar.
-    if not fdb.showPower and #f.textKinds.power == 0 then return end
+    if not fdb.showPower and not mana and #f.textKinds.power == 0 then return end
     local powerType, token, okMax, max, okValue, value = Power.Read(unit)
+    -- On a mana frame, power texts show the mana its bar shows.
+    local textType, okText, textValue = powerType, okValue, value
+    if mana then textType, okText, textValue = self:UpdateManaBar(f, unit) end
     if fdb.showPower then
         if okMax then pcall(f.power.SetMinMaxValues, f.power, 0, max) end
         if okValue then pcall(f.power.SetValue, f.power, value) end
         local color = fdb.powerColorMode == "custom" and fdb.powerColor or Power.Color(token)
         f.power:SetStatusBarColor(color[1], color[2], color[3], fdb.powerForegroundOpacity / 100)
     end
-    self:UpdatePowerTexts(f, unit, powerType, okValue, value)
+    self:UpdatePowerTexts(f, unit, textType, okText, textValue)
 end
 
 function M:UpdatePortrait(unit)

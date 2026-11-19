@@ -77,8 +77,9 @@
     function UnitExists(u) return units[u] and units[u].exists or false end
     function UnitHealth(u) return units[u].health end
     function UnitHealthMax(u) return units[u].max end
-    function UnitPower(u) return units[u].power end
-    function UnitPowerMax(u) return units[u].powerMax end
+    -- A unit's `mana`/`manaMax` answer for the mana type (0) when set (a Druid in a form).
+    function UnitPower(u,t) local d=units[u];if t==0 and d.mana~=nil then return d.mana end return d.power end
+    function UnitPowerMax(u,t) local d=units[u];if t==0 and d.manaMax~=nil then return d.manaMax end return d.powerMax end
     function UnitPowerType(u) return 0,units[u].token end
     function UnitName(u) return units[u].name end
     function UnitLevel(u) return units[u].level end

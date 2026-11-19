@@ -345,6 +345,22 @@ world.run([====[
     -- Combined shields on health (Style.Shield).
     assert(p.health.shield and p.health.shield.bar==p.health and p.health.shield.clip:IsShown())
     assert(M:SetFrameOption('player','showShields',false) and not p.health.shield.clip:IsShown() and M:SetFrameOption('player','showShields',true))
+    -- Bar Shows: Mana (owner, November 19, 2026): the bar shows the unit's mana
+    -- (the mana type, whatever power shows now), in the mana color, no shields;
+    -- health texts keep health, power texts show the mana; a matched Target keeps health.
+    assert(M.db.player.barShows=='health' and M.ownKeys.barShows and not M:SetFrameOption('player','barShows','rage'))
+    units.player.mana,units.player.manaMax=300,600
+    assert(M:SetFrameOption('player','barShows','mana') and M:FrameDB('target').barShows=='health','the matched Target keeps health')
+    M:Update('player')
+    local lo,hi=p.health:GetMinMaxValues();assert(lo==0 and hi==600 and p.health:GetValue()==300,'mana on the bar, not energy')
+    local mana=addon.Style.Tone.powerType.MANA;assert(p.health.fillColor==mana,'the mana color')
+    assert(not p.health.shield.clip:IsShown(),'no shields on a mana frame')
+    units.player.health=100;M:UpdateHealth('player');assert(p.health:GetValue()==300,'health leaves the bar alone')
+    units.player.mana=Secret('m');units.player.manaMax=Secret('mm');M:UpdatePower('player')
+    assert(p.health:GetValue()==units.player.mana,'secret mana passes straight to the bar')
+    units.player.mana,units.player.manaMax,units.player.health=nil,nil,900
+    assert(M:SetFrameOption('player','barShows','health'));M:Update('player')
+    assert(p.health:GetValue()==900 and p.health.fillColor~=mana and p.health.shield.clip:IsShown(),'health again')
     -- The end of the health fill gets a 1px light line, on the side it fills toward.
     local fe=p.health.fillEdge;assert(fe and fe:IsShown() and fe.width==1 and Point(fe)[1]=='TOPRIGHT' and Point(fe)[2]==p.health.fillTexture)
     assert(Point(t.health.fillEdge)[1]=='TOPLEFT','reverse fill: on the left')
