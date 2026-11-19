@@ -43,6 +43,15 @@ M.elementIds = { player = "unitFramesPlayer", target = "unitFramesTarget", targe
 for _, unit in ipairs({ "player", "target", "targettarget", "focus", "focustarget" }) do
     addon.Positioning:AddTarget(M.elementIds[unit], addon.L["ModeUI " .. M.titles[unit]], "ModeUI" .. M.frameNames[unit] .. "UnitFramePreview")
 end
+-- The Player and Target bar blocks (the stand-in's block, its border on its
+-- edge) are targets too (owner, November 18, 2026): something hung from a
+-- block stays on its border whatever Portrait Size, Health Height or Frame
+-- Width do to the frame around it.
+M.barsElementIds = { player = "unitFramesPlayerBars", target = "unitFramesTargetBars" }
+function M.BarsFrameName(unit) return "ModeUI" .. M.frameNames[unit] .. "UnitFrameBars" end
+for _, unit in ipairs({ "player", "target" }) do
+    addon.Positioning:AddTarget(M.barsElementIds[unit], addon.L["ModeUI " .. M.titles[unit] .. " Bars"], M.BarsFrameName(unit))
+end
 M.defaultPositions = {
     player = { target = "screen", placement = "center", x = -280, y = -200 },
     target = { target = "screen", placement = "center", x = 280, y = -200 },

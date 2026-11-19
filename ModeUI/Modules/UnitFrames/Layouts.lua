@@ -7,8 +7,9 @@ if not M or not addon.Layouts then return end
 -- 2026) and the owner's tuning the same day. Player and Target sit either
 -- side of the screen's bottom centre, as tall as an Essential Cooldowns icon:
 -- no power bar, 28 health and the 2px rim make a 32px bar block, 34 with its
--- shadow, as an icon is 30 plus its 2px edge each side; the 52px ring is 165%
--- of it, and Frame Width 166 (18 under the default) makes each frame 212 x 52.
+-- shadow, as an icon is 30 plus its 2px edge each side; Portrait Size 145
+-- makes the ring 46, and Frame Width 166 (18 under the default) each frame
+-- 206 x 46 (the frame is measured from the ring, so both set its width).
 -- Their bands sit 10px from Essential's (288 wide with its edges, its band 143
 -- out). In the health bar: the name (11) at the top right, the health text
 -- (10) at the bottom right, the level (10) at the bottom left, no text glow;
@@ -19,7 +20,7 @@ if not M or not addon.Layouts then return end
 -- bar 8px below) sits 64 over the Target's top left corner. Target of Focus
 -- is off; Target of Target keeps its defaults. See docs/UNIT_FRAMES.md,
 -- "Mode-Default layout".
-local HEALTH, WIDTH = 28, 166
+local HEALTH, WIDTH, PORTRAIT = 28, 166, 145
 local SIZES = { name = 11, health = 10, level = 10 }
 local ESSENTIAL_BAND, GAP, FOCUS_RISE = 143, 10, 64
 local HEIGHT = { ["1080"] = 300, ["1440"] = 325 }
@@ -39,6 +40,7 @@ addon.Layouts:Contribute("mode-default", "unitFrames", function(db, ctx)
     db.enabled = true
     db.player.healthHeight, db.player.showPower = HEALTH, false
     db.player.barWidth, db.target.barWidth = WIDTH, WIDTH
+    db.player.portraitScale, db.target.portraitScale = PORTRAIT, PORTRAIT
     -- The name from the border to the top right, the health text from the
     -- right to the bottom right; the level stays at the bottom left.
     local texts = db.player.texts

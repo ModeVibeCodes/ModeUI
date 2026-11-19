@@ -1164,6 +1164,7 @@ layoutWorld.run([====[
         assert(t.bottomLeft.content=='level','the level stays')
         assert(db.player.healthHeight==28 and db.player.showPower==false,'28 health, no power bar: as tall as an Essential icon')
         assert(db.player.barWidth==166 and db.target.barWidth==166,'18 shorter')
+        assert(db.player.portraitScale==145 and db.target.portraitScale==145,'Portrait Size 145')
         assert(t.topRight.size==11 and t.bottomRight.size==10 and t.bottomLeft.size==10,'room in the bar: 11, 10 and 10')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
             assert(db[unit].nameTextGlow==false and db[unit].healthTextGlow==false,unit..': no text glow')
@@ -1179,19 +1180,19 @@ layoutWorld.run([====[
             assert(p and p.target==target and p.point==point and p.relativePoint==relative and p.x==x and p.y==yy,
                 id..' '..variant..': '..tostring(p and p.point)..' '..tostring(p and p.x)..','..tostring(p and p.y))
         end
-        At('unitFramesPlayer','screen','CENTER','BOTTOM',-259,y)
-        At('unitFramesTarget','screen','CENTER','BOTTOM',259,y)
-        -- 64 over the Target's top left corner (212 x 52), from the screen.
-        At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',153,y+90)
+        At('unitFramesPlayer','screen','CENTER','BOTTOM',-256,y)
+        At('unitFramesTarget','screen','CENTER','BOTTOM',256,y)
+        -- 64 over the Target's top left corner (206 x 46), from the screen.
+        At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',153,y+87)
         assert(pos.unitFramesTargetTarget==nil and pos.unitFramesFocusTarget==nil)
         -- The sizes behind those numbers.
         local edge=addon.Style.EdgeDepth
         local pg=M:Geometry(db.player,1,edge('frame'))
         local fg=M:Geometry(db.focus,1,edge('frameThin'))
-        assert(pg.width==212 and pg.height==52 and fg.width==122 and fg.height==26)
+        assert(pg.width==206 and pg.height==46 and fg.width==122 and fg.height==26)
     end
     -- Made into its own profile once at login (1080 here: the mock UI is 800 tall).
-    assert(ModeUIDB.profiles['Mode-Default'].positions.unitFramesFocus.y==390)
+    assert(ModeUIDB.profiles['Mode-Default'].positions.unitFramesFocus.y==387)
 ]====], "unit_frames_layout")
 -- Only this module's part (and its places) go into the Default profile, so
 -- the check stays on these frames whatever other modules add to the layout.
@@ -1207,8 +1208,11 @@ H.Load({ before = STUBS, saved = used }).run([====[
     local pl,pb,pr,pt,pw,ph=Box(M.ghosts.player)
     local tl,tb,tr,tt,tw,th=Box(M.ghosts.target)
     local fl,fb,fr,ft,fw,fh=Box(M.ghosts.focus)
-    assert(pw==212 and ph==52 and tw==212 and th==52 and fw==122 and fh==26,'Edit Mode measures the frames as built')
-    assert((pl+pr)/2-ux==-259 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==259 and (tb+tt)/2-bottom==300)
+    assert(pw==206 and ph==46 and tw==206 and th==46 and fw==122 and fh==26,'Edit Mode measures the frames as built')
+    assert((pl+pr)/2-ux==-256 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==256 and (tb+tt)/2-bottom==300)
+    -- The bar blocks are targets: the stand-ins' blocks, by name.
+    assert(_G.ModeUIPlayerUnitFrameBars==M.ghosts.player.panel and _G.ModeUITargetUnitFrameBars==M.ghosts.target.panel,'bar block targets')
+    assert(addon.Positioning:Resolve('unitFramesPlayerBars')==M.ghosts.player.panel,'the Player block resolves')
     -- No power bar: the health bar fills the block, so Bottom Right sits on the frame's bottom right.
     local f=M.frames.player
     local g=f.geometry

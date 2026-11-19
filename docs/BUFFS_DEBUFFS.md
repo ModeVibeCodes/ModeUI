@@ -315,7 +315,7 @@ same at 1080 and 1440. The module is on.
 |---|---|---|
 | Buffs | 30 x 24, 12 per row, 24 max, Grow Left, New Rows Down, Spacing 4, time below | TOPRIGHT on the Minimap's TOPLEFT, (-10, 2) |
 | Debuffs | the same, 16 max | TOPRIGHT on the Minimap's BOTTOMLEFT, (-10, 73) |
-| Player Buffs | 30 x 24, 5 per row, Spacing 1 | TOPRIGHT on the Player frame's BOTTOMRIGHT, (0, 9) |
+| Player Buffs | 30 x 24, 5 per row, Spacing 1 | TOPRIGHT on ModeUI Player Frame Bars' BOTTOMRIGHT (the bar block), (0, -1) |
 | Defensives (`custom1`) | 40 x 34, 4 max | RIGHT on the screen's CENTER, (-124, 166) |
 
 Player Debuffs (All) and Boss & Important keep their defaults. The owner's
@@ -329,11 +329,13 @@ the minimap's edge is -(6 + 3 + 1) = -10; Buffs' icon tops on the minimap's
 top is 3 - 1 = 2; Debuffs' two rows (2 x 36 + 4 = 76, `M:BarSize`) end on
 the minimap's bottom at 76 - 3 = 73 (the editor's 82 counted 39-tall rows);
 Defensives' right edge at -123 is -124 for the element. Player Buffs (owner's
-tuning, November 18, 2026) sit under the Player frame's bottom border: its
-bar block ends 10 above the frame element's bottom (the 52px ring round the
-32px block) with its band on the block's edge, so icons 10 - 1 = 9 up share
-that band's shadow pixel, right edges lined up; five to a row (154 wide)
-stay clear of the portrait ring, Spacing 1 so neighbours share one shadow
+tuning, November 18, 2026) hang from the Player frame's bar block
+(`unitFramesPlayerBars`, its band on the block's edge), so Portrait Size,
+Health Height and Frame Width never move them into the frame: icons 1 under
+the block share that band's shadow pixel, right edges lined up; five to a
+row (154 wide) stay clear of the portrait ring at every Portrait Size and
+Health Height while Frame Width is 161 or more (`tests/layouts.lua` checks
+it; the layout uses 166), Spacing 1 so neighbours share one shadow
 pixel as the Cooldown Manager's icons do. Every aura icon's rim is drawn in
 pieces, each piece registered for the dispel color (DESIGN_LANGUAGE.md,
 "Pieces"). Icons show 2px

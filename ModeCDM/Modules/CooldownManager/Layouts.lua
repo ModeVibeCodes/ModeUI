@@ -33,11 +33,12 @@ local function Shape(style, width, height, perLine, grow, lineGrowth)
     style.grow, style.lineGrowth = grow, lineGrowth
     Look(style)
 end
--- The default bars' own sizes here, and places. Defensive Cooldowns sit on
--- the Player frame's top border, right ends lined up: the frame's band
--- starts 10 under its element's top (the 52px ring round the 32px bar
--- block), and a bar's stand-in ends in its icons' shadow ring, so at -10 the
--- two share one shadow pixel; +1 lines the icons' band up with the frame's.
+-- The default bars' own sizes here, and places. Defensive Cooldowns hang
+-- from the Player frame's bar block (unitFramesPlayerBars: its border on
+-- the block's edge), right ends lined up, so Portrait Size, Health Height
+-- and Frame Width never move them into the frame: the bar's stand-in ends in
+-- its icons' shadow ring, so on the block's top the two share one shadow
+-- pixel; +1 lines the icons' band up with the frame's.
 -- Ultra Emphasized Buffs further out on a 1440 screen.
 local SIZES = { defensives = { 36, 30 }, emphasized = { 38, 30 } }
 
@@ -75,7 +76,7 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     ctx.Place(M.ElementId("buffIcon"), CAST, "BOTTOM", "TOP", 0, 1)
 
     -- The default bars at their sizes and places here.
-    local places = { ultra = { x = ctx.V({ ["1080"] = 110, ["1440"] = 135 }) }, defensives = { x = 1, y = -10 } }
+    local places = { ultra = { x = ctx.V({ ["1080"] = 110, ["1440"] = 135 }) }, defensives = { target = "unitFramesPlayerBars", x = 1, y = 0 } }
     for _, tag in ipairs(M.presetOrder) do
         local bar = M.PresetBar(db, tag)
         assert(bar, "the " .. tag .. " bar is missing")

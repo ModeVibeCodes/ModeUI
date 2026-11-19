@@ -415,6 +415,15 @@ Built on branch `t3/mode-default-layout`.
   52 at x ±259; party frames at -365); texts 11 / 10 / 10 so the bar isn't
   crowded. Confirmation: Player Buffs show whole rims one dark pixel apart;
   the frames are shorter, without a power bar; name and health sit apart.
+- **Fourth round (owner, November 18, 2026):** Portrait Size 145 (frames 206
+  x 46 at x ±256, party frames at -359). Defensive Cooldowns and Player
+  Buffs clipped the frame after the owner changed Portrait Size: they hung
+  from the frame's element, whose height is the ring's. The Player and Target
+  bar blocks are now Edit Mode targets (**ModeUI Player Frame Bars**,
+  `unitFramesPlayerBars`), and both hang from the block's border;
+  `tests/layouts.lua` sweeps Portrait Size 100-200, Health Height 10-60 and
+  Frame Width 161-260 and checks neither touches the ring (five buffs in a
+  row need Frame Width 161 or more).
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
 

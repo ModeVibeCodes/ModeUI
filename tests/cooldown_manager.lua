@@ -851,7 +851,7 @@ H.Load({ before = STUBS .. "\nMakeViewers()" }).run([==[
         assert(#db.customBars == 5 and db.nextCustom == 6, 'the five default bars')
         local function Bar(tag) local bar = M.PresetBar(db, tag); return M.ElementId(bar.id), db[bar.id] end
         local id, style = Bar('defensives')
-        assert(Shape(style, 36, 30, 3, -1, 'left', 'up') and Placed(id, 'unitFramesPlayer', 'BOTTOMRIGHT', 'TOPRIGHT', 1, -10), 'Defensive Cooldowns')
+        assert(Shape(style, 36, 30, 3, -1, 'left', 'up') and Placed(id, 'unitFramesPlayerBars', 'BOTTOMRIGHT', 'TOPRIGHT', 1, 0), 'Defensive Cooldowns on the bar block')
         id, style = Bar('emphasized')
         assert(Shape(style, 38, 30, 4, -1, 'centerH', 'up') and Placed(id, 'cooldownManagerBuffIcon', 'BOTTOM', 'TOP', 0, 1), 'Emphasized Buffs')
         id, style = Bar('leftBuffs')

@@ -21,12 +21,13 @@ local SHADOW = 1 -- an aura icon's shadow ring, past its Width x Height
 local MAP_EDGE = addon.Style.EdgeReach("frame") -- the minimap's edge past the map: 3
 local MAP = "modeMinimap" -- the Minimap's Edit Mode element (Modules/Minimap/Init.lua)
 local GAP = 6 -- between the bars' icons and the minimap's edge
--- The Player frame's bar block ends 10 above its element's bottom (the 52px
--- ring round the 32px block; Modules/UnitFrames/Layout.lua, Geometry), its
--- band on the block's edge: icons 9 up share the band's shadow pixel. Five
--- to a row stay clear of the portrait ring; Spacing 1 leaves one pixel for
--- both icons' shadows, as the Cooldown Manager's icons share theirs.
-local PLAYER, PLAYER_BLOCK = "unitFramesPlayer", 10
+-- Player Buffs hang from the Player frame's bar block (unitFramesPlayerBars,
+-- its band on the block's edge), so Portrait Size, Health Height and Frame
+-- Width never move them into the frame: icons 1 under the block share the
+-- band's shadow pixel. Five to a row stay clear of the portrait ring (the
+-- layout test checks every size); Spacing 1 leaves one pixel for both icons'
+-- shadows, as the Cooldown Manager's icons share theirs.
+local PLAYER_BARS = "unitFramesPlayerBars"
 
 local function Bar(bar, values) for key, value in pairs(values) do bar[key] = value end end
 
@@ -52,5 +53,5 @@ addon.Layouts:Contribute("mode-default", "buffsDebuffs", function(db, ctx)
     local _, height = M:BarSize(bars.debuffs, 1)
     ctx.Place(M.ElementId("debuffs"), MAP, "TOPRIGHT", "BOTTOMLEFT", x, height - MAP_EDGE)
     ctx.Place(M.ElementId(defensives), "screen", "RIGHT", "CENTER", -123 - SHADOW, 166)
-    ctx.Place(M.ElementId("playerBuffs"), PLAYER, "TOPRIGHT", "BOTTOMRIGHT", 0, PLAYER_BLOCK - SHADOW)
+    ctx.Place(M.ElementId("playerBuffs"), PLAYER_BARS, "TOPRIGHT", "BOTTOMRIGHT", 0, -SHADOW)
 end)

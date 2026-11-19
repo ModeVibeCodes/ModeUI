@@ -34,7 +34,7 @@ world.run([==[
             local p = profile.positions[id]
             assert(p.target == 'screen' and p.relativePoint == 'BOTTOM' and p.y == y, id .. ' at ' .. y)
         end
-        assert(profile.positions.unitFramesPlayer.x == -259 and profile.positions.unitFramesTarget.x == 259, 'frames either side: ' .. tostring(profile.positions.unitFramesPlayer.x))
+        assert(profile.positions.unitFramesPlayer.x == -256 and profile.positions.unitFramesTarget.x == 256, 'frames either side: ' .. tostring(profile.positions.unitFramesPlayer.x))
         -- Every module on (allModules), Profiles always on.
         for id, module in pairs(addon.modules) do
             local db = profile.modules[id]
@@ -42,16 +42,50 @@ world.run([==[
         end
         -- What the places count on (owner's tuning, November 18, 2026): Essential
         -- is 288 wide with its edges, so the frames' bands sit 10 from its band;
-        -- the Player frame is 212 x 52 with its 32px bar block 10 in from top
-        -- and bottom, 34 with its shadow as an Essential icon is with its edge
-        -- (Defensive Cooldowns and Player Buffs share its shadow pixel).
+        -- the Player frame is 206 x 46 (Portrait Size 145) with its 32px bar
+        -- block, 34 with its shadow as an Essential icon is with its edge.
         local cdm, uf = profile.modules.cooldownManager, profile.modules.unitFrames
         local essential = addon.CooldownManager.Geometry(cdm.essential, 1, 1)
         assert(essential.width == 288 and essential.reach == 2, 'Essential 288 wide')
         local g = addon.UnitFrames:Geometry(uf.player, 1, addon.Style.EdgeDepth('frame'))
-        assert(g.width == 212 and g.height == 52 and g.blockY == 10 and g.blockHeight == 32, 'Player 212 x 52, block 10 in')
+        assert(uf.player.portraitScale == 145 and g.width == 206 and g.height == 46 and g.blockHeight == 32, 'Player 206 x 46')
         assert(g.blockHeight + 2 == essential.h + 2 * essential.reach, 'as tall as an Essential icon')
-        assert(259 - 212 / 2 - (288 / 2 - 1) == 10, '10px between the bands')
+        assert(256 - 206 / 2 - (288 / 2 - 1) == 10, '10px between the bands')
+        -- Defensive Cooldowns and Player Buffs hang from the bar block (owner,
+        -- November 18, 2026: they clipped the frame once Portrait Size changed).
+        local function On(id, target, point, relative, x, y)
+            local p = profile.positions[id]
+            assert(p and p.target == target and p.point == point and p.relativePoint == relative and p.x == x and p.y == y, id)
+        end
+        local defensives
+        for _, bar in ipairs(cdm.customBars) do if bar.preset == 'defensives' then defensives = bar.id end end
+        On(addon.CooldownManager.ElementId(defensives), 'unitFramesPlayerBars', 'BOTTOMRIGHT', 'TOPRIGHT', 1, 0)
+        On(addon.BuffsDebuffs.ElementId('playerBuffs'), 'unitFramesPlayerBars', 'TOPRIGHT', 'BOTTOMRIGHT', 0, -1)
+        -- At any Portrait Size and Health Height, at Frame Width 161 and up (five
+        -- 30px buffs, 154 wide, need that much beside the ring; the layout uses 166),
+        -- neither touches the portrait ring (its disc and shadow) nor the block.
+        local BD = addon.BuffsDebuffs
+        local buffW, buffH = BD:BarSize(profile.modules.buffsDebuffs.bars.playerBuffs, 1)
+        local dg = addon.CooldownManager.Geometry(cdm[defensives], 6, 1)
+        local defW, defH = dg.extent.width, dg.extent.height
+        local function Clear(l, t, r, b, cx, cy, radius)
+            local nx, ny = math.max(l, math.min(cx, r)), math.max(t, math.min(cy, b))
+            return (nx - cx) ^ 2 + (ny - cy) ^ 2 >= radius ^ 2
+        end
+        for scale = 100, 200, 5 do
+            for health = 10, 60, 2 do
+                for width = 161, 260, 3 do
+                    local fdb = setmetatable({ portraitScale = scale, healthHeight = health, barWidth = width }, { __index = uf.player })
+                    local fg = addon.UnitFrames:Geometry(fdb, 1, addon.Style.EdgeDepth('frame'))
+                    local top, bottom, right = fg.blockY, fg.blockY + fg.blockHeight, fg.width
+                    local cx, cy, radius = fg.portrait / 2, fg.height / 2, fg.portrait / 2 + 1
+                    -- Frame coordinates, y down; each rect with its icons' 1px shadow.
+                    local case = scale .. '% ' .. health .. 'h ' .. width .. 'w'
+                    assert(Clear(right - buffW - 1, bottom, right + 1, bottom + 2 + buffH, cx, cy, radius), 'Player Buffs clear of the ring: ' .. case)
+                    assert(Clear(right + 2 - defW, top - defH, right + 2, top, cx, cy, radius), 'Defensive Cooldowns clear of the ring: ' .. case)
+                end
+            end
+        end
         -- Minimap and meters show exactly as wide (the minimap's edge sits outside it).
         assert(profile.modules.damageMeters.window1.width == profile.modules.minimap.size + 2 * addon.Style.EdgeReach('frame'),
             'minimap as wide as the meters')

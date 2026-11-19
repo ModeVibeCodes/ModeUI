@@ -412,7 +412,7 @@ H.Load({ before = STUBS }).run([==[
         Is('debuffs', 'modeMinimap', 'TOPRIGHT', 'BOTTOMLEFT', -10, 73)
         Is('custom1', 'screen', 'RIGHT', 'CENTER', -124, 166)
         -- Under the Player frame's bottom border, sharing its shadow pixel, right edges lined up.
-        Is('playerBuffs', 'unitFramesPlayer', 'TOPRIGHT', 'BOTTOMRIGHT', 0, 9)
+        Is('playerBuffs', 'unitFramesPlayerBars', 'TOPRIGHT', 'BOTTOMRIGHT', 0, -1)
     end
     -- The bars may anchor to the minimap (anyTarget).
     addon:SetModuleEnabled('buffsDebuffs', true)

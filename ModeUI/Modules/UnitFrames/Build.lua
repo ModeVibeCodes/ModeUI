@@ -15,8 +15,9 @@ function M.EdgePreset(unit) return (unit == "player" or unit == "target") and "f
 -- line, 3px power) inside its Mode Frame border, which covers its own rounded
 -- corners (no masks); the portrait in an edge-lit Steel ring centred on the
 -- block's portrait-side edge, over the bars; Combined shields on health.
-function M:BuildFace(f)
-    local panel = CreateFrame("Frame", nil, f)
+-- `panelName` names the bar block (a stand-in's, for M.barsElementIds).
+function M:BuildFace(f, panelName)
+    local panel = CreateFrame("Frame", panelName, f)
     f.panel = panel
     -- The bars' area, one rim inside the block; the border sits around it.
     panel.inner = CreateFrame("Frame", nil, panel)
@@ -67,7 +68,7 @@ function M:CreateGhost(unit)
     local g = CreateFrame("Frame", "ModeUI" .. label .. "UnitFramePreview", UIParent)
     g.unit, g.ghost = unit, true
     g:SetFrameStrata("HIGH")
-    self:BuildFace(g)
+    self:BuildFace(g, self.barsElementIds[unit] and self.BarsFrameName(unit) or nil)
     self:ApplyLayout(g, unit)
     -- Registration measures the frame via GetCenter, which is nil until it has an anchor;
     -- the Position Manager then moves it to the saved position.

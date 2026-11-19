@@ -16,18 +16,19 @@ height (y) of the row:
 - **Size** (owner's tuning, November 18, 2026): Player (and the Target, which
   matches it) as tall as an Essential Cooldowns icon: Show Power off, 28
   health and the 2px rim make a 32px bar block, 34 with its shadow, as a 30px
-  icon is with its 2px edge each side. The ring (165%) is 52; Frame Width 166
-  (Player and Target; 18 under the default) makes each frame 212 x 52. Text
+  icon is with its 2px edge each side. Portrait Size 145 makes the ring 46;
+  Frame Width 166 (Player and Target; 18 under the default) makes each frame
+  206 x 46. Text
   glow (name and health) off on every frame. Without a power bar the health
   bar fills the block, so a Bottom slot sits on the frame's bottom edge.
-- **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -259,
+- **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -256,
   y 300 (1080) or 325 (1440): its band 10px from Essential Cooldowns' band
   (Essential is 288 wide with its edges, its band 143 out past the shadow
-  pixel: 143 + 10 + 106, half the frame's width). Texts: the name moves from the
+  pixel: 143 + 10 + 103, half the frame's width). Texts: the name moves from the
   border to **Top Right** (size 11) and the health text from Right to
   **Bottom Right** (size 10), inside the health bar, so Defensive Cooldowns
   own the top border's right end; the level stays at Bottom Left (size 10).
-- **Target** (`unitFramesTarget`): its CENTER on the screen's BOTTOM, x 259,
+- **Target** (`unitFramesTarget`): its CENTER on the screen's BOTTOM, x 256,
   the same y. It still matches and mirrors the Player (defaults), so its name
   sits at the top left and its health text at the bottom left. Its buffs
   start at the Top Left and grow Right (`target.buffs.anchor = "TOPLEFT"`,
@@ -38,14 +39,24 @@ height (y) of the row:
   left 64 over the Target's top left corner; unit frames are placed on the
   screen only (`allowedTargets = { "screen" }` in `Build.lua`), so the layout
   writes that spot from the screen: BOTTOMLEFT on the screen's BOTTOM, x 153
-  (259 less half the Target's 212), y 390 (1080) or 415 (1440) (the Target's
-  top, y + 26, plus 64). Moving the Target later does not move the Focus.
+  (256 less half the Target's 206), y 387 (1080) or 412 (1440) (the Target's
+  top, y + 23, plus 64). Moving the Target later does not move the Focus.
 - **Target of Focus** off. **Target of Target** keeps its defaults (attached
   under the Target frame).
 
-Player and Target are 212 x 52 in Edit Mode (their stand-ins,
-`ModeUI<Name>UnitFramePreview`, are the frames' size): the 52px ring (165% of
-the 32px bar block: 28 health and the 2px rim) and the 166px bars. Character portraits everywhere are centered and cropped 16% on
+Player and Target are 206 x 46 in Edit Mode (their stand-ins,
+`ModeUI<Name>UnitFramePreview`, are the frames' size): the 46px ring (145% of
+the 32px bar block: 28 health and the 2px rim) and the 166px bars.
+
+**Bar block targets** (owner, November 18, 2026): the Player's and Target's
+bar blocks are Edit Mode targets of their own, **ModeUI Player Frame Bars**
+(`unitFramesPlayerBars`) and **ModeUI Target Frame Bars**
+(`unitFramesTargetBars`): the stand-in's block, `ModeUI<Name>UnitFrameBars`,
+its border on the block's edge. Something hung from a block stays on its
+border whatever Portrait Size, Health Height or Frame Width do to the frame
+around it (the frame's own element is as tall as the ring, so an offset from
+it moved whenever the ring did). The layout hangs Defensive Cooldowns and
+Player Buffs from the Player's block. Character portraits everywhere are centered and cropped 16% on
 every side, so the face fills most of the ring (owner, November 18, 2026;
 was 10% at the sides and bottom, 4% at the top). The Player's cast bar steps aside when the Cooldown Manager's
 cast bar is on, as before.
