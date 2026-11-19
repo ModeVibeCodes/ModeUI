@@ -1156,7 +1156,11 @@ layoutWorld.run([====[
     for variant,y in pairs({ ['1080']=300, ['1440']=325 }) do
         local profile=assert(addon.Layouts:Build('mode-default',variant))
         local db,pos=profile.modules.unitFrames,profile.positions
-        assert(db.enabled==true and db.player.texts.border.content=='name' and db.player.texts.border.align=='LEFT','the Player name on the border, left')
+        -- The name at the top right and the health text at the bottom right, inside the health bar (owner's tuning, November 18, 2026).
+        local t=db.player.texts
+        assert(db.enabled==true and t.border.content=='none' and t.right.content=='none','the border and the right side left free')
+        assert(t.topRight.content=='name' and t.topRight.size==12 and t.bottomRight.content=='healthPercent' and t.bottomRight.size==11,'name top right, health bottom right')
+        assert(t.bottomLeft.content=='level','the level stays')
         assert(db.target.matchPlayer==true and db.target.mirrorText==true and db.target.buffs.enabled==true
             and db.target.buffs.anchor=='TOPLEFT' and db.target.buffs.grow=='right','Target buffs top left, growing right')
         local f=db.focus
@@ -1168,10 +1172,10 @@ layoutWorld.run([====[
             assert(p and p.target==target and p.point==point and p.relativePoint==relative and p.x==x and p.y==yy,
                 id..' '..variant..': '..tostring(p and p.point)..' '..tostring(p and p.x)..','..tostring(p and p.y))
         end
-        At('unitFramesPlayer','screen','CENTER','BOTTOM',-317,y)
-        At('unitFramesTarget','screen','CENTER','BOTTOM',317,y)
+        At('unitFramesPlayer','screen','CENTER','BOTTOM',-276,y)
+        At('unitFramesTarget','screen','CENTER','BOTTOM',276,y)
         -- 64 over the Target's top left corner (246 x 70), from the screen.
-        At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',194,y+99)
+        At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',153,y+99)
         assert(pos.unitFramesTargetTarget==nil and pos.unitFramesFocusTarget==nil)
         -- The sizes behind those numbers.
         local edge=addon.Style.EdgeDepth
@@ -1197,7 +1201,7 @@ H.Load({ before = STUBS, saved = used }).run([====[
     local tl,tb,tr,tt,tw,th=Box(M.ghosts.target)
     local fl,fb,fr,ft,fw,fh=Box(M.ghosts.focus)
     assert(pw==246 and ph==70 and tw==246 and th==70 and fw==122 and fh==26,'Edit Mode measures the frames the editor drew')
-    assert((pl+pr)/2-ux==-317 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==317 and (tb+tt)/2-bottom==300)
+    assert((pl+pr)/2-ux==-276 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==276 and (tb+tt)/2-bottom==300)
     assert(fl==tl and fb==tt+64,'the Focus 64 over the Target top left')
 ]====], "unit_frames_layout_world")
 print("unit frames: Mode-Default layout checks passed")

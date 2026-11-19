@@ -46,8 +46,8 @@ on the shared settings widgets:
 | Part | Look and behavior |
 |---|---|
 | Placement | Each bar has a stand-in in ModeUI's Edit Mode (`ModeUICooldownEssential`, ..., `ModeUICooldownCustom1`), one full line long, anchored to the screen or to any ModeUI element (another Cooldown Manager bar, a resource bar, your unit frames, ...). Anchored, it sits 1 px off its target's edge, pixel-perfect at any UI scale; the nudge buttons move it from there. **Match Width** and **Match Height** in the Edit Mode window size its line to what it's anchored on, separately, and follow that element when its size changes (the size is pushed on change, never polled). The first line never moves; more lines grow outside it. Essential starts at the bottom middle, 300 px up, Utility under it, Tracked Buffs on top, Tracked Bars to the right; custom bars in the middle of the screen (the default bars in their own places). Icons are wider than tall (Essential and Cooldown Bars 40 by 34; Utility, Tracked Buffs and Buff Bars 32 by 28), and each line leaves room for the icons' edges, so a matched width includes them. |
-| Growth | **Centered Horizontal** (default), **Centered Vertical**, **Horizontal Right**, **Horizontal Left**, **Vertical Down** or **Vertical Up**, with **New Lines** going Down or Up for rows, Right or Left for columns (Tracked Buffs and Bars: Up). **Icons per Line** (12; bars 1; custom bars 8), Spacing (2 px, between the edges' shadows), Width and Height. Spells Blizzard hides (an inactive buff) leave no gap. |
-| Icons | The Mode look (`docs/DESIGN_LANGUAGE.md`, "Cooldown icons"): the icon fills the item, cropped, over a **Mode Button** face in Background Color (Mono panel, 100%), with the `frameThin` edge outside it (Mode-Blizz by default: a 1px Silver Specular band, its shadow ring). **Border**: **Mode** or **None** (no edge, and its room given back); with Mode, **Border Style** and **Border Metal**. Tracked Bars' icons and bar boxes take the same edge. Blizzard's round mask and frame art come off; no mask goes on Blizzard's textures. |
+| Growth | **Centered Horizontal** (default), **Centered Vertical**, **Horizontal Right**, **Horizontal Left**, **Vertical Down** or **Vertical Up**, with **New Lines** going Down or Up for rows, Right or Left for columns (Tracked Buffs and Bars: Up). **Icons per Line** (12; bars 1; custom bars 8), Spacing (2 px, between the edges' shadows; down to -2: at -1 neighbours share one shadow pixel, at -2 their bands touch), Width and Height. Spells Blizzard hides (an inactive buff) leave no gap. |
+| Icons | The Mode look (`docs/DESIGN_LANGUAGE.md`, "Cooldown icons"): the icon fills the item, cropped, over a **Mode Button** face in Background Color (Mono panel, 100%), with the `frameThin` edge outside it (Mode-Blizz by default: a 1px Silver Specular band, its shadow ring). **Border**: **Mode** or **None** (no edge, and its room given back); with Mode, **Border Style**, **Border Metal**, **Border Size** (the band, 1px or 2px; a 2px band reaches 3px past the icon, so the line grows) and, with Mode-BlizzEmpty, **Border Color** (its flat band; Silver mid by default). Every icon edge is drawn in pieces (four 1:1 corners and four sides: an icon is shorter than the ring art, whose sliced corners shrank and looked square; owner, November 18, 2026). Tracked Bars' icons and bar boxes take the same edge, and a Border glow's rim follows the bar's style and band width. Blizzard's round mask and frame art come off; no mask goes on Blizzard's textures. |
 | Cooldown | **Desaturate on Cooldown** (on): an icon goes gray while its spell is on a real cooldown (not the global cooldown) and takes its color back within a fifth of a second of the cooldown ending: the game sends no event then, so icons on a real cooldown are asked about again by one small ticker that runs only while one is cooling; off, icons keep full color. A flat swipe in Swipe Color at Swipe Opacity (70%). While a spell's effect is up Blizzard shows the effect's time in a full-color gold swipe; ModeUI shows the spell's own cooldown instead, gray, straight away. **Show Aura Time** brings Blizzard's gold swipe back. **Edge**, **Bling**, **Ready Flash**, **Out of Range Tint** (the Mode Rosewood tint on an out-of-range spell instead of Blizzard's red; off keeps full color) and, on buffs, **Debuff Border**. Blizzard's out-of-range shade, cut to its round mask, stays faded: repainted it showed as a solid red block, and Blizzard leaves it shown on an icon with no spell yet. |
 | Bars | Tracked Bars (220 by 16): the icon, 4px wider than the bar is tall, beside the bar's own box, both in the `frameThin` edge 2px apart; the fill in Bar Texture (Mode Gradient: its base and white lift) in **Bar Color**: **Class Color** (default) or **Custom** (Ivory), over Bar Background (Mode BG on Slate, solid); Icon Side; **Spark** (the Comet, on by default). |
 | Text | Icons: **Cooldown** and **Count**; bars: **Name**, **Duration**, **Count**. The Text tab sets the bar's look: each text's Show This Text, Anchor, Size, Offsets and Color; Font, Outline, Text Shadow, Slug Text. A spell can have its own look per text from its menu (below). |
@@ -384,7 +384,7 @@ values (every class sees every bar; Animated runs the fill):
 | Tab | Settings |
 |---|---|
 | Bar | **Show Bar**, Status (whether it shows for this character now); Power, Combo Points and Alternate Mana: **Resources** › **Layout** (Separate Resources or Group Resources, shared by the three); **Width** (not while grouped), **Height** (Match Width lives only in Edit Mode's element panel since November 15, 2026: click it, then the element to take the width of); Combo Points: **Layout** (Grouped or Separated), **Spacing** (Separated), **Divider Width** and **Divider Color** (Grouped); Power and Alternate Mana: **Tick Marks** (**Show Tick Marks**; **Tick 1** to **Tick 5**, each a value typed in, 0 for none, with **Shows On**: Any Power, Energy, Rage, Mana or Focus, and **Remove** from Tick 2 on; **+ Add Tick Mark**; **Tick Width**, **Tick Color**); **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
-| Look | **Border** (Mode or None), **Border Style** and **Rim Color** (Default Metal, Silver, Steel, Gunmetal, Bar Color, Custom, with **Custom Rim Color**; on Power for a Grouped block); **Bar Mode** (Color or Dark), **Bar Texture** (Mode Gradient by default, Flat or SharedMedia), **Bar Color** (Power Type, Class Color or Custom; Combo Points: Custom or Class Color), **Dark Text Color** (Power Type or Bar Color, Class Color, Custom), **Bar Opacity**, **Bar Background** (Mode BG by default) and **Background Opacity**; Combo Points: **Full Combo Points Color** (every point takes it once all are lit); **Fill Direction**, **Smooth** and **Fill End Line** |
+| Look | **Border** (Mode or None), **Border Style**, **Border Size** (1px or 2px) and **Rim Color** (Default Metal, Silver, Steel, Gunmetal, Bar Color, Custom, with **Custom Rim Color**; on Power for a Grouped block); **Bar Mode** (Color or Dark), **Bar Texture** (Mode Gradient by default, Flat or SharedMedia), **Bar Color** (Power Type, Class Color or Custom; Combo Points: Custom or Class Color), **Dark Text Color** (Power Type or Bar Color, Class Color, Custom), **Bar Opacity**, **Bar Background** (Mode BG by default) and **Background Opacity**; Combo Points: **Full Combo Points Color** (every point takes it once all are lit); **Fill Direction**, **Smooth** and **Fill End Line** |
 | Text | **Show Text**; **Text** (Current, Percent, Current and Percent, Current / Max; Combo Points show their count), **Size**, **Offset X/Y**, **Text Color** (Color mode); **Font**, **Outline**, **Text Shadow**, **Slug Text**. The text sits in the middle of its bar (in a Grouped block, of its own strip). |
 | Visibility | **Show** (Always, In Combat, Out of Combat, In Combat or With a Target, Mouseover, Hidden), **Opacity**, **Faded Opacity** |
 
@@ -538,7 +538,7 @@ on. Buff Icons, which sat above Essential, hang above the cast bar.
 | Tab | Settings |
 |---|---|
 | Bar | **Show Bar**, Status; **Width**, **Height**; **Icon** (Hidden, Left, Right; the spell icon, a square of the bar's height in its own border) and **Icon Gap**; **Show Interrupted**; **Open Edit Mode**, **Reset to Defaults** (Show Bar and the size stay) |
-| Look | **Border** (Mode or None), **Border Style**, **Rim Color** (Default Metal, Silver, Steel, Gunmetal, Bar Color, Custom) and **Custom Rim Color**; **Bar Mode** (Color or Dark), **Bar Texture**, **Bar Color** (any color), **Not Interruptible**, **Interrupted**; **Dark Text Color** (Class Color, Bar Color, Custom) and **Custom Text Color**; **Bar Background**, **Background Opacity**; **Spark** |
+| Look | **Border** (Mode or None), **Border Style**, **Border Size** (1px or 2px), **Rim Color** (Default Metal, Silver, Steel, Gunmetal, Bar Color, Custom) and **Custom Rim Color**; **Bar Mode** (Color or Dark), **Bar Texture**, **Bar Color** (any color), **Not Interruptible**, **Interrupted**; **Dark Text Color** (Class Color, Bar Color, Custom) and **Custom Text Color**; **Bar Background**, **Background Opacity**; **Spark** |
 | Text | **Spell Name** and **Timer**, each: **Show**, **Anchor** (Left, Center, Right), **Offset X/Y**; **Size**, **Text Color** (Color mode); **Font**, **Outline**, **Text Shadow**, **Slug Text** |
 | Visibility | **Opacity**. It shows while you cast, and with a sample in Edit Mode. |
 
@@ -603,24 +603,33 @@ Places are an element's `point` on the target's `relativePoint`, in UI units
 | Element | Settings | Place (1080 / 1440) |
 |---|---|---|
 | Cooldown Manager | switched on | |
-| Essential Cooldowns | 46 by 40, 7 per line, Spacing 2, Centered Horizontal, New Lines Down | center on the screen's bottom, 300 / 325 up |
-| Utility Cooldowns | 36 by 30, 6 per line, Spacing 2, Centered Horizontal, Down | top on Essential's bottom, 82 down |
-| Resource Bars | Group Resources; Power 10, Combo Points 8, Alternate Mana 8, Dark; Health off; Power's Match Width on, matched to Essential (Edit Mode's pick) | Power: bottom on Essential's top, 1 up |
+| Essential Cooldowns | 38 by 30, 7 per line, Centered Horizontal, New Lines Down | center on the screen's bottom, 300 / 325 up |
+| Utility Cooldowns | 36 by 30, 6 per line, Centered Horizontal, Down | top on Essential's bottom, 69 down (36 under a second Essential row) |
+| Resource Bars | Group Resources; Power 10, Combo Points 8, Alternate Mana 8, all Bar Mode Color (Power in Class Color, Combo Points and Alternate Mana in their own colors); Health off; Power's Match Width on, matched to Essential (Edit Mode's pick) | Power: bottom on Essential's top, 1 up |
 | Cast Bar | height 12, Match Width on, matched to Essential; Icon Hidden | bottom on Power's top, 1 up |
-| Tracked Buffs | 30 by 24, 10 per line, Spacing 1, Centered Horizontal, New Lines Up | bottom on the Cast Bar's top, 1 up |
-| Defensive Cooldowns | its defaults (above) | bottom right on the ModeUI Player Frame's top right, 12 down |
-| Emphasized Buffs | its defaults | bottom on Tracked Buffs' top, 1 up |
+| Tracked Buffs | 30 by 24, 10 per line, Centered Horizontal, New Lines Up | bottom on the Cast Bar's top, 1 up |
+| Defensive Cooldowns | 36 by 30, otherwise its defaults (above) | bottom right on the ModeUI Player Frame's top right, (1, -14): on the frame's top border |
+| Emphasized Buffs | 38 by 30, otherwise its defaults | bottom on Tracked Buffs' top, 1 up |
 | Left Buffs / Right Buffs | their defaults | screen center, 150 left / 150 right |
 | Ultra Emphasized Buffs | its defaults | screen center, 110 / 135 right and 115 up |
 
+Every icon bar (the four viewers and the five default bars) also takes the
+owner's tuning (November 18, 2026, tested at 1080p): Mode-Round in Gunmetal,
+Border Size 1, Spacing -1 (neighbours share one shadow pixel) and cooldown
+numbers in `cooldownHot` (#FF3948). Defensive Cooldowns sit on the Player
+frame's top border: the frame's band starts 14 under its element's top (the
+70px ring round the 42px bar block), and the bar's stand-in ends in its
+icons' shadow ring, so at -14 the two share one shadow pixel; +1 lines the
+icons' band up with the frame's right end.
+
 Stand-ins as built: each bar's stand-in is one line of its icons, every icon
-with its 2px edge on each side, Spacing apart: Essential 362 by 44, Utility
-250 by 34, Defensive Cooldowns 106 by 28, Emphasized Buffs 206 by 44, Ultra
-Emphasized Buffs 118 by 52. A line of an odd pixel count is rounded up to an
-even one so a centered line lands on whole pixels: Tracked Buffs are 350 by
-28 (349 in the editor) and Left and Right Buffs 34 by 174 (173); all three
-hang by their middle, so the extra pixel splits half a pixel to each side and
-no offset can make up for it. Power's grouped block is Essential's 362 wide
+with its 2px edge on each side, Spacing apart: Essential 288 by 34, Utility
+236 by 34 (235 made even), Defensive Cooldowns 118 by 34, Emphasized Buffs 166
+by 34 (165), Ultra Emphasized Buffs 116 by 52 (115). A line of an odd pixel
+count is rounded up to an even one so a centered line lands on whole pixels:
+Tracked Buffs are 332 by 28 (331) and Left and Right Buffs 34 by 164 (163);
+a bar that hangs by its middle splits the extra pixel half to each side and
+no offset can make up for it. Power's grouped block is Essential's 288 wide
 and its bars plus the edges tall (14 with Power alone; each Combo Points or
 Alternate Mana strip adds its height and a 1px line); it hangs by its bottom,
 so it grows upward and the Cast Bar (12 plus its edges, 16) and Tracked
@@ -634,15 +643,20 @@ Buffs ride above it.
   `/mcdm`; click **Edit Mode** in the window's header and look at the
   bars, then **Exit**.
 - **Required state:** ModeCDM and ModeUI installed, logged in once after
-  updating (the Mode-Default profile is made at login), Unit Frames on, a
+  updating (the Mode-Default profile is made at login; one made before the
+  owner's tuning of November 18, 2026 keeps the old values: delete it and
+  make it again with **New from DPS / Tank Layout**), Unit Frames on, a
   class with a power bar; out of combat.
 - **Confirmation:** the window lists Defensive Cooldowns under **Cooldown
   Bars** and Emphasized Buffs, Left Buffs, Right Buffs and Ultra Emphasized
   Buffs under **Buff Bars**; in Edit Mode Essential sits low in the middle
-  (300 up at 1080, 325 at 1440) with Utility 82 below it, and above Essential,
-  1 pixel apart each, the grouped resource bars and the Cast Bar as wide as
-  Essential, then Tracked Buffs, then Emphasized Buffs; Defensive Cooldowns
-  sit just above the Player frame's bars at its right; Left and Right Buffs
+  (300 up at 1080, 325 at 1440) with Utility 69 below it, and above Essential,
+  1 pixel apart each, the grouped resource bars (filled: Power in your class
+  color) and the Cast Bar as wide as Essential, then Tracked Buffs, then
+  Emphasized Buffs; every bar in Mode-Round Gunmetal with one dark pixel
+  between icons and red (#FF3948) cooldown numbers; Defensive Cooldowns sit
+  on the Player frame's top border at its right end, one dark pixel above the
+  frame's band, right ends lined up; Left and Right Buffs
   stand either side of the screen's middle; no Lua errors. Switching back to
   your old profile shows it as it was.
 

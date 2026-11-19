@@ -828,28 +828,38 @@ H.Load({ before = STUBS .. "\nMakeViewers()" }).run([==[
             return style.width == w and style.height == h and style.perLine == per and style.spacing == spacing and style.grow == grow and style.lineGrowth == lines
         end
         assert(db.enabled and db.version == M.VERSION, variant .. ': on')
-        assert(Shape(db.essential, 46, 40, 7, 2, 'centerH', 'down') and Placed('cooldownManagerEssential', 'screen', 'CENTER', 'BOTTOM', 0, variant == '1440' and 325 or 300), 'Essential')
-        assert(Shape(db.utility, 36, 30, 6, 2, 'centerH', 'down') and Placed('cooldownManagerUtility', 'cooldownManagerEssential', 'TOP', 'BOTTOM', 0, -82), 'Utility')
+        assert(Shape(db.essential, 38, 30, 7, -1, 'centerH', 'down') and Placed('cooldownManagerEssential', 'screen', 'CENTER', 'BOTTOM', 0, variant == '1440' and 325 or 300), 'Essential')
+        -- Utility 36 under Essential's second row: a row is 30 + 2 x 2 - 1 = 33.
+        assert(Shape(db.utility, 36, 30, 6, -1, 'centerH', 'down') and Placed('cooldownManagerUtility', 'cooldownManagerEssential', 'TOP', 'BOTTOM', 0, -69), 'Utility')
+        -- Every bar in Mode-Round Gunmetal with cooldownHot numbers (owner's tuning, November 18, 2026).
+        local looks = { 'essential', 'utility', 'buffIcon', 'buffBar' }
+        for _, bar in ipairs(db.customBars) do looks[#looks + 1] = bar.id end
+        for _, key in ipairs(looks) do
+            local style = db[key]
+            assert(style.edgeStyle == 'round' and style.edgeMetal == 'gunmetal' and style.spacing == -1 and style.edgeSize == 1
+                and addon.Style.SameColor(style.cooldownColor, addon.Style.Tone.cooldownHot), key .. ': the Mode-Default look')
+        end
         local r = db.resources
         assert(db.resourceLayout == 'grouped' and r.power.height == 10 and r.combo.height == 8 and r.mana.height == 8 and not r.health.show, 'Group Resources')
-        assert(r.power.barMode == 'dark' and r.combo.barMode == 'dark' and r.mana.barMode == 'dark' and r.power.matchWidth, 'Dark, Match Width')
+        assert(r.power.barMode == 'color' and r.combo.barMode == 'color' and r.mana.barMode == 'color' and r.power.matchWidth, 'filled, Match Width')
+        assert(r.power.colorMode == 'class' and r.combo.colorMode == 'custom' and r.mana.colorMode == 'power', 'Power in class color, the others their own')
         assert(matches.cooldownManagerResourcePower.width == 'cooldownManagerEssential', "Power matches Essential's width")
         assert(Placed('cooldownManagerResourcePower', 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 1), 'Power on Essential')
         assert(db.castBar.height == 12 and db.castBar.matchWidth and db.castBar.icon == 'none' and matches.cooldownManagerCastBar.width == 'cooldownManagerEssential', 'Cast Bar')
         assert(Placed('cooldownManagerCastBar', 'cooldownManagerResourcePower', 'BOTTOM', 'TOP', 0, 1), 'Cast Bar on Power')
-        assert(Shape(db.buffIcon, 30, 24, 10, 1, 'centerH', 'up') and Placed('cooldownManagerBuffIcon', 'cooldownManagerCastBar', 'BOTTOM', 'TOP', 0, 1), 'Tracked Buffs')
+        assert(Shape(db.buffIcon, 30, 24, 10, -1, 'centerH', 'up') and Placed('cooldownManagerBuffIcon', 'cooldownManagerCastBar', 'BOTTOM', 'TOP', 0, 1), 'Tracked Buffs')
         assert(#db.customBars == 5 and db.nextCustom == 6, 'the five default bars')
         local function Bar(tag) local bar = M.PresetBar(db, tag); return M.ElementId(bar.id), db[bar.id] end
         local id, style = Bar('defensives')
-        assert(Shape(style, 30, 24, 3, 2, 'left', 'up') and Placed(id, 'unitFramesPlayer', 'BOTTOMRIGHT', 'TOPRIGHT', 0, -12), 'Defensive Cooldowns')
+        assert(Shape(style, 36, 30, 3, -1, 'left', 'up') and Placed(id, 'unitFramesPlayer', 'BOTTOMRIGHT', 'TOPRIGHT', 1, -14), 'Defensive Cooldowns')
         id, style = Bar('emphasized')
-        assert(Shape(style, 46, 40, 4, 2, 'centerH', 'up') and Placed(id, 'cooldownManagerBuffIcon', 'BOTTOM', 'TOP', 0, 1), 'Emphasized Buffs')
+        assert(Shape(style, 38, 30, 4, -1, 'centerH', 'up') and Placed(id, 'cooldownManagerBuffIcon', 'BOTTOM', 'TOP', 0, 1), 'Emphasized Buffs')
         id, style = Bar('leftBuffs')
-        assert(Shape(style, 30, 24, 6, 1, 'centerV', 'left') and Placed(id, 'screen', 'CENTER', 'CENTER', -150, 0), 'Left Buffs')
+        assert(Shape(style, 30, 24, 6, -1, 'centerV', 'left') and Placed(id, 'screen', 'CENTER', 'CENTER', -150, 0), 'Left Buffs')
         id, style = Bar('rightBuffs')
-        assert(Shape(style, 30, 24, 6, 1, 'centerV', 'right') and Placed(id, 'screen', 'CENTER', 'CENTER', 150, 0), 'Right Buffs')
+        assert(Shape(style, 30, 24, 6, -1, 'centerV', 'right') and Placed(id, 'screen', 'CENTER', 'CENTER', 150, 0), 'Right Buffs')
         id, style = Bar('ultra')
-        assert(Shape(style, 54, 48, 2, 2, 'centerH', 'up') and style.cooldownSize == 22 and style.countSize == 18, 'Ultra Emphasized Buffs')
+        assert(Shape(style, 54, 48, 2, -1, 'centerH', 'up') and style.cooldownSize == 22 and style.countSize == 18, 'Ultra Emphasized Buffs')
         assert(Placed(id, 'screen', 'CENTER', 'CENTER', variant == '1440' and 135 or 110, 115), 'Ultra further out at 1440')
     end
     assert(not M.db.enabled and M.db.essential.width == 40 and addon.db.positions.cooldownManagerEssential == nil, 'the profile in use is untouched')

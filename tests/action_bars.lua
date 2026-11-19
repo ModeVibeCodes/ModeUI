@@ -716,10 +716,10 @@ H.Load({ before = STUBS }).run([==[
         assert(db.enabled == true)
         for _, bar in ipairs({ 'bar1', 'bar2', 'bar3', 'bar4' }) do
             local s = db[bar]
-            assert(s.show and s.width == 36 and s.height == 30 and s.spacing == 2 and s.buttons == 12 and s.perLine == 12
-                and s.orientation == 'horizontal' and s.start == 'TOPLEFT', bar)
+            assert(s.show and s.width == 28 and s.height == 24 and s.spacing == 2 and s.buttons == 12 and s.perLine == 12
+                and s.orientation == 'horizontal' and s.start == 'TOPLEFT' and s.edgeStyle == 'blizz', bar)
             local g = M.Geometry(s, 12, 1)
-            assert(g.width == 526 and g.height == 36, bar .. ' is 526 x 36')
+            assert(g.width == 430 and g.height == 30, bar .. ' is 430 x 30')
         end
         assert(not db.bar5.show and not db.bar6.show and not db.bar7.show and not db.bar8.show)
         for _, bar in ipairs({ 'pet', 'stance' }) do
@@ -729,10 +729,12 @@ H.Load({ before = STUBS }).run([==[
         assert(db.pet.start == 'TOPLEFT' and db.stance.start == 'TOPRIGHT')
         local pet = M.Geometry(db.pet, 10, 1)
         assert(pet.width == 378 and pet.height == 30)
-        local micro = db.micro
-        assert(micro.perLine == 8 and micro.width == 32 and micro.height == 40 and micro.spacing == 4 and micro.start == 'TOPLEFT')
-        local g = M.Geometry(micro, 12, 1)
-        assert(g.width == 332 and g.height == 96 and g.points[9][3] < g.points[1][3], 'the second row of 8 goes below the first')
+        -- The micro menu in one row of 16 and the bag bar, 28 x 22, on Mouseover (owner's tuning, November 18, 2026).
+        local micro, bags = db.micro, db.bags
+        assert(micro.perLine == 16 and micro.width == 28 and micro.height == 22 and micro.spacing == 4 and micro.start == 'TOPLEFT')
+        assert(micro.visibility == 'mouseover' and bags.visibility == 'mouseover' and bags.width == 28 and bags.height == 22)
+        local g = M.Geometry(micro, 16, 1)
+        assert(g.width == 16 * 34 + 15 * 4 and g.height == 28 and g.points[16][3] == g.points[1][3], 'one row of 16')
         local function Is(element, target, point, rel, x, y)
             local p = pos[element]
             assert(p and p.target == target and p.point == point and p.relativePoint == rel and p.x == x and p.y == y, element)

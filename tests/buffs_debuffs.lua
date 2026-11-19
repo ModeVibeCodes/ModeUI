@@ -390,7 +390,7 @@ H.Load({ before = STUBS }).run([==[
             assert(bar.width == 30 and bar.height == 24 and bar.perRow == 12 and bar.grow == 'left' and bar.wrap == 'down'
                 and bar.spacing == 4 and bar.timer == 'below' and bar.timerSize == 10, 'Buffs and Debuffs icons')
         end
-        assert(b.max == 24 and d.max == 16 and pb.width == 26 and pb.height == 20)
+        assert(b.max == 24 and d.max == 16 and pb.width == 30 and pb.height == 24 and pb.perRow == 5, 'Player Buffs 30 x 24, five to a row')
         assert(db.bars.playerDebuffs.width == 42 and db.bars.playerImportant.width == 48, 'player debuff bars unchanged')
         assert(db.customBars[1].preset == 'defensives' and db.customBars[1].id == 'custom1')
         local def = db.bars.custom1
@@ -406,7 +406,8 @@ H.Load({ before = STUBS }).run([==[
         Is('buffs', 'modeMinimap', 'TOPRIGHT', 'TOPLEFT', -10, 2)
         Is('debuffs', 'modeMinimap', 'TOPRIGHT', 'BOTTOMLEFT', -10, 73)
         Is('custom1', 'screen', 'RIGHT', 'CENTER', -124, 166)
-        assert(pos[M.ElementId('playerBuffs')] == nil, 'Player Buffs keep their default place')
+        -- Under the Player frame's bottom border, sharing its shadow pixel, right edges lined up.
+        Is('playerBuffs', 'unitFramesPlayer', 'TOPRIGHT', 'BOTTOMRIGHT', 0, 13)
     end
     -- The bars may anchor to the minimap (anyTarget).
     addon:SetModuleEnabled('buffsDebuffs', true)

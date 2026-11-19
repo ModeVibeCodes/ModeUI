@@ -3,10 +3,10 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 17, 2026 (Phases 0-8
-built and confirmed November 15. The revisions and tweaks phase has started:
-the first revision, a more detailed border, is built and waits on its in-game
-gate; see "Revision 1: borders" below).
+machine or in a new session. Last updated November 18, 2026 (Phases 0-8
+built and confirmed November 15. The revisions and tweaks phase is under way:
+borders, type, ModeCDM's bars and the Mode-Default layout, each waiting on
+its in-game gate; see the revisions below).
 
 ## Goal
 
@@ -360,6 +360,44 @@ Built on branch `t3/mode-default-layout`.
   setting for Essential; the Healer layout (the owner's notes are in the
   editor's Healer tab).
 - Checked against the mock client only; waiting on the owner's in-game look.
+- **Owner's tuning (November 18, 2026, tested at 1080p; 1440 follows: the
+  same sizes and x, its own heights)**, on branch `t3/mode-default-tweaks`:
+  - ModeCDM borders for every bar: icon edges drawn in pieces (they read
+    square: an icon is shorter than the ring art), **Border Size** (1 or 2px)
+    on every bar including resource and cast bars, **Border Color** for
+    Mode-BlizzEmpty, Spacing down to -2, the Border glow's rim following the
+    bar (DESIGN_LANGUAGE.md, "Cooldown icons").
+  - In the layout: every ModeCDM bar Mode-Round Gunmetal, Spacing -1 (one
+    shared shadow pixel; owner's pick over 0 and -2), cooldown numbers
+    #FF3948 (`Tone.cooldownHot`); Essential and Emphasized Buffs 38 x 30,
+    Defensive Cooldowns 36 x 30 on the Player frame's top border (one shared
+    shadow pixel, right ends lined up); Utility 69 under Essential; Power
+    filled in class color, Combo Points and Alternate Mana filled in their
+    own colors (owner's pick).
+  - Player and Target at x ±276 (10px from Essential's band); the name at
+    Top Right and health text at Bottom Right inside the bar, the level kept;
+    Player Buffs 30 x 24, five to a row, under the bottom border (owner's
+    pick); party frames at -399 in Dark.
+  - Action Bars 1-4 28 x 24, Spacing 2, Mode-Blizz; Micro Menu 28 x 22, one
+    row of 16, Mouseover; Bag Bar 28 x 22, Mouseover. Pet and Stance bars
+    keep 30 x 24 (not in the notes).
+  - A Mode-Default profile made before this keeps the old values (layouts
+    only write new profiles). In-game check: **Navigation:** `/modeui`, then
+    **Profiles**. **Action:** pick **Mode-Default** in **Profile**, click
+    **Delete**; under **Manage**, leave **New from DPS / Tank Layout** empty
+    and click **Create**; pick **Mode-Default**, click **Switch to This
+    Profile**, then **Reload**. **Required state:** ModeUI and ModeCDM
+    updated, a Rogue with a target, out of combat, 1080p. **Confirmation:**
+    the CDM icons have rounded Gunmetal rims with one dark pixel between
+    them and red cooldown numbers; the frames sit about 10px from Essential;
+    Defensive Cooldowns rest on the Player frame's top border and Player
+    Buffs under its bottom border, right ends lined up; the name and health
+    text sit inside the bar at the right; the micro menu and bags appear on
+    mouseover; party frames are dark. Then `/mcdm`, any bar, **Look**:
+    **Border Size** shows, and **Border Color** appears with Border Style
+    Mode-BlizzEmpty.
+- **Next (owner):** the Healer layout, in the same editor (its own tab and
+  saved record), from the owner's notes in the editor's Healer tab.
 
 ## Decisions
 

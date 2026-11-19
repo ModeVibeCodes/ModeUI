@@ -315,7 +315,7 @@ same at 1080 and 1440. The module is on.
 |---|---|---|
 | Buffs | 30 x 24, 12 per row, 24 max, Grow Left, New Rows Down, Spacing 4, time below | TOPRIGHT on the Minimap's TOPLEFT, (-10, 2) |
 | Debuffs | the same, 16 max | TOPRIGHT on the Minimap's BOTTOMLEFT, (-10, 73) |
-| Player Buffs | 26 x 20 | its default |
+| Player Buffs | 30 x 24, 5 per row | TOPRIGHT on the Player frame's BOTTOMRIGHT, (0, 13) |
 | Defensives (`custom1`) | 40 x 34, 4 max | RIGHT on the screen's CENTER, (-124, 166) |
 
 Player Debuffs (All) and Boss & Important keep their defaults. The owner's
@@ -328,7 +328,12 @@ its edge 3px past it. So the places put outer edges on outer edges: 6px from
 the minimap's edge is -(6 + 3 + 1) = -10; Buffs' icon tops on the minimap's
 top is 3 - 1 = 2; Debuffs' two rows (2 x 36 + 4 = 76, `M:BarSize`) end on
 the minimap's bottom at 76 - 3 = 73 (the editor's 82 counted 39-tall rows);
-Defensives' right edge at -123 is -124 for the element. Icons show 2px
+Defensives' right edge at -123 is -124 for the element. Player Buffs (owner's
+tuning, November 18, 2026) sit under the Player frame's bottom border: its
+bar block ends 14 above the frame element's bottom (the 70px ring round the
+42px block) with its band on the block's edge, so icons 14 - 1 = 13 up share
+that band's shadow pixel, right edges lined up; five to a row (158 wide)
+stay clear of the portrait ring. Icons show 2px
 smaller each way than the editor drew them (32 x 26 with the shadow, not
 34 x 28; Defensives 42 x 36, not 46 x 40).
 

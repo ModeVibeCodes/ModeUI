@@ -13,20 +13,25 @@ The unit frames' part of the built-in **Mode-Default** layout (DPS / Tank,
 profile; no existing profile changes. The same at 1080 and 1440 except the
 height (y) of the row:
 
-- **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -317,
-  y 300 (1080) or 325 (1440). The name on the top border aligned Left
-  (`player.texts.border.align = "LEFT"`).
-- **Target** (`unitFramesTarget`): its CENTER on the screen's BOTTOM, x 317,
+- **Player** (`unitFramesPlayer`): its CENTER on the screen's BOTTOM, x -276,
+  y 300 (1080) or 325 (1440): its band 10px from Essential Cooldowns' band
+  (owner's tuning, November 18, 2026; Essential is 288 wide with its edges,
+  its band 143 out past the shadow pixel: 143 + 10 + 123). Texts: the name moves from the
+  border to **Top Right** (size 12) and the health text from Right to
+  **Bottom Right** (size 11), inside the health bar, so Defensive Cooldowns
+  own the top border's right end; the level stays at Bottom Left.
+- **Target** (`unitFramesTarget`): its CENTER on the screen's BOTTOM, x 276,
   the same y. It still matches and mirrors the Player (defaults), so its name
-  sits on the right end of its border. Its buffs start at the Top Left and
-  grow Right (`target.buffs.anchor = "TOPLEFT"`, `grow = "right"`).
+  sits at the top left and its health text at the bottom left. Its buffs
+  start at the Top Left and grow Right (`target.buffs.anchor = "TOPLEFT"`,
+  `grow = "right"`).
 - **Focus** (`unitFramesFocus`): Frame Width 120, 20px health, 3px power,
   Scale 100, no portrait, buffs and debuffs off, its cast bar on, 12 tall and
   8 below the frame (122 x 26 with its 1px rim). The editor hung its bottom
   left 64 over the Target's top left corner; unit frames are placed on the
   screen only (`allowedTargets = { "screen" }` in `Build.lua`), so the layout
-  writes that spot from the screen: BOTTOMLEFT on the screen's BOTTOM, x 194
-  (317 less half the Target's 246), y 399 (1080) or 424 (1440) (the Target's
+  writes that spot from the screen: BOTTOMLEFT on the screen's BOTTOM, x 153
+  (276 less half the Target's 246), y 399 (1080) or 424 (1440) (the Target's
   top, y + 35, plus 64). Moving the Target later does not move the Focus.
 - **Target of Focus** off. **Target of Target** keeps its defaults (attached
   under the Target frame).

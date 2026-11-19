@@ -140,11 +140,11 @@ Medium (another font keeps its one weight). Every bar shares one font setup:
 (DPS / Tank, `Shared/Runtime/Layouts.lua`); it only writes a new profile. The
 same at 1080 and 1440. The module is on.
 
-- **Action Bars 1-4**: 36 x 30 buttons, Spacing 2, 12 buttons, 12 per line,
-  Rows (Action Bar 4 turns from Columns), First Button Top Left. Each is
-  12 x (36 + 6) + 11 x 2 = 526 wide and 36 tall (the `frame` edge's 3px each
-  side is inside the bar, `M.Geometry`), as the owner's layout editor drew
-  them. A centered 2 x 2 grid: Action Bar 1's BOTTOMRIGHT on the screen's
+- **Action Bars 1-4**: 28 x 24 buttons (owner's tuning, November 18, 2026),
+  Spacing 2, 12 buttons, 12 per line, Rows (Action Bar 4 turns from Columns),
+  First Button Top Left, Border Style Mode-Blizz (the default). Each is
+  12 x (28 + 6) + 11 x 2 = 430 wide and 30 tall (the `frame` edge's 3px each
+  side is inside the bar, `M.Geometry`). A centered 2 x 2 grid: Action Bar 1's BOTTOMRIGHT on the screen's
   BOTTOM (-4, 8); Action Bar 2's LEFT on Action Bar 1's RIGHT (8, 0); 3 and 4
   BOTTOM on 1's and 2's TOP (0, 4).
 - **Action Bar 5** is off; 6-8 stay off.
@@ -152,10 +152,12 @@ same at 1080 and 1440. The module is on.
   Action Bar 3's TOPLEFT (0, 4). **Stance Bar**: the same, First Button Top
   Right, so it fills from the right end; BOTTOMRIGHT on Action Bar 4's
   TOPRIGHT (0, 4).
-- **Micro Menu**: 8 per line (Blizzard's 32 x 40, Spacing 4); with First
-  Button Top Left the second row goes below the first (332 x 96 for 9-16
-  buttons). TOPLEFT on the screen's TOPLEFT (8, -8). **Bag Bar**: TOPLEFT on
-  the Micro Menu's TOPRIGHT (8, 0).
+- **Micro Menu**: 28 x 22, 16 per line (one row, 604 x 28), Spacing 4,
+  Show on Mouseover (owner's tuning, November 18, 2026). TOPLEFT on the
+  screen's TOPLEFT (8, -8). **Bag Bar**: 28 x 22, Show on Mouseover; TOPLEFT
+  on the Micro Menu's TOPRIGHT (8, 0).
+- The pet and stance bars keep 30 x 24, a little larger than the action
+  buttons now; not part of the owner's tuning.
 
 ## Edit Mode
 
