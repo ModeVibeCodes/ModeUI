@@ -76,14 +76,14 @@ function M:LayoutCastFrame(frame, width, px)
     if fill and fill.ClearTextureSlice then fill:ClearTextureSlice() end
     box.comet:Layout(false, px)
     -- The edge over the spark (its head stands a pixel past the bar).
-    box.edge:SetStyle(style.edgeStyle, style.edgeMetal); box.edge:SetShown(edged); box.edge:Layout(); box.edge:SetLevel(3)
+    box.edge:SetRim(style.edgeSize); box.edge:SetStyle(style.edgeStyle, style.edgeMetal); box.edge:SetShown(edged); box.edge:Layout(); box.edge:SetLevel(3)
     local icon = frame.icon
     icon:SetShown(iconOn)
     if iconOn then
         local x = style.icon == "left" and reach or width - iconOuter + reach
         icon:ClearAllPoints(); icon:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -reach); icon:SetSize(h, h)
         icon:SetFrameLevel(frame:GetFrameLevel() + 1)
-        icon.edge:SetStyle(style.edgeStyle, style.edgeMetal); icon.edge:SetShown(edged); icon.edge:Layout()
+        icon.edge:SetRim(style.edgeSize); icon.edge:SetStyle(style.edgeStyle, style.edgeMetal); icon.edge:SetShown(edged); icon.edge:Layout()
     end
     self:LayoutCastTexts(frame, style, px)
     frame.px, frame.barHeight, frame.channel, frame.rimKey = px, h, nil, nil

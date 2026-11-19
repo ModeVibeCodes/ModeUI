@@ -32,16 +32,21 @@ local Cooldowns = addon.Domain.Cooldowns
 -- The `frameThin` edge sits outside each icon (docs/DESIGN_LANGUAGE.md,
 -- "Cooldown icons"): every slot is the icon plus the edge's reach on each
 -- side, so the line holds the edges and Spacing counts between their shadows.
--- The icon fills its slot inside the reach (no inset).
+-- The icon fills its slot inside the reach (no inset). Border Size widens
+-- the band, and the reach with it (frameThin: the 1px shadow ring plus the band).
 M.EDGE = "frameThin"
 M.EDGE_REACH = addon.Style.EdgeReach(M.EDGE)
+function M.IconReach(style)
+    if style.border == "none" then return 0 end
+    return M.EDGE_REACH + (style.edgeSize or 1) - 1
+end
 function M.Geometry(style, count, px, match)
     px = px or 1
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local horizontal = M.horizontalGrowth[style.grow] == true
     local w, h, gap = Snap(style.width), Snap(style.height), Round(style.spacing)
-    local reach = style.border == "none" and 0 or M.EDGE_REACH * px
+    local reach = M.IconReach(style) * px
     count = math.max(0, count)
     local per = math.max(1, style.perLine)
     local alongKey, crossKey = horizontal and "width" or "height", horizontal and "height" or "width"

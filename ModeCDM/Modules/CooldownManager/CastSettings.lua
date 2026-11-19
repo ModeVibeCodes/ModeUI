@@ -95,6 +95,8 @@ function M:CreateCastPage(parent)
             page.castBorderStylePicker = ui.Select(cells[1], 180, function() return M.castChoices.edgeStyle end, "edgeStyle")
             page.castRimPicker = ui.Select(cells[2], 180, M.ResourceRimChoices, nil,
                 function() return M:CastRim() end, function(value) M:SetCastRim(value) end)
+            local size = Columns({ "Border Size" })
+            page.castBorderSizeSelect = ui.Select(size[1], 180, function() return M.choices.edgeSize end, "edgeSize")
             When(function() return db().rimColor == "custom" end, function()
                 local custom = Columns({ "Custom Rim Color" })
                 ui.Color(custom[1], "rimCustom")

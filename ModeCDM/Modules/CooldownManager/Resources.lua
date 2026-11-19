@@ -27,12 +27,12 @@ local function NewBox(parent)
     box.edge = Style.Edge(box, M.EDGE, { pieces = true })
     return box
 end
--- How far a bar's edges reach past its boxes, in px units.
-function M.ResourceReach(style, px) return style.border == "none" and 0 or M.EDGE_REACH * px end
+-- How far a bar's edges reach past its boxes, in px units (Border Size widens it).
+function M.ResourceReach(style, px) return M.IconReach(style) * px end
 -- The shortest bar its border fits, in px units (one pixel without a border).
 function M.ResourceFloor(style, px)
     if style.border == "none" then return px end
-    return Style.EdgeMinHeight(M.EDGE, style.edgeStyle) * px
+    return Style.EdgeMinHeight(M.EDGE, style.edgeStyle, style.edgeSize) * px
 end
 -- A bar's height on whole pixels, raised to its border's floor unless it sits
 -- inside a Grouped block (`free`), where only the block has a floor.
@@ -89,7 +89,7 @@ local function LayoutBox(box, frame, style, x, y, w, h, px, edged, fillEdge)
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -y)
     box:SetSize(w, h)
-    box.edge:SetStyle(style.edgeStyle, style.edgeMetal)
+    box.edge:SetRim(style.edgeSize); box.edge:SetStyle(style.edgeStyle, style.edgeMetal)
     box.edge:SetShown(edged)
     box.edge:Layout()
     local bar = box.bar
@@ -149,7 +149,7 @@ function M:LayoutResourceFrame(frame, id, width, px, sample, opts)
     outer:SetPoint("TOPLEFT", frame, "TOPLEFT", x0, -y0)
     outer:SetSize(math.max(px, width - 2 * reach), h)
     outer:SetFrameLevel(frame:GetFrameLevel() + 1)
-    outer.edge:SetStyle(style.edgeStyle, style.edgeMetal)
+    outer.edge:SetRim(style.edgeSize); outer.edge:SetStyle(style.edgeStyle, style.edgeMetal)
     outer.edge:SetShown(combined and not opts.inBlock and style.border ~= "none")
     outer.edge:Layout()
     local inner = width - 2 * reach

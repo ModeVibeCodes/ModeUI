@@ -53,7 +53,7 @@ function M:SkinBar(item, style, g, state)
         state.art = self.IconArt(iconFrame)
         -- The bar's box: its edge and background, under Blizzard's bar.
         state.box = CreateFrame("Frame", nil, item)
-        state.boxEdge = Style.Edge(state.box, M.EDGE)
+        state.boxEdge = Style.Edge(state.box, M.EDGE, { pieces = true })
         state.bg = state.box:CreateTexture(nil, "BACKGROUND", nil, -8)
         -- Mode Gradient's lift: over the fill (ARTWORK 0), under the texts.
         state.sheen = bar:CreateTexture(nil, "ARTWORK", nil, 7)
@@ -70,8 +70,7 @@ function M:SkinBar(item, style, g, state)
     Fade(item.DebuffBorder, style.debuffBorder)
     Fade(bar.BarBG, false)
     Fade(bar.Pip, false)
-    state.boxEdge:SetStyle(style.edgeStyle, style.edgeMetal)
-    state.boxEdge:SetShown(style.border ~= "none")
+    M.StyleEdge(state.boxEdge, style)
     self:LayoutBarParts(item)
     -- The background fills the box; the fill and its lift draw over it.
     Kit.Inset(state.bg, state.box, 0)

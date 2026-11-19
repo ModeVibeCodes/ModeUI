@@ -168,6 +168,9 @@ local function Style(size, perLine, lineGrowth, small)
         -- The border's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
         -- icons and the Tracked Bars' boxes; Mode-Blizz in its own metal (owner, November 17, 2026).
         edgeStyle = "blizz", edgeMetal = "default",
+        -- Border Size (the band, 1 or 2px) and Border Color (Mode-BlizzEmpty's
+        -- flat band; owner, November 18, 2026).
+        edgeSize = 1, edgeColor = Copy(Tone.metal.silver.mid),
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
         -- in Swipe Color at Swipe Opacity; Edge is the bright line on its
         -- rim, Ready Flash Blizzard's flash as it ends.
@@ -222,11 +225,12 @@ for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[
 M.identityKeys = { show = true, perLine = true, grow = true, lineGrowth = true, width = true, height = true,
     matchWidth = true, matchHeight = true,
     visibility = true, spells = true }
-M.colorKeys = { backgroundColor = true, swipeColor = true, barColor = true }
+M.colorKeys = { backgroundColor = true, swipeColor = true, barColor = true, edgeColor = true }
 for _, kind in ipairs(M.glowKinds) do M.colorKeys[kind .. "Color"] = true end
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end
 
-M.ranges = { perLine = { 1, 20, 1 }, spacing = { 0, 20, 1 }, glowLines = { 2, 16, 1 }, glowThickness = { 1, 4, 1 },
+-- Spacing below 0 overlaps the edges' shadows (-1: one shared pixel; -2: the bands touch).
+M.ranges = { perLine = { 1, 20, 1 }, spacing = { -2, 20, 1 }, glowLines = { 2, 16, 1 }, glowThickness = { 1, 4, 1 },
     backgroundOpacity = { 0, 100, 5 }, swipeOpacity = { 0, 100, 5 }, readyDuration = { 1, 10, 1 },
     opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 } }
 for _, part in ipairs(M.textParts) do
@@ -258,6 +262,7 @@ M.choices = {
     lineGrowth = { { id = "down", label = "Down" }, { id = "up", label = "Up" }, { id = "right", label = "Right" }, { id = "left", label = "Left" } },
     border = { { id = "mode", label = "Mode" }, { id = "none", label = "None" } },
     edgeStyle = Mode.EdgeStyleChoices(), edgeMetal = Mode.EdgeMetalChoices(),
+    edgeSize = { { id = 1, label = "1px" }, { id = 2, label = "2px" } },
     barColorMode = { { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     procGlow = GLOW_STYLES, activeGlow = GLOW_STYLES, readyGlow = GLOW_STYLES, buffGlow = GLOW_STYLES,
     readyMode = { { id = "flash", label = "Flash" }, { id = "always", label = "While Ready" } },

@@ -57,6 +57,8 @@ local Tone = {
     dispel = { Magic = Hex("3399FF"), Curse = Hex("9900FF"), Disease = Hex("996600"), Poison = Hex("009900") },
     quality = { [0] = Hex("9D9D9D"), [1] = Hex("FFFFFF"), [2] = Hex("1EFF00"), [3] = Hex("0070DD"), [4] = Hex("A335EE"), [5] = Hex("FF8000") },
     cooldown = Hex("FFB12F"),
+    -- The Mode-Default layout's Cooldown Manager numbers (owner, November 18, 2026).
+    cooldownHot = Hex("FF3948"),
     -- Quest titles and objectives in tooltips.
     quest = Hex("FFB12F"),
     -- Power bars by power type (Domain.Power; no dependency on Blizzard's

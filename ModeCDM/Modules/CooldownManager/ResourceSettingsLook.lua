@@ -20,6 +20,8 @@ function M:BuildResourceLookTabs(page, ui)
                 page.resourceBorderStylePicker = ui.Select(cells[1], 180, function() return M.resourceChoices.edgeStyle end, "edgeStyle")
                 page.resourceRimPicker = ui.Select(cells[2], 180, M.ResourceRimChoices, nil,
                     function() return M:ResourceRim(Id()) end, function(value) M:SetResourceRim(Id(), value) end)
+                local size = Columns({ "Border Size" })
+                page.resourceBorderSizeSelect = ui.Select(size[1], 180, function() return M.choices.edgeSize end, "edgeSize")
                 When(function() return db().rimColor == "custom" end, function()
                     local custom = Columns({ "Custom Rim Color" })
                     ui.Color(custom[1], "rimCustom")

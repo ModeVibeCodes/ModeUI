@@ -86,6 +86,8 @@ local function Style(show, height, colorMode, color, text, size, extra)
         border = "mode",
         -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
         edgeStyle = "round", edgeMetal = "gunmetal",
+        -- Border Size: the band, 1 or 2px (owner, November 18, 2026).
+        edgeSize = 1,
         -- Rim Color: the metal (edgeMetal), the bar's color, or a custom one;
         -- the last two paint the band flat.
         rimColor = "metal", rimCustom = Copy(Tone.ivory),
@@ -128,7 +130,7 @@ M.V5_RESOURCE = { height = { power = 14, combo = 10, mana = 8 }, comboText = "no
 -- Version 6's heights (MigrateV6 moves a height still at them).
 M.V6_RESOURCE = { height = { power = 10, combo = 6, mana = 6 } }
 
-M.resourceRanges = { width = { 40, 600, 1 }, height = { 4, 40, 1 }, spacing = { 0, 12, 1 },
+M.resourceRanges = { width = { 40, 600, 1 }, height = { 4, 40, 1 }, spacing = { 0, 12, 1 }, edgeSize = { 1, 2, 1 },
     barOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 },
     textSize = { 6, 32, 1 }, textX = { -60, 60, 1 }, textY = { -40, 40, 1 },
     opacity = { 10, 100, 5 }, fadeOpacity = { 0, 100, 5 }, markWidth = { 1, 2, 1 }, dividerWidth = { 1, 2, 1 } }

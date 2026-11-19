@@ -163,6 +163,10 @@ world.run([==[
     assert(M:SetResourceOption('power', 'height', 4) and box.height == 6 and ModeUIResourcePower.height == 10, 'Mode-Blizz floor: 6px')
     assert(M:SetResourceOption('power', 'edgeStyle', 'round') and box.height == 10 and db.power.height == 4, 'Mode-Round floor: 10px; the saved height stays')
     assert(M:SetResourceOption('power', 'height', 10) and M:SetResourceOption('power', 'edgeStyle', 'blizz'))
+    -- Border Size (owner, November 18, 2026): a 2px band reaches 3px; the box moves in and the bar grows.
+    assert(db.power.edgeSize == 1 and M:SetResourceOption('power', 'edgeSize', 2) and box.edge.rim == 2)
+    assert(Point(box)[4] == 3 and Point(box)[5] == -3 and box.width == 448 and ModeUIResourcePower.height == 16, 'a 2px band: 3px reach')
+    assert(not M:SetResourceOption('power', 'edgeSize', 3) and M:SetResourceOption('power', 'edgeSize', 1) and ModeUIResourcePower.height == 14)
     -- Rim Color: Bar Color and Custom paint the edge flat; a metal brings the light back.
     assert(M:SetResourceRim('power', 'bar') and box.edge.tint and box.edge.tint[1] == energy[1], 'Bar Color rim')
     assert(M:SetResourceRim('power', 'custom') and M:SetResourceOption('power', 'rimCustom', { 0, 0, 1 }) and box.edge.tint[3] == 1, 'Custom rim')

@@ -70,19 +70,28 @@ M.FadeRegion = Fade
 
 -- The Mode icon art (docs/DESIGN_LANGUAGE.md, "Cooldown icons"): a Mode
 -- Button face in Background Color behind the icon, and the `frameThin` edge
--- outside the host (1px, in Border Style and Border Metal, with its shadow
--- ring; the layout leaves room for it). The rim covers its own corners: no mask goes on
--- Blizzard's textures. Border None hides the edge.
+-- outside the host (Border Size, in Border Style and Border Metal, with its
+-- shadow ring; the layout leaves room for it). The rim covers its own corners: no mask goes on
+-- Blizzard's textures. Border None hides the edge. Every icon edge is drawn
+-- in pieces: an icon is shorter than the ring art, and sliced corners shrink
+-- (docs/DESIGN_LANGUAGE.md, "Pieces").
 function M.IconArt(host)
-    local art = { face = host:CreateTexture(nil, "BACKGROUND", nil, -7), edge = Style.Edge(host, M.EDGE) }
+    local art = { face = host:CreateTexture(nil, "BACKGROUND", nil, -7), edge = Style.Edge(host, M.EDGE, { pieces = true }) }
     Style.ApplyAsset(art.face, "Button")
     return art
+end
+-- A bar's edge look: its band width, style and metal, Mode-BlizzEmpty's band
+-- in Border Color.
+function M.StyleEdge(edge, style)
+    edge:SetRim(style.edgeSize)
+    edge:SetStyle(style.edgeStyle, style.edgeMetal)
+    edge:SetTint(style.edgeStyle == "blizzEmpty" and style.edgeColor or nil)
+    edge:SetShown(style.border ~= "none")
 end
 function M.PaintIconArt(art, host, style)
     art.face:ClearAllPoints(); art.face:SetAllPoints(host)
     Style.Paint(art.face, style.backgroundColor, style.backgroundOpacity / 100)
-    art.edge:SetStyle(style.edgeStyle, style.edgeMetal)
-    art.edge:SetShown(style.border ~= "none")
+    M.StyleEdge(art.edge, style)
     art.edge:Layout()
 end
 

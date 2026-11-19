@@ -84,6 +84,23 @@ world.run([==[
     assert(M:SetOption('essential', 'border', 'none') and not art.edge.holder:IsShown() and Point(items[1])[5] == 0, 'None still hides the edge')
     assert(M:SetOption('essential', 'border', 'mode') and art.edge.holder:IsShown() and art.edge.styleId == 'round')
     assert(M:SetOption('essential', 'edgeStyle', 'blizz') and M:SetOption('essential', 'edgeMetal', 'default') and art.edge:Metal() == Tone.metal.silver)
+    -- Icon edges in pieces (owner, November 18, 2026): four 1:1 corners and four sides.
+    assert(art.edge.pieces and #art.edge.parts[1] == 8, 'icon edges drawn in pieces')
+    -- Border Size: a 2px band reaches 3px, the line grows by 2 per icon.
+    assert(M.db.essential.edgeSize == 1 and M:SetOption('essential', 'edgeSize', 2) and art.edge.rim == 2)
+    assert(ModeUICooldownEssential.width == wide + 12 * 2 and Point(items[1])[5] == -3 and art.edge:Outset() == 3, 'a 2px band: 3px reach')
+    assert(not M:SetOption('essential', 'edgeSize', 3) and not M:SetOption('essential', 'edgeSize', 0), 'Border Size is 1 or 2')
+    assert(M:SetOption('essential', 'edgeSize', 1) and ModeUICooldownEssential.width == wide)
+    -- Border Color: Mode-BlizzEmpty's flat band; other styles keep their metal.
+    assert(addon.Style.SameColor(M.db.essential.edgeColor, Tone.metal.silver.mid) and art.edge.tint == nil, 'no tint on a lit style')
+    assert(M:SetOption('essential', 'edgeColor', { 1, 0, 0 }) and art.edge.tint == nil, 'Border Color waits for Mode-BlizzEmpty')
+    assert(M:SetOption('essential', 'edgeStyle', 'blizzEmpty') and addon.Style.SameColor(art.edge.tint, { 1, 0, 0 }), 'Mode-BlizzEmpty in Border Color')
+    assert(M:SetOption('essential', 'edgeStyle', 'blizz') and art.edge.tint == nil and M:SetOption('essential', 'edgeColor', Tone.metal.silver.mid))
+    -- Spacing below 0: neighbours share their shadows, down to -2 (the bands touch).
+    assert(M:SetOption('essential', 'spacing', -1) and ModeUICooldownEssential.width == 12 * 44 - 11 + 1, 'Spacing -1 (the stand-in kept even)')
+    assert(Point(items[2])[4] - Point(items[1])[4] == 43, 'slots one pixel closer than the edges')
+    assert(M:SetOption('essential', 'spacing', -2) and not M:SetOption('essential', 'spacing', -3), 'down to -2')
+    assert(M:SetOption('essential', 'spacing', 2) and ModeUICooldownEssential.width == wide)
     items[1]:RefreshSpellCooldownInfo()
     assert(items[1].Cooldown.drawEdge == false and items[1].Cooldown.swipeColor[4] == 0.7, 'edge off, 70% swipe after the refresh')
     local count = items[1].ChargeCount.Current
@@ -156,6 +173,14 @@ world.run([==[
     local ring = set.proc.ring
     assert(set.proc:IsShown() and ring and ring.preset == 'empty' and ring.holder:IsShown() and addon.Style.SameColor(ring.tint, Tone.celadon), 'Border: the Celadon rim over the edge')
     assert(not set.proc.edges[1]:IsShown() and not set.proc.soft:IsShown(), 'no square glow edges')
+    -- The rim takes the bar's shape and band width, so it covers the edge exactly.
+    assert(ring.pieces and ring.styleId == 'blizz' and ring.rim == 1, "the rim in the bar's shape, in pieces")
+    assert(M:SetOption('essential', 'edgeStyle', 'round') and M:SetOption('essential', 'edgeSize', 2))
+    assert(ring.styleId == 'round' and ring.rim == 2 and ring:Outset() == 3 and addon.Style.SameColor(ring.tint, Tone.celadon), 'Mode-Round, 2px: the rim follows')
+    local fades = {}
+    for _, region in ipairs(set.proc.parts) do fades[region] = true end
+    for _, region in ipairs(ring:Regions()) do assert(fades[region], 'every rim texture fades with the glow') end
+    assert(M:SetOption('essential', 'edgeStyle', 'blizz') and M:SetOption('essential', 'edgeSize', 1) and ring.styleId == 'blizz' and ring.rim == 1)
     assert(M:SetSpellGlow('essential', '102', 'proc', 'style', 'blizzard') and not ring.holder:IsShown())
     assert(set.proc.flipbook:IsShown() and set.proc.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', "Blizzard: the game's proc loop art")
     assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active and not set.active:IsShown(), 'proc wins over active')
@@ -376,6 +401,13 @@ world.run([==[
     end
     assert(page.borderStylePicker and page.borderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border Style and Border Metal in Border')
     assert(M:SetOption(c2, 'border', 'none') and not pickerRow.visibleWhen() and M:SetOption(c2, 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
+    -- Border Size under them; Border Color only while the bar is Mode-BlizzEmpty.
+    local colorRow
+    for _, row in ipairs(page.rows) do
+        if row.card == borderGroup.card and row.settingsTitles and row.settingsTitles[1] == 'Border Color' then colorRow = row end
+    end
+    assert(page.borderSizeSelect and colorRow and not colorRow.visibleWhen(), 'Border Size shown; Border Color waits for Mode-BlizzEmpty')
+    assert(M:SetOption(c2, 'edgeStyle', 'blizzEmpty') and colorRow.visibleWhen() and M:SetOption(c2, 'edgeStyle', 'blizz') and not colorRow.visibleWhen())
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     local picker = M.picker
     assert(picker:IsShown() and picker.buttons[1]:IsShown() and picker.buttons[1].key == '302', 'tracked buffs not on it yet')

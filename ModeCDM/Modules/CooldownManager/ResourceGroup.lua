@@ -80,7 +80,7 @@ function M:LayoutResourceGroup()
     block:SetSize(inner, total)
     -- Above the bars (its innermost ring covers their corners), under the texts.
     block:SetFrameLevel(host:GetFrameLevel() + 3)
-    block.edge:SetStyle(style.edgeStyle, style.edgeMetal)
+    block.edge:SetRim(style.edgeSize); block.edge:SetStyle(style.edgeStyle, style.edgeMetal)
     block.edge:SetShown(style.border ~= "none")
     block.edge:Layout()
     block:Show()

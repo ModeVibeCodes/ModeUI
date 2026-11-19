@@ -49,12 +49,22 @@ local function Paint(item, frame, look)
     Kit.PaintSlotGlow(frame, item, border and "none" or look.style, look.color, look.pulse and not border, g and g.px or 1,
         { width = g and g.w, height = g and g.h, lines = look.lines, thickness = look.thickness })
     if border and not frame.ring then
-        frame.ring = addon.Style.Edge(frame, "empty", { rim = 1, level = 1 })
-        for _, region in ipairs(frame.ring:Regions()) do frame.parts[#frame.parts + 1] = region end
+        frame.ring = addon.Style.Edge(frame, "empty", { rim = 1, level = 1, pieces = true })
     end
     if frame.ring then
         frame.ring:SetShown(border)
-        if border then frame.ring:Layout(); frame.ring:SetTint(look.color) end
+        -- The rim takes the bar's shape and band width, so it covers the edge exactly.
+        local style = border and state and M.db and M.db[state.viewer]
+        if style then frame.ring:SetRim(style.edgeSize); frame.ring:SetStyle(style.edgeStyle) end
+        if border then
+            frame.ring:Layout(); frame.ring:SetTint(look.color)
+            -- A new style or width can add ring textures: they fade with the glow too.
+            local listed = {}
+            for _, region in ipairs(frame.parts) do listed[region] = true end
+            for _, region in ipairs(frame.ring:Regions()) do
+                if not listed[region] then frame.parts[#frame.parts + 1] = region end
+            end
+        end
     end
     if border and look.pulse and frame.pulse and not frame.pulse:IsPlaying() then frame.pulse:Play() end
 end

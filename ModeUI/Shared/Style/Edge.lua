@@ -234,12 +234,13 @@ function Style.EdgeDepth(preset)
     return (def.gap == true and 1 or 0) + def.rim
 end
 -- The shortest host, in physical pixels, a border of `preset` in style
--- `styleId` fits ("Choosing a border", Height floor): each ring's corners are
--- drawn 1:1, so a ring must be at least two slice margins tall, and a ring
--- `out` pixels outside the host is the host's height plus 2 * out.
-function Style.EdgeMinHeight(preset, styleId)
+-- `styleId` (and band width `rim`, the role's by default) fits ("Choosing a
+-- border", Height floor): each ring's corners are drawn 1:1, so a ring must be
+-- at least two slice margins tall, and a ring `out` pixels outside the host is
+-- the host's height plus 2 * out.
+function Style.EdgeMinHeight(preset, styleId, rim)
     local floor = 1
-    for _, ring in ipairs((D.Rings(preset, Style.EdgeStyle(styleId)))) do
+    for _, ring in ipairs((D.Rings(preset, Style.EdgeStyle(styleId), rim))) do
         floor = math.max(floor, 2 * D.SHAPES[ring.shape].margin - 2 * ring.out)
     end
     return floor

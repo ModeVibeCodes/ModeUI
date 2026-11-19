@@ -37,7 +37,7 @@ M.defaultPositions.buffIcon = { target = M.CAST_ELEMENT, placement = "above", x 
 M.castDefaults = {
     show = true, width = 300, height = 18, matchWidth = true,
     -- The resource bars' border: Mode-Round in Gunmetal, Rim Color.
-    border = "mode", edgeStyle = "round", edgeMetal = "gunmetal", rimColor = "metal", rimCustom = Copy(Tone.ivory),
+    border = "mode", edgeStyle = "round", edgeMetal = "gunmetal", rimColor = "metal", rimCustom = Copy(Tone.ivory), edgeSize = 1,
     -- Bar Mode Dark: the fill in darkFill, the Comet head alone, the text in
     -- your class color. Bar Color is any color (Color mode, and the rim's
     -- Bar Color); Not Interruptible and Interrupted have their own.
@@ -56,7 +56,7 @@ M.castDefaults = {
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, slug = true,
     opacity = 100,
 }
-M.castRanges = { width = { 40, 600, 1 }, height = { 6, 40, 1 }, iconGap = { 0, 12, 1 },
+M.castRanges = { width = { 40, 600, 1 }, height = { 6, 40, 1 }, iconGap = { 0, 12, 1 }, edgeSize = { 1, 2, 1 },
     barBackgroundOpacity = { 0, 100, 5 }, textSize = { 6, 32, 1 },
     nameX = { -60, 60, 1 }, nameY = { -40, 40, 1 }, timerX = { -60, 60, 1 }, timerY = { -40, 40, 1 },
     opacity = { 10, 100, 5 } }

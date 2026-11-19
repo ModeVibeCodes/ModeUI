@@ -91,7 +91,7 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Power (`powerType`) | Mana `#4096FF`, Rage, Energy, Focus, Happiness (Mode-toned), any other type a neutral gray |
 | Threat (`threat`) | aggro `#FF4848`, losing or pulling `#FFA040` |
 | Stats (`stat`) | the Character window's stats: Strength `#E85C50`, Agility `#FFD140`, Stamina `#E8B04B`, Intellect and mana regen `#4096FF`, Spirit and healing `#7FDB97`, physical power `#FF8A3D`, spell power `#B07CFF`, crit `#FF6B6B`, hit `#FFB12F`, haste `#7FDBFF`, avoidance `#9AD0EC`, armor `#B9B9B9` |
-| Other | cooldown text `#FFB12F`; quest lines in tooltips and the quest and gossip windows' button rims `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`), the owner's picks (November 18, 2026); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
+| Other | cooldown text `#FFB12F`; the Mode-Default layout's Cooldown Manager numbers `#FF3948` (`cooldownHot`, the owner's pick, November 18, 2026); quest lines in tooltips and the quest and gossip windows' button rims `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`), the owner's picks (November 18, 2026); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
 
 `Style.LEGACY` holds the pre-Mode defaults that saved settings still hold or
 migrations recognize (the Onyx palette `Kit.palette` / `Kit.onyx` alias it,
@@ -244,7 +244,16 @@ Phase 6 probe):
   Silver Specular band, shadow ring; Border Style and Border Metal per bar).
   Rows leave room for the edges, so Spacing (2px)
   counts between the shadows and a matched width includes them. Border None
-  hides the edge and gives its room back.
+  hides the edge and gives its room back. (Owner, November 18, 2026:) every
+  icon edge is drawn in **pieces** (see "Pieces"), since an icon is shorter
+  than the 64-row ring art and its sliced corners shrank to look square; a
+  bar's **Border Size** is the band's width, 1 or 2px (the reach grows with
+  it: 2px or 3px past the icon); **Border Color** paints Mode-BlizzEmpty's
+  flat band (a tint, Silver mid by default) in place of its metal; Spacing
+  goes down to -2 (-1: neighbours share one shadow pixel, -2: the bands
+  touch). The Border glow's rim follows the bar's style and band width.
+  The resource bars and the Cast Bar take Border Size too (their Rim Color
+  already paints a flat band: Bar Color or Custom).
 - **Glows:** Border swaps the rim (a Mode Empty rim in the glow color over the
   edge, so the icon keeps its size): Celadon for procs and buffs, Ivory for an
   active effect and off cooldown (Mode Glow by default). Mode Glow, Pixel,
