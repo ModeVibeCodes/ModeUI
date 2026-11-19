@@ -1017,7 +1017,12 @@ local CONTAINERS = STUBS .. [==[
             function button:SetIcon(t) self.iconRegion = t end
             function button:SetDurationCooldown(cd) self.cooldownRegion = cd end
             function button:SetApplicationCount(fs) self.countRegion = fs end
-            function button:AddDispelTypeTexture(t, o) self.dispelTexture, self.dispelOptions = t, o end
+            function button:AddDispelTypeTexture(t, o)
+                -- As Blizzard's AddDisplayElement: a list; the same texture twice is an error.
+                self.dispelTextures = self.dispelTextures or {}
+                for _, held in ipairs(self.dispelTextures) do assert(held ~= t, 'Display element has already been added.') end
+                self.dispelTextures[#self.dispelTextures + 1] = t; self.dispelOptions = o
+            end
             function button:SetDurationText(fs, o) self.timerRegion, self.timerOptions = fs, o end
             options.initializeFrame(button)
             self.groups[key].button = button
@@ -1056,7 +1061,7 @@ withContainers.run([==[
     -- Rims by type through a step curve on the dispel type IDs, which also colors secret types.
     local curve = button.dispelOptions.customDispelColorCurve
     local e = M.db.enemy
-    assert(button.dispelTexture == button.rim and curve and curve.type == Enum.LuaCurveType.Step, 'rim by dispel type through a curve')
+    assert(button.dispelTextures[1] == button.rim and #button.dispelTextures == 8 and curve and curve.type == Enum.LuaCurveType.Step, 'rim by dispel type through a curve, all eight pieces')
     assert(curve.points[1].r == e.auraMagicColor[1] and curve.points[2].r == e.auraCurseColor[1] and curve.points[9].r == e.auraEnrageColor[1], 'type IDs')
     assert(curve.points[11].r == e.auraBleedColor[1] and curve.points[0].r == e.auraNoTypeColor[1], 'bleed and no type')
     assert(button.dispelOptions.showWithoutDispelType and button.dispelOptions.showWhenHelpful, 'every aura gets a rim')

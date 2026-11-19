@@ -1160,9 +1160,11 @@ layoutWorld.run([====[
         -- The name at the top right and the health text at the bottom right, inside the health bar (owner's tuning, November 18, 2026).
         local t=db.player.texts
         assert(db.enabled==true and t.border.content=='none' and t.right.content=='none','the border and the right side left free')
-        assert(t.topRight.content=='name' and t.topRight.size==12 and t.bottomRight.content=='healthPercent' and t.bottomRight.size==11,'name top right, health bottom right')
+        assert(t.topRight.content=='name' and t.bottomRight.content=='healthPercent','name top right, health bottom right')
         assert(t.bottomLeft.content=='level','the level stays')
-        assert(db.player.healthHeight==24 and db.player.powerHeight==3,'24 health, the line and 3 power: as tall as an Essential icon')
+        assert(db.player.healthHeight==28 and db.player.showPower==false,'28 health, no power bar: as tall as an Essential icon')
+        assert(db.player.barWidth==166 and db.target.barWidth==166,'18 shorter')
+        assert(t.topRight.size==11 and t.bottomRight.size==10 and t.bottomLeft.size==10,'room in the bar: 11, 10 and 10')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
             assert(db[unit].nameTextGlow==false and db[unit].healthTextGlow==false,unit..': no text glow')
         end
@@ -1177,16 +1179,16 @@ layoutWorld.run([====[
             assert(p and p.target==target and p.point==point and p.relativePoint==relative and p.x==x and p.y==yy,
                 id..' '..variant..': '..tostring(p and p.point)..' '..tostring(p and p.x)..','..tostring(p and p.y))
         end
-        At('unitFramesPlayer','screen','CENTER','BOTTOM',-268,y)
-        At('unitFramesTarget','screen','CENTER','BOTTOM',268,y)
-        -- 64 over the Target's top left corner (230 x 52), from the screen.
+        At('unitFramesPlayer','screen','CENTER','BOTTOM',-259,y)
+        At('unitFramesTarget','screen','CENTER','BOTTOM',259,y)
+        -- 64 over the Target's top left corner (212 x 52), from the screen.
         At('unitFramesFocus','screen','BOTTOMLEFT','BOTTOM',153,y+90)
         assert(pos.unitFramesTargetTarget==nil and pos.unitFramesFocusTarget==nil)
         -- The sizes behind those numbers.
         local edge=addon.Style.EdgeDepth
         local pg=M:Geometry(db.player,1,edge('frame'))
         local fg=M:Geometry(db.focus,1,edge('frameThin'))
-        assert(pg.width==230 and pg.height==52 and fg.width==122 and fg.height==26)
+        assert(pg.width==212 and pg.height==52 and fg.width==122 and fg.height==26)
     end
     -- Made into its own profile once at login (1080 here: the mock UI is 800 tall).
     assert(ModeUIDB.profiles['Mode-Default'].positions.unitFramesFocus.y==390)
@@ -1205,8 +1207,14 @@ H.Load({ before = STUBS, saved = used }).run([====[
     local pl,pb,pr,pt,pw,ph=Box(M.ghosts.player)
     local tl,tb,tr,tt,tw,th=Box(M.ghosts.target)
     local fl,fb,fr,ft,fw,fh=Box(M.ghosts.focus)
-    assert(pw==230 and ph==52 and tw==230 and th==52 and fw==122 and fh==26,'Edit Mode measures the frames as built')
-    assert((pl+pr)/2-ux==-268 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==268 and (tb+tt)/2-bottom==300)
+    assert(pw==212 and ph==52 and tw==212 and th==52 and fw==122 and fh==26,'Edit Mode measures the frames as built')
+    assert((pl+pr)/2-ux==-259 and (pb+pt)/2-bottom==300 and (tl+tr)/2-ux==259 and (tb+tt)/2-bottom==300)
+    -- No power bar: the health bar fills the block, so Bottom Right sits on the frame's bottom right.
+    local f=M.frames.player
+    local g=f.geometry
+    assert(not f.power:IsShown() and g.healthHeight+2*g.pad==g.blockHeight and f.health:GetHeight()==g.healthHeight,'health fills the block without power')
+    local p=f.texts.bottomRight.points[1]
+    assert(p[1]=='BOTTOMRIGHT' and p[2]==f.health and p[3]=='BOTTOMRIGHT','health text on the bar bottom right')
     assert(fl==tl and fb==tt+64,'the Focus 64 over the Target top left')
 ]====], "unit_frames_layout_world")
 print("unit frames: Mode-Default layout checks passed")

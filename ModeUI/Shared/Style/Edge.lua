@@ -148,7 +148,7 @@ end
 function Edge:Build()
     local rings = D.Rings(self.preset, self.styleId, self.rim)
     self.rings = rings
-    self.shadow, self.gap, self.rimTexture = nil, nil, nil
+    self.shadow, self.gap, self.rimTexture, self.rimParts = nil, nil, nil, nil
     local sub = { shadow = 0, gap = 1 }
     local band = -1
     for i, ring in ipairs(rings) do
@@ -169,7 +169,7 @@ function Edge:Build()
         end
         if ring.kind == "shadow" then self.shadow = texture
         elseif ring.kind == "gap" then self.gap = texture
-        elseif not self.rimTexture then self.rimTexture = texture end
+        elseif not self.rimTexture then self.rimTexture, self.rimParts = texture, parts end
     end
     for i = #rings + 1, #self.textures do
         for _, part in ipairs(self.parts[i] or { self.textures[i] }) do part:Hide() end
@@ -307,6 +307,14 @@ function Edge:SetHighlight(kind)
     if self.shadow then self.highlight = color
     else self.tint = color end
     self:Paint()
+end
+
+-- The band's base ring: one texture, or its eight pieces (what a caller
+-- that recolors the rim itself, such as an aura container, takes).
+function Edge:RimTextures()
+    local list = {}
+    for _, texture in ipairs(self.rimParts or { self.rimTexture }) do list[#list + 1] = texture end
+    return list
 end
 
 -- Changes the band's width (1 or 2 pixels): its lighting, rings and layout.

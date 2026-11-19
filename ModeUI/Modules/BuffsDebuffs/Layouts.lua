@@ -24,7 +24,8 @@ local GAP = 6 -- between the bars' icons and the minimap's edge
 -- The Player frame's bar block ends 10 above its element's bottom (the 52px
 -- ring round the 32px block; Modules/UnitFrames/Layout.lua, Geometry), its
 -- band on the block's edge: icons 9 up share the band's shadow pixel. Five
--- to a row stay clear of the portrait ring.
+-- to a row stay clear of the portrait ring; Spacing 1 leaves one pixel for
+-- both icons' shadows, as the Cooldown Manager's icons share theirs.
 local PLAYER, PLAYER_BLOCK = "unitFramesPlayer", 10
 
 local function Bar(bar, values) for key, value in pairs(values) do bar[key] = value end end
@@ -35,7 +36,7 @@ addon.Layouts:Contribute("mode-default", "buffsDebuffs", function(db, ctx)
     local row = { width = 30, height = 24, perRow = 12, grow = "left", wrap = "down", spacing = 4, timer = "below" }
     Bar(bars.buffs, row); bars.buffs.max = 24
     Bar(bars.debuffs, row); bars.debuffs.max = 16
-    Bar(bars.playerBuffs, { width = 30, height = 24, perRow = 5 })
+    Bar(bars.playerBuffs, { width = 30, height = 24, perRow = 5, spacing = 1 })
     local defensives
     for _, entry in ipairs(db.customBars) do
         if entry.preset == "defensives" and not defensives then defensives = entry.id end

@@ -202,13 +202,14 @@ border all but vanishes (owner, in game, November 18, 2026, on the resource
 bars). A border on a thin host draws each ring as eight textures instead,
 four corners 1:1 and four edges between them (the middle rows stretched down
 the sides, as the slicing does), like Blizzard's NineSlice frames. The
-resource bars, the Cooldown Manager's icons and bars, and the nameplates'
-health and cast boxes use pieces (owner, November 18, 2026); other borders
-keep one sliced texture per ring until an in-game look says they need it
-too. Aura icons on Blizzard's aura containers (nameplates, party frames,
-Buffs & Debuffs) keep the sliced ring: the container recolors exactly one
-rim texture by dispel type (`AddDispelTypeTexture`), and pieces would make
-it eight.
+resource bars, the Cooldown Manager's icons and bars, the nameplates'
+health and cast boxes and every aura icon (nameplates, party frames, unit
+frames, Buffs & Debuffs) use pieces (owner, November 18, 2026); other
+borders keep one sliced texture per ring until an in-game look says they
+need it too. An aura icon on Blizzard's aura containers hands each of its
+rim's eight pieces to `AddDispelTypeTexture` (`Edge:RimTextures()`): the
+container keeps a list and recolors every one (`Blizzard_CustomAuraButton.lua`,
+`AddDisplayElement`; PreserveAsset only recolors).
 
 **Rim Color** (the Cooldown Manager's resource bars): one picker in place of
 Border Metal: Default Metal, Silver, Steel, Gunmetal (saved in `edgeMetal`),
@@ -435,8 +436,10 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   no soft drop, which would shade it.
 - **Chat:** each window a Mode window on its message box (the `window` edge
   inside it, Graphite panel at the chat's Background Opacity); the edit box
-  on a Graphite base band with a 1px Graphite line that turns Ivory while
-  typing (or, Below, a Mode field). Tabs are `control` panes resting on the
+  a field in the `control` edge drawn Mode-Blizz, its outer line Ivory while
+  typing: inside the window, see-through on a band shaded a little darker
+  than the window (black at 15%) with 3 px round it; Below, a Mode field
+  with a Graphite base (owner, November 18, 2026). Tabs are `control` panes resting on the
   edge (Mode Glass at 75% or the Mode Button face): the open one full height
   in the chosen tone with an Ivory label and line, the others tucked down in
   Graphite raised. The button compartment is one `control` box with 1px

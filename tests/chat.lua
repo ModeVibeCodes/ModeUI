@@ -131,11 +131,11 @@ world.run([==[
     assert(panel.edgeFrame:GetParent() == ChatFrame1 and panel.edgeFrame:GetFrameLevel() > ChatFrame1:GetFrameLevel(), 'above the window')
     assert(not panel.modeEdge.below:IsShown(), 'no drop under a see-through window')
     local p = Point(ChatFrame1Background)
-    -- Text Inset 6 + the window edge's 3px; the edit box (24) inside at the
-    -- bottom; the scroll bar's 10px gutter at the right.
+    -- Text Inset 6 + the window edge's 3px; the edit box (24, with the band's
+    -- 3px round it) inside at the bottom; the scroll bar's 10px gutter at the right.
     assert(p[1] == 'TOPLEFT' and p[2] == ChatFrame1 and p[4] == -9 and p[5] == 9, 'box around the messages')
     local q = Point(ChatFrame1Background, 2)
-    assert(q[1] == 'BOTTOMRIGHT' and q[4] == 19 and q[5] == -33, 'room for the edit box and the scroll bar')
+    assert(q[1] == 'BOTTOMRIGHT' and q[4] == 19 and q[5] == -39, 'room for the edit box and the scroll bar')
     FloatingChatFrame_UpdateBackgroundAnchors(ChatFrame1)
     p = Point(ChatFrame1Background); assert(p[4] == -9, 'Blizzard re-anchoring the box is followed')
     -- Edit Mode: the selection over the box and the tab row (24), 2 units of
@@ -143,22 +143,26 @@ world.run([==[
     -- clamp keeps the box itself on screen, also after AnchorSelectionFrame.
     local function Selection(i) return Point(ChatFrame1.Selection, i) end
     assert(Selection(1)[1] == 'TOPLEFT' and Selection(1)[2] == ChatFrame1 and Selection(1)[4] == -11 and Selection(1)[5] == 35, 'selection over the box and tabs')
-    assert(Selection(2)[1] == 'BOTTOMRIGHT' and Selection(2)[4] == 21 and Selection(2)[5] == -35, 'and to the box\'s bottom right')
+    assert(Selection(2)[1] == 'BOTTOMRIGHT' and Selection(2)[4] == 21 and Selection(2)[5] == -41, 'and to the box\'s bottom right')
     local function Clamp(l, r, t, b) local c = ChatFrame1.clampInsets; return c[1] == l and c[2] == r and c[3] == t and c[4] == b end
-    assert(Clamp(-9, 19, 33, -33), 'clamped by the box')
-    ChatFrame1:AnchorSelectionFrame(); assert(Clamp(-9, 19, 33, -33), 'Blizzard resetting the clamp is followed')
+    assert(Clamp(-9, 19, 33, -39), 'clamped by the box')
+    ChatFrame1:AnchorSelectionFrame(); assert(Clamp(-9, 19, 33, -39), 'Blizzard resetting the clamp is followed')
     assert(ChatFrame2.Selection == nil, 'only the Edit Mode window')
-    -- Edit box: joined to the window inside its edge, on a darker Graphite band.
+    -- Edit box: inside the window's edge, a Mode-Blizz field 3px in on a band
+    -- shaded a little darker than the window.
     local band = Point(panel.band)
     assert(panel.band:IsShown() and band[1] == 'BOTTOMLEFT' and band[2] == ChatFrame1Background and band[4] == 3 and band[5] == 3)
-    assert(panel.band:GetHeight() == 24 and Point(ChatFrame1EditBox)[2] == panel.band, 'edit box on the band')
-    assert(panel.band.vertexColor[1] == G.base[1] and math.abs(panel.band.vertexColor[4] - 0.75) < 1e-6, 'Graphite base, a little darker')
+    local ip = Point(ChatFrame1EditBox)
+    assert(panel.band:GetHeight() == 30 and ip[2] == panel.band and ip[4] == 3 and ip[5] == -3, 'the field 3px in on the band')
+    assert(panel.band.vertexColor[1] == Tone.shadow[1] and math.abs(panel.band.vertexColor[4] - 0.15) < 1e-6, 'a little darker, not much')
     assert(ChatFrame1EditBoxLeft.alpha == 0 and ChatFrame1EditBox.focusMid.alpha == 0, 'edit box art faded')
-    assert(panel.bandLine.vertexColor[1] == G.line[1], 'a Graphite divider')
+    local inner = Skin.parts[ChatFrame1EditBox]
+    assert(inner.modeEdge.preset == 'control' and inner.modeEdge.styleId == 'blizz' and inner.modeEdge.holder:IsShown(), 'a Mode-Blizz field')
+    assert(inner.face.vertexColor[4] == 0, 'see-through on the band')
     ChatFrame1EditBox:SetFocus(); ChatFrame1EditBox.scripts.OnEditFocusGained(ChatFrame1EditBox)
-    assert(panel.bandLine.vertexColor[1] == Tone.ivory[1], 'the divider turns Ivory while typing')
+    assert(inner.modeEdge.highlight[1] == Tone.ivory[1], 'its outer line Ivory while typing')
     ChatFrame1EditBox:ClearFocus(); ChatFrame1EditBox.scripts.OnEditFocusLost(ChatFrame1EditBox)
-    assert(panel.bandLine.vertexColor[1] == G.line[1], 'Graphite again')
+    assert(inner.modeEdge.highlight == nil, 'plain again')
     -- Font: the chat face, each window's own size kept.
     local path, size = ChatFrame1:GetFont()
     assert(path == Kit.FontPath(M.db, 'chat') and size == 14, 'chat face, window size kept')
@@ -279,9 +283,9 @@ world.run([==[
     assert(M:SetOption('edgeMetal', 'gunmetal') and panel.modeEdge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
     assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
     assert(M:SetOption('edgeStyle', 'thin') and M:SetOption('edgeMetal', 'default') and panel.modeEdge:Metal() == Tone.metal.steel)
-    assert(M:SetOption('editPosition', 'top') and Point(ChatFrame1Background)[5] == 9 + 24 and Point(panel.band)[1] == 'TOPLEFT', 'edit box at the top')
-    assert(Point(panel.band)[5] == -3 and Point(panel.bandLine)[1] == 'BOTTOMLEFT', 'the band inside the top edge, its divider under it')
-    assert(Point(bar)[5] == -(3 + 24 + 4), 'the scroll bar under the band')
+    assert(M:SetOption('editPosition', 'top') and Point(ChatFrame1Background)[5] == 9 + 30 and Point(panel.band)[1] == 'TOPLEFT', 'edit box at the top')
+    assert(Point(panel.band)[5] == -3, 'the band inside the top edge')
+    assert(Point(bar)[5] == -(3 + 30 + 4), 'the scroll bar under the band')
     assert(M:SetOption('editPosition', 'below') and not panel.band:IsShown(), 'Below: its own field')
     assert(Point(ChatFrame1.Selection, 2)[5] == -(9 + 4 + 24 + 2) and Clamp(-9, 19, 33, -(9 + 4 + 24)), 'the selection takes in the field below')
     local ep = Point(ChatFrame1EditBox)
@@ -297,7 +301,7 @@ world.run([==[
     local s = Point(ChatFrame1.ScrollToBottomButton)
     assert(s[4] == -7 and s[5] == 7, 'Scroll to Bottom clear of the round corner')
     M:SetOption('editPosition', 'bottom')
-    assert(not field.modeEdge.holder:IsShown() and field.face.vertexColor[4] == 0 and panel.band:IsShown(), 'inside again: no field edge')
+    assert(field.modeEdge.holder:IsShown() and field.face.vertexColor[4] == 0 and panel.band:IsShown(), 'inside again: see-through, edge kept')
     assert(M:SetOption('tabHeight', 28)); assert(t1.pane:GetHeight() == 28, 'h1 ' .. tostring(t1.pane:GetHeight()))
     assert(M:SetOption('tuckDepth', 0)); assert(t2.pane:GetHeight() == 28, 'h2 ' .. tostring(t2.pane:GetHeight()))
     assert(M:SetOption('buttons', 'hidden') and not box:IsShown())

@@ -6,18 +6,21 @@ if not M or not addon.Layouts then return end
 -- Shared/Runtime/Layouts.lua), from the owner's layout editor (November 18,
 -- 2026) and the owner's tuning the same day. Player and Target sit either
 -- side of the screen's bottom centre, as tall as an Essential Cooldowns icon:
--- 24 health, the 1px line, 3 power and the 2px rim make a 32px bar block,
--- 34 with its shadow, as an icon is 30 plus its 2px edge each side (the 52px
--- ring is 165% of it, so each frame is 230 x 52). Their bands sit 10px from Essential's
--- (288 wide with its edges, its band 143 out). The name sits inside the
--- health bar at the top right and the health text at the bottom right, both
--- without the text glow, leaving the top border's right end to Defensive
--- Cooldowns; the Target mirrors it, its buffs at the top left growing right.
+-- no power bar, 28 health and the 2px rim make a 32px bar block, 34 with its
+-- shadow, as an icon is 30 plus its 2px edge each side; the 52px ring is 165%
+-- of it, and Frame Width 166 (18 under the default) makes each frame 212 x 52.
+-- Their bands sit 10px from Essential's (288 wide with its edges, its band 143
+-- out). In the health bar: the name (11) at the top right, the health text
+-- (10) at the bottom right, the level (10) at the bottom left, no text glow;
+-- the top border's right end is Defensive Cooldowns'. The Target mirrors it
+-- (its power hidden too, as it matches the Player), its buffs at the top left
+-- growing right.
 -- A small Focus (120 wide, 20px health, 3px power, no portrait, a 12px cast
 -- bar 8px below) sits 64 over the Target's top left corner. Target of Focus
 -- is off; Target of Target keeps its defaults. See docs/UNIT_FRAMES.md,
 -- "Mode-Default layout".
-local HEALTH, POWER = 24, 3
+local HEALTH, WIDTH = 28, 166
+local SIZES = { name = 11, health = 10, level = 10 }
 local ESSENTIAL_BAND, GAP, FOCUS_RISE = 143, 10, 64
 local HEIGHT = { ["1080"] = 300, ["1440"] = 325 }
 local FRAMES = { "player", "target", "targettarget", "focus", "focustarget" }
@@ -34,13 +37,15 @@ end
 addon.Layouts:Contribute("mode-default", "unitFrames", function(db, ctx)
     local y = ctx.V(HEIGHT)
     db.enabled = true
-    db.player.healthHeight, db.player.powerHeight = HEALTH, POWER
+    db.player.healthHeight, db.player.showPower = HEALTH, false
+    db.player.barWidth, db.target.barWidth = WIDTH, WIDTH
     -- The name from the border to the top right, the health text from the
-    -- right to the bottom right, each at its own size; the level stays.
+    -- right to the bottom right; the level stays at the bottom left.
     local texts = db.player.texts
-    texts.topRight.content, texts.topRight.size = texts.border.content, texts.border.size
-    texts.bottomRight.content, texts.bottomRight.size = texts.right.content, texts.right.size
+    texts.topRight.content, texts.topRight.size = texts.border.content, SIZES.name
+    texts.bottomRight.content, texts.bottomRight.size = texts.right.content, SIZES.health
     texts.border.content, texts.right.content = "none", "none"
+    texts.bottomLeft.size = SIZES.level
     for _, unit in ipairs(FRAMES) do db[unit].nameTextGlow, db[unit].healthTextGlow = false, false end
     db.target.buffs.anchor, db.target.buffs.grow = "TOPLEFT", "right"
     local focus = db.focus

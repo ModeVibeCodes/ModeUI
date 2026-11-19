@@ -17,8 +17,8 @@ frame and fades Blizzard's art. Each plate has:
   covers its own corners, so nothing is masked. Each ring is drawn in pieces
   (DESIGN_LANGUAGE.md, "Pieces"; owner, November 18, 2026): a plate's bars
   are shorter than the ring art, whose sliced corners shrank and looked
-  square. Aura icons keep their sliced ring (their dispel color needs one
-  texture). Health fills in **Mode BG**
+  square. Aura icons are drawn in pieces too, each piece taking the dispel
+  color (`Kit.DispelAuraRim`). Health fills in **Mode BG**
   on Mode BG (Slate); the cast bar has its own **Cast Bar** texture (**Mode
   Cast**) and the **Comet** spark on the fill's leading edge (a channel's on
   its left), hidden while an interrupted cast is held.

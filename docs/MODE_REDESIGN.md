@@ -407,6 +407,14 @@ Built on branch `t3/mode-default-layout`.
   Player and Target bars line up with Essential's icons top and bottom;
   Bags, Chat, Nameplates, Tooltip and Windows are on; nameplate borders show
   whole rounded corners; the portrait's face fills the ring.
+- **Third round (owner, November 18, 2026, from in-game screenshots):** every
+  aura icon's rim in pieces (Player Buffs looked thin and uneven), each piece
+  handed to `AddDispelTypeTexture` (Blizzard's container keeps a list);
+  Player Buffs at Spacing 1 (shared shadows); Player and Target without a
+  power bar (28 health keeps the 32px block), Frame Width 166 (frames 212 x
+  52 at x ±259; party frames at -365); texts 11 / 10 / 10 so the bar isn't
+  crowded. Confirmation: Player Buffs show whole rims one dark pixel apart;
+  the frames are shorter, without a power bar; name and health sit apart.
 - **Next (owner):** the Healer layout, in the same editor (its own tab and
   saved record), from the owner's notes in the editor's Healer tab.
 

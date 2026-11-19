@@ -35,7 +35,12 @@ local STUBS = UNIT_STUBS .. [==[
         function button:SetIcon(t) self.iconRegion = t end
         function button:SetDurationCooldown(cd) self.cooldownRegion = cd end
         function button:SetApplicationCount(fs) self.countRegion = fs end
-        function button:AddDispelTypeTexture(t, o) self.dispelTextures = self.dispelTextures or {}; self.dispelTextures[#self.dispelTextures + 1] = t; self.dispelOptions = o end
+        function button:AddDispelTypeTexture(t, o)
+            -- As Blizzard's AddDisplayElement: a list; the same texture twice is an error.
+            self.dispelTextures = self.dispelTextures or {}
+            for _, held in ipairs(self.dispelTextures) do assert(held ~= t, 'Display element has already been added.') end
+            self.dispelTextures[#self.dispelTextures + 1] = t; self.dispelOptions = o
+        end
         function button:SetDurationText(fs, o) self.timerRegion, self.timerOptions = fs, o end
         function button:SetMouseClickEnabled(on) self.clicks = on end
         function button:SetCancelAuraButtons(b) self.cancel = b end
@@ -139,7 +144,7 @@ H.Load({ before = STUBS }).run([==[
     assert(buffs.lineSize == 10 * (32 + 4) - 4, 'ten per row')
     -- Debuffs: colored by type (flat rim handed to the game), private auras come with the container.
     local d = debuffs.groups.debuffs_all.button
-    assert(debuffs.groups.debuffs_all.filter == 'HARMFUL' and d.dispelTextures and d.dispelTextures[1] == d.modeIcon.rim, 'rim by type')
+    assert(debuffs.groups.debuffs_all.filter == 'HARMFUL' and d.dispelTextures and d.dispelTextures[1] == d.modeIcon.rim and #d.dispelTextures >= 8, 'rim by type, every piece')
     assert(d.cancel == nil and d.clicks == false, 'debuffs take no clicks')
     -- Player Debuffs: every kind in order, each leaving out the tokens before it.
     local pd = M.containers.playerDebuffs.groups
@@ -390,7 +395,7 @@ H.Load({ before = STUBS }).run([==[
             assert(bar.width == 30 and bar.height == 24 and bar.perRow == 12 and bar.grow == 'left' and bar.wrap == 'down'
                 and bar.spacing == 4 and bar.timer == 'below' and bar.timerSize == 10, 'Buffs and Debuffs icons')
         end
-        assert(b.max == 24 and d.max == 16 and pb.width == 30 and pb.height == 24 and pb.perRow == 5, 'Player Buffs 30 x 24, five to a row')
+        assert(b.max == 24 and d.max == 16 and pb.width == 30 and pb.height == 24 and pb.perRow == 5 and pb.spacing == 1, 'Player Buffs 30 x 24, five to a row, sharing shadows')
         assert(db.bars.playerDebuffs.width == 42 and db.bars.playerImportant.width == 48, 'player debuff bars unchanged')
         assert(db.customBars[1].preset == 'defensives' and db.customBars[1].id == 'custom1')
         local def = db.bars.custom1

@@ -12,10 +12,11 @@ if not M then return end
 -- Color at Background Opacity, and the `window` edge inside the box on its
 -- own frame above the window (no masks; the rim covers its own corners). A
 -- see-through window has no soft drop, which would only darken it. The edit
--- box joins the window: inside the edge at the bottom or top, on a darker
--- Graphite band with a one-pixel divider that turns Ivory while typing; or
--- Below, as its own field Edit Gap under the window, a Mode field in the
--- `control` edge. Sizes are whole physical pixels.
+-- box is a field in the `control` edge drawn Mode-Blizz, its outer line Ivory
+-- while typing: inside the edge at the bottom or top, see-through on a band
+-- shaded a little darker than the window, EDIT_PAD in from its sides; or
+-- Below, Edit Gap under the window on a Graphite base. Sizes are whole
+-- physical pixels.
 local Skin, Kit, Style = addon.Skin, addon.Kit, addon.Style
 local C = Skin.mode
 local REACH, CONTROL = Style.EdgeReach("window"), Style.EdgeReach("control")
@@ -24,8 +25,9 @@ local TEXTURES = { "Background", "TopLeftTexture", "BottomLeftTexture", "TopRigh
     "LeftTexture", "RightTexture", "BottomTexture", "TopTexture", "ButtonFrameBackground", "ButtonFrameTopLeftTexture",
     "ButtonFrameBottomLeftTexture", "ButtonFrameTopRightTexture", "ButtonFrameBottomRightTexture", "ButtonFrameLeftTexture",
     "ButtonFrameRightTexture", "ButtonFrameBottomTexture", "ButtonFrameTopTexture" }
--- Each edit box's window, for repainting the band when focus changes.
-local owners = setmetatable({}, { __mode = "k" })
+-- The edit field's border style; the band's padding round the field and how
+-- much it darkens the window (black over the window's face).
+local EDIT_STYLE, EDIT_PAD, BAND_SHADE = "blizz", 3, 0.15
 
 -- The suffixes of Blizzard's window art: its own list when it has one.
 local function TextureNames() return type(CHAT_FRAME_TEXTURES) == "table" and CHAT_FRAME_TEXTURES or TEXTURES end
@@ -41,9 +43,10 @@ function M:Rim(px) return REACH * px end
 function M:Corner(px) return self:Rim(px) + Snap(4, px) end
 function M:CornerClear(px) return self:Corner(px) end
 
--- Room the edit box takes inside the box: top, bottom.
+-- Room the edit box takes inside the box (the field and the band's padding
+-- round it): top, bottom.
 function M:EditSpace(px)
-    local height = Snap(self.db.editHeight, px)
+    local height = Snap(self.db.editHeight, px) + 2 * Snap(EDIT_PAD, px)
     if self.db.editPosition == "top" then return height, 0 end
     if self.db.editPosition == "bottom" then return 0, height end
     return 0, 0
@@ -70,15 +73,14 @@ end
 
 -- The window's own pieces, made once: the face and the edge (laid round the
 -- box but belonging to the window, so the idle fade dims them with it), and
--- the edit band with its divider.
+-- the edit band.
 function M:WindowParts(frame, box)
     local parts = Skin.parts[frame]
     if parts and parts.band then return parts end
     parts = Skin.Box(frame, "window", { inset = REACH })
     parts.band = frame:CreateTexture(nil, "BACKGROUND", nil, -7)
-    parts.bandLine = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
-    Style.ApplyAsset(parts.band, "Solid"); Style.ApplyAsset(parts.bandLine, "Solid")
-    parts.regions[parts.band], parts.regions[parts.bandLine] = true, true
+    Style.ApplyAsset(parts.band, "Solid")
+    parts.regions[parts.band] = true
     return parts
 end
 
@@ -149,49 +151,34 @@ function M:PlaceSelection(frame)
     end)
 end
 
--- The edit box and, inside the border, its band and divider.
+-- The edit box and, inside the border, its band.
 function M:LayoutEditBox(frame, box, px, rim)
     local edit, parts = frame.editBox, Skin.parts[frame]
     local position, height = self.db.editPosition, Snap(self.db.editHeight, px)
-    local band, line = parts.band, parts.bandLine
-    band:ClearAllPoints(); line:ClearAllPoints()
+    local band, pad = parts.band, Snap(EDIT_PAD, px)
+    band:ClearAllPoints()
     local inside = position ~= "below"
-    band:SetShown(inside); line:SetShown(inside)
+    band:SetShown(inside)
     if inside then
         local edge = position == "top" and "TOP" or "BOTTOM"
         local sign = position == "top" and -1 or 1
         band:SetPoint(edge .. "LEFT", box, edge .. "LEFT", rim, sign * rim)
         band:SetPoint(edge .. "RIGHT", box, edge .. "RIGHT", -rim, sign * rim)
-        band:SetHeight(height)
-        local facing = position == "top" and "BOTTOM" or "TOP"
-        line:SetPoint(facing .. "LEFT", band, facing .. "LEFT", 0, 0)
-        line:SetPoint(facing .. "RIGHT", band, facing .. "RIGHT", 0, 0)
-        line:SetHeight(px)
-        -- A Graphite band a little darker than the window, as one piece with it.
-        Style.Paint(band, C.field, math.min(1, self.db.backgroundOpacity / 100 + 0.15))
-        self:PaintBand(frame)
+        band:SetHeight(height + 2 * pad)
+        -- The window a little darker under the field, as one piece with it.
+        Style.Paint(band, Style.Tone.shadow, BAND_SHADE)
     end
     if not edit then return end
-    owners[edit] = frame
     edit:ClearAllPoints()
     if inside then
-        edit:SetPoint("TOPLEFT", band, "TOPLEFT", 0, 0)
-        edit:SetPoint("BOTTOMRIGHT", band, "BOTTOMRIGHT", 0, 0)
+        edit:SetPoint("TOPLEFT", band, "TOPLEFT", pad, -pad)
+        edit:SetPoint("BOTTOMRIGHT", band, "BOTTOMRIGHT", -pad, pad)
     else
         local gap = self.db.editGap > 0 and Snap(self.db.editGap, px) or 0
         edit:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -gap)
         edit:SetPoint("TOPRIGHT", box, "BOTTOMRIGHT", 0, -gap)
         edit:SetHeight(height)
     end
-end
-
--- The band's divider: Ivory while its edit box has focus.
-function M:PaintBand(frame)
-    local parts = Skin.parts[frame]
-    if not parts or not parts.bandLine then return end
-    local edit = frame.editBox
-    local focused = edit and edit.HasFocus and edit:HasFocus() == true
-    Style.Paint(parts.bandLine, focused and C.accent or C.line)
 end
 
 -- Blizzard's MinimalScrollBar: a slim Mode track and thumb in the gutter at
@@ -264,22 +251,19 @@ function M:SkinScrollButton(frame, px)
     Skin.PinAlpha(button, function(target) return self:ScrollButtonAlpha(target) end)
 end
 
--- The edit box: Blizzard's left, middle, right and focus art faded. Inside
--- the edge it is see-through on the window's band; Below, it is its own Mode
--- field (a Graphite base in the `control` edge inside it), Ivory while it
--- has focus. Its text, header and prompt use the chat face at the window's
--- text size.
+-- The edit box: Blizzard's left, middle, right and focus art faded. A field
+-- in the `control` edge (inside it) drawn Mode-Blizz, Ivory while it has
+-- focus: see-through on the window's band inside the edge, on a Graphite base
+-- Below. Its text, header and prompt use the chat face at the window's text
+-- size.
 function M:SkinEditBox(frame, px)
     local edit = frame.editBox
     if not edit then return end
-    local parts = Skin.Box(edit, "control", { inset = CONTROL })
+    local parts = Skin.Box(edit, "control", { inset = CONTROL, style = EDIT_STYLE })
     Skin.FadeTextures(edit)
     for _, key in ipairs({ "focusLeft", "focusMid", "focusRight" }) do Skin.Fade(edit[key]) end
     local function Paint()
-        if not self.active then return end
-        self:PaintEditBox(edit)
-        local window = owners[edit]
-        if window then self:PaintBand(window) end
+        if self.active then self:PaintEditBox(edit) end
     end
     Skin.Once(edit, "chatFocus", function()
         edit:HookScript("OnEditFocusGained", Paint)
@@ -301,5 +285,5 @@ function M:PaintEditBox(edit)
     if not parts or not parts.face then return end
     local below = self.db.editPosition == "below"
     local focused = edit.HasFocus and edit:HasFocus() == true
-    Skin.PaintBox(parts, edit, "Solid", C.field, below and 1 or 0, below, focused and "accent" or nil)
+    Skin.PaintBox(parts, edit, "Solid", C.field, below and 1 or 0, true, focused and "accent" or nil)
 end

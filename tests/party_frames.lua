@@ -508,7 +508,12 @@ local CONTAINERS = STUBS .. [==[
         function button:SetIcon(t) self.iconRegion = t end
         function button:SetDurationCooldown(cd) self.cooldownRegion = cd end
         function button:SetApplicationCount(fs) self.countRegion = fs end
-        function button:AddDispelTypeTexture(t, o) self.dispelTextures = self.dispelTextures or {}; self.dispelTextures[#self.dispelTextures + 1] = t; self.dispelOptions = o end
+        function button:AddDispelTypeTexture(t, o)
+            -- As Blizzard's AddDisplayElement: a list; the same texture twice is an error.
+            self.dispelTextures = self.dispelTextures or {}
+            for _, held in ipairs(self.dispelTextures) do assert(held ~= t, 'Display element has already been added.') end
+            self.dispelTextures[#self.dispelTextures + 1] = t; self.dispelOptions = o
+        end
         function button:SetDurationText(fs, o) self.timerRegion, self.timerOptions = fs, o end
         function button:SetMouseClickEnabled(on) self.clicks = on end
         return button
@@ -570,7 +575,7 @@ H.Load({ before = CONTAINERS }).run([==[
     -- A glow by type registers the glow with the game's dispel colors.
     assert(M:SetAuraOption('magic', 'glow', 'gcd') and p1.auraContainers['BOTTOMLEFT|inside'] ~= row and not row.enabled, 'look change: new container')
     local glowing = p1.auraContainers['BOTTOMLEFT|inside'].groups.magic1.button
-    assert(glowing.dispelTextures[2] == glowing.flash and glowing.flash:IsShown(), 'glow by type')
+    assert(glowing.dispelTextures[9] == glowing.flash and glowing.flash:IsShown(), 'glow by type, after the eight rim pieces')
     -- Moving one type gives it a container of its own.
     assert(M:SetAuraOption('curse', 'anchor', 'TOPLEFT') and p1.auraContainers['TOPLEFT|inside'].groups.curse1)
     assert(p1.auraContainers['BOTTOMLEFT|inside'].groups.curse1 == nil, 'out of the shared row')
@@ -762,7 +767,7 @@ layoutWorld.run([==[
         assert(g.height == 28 and g.width == 136 and g.healthHeight == 22 and g.innerHeight == 26)
         -- The stand-in is a full party (5 x 28 + 4 = 144); the four members take
         -- its top 115, their middle at y, so its own middle is 14.5 lower (rounded).
-        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -383 and p.y == y - 14,
+        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -365 and p.y == y - 14,
             variant .. ': ' .. tostring(p.x) .. ',' .. tostring(p.y))
     end
 ]==], "party_layout")
@@ -780,7 +785,7 @@ H.Load({ before = STUBS, saved = used }).run([==[
     local ux, uy = UIParent:GetCenter()
     assert(ghost:GetWidth() == 136 and ghost:GetHeight() == 144, 'room for five')
     local right, top = x + 68 - ux, y + 72 - uy
-    assert(right == -383 and top == 98, 'right edge at -383 (the Player portrait), the top 58 over 40')
+    assert(right == -365 and top == 98, 'right edge at -365 (the Player portrait), the top 58 over 40')
     -- Four members from the top: 4 x 28 + 3 = 115, their middle half a pixel over 40.
     assert(top - 115 / 2 == 40.5)
     -- The secure header starts at the stand-in's top left (its edges from UIParent's BOTTOMLEFT).

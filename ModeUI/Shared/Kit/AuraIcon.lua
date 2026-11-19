@@ -25,7 +25,9 @@ function Kit.AuraIconParts(icon)
     icon.inner = CreateFrame("Frame", nil, icon)
     icon.back = icon:CreateTexture(nil, "BACKGROUND", nil, 1)
     Style.ApplyAsset(icon.back, "Solid"); Style.Paint(icon.back, Style.Tone.shadow)
-    icon.edge = Style.Edge(icon.inner, "frameThin", { style = "thin" })
+    -- In pieces: an aura icon is shorter than the ring art, whose sliced
+    -- corners shrink (docs/DESIGN_LANGUAGE.md, "Pieces").
+    icon.edge = Style.Edge(icon.inner, "frameThin", { style = "thin", pieces = true })
     -- The rim's base ring: aura containers recolor it by dispel type
     -- (Kit.DispelAuraRim), the lighting layers over it hidden.
     icon.rim = icon.edge.rimTexture
@@ -122,11 +124,12 @@ function Kit.TintAuraRim(icon, color) icon.edge:SetTint(color) end
 -- ring alone, `color` until the game recolors it), so no lighting layer
 -- covers the type's color. `icon` is the frame holding the icon parts when
 -- they sit on a child of the button (Buffs & Debuffs: room for text below).
+-- Each of the rim's pieces is handed over (the container keeps a list).
 function Kit.DispelAuraRim(button, options, color, icon)
     icon = icon or button
     icon.edge:SetTint(color or Style.Tone.metal.silver.mid)
     icon.rim = icon.edge.rimTexture
-    button:AddDispelTypeTexture(icon.rim, options)
+    for _, texture in ipairs(icon.edge:RimTextures()) do button:AddDispelTypeTexture(texture, options) end
 end
 -- Lets an aura's art follow a module's Border choice (style and metal ids).
 function Kit.AuraBorderStyle(icon, styleId, metalId) icon.edge:SetStyle(styleId or "thin", metalId) end

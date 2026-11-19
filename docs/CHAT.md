@@ -19,7 +19,7 @@ measures messages, and it never writes Blizzard's globals or fields.
 | Edge | The `window` edge (`Skin.Box`, `Style.Edge`: Mode-Thin by default, a 2px Steel bevel with a 1px black line just inside and a shadow ring, 3 px in all), drawn inside the box on its own frame above the window, so the idle fade dims it with the window. Sliced Round 4 rim art covers its own corners: no masks. A see-through window (Background Opacity under 100) has no soft drop, which would only darken it. **Border Style** and **Border Metal** (Window tab, Border group) choose its look. The scroll bar starts clear of the top-right corner, and Scroll to Bottom sits clear of the bottom-right corner when no edit band fills it. |
 | Box | Blizzard's `Background` region stays as the window's box, moved to Text Inset (6 px) plus the edge's 3 px around the messages, plus the edit box when it sits inside and the scroll bar's 10 px gutter (more on top for the combat log's quick buttons). The tab dock, button frame and alerts that Blizzard anchors to it follow. |
 | Text | The Mode typeface by default (the Font setting's "Mode": Expressway when the client has it, else Geist), with a crisp one-pixel shadow. Each window keeps its own Font Size from its tab's right-click menu; Blizzard re-applies the size but keeps the face. |
-| Edit box | **Bottom** (default) or **Top**: joined to the window inside its edge, on a Graphite base band a little darker than the window, Edit Box Height tall, with a one-pixel Graphite line divider toward the text that turns Ivory while typing. **Below**: its own Mode field Edit Gap under the window (a Graphite base inside the `control` edge), its outer line Ivory while typing. Its text, header and prompt use the chat face. |
+| Edit box | A field in the `control` edge drawn Mode-Blizz (silver, cut corners), Edit Box Height tall, its outer line Ivory while typing (owner, November 18, 2026). **Bottom** (default) or **Top**: inside the window's edge, see-through on a band shaded a little darker than the window (black at 15% over it), the field 3 px in from the band's sides. **Below**: its own Mode field Edit Gap under the window, on a Graphite base. Its text, header and prompt use the chat face. |
 | Tabs | Blizzard's tab art is faded. Each tab is a Mode control resting on the window's edge (the `control` edge inside the pane), the label in the chat face's SemiBold: the selected tab stands Tab Height tall (24 px) in the chosen tone (Graphite track) with an Ivory label and outer line; the others tuck down Tuck Depth (3 px) in Graphite raised with Graphite secondary text. **Glass**: Mode Glass at 75%, so the world shows through. **Solid**: the Mode Button face. Whisper tabs keep their whisper color. Text sits on the pane's middle. |
 | Edit Mode | The main window is one of Blizzard's Edit Mode systems. Blizzard's selection (the blue highlight) reaches 32 units left of and below the window, for the button column ModeUI moves into the compartment, and 60 above. ModeUI lays it over the Mode box and the tab row (and the field, with the edit box Below), 2 units past them for Blizzard's snap padding, and clamps the window by the box. So the highlight shows the window, and snapping to a screen edge or corner puts the box right on it (owner, November 15, 2026). Blizzard's `AnchorSelectionFrame` sets the clamp from the selection again; ModeUI puts its own back right after (post-hook). |
 | Tab width | Blizzard sizes a tab to its text in whatever font it had; General, Combat Log and other fixed or undocked tabs are sized again in the Mode face right after (post-hook on `PanelTemplates_TabResize`), so names aren't cut off. Dynamic docked tabs keep the dock's width; whisper tabs (whose names can be secret) are never measured. |
@@ -115,14 +115,15 @@ textures). Tests: `tests/chat.lua`.
 - **Confirmation:** the chat is a see-through Graphite window (the same
   gray as the Character and Guild windows, at 60%) with the thin steel Mode
   edge just inside it and no drop shadow around it, in Expressway (or Geist
-  without it); the edit box sits inside the edge at the bottom on a slightly
-  darker band, with no gap. Tab names show in full; the selected tab stands
+  without it); the edit box sits inside the edge at the bottom on a band
+  only a little darker than the window, as a field with a thin silver
+  Mode-Blizz border and cut corners, a small gap all round it. Tab names show in full; the selected tab stands
   taller than the others with an Ivory name and an Ivory outline, the others
   gray. In the tab row's right end, the buttons sit in one small box with
   thin dividers. The scroll bar is a slim gray line; the Scroll to Bottom
   button is a small square with a chevron that doesn't flash and turns Ivory
   under the mouse. Away from the mouse the tabs stay until the chat goes
   idle, then hide while the chat eases to 40%. Over the chat or typing it
-  comes back and the line above the edit box turns Ivory. Solid tabs are
+  comes back, and while typing the edit field's border turns Ivory. Solid tabs are
   opaque gray buttons; Glass tabs let the world show through. The settings
   tabs sit above the cards, not over them. No Lua errors.
