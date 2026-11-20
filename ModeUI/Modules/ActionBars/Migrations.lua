@@ -120,11 +120,11 @@ local function MigrateV5(db)
             end
             if style.border == "rounded" or style.border == "square" then style.border = "mode" end
             for _, key in ipairs(M.retiredKeys) do style[key] = nil end
-            if Same(style.backgroundColor, M.BACKGROUND_COLOR) then style.backgroundColor = Copy(Tone.mono.panel) end
+            if Same(style.backgroundColor, M.BACKGROUND_COLOR) then style.backgroundColor = addon.Style.BlizzTone("mono", "panel") end
             if Same(style.procColor, M.PROC_COLOR) then style.procColor = Copy(Tone.celadon) end
             if Same(style.readyColor, M.READY_COLOR) then style.readyColor = Copy(Tone.ivory) end
-            if Same(style.hotkeyColor, P.text) then style.hotkeyColor = Copy(Tone.graphite.secondary) end
-            if Same(style.countColor, P.text) then style.countColor = Copy(Tone.textBright) end
+            if Same(style.hotkeyColor, P.text) then style.hotkeyColor = addon.Style.BlizzTone("graphite", "secondary") end
+            if Same(style.countColor, P.text) then style.countColor = addon.Style.BlizzTone("textBright") end
         end
     end
 end

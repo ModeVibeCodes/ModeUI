@@ -39,7 +39,8 @@ function T:CatchUp(profile, moduleId, db)
     if type(profile.themeParts) ~= "table" then profile.themeParts = {} end
     if profile.themeParts[moduleId] == theme then return end
     local part = self.parts[theme] and self.parts[theme][moduleId]
-    if part then part(db) end
+    if not part then return end
+    part(db)
     profile.themeParts[moduleId] = theme
 end
 
@@ -67,8 +68,17 @@ function T:Seed(root, fresh)
         return
     end
     if profile.theme == "obsidian" then return end
-    local copy = addon.ProfileCodec.Copy(profile)
-    copy.theme, copy.themeParts = "obsidian", {}
+    local ok, copy = pcall(addon.ProfileCodec.Copy, profile)
+    if ok and type(copy) == "table" then
+        copy.theme, copy.themeParts = "obsidian", {}
+        copy = addon.Database:ValidateProfile(copy)
+    else copy = nil end
+    if not copy then
+        -- Kept as it was; tried again at the next start.
+        root.builtThemes.obsidian = nil
+        self.seeded = { failed = source }
+        return
+    end
     local name = UniqueName(root, self.PROFILE_NAME)
     root.profiles[name] = copy
     root.activeProfile = name
@@ -81,7 +91,9 @@ function T:Announce()
     local seeded = self.seeded
     if not seeded then return end
     self.seeded = nil
-    if seeded.from then
+    if seeded.failed then
+        addon:PrintAction("Mode-Obsidian couldn't be set up from " .. seeded.failed .. "; kept it as it was.", "themes")
+    elseif seeded.from then
         addon:PrintAction("New look: Mode-Obsidian. Your settings were copied to the profile " .. seeded.to
             .. ". To go back, choose " .. seeded.from .. " in /modeui, Profiles, and reload.", "themes")
     end

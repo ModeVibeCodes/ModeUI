@@ -82,6 +82,7 @@ function M:ApplyLayout(f)
     -- Edge over the bars; highlights, text and auras over the edge.
     panel.edge.holder:SetFrameLevel(level + 3)
     panel.edge:Layout()
+    if f.prism then f.prism:Layout() end
     f.glowLayer:SetFrameLevel(level + 4)
     f.textLayer:SetFrameLevel(level + 5)
     f.auraLayer:SetFrameLevel(level + 6)

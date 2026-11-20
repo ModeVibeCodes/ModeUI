@@ -127,7 +127,8 @@ textures, is `design/obsidian/` (README.md, approved-mock.html, preview.png).
 
 1. **First start.** Navigation: log in. Action: read the chat. Required
    state: this code in the AddOns folder (the junction points at the
-   repository's `ModeUI` folder). Confirmation: a ModeUI line says the
+   repository's `ModeUI` folder), and the game fully restarted (new font and
+   texture files don't load on `/reload`). Confirmation: a ModeUI line says the
    settings were copied to Mode-Obsidian and names the old profile;
    `/modeui`, Profiles, Active Profile reads Mode-Obsidian.
 2. **Borders and type.** Navigation: look at the Player frame, action bars
@@ -178,3 +179,5 @@ Entries are added as each piece lands (newest last).
 - 2026-11-20 (`e2ecba3`): Profiles: New Mode-Obsidian Copy (`Profiles:CreateThemed`); `Style.IsFlatStyle` where Mode-BlizzEmpty was checked by name (Cooldown Manager); the minimap's metal swatch reads the theme's style.
 - 2026-11-20: the asset bundle `design/obsidian/` and `tools/render_obsidian_preview.lua`; `docs/ARCHITECTURE.md` "Themes"; warm keybind and meter header text in the Action Bars and Damage Meters parts.
 - 2026-11-20: every theme part puts border metals back to the style's own (`Themes.DefaultMetal`; new parts for Buffs & Debuffs and the Minimap), so a layout's Steel or Gunmetal no longer tints the Obsidian rims gray in the Mode-Obsidian copy (the original profile keeps them). Checked against the owner's real saved variables (the backup) in the test harness: the first start copies "2s" to Mode-Obsidian, runs every part, and all six profiles still pass validation.
+- 2026-11-20: fixes from an independent review of the whole diff (no runtime, secret-value or combat problems found): a module is marked in `themeParts` only when its part ran, so a part added later still runs; the Play The Game Tools import runs before the first start, and an account that imported gets a Mode-Obsidian copy (the import keeps its own profile); the first-start copy is checked before it is made active, and a copy that fails leaves the account as it was (tried again next start); on Player and Target the frame border's soft drop steps aside while the Prism glow shows; Action Bars and Buffs & Debuffs migrations write Mode-Blizz values whatever theme is in use; Party Frames lay out their glow with the member. Regression tests in `tests/obsidian.lua`.
+- Note for the first in-game run: the Urbanist fonts and the new textures are new files, so the game must be fully restarted (not just `/reload`) before they load.

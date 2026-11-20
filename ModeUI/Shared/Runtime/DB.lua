@@ -217,10 +217,13 @@ function addon:InitializeDatabase()
             status = "Profile " .. tostring(requested) .. " could not be loaded; kept " .. root.activeProfile .. "."
         end
     end
-    -- The first start with themes: Mode-Obsidian (Shared/Runtime/Themes.lua).
-    addon.Themes:Seed(root, fresh)
     local active = root.profiles[root.activeProfile]
     if type(active) == "table" then ImportFromPlayTheGameTools(root, active) end
+    -- The first start with themes: Mode-Obsidian (Shared/Runtime/Themes.lua).
+    -- An account that just imported Play The Game Tools settings gets a copy,
+    -- so the imported look stays in its own profile.
+    addon.Themes:Seed(root, fresh and root.importedFrom == "none")
+    active = root.profiles[root.activeProfile]
     local profile, reason = D:ValidateProfile(active)
     assert(profile, "ModeUI: profile " .. root.activeProfile .. " is invalid (" .. tostring(reason) .. "); settings were not reset.")
     root.profiles[root.activeProfile] = profile

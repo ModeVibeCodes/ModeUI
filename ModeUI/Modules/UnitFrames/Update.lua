@@ -72,6 +72,8 @@ function M:PaintGlow(f, unit)
     local shown = mode == "always" or (mode == "hover" and f.hovered == true)
     if shown then glow:SetColor(f.ghost and self:SampleIdentity(unit) or self:IdentityColor(unit) or self.ACCENT) end
     glow:SetShown(shown)
+    -- The frame border's soft drop would darken the glow: it steps aside.
+    f.panel.edge:SetDrop(self:MatchedFrame(unit, self:FrameDB(unit)).dropShadow and not shown)
 end
 -- Ring Finish as one choice: a Ring Metal id while Portrait Ring is Metal
 -- ("border"), else "class" or "custom".

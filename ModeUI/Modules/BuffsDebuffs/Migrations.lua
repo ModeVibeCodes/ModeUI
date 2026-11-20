@@ -107,10 +107,10 @@ function M.MigrateV3(db)
     local bars = type(db.bars) == "table" and db.bars or {}
     for _, bar in pairs(bars) do
         if type(bar) == "table" then
-            if Style.SameColor(bar.timerColor, Tone.cooldown) or Style.SameColor(bar.timerColor, Tone.textBright) then
+            if Style.SameColor(bar.timerColor, Tone.cooldown) or Style.SameColor(bar.timerColor, Style.BlizzTone("textBright")) then
                 bar.timerColor = Copy(Tone.mono.white)
             end
-            if Style.SameColor(bar.countColor, Tone.textBright) then bar.countColor = Copy(Tone.auraStack) end
+            if Style.SameColor(bar.countColor, Style.BlizzTone("textBright")) then bar.countColor = Copy(Tone.auraStack) end
         end
     end
     if type(bars.playerDebuffs) == "table" and Exactly(bars.playerDebuffs.cats, OLD_ALL) then bars.playerDebuffs.cats.boss = nil end

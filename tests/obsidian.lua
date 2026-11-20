@@ -144,4 +144,34 @@ blizz.run([==[
     assert(color == Style.Tone.mono.white and alpha == 0.22 and inset == 0)
 ]==])
 
+-- A part added later still runs on a profile already in the theme.
+world.run([[
+    local profile = ModeUIDB.profiles['Mode-Obsidian']
+    assert(profile.themeParts.classColors == nil, 'a module without a part is not marked')
+    local ran = false
+    addon.Themes:Contribute('obsidian', 'classColors', function() ran = true end)
+    addon.Database:ValidateProfile(profile)
+    assert(ran, 'a part added later runs')
+]])
+
+-- A first-start copy that fails its check leaves the account as it was.
+local broken = H.Load({ before = STUBS .. [[
+    addon.Themes:Contribute('obsidian', 'classColors', function() error('broken part') end)
+]], saved = { schemaVersion = 2, activeProfile = 'Main', profiles = { Main = { modules = {}, positions = {} } } }, obsidian = true })
+broken.run([[
+    assert(ModeUIDB.activeProfile == 'Main' and ModeUIDB.profiles['Mode-Obsidian'] == nil, 'the failed copy is dropped')
+    assert(not ModeUIDB.builtThemes.obsidian, 'tried again at the next start')
+    assert(addon.Style.Theme() == 'blizz')
+]])
+
+-- A fresh account that imports Play The Game Tools keeps the import in its
+-- own profile and gets a Mode-Obsidian copy.
+local ptg = H.Load({ before = STUBS, obsidian = true,
+    ptg = { defaultProfile = 'P', profiles = { P = { modules = { unitFrames = { enabled = true } }, positions = {} } } } })
+ptg.run([[
+    assert(tostring(ModeUIDB.importedFrom):find('PlayTheGameTools'), 'imported')
+    assert(ModeUIDB.activeProfile == 'Mode-Obsidian' and ModeUIDB.profiles.Default.theme == nil, 'the import stays as it was')
+    assert(ModeUIDB.profiles.Default.modules.unitFrames.enabled == true)
+]])
+
 print("obsidian: all checks passed")
