@@ -19,6 +19,8 @@ addon.Themes:Contribute("obsidian", "unitFrames", function(db)
             fdb.nameColorMode = "class"
             fdb.portraitRing = "class"
             fdb.prismGlow = unit == "focus" and "always" or "hover"
+            addon.Themes.DefaultMetal(fdb)
+            addon.Themes.DefaultMetal(fdb, "portraitRingMetal")
             if type(fdb.castBar) == "table" then fdb.castBar.backgroundTexture = TRACK end
         end
     end

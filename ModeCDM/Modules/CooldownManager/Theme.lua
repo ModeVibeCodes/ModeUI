@@ -12,13 +12,15 @@ if not M or not addon.Themes then return end
 -- the companion starts.
 local TRACK = "media:Mode-Obsidian Track"
 local function Track(style)
-    if type(style) ~= "table" or style.barBackground == nil then return end
+    if type(style) ~= "table" then return end
+    addon.Themes.DefaultMetal(style)
+    if style.barBackground == nil then return end
     style.barBackground, style.barBackgroundOpacity = TRACK, 85
 end
 addon.Themes:Contribute("obsidian", "cooldownManager", function(db)
     local Swap = addon.Themes.SwapColor
     for _, viewer in ipairs(M.viewers) do Swap(db[viewer], "backgroundColor", "mono", "panel"); Track(db[viewer]) end
-    for _, bar in ipairs(type(db.customBars) == "table" and db.customBars or {}) do Swap(bar, "backgroundColor", "mono", "panel"); Track(bar) end
+    for _, bar in pairs(type(db.customBars) == "table" and db.customBars or {}) do Swap(bar, "backgroundColor", "mono", "panel"); Track(bar) end
     for _, id in ipairs(M.resources or {}) do Track(type(db.resources) == "table" and db.resources[id]) end
     Track(db.castBar)
 end)

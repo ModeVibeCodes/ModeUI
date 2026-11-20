@@ -7,4 +7,5 @@ if not M then return end
 -- at Graphite panel takes Mode-Obsidian's.
 addon.Themes:Contribute("obsidian", "windows", function(db)
     addon.Themes.SwapColor(db, "backgroundColor", "graphite", "panel")
+    addon.Themes.DefaultMetal(db)
 end)

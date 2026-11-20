@@ -10,5 +10,6 @@ addon.Themes:Contribute("obsidian", "actionBars", function(db)
         addon.Themes.SwapColor(db[bar], "backgroundColor", "mono", "panel")
         -- The keybind's Graphite secondary takes the theme's warm one.
         addon.Themes.SwapColor(db[bar], "hotkeyColor", "graphite", "secondary")
+        addon.Themes.DefaultMetal(db[bar])
     end
 end)

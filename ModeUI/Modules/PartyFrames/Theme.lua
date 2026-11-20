@@ -15,4 +15,5 @@ addon.Themes:Contribute("obsidian", "partyFrames", function(db)
     db.powerBackgroundTexture, db.powerBackgroundOpacity = TRACK, 85
     db.dispelFrom = "bottom"
     db.hoverGlow, db.focusGlow, db.hoverHighlight = true, true, false
+    addon.Themes.DefaultMetal(db)
 end)

@@ -12,5 +12,6 @@ addon.Themes:Contribute("obsidian", "damageMeters", function(db)
         Swap(db[window], "headerColor", "graphite", "raised")
         Swap(db[window], "titleColor", "graphite", "text")
         Swap(db[window], "timerColor", "graphite", "muted")
+        addon.Themes.DefaultMetal(db[window])
     end
 end)

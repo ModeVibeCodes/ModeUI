@@ -88,6 +88,14 @@ function T:Announce()
 end
 addon.Events:On(T, "PLAYER_LOGIN", function() T:Announce() end)
 
+-- For parts: a border's metal back to its style's own ("default"), so every
+-- border draws in the theme's metal (Mode-Obsidian's champagne and soft top
+-- row; a layout's Steel or Gunmetal would tint them gray).
+function T.DefaultMetal(t, key)
+    key = key or "edgeMetal"
+    if type(t) == "table" and t[key] ~= nil then t[key] = "default" end
+end
+
 -- For parts: a saved color still at its Mode-Blizz default takes the
 -- Mode-Obsidian value of the same token (Style/Tone.lua); a color the player
 -- chose stays.

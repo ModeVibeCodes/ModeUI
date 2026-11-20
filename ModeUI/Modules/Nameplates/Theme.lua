@@ -12,6 +12,7 @@ addon.Themes:Contribute("obsidian", "nameplates", function(db)
         if type(style) == "table" then
             style.backgroundTexture, style.backgroundOpacity = "media:Mode-Obsidian Track", 85
             style.focusStyle = "glow"
+            addon.Themes.DefaultMetal(style)
         end
     end
 end)
