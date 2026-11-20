@@ -23,6 +23,8 @@ function M:GetStatusBar(style, scope)
     if style==nil or style=="default" then return self:GetSurfaceTexture(scope) end
     if style=="flat" then return self.defaultStatusBar end
     if type(style)~="string" or style:sub(1,6)~="media:" or not self.library then return end
+    -- A Mode texture saved before November 20, 2026 draws as the one it became.
+    style=addon.Style.OLD_MEDIA[style] or style
     local name=style:sub(7)
     local entries=self.library:HashTable("statusbar")
     if not entries or not entries[name] then return end

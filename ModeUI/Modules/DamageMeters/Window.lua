@@ -152,7 +152,7 @@ function M:PaintShell(frame, style, rows)
     frame:SetSize(g.width, g.height)
     -- The Mode window; no soft drop under a see-through one.
     local alpha = style.backgroundOpacity / 100
-    Skin.PaintBox(frame.parts, frame, "Panel", style.backgroundColor, alpha, true)
+    Skin.PaintBox(frame.parts, frame, "Surface", style.backgroundColor, alpha, true)
     -- Border Style and Border Metal; every style has the same reach.
     frame.parts.modeEdge:SetStyle(style.edgeStyle, style.edgeMetal)
     frame.parts.modeEdge:SetDrop(alpha >= 1 and style.opacity >= 100)

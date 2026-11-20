@@ -3,7 +3,11 @@
 The working record of the Mode design-language rollout: what is built, what
 the owner decided along the way, how the work is done, and what comes next.
 Read this, `AGENTS.md` and `docs/DESIGN_LANGUAGE.md` before continuing on a new
-machine or in a new session. Last updated November 19, 2026 (Phases 0-8
+machine or in a new session. **Since November 20, 2026 the look is
+Mode-Obsidian only** (`docs/OBSIDIAN.md`, "Update: the only look"): where
+this file names Mode-Blizz styles, the old textures or Geist, read
+`docs/DESIGN_LANGUAGE.md`'s mapping table, and the Mode-Default layout is now
+Mode-DPS/TANK. Last updated November 19, 2026 (Phases 0-8
 built and confirmed November 15. The revisions and tweaks phase is under way:
 borders, type, ModeCDM's bars, the Mode-Default layout (finalized November
 18) and the Healer layout (built November 19, waiting on its in-game gate);

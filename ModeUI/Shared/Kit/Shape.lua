@@ -25,7 +25,7 @@ end
 -- An anti-aliased circle texture.
 function Kit.Circle(frame, layer, sublevel)
     local texture = frame:CreateTexture(nil, layer, nil, sublevel)
-    if not addon.Media:ApplyTexture(texture, "UnitFrameCircle") then addon.Media:ApplyTexture(texture, "ModeThumb") end
+    addon.Media:ApplyTexture(texture, "UnitFrameCircle")
     return texture
 end
 
@@ -53,13 +53,15 @@ function Kit.Unsnap(texture)
     if texture.SetTexelSnappingBias then texture:SetTexelSnappingBias(0) end
 end
 
--- Mode Gradient: ModeUI's one bar texture, used by every skinned bar. A flat
--- fill with a soft white gradient over its top half, drawn above the track.
--- `bar` comes from Kit.Bar; barHeight and px are in the bar's units.
--- A bar's foreground texture choice: "mode" (Mode Gradient, the default),
--- "flat", or "media:<name>" (a SharedMedia status bar texture; Mode Gradient
--- while it isn't available).
+-- A bar's foreground texture choice: "media:<name>" (a SharedMedia status bar
+-- texture; Mode-FG and the other Mode textures through Style.ApplyBarLook),
+-- "flat", or "mode" (saved before November 20, 2026; Mode-FG). A texture not
+-- yet available draws as a flat fill with a soft white gradient over its top
+-- half (Kit.ModeGradient). `bar` comes from Kit.Bar; barHeight and px are in
+-- the bar's units.
 function Kit.BarForeground(bar, choice, barHeight, px)
+    -- "mode" (Mode Gradient before November 20, 2026) draws as Mode-FG.
+    if choice == "mode" then choice = "media:Mode-FG" end
     -- Mode textures with a lift: base plus white lift (Style.ApplyBarLook).
     if addon.Style.ApplyBarLook(bar, choice) then return end
     local path = choice == "flat" and Kit.FLAT or (choice ~= "mode" and addon.Media:GetStatusBar(choice)) or nil
@@ -82,8 +84,7 @@ function Kit.ValidBarTexture(value, foreground)
 end
 function Kit.BarTextureChoices(foreground)
     local list = { { id = "flat", label = "Flat" } }
-    if foreground then table.insert(list, 1, { id = "mode", label = "Mode Gradient" })
-    else
+    if not foreground then
         table.insert(list, 1, { id = "slateHatch", label = "Mode Slate Hatch" })
         table.insert(list, 1, { id = "slate", label = "Mode Slate" })
     end
@@ -114,10 +115,10 @@ end
 -- The color a background texture is tinted: Mode Slate's gray (the hatch tile
 -- is 80% gray, so its tint is a fifth lighter), else the Onyx track.
 function Kit.BarBackgroundColor(choice)
-    -- Mode BG is tinted Slate (docs/DESIGN_LANGUAGE.md, "Bars").
-    if choice == "media:Mode BG" then return addon.Style.Tone.slate end
-    -- So is Mode-Obsidian Track (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme").
-    if choice == "media:Mode-Obsidian Track" then return addon.Style.Tone.slate end
+    -- Mode-BG is tinted Slate (docs/DESIGN_LANGUAGE.md, "Bars"); so is a
+    -- saved Mode BG or Mode-Obsidian Track (Style.OLD_MEDIA).
+    choice = addon.Style.OLD_MEDIA[choice] or choice
+    if choice == "media:Mode-BG" then return addon.Style.Tone.slate end
     if choice == "slate" then return Kit.onyx.slate end
     if choice == "slateHatch" then return Kit.onyx.slateHatch end
     return Kit.onyx.track
@@ -176,7 +177,7 @@ end
 -- Fill choices for such bars: every foreground and background texture.
 function Kit.ValidFillTexture(value) return Kit.ValidBarTexture(value, true) or Kit.ValidBarTexture(value, false) end
 function Kit.FillTextureChoices()
-    local list = { { id = "slateHatch", label = "Mode Slate Hatch" }, { id = "mode", label = "Mode Gradient" },
+    local list = { { id = "slateHatch", label = "Mode Slate Hatch" },
         { id = "flat", label = "Flat" }, { id = "slate", label = "Mode Slate" } }
     for _, choice in ipairs(addon.Media:GetStatusBars()) do
         if choice.key ~= "default" then list[#list + 1] = { id = choice.key, label = choice.label } end

@@ -90,8 +90,8 @@ function M.LayoutBox(box, width, barHeight, px, background, db, texture)
     bar:ClearAllPoints()
     bar:SetAllPoints(box.inner)
     bar:SetFrameLevel(box:GetFrameLevel() + 1)
-    Kit.BarForeground(bar, texture or (db and db.foregroundTexture) or "media:Mode BG", barHeight, px)
-    local backgroundTexture = db and db.backgroundTexture or "media:Mode BG"
+    Kit.BarForeground(bar, texture or (db and db.foregroundTexture) or "media:Mode-FG", barHeight, px)
+    local backgroundTexture = db and db.backgroundTexture or "media:Mode-BG"
     Kit.BarBackground(bar, backgroundTexture, width - 2 * inset, barHeight, px)
     Tint(bar.bg, Kit.BarBackgroundColor(backgroundTexture), background or 1)
     -- Border Style and Border Metal (every style reaches the same: the box keeps its size).

@@ -37,13 +37,13 @@ M.defaultPositions.buffIcon = { target = M.CAST_ELEMENT, placement = "above", x 
 M.castDefaults = {
     show = true, width = 300, height = 18, matchWidth = true,
     -- The resource bars' border: Mode-Round in Gunmetal, Rim Color.
-    border = "mode", edgeStyle = "round", edgeMetal = "gunmetal", rimColor = "metal", rimCustom = Copy(Tone.ivory), edgeSize = 1,
+    border = "mode", edgeStyle = "obsidian", edgeMetal = "default", rimColor = "metal", rimCustom = Copy(Tone.ivory), edgeSize = 1,
     -- Bar Mode Dark: the fill in darkFill, the Comet head alone, the text in
     -- your class color. Bar Color is any color (Color mode, and the rim's
     -- Bar Color); Not Interruptible and Interrupted have their own.
-    barMode = "dark", barTexture = "media:Mode Gradient", barColor = Copy(Tone.cast.casting),
+    barMode = "dark", barTexture = "media:Mode-FG", barColor = Copy(Tone.cast.casting),
     lockedColor = Copy(Tone.cast.shielded), interruptedColor = Copy(Tone.cast.interrupted),
-    barBackground = "media:Mode BG", barBackgroundOpacity = M.RESOURCE_EMPTY, spark = true,
+    barBackground = "media:Mode-BG", barBackgroundOpacity = M.RESOURCE_EMPTY, spark = true,
     darkText = "class", darkTextColor = Copy(Tone.textBright),
     -- The spell icon: Hidden, Left or Right, in its own border, Icon Gap
     -- from the bar's border.

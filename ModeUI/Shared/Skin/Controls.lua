@@ -163,7 +163,7 @@ function Skin.PaintField(frame)
     if parts.field then
         Skin.PaintBox(parts, parts.box or frame, "Solid", M.field, 1, true, lit and "accent" or nil)
     else
-        Skin.PaintBox(parts, parts.box or frame, "Button", M.face, 1, true, lit and "accent" or nil)
+        Skin.PaintBox(parts, parts.box or frame, "FG", M.face, 1, true, lit and "accent" or nil)
         if parts.accent and parts.modeEdge then parts.modeEdge:SetTint(not enabled and M.disabled or nil) end
         Skin.Ink(Text(frame), enabled and M.text or M.muted)
     end
@@ -253,7 +253,7 @@ function Skin.PaintSideTab(tab)
     -- SidePanelTabButtonMixin shows SelectedTexture when checked (it may
     -- have no GetChecked); the texture is faded, but its shown state stays.
     local checked = (tab.GetChecked and Public(tab:GetChecked()) == true) or Shown(tab.SelectedTexture)
-    Skin.PaintBox(parts, tab.Icon or tab, "Button", checked and M.chosen or M.face, 1, true, (checked or parts.hovered) and "accent" or nil)
+    Skin.PaintBox(parts, tab.Icon or tab, "FG", checked and M.chosen or M.face, 1, true, (checked or parts.hovered) and "accent" or nil)
 end
 
 -- A window button with a Mode glyph (ModeClose, ModeMinimize, ModeMaximize):
@@ -281,7 +281,7 @@ function Skin.Close(button) Skin.GlyphButton(button, "ModeClose") end
 function Skin.PaintClose(button)
     local parts = Skin.parts[button]
     if not parts or not parts.icon then return end
-    Skin.PaintBox(parts, button, "Button", M.face, 1, true, parts.hovered and "accent" or nil)
+    Skin.PaintBox(parts, button, "FG", M.face, 1, true, parts.hovered and "accent" or nil)
     Style.Paint(parts.icon, parts.hovered and M.accent or M.label)
 end
 
@@ -332,5 +332,5 @@ function Skin.Inset(inset)
     Skin.FadeNineSlice(inset.NineSlice); Fade(inset.Bg)
     local host = inset:GetParent() or inset
     local parts = Skin.Box(inset, "card", { faceHost = host, sublevel = -7, inset = Style.EdgeReach("card") })
-    Skin.PaintBox(parts, inset, "Title", M.field, 1, true)
+    Skin.PaintBox(parts, inset, "FG", M.field, 1, true)
 end

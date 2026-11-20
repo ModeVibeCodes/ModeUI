@@ -1,6 +1,6 @@
 -- The Cast Bar in the Cooldown Manager (/mcdm): defaults, its stand-in above
 -- Essential with Buff Icons above it, the resource bars' look (pieces, whole
--- pixels, Mode-Round in Gunmetal, Dark with the Comet head alone), casts,
+-- pixels, Mode-Border in its own metal, Dark with the Comet head alone), casts,
 -- channels and secret values, Show Interrupted, the claim on the player's
 -- cast bar (Unit Frames' Player cast bar steps aside, Blizzard's stays faded
 -- while either module holds it), the icon box, Edit Mode, the page and
@@ -16,7 +16,7 @@ world.run([==[
     local M, PM, Kit, Tone, UF = addon.CooldownManager, addon.PositionManager, addon.Kit, addon.Style.Tone, addon.UnitFrames
     local db = M.db.castBar
     assert(M.db.version == M.VERSION and M.VERSION == 9, 'settings version 9')
-    assert(db.show and db.edgeStyle == 'round' and db.edgeMetal == 'gunmetal' and db.rimColor == 'metal' and db.barMode == 'dark', 'Mode-Round, Gunmetal, Dark')
+    assert(db.show and db.edgeStyle == 'obsidian' and db.edgeMetal == 'default' and db.rimColor == 'metal' and db.barMode == 'dark', 'Mode-Border in its own metal, Dark')
     assert(db.icon == 'none' and db.showInterrupted and db.darkText == 'class' and db.matchWidth and db.height == 18, 'icon hidden, Show Interrupted, class-colored text')
     assert(M.defaultPositions.buffIcon.target == M.CAST_ELEMENT and M.castPosition.target == 'cooldownManagerEssential' and M.castPosition.placement == 'above')
 
@@ -37,7 +37,7 @@ world.run([==[
     assert(Kit.PlayerCast.ClaimedBy() == 'cooldownManager' and Kit.NativeFade:IsHeld(PlayerCastingBarFrame, 'cooldownManager'), 'the claim')
     assert(PlayerCastingBarFrame:GetAlpha() == 0 and not frame:IsShown(), "Blizzard's faded; nothing while not casting")
     -- The resource bars' look: the edge in pieces outside the box, on whole pixels.
-    assert(box.edge.pieces and #box.edge.parts[1] == 8 and box.edge.styleId == 'round' and box.edge:Metal() == Tone.metal.gunmetal, 'Mode-Round Gunmetal, in pieces')
+    assert(box.edge.pieces and #box.edge.parts[1] == 8 and box.edge.styleId == 'obsidian' and box.edge:Metal() == Tone.metal.obsidian, 'Mode-Border in its own metal, in pieces')
     assert(box.height == 18 and mover.height == 22 and Point(box)[4] == 2 and Point(box)[5] == -2, 'the box inside the edge reach')
     assert(frame.snapMover == mover and box.width == mover.width - 4, 'hung on whole pixels, the bar across the width')
     assert(PM:GetSizeMatch(M.CAST_ELEMENT, 'width'), 'Match Width')

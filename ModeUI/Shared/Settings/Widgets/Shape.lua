@@ -51,7 +51,7 @@ function Box:SetShown(shown)
     else self.fill:Hide(); if self.edge then self.edge:SetShown(false) end end
 end
 
--- The face texture: a Style.ASSETS key ("Solid" by default; buttons use "Gradient").
+-- The face texture: a Style.ASSETS key ("Solid" by default; buttons use "FG").
 function Box:SetAsset(key)
     local asset = Style.ASSETS[key]
     Style.ApplyAsset(self.fill, asset and asset.fill or key)

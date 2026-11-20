@@ -54,7 +54,7 @@ M.defaults = {
     -- The window's border (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
     -- Mode-Thin in its own metal (owner, November 17, 2026). Tabs, buttons and
     -- the field keep their `control` edge. New keys: filled from these defaults.
-    edgeStyle = "thin", edgeMetal = "default",
+    edgeStyle = "obsidian", edgeMetal = "default",
     -- Edit box: inside the edge at the bottom or top, or below the window.
     editPosition = "bottom", editHeight = 24, editGap = 4,
     -- Tabs: Glass (true) or Solid; others tuck down Tuck Depth. awayTabOpacity

@@ -124,15 +124,15 @@ M.defaults = {
     -- Each member: 150 x 34 health and 3px power in the group edge, Mode
     -- Glass on Mode BG.
     width = 150, healthHeight = 34,
-    foregroundTexture = "media:Mode Glass", backgroundTexture = "media:Mode BG", healthOpacity = 100, backgroundOpacity = EMPTY,
+    foregroundTexture = "media:Mode-FG", backgroundTexture = "media:Mode-BG", healthOpacity = 100, backgroundOpacity = EMPTY,
     fillDirection = "standard", fillEdge = true, healthColorMode = "class", healthColor = Copy(P.green),
     -- The member's border, its inset power bar's and the dispel rim's shape
     -- (docs/DESIGN_LANGUAGE.md, "Choosing a border"): Mode-Blizz in its own
     -- metal (owner, November 17, 2026).
-    edgeStyle = "blizz", edgeMetal = "default",
+    edgeStyle = "obsidian", edgeMetal = "default",
     -- Power Bars and Resources: who shows it, where, how it looks, its text.
     powerShown = "all", powerStyle = "below", powerHeight = 3, powerWidth = 70, powerAlign = "CENTER", powerX = 0, powerY = 3,
-    powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerOpacity = 100, powerBackgroundOpacity = EMPTY,
+    powerForegroundTexture = "media:Mode-FG", powerBackgroundTexture = "media:Mode-BG", powerOpacity = 100, powerBackgroundOpacity = EMPTY,
     powerFillDirection = "standard", powerColorMode = "type", powerColor = Copy(P.mana),
     powerTextShow = false, powerText = "percent", powerTextSize = 9, powerTextAlign = "CENTER", powerTextX = 0, powerTextY = 0,
     -- Out of range, dead and offline members fade.

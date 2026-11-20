@@ -6,7 +6,7 @@
 -- way back to the window, copy and reset, switching off, late loading, the
 -- version 1 migration, persistence and the no-writes rule on Blizzard's
 -- frames, the five default bars (a new profile, the version 9 step, Reset
--- to Defaults, refusals) and ModeCDM's part of the Mode-Default layout.
+-- to Defaults, refusals) and ModeCDM's part of the Mode-DPS/TANK layout.
 -- Simulated client; not WoW rendering, security or taint.
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root .. "tests/cooldown_manager_stubs.lua")
@@ -37,7 +37,7 @@ world.run([==[
     assert(M.db.essential.procGlow == 'border' and M.db.essential.readyGlow == 'mode', 'looks a glow starts with')
     local Tone = addon.Style.Tone
     assert(addon.Style.SameColor(M.db.essential.procColor, Tone.celadon) and addon.Style.SameColor(M.db.essential.readyColor, Tone.ivory), 'Celadon procs, Ivory ready')
-    assert(M.db.essential.fontMedia == 'Mode' and not M.db.essential.outline and M.db.essential.backgroundOpacity == 100, 'Geist, no outline, a solid face')
+    assert(M.db.essential.fontMedia == 'Mode' and not M.db.essential.outline and M.db.essential.backgroundOpacity == 100, 'Urbanist, no outline, a solid face')
 
     addon:SetModuleEnabled('cooldownManager', true)
     assert(M.built and ModeUICooldownEssential and ModeUICooldownBuffBar, 'a stand-in per viewer')
@@ -71,19 +71,22 @@ world.run([==[
     assert(not M:SetOption('essential', 'border', 'rounded'), 'the slot rims retired')
     assert(M:SetOption('essential', 'border', 'mode'))
     -- Border Style and Border Metal (owner, November 17, 2026): per bar,
-    -- Mode-Blizz in its own metal; any style keeps the layout.
-    for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'blizz' and M.db[viewer].edgeMetal == 'default', viewer .. ' in Mode-Blizz') end
-    assert(art.edge.styleId == 'blizz' and art.edge:Metal() == Tone.metal.silver, 'icons in Mode-Blizz, Silver')
+    -- Mode-Empty with a neutral, darker rim (owner, November 20, 2026); any
+    -- style keeps the layout.
+    for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'obsidianEmpty' and M.db[viewer].edgeMetal == 'default', viewer .. ' in Mode-Empty') end
+    assert(art.edge.styleId == 'obsidianEmpty' and art.edge:Metal() == Tone.metal.obsidian and addon.Style.SameColor(art.edge.tint, Tone.emptyRim), 'icons in Mode-Empty, the neutral rim')
     local wide, step = ModeUICooldownEssential.width, Point(items[2])[4]
-    assert(M:SetOption('essential', 'edgeStyle', 'round') and art.edge.styleId == 'round', 'Mode-Round')
+    assert(M:SetOption('essential', 'edgeStyle', 'obsidian') and art.edge.styleId == 'obsidian' and art.edge.tint == nil, 'Mode-Border')
     assert(ModeUICooldownEssential.width == wide and Point(items[2])[4] == step and Point(items[1])[5] == -2 and art.edge:Outset() == 2, 'same layout, same reach')
     assert(M:SetOption('essential', 'edgeMetal', 'steel') and art.edge:Metal() == Tone.metal.steel, 'Steel')
-    assert(M.dress[ItemsOf(utility)[1]].art.edge.styleId == 'blizz', 'other bars keep their own')
+    assert(M.dress[ItemsOf(utility)[1]].art.edge.styleId == 'obsidianEmpty', 'other bars keep their own')
     assert(not M:SetOption('essential', 'edgeStyle', 'nope') and not M:SetOption('essential', 'edgeMetal', 'gold') and not M:SetOption('essential', 'edgeStyle', 'none'), 'unknown styles and metals are refused')
-    assert(M.db.essential.edgeStyle == 'round' and M.db.essential.edgeMetal == 'steel')
+    assert(M.db.essential.edgeStyle == 'obsidian' and M.db.essential.edgeMetal == 'steel')
     assert(M:SetOption('essential', 'border', 'none') and not art.edge.holder:IsShown() and Point(items[1])[5] == 0, 'None still hides the edge')
-    assert(M:SetOption('essential', 'border', 'mode') and art.edge.holder:IsShown() and art.edge.styleId == 'round')
-    assert(M:SetOption('essential', 'edgeStyle', 'blizz') and M:SetOption('essential', 'edgeMetal', 'default') and art.edge:Metal() == Tone.metal.silver)
+    assert(M:SetOption('essential', 'border', 'mode') and art.edge.holder:IsShown() and art.edge.styleId == 'obsidian')
+    -- An old style id stays valid and draws as the style it became.
+    assert(M:SetOption('essential', 'edgeStyle', 'round') and art.edge.styleId == 'obsidian', 'Mode-Round draws as Mode-Border')
+    assert(M:SetOption('essential', 'edgeStyle', 'obsidian') and M:SetOption('essential', 'edgeMetal', 'default') and art.edge:Metal() == Tone.metal.obsidian)
     -- Icon edges in pieces (owner, November 18, 2026): four 1:1 corners and four sides.
     assert(art.edge.pieces and #art.edge.parts[1] == 8, 'icon edges drawn in pieces')
     -- Border Size: a 2px band reaches 3px, the line grows by 2 per icon.
@@ -91,11 +94,12 @@ world.run([==[
     assert(ModeUICooldownEssential.width == wide + 12 * 2 and Point(items[1])[5] == -3 and art.edge:Outset() == 3, 'a 2px band: 3px reach')
     assert(not M:SetOption('essential', 'edgeSize', 3) and not M:SetOption('essential', 'edgeSize', 0), 'Border Size is 1 or 2')
     assert(M:SetOption('essential', 'edgeSize', 1) and ModeUICooldownEssential.width == wide)
-    -- Border Color: Mode-BlizzEmpty's flat band; other styles keep their metal.
-    assert(addon.Style.SameColor(M.db.essential.edgeColor, Tone.metal.silver.mid) and art.edge.tint == nil, 'no tint on a lit style')
-    assert(M:SetOption('essential', 'edgeColor', { 1, 0, 0 }) and art.edge.tint == nil, 'Border Color waits for Mode-BlizzEmpty')
-    assert(M:SetOption('essential', 'edgeStyle', 'blizzEmpty') and addon.Style.SameColor(art.edge.tint, { 1, 0, 0 }), 'Mode-BlizzEmpty in Border Color')
-    assert(M:SetOption('essential', 'edgeStyle', 'blizz') and art.edge.tint == nil and M:SetOption('essential', 'edgeColor', Tone.metal.silver.mid))
+    -- Border Color: Mode-Empty's flat band; other styles keep their metal.
+    assert(addon.Style.SameColor(M.db.essential.edgeColor, Tone.emptyRim) and art.edge.tint == nil, 'no tint on a lit style')
+    assert(M:SetOption('essential', 'edgeColor', { 1, 0, 0 }) and art.edge.tint == nil, 'Border Color waits for Mode-Empty')
+    assert(M:SetOption('essential', 'edgeStyle', 'obsidianEmpty') and addon.Style.SameColor(art.edge.tint, { 1, 0, 0 }), 'Mode-Empty in Border Color')
+    assert(M:SetOption('essential', 'edgeStyle', 'blizzEmpty') and addon.Style.SameColor(art.edge.tint, { 1, 0, 0 }), 'Mode-BlizzEmpty draws as Mode-Empty')
+    assert(M:SetOption('essential', 'edgeStyle', 'obsidian') and art.edge.tint == nil and M:SetOption('essential', 'edgeColor', Tone.emptyRim))
     -- Spacing below 0: neighbours share their shadows, down to -2 (the bands touch).
     assert(M:SetOption('essential', 'spacing', -1) and ModeUICooldownEssential.width == 12 * 44 - 11 + 1, 'Spacing -1 (the stand-in kept even)')
     assert(Point(items[2])[4] - Point(items[1])[4] == 43, 'slots one pixel closer than the edges')
@@ -104,7 +108,7 @@ world.run([==[
     items[1]:RefreshSpellCooldownInfo()
     assert(items[1].Cooldown.drawEdge == false and items[1].Cooldown.swipeColor[4] == 0.7, 'edge off, 70% swipe after the refresh')
     local count = items[1].ChargeCount.Current
-    assert(count.font[2] == 11 and count.font[1]:find('Geist%-Bold') and Point(count)[1] == 'BOTTOMRIGHT' and Point(count)[4] == -2, 'count in the corner, Geist Bold')
+    assert(count.font[2] == 11 and count.font[1]:find('Urbanist%-Bold') and Point(count)[1] == 'BOTTOMRIGHT' and Point(count)[4] == -2, 'count in the corner, Urbanist Bold')
 
     -- Growth and New Lines (slots 46px apart: 44 with the edges, 2 between).
     local function At(item) local q = Point(item); return q[4], q[5] end
@@ -174,13 +178,13 @@ world.run([==[
     assert(set.proc:IsShown() and ring and ring.preset == 'empty' and ring.holder:IsShown() and addon.Style.SameColor(ring.tint, Tone.celadon), 'Border: the Celadon rim over the edge')
     assert(not set.proc.edges[1]:IsShown() and not set.proc.soft:IsShown(), 'no square glow edges')
     -- The rim takes the bar's shape and band width, so it covers the edge exactly.
-    assert(ring.pieces and ring.styleId == 'blizz' and ring.rim == 1, "the rim in the bar's shape, in pieces")
-    assert(M:SetOption('essential', 'edgeStyle', 'round') and M:SetOption('essential', 'edgeSize', 2))
-    assert(ring.styleId == 'round' and ring.rim == 2 and ring:Outset() == 3 and addon.Style.SameColor(ring.tint, Tone.celadon), 'Mode-Round, 2px: the rim follows')
+    assert(ring.pieces and ring.styleId == 'obsidian' and ring.rim == 1, "the rim in the bar's shape, in pieces")
+    assert(M:SetOption('essential', 'edgeStyle', 'obsidianEmpty') and M:SetOption('essential', 'edgeSize', 2))
+    assert(ring.styleId == 'obsidianEmpty' and ring.rim == 2 and ring:Outset() == 3 and addon.Style.SameColor(ring.tint, Tone.celadon), 'Mode-Empty, 2px: the rim follows')
     local fades = {}
     for _, region in ipairs(set.proc.parts) do fades[region] = true end
     for _, region in ipairs(ring:Regions()) do assert(fades[region], 'every rim texture fades with the glow') end
-    assert(M:SetOption('essential', 'edgeStyle', 'blizz') and M:SetOption('essential', 'edgeSize', 1) and ring.styleId == 'blizz' and ring.rim == 1)
+    assert(M:SetOption('essential', 'edgeStyle', 'obsidian') and M:SetOption('essential', 'edgeSize', 1) and ring.styleId == 'obsidian' and ring.rim == 1)
     assert(M:SetSpellGlow('essential', '102', 'proc', 'style', 'blizzard') and not ring.holder:IsShown())
     assert(set.proc.flipbook:IsShown() and set.proc.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', "Blizzard: the game's proc loop art")
     assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active and not set.active:IsShown(), 'proc wins over active')
@@ -231,14 +235,14 @@ world.run([==[
     -- 220 x 16: the icon 4px wider than tall, the box past both edges and 2px.
     local barState = M.dress[bar]
     assert(bar.width == 220 and bar.Icon.width == 20 and bar.Icon.height == 16 and Point(barState.box)[4] == 26, 'icon wider than tall, bar box beside it')
-    assert(bar.Bar.statusBarTexture ~= Kit.FLAT and barState.sheen:IsShown() and bar.Bar.BarBG.alpha == 0 and bar.Bar.Pip.alpha == 0, 'Mode Gradient: base and lift')
-    assert(barState.bg.vertexColor[1] == Tone.slate[1] and barState.bg.vertexColor[4] == 1, 'Mode BG on Slate, solid')
+    assert(bar.Bar.statusBarTexture ~= Kit.FLAT and barState.sheen:IsShown() and bar.Bar.BarBG.alpha == 0 and bar.Bar.Pip.alpha == 0, 'Mode-FG: base and lift')
+    assert(barState.bg.vertexColor[1] == Tone.slate[1] and math.abs(barState.bg.vertexColor[4] - 0.85) < 1e-6, 'Mode-BG on Slate at 85% (the Mode-Obsidian part)')
     assert(barState.art.edge.holder:IsShown() and barState.boxEdge.preset == 'frameThin' and barState.boxEdge.holder:IsShown(), 'the Mode edge on the icon and the bar')
     local boxAt = Point(barState.box)[4]
-    assert(M:SetOption('buffBar', 'edgeStyle', 'thin') and M:SetOption('buffBar', 'edgeMetal', 'gunmetal') and barState.art.edge.styleId == 'thin'
-        and barState.boxEdge.styleId == 'thin' and barState.boxEdge:Metal() == Tone.metal.gunmetal and Point(barState.box)[4] == boxAt, 'icon and bar box in Mode-Thin Gunmetal, same place')
+    assert(M:SetOption('buffBar', 'edgeStyle', 'obsidian') and M:SetOption('buffBar', 'edgeMetal', 'gunmetal') and barState.art.edge.styleId == 'obsidian'
+        and barState.boxEdge.styleId == 'obsidian' and barState.boxEdge:Metal() == Tone.metal.gunmetal and Point(barState.box)[4] == boxAt, 'icon and bar box in Mode-Border Gunmetal, same place')
     assert(M:SetOption('buffBar', 'border', 'none') and not barState.boxEdge.holder:IsShown() and M:SetOption('buffBar', 'border', 'mode'))
-    assert(M:SetOption('buffBar', 'edgeStyle', 'blizz') and M:SetOption('buffBar', 'edgeMetal', 'default') and barState.boxEdge.styleId == 'blizz')
+    assert(M:SetOption('buffBar', 'edgeStyle', 'obsidianEmpty') and M:SetOption('buffBar', 'edgeMetal', 'default') and barState.boxEdge.styleId == 'obsidianEmpty')
     assert(Point(bar.Bar)[4] == 0 and barState.comet.clip:IsShown(), 'the bar fills its box; the Comet spark')
     assert(M:SetOption('buffBar', 'showSpark', false) and not barState.comet.clip:IsShown() and M:SetOption('buffBar', 'showSpark', true))
     assert(M:SetOption('buffBar', 'barColorMode', 'custom') and bar.Bar.statusBarColor[1] == Tone.ivory[1], 'Custom: Bar Color (Ivory)')
@@ -401,13 +405,13 @@ world.run([==[
     end
     assert(page.borderStylePicker and page.borderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border Style and Border Metal in Border')
     assert(M:SetOption(c2, 'border', 'none') and not pickerRow.visibleWhen() and M:SetOption(c2, 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
-    -- Border Size under them; Border Color only while the bar is Mode-BlizzEmpty.
+    -- Border Size under them; Border Color only while the bar is Mode-Empty (the default).
     local colorRow
     for _, row in ipairs(page.rows) do
         if row.card == borderGroup.card and row.settingsTitles and row.settingsTitles[1] == 'Border Color' then colorRow = row end
     end
-    assert(page.borderSizeSelect and colorRow and not colorRow.visibleWhen(), 'Border Size shown; Border Color waits for Mode-BlizzEmpty')
-    assert(M:SetOption(c2, 'edgeStyle', 'blizzEmpty') and colorRow.visibleWhen() and M:SetOption(c2, 'edgeStyle', 'blizz') and not colorRow.visibleWhen())
+    assert(page.borderSizeSelect and colorRow and colorRow.visibleWhen(), 'Border Size shown; Border Color for Mode-Empty')
+    assert(M:SetOption(c2, 'edgeStyle', 'obsidian') and not colorRow.visibleWhen() and M:SetOption(c2, 'edgeStyle', 'obsidianEmpty') and colorRow.visibleWhen())
     view.plus.scripts.OnMouseUp(view.plus, 'LeftButton')
     local picker = M.picker
     assert(picker:IsShown() and picker.buttons[1]:IsShown() and picker.buttons[1].key == '302', 'tracked buffs not on it yet')
@@ -607,7 +611,7 @@ world.run([==[
     -- Copy and reset, then the no-writes rule.
     assert(M:SetOption('essential', 'border', 'none') and M:SetOption('essential', 'edgeStyle', 'round') and M:CopyStyleToAll('essential'))
     assert(M.db.custom6.border == 'none' and M.db.custom6.edgeStyle == 'round' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
-    assert(M:ResetViewer(c1) and M.db.custom6.border == 'mode' and M.db.custom6.edgeStyle == 'blizz')
+    assert(M:ResetViewer(c1) and M.db.custom6.border == 'mode' and M.db.custom6.edgeStyle == 'obsidianEmpty')
     assert(#blizzardWrites == 0, 'wrote to Blizzard frames: ' .. table.concat(blizzardWrites, ', '))
 
     -- Switching off: icons back at full, a reload for the look.
@@ -635,7 +639,7 @@ restored.run([==[
     local M = addon.CooldownManager
     assert(M.enabled and M.db.essential.border == 'none' and #M.db.customBars == 2 and M.db.nextCustom == 11 and M.db.racials == 'utility', 'settings persist')
     assert(not M.PresetBar(M.db, 'defensives'), 'a deleted default bar stays deleted')
-    assert(M.db.essential.edgeStyle == 'round' and M.dress[ItemsOf(EssentialCooldownViewer)[1]].art.edge.styleId == 'round', 'Border Style persists')
+    assert(M.db.essential.edgeStyle == 'round' and M.dress[ItemsOf(EssentialCooldownViewer)[1]].art.edge.styleId == 'obsidian', 'Border Style persists (Mode-Round draws as Mode-Border)')
     local buff = ItemsOf(BuffIconCooldownViewer)[2]
     assert(Point(buff)[2] == M.holders.custom7, 'custom bars hold their spells after a reload')
     assert(M.spellIcons.custom6.s9001:IsShown() and M.spellIcons.custom6.s9003, 'custom spells too')
@@ -650,8 +654,8 @@ do
     H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
         local M = addon.CooldownManager
         assert(M.db.version == 9 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
-        for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'blizz' and M.db[viewer].edgeMetal == 'default', viewer .. ' takes the default border') end
-        assert(M.db.custom6.edgeStyle == 'blizz' and M.db.custom7.edgeMetal == 'default', 'custom bars too')
+        for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'obsidianEmpty' and M.db[viewer].edgeMetal == 'default', viewer .. ' takes the default border') end
+        assert(M.db.custom6.edgeStyle == 'obsidianEmpty' and M.db.custom7.edgeMetal == 'default', 'custom bars too')
     ]==], "fill border style")
 end
 
@@ -708,6 +712,8 @@ H.Load({ before = STUBS .. "\nMakeViewers()", saved = v3 }).run([==[
 local v4 = restored.saved()
 local four = v4.profiles.Default.modules.cooldownManager
 four.version = 4
+-- A version 4 profile is from before Mode-Obsidian: no look step, no theme parts.
+v4.profiles.Default.look, v4.profiles.Default.themeParts, v4.profiles.Default.theme = nil, nil, nil
 local E, U, B = four.essential, four.utility, four.buffBar
 E.width, E.height, E.border, E.borderSize, E.borderColor = 42, 34, "square", 3, { 0.25, 0.27, 0.3 }
 E.backgroundColor, E.backgroundOpacity, E.fontMedia, E.outline = { 4 / 255, 4 / 255, 4 / 255 }, 75, "Expressway", true
@@ -730,10 +736,12 @@ H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
     assert(Same(E.spells['101'].proc.color, Tone.celadon) and E.spells['101'].proc.style == 'pixel', "a spell's glow takes the new color, keeps its style")
     assert(E.cooldownSize == 13 and E.countSize == 11 and Same(E.countColor, Tone.textBright), 'text sizes and colors')
     assert(Same(U.backgroundColor, { 1, 0, 0 }) and U.fontMedia == 'Friz Quadrata', 'chosen values stay')
-    assert(B.barTexture == 'media:Mode Gradient' and B.barBackground == 'media:Mode BG' and B.barBackgroundOpacity == 100 and B.showSpark, 'Mode bars')
+    -- Mode Gradient and Mode BG, then the look step (Mode-FG, Mode-BG) and the
+    -- Mode-Obsidian part (the empty part at 85%).
+    assert(B.barTexture == 'media:Mode-FG' and B.barBackground == 'media:Mode-BG' and B.barBackgroundOpacity == 85 and B.showSpark, 'Mode bars')
     assert(B.barColorMode == 'class' and db.custom6.barColorMode == 'custom' and Same(db.custom6.barColor, { 0.2, 0.4, 0.6 }), 'cyan becomes class; a chosen color stays, as Custom')
     local power, combo = db.resources.power, db.resources.combo
-    assert(power.barTexture == 'media:Mode Gradient' and power.barBackground == 'media:Mode BG' and power.barBackgroundOpacity == 60, 'resource bars')
+    assert(power.barTexture == 'media:Mode-FG' and power.barBackground == 'media:Mode-BG' and power.barBackgroundOpacity == 85, 'resource bars')
     assert(power.borderColor == nil and power.fontMedia == 'Mode' and not power.outline and Same(combo.barColor, Tone.reaction.hostile))
 ]==], "migrate v4")
 
@@ -814,7 +822,7 @@ do
     ]==], "version 9")
 end
 
--- The Mode-Default layout (DPS / Tank), as a new profile: ModeCDM's part.
+-- The Mode-DPS/TANK layout (DPS / Tank), as a new profile: ModeCDM's part.
 H.Load({ before = STUBS .. "\nMakeViewers()" }).run([==[
     local M = addon.CooldownManager
     for _, variant in ipairs({ '1080', '1440' }) do
@@ -831,13 +839,15 @@ H.Load({ before = STUBS .. "\nMakeViewers()" }).run([==[
         assert(Shape(db.essential, 38, 30, 7, -1, 'centerH', 'down') and Placed('cooldownManagerEssential', 'screen', 'CENTER', 'BOTTOM', 0, variant == '1440' and 325 or 300), 'Essential')
         -- Utility 36 under Essential's second row: a row is 30 + 2 x 2 - 1 = 33.
         assert(Shape(db.utility, 36, 30, 6, -1, 'centerH', 'down') and Placed('cooldownManagerUtility', 'cooldownManagerEssential', 'TOP', 'BOTTOM', 0, -69), 'Utility')
-        -- Every bar in Mode-Round Gunmetal with cooldownHot numbers (owner's tuning, November 18, 2026).
+        -- Every bar in Mode-Empty with the neutral, darker rim (owner, November 20,
+        -- 2026) and cooldownHot numbers (owner's tuning, November 18, 2026).
         local looks = { 'essential', 'utility', 'buffIcon', 'buffBar' }
         for _, bar in ipairs(db.customBars) do looks[#looks + 1] = bar.id end
         for _, key in ipairs(looks) do
             local style = db[key]
-            assert(style.edgeStyle == 'round' and style.edgeMetal == 'gunmetal' and style.spacing == -1 and style.edgeSize == 1
-                and addon.Style.SameColor(style.cooldownColor, addon.Style.Tone.cooldownHot), key .. ': the Mode-Default look')
+            assert(style.edgeStyle == 'obsidianEmpty' and style.edgeMetal == 'default' and style.spacing == -1 and style.edgeSize == 1
+                and addon.Style.SameColor(style.edgeColor, addon.Style.Tone.emptyRim)
+                and addon.Style.SameColor(style.cooldownColor, addon.Style.Tone.cooldownHot), key .. ': the Mode-DPS/TANK look')
         end
         local r = db.resources
         assert(db.resourceLayout == 'grouped' and r.power.height == 10 and r.combo.height == 8 and r.mana.height == 8 and not r.health.show, 'Group Resources')

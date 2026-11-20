@@ -15,7 +15,10 @@
   color comes from `Style.Tone`, every border from a `Style.Edge` preset, every
   bar from `Style.Bar` (Mode BG empty part, Comet spark, Combined shields),
   every texture from a "Mode <Name>" key in `Style.Asset`, every font from
-  `Style.Font` (the Mode typeface: Expressway when installed, else Geist). All of it lives in `ModeUI/Shared/Style/`; modules,
+  `Style.Font` (the Mode typeface: Urbanist). Mode-Obsidian is the only look
+  (Mode-Border and Mode-Empty borders, Mode-FG and Mode-BG bars); the retired
+  Mode-Blizz art and Geist live in `archive/mode-blizz/`, outside the addon,
+  and never load. All of it lives in `ModeUI/Shared/Style/`; modules,
   Skin and Settings never hard-code colors, borders, masks, texture paths or
   font files. Change the design doc first, then Style, then the modules.
 - `tests/design.lua` enforces that, everywhere outside `Shared/Style/` and

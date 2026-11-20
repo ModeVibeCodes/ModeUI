@@ -137,7 +137,7 @@ local function Style(bar)
         border = "mode", backgroundColor = Copy(Tone.mono.panel), showEmpty = true, backgroundOpacity = 100,
         -- The buttons' border style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a
         -- border"): Mode-Blizz in its own metal (owner, November 17, 2026).
-        edgeStyle = "blizz", edgeMetal = "default",
+        edgeStyle = "obsidian", edgeMetal = "default",
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = true,
         -- Paging: Action Bar 1 follows the game's own paging (stances, forms,

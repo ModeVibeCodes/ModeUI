@@ -106,16 +106,16 @@ local function Style(window)
         -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a
         -- border"): the window, its breakdown and its menu in Mode-Thin in its
         -- own metal (owner, November 17, 2026).
-        edgeStyle = "thin", edgeMetal = "default",
+        edgeStyle = "obsidian", edgeMetal = "default",
         -- Header
-        header = true, headerHeight = 20, headerTexture = "media:Mode Title", headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
+        header = true, headerHeight = 20, headerTexture = "media:Mode-FG", headerColor = Copy(M.HEADER_COLOR), headerOpacity = 100,
         titleUpper = false, showSession = false, showTimer = true, headerButtons = true,
         -- The title's place: Left, Center or Right in the room the timer and
         -- buttons leave, moved by Title X and Title Y (interface units).
         titleAlign = "left", titleOffsetX = 0, titleOffsetY = 0,
         -- Bars
         -- Mode Panel bars on Mode BG (tinted Slate), as the approved probe.
-        barTexture = "media:Mode Panel", barBackground = "media:Mode BG", barOpacity = 100, barBackgroundOpacity = 100,
+        barTexture = "media:Mode-FG", barBackground = "media:Mode-BG", barOpacity = 100, barBackgroundOpacity = 100,
         barColorMode = "class", barColor = Copy(Tone.ivory), otherColor = Copy(M.OTHER_COLOR),
         icon = "class", alwaysShowMe = true,
         -- Text: numbers are whole by default (Decimals 0-3); Separator joins

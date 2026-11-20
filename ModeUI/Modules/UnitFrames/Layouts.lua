@@ -35,8 +35,8 @@ local function TargetSize(db)
     return g.width * fdb.scale / 100, g.height * fdb.scale / 100
 end
 
--- What both layouts share: no text glow, Mode-Thin Steel on every frame and
--- cast bar, no soft drop under the Player and Target (the icons on them keep
+-- What both layouts share: no text glow, Mode-Border in its own metal on
+-- every frame and cast bar, no soft drop under the Player and Target (the icons on them keep
 -- a crisp 1px shadow line), aura icons 1px apart (neighbours share one
 -- shadow pixel; the border is inside the icon), the Target's buffs at its top
 -- left growing right, Target of Focus off.
@@ -45,7 +45,7 @@ local function Common(db)
     for _, unit in ipairs(FRAMES) do
         local fdb = db[unit]
         fdb.nameTextGlow, fdb.healthTextGlow = false, false
-        fdb.edgeStyle, fdb.edgeMetal = "thin", "steel"
+        fdb.edgeStyle, fdb.edgeMetal = "obsidian", "default"
         fdb.buffs.spacing, fdb.debuffs.spacing = 1, 1
     end
     db.player.dropShadow, db.target.dropShadow = false, false

@@ -77,7 +77,7 @@ M.FadeRegion = Fade
 -- (docs/DESIGN_LANGUAGE.md, "Pieces").
 function M.IconArt(host)
     local art = { face = host:CreateTexture(nil, "BACKGROUND", nil, -7), edge = Style.Edge(host, M.EDGE, { pieces = true }) }
-    Style.ApplyAsset(art.face, "Button")
+    Style.ApplyAsset(art.face, "FGBase")
     return art
 end
 -- A bar's edge look: its band width, style and metal, Mode-BlizzEmpty's band

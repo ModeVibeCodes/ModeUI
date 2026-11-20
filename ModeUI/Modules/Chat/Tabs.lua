@@ -34,7 +34,7 @@ local WHISPER_INSET = 6
 local function Parts(tab)
     local parts = Skin.parts[tab]
     if parts and parts.pane then return parts end
-    parts = Skin.Box(tab, "control", { inset = CONTROL, style = "thin", pieces = true })
+    parts = Skin.Box(tab, "control", { inset = CONTROL, style = "obsidian", pieces = true })
     -- The pane's place (an empty texture the face and edge follow).
     parts.pane = tab:CreateTexture(nil, "BACKGROUND", nil, -8)
     parts.pane:SetAlpha(0)
@@ -109,7 +109,7 @@ function M:PaintPane(tab, selected)
     pane:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", -gap, 0)
     pane:SetHeight(height)
     local glass = self.db.glassTabs
-    Skin.PaintBox(parts, pane, glass and "Glass" or "Button", selected and C.chosen or C.face, glass and 0.75 or 1, true,
+    Skin.PaintBox(parts, pane, "FG", selected and C.chosen or C.face, glass and 0.75 or 1, true,
         selected and "accent" or nil)
     -- The text; the conversation icon, anchored to its left, follows. Only
     -- Blizzard's temporary (whisper) tabs have one.

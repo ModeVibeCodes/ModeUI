@@ -119,8 +119,11 @@ world.run([==[
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'frames' and not M.enabled, 'registered under Frames, off by default')
     assert(M.db.version == 11 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
-    -- The Mode design language: Mode BG on Mode BG, Mode Cast, Gradient names, health text by health, Geist.
-    assert(M.db.enemy.foregroundTexture == 'media:Mode BG' and M.db.enemy.backgroundTexture == 'media:Mode BG' and M.db.enemy.castTexture == 'media:Mode Cast')
+    -- The Mode-Obsidian look (the theme part runs on every profile): Mode-FG
+    -- on Mode-BG at 85%, Mode-FG casts, the focus in the Glow, Gradient names,
+    -- health text by health, Urbanist.
+    assert(M.db.enemy.foregroundTexture == 'media:Mode-FG' and M.db.enemy.backgroundTexture == 'media:Mode-BG' and M.db.enemy.castTexture == 'media:Mode-FG')
+    assert(M.db.enemy.focusStyle == 'glow' and M.db.friendly.focusStyle == 'glow' and M.db.friendly.backgroundTexture == 'media:Mode-BG', 'the focus in the Glow, per kind')
     assert(M.db.enemy.nameColorMode == 'gradient' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode' and not M.db.enemy.liftedShadow)
     assert(M.db.enemy.targetColor[1] == addon.Style.Tone.ivory[1] and M.db.enemy.focusColor[1] == addon.Style.Tone.rosewood[1], 'Ivory target, Rosewood focus')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
@@ -144,8 +147,8 @@ world.run([==[
     -- Colors: the true hostile reaction color; threat wins when known.
     local hostile = P.hostile
     assert(plate.health.statusBarColor[1] == hostile[1] and plate.health.statusBarColor[4] == 1, 'true hostile color, opaque bar')
-    assert(M.db.enemy.softness == nil and M.db.enemy.healthOpacity == 100 and M.db.enemy.backgroundOpacity == 60, 'opacity defaults: see-through empty bars')
-    assert(math.abs(plate.health.bg.vertexColor[4] - 0.6) < 1e-9, 'Slate at 60%')
+    assert(M.db.enemy.softness == nil and M.db.enemy.healthOpacity == 100 and M.db.enemy.backgroundOpacity == 85, 'opacity defaults: see-through empty bars')
+    assert(math.abs(plate.health.bg.vertexColor[4] - 0.85) < 1e-9, 'Slate at 85%')
     local hg = plate.healthText.glow
     assert(M.db.enemy.healthTextGlow and hg and hg.on and hg:IsShown(), 'health numbers glow')
     assert(M:SetOption('enemy', 'healthTextGlow', false) and not hg:IsShown() and M:SetOption('enemy', 'healthTextGlow', true) and hg:IsShown())
@@ -163,21 +166,22 @@ world.run([==[
     assert(math.abs(box:GetHeight() - (M.db.enemy.healthHeight + 2)) < 1e-9 and Point(box.inner)[4] == 1, 'the bar one rim inside the box')
     assert(plate.castBox.edge.preset == 'frameThin' and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
     assert(plate.comet and plate.comet.head and plate.comet.trail, 'the Comet spark on the cast bar')
-    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Round in
-    -- its own metal (Silver) by default, per kind, health and cast bar together;
-    -- any style keeps the box's size.
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Border in
+    -- its own metal by default, per kind, health and cast bar together; any
+    -- style keeps the box's size; an old id (Mode-Blizz) draws as Mode-Border.
     local Metal = addon.Style.Tone.metal
-    assert(M.db.enemy.edgeStyle == 'round' and M.db.enemy.edgeMetal == 'default' and M.db.friendly.edgeStyle == 'round'
-        and M.db.friendly.edgeMetal == 'default', 'Mode-Round, the style\'s metal')
-    assert(box.edge.styleId == 'round' and box.edge:Metal() == Metal.silver and plate.castBox.edge.styleId == 'round', 'plates in Mode-Round, Silver')
+    assert(M.db.enemy.edgeStyle == 'obsidian' and M.db.enemy.edgeMetal == 'default' and M.db.friendly.edgeStyle == 'obsidian'
+        and M.db.friendly.edgeMetal == 'default', 'Mode-Border, the style\'s metal')
+    assert(box.edge.styleId == 'obsidian' and box.edge:Metal() == Metal.obsidian and plate.castBox.edge.styleId == 'obsidian', 'plates in Mode-Border')
     local boxWidth, boxHeight, castHeight = box:GetWidth(), box:GetHeight(), plate.castBox:GetHeight()
-    assert(M:SetOption('enemy', 'edgeStyle', 'blizz') and box.edge.styleId == 'blizz' and plate.castBox.edge.styleId == 'blizz', 'Mode-Blizz')
+    assert(M:SetOption('enemy', 'edgeStyle', 'obsidianEmpty') and box.edge.styleId == 'obsidianEmpty' and plate.castBox.edge.styleId == 'obsidianEmpty', 'Mode-Empty')
     assert(box:GetWidth() == boxWidth and box:GetHeight() == boxHeight and plate.castBox:GetHeight() == castHeight, 'same size')
+    assert(M:SetOption('enemy', 'edgeStyle', 'blizz') and box.edge.styleId == 'obsidian', 'an old id draws as Mode-Border')
     assert(M:SetOption('enemy', 'edgeMetal', 'gunmetal') and box.edge:Metal() == Metal.gunmetal and plate.castBox.edge:Metal() == Metal.gunmetal, 'Gunmetal')
-    assert(M.db.friendly.edgeStyle == 'round' and M.db.friendly.edgeMetal == 'default', 'per kind')
+    assert(M.db.friendly.edgeStyle == 'obsidian' and M.db.friendly.edgeMetal == 'default', 'per kind')
     assert(not M:SetOption('enemy', 'edgeStyle', 'nope') and not M:SetOption('enemy', 'edgeMetal', 'gold') and M.db.enemy.edgeStyle == 'blizz', 'unknown styles are refused')
-    assert(M:SetOption('enemy', 'edgeStyle', 'round') and M:SetOption('enemy', 'edgeMetal', 'default') and box.edge.styleId == 'round'
-        and box.edge:Metal() == Metal.silver)
+    assert(M:SetOption('enemy', 'edgeStyle', 'obsidian') and M:SetOption('enemy', 'edgeMetal', 'default') and box.edge.styleId == 'obsidian'
+        and box.edge:Metal() == Metal.obsidian)
     -- The indicator reads level, classification and quest from the unit.
     local P1 = plate.indicatorParts
     assert(not P1.level:IsShown() and not P1.quest:IsShown() and M:IndicatorRoom(plate, 'LEFT') == 0, 'nothing known, nothing shown')
@@ -309,6 +313,8 @@ world.run([==[
 
     -- Focus: found like the target; a border, glow or stripes, its own texture, fading the others.
     local rose = M.db.enemy.focusColor
+    -- The Glow by default (Mode-Obsidian); the border first here.
+    assert(M.db.enemy.focusStyle == 'glow' and M:SetOption('enemy', 'focusStyle', 'border'))
     nameplates.focus = first; FireEvent('PLAYER_FOCUS_CHANGED')
     assert(plate.focused and not p2.focused and plate.healthBox.edge.highlight == rose, 'focus border')
     assert(p2:GetAlpha() == 1, 'others stay at 100% by default')
@@ -464,7 +470,7 @@ world.run([==[
     CreateFont, ModeUISlugFont, ModeUISlugFontOutline = nil, nil, nil
     assert(M:SetOption('enemy', 'slug', false) and M:SetOption('enemy', 'slug', true))
     -- Foreground and background textures, for the health and cast bars.
-    assert(M.db.enemy.foregroundTexture == 'media:Mode BG' and M.db.enemy.backgroundTexture == 'media:Mode BG', 'texture defaults')
+    assert(M.db.enemy.foregroundTexture == 'media:Mode-FG' and M.db.enemy.backgroundTexture == 'media:Mode-BG', 'texture defaults')
     assert(M:SetOption('enemy', 'foregroundTexture', 'flat') and plate.health.statusBarTexture == Kit.FLAT and not plate.health.sheen:IsShown(), 'flat foreground')
     assert(M:SetOption('enemy', 'castTexture', 'flat') and plate.cast.statusBarTexture == Kit.FLAT, 'the cast bar has its own texture')
     assert(not M:SetOption('enemy', 'castTexture', 'slate'), 'slate is a background only')
@@ -474,13 +480,13 @@ world.run([==[
     local labels = {}
     for _, choice in ipairs(M.TextureChoices(true)) do labels[#labels + 1] = choice.id end
     local backgrounds = M.TextureChoices(false)
-    assert(labels[1] == 'mode' and labels[2] == 'flat' and backgrounds[1].id == 'slate' and backgrounds[2].id == 'slateHatch' and backgrounds[3].id == 'flat', 'texture choices')
+    assert(labels[1] == 'flat' and backgrounds[1].id == 'slate' and backgrounds[2].id == 'slateHatch' and backgrounds[3].id == 'flat', 'texture choices')
     -- Mode Slate: flat, tinted the slate gray; the hatch tiles per pixel.
     assert(M:SetOption('enemy', 'backgroundTexture', 'slate') and plate.health.bg.texture == Kit.FLAT and plate.health.bg.vertexColor[1] == Kit.onyx.slate[1])
     assert(M:SetOption('enemy', 'backgroundTexture', 'slateHatch') and plate.health.bg.texture == addon.Media:GetTexture('ModeSlateHatch'))
     assert(not M:SetOption('enemy', 'foregroundTexture', 'slate'), 'slate is a background only')
-    assert(M:SetOption('enemy', 'foregroundTexture', 'media:Mode BG') and M:SetOption('enemy', 'backgroundTexture', 'media:Mode BG')
-        and M:SetOption('enemy', 'castTexture', 'media:Mode Cast'))
+    assert(M:SetOption('enemy', 'foregroundTexture', 'media:Mode-FG') and M:SetOption('enemy', 'backgroundTexture', 'media:Mode-BG')
+        and M:SetOption('enemy', 'castTexture', 'media:Mode-FG'))
     assert(M:SetOption('enemy', 'castHeight', 4) and math.abs(plate.castBox:GetHeight() - 6) < 1e-9, 'small cast bars keep their rim')
     assert(M:SetOption('enemy', 'castHeight', 8))
 
@@ -966,7 +972,7 @@ np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.Nameplates.db
     assert(db.version == 11 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
-    assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 60, 'opacity defaults (55, the Mode 100, then 60)')
+    assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 85 and db.friendly.backgroundOpacity == 85, 'opacity defaults (Mode-Obsidian: 85)')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v5")
 
@@ -1120,8 +1126,8 @@ np.friendly.backgroundOpacity, np.friendly.nameColorMode = 40, 'class'
 H.Load({ before = STUBS, saved = v8 }).run([==[
     local db, Tone, P = addon.Nameplates.db, addon.Style.Tone, addon.Kit.palette
     local e, f = db.enemy, db.friendly
-    assert(db.version == 11 and e.foregroundTexture == 'media:Mode BG' and e.backgroundTexture == 'media:Mode BG' and e.backgroundOpacity == 60)
-    assert(e.nameColorMode == 'gradient' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode Cast')
+    assert(db.version == 11 and e.foregroundTexture == 'media:Mode-FG' and e.backgroundTexture == 'media:Mode-BG' and e.backgroundOpacity == 85)
+    assert(e.nameColorMode == 'gradient' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode-FG')
     assert(e.healthTextColor == 'health' and e.focusColor[1] == Tone.rosewood[1], 'old focus amber takes Rosewood')
     assert(f.backgroundOpacity == 40 and f.nameColorMode == 'class', 'picked values stay')
 ]==], "nameplates_v8")
@@ -1148,7 +1154,7 @@ np.enemy.edgeStyle, np.enemy.edgeMetal, np.friendly.edgeStyle, np.friendly.edgeM
 H.Load({ before = STUBS, saved = v10 }).run([==[
     local db = addon.Nameplates.db
     assert(db.version == 11 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 45, '100 becomes 60')
-    assert(db.enemy.edgeStyle == 'round' and db.friendly.edgeMetal == 'default', 'the border keys arrive with their defaults')
+    assert(db.enemy.edgeStyle == 'obsidian' and db.friendly.edgeMetal == 'default', 'the border keys arrive with their defaults')
 ]==], "nameplates_v10")
 
 -- Invalid saved settings stop validation instead of being reset.
@@ -1156,7 +1162,7 @@ local broken = world.saved()
 broken.profiles.Default.modules.nameplates.enemy.width = 'wide'
 local ok = pcall(H.Load, { before = STUBS, saved = broken })
 assert(not ok, 'invalid nameplate settings are refused, not reset')
--- The Mode-Default layout's part: aura icons 1px apart (owner, November 18, 2026).
+-- The Mode-DPS/TANK layout's part: aura icons 1px apart (owner, November 18, 2026).
 H.Load({ before = STUBS }).run([==[
     for _, variant in ipairs({ '1080', '1440' }) do
         local profile = assert(addon.Layouts:Build('mode-default', variant))

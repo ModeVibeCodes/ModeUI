@@ -27,7 +27,7 @@ function M:Art(host)
     local art = self.art[host]
     if art then return art end
     art = { face = host:CreateTexture(nil, "BACKGROUND", nil, -7), edge = Style.Edge(host, "frame") }
-    Style.ApplyAsset(art.face, "Button")
+    Style.ApplyAsset(art.face, "FGBase")
     self.art[host] = art
     return art
 end

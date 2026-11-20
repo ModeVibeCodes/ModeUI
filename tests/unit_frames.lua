@@ -14,15 +14,16 @@ world.run([====[
     assert(addon.categories.frames.title=='Interface')
     assert(not M.enabled and M.frames.player==nil,'default off creates nothing')
     assert(M.db.layoutVersion==24 and M.db.player.portraitSide=='left' and M.db.target.portraitSide=='right')
-    -- The Mode look (docs/DESIGN_LANGUAGE.md): Geist, Mode Matte health, Mode
-    -- Gradient power, Mode BG empty bars, 3px power, Combined shields.
+    -- The Mode-Obsidian look (docs/DESIGN_LANGUAGE.md; the theme part runs on
+    -- every profile): Urbanist, Mode-FG health and power over Mode-BG at 85%,
+    -- 3px power, Combined shields.
     assert(M.db.player.fontMedia == 'Mode' and M.db.player.texture==nil)
-    assert(M.db.player.foregroundTexture=='media:Mode Matte' and M.db.player.powerForegroundTexture=='media:Mode Gradient'
-        and M.db.player.backgroundTexture=='media:Mode BG' and M.db.player.barBackgroundOpacity==60 and M.db.player.powerBackgroundOpacity==60)
+    assert(M.db.player.foregroundTexture=='media:Mode-FG' and M.db.player.powerForegroundTexture=='media:Mode-FG'
+        and M.db.player.backgroundTexture=='media:Mode-BG' and M.db.player.barBackgroundOpacity==85 and M.db.player.powerBackgroundOpacity==85)
     assert(M.db.player.powerHeight==3 and M.db.focus.powerHeight==3 and M.db.player.showShields==true)
-    assert(M.db.player.castBar.gap==2 and M.db.focus.castBar.gap==8 and M.db.player.castBar.foregroundTexture=='media:Mode Cast')
+    assert(M.db.player.castBar.gap==2 and M.db.focus.castBar.gap==8 and M.db.player.castBar.foregroundTexture=='media:Mode-FG' and M.db.player.castBar.backgroundTexture=='media:Mode-BG')
     assert(M.db.target.matchPlayer==true and M.db.player.matchPlayer==false)
-    assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='gradient' and M.db.player.portraitRing=='class')
+    assert(M.db.player.healthColorMode=='default' and M.db.player.nameColorMode=='class' and M.db.player.portraitRing=='class')
     local PS=M.db.player.texts
     assert(PS.border.content=='name' and PS.border.align=='RIGHT' and PS.border.size==12 and M.db.player.classSoftness==nil,'Class Color Softness retired')
     assert(M.db.player.dropShadow==true and M.db.target.dropShadow==true,'Drop Shadow on by default')
@@ -208,16 +209,18 @@ world.run([====[
     FireEvent('UNIT_AURA','target')
     local b1,b2=t.auraIcons.buffs[1],t.auraIcons.buffs[2]
     assert(b1:IsShown() and b2:IsShown() and t.auraShown.buffs==2 and t.auraShown.debuffs==0 and auraFilters[#auraFilters]=='HELPFUL')
-    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.edge.preset=='frameThin' and b1.edge.tint==nil and b1.rim.vertexColor[1]==addon.Style.Tone.metal.steel.mid[1] and b1.edge.styleId=='thin','auras wear the frameThin edge in Mode-Thin')
-    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Blizz in
-    -- Silver by default, frame and cast bar together; any style keeps the layout.
-    assert(M.db.player.edgeStyle=='blizz' and M.db.player.edgeMetal=='default' and p.panel.edge.styleId=='blizz'
-        and p.panel.edge:Metal()==addon.Style.Tone.metal.silver and p.castBox.edge.styleId=='blizz','frames in Mode-Blizz, Silver')
+    assert(b1.icon.texture==136078 and b1.count:GetText()=='3' and b1.cooldown.cooldownStart==10 and b1.edge.preset=='frameThin' and b1.edge.tint==nil and b1.rim.vertexColor[1]==addon.Style.Tone.metal.obsidian.deep[1] and b1.edge.styleId=='obsidian','auras wear the frameThin edge in Mode-Border')
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Border in
+    -- its own metal by default, frame and cast bar together; any style keeps
+    -- the layout; an old style id (Mode-Round) draws as Mode-Border.
+    assert(M.db.player.edgeStyle=='obsidian' and M.db.player.edgeMetal=='default' and p.panel.edge.styleId=='obsidian'
+        and p.panel.edge:Metal()==addon.Style.Tone.metal.obsidian and p.castBox.edge.styleId=='obsidian','frames in Mode-Border')
     local before=p.geometry.width
-    assert(M:SetFrameOption('player','edgeStyle','round') and p.panel.edge.styleId=='round' and p.castBox.edge.styleId=='round' and p.geometry.width==before,'Mode-Round, same size')
+    assert(M:SetFrameOption('player','edgeStyle','obsidianEmpty') and p.panel.edge.styleId=='obsidianEmpty' and p.castBox.edge.styleId=='obsidianEmpty' and p.geometry.width==before,'Mode-Empty, same size')
+    assert(M:SetFrameOption('player','edgeStyle','round') and p.panel.edge.styleId=='obsidian','an old id draws as Mode-Border')
     assert(M:SetFrameOption('player','edgeMetal','gunmetal') and p.panel.edge:Metal()==addon.Style.Tone.metal.gunmetal)
     assert(not M:SetFrameOption('player','edgeStyle','nope') and M.db.player.edgeStyle=='round','unknown styles are refused')
-    assert(M:SetFrameOption('player','edgeStyle','blizz') and M:SetFrameOption('player','edgeMetal','default') and p.panel.edge.styleId=='blizz')
+    assert(M:SetFrameOption('player','edgeStyle','obsidian') and M:SetFrameOption('player','edgeMetal','default') and p.panel.edge.styleId=='obsidian')
     -- Hover shows the game's tooltip for that aura; a secret ID (combat) shows none.
     function GameTooltip:SetOwner(owner) self.owner=owner end
     function GameTooltip:GetOwner() return self.owner end
@@ -325,23 +328,23 @@ world.run([====[
     assert(p.panel.edge.holder:GetFrameLevel()>p.health:GetFrameLevel() and p.panel.edge.holder:GetFrameLevel()<p.portrait:GetFrameLevel(),'border over the bars, under the ring')
     assert(p.portrait.ring and p.portrait.icon==p.portrait.ring.portrait and p.portrait.width==70,'the portrait in its ring')
     assert(Point(p.portrait)[1]=='TOPLEFT' and Point(p.portrait)[4]==0 and Point(t.portrait)[1]=='TOPRIGHT','ring centred on the block edge, mirrored on the Target')
-    -- Mode Matte health and Mode Gradient power over Mode BG on Slate.
+    -- Mode-FG health and power over Mode-BG on Slate.
     -- Textures with a lift draw their base, with the white lift over the fill.
     local Base=S.AssetPath
-    assert(p.health.statusBarTexture==Base('MatteBase') and p.power.statusBarTexture==Base('Solid'),'Mode textures')
-    assert(p.health.sheen:IsShown() and p.health.sheen.texture==Base('MatteLift') and p.power.sheen.texture==Base('GradientLift'),'the lifts')
+    assert(p.health.statusBarTexture==Base('FGBase') and p.power.statusBarTexture==Base('FGBase'),'Mode textures')
+    assert(p.health.sheen:IsShown() and p.health.sheen.texture==Base('FGLift') and p.power.sheen.texture==Base('FGLift'),'the lifts')
     assert(Point(p.health.sheen)[2]==p.health.fillTexture and p.health.sheen.vertexColor[1]==1,'the lift follows the fill, white')
     for _,bar in ipairs({p.health,p.power}) do
-        assert(bar.bg.vertexColor[1]==S.Tone.slate[1] and math.abs(bar.bg.vertexColor[4]-0.6)<1e-6,'Mode BG on Slate, see-through')
+        assert(bar.bg.vertexColor[1]==S.Tone.slate[1] and math.abs(bar.bg.vertexColor[4]-0.85)<1e-6,'Mode-BG on Slate, see-through')
         assert(bar.fillTexture.drawLayer=='ARTWORK','fill drawn above the track')
     end
     assert(p.panel.back.vertexColor[4]==0,'no black plate behind see-through empty bars')
     local d=M.db.player
-    assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==60)
+    assert(d.barForegroundOpacity==100 and d.barBackgroundOpacity==85)
     assert(M:SetFrameOption('player','barBackgroundOpacity',100) and p.panel.back.vertexColor[4]==0,'power still see-through')
     assert(M:SetFrameOption('player','powerBackgroundOpacity',100) and p.panel.back.vertexColor[4]==1,'solid bars keep the plate')
     assert(M:SetFrameOption('player','backgroundTexture','flat') and p.health.bg.vertexColor[1]==O.track[1] and p.health.bg.texCoord[2]==1)
-    assert(M:SetFrameOption('player','backgroundTexture','media:Mode BG') and not M:SetFrameOption('player','foregroundTexture','slate'))
+    assert(M:SetFrameOption('player','backgroundTexture','media:Mode-BG') and not M:SetFrameOption('player','foregroundTexture','slate'))
     -- Combined shields on health (Style.Shield).
     assert(p.health.shield and p.health.shield.bar==p.health and p.health.shield.clip:IsShown())
     assert(M:SetFrameOption('player','showShields',false) and not p.health.shield.clip:IsShown() and M:SetFrameOption('player','showShields',true))
@@ -382,7 +385,7 @@ world.run([====[
     local ring=p.portrait
     -- The ring sits above the bars and the border, so its whole circle is drawn over the block's end.
     assert(ring:GetFrameLevel()>p.health:GetFrameLevel() and ring:GetFrameLevel()>p.panel.edge.holder:GetFrameLevel(),'ring over the block end')
-    assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and #ring.ring.layers==4 and ring.ring.layers[2].texture.texture==addon.Style.AssetPath('Rings2m') and ring.ring.shadow.vertexColor[4]==addon.Style.Tone.shadowAlpha,'Mode-Blizz specular ring with its shadow ring')
+    assert(ring.ring.disc.texture==addon.Style.AssetPath('Circle') and #ring.ring.layers==3 and ring.ring.layers[2].texture.texture==addon.Style.AssetPath('Ringorh') and ring.ring.shadow.vertexColor[4]==addon.Style.Tone.shadowAlpha,'Mode-Border ring (lit top, deeper bottom) with its shadow ring')
     local line=ring.ring.line
     assert(Point(line)[4]==2 and Point(line)[5]==-2 and line.vertexColor[1]==0 and line.vertexColor[2]==0 and line.vertexColor[3]==0,'the 1px black line, the band inner pixel')
     assert(Point(ring.icon)[4]==3 and Point(ring.icon)[5]==-3 and ring.ring.mask,'the whole portrait 3px in, cut round')
@@ -391,7 +394,7 @@ world.run([====[
     -- On the Border (default): the baseline on the top rim's middle (bottom = 2 - 1 - 3
     -- descent = -2), clear of the ring at its height (31 in from the bars' start).
     local np=Point(p.texts.border);assert(np[1]=='BOTTOMLEFT' and np[2]==p.health and np[4]==28 and np[5]==3 and p.texts.border.justifyH=='RIGHT','name just above the border (1px over the block)')
-    assert(p.texts.border.font[1]:find('Geist%-SemiBold') and p.texts.right.font[1]:find('Geist%-Bold'),'Geist: names on the border in SemiBold, text in the bars in Bold')
+    assert(p.texts.border.font[1]:find('Urbanist%-SemiBold') and p.texts.right.font[1]:find('Urbanist%-Bold'),'Urbanist: names on the border in SemiBold, text in the bars in Bold')
     assert(t.texts.border.justifyH=='LEFT','the mirrored Target has its name on the left')
     -- Mirror Player Text off: the Player's slots as they are, each clear of the Target's own portrait.
     assert(M:SetFrameOption('target','mirrorText',false) and t.texts.border.justifyH=='RIGHT' and not t.texts.left:IsShown())
@@ -470,30 +473,28 @@ world.run([====[
     assert(M:SetFrameOption('player','nameTextGlow',true) and M:SetFrameOption('player','healthTextGlow',true))
     assert(p.texts.border.lift.justifyH=='RIGHT' and not p.texts.powerCenter.lift:IsShown(),'no power text by default, so no lift')
     assert(t.texts.border.lift.text.label=='name' and t.texts.left.lift.text.secret.label=='pct','secret values go straight to the lifts')
-    -- Metal: Ring Style in Ring Metal (Mode-Blizz in Silver by default); Class
-    -- Color is Mode-Blizz's Specular in tones of the true class color (Style.PaintRing).
+    -- Metal: Ring Style in Ring Metal (Mode-Border in its own metal by default);
+    -- Class Color is Mode-Border's ring lighting (the color, a lit top, a
+    -- deeper bottom) in tones of the true class color (Style.PaintRing).
     local S=addon.Style
-    local silver,pr=S.Tone.metal.silver,p.portrait.ring
-    assert(M.db.player.portraitRing=='class' and Near(pr.layers[2].texture.vertexColor[1],rogue[1]) and pr.layers[2].texture:IsShown() and pr.styleId=='blizz','Class Color by default: Specular in the class tones')
+    local ob,pr=S.Tone.metal.obsidian,p.portrait.ring
+    assert(M.db.player.portraitRing=='class' and Near(pr.disc.vertexColor[1],rogue[1]) and pr.layers[2].texture:IsShown() and pr.styleId=='obsidian','Class Color by default: the ring lighting in the class tones')
     assert(M:SetFrameOption('player','portraitRing','border'))
-    assert(M.db.player.portraitRingStyle=='blizz' and M.db.player.portraitRingMetal=='default')
-    assert(pr.styleId=='blizz' and pr.disc.vertexColor[1]==silver.dark[1] and pr.layers[4].texture:IsShown() and pr.layers[4].texture.vertexColor[1]==silver.hi[1],'Mode-Blizz in Silver')
-    assert(M:SetFrameOption('player','portraitRingMetal','gunmetal') and pr.disc.vertexColor[1]==S.Tone.metal.gunmetal.dark[1],'Ring Metal')
-    assert(M:SetFrameOption('player','edgeMetal','steel') and pr.disc.vertexColor[1]==S.Tone.metal.gunmetal.dark[1],'Border Metal leaves the ring alone')
+    assert(M.db.player.portraitRingStyle=='obsidian' and M.db.player.portraitRingMetal=='default')
+    assert(pr.styleId=='obsidian' and pr.disc.vertexColor[1]==ob.mid[1] and pr.layers[3].texture:IsShown() and pr.layers[2].texture.vertexColor[1]==ob.hi[1],'Mode-Border in its own metal')
+    assert(M:SetFrameOption('player','portraitRingMetal','gunmetal') and pr.disc.vertexColor[1]==S.Tone.metal.gunmetal.mid[1],'Ring Metal')
+    assert(M:SetFrameOption('player','edgeMetal','steel') and pr.disc.vertexColor[1]==S.Tone.metal.gunmetal.mid[1],'Border Metal leaves the ring alone')
     assert(M:SetFrameOption('player','edgeMetal','default') and not M:SetFrameOption('player','portraitRingMetal','gold'))
-    assert(M:SetFrameOption('player','portraitRingStyle','thin') and pr.styleId=='thin' and #pr.layers==6 and pr.layers[5].texture.texture==S.AssetPath('Ringb2id'),'Mode-Thin: bevel')
-    assert(Point(pr.layers[4].texture)[4]>0 and Point(pr.layers[1].texture)[4]==0,'the inner row sits 1px in')
-    assert(M:SetFrameOption('player','portraitRingMetal','default') and pr.disc.vertexColor[1]==S.Tone.metal.steel.mid[1],'Default: the style own metal')
-    assert(M:SetFrameOption('player','portraitRingStyle','blizzEmpty') and #pr.layers==1 and pr.disc.vertexColor[1]==silver.mid[1] and not pr.pool[2]:IsShown(),'Mode-BlizzEmpty: flat Silver')
-    assert(M:SetFrameOption('player','portraitRingStyle','round') and pr.styleId=='round' and not M:SetFrameOption('player','portraitRingStyle','none'))
-    assert(M:SetFrameOption('player','portraitRingStyle','blizz') and #pr.layers==4)
-    assert(M:SetFrameOption('player','portraitRing','class') and Near(pr.layers[2].texture.vertexColor[1],rogue[1]) and pr.layers[2].texture:IsShown(),'Specular in the class tones')
-    assert(M:SetFrameOption('player','portraitRingStyle','thin') and pr.styleId=='thin' and Near(pr.disc.vertexColor[1],rogue[1]) and Near(pr.layers[4].texture.vertexColor[1],rogue[1]*0.35),'Ring Style with Class Color: Mode-Thin bevel in the class tones')
-    assert(M:SetFrameOption('player','portraitRingStyle','blizzEmpty') and #pr.layers==1 and Near(pr.disc.vertexColor[1],rogue[1]),'Mode-BlizzEmpty: the flat class color')
-    assert(M:SetFrameOption('player','portraitRingStyle','blizz'))
+    assert(M:SetFrameOption('player','portraitRingMetal','default') and pr.disc.vertexColor[1]==ob.mid[1],'Default: the style own metal')
+    assert(M:SetFrameOption('player','portraitRingStyle','obsidianEmpty') and #pr.layers==1 and pr.disc.vertexColor[1]==ob.mid[1] and not pr.pool[2]:IsShown(),'Mode-Empty: flat')
+    assert(M:SetFrameOption('player','portraitRingStyle','round') and pr.styleId=='obsidian' and not M:SetFrameOption('player','portraitRingStyle','none'),'an old id draws as Mode-Border')
+    assert(M:SetFrameOption('player','portraitRingStyle','obsidian') and #pr.layers==3)
+    assert(M:SetFrameOption('player','portraitRing','class') and Near(pr.disc.vertexColor[1],rogue[1]) and pr.layers[2].texture:IsShown(),'the class tones')
+    assert(M:SetFrameOption('player','portraitRingStyle','obsidianEmpty') and #pr.layers==1 and Near(pr.disc.vertexColor[1],rogue[1]),'Mode-Empty: the flat class color')
+    assert(M:SetFrameOption('player','portraitRingStyle','obsidian'))
     -- Ring Finish (the Portrait tab): a metal, Class Color or Custom in one choice.
     assert(M.RingFinish(M.db.player)=='class' and M:SetRingFinish('player','steel') and M.db.player.portraitRing=='border' and M.db.player.portraitRingMetal=='steel' and M.RingFinish(M.db.player)=='steel')
-    assert(pr.disc.vertexColor[1]==S.Tone.metal.steel.dark[1],'Steel finish')
+    assert(pr.disc.vertexColor[1]==S.Tone.metal.steel.mid[1],'Steel finish')
     assert(M:SetRingFinish('player','custom') and M.RingFinish(M.db.player)=='custom' and M.db.player.portraitRingMetal=='steel')
     assert(M:SetRingFinish('player','default') and M:SetRingFinish('player','class') and not M:SetRingFinish('player','gold'))
     assert(M:SetFrameOption('player','portraitRing','border') and pr.layers[2].texture:IsShown())
@@ -511,21 +512,21 @@ world.run([====[
     assert(M:SetFrameOption('player','barForegroundOpacity',50) and p.health.statusBarColor[4]==0.5 and p.power.statusBarColor[4]==1,'the health bar only')
     assert(M:SetFrameOption('player','powerForegroundOpacity',40) and p.power.statusBarColor[4]==0.4 and p.health.statusBarColor[4]==0.5,'the power bar has its own')
     assert(M:SetFrameOption('player','powerBackgroundOpacity',20) and p.power.bg.vertexColor[4]==0.2 and p.health.bg.vertexColor[4]==1)
-    assert(M:SetFrameOption('player','powerForegroundTexture','flat') and p.power.statusBarTexture==addon.Kit.FLAT and p.health.statusBarTexture==addon.Style.AssetPath('MatteBase'),'power texture its own')
+    assert(M:SetFrameOption('player','powerForegroundTexture','flat') and p.power.statusBarTexture==addon.Kit.FLAT and p.health.statusBarTexture==addon.Style.AssetPath('FGBase'),'power texture its own')
     assert(not M:SetFrameOption('player','powerBackgroundTexture','mode'),'validated')
-    assert(M:SetFrameOption('player','powerForegroundTexture','media:Mode Gradient') and M:SetFrameOption('player','powerForegroundOpacity',100) and M:SetFrameOption('player','powerBackgroundOpacity',100))
+    assert(M:SetFrameOption('player','powerForegroundTexture','media:Mode-FG') and M:SetFrameOption('player','powerForegroundOpacity',100) and M:SetFrameOption('player','powerBackgroundOpacity',100))
     assert(M:SetCastOption('player','foregroundTexture','flat') and p.castBox.bar.statusBarTexture==addon.Kit.FLAT and p.health.statusBarTexture~=addon.Kit.FLAT,'the cast bar has its own texture')
-    assert(not M:SetCastOption('player','backgroundTexture','mode') and M:SetCastOption('player','foregroundTexture','media:Mode Cast'))
+    assert(not M:SetCastOption('player','backgroundTexture','mode') and M:SetCastOption('player','foregroundTexture','media:Mode-FG'))
     assert(t.health.statusBarColor[4]==0.5,'matched target follows')
     assert(M:SetFrameOption('player','barBackgroundOpacity',0) and p.health.bg.vertexColor[4]==0 and t.health.bg.vertexColor[4]==0)
     assert(not M:SetFrameOption('player','barForegroundOpacity',5) and not M:SetFrameOption('player','barBackgroundOpacity',101),'ranges')
     assert(M:SetFrameOption('player','foregroundTexture','flat') and p.health.statusBarTexture==addon.Kit.FLAT and not p.health.sheen:IsShown())
     assert(not M:SetFrameOption('player','backgroundTexture','mode') and not M:SetFrameOption('player','foregroundTexture','bogus'),'texture choices validated')
-    assert(M:SetFrameOption('player','foregroundTexture','mode') and p.health.sheen:IsShown(),'the older Mode Gradient still draws')
-    assert(M:SetFrameOption('player','foregroundTexture','media:Mode Matte') and p.health.sheen:IsShown() and p.health.sheen.texture==S.AssetPath('MatteLift'))
-    assert(M:SetFrameOption('player','foregroundTexture','media:Mode BG') and not p.health.sheen:IsShown(),'BG has no lift')
-    assert(M:SetFrameOption('player','foregroundTexture','media:Mode Matte'))
-    assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',60) and M:SetFrameOption('player','powerBackgroundOpacity',60))
+    assert(M:SetFrameOption('player','foregroundTexture','mode') and p.health.sheen:IsShown() and p.health.sheen.texture==S.AssetPath('FGLift'),'the older Mode Gradient draws as Mode-FG')
+    assert(M:SetFrameOption('player','foregroundTexture','media:Mode Matte') and p.health.sheen:IsShown() and p.health.sheen.texture==S.AssetPath('FGLift'),'an old Mode texture draws as Mode-FG')
+    assert(M:SetFrameOption('player','foregroundTexture','media:Mode-BG') and not p.health.sheen:IsShown(),'BG has no lift')
+    assert(M:SetFrameOption('player','foregroundTexture','media:Mode-FG') and p.health.sheen.texture==S.AssetPath('FGLift'))
+    assert(M:SetFrameOption('player','barForegroundOpacity',100) and M:SetFrameOption('player','barBackgroundOpacity',85) and M:SetFrameOption('player','powerBackgroundOpacity',85))
     assert(M:SetFrameOption('player','showPower',false) and not p.panel.hairline:IsShown() and M:SetFrameOption('player','showPower',true))
     assert(not M:SetFrameOption('player','healthColorMode','palette') and not M:SetFrameOption('player','healthColorMode','reaction'),'only Default, Class Color or Custom')
     assert(M:SetFrameOption('player','nameColorMode','class') and Near(p.texts.border.color[1],rogue[1]))
@@ -553,10 +554,10 @@ world.run([====[
     assert(M:SetTextOption('player','powerCenter','content','powerPercent') and p.texts.powerCenter.lift:IsShown() and p.texts.powerCenter.lift:GetText()=='50%','power text lifts too')
     assert(M:SetTextOption('player','powerCenter','content','none') and not p.texts.powerCenter.lift:IsShown())
     local function Disc(f) return f.portrait.ring.disc.vertexColor end
-    local function Mid(f) return f.portrait.ring.layers[2].texture.vertexColor end
-    assert(M:SetFrameOption('player','portraitRing','border') and Near(Disc(p)[1],S.Tone.metal.silver.dark[1]),'Mode-Blizz')
+    local function Mid(f) return f.portrait.ring.layers[1].texture.vertexColor end
+    assert(M:SetFrameOption('player','portraitRing','border') and Near(Disc(p)[1],S.Tone.metal.obsidian.mid[1]),'Mode-Border')
     assert(M:SetFrameOption('player','portraitRing','custom') and M:SetFrameOption('player','portraitRingColor',{1,0,1})
-        and Mid(p)[1]==1 and Mid(p)[2]==0 and Mid(p)[3]==1,'Specular in the custom color')
+        and Mid(p)[1]==1 and Mid(p)[2]==0 and Mid(p)[3]==1,'the ring in the custom color')
     assert(not M:SetFrameOption('player','portraitRing','accent'))
     assert(M:SetFrameOption('player','portraitRing','class'))
     assert(Near(Mid(p)[1],rogue[1]) and not M:SetFrameOption('player','classSoftness',0),'the true class color; Class Color Softness is retired')
@@ -669,7 +670,7 @@ world.run([====[
     units.player.dead=true;M:UpdateHealth('player');assert(p.texts.right:GetText()=='Dead');units.player.dead=false
     assert(M:SetTextOption('player','right','content','none') and M:SetTextOption('player','center','content','healthPercent') and Point(p.texts.center)[1]=='CENTER')
     assert(p.texts.center:GetText()=='90%' and not p.texts.right:IsShown())
-    assert(p.health.statusBarTexture==addon.Style.AssetPath('MatteBase') and p.power.statusBarTexture==addon.Style.AssetPath('Solid'),'Mode textures on the bars')
+    assert(p.health.statusBarTexture==addon.Style.AssetPath('FGBase') and p.power.statusBarTexture==addon.Style.AssetPath('FGBase'),'Mode textures on the bars')
     assert(not M:SetFrameOption('player','texture','flat'),'the bar texture is no longer a setting')
     assert(M:SetFrameOption('player','scale',120) and p.scale==1.2)
     assert(M:SetFrameOption('player','barWidth',240) and p.width==60+240+2)
@@ -699,9 +700,9 @@ world.run([====[
     local handle=addon.PositionManager.elements.unitFramesPlayer.decoration
     assert(handle and handle.label:GetText()=='Player Frame' and addon.PositionManager.elements.unitFramesTarget.decoration.label:GetText()=='Target Frame','each handle names its frame')
     assert(Plain(ghost.texts.border.lift:GetText())=='Fixture' and ghost.texts.bottomLeft.lift:IsShown() and ghost.texts.border.halo and ghost.texts.border.halo.on and ghost.texts.bottomLeft.lift:GetText()=='60','stand-in text has the lift too')
-    local silverBase=addon.Style.Tone.metal.silver.dark
+    local silverBase=addon.Style.Tone.metal.obsidian.mid
     assert(ghost.width==p.width and ghost.portrait.ring.disc.vertexColor[1]==silverBase[1],'stand-in matches size and ring')
-    assert(Near(M.ghosts.target.portrait.ring.layers[2].texture.vertexColor[1],M.palette.hostile[1]),'target stand-in: Class Color, a sample enemy in the hostile tones')
+    assert(Near(M.ghosts.target.portrait.ring.layers[1].texture.vertexColor[1],M.palette.hostile[1]),'target stand-in: Class Color, a sample enemy in the hostile tones')
     local gc=M.ghosts.target.combo;assert(gc:IsShown() and gc.points[3].bar.value==M.COMBO_SAMPLE and gc.points[5]:IsShown(),'stand-in shows sample combo points')
     local ga=M.ghosts.target;assert(ga.auraShown.buffs==M.AURA_SAMPLE and ga.auraIcons.buffs[1]:IsShown() and ga.auraShown.debuffs==0,'sample buffs')
     assert(ga.castBox:IsShown() and ga.castBox.text:GetText()=='Frostbolt' and not M.ghosts.player.auraIcons.buffs[1],'sample cast; no buffs on the Player')
@@ -848,7 +849,7 @@ world.run([====[
     M.Initialize(v17)
     local q17=v17.player;assert(v17.layoutVersion==24 and q17.powerForegroundTexture=='flat' and q17.powerBackgroundTexture=='slateHatch' and q17.powerForegroundOpacity==80 and q17.powerBackgroundOpacity==40)
     assert(q17.castBar.foregroundTexture=='flat' and q17.castBar.backgroundTexture=='slateHatch' and q17.castBar.height==14,'nothing changes on screen')
-    assert(v17.target.powerForegroundTexture=='media:Mode Gradient' and v17.target.castBar.backgroundTexture=='media:Mode BG','new frames take the defaults')
+    assert(v17.target.powerForegroundTexture=='media:Mode-FG' and v17.target.castBar.backgroundTexture=='media:Mode-BG','new frames take the defaults')
     -- Version 18 -> 19: the Focus cast bar at the old 3px moves to 8px; a chosen gap stays.
     local v18={layoutVersion=18,focus={castBar={gap=3}},player={castBar={gap=3}}};M.Initialize(v18)
     assert(v18.layoutVersion==24 and v18.focus.castBar.gap==8 and v18.player.castBar.gap==2 and v18.focus.castBar.fullWidth==true)
@@ -911,7 +912,7 @@ world.run([====[
     units.player.health=250;FireEvent('UNIT_HEALTH','player');assert(Is(ht.color,S.Tone.rosewood),'under 30%: Rosewood')
     assert(M:SetFrameOption('player','healthTextColor','text') and Is(p.textKinds.health[1].text.color,M.db.player.textColor),'or the Text Color')
     assert(M:SetFrameOption('player','healthTextColor','health'));units.player.health=900;FireEvent('UNIT_HEALTH','player')
-    assert(p.castBox.text.font[1]:find('Geist%-Bold') and M.db.player.castBar.fontSize==11,'cast text in Bold, 11px')
+    assert(p.castBox.text.font[1]:find('Urbanist%-Bold') and M.db.player.castBar.fontSize==11,'cast text in Bold, 11px')
     addon:SetModuleEnabled('unitFrames',wasOn)
     -- Reset (the settings footer): every frame back to the defaults.
     local before=addon.ProfileCodec.Copy(M.db)
@@ -1122,7 +1123,7 @@ restored.run([====[
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelect.label:GetText():find('^Focus  '))
     assert(Visible(Row('Frame','Scale')) and not Visible(Toggle('Frame','Match Player Frame')),'only the Target matches the Player')
-    assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==60,'edits the Focus only')
+    assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==85,'edits the Focus only')
     assert(M:ResetFrame('focus'))
     -- Placement shows only for frames that attach; its offsets only while attached.
     assert(not Visible(Row('Frame','Attach Point')),'Focus has no parent frame')
@@ -1165,7 +1166,7 @@ restored.run([====[
 , "unit_frames_page")
 print("unit frames: all checks passed")
 
--- The Mode-Default layout (DPS / Tank, Modules/UnitFrames/Layouts.lua): the
+-- The Mode-DPS/TANK layout (DPS / Tank, Modules/UnitFrames/Layouts.lua): the
 -- values it writes at both screen heights, then the frames in a world that
 -- uses the profile, measured where Edit Mode sees them (the stand-ins).
 local layoutWorld = H.Load({ before = STUBS })
@@ -1185,7 +1186,7 @@ layoutWorld.run([====[
         assert(db.player.dropShadow==false and db.target.dropShadow==false,'no soft drop under the border')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
             assert(db[unit].buffs.spacing==1 and db[unit].debuffs.spacing==1,unit..': aura icons 1px apart')
-            assert(db[unit].edgeStyle=='thin' and db[unit].edgeMetal=='steel',unit..': Mode-Thin Steel')
+            assert(db[unit].edgeStyle=='obsidian' and db[unit].edgeMetal=='default',unit..': Mode-Border in its own metal')
         end
         assert(t.topRight.size==11 and t.bottomRight.size==10 and t.bottomLeft.size==10,'room in the bar: 11, 10 and 10')
         for _,unit in ipairs({'player','target','targettarget','focus','focustarget'}) do
@@ -1214,12 +1215,12 @@ layoutWorld.run([====[
         assert(pg.width==206 and pg.height==46 and fg.width==122 and fg.height==26)
     end
     -- Made into its own profile once at login (1080 here: the mock UI is 800 tall).
-    assert(ModeUIDB.profiles['Mode-Default'].positions.unitFramesFocus.y==387)
+    assert(ModeUIDB.profiles['Mode-DPS/TANK'].positions.unitFramesFocus.y==387)
 ]====], "unit_frames_layout")
 -- Only this module's part (and its places) go into the Default profile, so
 -- the check stays on these frames whatever other modules add to the layout.
 local used = layoutWorld.saved()
-local built, default = used.profiles['Mode-Default'], used.profiles.Default
+local built, default = used.profiles['Mode-DPS/TANK'], used.profiles.Default
 default.modules.unitFrames = built.modules.unitFrames
 for _, id in ipairs({ 'unitFramesPlayer', 'unitFramesTarget', 'unitFramesFocus' }) do default.positions[id] = built.positions[id] end
 H.Load({ before = STUBS, saved = used }).run([====[
@@ -1243,7 +1244,7 @@ H.Load({ before = STUBS, saved = used }).run([====[
     end
     -- Drop Shadow off: the soft drop is hidden; switching it on shows it again.
     local edge=M.frames.player.panel.edge
-    assert(edge.below and not edge.below:IsShown(),'no soft drop in Mode-Default')
+    assert(edge.below and not edge.below:IsShown(),'no soft drop in Mode-DPS/TANK')
     assert(M:SetFrameOption('player','dropShadow',true) and edge.below:IsShown(),'Drop Shadow on')
     assert(M.frames.target.panel.edge.below:IsShown(),'the matched Target follows')
     assert(M:SetFrameOption('player','dropShadow',false) and not edge.below:IsShown())
@@ -1255,4 +1256,4 @@ H.Load({ before = STUBS, saved = used }).run([====[
     assert(p[1]=='BOTTOMRIGHT' and p[2]==f.health and p[3]=='BOTTOMRIGHT','health text on the bar bottom right')
     assert(fl==tl and fb==tt+64,'the Focus 64 over the Target top left')
 ]====], "unit_frames_layout_world")
-print("unit frames: Mode-Default layout checks passed")
+print("unit frames: Mode-DPS/TANK layout checks passed")

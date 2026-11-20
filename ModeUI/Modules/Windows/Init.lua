@@ -128,7 +128,7 @@ M.defaults = {
     -- Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"): Mode-Thin
     -- in its own metal, Steel (owner, November 17, 2026). Controls and cards
     -- keep their role's border.
-    border = true, titleBar = true, edgeStyle = "thin", edgeMetal = "default",
+    border = true, titleBar = true, edgeStyle = "obsidian", edgeMetal = "default",
     -- Text: titles and tabs at their sizes; Window Text puts every other
     -- text in the window in the font too, at the game's sizes.
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, titleSize = 13, tabSize = 12, outline = false, shadow = true,

@@ -108,7 +108,7 @@ function Skin.Menu(menu)
     local level = menu:GetFrameLevel()
     if Public(level) then panel:SetFrameLevel(level + 1) end
     -- A Mode window: Graphite panel in the `window` edge.
-    Skin.PaintBox(panel.parts, panel, "Panel", M.panel, 1, true)
+    Skin.PaintBox(panel.parts, panel, "Surface", M.panel, 1, true)
     panel.menu = menu
     panel:Show()
 end

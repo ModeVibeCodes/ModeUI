@@ -10,6 +10,31 @@ The rules are enforced by `tests/design.lua` (no colors, borders, masks,
 texture paths or font files outside `Shared/Style/`) and `tests/style.lua`
 (the tokens and presets themselves).
 
+## Mode-Obsidian is the look (November 20, 2026)
+
+The owner retired the Mode-Blizz look: **Mode-Obsidian** (the last section of
+this file) is the only look, for every profile. Its old art (the Mode-Blizz,
+Mode-BlizzEmpty, Mode-Thin and Mode-Round borders and portrait ring lighting,
+the Matte, Gradient, Button, Glass, Cast, Panel, Title and old BG textures,
+the pre-Mode settings surfaces, and the Geist typeface) no longer ships with
+the addon; a copy is kept in the repository under `archive/mode-blizz/`.
+Where the sections below still name the old pieces, read them as:
+
+| Older text says | Now |
+|---|---|
+| Mode-Blizz, Mode-Thin, Mode-Round (a border style) | **Mode-Border** (`obsidian`) |
+| Mode-BlizzEmpty | **Mode-Empty** (`obsidianEmpty`) |
+| Mode-Obsidian, Mode-ObsidianEmpty (a border style) | Mode-Border, Mode-Empty |
+| Mode BG, Mode-Obsidian Track (an empty part) | **Mode-BG** |
+| Mode Matte, Gradient, Button, Glass, Cast, Panel, Title; Mode-Obsidian (a fill) | **Mode-FG**, or **Surface** for a large panel |
+| Geist, Expressway (the Mode typeface) | **Urbanist** (Mode-Urbanist) |
+| "in the theme" / "under Obsidian" | always |
+
+Saved settings keep working: the old style ids stay valid and draw as the
+style they became, old texture names draw as theirs (`Style.OLD_MEDIA`), and
+each profile moves its saved ones once (`Shared/Runtime/DB.lua`: look step 1,
+typeface step 4).
+
 ## Principles
 
 - **Blizzard plain, Mode finished.** Default-UI layouts and meanings, with
@@ -111,6 +136,11 @@ it needs no mask. The look was chosen in the border study (Revision 1,
 `design/border-study/`, owner, November 17, 2026).
 
 ### Styles
+
+Since November 20, 2026 the styles are **Mode-Border** and **Mode-Empty**
+("Mode-Obsidian theme", below); the table is the retired Mode-Blizz set,
+kept for the record (every id in it draws as Mode-Border, or Mode-Empty for
+`blizzEmpty`).
 
 | Style | Shape | Lighting | Metal (default; options) | Default for |
 |---|---|---|---|---|
@@ -327,6 +357,8 @@ Phase 6 probe):
 
 ## Text (`Style.Font`, `Style.SetName`)
 
+- **The Mode typeface: Urbanist** since November 20, 2026 (owner's
+  decision; "Mode-Obsidian theme", Type, below). Before it:
 - **The Mode typeface: Expressway** (owner's decision, November 15, 2026: it
   reads best in WoW, most of all in text-heavy windows), numbers included,
   when the client has it: the copy an installed addon ships (EllesmereUI,
@@ -559,18 +591,18 @@ Menus group them under "Mode" with the short name.
 
 | Menu name | Job |
 |---|---|
-| BG | every empty bar; alternate fill |
-| Cast | cast bars |
-| Panel | window backgrounds, meter bars |
-| Title | title bars |
-| Button | button and icon faces, class resource |
+| Mode-FG | every bar's fill (tinted by its color), button and icon faces, title strips, cards |
+| Mode-BG | every empty bar (tinted Slate) |
+| Surface | large panels: windows, chat, tooltips, meters, menus (a flat fill with the mock's soft sheen; not in bar menus) |
 | Shield | absorbs and overshields |
-| Solid, Matte, Gradient, Glass | general fills |
+| Solid | flat fills |
 | Spark | Comet head and trail; shield finish line |
 | Text Glow | the health text halo |
-| Mode-Obsidian, Mode-Obsidian Track | Mode-Obsidian's dark glass health fill and its lighter graphite empty part |
-| Mode-Prism | Mode-Obsidian's glow round a frame (not in bar menus) |
-| Light, Empty | border art |
+| Mode-Prism | the glow round a frame (not in bar menus) |
+| Mode-Border, Mode-Empty | border art |
+
+The retired textures (Matte, Gradient, Button, Glass, Cast, Panel, Title and
+the old BG) are in `archive/mode-blizz/`.
 
 Module icons (`Style.ICONS`, the settings sidebar and icon rail) and control
 glyphs (`Style.GLYPHS`: Clean Up's broom, the quest mark) are white line art
@@ -592,32 +624,40 @@ graphite, and color stays in hints (names, spell names, portrait rings,
 power, states). Everything above still holds under Obsidian except what this
 section changes.
 
-- **A profile setting.** `profile.theme` is `"blizz"` (Mode-Blizz, every
-  profile without the key) or `"obsidian"`. The first start with the theme
-  copies the active profile to **Mode-Obsidian**, gives the copy the theme
-  and makes it active; the old profile stays as it was (`ModeUIDB.builtThemes`).
-  Theme changes apply on reload, like a profile switch. The Profiles page's
-  **New Mode-Obsidian Copy** copies any profile into the theme; a new
-  profile, or one from a layout, takes the theme of the profile in use.
-- **Borders.** Under Obsidian every Mode metal style (Mode-Blizz, Mode-Thin,
-  Mode-Round) draws as **Mode-Obsidian**, and Mode-BlizzEmpty as
-  **Mode-ObsidianEmpty** (`Style.ThemeStyle`), in every role: the saved
-  `edgeStyle` keys are not changed, and the reach of every role is the same,
-  so nothing moves. The Border Style picker lists the theme's styles.
+- **The only look** (owner, November 20, 2026; it began as a profile
+  setting with a first-start "Mode-Obsidian" copy, retired the same day).
+  `profile.theme` is always `"obsidian"`; a profile from before turns
+  Mode-Obsidian the first time it is checked (each module's part once, then
+  the look and typeface steps). Mode's role profiles are **Mode-DPS/TANK**
+  (the DPS / Tank layout, Mode-Default before) and **Mode-Healer**, made in
+  Mode-Obsidian.
+- **Borders.** Two styles: **Mode-Border** (`obsidian`) and **Mode-Empty**
+  (`obsidianEmpty`, one flat color). The old ids (Mode-Blizz, Mode-Thin,
+  Mode-Round; Mode-BlizzEmpty) draw as them (`Style.ThemeStyle`), in every
+  role, and the reach of every role is the same, so nothing moves. The
+  Border Style picker lists Mode-Border and Mode-Empty.
   - Shape **soft**: round corners, 6px heavy and 4px thin (the same slice
     margins as the cut shapes, so the height floors don't change).
   - Lighting **obsidian**: the band's base is the metal's `deep` (dark glass);
     a lit top row in `hi` fades out by a third of the way down the sides; a
     warm row along the bottom in `light` (the champagne caustic) fades in
-    over the last quarter. A 2px band keeps its outer row dark and lights the
-    inner one. The shadow ring is the black outer line (`shadowAlpha` 0.9).
+    over the last third (owner, November 20, 2026: long, soft fades; the top
+    row is gone 42% down, the bottom row starts 62% down). A 2px band keeps
+    its outer row dark and lights the inner one. The shadow ring is the outer
+    line at `shadowAlpha` 0.65 (softened from 0.9: the edge read too black).
   - Metal **obsidian** (`Tone.metal.obsidian`, the style's default; Silver,
     Steel and Gunmetal still choose): hi `#6E6E74`, light `#8C806A`,
-    mid `#2A2A2D`, dark `#18181A`, deep `#0F0F11`.
+    mid `#2A2A2D`, dark `#18181A`, deep `#19191C` (lifted from `#0F0F11`
+    with the softer edge).
   - **Portrait ring**: a 2px band in the class or reaction color (`mid`)
     with a lit top (`hi`) and a deeper bottom (`dark`), between its black
     lines (lighting `obsidianRing`).
-- **Tokens** (`Style.ApplyTheme`, in place after the profile is checked):
+- **Mode-Empty's neutral rim** (`Tone.emptyRim`, `#343438`): the Cooldown
+  Manager's icons are Mode-Empty in this neutral, darker tone (owner,
+  November 20, 2026), by default and in Mode-DPS/TANK and Mode-Healer.
+- **Tokens** (`Style.ApplyTheme`, in place at load and after the profile is
+  checked; the Mode-Blizz values are kept only so migrations recognize old
+  saved colors):
 
   | Token | Mode-Blizz | Mode-Obsidian |
   |---|---|---|
@@ -628,13 +668,19 @@ section changes.
   | `text`, `textBright` | `#DADADA` `#F2F2F2` | `#E8E3D9` `#F7F3EA` |
   | `darkFill` (dark health) | `#1C1D1C` | `#161618` |
   | `slate` (empty part), `emptyAlpha` | `#575757`, 60% | `#46464B`, 85% |
-  | `shadowAlpha` | 82% | 90% |
+  | `shadowAlpha` | 82% | 65% |
 
-- **Dark health.** Health is the dark part: `darkFill` in **Mode-Obsidian**
-  (a dark glass fill: base 100% to 82% down the bar, a faint 1px top line and
-  a soft band of light fading out by the middle) over **Mode-Obsidian Track**
-  (the lighter graphite empty part: 100% to 76% down, tinted `slate`).
-  Damage shows as gray, never as color.
+- **Dark health.** Health is the dark part: `darkFill` in **Mode-FG** (a
+  dark glass fill: base 100% to 82% down the bar, a faint 1px top line and a
+  soft band of light fading out by the middle; Mode-Obsidian until November
+  20, 2026) over **Mode-BG** (the lighter graphite empty part: 100% to 76%
+  down, tinted `slate`; Mode-Obsidian Track before). Damage shows as gray,
+  never as color. Every other bar fills with Mode-FG in its own color.
+- **Surfaces.** Buttons, icon faces, title strips and cards are Mode-FG (its
+  base, or base and lift); large panels (windows, chat, tooltips, meters,
+  menus) are **Surface**: a flat fill with the mock's sheen, white 4.5% at
+  the top fading out 40% down, without the top line (stretched over a tall
+  panel it would read as a band).
 - **Fill end:** a 1px ice-white line (`fillEnd`, `#D6EBFF` at 85%), 1px in
   from the bar's top and bottom so it stays inside the border.
 - **Prism glow** (`Style.Glow`, **Mode-Prism** art): a soft glow 8px around a
@@ -644,13 +690,13 @@ section changes.
 - **Backlit dispels:** the Party Frames' dispel Gradient rises from the
   bottom edge (Gradient From: Bottom).
 - **Type:** the Mode typeface is **Urbanist** (Regular, Medium, SemiBold,
-  Bold; OFL, bundled as **Mode-Urbanist**), Expressway or not; ruRU uses
-  Geist (Urbanist has no Cyrillic), CJK clients Blizzard's font.
+  Bold; OFL, bundled as **Mode-Urbanist**), Expressway or not (an installed
+  Expressway stays a font the player may pick); Geist is retired. ruRU and
+  CJK clients use Blizzard's font (Urbanist has no Cyrillic).
 - **Theme parts.** Each module may add an Obsidian part
   (`addon.Themes:Contribute("obsidian", moduleId, fn(db))`) that sets its
   Obsidian defaults once per profile (`profile.themeParts`): Unit Frames and
-  Party Frames take dark health, the Mode-Obsidian fill and track, the track
-  at 85% and the glows; Unit Frames names take the solid class color; Party
+  Party Frames take dark health, Mode-FG over Mode-BG at 85% and the glows; Unit Frames names take the solid class color; Party
   Frames dispels rise from the bottom; Nameplates focus takes the Glow.
   Nameplates keep reaction-colored health (a gameplay meaning).
 

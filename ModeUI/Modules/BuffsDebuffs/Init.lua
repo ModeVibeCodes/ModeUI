@@ -87,7 +87,7 @@ end
 local function Bar(kind, cats, o)
     local bar = { show = true, kind = kind, cats = {}, sort = "default", max = 8, perRow = 8, width = 32, spacing = 4,
         grow = "left", wrap = "down", timer = "below", swipe = true, count = true, tooltip = true, cancel = kind == "buffs",
-        edgeStyle = "blizz", edgeMetal = "default", borderSize = 1, borderGap = 0, crop = 10, byType = kind == "debuffs",
+        edgeStyle = "obsidian", edgeMetal = "default", borderSize = 1, borderGap = 0, crop = 10, byType = kind == "debuffs",
         glow = "none", glowColor = "custom", glowCustomColor = Copy(Tone.auraGlow),
         timerX = 0, timerY = 0, countPoint = "BOTTOMRIGHT", countX = 0, countY = 0, countColor = Copy(Tone.auraStack),
         borderX = 0, borderY = 0, borderShift = 0, borderTint = false, borderColor = Copy(Tone.metal.silver.mid), spells = {} }
@@ -115,11 +115,11 @@ M.barDefaults = {
     -- border; Boss Debuffs off (owner, November 18, 2026: they live in Boss &
     -- Important; still a choice here).
     playerDebuffs = Bar("debuffs", { "cc", "dispellable", "Magic", "Curse", "Disease", "Poison", "Bleed", "other" },
-        { max = 8, perRow = 6, width = 42, spacing = 3, timer = "center", edgeStyle = "blizzEmpty", borderSize = 2 }),
+        { max = 8, perRow = 6, width = 42, spacing = 3, timer = "center", edgeStyle = "obsidianEmpty", borderSize = 2 }),
     -- Owner, November 17, 2026: a preset for Boss and Important debuffs, in
     -- Player Debuffs' look a little bigger (48 x 42), just above it.
     playerImportant = Bar("debuffs", { "important", "boss" },
-        { max = 6, perRow = 6, width = 48, spacing = 3, timer = "center", edgeStyle = "blizzEmpty", borderSize = 2 }),
+        { max = 6, perRow = 6, width = 48, spacing = 3, timer = "center", edgeStyle = "obsidianEmpty", borderSize = 2 }),
 }
 -- A new custom bar, and the one every profile starts with: Defensives, a
 -- preset (it always shows buffs; owner, November 18, 2026: 42 x 34, 2px
@@ -127,7 +127,7 @@ M.barDefaults = {
 M.customDefaults = Bar("buffs", { "all" }, { max = 8, perRow = 8, width = 36 })
 M.PRESETS = { defensives = { kind = "buffs", cancel = false } }
 M.firstCustom = { name = "Defensives", preset = "defensives", bar = Bar("buffs", { "tracked", "bigdef", "extdef", "important" },
-    { max = 4, perRow = 6, width = 42, height = 34, spacing = 2, crop = 8, timer = "center", edgeStyle = "thin",
+    { max = 4, perRow = 6, width = 42, height = 34, spacing = 2, crop = 8, timer = "center", edgeStyle = "obsidian",
         edgeMetal = "silver", borderSize = 2, glow = "soft", cancel = false, tooltip = false }) }
 
 -- Places (owner's canvas layout): Buffs in Blizzard's Buff Frame spot (its

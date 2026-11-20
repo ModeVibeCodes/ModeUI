@@ -18,14 +18,15 @@ Because of the LGPL library, the bundled distribution is licensed GPL-3.0-only
 
 ## Fonts
 
-Geist-Regular.ttf, Geist-Medium.ttf, Geist-SemiBold.ttf and Geist-Bold.ttf (ModeUI/Media/Fonts/Geist)
-are unmodified static Geist font software v1.9.2, Copyright 2026 The Geist Project
+Geist-Regular.ttf, Geist-Medium.ttf, Geist-SemiBold.ttf and Geist-Bold.ttf
+(archive/mode-blizz/ModeUI/Media/Fonts/Geist; no longer in the addon since
+November 20, 2026, kept in the repository only) are unmodified static Geist font software v1.9.2, Copyright 2026 The Geist Project
 Authors (https://github.com/vercel/geist-font), SIL Open Font License 1.1, with
 no reserved font name. Full terms: LICENSES/Geist-OFL.txt, also next to the fonts.
 Source: https://github.com/vercel/geist-font/releases/download/v1.9.2/geist-font-v1.9.2.zip.
 SHA-256: Geist-Regular.ttf 2c460a7a71063e53491f343d44b382267bc0cf496e31db64865f962af3152e68; Geist-Medium.ttf e9099e006d4934cae4a8c7d14a1ca2ea724ee2f69f9bdd5b2ffe715baf5524fc; Geist-SemiBold.ttf 01923aa148e5202ae70a2e11b2ab4dc41b80bcc374aedccc913d47bb2f591c06; Geist-Bold.ttf 1c24df313b8ddc9550e060cfe5321c6374997f2892880af303b5ded45fed2582; 
-Geist is the Mode design language's fallback typeface (docs/DESIGN_LANGUAGE.md),
-used when the client has no Expressway.
+Geist was the Mode design language's fallback typeface until November 20, 2026;
+it is retired and does not ship with ModeUI.
 
 Damion-Regular.ttf (ModeUI/Media/Fonts/Damion) is unmodified Damion font
 software, Version 1.100, Copyright 2014 The Damion Project Authors
@@ -42,10 +43,10 @@ font software, Copyright 2024 The Urbanist Project Authors
 reserved font name. Full terms: LICENSES/Urbanist-OFL.txt, also next to the fonts.
 Source: https://github.com/coreyhu/Urbanist/tree/main/fonts/ttf (commit 5497164).
 SHA-256: Urbanist-Regular.ttf bef5cf82ac62ebe7764fe854d66e8d5282688f10359e51a0bc28a97ac3a26514; Urbanist-Medium.ttf 39c4468f6505afeb478af603e338dab0817959234c1358b058d012f1682fe92c; Urbanist-SemiBold.ttf c0f7110c4ea228c82a03140cffcf3db9e2a47c76e24a0feafe51aa5a227d3958; Urbanist-Bold.ttf eb2934eb4f1423a479c106f4f0c3a7d9649b961dea7c4f34a0647bf62e1c158f.
-Urbanist is the Mode typeface under the Mode-Obsidian theme (docs/DESIGN_LANGUAGE.md,
-"Mode-Obsidian"), owner's pick, November 20, 2026.
+Urbanist is the Mode typeface (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian
+theme"), owner's pick, November 20, 2026.
 
-Expressway is the Mode typeface when the client has it, and only by reference:
+Expressway is only used by reference, as a font a player may pick:
 ModeUI uses a verified font asset from an installed EllesmereUI/AyijeUI
 (Expressway and Expressway Bold), or an existing LibSharedMedia registration.
 ModeUI does not copy or redistribute the font file. The installed copy's

@@ -1,6 +1,6 @@
 -- The Healer layout (Shared/Runtime/Layouts.lua; owner, November 19, 2026;
 -- design/healer-layout/): builds a valid Mode-Healer profile at 1080 and 1440
--- from every module's part, made once per account at login like Mode-Default,
+-- from every module's part, made once per seed at login like Mode-DPS/TANK,
 -- and its places line up the way the owner asked: the Player mana frame's bar
 -- as wide as the party column and 1px over it, the Target 1px beside it, the
 -- Focus 1px under the Target's cast bar, the party column ending level with
@@ -49,8 +49,10 @@ world.run([==[
         local party = m.partyFrames
         local pg = PF.Geometry({ db = party }, 1)
         assert(pg.width == 136 and pg.height == 64 and party.showPlayer and party.showSolo and party.spacing == 1, 'members 136 x 64, you shown, solo too')
-        assert(party.edgeStyle == 'thin' and party.edgeMetal == 'gunmetal' and party.foregroundTexture == 'media:Mode Matte'
-            and party.backgroundOpacity == 70, 'Mode-Thin Gunmetal, Mode Matte at 70')
+        assert(party.edgeStyle == 'obsidian' and party.edgeMetal == 'default' and party.foregroundTexture == 'media:Mode-FG'
+            and party.backgroundTexture == 'media:Mode-BG' and party.backgroundOpacity == 85, 'Mode-Border, Mode-FG over Mode-BG at 85')
+        assert(m.cooldownManager.essential.edgeStyle == 'obsidianEmpty' and addon.Style.SameColor(m.cooldownManager.essential.edgeColor, addon.Style.Tone.emptyRim),
+            'Cooldown Manager icons in Mode-Empty, neutral and darker')
         local column = PF.MAX_MEMBERS * pg.height + (PF.MAX_MEMBERS - 1) * party.spacing
         local p = pos.partyFrames
         assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -323, 'party right edge -323')
@@ -113,7 +115,7 @@ world.run([==[
         -- on Essential; the Cast Bar 16 tall at a fixed place over it; Utility 70 under.
         assert(not cdm.resources.power.show and not cdm.resources.mana.show and cdm.resourceLayout == 'separate')
         local combo = cdm.resources.combo
-        assert(combo.height == 6 and combo.edgeStyle == 'thin' and addon.Style.EdgeMinHeight(CDM.EDGE, 'thin', 1) <= 6, 'a thin strip')
+        assert(combo.height == 6 and combo.edgeStyle == 'obsidian' and addon.Style.EdgeMinHeight(CDM.EDGE, 'obsidian', 1) <= 6, 'a thin strip')
         At(CDM.ResourceElementId('combo'), 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 1)
         assert(cdm.castBar.height == 16, 'Cast Bar 16')
         At(CDM.CAST_ELEMENT, 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 8)
@@ -141,16 +143,17 @@ world.run([==[
         At(BD.ElementId(defensives), 'screen', 'LEFT', 'CENTER', -82, 170)
         assert(dw == 163 and math.abs(-82 + dw / 2) <= 0.5, 'Defensives centered on 0')
 
-        -- Everything else as Mode-Default.
+        -- Everything else as Mode-DPS/TANK.
         local dps = assert(L:Build('mode-default', variant))
         for _, id in ipairs({ 'actionBarsBar1', 'actionBarsMicro', 'modeMinimap', 'damageMetersWindow1', 'buffsDebuffsBuffs',
             'buffsDebuffsDebuffs', 'cooldownManagerBuffIcon' }) do
             local a1, b1 = pos[id], dps.positions[id]
-            assert(a1 and b1 and a1.target == b1.target and a1.x == b1.x and a1.y == b1.y, id .. ' as in Mode-Default')
+            assert(a1 and b1 and a1.target == b1.target and a1.x == b1.x and a1.y == b1.y, id .. ' as in Mode-DPS/TANK')
         end
     end
-    -- Made into a profile once, at login, beside Mode-Default; the active profile stays.
-    assert(P:Exists('Mode-Healer') and P:Exists('Mode-Default') and P:Active() == 'Default' and ModeUIDB.builtLayouts.healer == true)
+    -- Made into a profile once, at login, beside Mode-DPS/TANK; the active profile stays.
+    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@2'] == true)
+    assert(ModeUIDB.profiles['Mode-Healer'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-Healer', 'healer'), 'its name is taken')
 ]==], "healer build")
 

@@ -156,10 +156,10 @@ local function Frame(side, extra)
         -- Mode Slate at 70% (owner, November 13, 2026): a solid near-neutral gray
         -- behind the fill, strong enough not to feel see-through.
         -- Mode Matte health over Mode BG on Slate, semi-transparent (docs/DESIGN_LANGUAGE.md, "Bars").
-        foregroundTexture = "media:Mode Matte", backgroundTexture = "media:Mode BG", barForegroundOpacity = 100, barBackgroundOpacity = EMPTY,
+        foregroundTexture = "media:Mode-FG", backgroundTexture = "media:Mode-BG", barForegroundOpacity = 100, barBackgroundOpacity = EMPTY,
         -- The power bar's own (owner, November 13, 2026: each part of the frame
         -- has its own texture settings); the keys above are the health bar's.
-        powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerForegroundOpacity = 100,
+        powerForegroundTexture = "media:Mode-FG", powerBackgroundTexture = "media:Mode-BG", powerForegroundOpacity = 100,
         powerBackgroundOpacity = EMPTY,
         -- Combined shields on the health bar (Style.Shield).
         showShields = true,
@@ -172,7 +172,7 @@ local function Frame(side, extra)
         portraitRing = "class", portraitRingColor = Copy(M.ACCENT),
         -- The ring's own Mode border style and metal (Style.SetRingStyle):
         -- Mode-Blizz in its Silver (owner, November 17, 2026).
-        portraitRingStyle = "blizz", portraitRingMetal = "default",
+        portraitRingStyle = "obsidian", portraitRingMetal = "default",
         -- The color of names in text slots (TextSlots.lua places every text).
         nameColorMode = "gradient", nameColor = Copy(M.ACCENT),
         healthColorMode = "default", healthColor = Copy(M.palette.green),
@@ -195,7 +195,7 @@ local function Frame(side, extra)
         fillDirection = "standard",
         -- The frame's and its cast bar's border (docs/DESIGN_LANGUAGE.md,
         -- "Choosing a border"): Mode-Blizz in its own metal (owner, November 17, 2026).
-        edgeStyle = "blizz", edgeMetal = "default",
+        edgeStyle = "obsidian", edgeMetal = "default",
         -- Player and Target: the Mode Frame border's soft drop (owner, November
         -- 18, 2026: off where icons sit on the border, as in Mode-Default).
         dropShadow = true,
@@ -245,7 +245,7 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 -- lined up with the health bar. On for the Player, Target and Focus.
 M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 2, icon = "near",
     fullWidth = true, width = 160,
-    foregroundTexture = "media:Mode Cast", backgroundTexture = "media:Mode BG",
+    foregroundTexture = "media:Mode-FG", backgroundTexture = "media:Mode-BG",
     showText = true, showTimer = true, fontSize = 11, outline = true, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
 -- Gap -1: the bar 1px from the frame, the two shadows sharing one pixel, as
 -- Mode's icons and frames do (owner, November 19, 2026).

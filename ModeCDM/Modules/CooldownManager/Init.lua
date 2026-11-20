@@ -166,11 +166,12 @@ local function Style(size, perLine, lineGrowth, small)
         matchWidth = false, matchHeight = false,
         border = "mode", backgroundColor = Copy(Tone.mono.panel), backgroundOpacity = 100,
         -- The border's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
-        -- icons and the Tracked Bars' boxes; Mode-Blizz in its own metal (owner, November 17, 2026).
-        edgeStyle = "blizz", edgeMetal = "default",
-        -- Border Size (the band, 1 or 2px) and Border Color (Mode-BlizzEmpty's
+        -- icons and the Tracked Bars' boxes; Mode-Empty with a neutral, darker
+        -- rim (owner, November 20, 2026; Mode-Blizz before).
+        edgeStyle = "obsidianEmpty", edgeMetal = "default",
+        -- Border Size (the band, 1 or 2px) and Border Color (Mode-Empty's
         -- flat band; owner, November 18, 2026).
-        edgeSize = 1, edgeColor = Copy(Tone.metal.silver.mid),
+        edgeSize = 1, edgeColor = Copy(Tone.emptyRim),
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
         -- in Swipe Color at Swipe Opacity; Edge is the bright line on its
         -- rim, Ready Flash Blizzard's flash as it ends.
@@ -190,8 +191,8 @@ local function Style(size, perLine, lineGrowth, small)
         -- Tracked Bars: the bar's texture and color (your class color, or
         -- Bar Color when Custom), its background, the icon's side and the
         -- Comet spark.
-        barTexture = "media:Mode Gradient", barColorMode = "class", barColor = Copy(M.BAR_COLOR),
-        barBackground = "media:Mode BG", barBackgroundOpacity = 100, iconSide = "left", showSpark = true,
+        barTexture = "media:Mode-FG", barColorMode = "class", barColor = Copy(M.BAR_COLOR),
+        barBackground = "media:Mode-BG", barBackgroundOpacity = 100, iconSide = "left", showSpark = true,
         -- Spells with their own switches, by cooldown ID: { ["1234"] = { hide = true, proc = false } }.
         spells = {},
     }
