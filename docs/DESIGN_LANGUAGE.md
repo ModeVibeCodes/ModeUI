@@ -568,6 +568,8 @@ Menus group them under "Mode" with the short name.
 | Solid, Matte, Gradient, Glass | general fills |
 | Spark | Comet head and trail; shield finish line |
 | Text Glow | the health text halo |
+| Mode-Obsidian, Mode-Obsidian Track | Mode-Obsidian's dark glass health fill and its lighter graphite empty part |
+| Mode-Prism | Mode-Obsidian's glow round a frame (not in bar menus) |
 | Light, Empty | border art |
 
 Module icons (`Style.ICONS`, the settings sidebar and icon rail) and control
@@ -594,7 +596,9 @@ section changes.
   profile without the key) or `"obsidian"`. The first start with the theme
   copies the active profile to **Mode-Obsidian**, gives the copy the theme
   and makes it active; the old profile stays as it was (`ModeUIDB.builtThemes`).
-  Theme changes apply on reload, like a profile switch.
+  Theme changes apply on reload, like a profile switch. The Profiles page's
+  **New Mode-Obsidian Copy** copies any profile into the theme; a new
+  profile, or one from a layout, takes the theme of the profile in use.
 - **Borders.** Under Obsidian every Mode metal style (Mode-Blizz, Mode-Thin,
   Mode-Round) draws as **Mode-Obsidian**, and Mode-BlizzEmpty as
   **Mode-ObsidianEmpty** (`Style.ThemeStyle`), in every role: the saved

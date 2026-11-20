@@ -10,5 +10,7 @@ addon.Themes:Contribute("obsidian", "damageMeters", function(db)
     for _, window in ipairs(M.windows) do
         Swap(db[window], "backgroundColor", "graphite", "panel")
         Swap(db[window], "headerColor", "graphite", "raised")
+        Swap(db[window], "titleColor", "graphite", "text")
+        Swap(db[window], "timerColor", "graphite", "muted")
     end
 end)

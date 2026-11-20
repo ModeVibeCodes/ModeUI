@@ -1,0 +1,365 @@
+<title>Mode Obsidian</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500&family=Geist:wght@400;500;600;700&family=Urbanist:wght@500;600;700&display=swap">
+<style>
+/* Layout: the converged direction. Header, sticky controls, one large live scene, five "pieces" cards that zoom into each element, then the build path: what already exists in ModeUI, the work per piece, blank slate vs building on today's code, and an order of work. */
+:root{
+  --bg:#ECECEA; --bg2:#E2E1DE; --card:#F7F7F5; --ink:#161513; --ink2:#47443F; --ink3:#6F6B64; --line:#D1CFCA; --acc:#8A6A2E; --good:#2F7A4B; --warn:#9A5B12;
+  --checker-a:#1A1A1B; --checker-b:#232325;
+  --f-ui:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --f-disp:"Urbanist","Geist",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0B0B0C;--bg2:#141415;--card:#111112;--ink:#ECE8DF;--ink2:#B7B1A6;--ink3:#827C72;--line:#26252A;--acc:#E6CF9E;--good:#7FD49B;--warn:#F2B866;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B0B0C;--bg2:#141415;--card:#111112;--ink:#ECE8DF;--ink2:#B7B1A6;--ink3:#827C72;--line:#26252A;--acc:#E6CF9E;--good:#7FD49B;--warn:#F2B866;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 var(--f-ui);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--acc);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+h1,h2{font-family:var(--f-disp);text-wrap:balance;font-weight:600;letter-spacing:-.015em;margin:0}
+h1{font-size:clamp(34px,5vw,50px);line-height:1.04}
+h2{font-size:clamp(28px,4vw,38px);line-height:1.1}
+h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);font-weight:500;margin:0 0 12px}
+h4{margin:0 0 6px;font-size:15px;font-weight:600}
+p{margin:0;max-width:68ch}
+.eyebrow{font:500 11px/1.4 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.top{padding-block:56px 22px;display:grid;gap:16px}
+.lede{font-size:17px;color:var(--ink2)}
+.picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:4px}
+.picks div{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:10px 12px;font-size:13px;color:var(--ink2)}
+.picks b{display:block;color:var(--ink);font-weight:600;font-size:13.5px}
+.jumps{display:flex;flex-wrap:wrap;gap:6px}
+.jumps a{font-size:13px;text-decoration:none;color:var(--ink2);border:1px solid var(--line);background:var(--card);padding:4px 10px;border-radius:3px}
+.labbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-block:1px solid var(--line)}
+.labbar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;padding-block:9px}
+.ctl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3)}
+.ctl>b{font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:10.5px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{font:500 12px var(--f-ui);background:var(--card);color:var(--ink2);border:0;padding:4px 9px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.sec{padding-block:36px 8px}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;margin:0 0 10px;font-size:13px;color:var(--ink2)}
+.tools label{display:flex;align-items:center;gap:10px}
+.tools input[type=range]{width:160px;accent-color:var(--acc)}
+.tools output{font:500 12px var(--f-mono);min-width:4ch;color:var(--ink)}
+.hint{color:var(--ink3);font-size:12.5px}
+.stage-wrap{overflow-x:auto;border-radius:6px;background:var(--wc)}
+.stage{position:relative;width:880px;height:368px;overflow:hidden;background:radial-gradient(70% 80% at 45% 10%,var(--wglow),transparent 70%),linear-gradient(to bottom,var(--wa),var(--wb) 55%,var(--wc))}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--ink3);margin-top:8px}
+.pieces{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.k{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;min-width:0}
+.k p{font-size:14px;color:var(--ink2)}
+.k p+p{margin-top:8px}
+.k code{font:12.5px var(--f-mono);color:var(--ink)}
+.zone{position:relative;height:170px;border-radius:4px;overflow:hidden;margin-bottom:14px;background:radial-gradient(70% 90% at 40% 0%,var(--wglow),transparent 70%),linear-gradient(to bottom,var(--wa),var(--wb) 55%,var(--wc))}
+.zone .zin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(var(--zs,2));transform-origin:center}
+.have{display:block;font:500 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;color:var(--good)}
+.have.new{color:var(--warn)}
+.callouts{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.callouts li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;font-size:13.5px;color:var(--ink2)}
+.callouts i{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);display:block}
+.callouts b{color:var(--ink);font-weight:600}
+.callouts code{font:11.5px var(--f-mono);color:var(--ink3)}
+.block{padding-block:60px 16px;border-top:1px solid var(--line);margin-top:44px;scroll-margin-top:60px}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:18px}
+.facts div{border:1px solid var(--line);border-radius:6px;padding:12px 14px;background:var(--card)}
+.facts b{display:block;font:600 24px/1.1 var(--f-disp);font-variant-numeric:tabular-nums;color:var(--ink)}
+.facts span{font-size:12.5px;color:var(--ink3)}
+.tbl-scroll{overflow-x:auto;margin-top:18px;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:900px;font-size:13px}
+th,td{text-align:left;vertical-align:top;padding:11px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:600;background:var(--bg2)}
+td{color:var(--ink2)}
+td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+td code{font:12px var(--f-mono);color:var(--ink)}
+tr:last-child td{border-bottom:0}
+.size{display:inline-block;font:500 11px var(--f-mono);padding:2px 7px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.size.s{color:var(--good)} .size.m{color:var(--acc)} .size.l{color:var(--warn)}
+.vs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.vs ul{margin:8px 0 0;padding-left:18px;display:grid;gap:6px;color:var(--ink2);font-size:14px}
+.vs .pick{border-color:color-mix(in srgb,var(--acc),var(--line) 40%)}
+.verdict{margin-top:18px;border-left:3px solid var(--acc);padding:6px 0 6px 16px;font-size:16px;color:var(--ink)}
+ol.steps{margin:18px 0 0;padding-left:22px;display:grid;gap:10px;color:var(--ink2);font-size:14.5px}
+ol.steps b{color:var(--ink)}
+.foot{padding-block:40px 72px;color:var(--ink3);font-size:13px}
+#darkCard{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:center}
+@media (max-width:760px){.pieces,.vs,#darkCard{grid-template-columns:1fr}.zone .zin{--zs:1.3}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== world ===== */
+#lab{--wa:#3B4A44;--wb:#1E2629;--wc:#0E1114;--wglow:rgba(255,214,150,.16);--ac:#F2DFB8}
+#lab[data-ground="snow"]{--wa:#E3EAEE;--wb:#BCC7CE;--wc:#8C99A2;--wglow:rgba(255,255,255,.5)}
+#lab[data-ground="dungeon"]{--wa:#3A2A20;--wb:#1C1410;--wc:#0A0706;--wglow:rgba(255,140,60,.18)}
+
+/* ===== game skeleton ===== */
+.box{position:absolute}
+.box::after{content:"";position:absolute;pointer-events:none;z-index:4}
+.bar{position:absolute;left:0;right:0;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;width:calc(var(--v)*100%);transition:width .25s ease}
+.trail{position:absolute;top:0;bottom:0;left:calc(var(--v)*100%);width:var(--dmg,0%);background:rgba(255,255,255,.32);transition:width .5s ease .15s}
+.nm{position:absolute;font-size:12px;white-space:nowrap;color:var(--nc,#F1F2F4);font-family:var(--f-name);font-weight:var(--w-name);text-shadow:1px 1px 0 rgba(0,0,0,.95)}
+.nm.sm{font-size:10.5px}
+.nm.lbl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.val{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-family:var(--f-num);font-weight:var(--w-num);font-size:12.5px;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.95);font-variant-numeric:tabular-nums;z-index:5;line-height:1}
+.val.l{right:auto;left:7px}
+.lft{position:absolute;left:7px;top:50%;transform:translateY(-50%);font-family:var(--f-name);font-weight:var(--w-name);font-size:11px;color:var(--nc,#fff);text-shadow:1px 1px 0 rgba(0,0,0,.95);z-index:5;line-height:1}
+.ctext{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--f-name);font-weight:var(--w-name);font-size:10px;color:var(--cc,#fff);text-shadow:1px 1px 0 #000;z-index:5;line-height:1}
+.tm{position:absolute;font-family:var(--f-num);font-weight:var(--w-num);font-size:10px;color:#C9CDD3;text-shadow:1px 1px 0 #000;text-align:center;width:26px;font-variant-numeric:tabular-nums}
+.ic{position:absolute;inset:0;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center;overflow:hidden}
+.ic svg{width:44%;height:auto;opacity:.88}
+.kb{position:absolute;right:3px;top:2px;font-size:9.5px;font-weight:600;font-family:var(--f-num);color:#D8D8DB;text-shadow:1px 1px 0 #000;z-index:5}
+.btn.cd .ic::after{content:"";position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.68) 0 72%,transparent 0)}
+.btn.cd .cdn{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-weight:var(--w-num);font-size:15px;color:#FFB12F;text-shadow:1px 1px 0 #000;z-index:5}
+.btn.oor .ic::after{content:"";position:absolute;inset:0;background:rgba(207,106,111,.45)}
+.btn.oor .kb{color:#CF6A6F}
+.btn.un .ic{filter:grayscale(1) brightness(.55)}
+.tip-t{position:absolute;left:11px;top:10px;font-family:var(--f-name);font-weight:var(--w-name);font-size:13px;color:#E5484D}
+.tip-l{position:absolute;left:11px;font-size:11px;font-family:var(--f-body);color:var(--mu);white-space:nowrap}
+.tip-sep{position:absolute;left:11px;right:11px;top:52px;height:1px;background:rgba(243,239,230,.1)}
+.face{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:radial-gradient(110% 90% at 32% 18%,color-mix(in srgb,var(--u),#fff 6%),color-mix(in srgb,var(--u),#000 64%) 62%,color-mix(in srgb,var(--u),#000 86%))}
+.face svg{position:absolute;left:12%;bottom:-4%;width:76%;height:auto}
+.lvl{font-family:var(--f-num);font-weight:var(--w-num);font-size:9.5px;color:var(--ac);display:grid;place-items:center;line-height:1;z-index:6}
+
+/* ===== Obsidian ===== */
+.ob{--sf0:rgba(8,8,9,.93);--tr:rgba(0,0,0,.62);--tx:#F3EFE6;--mu:#8F897D;--hi:rgba(255,255,255,.2);--caus:rgba(242,223,184,.34);--line:#000;--rad:6px;--ein:rgba(242,223,184,.06);
+  --drop:0 6px 16px rgba(0,0,0,.5);--sheen:linear-gradient(to bottom,rgba(255,255,255,.045),transparent 40%);
+  --f-name:"Urbanist",sans-serif;--w-name:600;--f-num:"Urbanist",sans-serif;--w-num:700;--f-body:"Urbanist",sans-serif}
+#lab[data-type="mode"] .ob{--f-name:"Geist",sans-serif;--w-name:600;--f-num:"Geist",sans-serif;--w-num:700;--f-body:"Geist",sans-serif}
+.ob .box{background:var(--sf0);border-radius:var(--rad);box-shadow:0 0 0 1px var(--lc,var(--line)),var(--aura,0 0 0 0 transparent),var(--drop)}
+.ob .box::after{inset:0;border-radius:var(--rad);box-shadow:inset 0 1px 0 var(--et,var(--hi)),inset 0 -1px 0 var(--eb,var(--caus)),inset 0 0 0 1px var(--ein);background:var(--glow,linear-gradient(transparent,transparent)),var(--sheen)}
+.ob .box.hl,.ob .btn:hover{--et:var(--ac);--eb:color-mix(in srgb,var(--ac),transparent 40%);--lc:color-mix(in srgb,var(--ac),#000 62%)}
+.ob .box.tint{--et:var(--tint);--eb:color-mix(in srgb,var(--tint),transparent 30%);--lc:color-mix(in srgb,var(--tint),#000 50%)}
+.ob .bar{background:var(--tr);border-radius:4px}
+.ob .bar.sm{border-radius:2px}
+.ob .fill{background:linear-gradient(to bottom,color-mix(in srgb,var(--c),#fff 10%),var(--c) 50%,color-mix(in srgb,var(--c),#000 26%))}
+.ob .ic{border-radius:5px}
+/* the class-colored portrait ring: outer black line, 2px class band lit from the top, inner black line */
+.ob .box.pt,.ob .box.pt::after{border-radius:50%}
+.ob .box.pt{--lc:#000}
+.ob .box.pt::after{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--u),#fff 55%),inset 0 -1px 0 color-mix(in srgb,var(--u),#000 35%),inset 0 0 0 2px var(--u),inset 0 0 0 3px rgba(0,0,0,.7);background:var(--sheen)}
+/* frame rims follow the unit's color when Rims = Class */
+.ob[data-rim="class"] .box.unit{--lc:color-mix(in srgb,var(--u),#000 45%);--et:color-mix(in srgb,var(--u),#fff 30%);--eb:color-mix(in srgb,var(--u),transparent 35%);--ein:color-mix(in srgb,var(--u),transparent 82%)}
+/* Prism glow: supplemental, for mouseover and focus only */
+.ob .box.unit:hover,.ob .box.mo,.ob .box.focus{--aura:0 0 14px 1px color-mix(in srgb,var(--u),transparent 52%);--lc:color-mix(in srgb,var(--u),#000 30%)}
+.ob .box.unit:hover,.ob .box.mo{cursor:default}
+/* Backlit dispels: the type color pools up from the bottom edge inside the glass */
+.ob .box.disp,.ob[data-rim] .box.unit.disp{--glow:linear-gradient(to top,color-mix(in srgb,var(--tint),transparent 42%),transparent 74%);--eb:var(--tint);--lc:color-mix(in srgb,var(--tint),#000 55%)}
+/* Dark mode bars: a near-black fill on a lighter graphite track; color only in text and thin hints */
+.ob[data-b="dark"] .bar.hp{background:linear-gradient(to bottom,#3D3D41,#2E2E32)}
+.ob[data-b="dark"] .bar.hp .fill{background:linear-gradient(to bottom,#161618,#0C0C0D);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset -1px 0 0 rgba(242,223,184,.55)}
+.ob[data-b="dark"] .bar.cast{background:linear-gradient(to bottom,#151517,#0E0E0F)}
+.ob[data-b="dark"] .bar.cast .fill{background:linear-gradient(to bottom,#55555A,#414145);box-shadow:inset -1px 0 0 var(--c)}
+.ob[data-b="dark"] .trail{background:rgba(255,255,255,.22)}
+</style>
+
+<div id="lab" data-ground="dusk" data-type="look">
+
+<header class="wrap top">
+  <div class="eyebrow">ModeUI · design research · November 20, 2026</div>
+  <h1>Obsidian, dark first</h1>
+  <p class="lede">Your picks, combined into one look and built to stand out in dark mode. Frames and bars are black and graphite. Color stays in names, spell names, portrait rings, power and anything that needs attention. Color mode is one switch away. The second half of the page weighs the work: whether this goes on top of today's ModeUI or starts from a blank slate.</p>
+  <div class="picks">
+    <div><b>Obsidian as the base</b>Black glass, soft 6px corners, a quiet line, champagne light along the bottom.</div>
+    <div><b>Class-colored portrait rings</b>The Obsidian and Prism ring, always in the class or reaction color.</div>
+    <div><b>Prism glow, supplemental</b>Only on mouseover and focus. Hover any unit frame in the scene.</div>
+    <div><b>Backlit dispels</b>The dispel type's color rises from the bottom of the party frame.</div>
+    <div><b>Dark health bars, fixed</b>A near-black fill on a lighter graphite track. No class color in the bar.</div>
+  </div>
+  <nav class="jumps" aria-label="Sections"><a href="#scene">The scene</a><a href="#pieces">The pieces</a><a href="#build">Build path</a><a href="#order">Order of work</a></nav>
+</header>
+
+<div class="labbar" role="region" aria-label="Scene controls"><div class="wrap">
+  <div class="ctl"><b>Mode</b><span class="seg" id="barSeg"><button type="button" data-v="dark" aria-pressed="true">Dark</button><button type="button" data-v="color" aria-pressed="false">Color</button></span></div>
+  <div class="ctl"><b>Frame rims</b><span class="seg" id="rimSeg"><button type="button" data-v="neutral" aria-pressed="true">Neutral</button><button type="button" data-v="class" aria-pressed="false">Class</button></span></div>
+  <div class="ctl"><b>Type</b><span class="seg" id="typeSeg"><button type="button" data-v="look" aria-pressed="true">Urbanist</button><button type="button" data-v="mode" aria-pressed="false">Geist</button></span></div>
+  <div class="ctl"><b>Ground</b><span class="seg" id="groundSeg"><button type="button" data-v="dusk" aria-pressed="true">Forest</button><button type="button" data-v="snow" aria-pressed="false">Snow</button><button type="button" data-v="dungeon" aria-pressed="false">Dungeon</button></span></div>
+</div></div>
+
+<section class="wrap sec" id="scene">
+  <div class="tools">
+    <label for="hp">Player health <input type="range" id="hp" min="0" max="100" value="82"><output id="hpo">82%</output></label>
+    <span class="seg" role="group" aria-label="Zoom" id="zoomSeg"><button type="button" aria-pressed="true" data-v="1">1×</button><button type="button" aria-pressed="false" data-v="2">2×</button></span>
+    <span class="hint">Hover any unit frame for the mouseover glow. Drag health down for the trailing chunk.</span>
+  </div>
+  <div class="stage-wrap"><div class="stage ob live" data-b="dark" data-rim="neutral" id="stage" style="--hp:.82"></div></div>
+  <div class="legend"><span>Focus: Shadeweaver (frame and nameplate glow)</span><span>Mouseover: Tovan</span><span>Backlit dispels: Mirelle (Magic), Brakk (Poison)</span><span>Target: champagne rim, level chip</span><span>Buttons: 3 cooldown, 5 proc, 7 out of range, 9 unusable</span></div>
+</section>
+
+<section class="wrap block" id="pieces">
+  <div class="eyebrow">Up close</div>
+  <h2 style="margin-top:10px">The pieces, and what ModeUI already has</h2>
+  <p style="margin-top:12px;color:var(--ink2)">Each card zooms into one element at 2×, following the Mode and rim switches. The green label says how much of it ModeUI already does today.</p>
+  <div class="pieces" id="pieceGrid"></div>
+</section>
+
+<section class="wrap block" id="build">
+  <div class="eyebrow">Research</div>
+  <h2 style="margin-top:10px">How hard is a new theme, this soon after the redesign?</h2>
+  <p style="margin-top:12px;color:var(--ink2)">Less than it looks. The redesign was mostly about moving every color, border, bar texture and font into one place, <code>ModeUI/Shared/Style/</code>, with a test (<code>tests/design.lua</code>) that fails if a module hard-codes any of them. That is exactly the seam a new theme needs. Counts are from the repository as it stands today.</p>
+  <div class="facts">
+    <div><b>39,228</b><span>lines of Lua in ModeUI (269 files), plus 7,496 in ModeCDM</span></div>
+    <div><b>2,074</b><span>lines in <code>Shared/Style</code>: where the look lives (about 5%)</span></div>
+    <div><b>1</b><span>data table defines every border style: <code>EdgeData.lua</code>, which the asset tool also reads</span></div>
+    <div><b>12</b><span>Border pickers and 1 Ring Style picker that list every style automatically</span></div>
+    <div><b>27</b><span>saved <code>edgeStyle</code> keys; 8 module defaults name Mode-Blizz outright</span></div>
+    <div><b>0</b><span>files allowed to hard-code colors or borders outside Style (the legacy list is empty)</span></div>
+  </div>
+  <div class="tbl-scroll"><table>
+    <thead><tr><th>Piece</th><th>Already in ModeUI</th><th>Work to do</th><th>Size</th></tr></thead>
+    <tbody>
+      <tr><td>Obsidian rim</td><td>Border styles are data: a shape, a lighting model and a metal per style in <code>EdgeData.lua</code>. <code>tools/build_mode_assets.lua</code> draws every ring from that data.</td><td>Add an <code>obsidian</code> style: round shape with 6px corners, a lighting profile with a soft top row and a champagne bottom row, champagne tones in <code>Tone.metal</code>. The sheen is new: an optional inner layer in <code>Style.Edge</code>.</td><td><span class="size s">small</span> + <span class="size m">sheen: medium</span></td></tr>
+      <tr><td>Class-colored portrait ring</td><td>Done: the ring takes the class or reaction color (Unit Frames layout version 24), and its style comes from the same border data.</td><td>Nothing beyond the Obsidian style's ring art, which the asset tool draws.</td><td><span class="size s">small</span></td></tr>
+      <tr><td>Dark health bars</td><td>Party Frames already offer a health color called Dark. Unit Frames and Nameplates have Default, Class and Custom, and every bar has its own empty-part texture and opacity.</td><td>One shared Dark bar mode in <code>Style.Bar</code> (fill and track tokens), offered the same way in Unit Frames, Party Frames, Nameplates and ModeCDM.</td><td><span class="size m">medium</span></td></tr>
+      <tr><td>Backlit dispels</td><td>Party Frames' Dispel already has a Gradient effect: the type color from the top edge, fading over 72% of the health bar.</td><td>Anchor that gradient at the bottom edge and add a bottom rim row in the type color.</td><td><span class="size s">small</span></td></tr>
+      <tr><td>Prism glow</td><td>Party Frames swap the rim for aggro, target and dispel. Nameplates have a focus line. Names and Shields already use additive blending.</td><td>A <code>Style.Glow</code> helper (a soft slice behind a frame, additive), driven by mouseover and focus in Unit Frames, Party Frames and Nameplates.</td><td><span class="size m">medium</span></td></tr>
+      <tr><td>Dark and Color modes</td><td>None yet. Each module saves its own border style, colors and textures.</td><td>A Theme setting in <code>Shared/</code> that module defaults follow, plus migrations that move settings still on the old defaults to "follow the theme". This is the main design decision.</td><td><span class="size l">medium–large</span></td></tr>
+      <tr><td>Type</td><td><code>Style.Font</code>: Expressway when installed, else Geist.</td><td>Optional: bundle Urbanist (OFL) as a third Mode face. Flip Type to Geist to judge whether it's needed.</td><td><span class="size s">small</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 style="margin-top:36px">Blank slate or build on today's ModeUI</h3>
+  <div class="vs">
+    <div class="k"><h4>Start a new addon</h4><ul>
+      <li>Rebuilds behavior, not looks: secure frames, secret-value handling, aura containers, 8 modules' migrations, 35 tests and the 4,490-line settings window.</li>
+      <li><code>ModeUIDB</code> can't carry over without an importer, and the project rule is never to reset it.</li>
+      <li>Two addons, or two code paths, live side by side until the new one catches up. That is the overlap you're worried about, made worse.</li>
+      <li>The only real gain is freedom from old defaults, and migrations already handle that.</li>
+    </ul></div>
+    <div class="k pick"><h4>Build on today's ModeUI (recommended)</h4><ul>
+      <li>The look is about 5% of the code, already isolated, and guarded by a test.</li>
+      <li>Obsidian arrives as a new border style beside Mode-Blizz, so you can switch back and forth in game before anything becomes a default.</li>
+      <li>Old and new don't tangle: the test keeps every visual in Style, and Phase 8 already showed how to delete a retired look cleanly.</li>
+      <li>Every step is one focused change that you can check in game.</li>
+    </ul></div>
+  </div>
+  <p class="verdict">Build on the existing addon. The redesign is the reason this is cheap: it built the theme seam. A blank slate would spend most of its effort rebuilding behavior that already works.</p>
+</section>
+
+<section class="wrap block" id="order">
+  <div class="eyebrow">If you go ahead</div>
+  <h2 style="margin-top:10px">An order of work</h2>
+  <ol class="steps">
+    <li><b>Design doc first.</b> Add Obsidian, the Dark bar mode, the glow and Backlit dispels to <code>docs/DESIGN_LANGUAGE.md</code>, per the project rules.</li>
+    <li><b>Obsidian border style and ring art.</b> It appears in every Border picker and the Ring Style picker. Nothing else changes, so you judge it in game beside Mode-Blizz.</li>
+    <li><b>Dark bar mode</b> in <code>Style.Bar</code>, then offered by Unit Frames, Party Frames, Nameplates and ModeCDM.</li>
+    <li><b>Backlit dispels</b> in Party Frames: a bottom-anchored option for the existing Gradient effect.</li>
+    <li><b>Prism glow</b> for mouseover and focus.</li>
+    <li><b>Theme switch</b> (Dark default, Color option) and the migrations that move untouched defaults to follow it.</li>
+    <li><b>Retire Mode-Blizz pieces</b> only if you no longer want them as options. Until then they cost nothing.</li>
+  </ol>
+</section>
+
+<footer class="wrap foot">Research only. Nothing in the ModeUI repo changed. Portraits and icons are placeholders. The sizes are relative, not time estimates. The sheen, glow and blend calls need an in-game check on Forever.</footer>
+</div>
+
+<script>
+const GLYPH={
+ ring:'<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2"><circle cx="8" cy="8" r="5"/></svg>',
+ arc:'<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M13 8a5 5 0 1 1-2-4"/></svg>',
+ star:'<svg viewBox="0 0 16 16" fill="#fff"><path d="M8 1l1.6 5.4L15 8l-5.4 1.6L8 15l-1.6-5.4L1 8l5.4-1.6z"/></svg>',
+ chev:'<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M3 11l5-5 5 5"/></svg>',
+ drop:'<svg viewBox="0 0 16 16" fill="#fff"><path d="M8 1.5C8 1.5 3 7 3 10a5 5 0 0 0 10 0c0-3-5-8.5-5-8.5z"/></svg>',
+ bolt:'<svg viewBox="0 0 16 16" fill="#fff"><path d="M9 1L3 9h4l-1 6 6-8H8z"/></svg>'};
+const ICONS=[['#F7B267','#7A2E0B','ring'],['#9AD1FF','#173B6B','arc'],['#C8F2A1','#2E5A12','star'],['#E9A8FF','#4B1663','chev'],['#FFE08A','#6B4A07','bolt'],['#FF9A9A','#5E1414','drop'],['#A8F0E6','#0F4A45','arc'],['#D9D9D9','#2D2D2D','star'],['#FFC59A','#5A2A10','chev'],['#B9C4FF','#1D2466','ring']];
+const BUST='<svg viewBox="0 0 40 40"><circle cx="20" cy="14" r="8" fill="#000" fill-opacity=".45"/><path d="M3 41c0-10 7.5-15.5 17-15.5S37 31 37 41z" fill="#000" fill-opacity=".55"/></svg>';
+const ic=i=>{const c=ICONS[i%ICONS.length];return `<div class="ic" style="--a:${c[0]};--b:${c[1]}">${GLYPH[c[2]]}</div>`};
+const box=(x,y,w,h,inner='',cls='',st='')=>`<div class="box ${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;${st}">${inner}</div>`;
+const bar=(v,c,top,h,extra='',cls='')=>`<div class="bar ${cls}" style="--v:${v};--c:${c};top:${top}px;height:${h}px"><i class="fill"></i>${extra}</div>`;
+const t=(x,y,s,cls='nm',st='')=>`<span class="${cls}" style="left:${x}px;top:${y}px;${st}">${s}</span>`;
+const portrait=(x,y,d,u)=>box(x,y,d,d,`<div class="face">${BUST}</div>`,'pt','--u:'+u);
+function unit(x,y,w,hh,ph,d,side,u,v,pv,pc,val,cls='',trail=false){
+ const bh=hh+1+ph,py=y-Math.round((d-bh)/2);
+ let h=box(x,y,w,bh,bar(v,u,0,hh,trail?'<i class="trail"></i>':'','hp')+bar(pv,pc,hh+1,ph,'','sm')+(val?`<span class="val${side==='right'?' l':''}">${val}</span>`:''),'unit '+cls,'--u:'+u);
+ if(d)h+=portrait(side==='left'?x-d+Math.round(d*.36):x+w-Math.round(d*.36),py,d,u);
+ return h;
+}
+const button=(x,y,i,st='')=>box(x,y,40,34,ic(i)+`<span class="kb">${i===9?0:i+1}</span>`+(st.includes('cd')?'<span class="cdn">12</span>':''),'btn '+st);
+const party=(x,y,w,h,n,v,c,extra='')=>{const pct=v?Math.round(v*100)+'%':'Dead';return box(x,y,w,h,bar(v,c,0,h,'','hp')+`<span class="lft" style="--nc:${v?c:'#8A8A8A'}">${n}</span><span class="val" style="font-size:11px${v?'':';color:#9AA0A8'}">${pct}</span>`,'unit '+(extra.cls||''),'--u:'+c+';'+(extra.st||''))};
+
+function scene(){
+ let h='';
+ h+=t(100,26,'Aelira','nm','--nc:#FF7C0A');
+ h+=unit(72,46,184,34,3,62,'left','#FF7C0A','var(--hp)',.64,'#4096FF','<span data-hp>82%</span>','',true);
+ ['14m','42s','8s','2m',''].forEach((s,i)=>{h+=box(72+i*31,100,26,22,ic([1,2,6,4,8][i]))+t(72+i*31,125,s,'tm')});
+ h+=t(336,26,'Ironjaw Ravager','nm','--nc:#E5484D');
+ h+=unit(330,46,184,34,3,62,'right','#E5484D',.46,.3,'#D9534F','46%','hl');
+ h+=box(512,89,22,13,'<span>32</span>','lvl');
+ h+=t(574,44,'Aelira','nm sm','--nc:#FF7C0A');
+ h+=box(574,60,96,14,bar(.82,'#FF7C0A',0,14,'','hp'),'unit','--u:#FF7C0A');
+ h+=box(330,100,184,14,bar(.6,'#F2B13C',0,14,'','cast')+'<span class="ctext" style="left:7px;--cc:#F2B13C">Rending Howl</span><span class="ctext" style="right:7px">1.2</span>');
+ [['#3399FF',0],['#AA55FF',3],['#55BB55',2],['#C82D2D',5]].forEach(([c,i],k)=>{h+=box(330+k*31,124,26,22,ic(i),'tint','--tint:'+c)+t(330+k*31,149,['9s','21s','4s','6s'][k],'tm')});
+ // focus frame with persistent glow
+ h+=t(110,186,'Focus','nm lbl')+t(150,183,'Shadeweaver','nm sm','--nc:#E5484D');
+ h+=unit(100,202,150,22,2,40,'left','#E5484D',.71,.55,'#4096FF','71%','focus');
+ // party
+ h+=party(620,34,160,28,'Tovan',.94,'#C69B6D',{cls:'mo'});
+ h+=party(620,70,160,28,'Mirelle',.58,'#3FC7EB',{cls:'disp',st:'--tint:#3399FF'});
+ h+=party(620,106,160,28,'Brakk',.31,'#C41E3A',{cls:'disp',st:'--tint:#55BB55'});
+ h+=party(620,142,160,28,'Senna',0,'#8A8A8A');
+ // nameplates
+ h+=t(370,186,'Ironjaw Ravager','nm sm','width:130px;text-align:center;--nc:#E5484D');
+ h+=box(370,203,130,9,bar(.46,'#E5484D',0,9,'','hp'),'unit hl','--u:#E5484D');
+ h+=t(370,232,'Shadeweaver','nm sm','width:130px;text-align:center;--nc:#E5484D');
+ h+=box(370,249,130,9,bar(.71,'#E5484D',0,9,'','hp'),'unit focus','--u:#E5484D');
+ // tooltip
+ h+=box(620,196,220,104,`<span class="tip-t">Gloomfang Stalker</span>`+t(11,31,'Level 32 Beast (Elite)','tip-l')+`<i class="tip-sep"></i>`+t(11,60,'Cull the Pack','tip-l','color:#FFB12F')+t(11,78,'Gloomfang Stalker slain: 3/8','tip-l','color:var(--tx)'));
+ for(let i=0;i<10;i++)h+=button(36+i*46,312,i,{2:'cd',4:'hl',6:'oor',8:'un'}[i]||'');
+ return h;
+}
+
+const PIECES=[
+ {title:'The Obsidian rim',have:'Style data exists · new art',newp:false,w:240,h:70,
+  html:()=>box(10,10,120,50,t(10,9,'Gloomfang','nm sm','--nc:#E5484D')+t(10,28,'Level 32 Beast','tip-l','top:28px'))+button(150,18,1)+button(196,18,4,'hl'),
+  text:`A black outer line, a soft white row along the top, a champagne row along the bottom and a 6% champagne hairline inside. Corners are 6px. The right button shows the proc and target state: the top row turns champagne.`,
+  more:`In ModeUI this is one more entry in <code>EdgeData.lua</code>. The asset tool draws its rings like every other style's.`},
+ {title:'Class-colored portrait ring',have:'Already in ModeUI',newp:false,w:240,h:76,
+  html:()=>t(52,0,'Aelira','nm','--nc:#FF7C0A')+unit(44,20,180,30,3,54,'left','#FF7C0A',.82,.64,'#4096FF','82%'),
+  text:`A 2px band in the class or reaction color, lit from the top, between two black lines. It's the Obsidian ring with Prism's color.`,
+  more:`ModeUI already colors the ring by class or reaction. Only the Obsidian ring art is new.`},
+ {title:'Prism glow, for mouseover and focus',have:'New helper',newp:true,w:240,h:84,
+  html:()=>party(10,8,105,26,'Tovan',.94,'#C69B6D')+party(125,8,105,26,'Tovan',.94,'#C69B6D',{cls:'mo'})+t(10,40,'Resting','nm lbl')+t(125,40,'Mouseover','nm lbl')+box(10,54,220,9,bar(.71,'#E5484D',0,9,'','hp'),'unit focus','--u:#E5484D')+t(10,68,'Focus nameplate: always on','nm lbl'),
+  text:`A soft glow in the unit's own color around the frame, and the rim's outer line warms to match. It appears only on mouseover and for your focus, so it adds information without becoming a main element.`,
+  more:`New: a <code>Style.Glow</code> slice behind the frame with additive blending, driven by mouseover and focus events.`},
+ {title:'Backlit dispels',have:'Gradient effect exists · flip it',newp:false,w:240,h:84,
+  html:()=>[['Mirelle','#3FC7EB','#3399FF','Magic'],['Brakk','#C41E3A','#55BB55','Poison'],['Tovan','#C69B6D','#AA55FF','Curse'],['Senna','#FFFFFF','#CC8833','Disease']].map(([n,c,d],i)=>party(10+(i%2)*115,6+Math.floor(i/2)*38,105,28,n,[.58,.31,.9,.66][i],c,{cls:'disp',st:'--tint:'+d})).join(''),
+  text:`The dispel type's color rises from the bottom edge, inside the glass, and the bottom rim row takes the same color. On dark bars the light reads clearly without painting the whole frame.`,
+  more:`Party Frames already draw a Gradient from the top edge at 56% over 72% of the bar. Backlit anchors it at the bottom.`}
+];
+function pieces(){
+ return PIECES.map((p,i)=>`<div class="k"><div class="zone"><div class="zin ob live" data-b="dark" data-rim="neutral" style="width:${p.w}px;height:${p.h}px">${p.html()}</div></div>
+  <span class="have${p.newp?' new':''}">${p.have}</span><h4>${p.title}</h4><p>${p.text}</p><p>${p.more}</p></div>`).join('')+
+ `<div class="k" id="darkCard">
+   <div class="zone" style="margin:0;height:190px"><div class="zin ob" data-b="dark" data-rim="neutral" style="width:250px;height:80px">${t(52,2,'Aelira','nm','--nc:#FF7C0A')+unit(44,24,196,34,3,62,'left','#FF7C0A',.58,.64,'#4096FF','58%')}</div></div>
+   <div><span class="have">Party Frames have a Dark option today</span><h4>The dark health bar, corrected</h4>
+   <ul class="callouts">
+    <li><i style="background:linear-gradient(#161618,#0C0C0D)"></i><div><b>Fill: near-black</b> <code>#161618 → #0C0C0D</code>. Health is the dark part.</div></li>
+    <li><i style="background:linear-gradient(#3D3D41,#2E2E32)"></i><div><b>Missing health: lighter graphite</b> <code>#3D3D41 → #2E2E32</code>. Damage shows up as gray, never as color.</div></li>
+    <li><i style="background:rgba(242,223,184,.55)"></i><div><b>Spark: champagne at 55%</b>, 1px where the fill ends, today's Comet spark warmed.</div></li>
+    <li><i style="background:#FF7C0A"></i><div><b>Color only in hints:</b> the name, the portrait ring, the 3px power bar and spell names on casts.</div></li>
+   </ul></div></div>`;
+}
+const lab=document.getElementById('lab'),st=document.getElementById('stage');
+st.innerHTML=scene();
+document.getElementById('pieceGrid').innerHTML=pieces();
+function seg(id,fn){const el=document.getElementById(id);el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));fn(b.dataset.v)})}
+seg('barSeg',v=>document.querySelectorAll('.live').forEach(e=>e.dataset.b=v));
+seg('rimSeg',v=>document.querySelectorAll('.live').forEach(e=>e.dataset.rim=v));
+seg('typeSeg',v=>{lab.dataset.type=v});
+seg('groundSeg',v=>{lab.dataset.ground=v});
+seg('zoomSeg',v=>{st.style.zoom=v});
+const r=document.getElementById('hp');let prev=+r.value,timer;
+r.addEventListener('input',()=>{
+ const v=+r.value;st.style.setProperty('--hp',(v/100).toString());
+ st.querySelectorAll('[data-hp]').forEach(e=>e.textContent=v+'%');
+ document.getElementById('hpo').textContent=v+'%';
+ const d=Math.max(0,prev-v);
+ if(d>0){st.style.setProperty('--dmg',d+'%');clearTimeout(timer);timer=setTimeout(()=>{st.style.setProperty('--dmg','0%');prev=v},650)}
+ else{prev=v;st.style.setProperty('--dmg','0%')}
+});
+</script>

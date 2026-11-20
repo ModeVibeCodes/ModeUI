@@ -6,5 +6,9 @@ if not M then return end
 -- "Mode-Obsidian theme"; Shared/Runtime/Themes.lua): button faces still at
 -- Mono panel take Mode-Obsidian's. Borders follow the theme in Style.
 addon.Themes:Contribute("obsidian", "actionBars", function(db)
-    for _, bar in ipairs(M.bars) do addon.Themes.SwapColor(db[bar], "backgroundColor", "mono", "panel") end
+    for _, bar in ipairs(M.bars) do
+        addon.Themes.SwapColor(db[bar], "backgroundColor", "mono", "panel")
+        -- The keybind's Graphite secondary takes the theme's warm one.
+        addon.Themes.SwapColor(db[bar], "hotkeyColor", "graphite", "secondary")
+    end
 end)

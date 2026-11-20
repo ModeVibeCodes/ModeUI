@@ -21,7 +21,10 @@
 --   baked files Gradient, Button, Glass, Cast that other addons get through
 --   LibSharedMedia (and Matte). Shield: a 32x32 tile, a 1px 45-degree line every 8 texels.
 --   CometHead, CometTrail, LineGlow: the Comet spark and the shield finish line.
+--   ObsidianBase/ObsidianLift (+ baked Obsidian), ObsidianTrack: Mode-Obsidian's
+--   dark glass health fill and its lighter graphite empty part.
 -- Glows/   TextGlow: a soft capsule of light behind health numbers (stretched).
+--          Prism: Mode-Obsidian's glow round a frame on mouseover and focus (sliced at 14).
 -- Controls/ Knob (slide toggle block, radius 2), Blade (slider thumb).
 -- Icons/    the module icons for the settings sidebar and icon rail (tools/mode_icons.lua).
 -- Masks/    Circle: a filled disc (portrait metal disc and the portrait's own crop).
