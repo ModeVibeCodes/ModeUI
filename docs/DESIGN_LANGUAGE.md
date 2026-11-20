@@ -608,7 +608,7 @@ section changes.
     over the last quarter. A 2px band keeps its outer row dark and lights the
     inner one. The shadow ring is the black outer line (`shadowAlpha` 0.9).
   - Metal **obsidian** (`Tone.metal.obsidian`, the style's default; Silver,
-    Steel and Gunmetal still choose): hi `#5A5A5E`, light `#7A705E`,
+    Steel and Gunmetal still choose): hi `#6E6E74`, light `#8C806A`,
     mid `#2A2A2D`, dark `#18181A`, deep `#0F0F11`.
   - **Portrait ring**: a 2px band in the class or reaction color (`mid`)
     with a lit top (`hi`) and a deeper bottom (`dark`), between its black

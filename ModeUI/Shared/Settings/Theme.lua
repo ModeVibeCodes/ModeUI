@@ -23,7 +23,9 @@ addon.Theme = {
 local Style = addon.Style
 local Tone, G = Style.Tone, Style.Tone.graphite
 local function C(color, alpha) return { color[1], color[2], color[3], alpha or 1 } end
-local MODE = {
+-- Built from the tokens as they are now (Mode-Blizz at load; Palette()
+-- again once a theme sets them, Style.OnThemeApplied below).
+local function Palette() return {
     primary = C(Tone.ivory), accentFill = C(Style.Mix(Tone.ivory, G.raised, 0.12)),
     -- Flat rims of the Ivory and Rosewood buttons: their color 70% toward black.
     primaryRim = C(Style.Mix(Tone.ivory, G.void, 0.3)), dangerRim = C(Style.Mix(Tone.rosewood, G.void, 0.3)),
@@ -41,7 +43,8 @@ local MODE = {
     toggleOn = C(Tone.celadon), toggleOff = C(Tone.rosewoodDeep), toggleIdle = C(G.muted),
     text = C(G.text), heading = C(G.white),
     secondary = C(G.secondary), muted = C(G.muted), faint = C(Style.Mix(G.muted, G.rimStrong, 0.5)),
-}
+} end
+local MODE = Palette()
 
 addon.InterfaceThemes = {
     order = { "mode" },
@@ -64,6 +67,18 @@ addon.InterfaceTheme = {
     fontSize = { small = 11, body = 12, group = 10, card = 11, section = 12, brand = 22, page = 18, display = 18 },
 }
 for key, color in pairs(MODE) do addon.InterfaceTheme[key] = Copy(color) end
+
+-- A theme (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme") changes the
+-- tokens after load: the palette's colors change in place, since settings
+-- files hold its tables as upvalues.
+Style.OnThemeApplied(function()
+    for key, color in pairs(Palette()) do
+        MODE[key] = color
+        local live = addon.InterfaceTheme[key]
+        if type(live) == "table" then live[1], live[2], live[3], live[4] = color[1], color[2], color[3], color[4] or 1
+        else addon.InterfaceTheme[key] = Copy(color) end
+    end
+end)
 
 -- Kept for callers shared with Play The Game Tools; ModeUI only has "mode".
 function addon:ResolveInterfaceTheme() return "mode" end

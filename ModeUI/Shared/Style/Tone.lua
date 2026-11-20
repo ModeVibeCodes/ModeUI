@@ -48,7 +48,7 @@ local Tone = {
         -- Mode-Obsidian's own (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"):
         -- deep is the dark glass of the band, hi its lit top row, light the
         -- warm champagne row along the bottom.
-        obsidian = { hi = Hex("5A5A5E"), light = Hex("7A705E"), mid = Hex("2A2A2D"), dark = Hex("18181A"), deep = Hex("0F0F11") },
+        obsidian = { hi = Hex("6E6E74"), light = Hex("8C806A"), mid = Hex("2A2A2D"), dark = Hex("18181A"), deep = Hex("0F0F11") },
     },
     -- Mode-Obsidian's fill-end line: ice white (owner, November 20, 2026).
     fillEnd = Hex("D6EBFF"),
@@ -270,6 +270,11 @@ function Style.Theme()
 end
 function Style.IsObsidian() return Style.Theme() == "obsidian" end
 
+-- Code that keeps its own copies of token colors (the settings window's
+-- palette) refreshes them when a theme is applied: fn(theme).
+Style.themeListeners = {}
+function Style.OnThemeApplied(fn) Style.themeListeners[#Style.themeListeners + 1] = fn end
+
 -- Sets the tokens for `theme` (in place) and remembers it.
 function Style.ApplyTheme(theme)
     theme = Style.THEMES[theme] and theme or Style.DEFAULT_THEME
@@ -294,6 +299,7 @@ function Style.ApplyTheme(theme)
         Tone.emptyAlpha, Tone.shadowAlpha = O.emptyAlpha, O.shadowAlpha
     end
     Style.activeTheme = theme
+    for _, fn in ipairs(Style.themeListeners) do fn(theme) end
     return theme
 end
 
