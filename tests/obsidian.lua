@@ -109,6 +109,10 @@ world.run([==[
     -- A new profile made now carries the theme.
     local made = addon.Database:NewProfile()
     assert(made.theme == 'obsidian' and made.modules.unitFrames.player.prismGlow == 'hover', 'a new profile takes the theme in use')
+    assert(addon.Profiles:CreateThemed('Main Obsidian', 'Main', 'obsidian'), 'a themed copy')
+    local copy = ModeUIDB.profiles['Main Obsidian']
+    assert(copy.theme == 'obsidian' and copy.themeParts.unitFrames == 'obsidian' and copy.modules.unitFrames.focus.prismGlow == 'always')
+    assert(ModeUIDB.profiles.Main.theme == nil, 'the source stays')
     local layout = addon.Layouts:Build('mode-default', '1440')
     assert(layout.theme == 'obsidian' and layout.modules.partyFrames.dispelFrom == 'bottom', 'a layout profile takes the theme in use')
 ]==])

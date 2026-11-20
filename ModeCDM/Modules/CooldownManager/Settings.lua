@@ -244,7 +244,7 @@ function M:BuildLookTab(ui)
             local size = ui.Columns({ "Border Size" })
             page.borderSizeSelect = ui.SelectIn(size[1], 180, function() return M.choices.edgeSize end,
                 function() return db().edgeSize end, ui.Set("edgeSize"))
-            ui.When(function() return db().edgeStyle == "blizzEmpty" end, function()
+            ui.When(function() return addon.Style.IsFlatStyle(db().edgeStyle) end, function()
                 local color = ui.Columns({ "Border Color" })
                 ui.Color(color[1], "edgeColor")
             end)

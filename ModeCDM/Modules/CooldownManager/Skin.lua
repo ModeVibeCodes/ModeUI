@@ -85,7 +85,7 @@ end
 function M.StyleEdge(edge, style)
     edge:SetRim(style.edgeSize)
     edge:SetStyle(style.edgeStyle, style.edgeMetal)
-    edge:SetTint(style.edgeStyle == "blizzEmpty" and style.edgeColor or nil)
+    edge:SetTint(addon.Style.IsFlatStyle(style.edgeStyle) and style.edgeColor or nil)
     edge:SetShown(style.border ~= "none")
 end
 function M.PaintIconArt(art, host, style)

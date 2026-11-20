@@ -37,7 +37,7 @@ end
 -- (the `rim` swatch shows its mid tone).
 function M:EdgeMetal()
     local db, metals = self.db, Style.Tone.metal
-    local style = Style.EDGE_STYLES[Style.EdgeStyle(db.edgeStyle) or "blizz"]
+    local style = Style.EDGE_STYLES[Style.ThemeStyle(Style.EdgeStyle(db.edgeStyle) or "blizz")]
     return metals[db.edgeMetal] or metals[style.metal]
 end
 -- Paints a Mode edge in Border Style and Border Metal with the Map Border or

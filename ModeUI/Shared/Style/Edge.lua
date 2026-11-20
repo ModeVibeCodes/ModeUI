@@ -46,6 +46,12 @@ function Style.EdgeMetalChoices()
     for _, id in ipairs(D.METAL_ORDER) do list[#list + 1] = { id = id, label = D.METAL_LABELS[id] } end
     return list
 end
+-- True for a style that paints its band one flat color (Mode-BlizzEmpty,
+-- Mode-ObsidianEmpty), in the theme in use.
+function Style.IsFlatStyle(id)
+    local style = D.STYLES[Style.ThemeStyle(id)]
+    return style ~= nil and style.light == "flat"
+end
 -- A saved style id that is a real style (anything else: nil, the role's default).
 function Style.EdgeStyle(id) return D.STYLES[id] and id or nil end
 
