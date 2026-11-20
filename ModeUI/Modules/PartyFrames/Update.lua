@@ -96,11 +96,28 @@ function M:UpdateMember(f)
     -- A role or power type change can add or remove the power bar.
     self:UpdatePowerShown(f)
     self:UpdateName(f); self:UpdateHealth(f); self:UpdatePower(f); self:UpdatePrediction(f)
-    self:UpdateStatus(f); self:UpdateIcons(f); self:UpdateThreat(f); self:UpdateTarget(f); self:UpdateAuras(f)
+    self:UpdateStatus(f); self:UpdateIcons(f); self:UpdateThreat(f); self:UpdateTarget(f); self:UpdateFocus(f); self:UpdateAuras(f)
 end
 function M:UpdateAll() for _, f in ipairs(self.members or {}) do self:UpdateMember(f) end end
 function M:UpdateAllIcons() for _, f in ipairs(self.members or {}) do if self:Live(f) then self:UpdateIcons(f) end end end
 function M:UpdateAllTargets() for _, f in ipairs(self.members or {}) do self:UpdateTarget(f) end end
+function M:UpdateAllFocus() for _, f in ipairs(self.members or {}) do self:UpdateFocus(f) end end
+
+-- Your focus (the Prism glow, when Focus Glow is on).
+function M:UpdateFocus(f)
+    f.isFocus = self:Live(f) and Q.Truthy(UnitIsUnit, f.unit, "focus") or false
+    self:PaintGlow(f)
+end
+-- The Prism glow round a member (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian
+-- theme"): while the mouse is over it (Hover Glow) or while it is your focus
+-- (Focus Glow), in its class color.
+function M:PaintGlow(f)
+    local glow, db = f.prism, self.db
+    if not glow then return end
+    local shown = (db.hoverGlow and f.hovered == true) or (db.focusGlow and f.isFocus == true) or false
+    if shown then glow:SetColor(f.unit and self:ClassColor(f.unit) or Style.Tone.ivory) end
+    glow:SetShown(shown)
+end
 
 -- The class color of a player (custom Class Colors included), else nil.
 function M:ClassColor(unit)

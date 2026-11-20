@@ -59,6 +59,19 @@ function M:PaintRing(f, unit)
         or mode == "class" and (f.ghost and self:SampleIdentity(unit) or self:IdentityColor(unit)) or nil
     Style.SetRingStyle(ring, fdb.portraitRingStyle)
     Style.PaintRing(ring, color, fdb.portraitRingMetal)
+    self:PaintGlow(f, unit)
+end
+
+-- The Prism glow round the bar block (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian
+-- theme"): Always, or while the mouse is over the frame (Mouseover), in the
+-- unit's class or reaction color.
+function M:PaintGlow(f, unit)
+    local glow = f.prism
+    if not glow then return end
+    local mode = self:FrameDB(unit).prismGlow
+    local shown = mode == "always" or (mode == "hover" and f.hovered == true)
+    if shown then glow:SetColor(f.ghost and self:SampleIdentity(unit) or self:IdentityColor(unit) or self.ACCENT) end
+    glow:SetShown(shown)
 end
 -- Ring Finish as one choice: a Ring Metal id while Portrait Ring is Metal
 -- ("border"), else "class" or "custom".

@@ -83,7 +83,17 @@ function T:Announce()
     self.seeded = nil
     if seeded.from then
         addon:PrintAction("New look: Mode-Obsidian. Your settings were copied to the profile " .. seeded.to
-            .. ". To go back, choose " .. seeded.from .. " in /modeui, Profiles, and reload.", "info")
+            .. ". To go back, choose " .. seeded.from .. " in /modeui, Profiles, and reload.", "themes")
     end
 end
 addon.Events:On(T, "PLAYER_LOGIN", function() T:Announce() end)
+
+-- For parts: a saved color still at its Mode-Blizz default takes the
+-- Mode-Obsidian value of the same token (Style/Tone.lua); a color the player
+-- chose stays.
+function T.SwapColor(t, key, group, role)
+    local Style = addon.Style
+    if type(t) ~= "table" or type(t[key]) ~= "table" then return end
+    local old, new = Style.BlizzTone(group, role), Style.ObsidianTone(group, role)
+    if old and new and Style.SameColor(t[key], old) then t[key] = new end
+end

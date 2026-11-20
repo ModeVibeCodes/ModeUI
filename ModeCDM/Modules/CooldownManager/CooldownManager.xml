@@ -4,6 +4,7 @@
     <Script file="CastInit.lua"/>
     <Script file="Presets.lua"/>
     <Script file="Migrations.lua"/>
+    <Script file="Theme.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Custom.lua"/>
     <Script file="Spells.lua"/>

@@ -148,6 +148,8 @@ function M:CreateConfigPage(parent)
             When(function() return editing == "player" or editing == "target" end, function()
                 Toggles({ { "Drop Shadow", "dropShadow" } })
             end)
+            -- The Prism glow round the block (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme").
+            Choice("Prism Glow", "prismGlow")
         end)
         -- Target of Target and Target of Focus can attach to their parent frame
         -- (offsets in screen pixels); detached, they move in Edit Mode.

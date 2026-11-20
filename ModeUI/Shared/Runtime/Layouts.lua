@@ -85,6 +85,9 @@ function L:Build(id, variant)
             if not ok then return nil, part.module .. ": " .. tostring(err):gsub("^[^:]*:%d+: ", "") end
         end
     end
+    -- A profile in a theme (Shared/Runtime/Themes.lua) takes the theme's
+    -- parts again after the layout's, so the look stays the theme's.
+    profile.themeParts = {}
     return addon.Database:ValidateProfile(profile)
 end
 

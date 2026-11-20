@@ -105,6 +105,7 @@ function M:ApplyLayout(f, unit)
     f.geometry = g
     f.panel.edge:SetStyle(fdb.edgeStyle, fdb.edgeMetal)
     f.panel.edge:SetDrop(fdb.dropShadow)
+    if f.prism then f.prism:Layout() end
     if f.castBox then f.castBox.edge:SetStyle(fdb.edgeStyle, fdb.edgeMetal) end
     local near, far, sign = Sides(fdb)
     f:SetSize(g.width, g.height)

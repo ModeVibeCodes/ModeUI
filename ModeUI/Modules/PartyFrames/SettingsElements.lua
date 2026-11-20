@@ -70,6 +70,7 @@ function M:BuildHighlightsTab(page, c, Kind)
     page.targetSelect = c.Select(target[1], 200, M.choices.highlightStyle, "targetHighlight"); c.Mark("target")
     c.Color(target[2], "targetColor")
     page.hoverToggles = c.Toggles({ { "Mouse Highlight", "hoverHighlight" }, { "Aggro Rim", "aggroHighlight" },
+        { "Hover Glow", "hoverGlow" }, { "Focus Glow", "focusGlow" },
         { "Preview as Your Target", "previewTarget", get = function() return page.partyShowTarget == true end,
             set = function(value) page.partyShowTarget = value or nil; page:Refresh() end } })
 
@@ -79,6 +80,8 @@ function M:BuildHighlightsTab(page, c, Kind)
     page.dispelFilterSelect = c.SelectIn(which[1], 220, function() return M.auraFilters.dispel end,
         function() return M.db.dispelFilter end, c.Set("dispelFilter"))
     c.Slider(which[2], "dispelGradientOpacity", "%")
+    local from = c.Columns({ "Gradient From" })
+    page.dispelFromSelect = c.Select(from[1], 200, M.choices.dispelFrom, "dispelFrom")
     local kinds = {}
     for _, kind in ipairs(M.dispelTypes) do kinds[#kinds + 1] = { id = kind, label = kind } end
     page.dispelTypePills = c.Pills("Type", kinds, Kind, page.SetDispelType, 80)

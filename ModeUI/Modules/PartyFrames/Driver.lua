@@ -47,6 +47,7 @@ local GLOBAL_EVENTS = {
     PARTY_LEADER_CHANGED = "UpdateAllIcons", READY_CHECK = "UpdateAllIcons", READY_CHECK_CONFIRM = "UpdateAllIcons",
     READY_CHECK_FINISHED = "OnReadyCheckFinished", RAID_TARGET_UPDATE = "UpdateAllIcons",
     PLAYER_TARGET_CHANGED = "UpdateAllTargets", UI_SCALE_CHANGED = "Refresh", DISPLAY_SIZE_CHANGED = "Refresh",
+    PLAYER_FOCUS_CHANGED = "UpdateAllFocus",
 }
 
 -- Runtime sets self.enabled after these return, so they keep their own state.

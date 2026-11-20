@@ -23,12 +23,15 @@ M.DISPEL_GRADIENT_REACH = 0.72
 local function LayoutEffects(self, f, set, color)
     local db = self.db
     set.health:ClearAllPoints(); set.health:SetAllPoints(f.health:GetStatusBarTexture())
+    -- From the top edge, or rising from the bottom (Backlit, Mode-Obsidian).
+    local side = db.dispelFrom == "bottom" and "BOTTOM" or "TOP"
     set.gradient:ClearAllPoints()
-    set.gradient:SetPoint("TOPLEFT", f.health, "TOPLEFT", 0, 0); set.gradient:SetPoint("TOPRIGHT", f.health, "TOPRIGHT", 0, 0)
+    set.gradient:SetPoint(side .. "LEFT", f.health, side .. "LEFT", 0, 0); set.gradient:SetPoint(side .. "RIGHT", f.health, side .. "RIGHT", 0, 0)
     set.gradient:SetHeight(math.max(f.geometry.px, f.health:GetHeight() * M.DISPEL_GRADIENT_REACH))
     if color then
         Kit.Tint(set.health, color, 1)
-        Kit.Gradient(set.gradient, { color[1], color[2], color[3], db.dispelGradientOpacity / 100 }, { color[1], color[2], color[3], 0 })
+        local strong, clear = { color[1], color[2], color[3], db.dispelGradientOpacity / 100 }, { color[1], color[2], color[3], 0 }
+        if side == "BOTTOM" then Kit.Gradient(set.gradient, clear, strong) else Kit.Gradient(set.gradient, strong, clear) end
     end
 end
 
@@ -52,7 +55,8 @@ end
 -- Everything the slots' buttons bake in when they're made.
 local function SlotKey(self, f)
     local db, g = self.db, f.geometry
-    local parts = { db.dispelFilter, g.width, g.height, g.px, g.healthHeight, db.dispelGradientOpacity, db.edgeStyle, db.edgeMetal }
+    local parts = { db.dispelFilter, g.width, g.height, g.px, g.healthHeight, db.dispelGradientOpacity, db.edgeStyle, db.edgeMetal,
+        db.dispelFrom }
     for _, kind in ipairs(self.dispelTypes) do
         local e, c = db.dispel[kind], db[self.dispelColorKeys[kind]]
         parts[#parts + 1] = string.format("%s%s%s%.3f,%.3f,%.3f", tostring(e.border), tostring(e.health), tostring(e.gradient), c[1], c[2], c[3])

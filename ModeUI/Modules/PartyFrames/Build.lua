@@ -34,6 +34,8 @@ function M:BuildFace(f)
     f.healPrediction = Kit.Bar(f.health)
     f.healPrediction.bg:Hide(); f.healPrediction:SetMinMaxValues(0, 1); f.healPrediction:SetValue(0)
     f.health.shield = Style.Shield(f.health)
+    -- The Prism glow round the member (mouseover and focus: Update.lua).
+    f.prism = Style.Glow(panel)
     -- Highlights sit over the bars and under the text.
     local glow = CreateFrame("Frame", nil, f)
     glow:SetAllPoints(panel)
@@ -76,8 +78,11 @@ end
 
 -- The mouse highlight on secure buttons and stand-ins alike.
 function M:HookHover(f)
-    f:HookScript("OnEnter", function() if self.db.hoverHighlight then f.hover:Show() end end)
-    f:HookScript("OnLeave", function() f.hover:Hide() end)
+    f:HookScript("OnEnter", function()
+        if self.db.hoverHighlight then f.hover:Show() end
+        f.hovered = true; self:PaintGlow(f)
+    end)
+    f:HookScript("OnLeave", function() f.hover:Hide(); f.hovered = false; self:PaintGlow(f) end)
 end
 
 -- The member's rim: a dispel type's color (samples), your target, aggro, or

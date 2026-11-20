@@ -31,6 +31,8 @@ function M:BuildFace(f, panelName)
     -- corners shrink to specks (owner, November 18, 2026, on Target of
     -- Target; docs/DESIGN_LANGUAGE.md, "Pieces").
     panel.edge = Style.Edge(panel.inner, M.EdgePreset(f.unit), { pieces = true })
+    -- The Prism glow round the block (mouseover, or always: Update.lua).
+    f.prism = Style.Glow(panel)
     local ring = Style.Ring(f, 64)
     f.portrait = ring.frame
     f.portrait.ring, f.portrait.icon = ring, ring.portrait
@@ -55,8 +57,12 @@ function M:CreateDisplay()
         b:SetScript("OnEnter", function(button)
             if GameTooltip_SetDefaultAnchor then GameTooltip_SetDefaultAnchor(GameTooltip, button) end
             if GameTooltip and GameTooltip.SetUnit then GameTooltip:SetUnit(unit); GameTooltip:Show() end
+            button.hovered = true; self:PaintGlow(button, unit)
         end)
-        b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+        b:SetScript("OnLeave", function(button)
+            if GameTooltip then GameTooltip:Hide() end
+            button.hovered = false; self:PaintGlow(button, unit)
+        end)
         self:BuildFace(b)
         b:SetPoint("CENTER", UIParent, "CENTER", self.defaultPositions[unit].x, self.defaultPositions[unit].y)
         self.frames[unit] = b

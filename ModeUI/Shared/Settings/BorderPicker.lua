@@ -25,9 +25,12 @@ function W.BorderPickers(page, style, metal, opts)
         page.refreshers[#page.refreshers + 1] = function() button:Refresh() end
         return button
     end
-    local styles = Localized(Style.EdgeStyleChoices(opts and opts.none))
+    local styles = Localized(Style.EdgeStyleChoices(opts and opts.none, true))
     local metals = Style.EdgeMetalChoices()
     for _, choice in ipairs(opts and opts.finishes or {}) do metals[#metals + 1] = { id = choice.id, label = choice.label } end
     metals = Localized(metals)
-    return Picker(cells[1], styles, style.get, style.set), Picker(cells[2], metals, metal.get, metal.set)
+    -- A saved style shows as the style it draws as in the theme in use
+    -- (Mode-Obsidian: every Mode metal style is Mode-Obsidian).
+    local function StyleGet() return Style.ThemeStyle(style.get()) end
+    return Picker(cells[1], styles, StyleGet, style.set), Picker(cells[2], metals, metal.get, metal.set)
 end

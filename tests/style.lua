@@ -205,7 +205,7 @@ world.run([[
     assert(window.styleId == "thin" and window:Metal() == Tone.metal.steel and #window.rings == 8, "windows: Mode-Thin bevel in Steel")
     window:SetStyle("round", "default")
     assert(window.styleId == "round" and window:Metal() == Tone.metal.silver and window.rings[2].key:find("^roundHeavy"), "Mode-Round, Silver")
-    assert(Style.EdgeStyleChoices(true)[5].id == "none" and Style.EdgeMetalChoices()[1].id == "default", "picker choices")
+    assert(Style.EdgeStyleChoices(true, true)[5].id == "none" and Style.EdgeStyleChoices(true)[7].id == "none" and Style.EdgeMetalChoices()[1].id == "default", "picker choices")
     frame:SetStyle(nil)
     frame:SetRim(1)
     assert(frame:Layout() == 1 and #frame.rings == 6 and frame.rings[3].profile == "s1m" and frame.rings[6].kind == "gap",

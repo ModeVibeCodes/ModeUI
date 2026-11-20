@@ -26,12 +26,17 @@ end
 -- Mode-ObsidianEmpty (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme").
 function Style.ThemeStyle(styleId) return D.ThemeStyle(styleId, Style.Theme and Style.Theme()) end
 
--- The style choices for a Border picker ({ id, label }), with None when asked:
--- the theme's own styles.
-function Style.EdgeStyleChoices(withNone)
+-- The style choices ({ id, label }), with None when asked. `themed`: the
+-- theme in use's own styles (what a Border picker lists); otherwise every
+-- style (what a module's settings check accepts, so a style picked under
+-- any theme stays valid).
+function Style.EdgeStyleChoices(withNone, themed)
     local list = {}
-    local order = Style.Theme and Style.Theme() == "obsidian" and D.OBSIDIAN_ORDER or D.STYLE_ORDER
-    for _, id in ipairs(order) do list[#list + 1] = { id = id, label = D.STYLES[id].label } end
+    local obsidian = Style.Theme and Style.Theme() == "obsidian"
+    local orders = not themed and { D.STYLE_ORDER, D.OBSIDIAN_ORDER } or { obsidian and D.OBSIDIAN_ORDER or D.STYLE_ORDER }
+    for _, order in ipairs(orders) do
+        for _, id in ipairs(order) do list[#list + 1] = { id = id, label = D.STYLES[id].label } end
+    end
     if withNone then list[#list + 1] = { id = "none", label = "None" } end
     return list
 end

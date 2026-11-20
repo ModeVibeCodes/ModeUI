@@ -4,7 +4,10 @@
 local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "harness.lua")
 
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
-local world = H.Load({ before = STUBS })
+-- Every page in both themes: Mode-Blizz, and Mode-Obsidian (a fresh account,
+-- docs/DESIGN_LANGUAGE.md "Mode-Obsidian theme"), whose fonts and pickers differ.
+for _, obsidian in ipairs({ false, true }) do
+local world = H.Load({ before = STUBS, obsidian = obsidian })
 local problems = world.run([[
     SlashCmdList.MODEUI()
     local window, S = addon.configWindow, addon.ConfigWidgets.SETTINGS_SIZES
@@ -90,6 +93,8 @@ local problems = world.run([[
 ]], "settings_fit")
 
 if #problems > 0 then
-    error("settings fit: " .. #problems .. " control(s) past their tile\n  " .. table.concat(problems, "\n  "), 0)
+    error("settings fit (" .. (obsidian and "Mode-Obsidian" or "Mode-Blizz") .. "): " .. #problems
+        .. " control(s) past their tile\n  " .. table.concat(problems, "\n  "), 0)
+end
 end
 print("settings fit: every page and tab fits its tiles")

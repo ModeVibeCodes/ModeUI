@@ -123,12 +123,13 @@ M.ringFinishes = { M.choices.ring[2], M.choices.ring[3] }
 -- Bar Shows (owner, November 19, 2026: the Healer layout's "mana frame"):
 -- the health bar shows the unit's health, or its mana (Update.lua).
 M.choices.barShows = { { id = "health", label = "Health" }, { id = "mana", label = "Mana" } }
+M.choices.prismGlow = { { id = "none", label = "Off" }, { id = "hover", label = "Mouseover" }, { id = "always", label = "Always" } }
 -- Setting key -> choice list.
 M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring", healthTextColor = "healthText",
     nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
     fillDirection = "fill", edgeStyle = "edgeStyle", edgeMetal = "edgeMetal", portraitRingStyle = "edgeStyle",
     portraitRingMetal = "edgeMetal", healthTextGlowColor = "glowColor",
-    nameTextGlowColor = "glowColor", barShows = "barShows" }
+    nameTextGlowColor = "glowColor", barShows = "barShows", prismGlow = "prismGlow" }
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 M.Public = addon.IsPublic
@@ -197,7 +198,11 @@ local function Frame(side, extra)
         edgeStyle = "blizz", edgeMetal = "default",
         -- Player and Target: the Mode Frame border's soft drop (owner, November
         -- 18, 2026: off where icons sit on the border, as in Mode-Default).
-        dropShadow = true }
+        dropShadow = true,
+        -- The Prism glow round the bar block (docs/DESIGN_LANGUAGE.md,
+        -- "Mode-Obsidian theme"): Off, on Mouseover, or Always (the Focus
+        -- frame under Mode-Obsidian), in the unit's class or reaction color.
+        prismGlow = "none" }
     for key, value in pairs(extra or {}) do frame[key] = value end
     return frame
 end

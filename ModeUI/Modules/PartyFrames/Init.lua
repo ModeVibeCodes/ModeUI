@@ -110,6 +110,7 @@ M.choices = {
     auraGlow = { { id = "none", label = "Off" }, { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     auraGlowColor = { { id = "type", label = "By Type" }, { id = "custom", label = "Custom" } },
     place = { { id = "inside", label = "Inside" }, { id = "outside", label = "Outside" } },
+    dispelFrom = { { id = "top", label = "Top" }, { id = "bottom", label = "Bottom" } },
     edgeStyle = addon.Style.EdgeStyleChoices(),
     edgeMetal = addon.Style.EdgeMetalChoices(),
 }
@@ -146,9 +147,15 @@ M.defaults = {
     -- Highlights: your target (the rim in Ivory), aggro (the rim in the
     -- hostile red) and the mouse.
     targetHighlight = "border", targetColor = Copy(addon.Style.Tone.ivory), hoverHighlight = true, aggroHighlight = true,
+    -- The Prism glow round a member (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian
+    -- theme"): on mouseover, and on your focus, in the member's class color.
+    hoverGlow = false, focusGlow = false,
     -- Debuff effects by type: border, health color and a gradient from the
     -- top edge (56% fading over 72% of the health), each per type.
     dispelFilter = "mine", dispelGradientOpacity = 56,
+    -- Where the gradient rises from: the top edge, or the bottom (Backlit,
+    -- Mode-Obsidian).
+    dispelFrom = "top",
     dispel = { Magic = Effects(), Curse = Effects(), Disease = Effects(), Poison = Effects(), Bleed = Effects() },
     -- Text.
     nameColorMode = "gradient", nameColor = Copy(P.text), healthText = "percent", healthTextColor = "health", healthTextGlow = true, nameWidth = 60,
@@ -186,7 +193,7 @@ M.choiceKeys = { growth = "growth", sortBy = "sortBy", healthColorMode = "health
     powerColorMode = "powerColorMode", powerShown = "powerShown", powerStyle = "powerStyle", powerAlign = "powerAlign",
     nameColorMode = "nameColorMode", healthText = "healthText", healthTextColor = "healthTextColor", fillDirection = "fillDirection", targetHighlight = "highlightStyle",
     powerFillDirection = "fillDirection", powerText = "powerText", powerTextAlign = "powerAlign",
-    edgeStyle = "edgeStyle", edgeMetal = "edgeMetal" }
+    edgeStyle = "edgeStyle", edgeMetal = "edgeMetal", dispelFrom = "dispelFrom" }
 M.groupChoiceKeys = { border = "auraBorder", glow = "auraGlow", glowColor = "auraGlowColor", grow = "growChoices",
     anchor = "anchors", place = "place" }
 -- Texture choices are shared with every bar (Shared/Kit/Shape.lua).

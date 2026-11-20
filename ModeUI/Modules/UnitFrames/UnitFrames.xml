@@ -1,6 +1,7 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="Init.lua"/>
     <Script file="Layouts.lua"/>
+    <Script file="Theme.lua"/>
     <Script file="TextSlots.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Driver.lua"/>

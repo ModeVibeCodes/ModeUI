@@ -114,7 +114,12 @@ function D:ValidateProfile(source)
     return nil, tostring(result):gsub("^[^:]*:%d+: ", ""):sub(1, 240)
 end
 
-function D:NewProfile() return self:ValidateProfile({}) end
+-- A profile from defaults, in the active profile's theme (a new profile
+-- made while Mode-Obsidian is in use is Mode-Obsidian too).
+function D:NewProfile()
+    local theme = type(addon.db) == "table" and addon.db.theme or nil
+    return self:ValidateProfile({ theme = theme ~= "blizz" and theme or nil })
+end
 
 -- Schema 1 kept one flat settings table; it becomes the Default profile.
 local function MigrateV1(root)
