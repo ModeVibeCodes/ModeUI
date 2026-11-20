@@ -13,8 +13,11 @@ addon.Database = D
 D.accountKeys = { schemaVersion = true, profiles = true, activeProfile = true, pendingProfile = true,
     failedProfile = true, window = true, importedFrom = true, mediaRegistry = true, optimizationOriginals = true,
     -- Built-in layouts already made into a profile once (Shared/Runtime/Layouts.lua).
-    builtLayouts = true }
-D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {}, builtLayouts = {} }
+    builtLayouts = true,
+    -- Themes the first start already set up, and the profile that was active
+    -- before (Shared/Runtime/Themes.lua).
+    builtThemes = true, previousProfile = true }
+D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {}, builtLayouts = {}, builtThemes = {} }
 D.profileDefaults = {
     -- Shared media read by the Mode widgets and the unit frames' "Use Global
     -- Setting" choices. ModeUI has no page to change them yet.
@@ -25,9 +28,15 @@ D.profileDefaults = {
     sizeMatches = {},
     -- The typeface step this profile's fonts are at (see Typeface below).
     typeface = 3,
+    -- The look (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): "blizz" or
+    -- "obsidian", and the modules whose part of that theme already ran
+    -- (Shared/Runtime/Themes.lua).
+    theme = "blizz",
+    themeParts = {},
 }
 -- The keys a profile may contain (import/export accept nothing else).
-D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true, typeface = true }
+D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true, typeface = true, theme = true,
+    themeParts = true }
 
 -- Typeface step 2 (November 15, 2026, the owner's decision): the Mode font is
 -- "Mode" (Expressway when the client has it, else Geist; Style/Fonts.lua).
@@ -71,6 +80,8 @@ function D:ValidateProfile(source)
         local profile = Copy(source)
         local typeface = profile.typeface
         assert(typeface == nil or typeface == 1 or typeface == 2 or typeface == 3, "Invalid typeface step.")
+        assert(addon.Themes:Valid(profile.theme), "Invalid theme.")
+        assert(profile.themeParts == nil or type(profile.themeParts) == "table", "Invalid theme parts.")
         ApplyDefaults(profile, self.profileDefaults, "profile")
         for _, id in ipairs(addon.moduleOrder) do
             local module = addon.modules[id]
@@ -86,6 +97,8 @@ function D:ValidateProfile(source)
             -- validation. It writes only its own `db`, once.
             if module.Adopt then module.Adopt(db, profile.modules) end
             if module.Initialize then module.Initialize(db) end
+            -- The module's part of the profile's theme, once (Themes.lua).
+            addon.Themes:CatchUp(profile, id, db)
         end
         assert(type(profile.positions) == "table", "Invalid positions.")
         assert(addon.PositionManager.ValidSizeMatches(profile.sizeMatches), "Invalid size matches.")
@@ -168,6 +181,8 @@ function addon:InitializeDatabase()
     local root = ModeUIDB
     local version = root.schemaVersion
     assert(version == nil or version == 1 or version == SCHEMA_VERSION, "ModeUI: unsupported database version; settings were not reset.")
+    -- A fresh account (no saved settings at all) starts in Mode-Obsidian.
+    local fresh = root.profiles == nil and version == nil and next(root) == nil
     if root.profiles == nil then MigrateV1(root) end
     root.schemaVersion = SCHEMA_VERSION
     ApplyDefaults(root, D.accountDefaults, "ModeUIDB")
@@ -197,12 +212,16 @@ function addon:InitializeDatabase()
             status = "Profile " .. tostring(requested) .. " could not be loaded; kept " .. root.activeProfile .. "."
         end
     end
+    -- The first start with themes: Mode-Obsidian (Shared/Runtime/Themes.lua).
+    addon.Themes:Seed(root, fresh)
     local active = root.profiles[root.activeProfile]
     if type(active) == "table" then ImportFromPlayTheGameTools(root, active) end
     local profile, reason = D:ValidateProfile(active)
     assert(profile, "ModeUI: profile " .. root.activeProfile .. " is invalid (" .. tostring(reason) .. "); settings were not reset.")
     root.profiles[root.activeProfile] = profile
     self.root, self.db = root, profile
+    -- The theme's tokens, now that the profile is checked (Style/Tone.lua).
+    addon.Style.ApplyTheme(profile.theme)
     self.Profiles.status = status
     return profile
 end

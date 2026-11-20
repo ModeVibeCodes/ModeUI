@@ -22,6 +22,7 @@ Shared\Runtime\ProfileCodec.lua
 Shared\Runtime\DB.lua
 Shared\Runtime\Profiles.lua
 Shared\Runtime\Layouts.lua
+Shared\Runtime\Themes.lua
 Shared\Runtime\Reload.lua
 Shared\Runtime\Lifecycle.lua
 Shared\Style\Tone.lua
@@ -55,6 +56,7 @@ Shared\Style\Bar.lua
 Shared\Style\Shield.lua
 Shared\Style\Names.lua
 Shared\Style\Halo.lua
+Shared\Style\Glow.lua
 Shared\Style\Icon.lua
 Shared\Style\Sheet.lua
 Shared\Runtime\API.lua

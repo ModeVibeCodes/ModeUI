@@ -116,6 +116,8 @@ end
 function Kit.BarBackgroundColor(choice)
     -- Mode BG is tinted Slate (docs/DESIGN_LANGUAGE.md, "Bars").
     if choice == "media:Mode BG" then return addon.Style.Tone.slate end
+    -- So is Mode-Obsidian Track (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme").
+    if choice == "media:Mode-Obsidian Track" then return addon.Style.Tone.slate end
     if choice == "slate" then return Kit.onyx.slate end
     if choice == "slateHatch" then return Kit.onyx.slateHatch end
     return Kit.onyx.track

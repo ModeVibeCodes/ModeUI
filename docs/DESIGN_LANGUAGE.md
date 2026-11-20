@@ -581,6 +581,75 @@ close and window buttons, nameplate glows, minimap masks) come from
 none of it. The pre-Mode art (box corners, caps, rings, the round box, the
 glass tab, the old slot and control art) was removed in Phase 8.
 
+## Mode-Obsidian theme
+
+The owner's redesign (November 20, 2026; the Mode Obsidian page,
+https://claude.ai/artifact/FmYkTTQsWESUUoz21vBuvG; plan and log in
+`docs/OBSIDIAN.md`). **Dark first**: frames and bars are black glass and
+graphite, and color stays in hints (names, spell names, portrait rings,
+power, states). Everything above still holds under Obsidian except what this
+section changes.
+
+- **A profile setting.** `profile.theme` is `"blizz"` (Mode-Blizz, every
+  profile without the key) or `"obsidian"`. The first start with the theme
+  copies the active profile to **Mode-Obsidian**, gives the copy the theme
+  and makes it active; the old profile stays as it was (`ModeUIDB.builtThemes`).
+  Theme changes apply on reload, like a profile switch.
+- **Borders.** Under Obsidian every Mode metal style (Mode-Blizz, Mode-Thin,
+  Mode-Round) draws as **Mode-Obsidian**, and Mode-BlizzEmpty as
+  **Mode-ObsidianEmpty** (`Style.ThemeStyle`), in every role: the saved
+  `edgeStyle` keys are not changed, and the reach of every role is the same,
+  so nothing moves. The Border Style picker lists the theme's styles.
+  - Shape **soft**: round corners, 6px heavy and 4px thin (the same slice
+    margins as the cut shapes, so the height floors don't change).
+  - Lighting **obsidian**: the band's base is the metal's `deep` (dark glass);
+    a lit top row in `hi` fades out by a third of the way down the sides; a
+    warm row along the bottom in `light` (the champagne caustic) fades in
+    over the last quarter. A 2px band keeps its outer row dark and lights the
+    inner one. The shadow ring is the black outer line (`shadowAlpha` 0.9).
+  - Metal **obsidian** (`Tone.metal.obsidian`, the style's default; Silver,
+    Steel and Gunmetal still choose): hi `#5A5A5E`, light `#7A705E`,
+    mid `#2A2A2D`, dark `#18181A`, deep `#0F0F11`.
+  - **Portrait ring**: a 2px band in the class or reaction color (`mid`)
+    with a lit top (`hi`) and a deeper bottom (`dark`), between its black
+    lines (lighting `obsidianRing`).
+- **Tokens** (`Style.ApplyTheme`, in place after the profile is checked):
+
+  | Token | Mode-Blizz | Mode-Obsidian |
+  |---|---|---|
+  | Graphite base, panel, raised, track | `#0A0A0B` `#121213` `#1A1A1C` `#222224` | `#070708` `#0B0B0C` `#131314` `#1A1A1C` |
+  | Graphite line, rim, rimStrong | `#2C2C2F` `#3D3D41` `#5A5A5F` | `#232325` `#343438` `#4E4E54` |
+  | Graphite muted, secondary, text, white | `#85858B` `#A9A9AE` `#D8D8DB` `#F5F5F6` | `#8A857C` `#ADA79C` `#E6E1D7` `#F6F2EA` |
+  | Mono base, panel, raised, track | `#050505` `#0E0E0E` `#161616` `#1E1E1E` | `#040405` `#09090A` `#111112` `#19191B` |
+  | `text`, `textBright` | `#DADADA` `#F2F2F2` | `#E8E3D9` `#F7F3EA` |
+  | `darkFill` (dark health) | `#1C1D1C` | `#161618` |
+  | `slate` (empty part), `emptyAlpha` | `#575757`, 60% | `#46464B`, 85% |
+  | `shadowAlpha` | 82% | 90% |
+
+- **Dark health.** Health is the dark part: `darkFill` in **Mode-Obsidian**
+  (a dark glass fill: base 100% to 82% down the bar, a faint 1px top line and
+  a soft band of light fading out by the middle) over **Mode-Obsidian Track**
+  (the lighter graphite empty part: 100% to 76% down, tinted `slate`).
+  Damage shows as gray, never as color.
+- **Fill end:** a 1px ice-white line (`fillEnd`, `#D6EBFF` at 85%), 1px in
+  from the bar's top and bottom so it stays inside the border.
+- **Prism glow** (`Style.Glow`, **Mode-Prism** art): a soft glow 8px around a
+  frame in the unit's class or reaction color, added light at 55%, only on
+  mouseover and focus (Unit Frames, Party Frames; the nameplates' focus
+  style Glow).
+- **Backlit dispels:** the Party Frames' dispel Gradient rises from the
+  bottom edge (Gradient From: Bottom).
+- **Type:** the Mode typeface is **Urbanist** (Regular, Medium, SemiBold,
+  Bold; OFL, bundled as **Mode-Urbanist**), Expressway or not; ruRU uses
+  Geist (Urbanist has no Cyrillic), CJK clients Blizzard's font.
+- **Theme parts.** Each module may add an Obsidian part
+  (`addon.Themes:Contribute("obsidian", moduleId, fn(db))`) that sets its
+  Obsidian defaults once per profile (`profile.themeParts`): Unit Frames and
+  Party Frames take dark health, the Mode-Obsidian fill and track, the track
+  at 85% and the glows; Unit Frames names take the solid class color; Party
+  Frames dispels rise from the bottom; Nameplates focus takes the Glow.
+  Nameplates keep reaction-colored health (a gameplay meaning).
+
 ## Companion addons
 
 Companion addons (the first is `ModeCDM`, the Cooldown Manager) need ModeUI,

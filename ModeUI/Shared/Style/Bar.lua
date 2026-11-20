@@ -13,6 +13,16 @@ Style.BAR_ROLES = { health = "Matte", healthClass = "Gradient", power = "Gradien
 
 local Bar = {}
 
+-- The fill-end line's look in the theme in use: color, alpha and how many
+-- pixels it stays in from the bar's top and bottom. Mode-Blizz: white, the
+-- full height (Style.Bar at 70%; module bars at 22%, Kit.FillEdge).
+-- Mode-Obsidian: ice white at 85%, 1px in, so it sits inside the border
+-- (owner, November 20, 2026).
+function Style.FillEnd(alpha)
+    if Style.Theme and Style.Theme() == "obsidian" then return Tone.fillEnd, 0.85, 1 end
+    return Tone.mono.white, alpha or 0.7, 0
+end
+
 -- A bar in `parent`. opts: role (picks the default texture), texture (a key from
 -- Style.BAR_TEXTURES), reverse (fills right to left), spark (Comet), endLine
 -- (default true).
@@ -34,7 +44,8 @@ function Style.Bar(parent, opts)
     bar.endClip:SetClipsChildren(true)
     bar.endLine = bar.endClip:CreateTexture(nil, "OVERLAY", nil, 2)
     Style.ApplyAsset(bar.endLine, "Solid")
-    bar.endLine:SetVertexColor(1, 1, 1, 0.7)
+    local endColor, endAlpha = Style.FillEnd(0.7)
+    Style.Paint(bar.endLine, endColor, endAlpha)
     bar.trail = bar:CreateTexture(nil, "OVERLAY", nil, 3)
     Style.ApplyAsset(bar.trail, "CometTrail")
     bar.head = bar:CreateTexture(nil, "OVERLAY", nil, 4)
@@ -199,9 +210,10 @@ function Bar:LayoutStyle()
     self.endClip:ClearAllPoints()
     self.endClip:SetPoint("TOPLEFT", self, "TOPLEFT", self.reverse and px or 0, 0)
     self.endClip:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", self.reverse and 0 or -px, 0)
+    local _, _, inset = Style.FillEnd()
     self.endLine:ClearAllPoints()
-    self.endLine:SetPoint("TOP" .. side, fill, "TOP" .. side)
-    self.endLine:SetPoint("BOTTOM" .. side, fill, "BOTTOM" .. side)
+    self.endLine:SetPoint("TOP" .. side, fill, "TOP" .. side, 0, -inset * px)
+    self.endLine:SetPoint("BOTTOM" .. side, fill, "BOTTOM" .. side, 0, inset * px)
     self.endLine:SetWidth(px)
     self.endLine:SetShown(self.showEndLine and not self.showSpark)
     -- Comet: a 10px oval head centered on the edge, 1px taller than the bar

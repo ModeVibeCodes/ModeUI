@@ -8,14 +8,24 @@ local D = {}
 -- Styles in menu order. shape: a SHAPES family; light: a LIGHTS entry; metal:
 -- the default Tone.metal key.
 D.STYLE_ORDER = { "blizz", "blizzEmpty", "thin", "round" }
+-- The Mode-Obsidian theme's styles, in menu order (docs/DESIGN_LANGUAGE.md,
+-- "Mode-Obsidian theme"), and the style each Mode style draws as under it.
+D.OBSIDIAN_ORDER = { "obsidian", "obsidianEmpty" }
+D.THEME_STYLES = { obsidian = { blizz = "obsidian", thin = "obsidian", round = "obsidian", blizzEmpty = "obsidianEmpty" } }
 D.STYLES = {
     blizz = { label = "Mode-Blizz", shape = "cut", light = "specular", metal = "silver" },
     blizzEmpty = { label = "Mode-BlizzEmpty", shape = "cut", light = "flat", metal = "silver" },
     thin = { label = "Mode-Thin", shape = "cut", light = "bevel", metal = "steel" },
     round = { label = "Mode-Round", shape = "round", light = "bevel", metal = "silver" },
+    -- Mode-Obsidian: soft round corners, a dark glass band with a lit top
+    -- row and a champagne bottom row; the portrait ring in its own lighting
+    -- (`ring`). Mode-ObsidianEmpty: the same shape, one flat color (flatTone:
+    -- the metal tone an untinted flat band takes).
+    obsidian = { label = "Mode-Obsidian", shape = "soft", light = "obsidian", metal = "obsidian", ring = "obsidianRing" },
+    obsidianEmpty = { label = "Mode-ObsidianEmpty", shape = "soft", light = "flat", metal = "obsidian", flatTone = "hi" },
 }
 D.METAL_ORDER = { "silver", "steel", "gunmetal" }
-D.METAL_LABELS = { silver = "Silver", steel = "Steel", gunmetal = "Gunmetal" }
+D.METAL_LABELS = { silver = "Silver", steel = "Steel", gunmetal = "Gunmetal", obsidian = "Obsidian" }
 
 -- The corner of a role's outermost ring (a 45-degree cut's leg, or a radius),
 -- by shape and size, and the art's size: width and height in texels and the
@@ -27,6 +37,10 @@ D.SHAPES = {
     cutThin = { cut = 3, w = 16, h = 64, margin = 4 },
     roundHeavy = { radius = 12, w = 32, h = 64, margin = 12 },
     roundThin = { radius = 6, w = 16, h = 64, margin = 6 },
+    -- Mode-Obsidian: 6px heavy, 4px thin, on the cut shapes' margins, so the
+    -- height floors stay the same.
+    softHeavy = { radius = 6, w = 16, h = 64, margin = 6 },
+    softThin = { radius = 4, w = 16, h = 64, margin = 4 },
 }
 D.CUT_STEP = 2 - math.sqrt(2)
 
@@ -51,6 +65,15 @@ D.PROFILES = {
     b2im = { { 0, 1 }, { 0.5, 0 }, { 1, 0 } },
     -- Bevel, 1px: hi fading to mid (over mid).
     b1h = { { 0, 1 }, { 1, 0 } },
+    -- Obsidian: the lit top row (hi) fading out a third of the way down the
+    -- sides, and the champagne bottom row (light) fading in over the last
+    -- quarter, both over the dark glass base (deep).
+    o1h = { { 0, 1 }, { 0.06, 0.85 }, { 0.33, 0 }, { 1, 0 } },
+    o1l = { { 0, 0 }, { 0.72, 0 }, { 0.94, 0.7 }, { 1, 1 } },
+    -- Obsidian portrait ring: the color (mid) with a lit top (hi) and a
+    -- deeper bottom (dark).
+    orh = { { 0, 1 }, { 0.32, 0 }, { 1, 0 } },
+    ord = { { 0, 0 }, { 0.6, 0 }, { 1, 0.85 } },
 }
 
 -- The band's layers by lighting and band width. row: "all" (the whole band),
@@ -69,6 +92,18 @@ D.LIGHTS = {
         [2] = { { row = "outer", tone = "mid" }, { row = "outer", tone = "light", profile = "b2ol" },
             { row = "outer", tone = "hi", profile = "b2oh" }, { row = "inner", tone = "deep" },
             { row = "inner", tone = "dark", profile = "b2id" }, { row = "inner", tone = "mid", profile = "b2im" } },
+    },
+    -- Obsidian: a 2px band keeps its outer row dark glass and lights the inner one.
+    obsidian = {
+        [1] = { { row = "all", tone = "deep" }, { row = "all", tone = "hi", profile = "o1h" },
+            { row = "all", tone = "light", profile = "o1l" } },
+        [2] = { { row = "all", tone = "deep" }, { row = "inner", tone = "hi", profile = "o1h" },
+            { row = "inner", tone = "light", profile = "o1l" } },
+    },
+    -- The Obsidian portrait ring (a disc: the whole band in the color).
+    obsidianRing = {
+        [1] = { { row = "all", tone = "mid" }, { row = "all", tone = "hi", profile = "orh" }, { row = "all", tone = "dark", profile = "ord" } },
+        [2] = { { row = "all", tone = "mid" }, { row = "all", tone = "hi", profile = "orh" }, { row = "all", tone = "dark", profile = "ord" } },
     },
 }
 
@@ -122,7 +157,12 @@ end
 D.RING = { style = "blizz", rim = 2 }
 function D.RingLayers(styleId)
     local style = D.STYLES[styleId] or D.STYLES[D.RING.style]
-    return D.LIGHTS[style.light][D.RING.rim]
+    return D.LIGHTS[style.ring or style.light][D.RING.rim]
+end
+-- The style `styleId` draws as under `theme` (itself when the theme keeps it).
+function D.ThemeStyle(styleId, theme)
+    local map = theme and D.THEME_STYLES[theme]
+    return map and map[styleId] or styleId
 end
 -- Every lighting profile a ring can draw, sorted: the art the builder writes.
 function D.RingProfiles()

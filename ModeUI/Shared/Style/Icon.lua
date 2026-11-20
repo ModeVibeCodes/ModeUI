@@ -99,7 +99,7 @@ end
 -- else: Mode-Blizz): the base disc, then each lighting disc over it, in order.
 -- Paint it again after (Style.PaintRing).
 function Style.SetRingStyle(ring, styleId)
-    styleId = Style.EdgeStyle(styleId) or D.RING.style
+    styleId = Style.ThemeStyle(Style.EdgeStyle(styleId) or D.RING.style)
     if ring.styleId == styleId then return end
     ring.styleId = styleId
     local layers = {}

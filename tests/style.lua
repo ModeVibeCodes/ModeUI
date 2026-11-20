@@ -48,9 +48,14 @@ end
 
 -- The picker's bar textures: each has a LibSharedMedia name, and the names are the design's.
 local bars = world.run([[ return addon.Style.BAR_TEXTURES ]])
-local EXPECTED = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield" }
+local EXPECTED = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield", "Obsidian", "ObsidianTrack" }
 Check(table.concat(bars, ",") == table.concat(EXPECTED, ","), "bar textures in menu order: " .. table.concat(bars, ","))
-for _, key in ipairs(bars) do Check(keys[key] and keys[key][7] == "Mode " .. key, key .. ": LibSharedMedia name should be Mode " .. key) end
+-- Mode-Obsidian's are "Mode-<Name>" (owner, November 20, 2026).
+local LSM_NAMES = { Obsidian = "Mode-Obsidian", ObsidianTrack = "Mode-Obsidian Track" }
+for _, key in ipairs(bars) do
+    local name = LSM_NAMES[key] or ("Mode " .. key)
+    Check(keys[key] and keys[key][7] == name, key .. ": LibSharedMedia name should be " .. name)
+end
 
 -- Fonts: the four static Geist weights and the OFL beside them.
 for _, weight in ipairs({ "Regular", "Medium", "SemiBold", "Bold" }) do

@@ -46,6 +46,14 @@ Style.ASSETS = {
     CometTrail = { file = "Bars\\CometTrail" },
     LineGlow = { file = "Bars\\LineGlow" },
     TextGlow = { file = "Glows\\TextGlow" },
+    -- Mode-Obsidian (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): the
+    -- dark glass health fill, the lighter graphite empty part and the Prism
+    -- glow behind a frame on mouseover and focus (sliced).
+    Obsidian = { file = "Bars\\Obsidian", fill = "ObsidianBase", lift = "ObsidianLift", lsm = "Mode-Obsidian" },
+    ObsidianBase = { file = "Bars\\ObsidianBase" },
+    ObsidianLift = { file = "Bars\\ObsidianLift" },
+    ObsidianTrack = { file = "Bars\\ObsidianTrack", lsm = "Mode-Obsidian Track" },
+    Prism = { file = "Glows\\Prism", slice = 14 },
     -- Controls and masks.
     Knob = { file = "Controls\\Knob", slice = 3 },
     Blade = { file = "Controls\\Blade" },
@@ -62,7 +70,8 @@ Style.GLYPHS = { "CleanUp", "Quest" }
 for _, name in ipairs(Style.GLYPHS) do Style.ASSETS["Icon" .. name] = { file = "Icons\\" .. name } end
 
 -- The bar textures every picker offers, in menu order ("Mode" heading, short names).
-Style.BAR_TEXTURES = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield" }
+Style.BAR_TEXTURES = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield", "Obsidian",
+    "ObsidianTrack" }
 
 -- The asset behind a bar texture choice ("media:Mode <Name>"), and its key.
 local byMedia

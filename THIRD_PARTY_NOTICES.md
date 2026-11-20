@@ -35,6 +35,16 @@ Source: https://github.com/google/fonts/tree/main/ofl/damion.
 SHA-256: Damion-Regular.ttf a51fd6c3c517feb9924b98139c2e902a7317caee52c22a2ec9682973969562bf.
 Damion is Mode Script, used only for the "Mode" wordmark in the settings window.
 
+Urbanist-Regular.ttf, Urbanist-Medium.ttf, Urbanist-SemiBold.ttf and
+Urbanist-Bold.ttf (ModeUI/Media/Fonts/Urbanist) are unmodified static Urbanist
+font software, Copyright 2024 The Urbanist Project Authors
+(https://github.com/coreyhu/Urbanist), SIL Open Font License 1.1, with no
+reserved font name. Full terms: LICENSES/Urbanist-OFL.txt, also next to the fonts.
+Source: https://github.com/coreyhu/Urbanist/tree/main/fonts/ttf (commit 5497164).
+SHA-256: Urbanist-Regular.ttf bef5cf82ac62ebe7764fe854d66e8d5282688f10359e51a0bc28a97ac3a26514; Urbanist-Medium.ttf 39c4468f6505afeb478af603e338dab0817959234c1358b058d012f1682fe92c; Urbanist-SemiBold.ttf c0f7110c4ea228c82a03140cffcf3db9e2a47c76e24a0feafe51aa5a227d3958; Urbanist-Bold.ttf eb2934eb4f1423a479c106f4f0c3a7d9649b961dea7c4f34a0647bf62e1c158f.
+Urbanist is the Mode typeface under the Mode-Obsidian theme (docs/DESIGN_LANGUAGE.md,
+"Mode-Obsidian"), owner's pick, November 20, 2026.
+
 Expressway is the Mode typeface when the client has it, and only by reference:
 ModeUI uses a verified font asset from an installed EllesmereUI/AyijeUI
 (Expressway and Expressway Bold), or an existing LibSharedMedia registration.

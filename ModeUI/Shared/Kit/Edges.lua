@@ -26,9 +26,12 @@ function Kit.FillEdge(bar, shown, reverse, px, color, alpha)
     if not shown then return end
     local fill = bar:GetStatusBarTexture()
     local side = reverse and "LEFT" or "RIGHT"
+    -- The theme's look (Style.FillEnd): Mode-Obsidian's ice line stays 1px
+    -- inside the bar's top and bottom.
+    local themeColor, themeAlpha, inset = addon.Style.FillEnd(0.22)
     edge:ClearAllPoints()
-    edge:SetPoint("TOP" .. side, fill, "TOP" .. side, 0, 0)
-    edge:SetPoint("BOTTOM" .. side, fill, "BOTTOM" .. side, 0, 0)
+    edge:SetPoint("TOP" .. side, fill, "TOP" .. side, 0, -inset * px)
+    edge:SetPoint("BOTTOM" .. side, fill, "BOTTOM" .. side, 0, inset * px)
     edge:SetWidth(px)
-    Kit.Tint(edge, color or { 1, 1, 1 }, alpha or 0.22)
+    Kit.Tint(edge, color or themeColor, alpha or themeAlpha)
 end

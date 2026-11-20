@@ -25,6 +25,20 @@ Style.FONT_NAMES = { regular = "Mode Geist", medium = "Mode Geist Medium", semib
 Style.FONT_DEFAULT = "Mode"
 -- LibSharedMedia language bits: western (128) + ruRU (2).
 local LANGUAGES = 130
+-- Mode-Urbanist (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"; owner's
+-- pick, November 20, 2026): the Mode typeface under Mode-Obsidian, Expressway
+-- or not. Four static weights, SIL OFL 1.1 (Media/Fonts/Urbanist/OFL.txt),
+-- Latin only, so ruRU keeps Geist.
+local URBANIST = "Interface\\AddOns\\ModeUI\\Media\\Fonts\\Urbanist\\Urbanist-"
+Style.URBANIST_NAMES = { regular = "Mode-Urbanist", medium = "Mode-Urbanist Medium", semibold = "Mode-Urbanist SemiBold",
+    bold = "Mode-Urbanist Bold" }
+local function UrbanistPath(weight) return URBANIST .. (Style.FONT_WEIGHTS[weight or "regular"] or "Regular") .. ".ttf" end
+-- Urbanist has Latin glyphs only.
+local function LatinOnly()
+    local locale = GetLocale and GetLocale()
+    return locale ~= "ruRU"
+end
+local function Urbanist() return Style.Theme and Style.Theme() == "obsidian" and LatinOnly() end
 
 -- Locales Geist and Expressway have no glyphs for.
 local function NativeOnly()
@@ -51,11 +65,16 @@ local function Expressway(weight)
     local heavy = weight == "semibold" or weight == "bold"
     return heavy and media:GetFont("Expressway Bold") or media:GetFont("Expressway")
 end
--- Which typeface the client has now: "Expressway" or "Geist".
-function Style.Typeface() return Expressway() and "Expressway" or "Geist" end
+-- Which typeface the client has now: "Urbanist" (Mode-Obsidian),
+-- "Expressway" or "Geist".
+function Style.Typeface()
+    if Urbanist() then return "Urbanist" end
+    return Expressway() and "Expressway" or "Geist"
+end
 
 function Style.FontPath(weight)
     if NativeOnly() then return STANDARD_TEXT_FONT end
+    if Urbanist() then return UrbanistPath(weight) end
     return Expressway(weight) or GeistPath(weight)
 end
 
@@ -64,7 +83,8 @@ end
 -- keeps its one weight).
 function Style.Weighted(path, weight)
     if type(path) ~= "string" then return path end
-    if path:sub(1, #BASE) == BASE or path == Expressway("regular") or path == Expressway("bold") then return Style.FontPath(weight) end
+    if path:sub(1, #BASE) == BASE or path:sub(1, #URBANIST) == URBANIST or path == Expressway("regular")
+        or path == Expressway("bold") then return Style.FontPath(weight) end
     return path
 end
 
@@ -90,6 +110,11 @@ function Style.RegisterFonts(library)
     for weight, name in pairs(Style.FONT_NAMES) do
         local path = GeistPath(weight)
         if Present(path) then library:Register("font", name, path, LANGUAGES) end
+    end
+    -- Western only: Urbanist has no Cyrillic.
+    for weight, name in pairs(Style.URBANIST_NAMES) do
+        local path = UrbanistPath(weight)
+        if Present(path) then library:Register("font", name, path, 128) end
     end
 end
 

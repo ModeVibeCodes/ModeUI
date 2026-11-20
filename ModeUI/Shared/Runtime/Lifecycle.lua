@@ -95,6 +95,8 @@ function addon:StartLateModules()
         local settings = self.ProfileCodec.Copy(saved or {})
         if settings.enabled == nil then settings.enabled = module.defaultEnabled ~= false end
         if module.Initialize then module.Initialize(settings) end
+        -- Its part of the active profile's theme, once (Themes.lua).
+        self.Themes:CatchUp(self.db, id, settings)
         self.db.modules[id] = settings
         Start(self, id)
     end

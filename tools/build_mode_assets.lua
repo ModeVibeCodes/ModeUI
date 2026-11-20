@@ -151,6 +151,19 @@ Baked("Bars/Gradient", function() return 1 end, gradientLift)
 Baked("Bars/Button", buttonBase, buttonLift)
 Baked("Bars/Glass", glassBase, glassLift)
 Baked("Bars/Cast", castBase, castLift)
+-- Mode-Obsidian (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): the dark
+-- glass health fill (a base 100% to 82% down, a faint 1px top line and a soft
+-- band of light fading out by the middle) and the lighter graphite empty part
+-- (100% to 76% down, opaque; tinted Slate in game).
+local obsidianBase = Profile({ { 0, 1 }, { 1, 0.82 } })
+local obsidianLift = function(x, y)
+    if y == 0 then return 0.12 end
+    return Profile({ { 0, 0.07 }, { 0.25, 0.05 }, { 0.5, 0 }, { 1, 0 } })(x, y)
+end
+Luma("Bars/ObsidianBase", BW, BH, obsidianBase)
+Lift("Bars/ObsidianLift", BW, BH, obsidianLift)
+Baked("Bars/Obsidian", obsidianBase, obsidianLift)
+Luma("Bars/ObsidianTrack", BW, BH, Profile({ { 0, 1 }, { 1, 0.76 } }))
 -- Panel (brushed): faint horizontal streaks, one value per row plus fine grain;
 -- tiles in both directions, drawn 1:1.
 do
@@ -192,6 +205,20 @@ Lift("Glows/TextGlow", 128, 32, function(x, y)
     local ty = math.abs(y + 0.5 - 16) / 16
     local r = math.min(1, math.sqrt(tx * tx + ty * ty))
     return 0.85 * (1 - T.Smooth(r)) ^ 2
+end)
+
+-- Mode-Prism: the glow behind a frame on mouseover and focus, sliced at 14.
+-- The frame's edge sits 8 texels in from the border: the light is strongest
+-- there and fades out over the 8 texels outside it and 6 texels inside it.
+-- (Signed distance to a rounded box, radius 4, around texels 8-24.)
+Save("Glows/Prism", 32, 32, function(x, y)
+    local qx, qy = math.abs(x + 0.5 - 16) - 4, math.abs(y + 0.5 - 16) - 4
+    local outside = math.sqrt(math.max(qx, 0) ^ 2 + math.max(qy, 0) ^ 2)
+    local d = outside + math.min(math.max(qx, qy), 0) - 4
+    local a
+    if d >= 0 then a = (1 - T.Smooth(math.min(1, d / 8))) ^ 1.6
+    else a = (1 - T.Smooth(math.min(1, -d / 6))) ^ 2 end
+    return 1, 1, 1, 0.9 * a
 end)
 
 -- Icons --------------------------------------------------------------------

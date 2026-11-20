@@ -45,7 +45,13 @@ local Tone = {
         silver = { hi = Hex("F2F4F6"), light = Hex("D9DCE0"), mid = Hex("9A9EA4"), dark = Hex("5C6066"), deep = Hex("3A3D41") },
         steel = { hi = Hex("D4D7DC"), light = Hex("A3A6AB"), mid = Hex("6E7176"), dark = Hex("3D4044"), deep = Hex("26282B") },
         gunmetal = { hi = Hex("A5A9AF"), light = Hex("7C8086"), mid = Hex("4E5156"), dark = Hex("2C2E31"), deep = Hex("1A1B1D") },
+        -- Mode-Obsidian's own (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"):
+        -- deep is the dark glass of the band, hi its lit top row, light the
+        -- warm champagne row along the bottom.
+        obsidian = { hi = Hex("5A5A5E"), light = Hex("7A705E"), mid = Hex("2A2A2D"), dark = Hex("18181A"), deep = Hex("0F0F11") },
     },
+    -- Mode-Obsidian's fill-end line: ice white (owner, November 20, 2026).
+    fillEnd = Hex("D6EBFF"),
     shadow = { 0, 0, 0 },
     shadowAlpha = 0.82,
     softAlpha = 0.55,
@@ -216,4 +222,92 @@ end
 -- `n` physical pixels in `frame`'s units, rounded to whole pixels.
 function Style.Pixels(frame, n)
     return math.floor(n + 0.5) * Style.Pixel(frame)
+end
+
+-- Themes (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"). A profile's
+-- `theme` is "blizz" (Mode-Blizz, every profile without the key) or
+-- "obsidian". Style.ApplyTheme sets the surface tokens in place once the
+-- profile is checked (Shared/Runtime/DB.lua), so every reader of a token
+-- follows; the Mode-Blizz values are kept to put back.
+Style.THEMES = { blizz = "Mode-Blizz", obsidian = "Mode-Obsidian" }
+Style.THEME_ORDER = { "obsidian", "blizz" }
+Style.DEFAULT_THEME = "blizz"
+Style.OBSIDIAN = {
+    graphite = { base = "070708", panel = "0B0B0C", raised = "131314", track = "1A1A1C", line = "232325", rim = "343438",
+        rimStrong = "4E4E54", muted = "8A857C", secondary = "ADA79C", text = "E6E1D7", white = "F6F2EA" },
+    mono = { base = "040405", panel = "09090A", raised = "111112", track = "19191B", line = "222224", rim = "333336",
+        rimStrong = "4D4D52" },
+    text = "E8E3D9", textBright = "F7F3EA", darkFill = "161618", darkFillGraphite = "161618", slate = "46464B",
+    emptyAlpha = 0.85, shadowAlpha = 0.9,
+}
+
+local function Set(color, hex)
+    local value = Hex(hex)
+    color[1], color[2], color[3] = value[1], value[2], value[3]
+end
+-- A copy of every token the theme changes, as Mode-Blizz has it.
+local blizz
+local function Snapshot()
+    if blizz then return end
+    blizz = { graphite = {}, mono = {}, numbers = {} }
+    for _, ramp in ipairs({ "graphite", "mono" }) do
+        for role, color in pairs(Tone[ramp]) do blizz[ramp][role] = { color[1], color[2], color[3] } end
+    end
+    for _, key in ipairs({ "text", "textBright", "darkFill", "darkFillGraphite", "slate" }) do
+        blizz[key] = { Tone[key][1], Tone[key][2], Tone[key][3] }
+    end
+    blizz.numbers.emptyAlpha, blizz.numbers.shadowAlpha = Tone.emptyAlpha, Tone.shadowAlpha
+end
+
+-- The theme in use ("blizz" or "obsidian"): the active profile's.
+function Style.Theme()
+    local theme = Style.activeTheme
+    if theme == nil then
+        local db = addon.db
+        theme = type(db) == "table" and db.theme or nil
+    end
+    return Style.THEMES[theme] and theme or Style.DEFAULT_THEME
+end
+function Style.IsObsidian() return Style.Theme() == "obsidian" end
+
+-- Sets the tokens for `theme` (in place) and remembers it.
+function Style.ApplyTheme(theme)
+    theme = Style.THEMES[theme] and theme or Style.DEFAULT_THEME
+    Snapshot()
+    for _, ramp in ipairs({ "graphite", "mono" }) do
+        for role, value in pairs(blizz[ramp]) do
+            local color = Tone[ramp][role]
+            color[1], color[2], color[3] = value[1], value[2], value[3]
+        end
+    end
+    for _, key in ipairs({ "text", "textBright", "darkFill", "darkFillGraphite", "slate" }) do
+        local value = blizz[key]
+        Tone[key][1], Tone[key][2], Tone[key][3] = value[1], value[2], value[3]
+    end
+    Tone.emptyAlpha, Tone.shadowAlpha = blizz.numbers.emptyAlpha, blizz.numbers.shadowAlpha
+    if theme == "obsidian" then
+        local O = Style.OBSIDIAN
+        for _, ramp in ipairs({ "graphite", "mono" }) do
+            for role, hex in pairs(O[ramp]) do Set(Tone[ramp][role], hex) end
+        end
+        for _, key in ipairs({ "text", "textBright", "darkFill", "darkFillGraphite", "slate" }) do Set(Tone[key], O[key]) end
+        Tone.emptyAlpha, Tone.shadowAlpha = O.emptyAlpha, O.shadowAlpha
+    end
+    Style.activeTheme = theme
+    return theme
+end
+
+-- A token's color under Mode-Obsidian, whatever theme is in use (theme
+-- parts write these into saved settings): Style.ObsidianTone("graphite", "panel").
+function Style.ObsidianTone(group, role)
+    local O = Style.OBSIDIAN
+    local hex = role and O[group] and O[group][role] or (not role and O[group])
+    return type(hex) == "string" and Hex(hex) or nil
+end
+-- A token's Mode-Blizz color, whatever theme is in use (what a theme part
+-- compares a saved color with).
+function Style.BlizzTone(group, role)
+    Snapshot()
+    local value = role and blizz[group] and blizz[group][role] or (not role and blizz[group])
+    return type(value) == "table" and { value[1], value[2], value[3] } or nil
 end

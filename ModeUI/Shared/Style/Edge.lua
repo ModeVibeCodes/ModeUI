@@ -21,10 +21,17 @@ for key, ring in pairs(D.AllRings()) do
     Style.ASSETS["Edge" .. key] = { file = "Borders\\" .. key, slice = D.SHAPES[ring.shape].margin }
 end
 
--- The style choices for a Border picker ({ id, label }), with None when asked.
+-- The style a saved style draws as in the theme in use: under Mode-Obsidian
+-- every Mode metal style is Mode-Obsidian and Mode-BlizzEmpty is
+-- Mode-ObsidianEmpty (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme").
+function Style.ThemeStyle(styleId) return D.ThemeStyle(styleId, Style.Theme and Style.Theme()) end
+
+-- The style choices for a Border picker ({ id, label }), with None when asked:
+-- the theme's own styles.
 function Style.EdgeStyleChoices(withNone)
     local list = {}
-    for _, id in ipairs(D.STYLE_ORDER) do list[#list + 1] = { id = id, label = D.STYLES[id].label } end
+    local order = Style.Theme and Style.Theme() == "obsidian" and D.OBSIDIAN_ORDER or D.STYLE_ORDER
+    for _, id in ipairs(order) do list[#list + 1] = { id = id, label = D.STYLES[id].label } end
     if withNone then list[#list + 1] = { id = "none", label = "None" } end
     return list
 end
@@ -123,7 +130,7 @@ function Style.Edge(host, preset, opts)
     local def = assert(D.PRESETS[preset], "Style.Edge: unknown preset " .. tostring(preset))
     opts = opts or {}
     local edge = setmetatable({ host = host, preset = preset, def = def, rim = opts.rim or def.rim, color = opts.color,
-        styleId = Style.EdgeStyle(opts.style) or def.style, metalId = opts.metal, textures = {}, parts = {},
+        styleId = Style.ThemeStyle(Style.EdgeStyle(opts.style) or def.style), metalId = opts.metal, textures = {}, parts = {},
         pieces = opts.pieces == true }, Edge)
     local holder = CreateFrame("Frame", nil, host)
     holder:SetAllPoints(host)
@@ -240,7 +247,8 @@ end
 -- the host's height plus 2 * out.
 function Style.EdgeMinHeight(preset, styleId, rim)
     local floor = 1
-    for _, ring in ipairs((D.Rings(preset, Style.EdgeStyle(styleId), rim))) do
+    local style = Style.ThemeStyle(Style.EdgeStyle(styleId) or D.PRESETS[preset] and D.PRESETS[preset].style)
+    for _, ring in ipairs((D.Rings(preset, style, rim))) do
         floor = math.max(floor, 2 * D.SHAPES[ring.shape].margin - 2 * ring.out)
     end
     return floor
@@ -261,8 +269,9 @@ function Edge:Paint()
     local metal = self:Metal()
     -- A tint, a flat role or Mode-BlizzEmpty paints the band one color: its
     -- base rings only, the lighting layers hidden.
+    local style = D.STYLES[self.styleId]
     local flat = self.tint or (self.def.flat and (self.color or Tone.mono.rimStrong))
-        or (D.STYLES[self.styleId].light == "flat" and metal.mid)
+        or (style.light == "flat" and metal[style.flatTone or "mid"])
     for i, ring in ipairs(self.rings) do
         for _, texture in ipairs(self.parts[i]) do
             if ring.kind == "shadow" then
@@ -285,7 +294,7 @@ end
 -- Draws the border in another style and metal (nil: the role's style, the
 -- style's metal; "default" is the style's metal too). The reach never changes.
 function Edge:SetStyle(styleId, metalId)
-    styleId = Style.EdgeStyle(styleId) or self.def.style
+    styleId = Style.ThemeStyle(Style.EdgeStyle(styleId) or self.def.style)
     metalId = Tone.metal[metalId] and metalId or nil
     if styleId == self.styleId and metalId == self.metalId then return end
     local rebuild = styleId ~= self.styleId
