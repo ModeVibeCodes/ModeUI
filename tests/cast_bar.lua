@@ -15,8 +15,8 @@ local world = H.Load({ before = STUBS })
 world.run([==[
     local M, PM, Kit, Tone, UF = addon.CooldownManager, addon.PositionManager, addon.Kit, addon.Style.Tone, addon.UnitFrames
     local db = M.db.castBar
-    assert(M.db.version == M.VERSION and M.VERSION == 9, 'settings version 9')
-    assert(db.show and db.edgeStyle == 'obsidian' and db.edgeMetal == 'default' and db.rimColor == 'metal' and db.barMode == 'dark', 'Mode-Border in its own metal, Dark')
+    assert(M.db.version == M.VERSION and M.VERSION == 10, 'settings version 10')
+    assert(db.show and db.edgeStyle == 'obsidian' and db.edgeMetal == 'default' and db.rimColor == 'metal' and db.barMode == 'color' and db.barColorMode == 'class', 'Mode-Border in its own metal, filled in your class color')
     assert(db.icon == 'none' and db.showInterrupted and db.darkText == 'class' and db.matchWidth and db.height == 18, 'icon hidden, Show Interrupted, class-colored text')
     assert(M.defaultPositions.buffIcon.target == M.CAST_ELEMENT and M.castPosition.target == 'cooldownManagerEssential' and M.castPosition.placement == 'above')
 
@@ -42,20 +42,24 @@ world.run([==[
     assert(frame.snapMover == mover and box.width == mover.width - 4, 'hung on whole pixels, the bar across the width')
     assert(PM:GetSizeMatch(M.CAST_ELEMENT, 'width'), 'Match Width')
 
-    -- A cast: Unit Frames steps aside; Dark: the dark fill, the Comet head alone, the class color.
+    -- A cast: Unit Frames steps aside; by default the fill in your class color with the full Comet.
     units.player.cast = { name = 'Frostbolt', text = 'Frostbolt', icon = 135846, start = 99000, stop = 102000 }
     FireEvent('UNIT_SPELLCAST_START', 'player')
     local fill = bar:GetStatusBarTexture()
+    local class = addon.Domain.UnitColor.PlayerClass('player')
+    assert(fill.vertexColor[1] == class.r and fill.vertexColor[3] == class.b and box.comet.trail:IsShown(), 'the fill in your class color')
+    -- Dark: the dark fill, the Comet head alone, the class color.
+    assert(M:SetCastOption('barMode', 'dark'))
     assert(frame:IsShown() and bar.low == 99000 and bar.high == 102000 and bar.value == testClock * 1000, 'the cast, at the time now')
     assert(frame.name.text == 'Frostbolt' and frame.timer.text and frame.icon.texture.texture == 135846, 'name, timer, icon')
     assert(not ufCast:IsShown(), "Unit Frames' Player cast bar steps aside")
     assert(fill.vertexColor[1] == Tone.darkFill[1] and box.comet.head:IsShown() and not box.comet.trail:IsShown(), 'Dark: the dark fill, the Comet head alone')
-    local class = addon.Domain.UnitColor.PlayerClass('player')
     assert(frame.name.color[1] == class.r and frame.timer.color[3] == class.b, 'Dark: the text in your class color')
     Advance(0.2); assert(bar.value == testClock * 1000, 'the bar follows the time')
     assert(Point(frame.name)[1] == 'LEFT' and Point(frame.name)[4] == 4 and Point(frame.timer)[1] == 'RIGHT', 'Spell Name left, Timer right')
     -- Color mode: Bar Color (any color), the full Comet; Not Interruptible in its own color.
-    assert(M:SetCastOption('barMode', 'color') and fill.vertexColor[1] == db.barColor[1] and box.comet.trail:IsShown(), 'Color: Bar Color and the trail')
+    assert(M:SetCastOption('barMode', 'color') and M:SetCastOption('barColorMode', 'custom') and not M:SetCastOption('barColorMode', 'rainbow'))
+    assert(fill.vertexColor[1] == db.barColor[1] and box.comet.trail:IsShown(), 'Color, Bar Color Custom: Bar Color and the trail')
     assert(M:SetCastOption('barColor', { 0, 1, 0 }) and fill.vertexColor[2] == 1 and fill.vertexColor[1] == 0, 'any foreground color')
     assert(frame.name.color[1] == db.textColor[1], 'Color mode: Text Color')
     units.player.cast.locked = true; FireEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE', 'player')
@@ -134,8 +138,8 @@ world.run([==[
     testCombat, testLockdown = true, true
     assert(not M:SetCastOption('height', 20), 'settings change only outside combat')
     testCombat, testLockdown = false, false
-    assert(M:SetCastOption('height', 20) and M:SetCastOption('barMode', 'color') and M:ResetCast())
-    assert(db.height == 20 and M.db.castBar.barMode == 'dark' and M.db.castBar.nameAnchor == 'LEFT', 'Reset: the look back, the size kept')
+    assert(M:SetCastOption('height', 20) and M:SetCastOption('barMode', 'dark') and M:ResetCast())
+    assert(db.height == 20 and M.db.castBar.barMode == 'color' and M.db.castBar.barColorMode == 'class' and M.db.castBar.nameAnchor == 'LEFT', 'Reset: the look back, the size kept')
     db = M.db.castBar
 
     -- The window: Cast Bar under Resource Bars, its page and preview.
@@ -191,9 +195,20 @@ cdm.version, cdm.castBar, cdm.moveBuffIcons = 7, nil, nil
 profile.positions.cooldownManagerBuffIcon = { target = 'cooldownManagerEssential', placement = 'above', x = 0, y = 0 }
 H.Load({ before = STUBS, saved = seven }).run([==[
     local M = addon.CooldownManager
-    assert(M.db.version == 9 and M.db.moveBuffIcons == nil and M.db.castBar.show and M.db.castBar.icon == 'none', 'version 8 (then 9); the cast bar from its defaults')
+    assert(M.db.version == 10 and M.db.moveBuffIcons == nil and M.db.castBar.show and M.db.castBar.icon == 'none', 'version 8 (then 9, 10); the cast bar from its defaults')
     assert(addon.db.positions.cooldownManagerBuffIcon.target == M.CAST_ELEMENT, 'Buff Icons above the cast bar')
 ]==], "version 8")
+
+-- Version 9 -> 10 (owner, November 20, 2026): a Cast Bar still at Dark, the
+-- old default, takes Color in your class color; Color with a picked Bar Color stays.
+local nine = restored.saved()
+nine.profiles.Default.modules.cooldownManager.version = 9
+nine.profiles.Default.modules.cooldownManager.castBar.barMode = 'dark'
+nine.profiles.Default.modules.cooldownManager.castBar.barColorMode = nil
+H.Load({ before = STUBS, saved = nine }).run([==[
+    local db = addon.CooldownManager.db
+    assert(db.version == 10 and db.castBar.barMode == 'color' and db.castBar.barColorMode == 'class', 'Dark becomes your class color')
+]==], "version 10")
 local moved = restored.saved()
 moved.profiles.Default.modules.cooldownManager.version = 7
 moved.profiles.Default.positions.cooldownManagerBuffIcon = { target = 'cooldownManagerEssential', placement = 'above', x = 12, y = 0 }

@@ -38,10 +38,11 @@ M.castDefaults = {
     show = true, width = 300, height = 18, matchWidth = true,
     -- The resource bars' border: Mode-Round in Gunmetal, Rim Color.
     border = "mode", edgeStyle = "obsidian", edgeMetal = "default", rimColor = "metal", rimCustom = Copy(Tone.ivory), edgeSize = 1,
-    -- Bar Mode Dark: the fill in darkFill, the Comet head alone, the text in
-    -- your class color. Bar Color is any color (Color mode, and the rim's
-    -- Bar Color); Not Interruptible and Interrupted have their own.
-    barMode = "dark", barTexture = "media:Mode-FG", barColor = Copy(Tone.cast.casting),
+    -- Bar Mode Color (the default since version 10, owner, November 20,
+    -- 2026): the fill in your class color, or in Bar Color when Bar Color is
+    -- Custom. Dark: the fill in darkFill, the Comet head alone, the text in
+    -- your class color. Not Interruptible and Interrupted have their own.
+    barMode = "color", barColorMode = "class", barTexture = "media:Mode-FG", barColor = Copy(Tone.cast.casting),
     lockedColor = Copy(Tone.cast.shielded), interruptedColor = Copy(Tone.cast.interrupted),
     barBackground = "media:Mode-BG", barBackgroundOpacity = M.RESOURCE_EMPTY, spark = true,
     darkText = "class", darkTextColor = Copy(Tone.textBright),
@@ -67,6 +68,7 @@ local ANCHORS = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Cen
 M.castChoices = {
     border = M.resourceChoices.border, edgeStyle = M.resourceChoices.edgeStyle, edgeMetal = M.resourceChoices.edgeMetal,
     rimColor = M.resourceChoices.rimColor, barMode = M.resourceChoices.barMode,
+    barColorMode = { { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
     darkText = { { id = "class", label = "Class Color" }, { id = "bar", label = "Bar Color" }, { id = "custom", label = "Custom" } },
     icon = { { id = "none", label = "Hidden" }, { id = "left", label = "Left" }, { id = "right", label = "Right" } },
     nameAnchor = ANCHORS, timerAnchor = ANCHORS,

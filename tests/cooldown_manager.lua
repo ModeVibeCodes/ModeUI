@@ -19,7 +19,7 @@ world.run([==[
     local first = ItemsOf(essential)[1]
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
     assert(M.db.essential.width == 40 and M.db.essential.height == 34 and M.db.utility.width == 32 and M.db.utility.height == 28, 'icons wider than tall (Mode sizes)')
-    assert(M.db.version == 9 and M.db.essential.border == 'mode' and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    assert(M.db.version == 10 and M.db.essential.border == 'mode' and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
     -- A new profile starts with the five default bars (Presets.lua), in order.
     assert(#M.db.customBars == 5 and M.db.nextCustom == 6, 'the five default bars')
     local want = { { 'defensives', 'Defensive Cooldowns', 'cooldown', 30, 24, 3, 'left', 'up', 2 },
@@ -653,7 +653,7 @@ do
     for key, style in pairs(db) do if type(style) == "table" and style.border then style.edgeStyle, style.edgeMetal = nil, nil end end
     H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
         local M = addon.CooldownManager
-        assert(M.db.version == 9 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
+        assert(M.db.version == 10 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
         for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'obsidianEmpty' and M.db[viewer].edgeMetal == 'default', viewer .. ' takes the default border') end
         assert(M.db.custom6.edgeStyle == 'obsidianEmpty' and M.db.custom7.edgeMetal == 'default', 'custom bars too')
     ]==], "fill border style")
@@ -667,7 +667,7 @@ v1.profiles.Default.modules.cooldownManager = { enabled = true, version = 1,
     buffIcon = { orientation = "horizontal", start = "BOTTOMLEFT", center = true, readyGlow = false, readyStyle = "glow" } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 9 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'v1 also takes the Mode edge')
+    assert(db.version == 10 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'v1 also takes the Mode edge')
     assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
     assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow look kept, as a flash')
     assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 5, 'and the five default bars (version 9)')
@@ -685,7 +685,7 @@ old.utility.border, old.utility.borderColor = "square", { 1, 0, 0 }
 old.custom6.border = "rounded"
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v2 }).run([==[
     local db, Kit = addon.CooldownManager.db, addon.Kit
-    assert(db.version == 9 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'old default to the Mode edge')
+    assert(db.version == 10 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'old default to the Mode edge')
     assert(db.utility.border == 'mode' and db.utility.borderColor == nil and db.utility.borderSize == nil, 'Square becomes the Mode edge; size and color retire')
     assert(db.custom6.border == 'mode', 'custom bars too')
 ]==], "migrate v2")
@@ -702,7 +702,7 @@ v3.profiles.Default.positions.cooldownManagerUtility = { target = "cooldownManag
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v3 }).run([==[
     local M, PM = addon.CooldownManager, addon.PositionManager
     local db = M.db
-    assert(db.version == 9 and db.essential.width == 40 and db.essential.height == 34 and db.custom7.width == 32 and db.custom7.height == 28, 'default sizes move')
+    assert(db.version == 10 and db.essential.width == 40 and db.essential.height == 34 and db.custom7.width == 32 and db.custom7.height == 28, 'default sizes move')
     assert(db.utility.width == 40 and db.utility.height == 30 and db.movePlaces == nil, 'a chosen size stays')
     assert(PM:GetPosition('cooldownManagerUtility').y == 0 and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
 ]==], "migrate v3")
@@ -729,7 +729,7 @@ four.resources = { power = { barTexture = "mode", barBackground = "slate", barBa
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
     local db, Tone, Same = addon.CooldownManager.db, addon.Style.Tone, addon.Style.SameColor
     local E, U, B = db.essential, db.utility, db.buffBar
-    assert(db.version == 9 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
+    assert(db.version == 10 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
     assert(E.width == 40 and E.height == 34 and U.width == 32 and U.height == 28 and B.height == 16, 'default sizes move')
     assert(Same(E.backgroundColor, Tone.mono.panel) and E.backgroundOpacity == 100 and E.fontMedia == 'Mode' and not E.outline)
     assert(E.procGlow == 'border' and Same(E.procColor, Tone.celadon) and E.readyGlow == 'mode' and Same(E.readyColor, Tone.ivory), 'glow looks')
@@ -797,7 +797,7 @@ do
     H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
         local M, PM = addon.CooldownManager, addon.PositionManager
         local bars = M.db.customBars
-        assert(M.db.version == 9 and #bars == 7 and bars[1].id == 'custom6' and bars[2].id == 'custom7' and #bars[1].entries == 2, 'its own bars first, kept')
+        assert(M.db.version == 10 and #bars == 7 and bars[1].id == 'custom6' and bars[2].id == 'custom7' and #bars[1].entries == 2, 'its own bars first, kept')
         for i, tag in ipairs(M.presetOrder) do assert(bars[i + 2].id == 'custom' .. (10 + i) and bars[i + 2].preset == tag, tag .. ' added') end
         assert(M.db.nextCustom == 16 and M.db.custom15.width == 54 and M.db.essential.border == 'none', 'the counter carries on; nothing else changes')
         assert(PM:GetPosition('cooldownManagerCustom12').target == 'cooldownManagerBuffIcon', 'in its own place')

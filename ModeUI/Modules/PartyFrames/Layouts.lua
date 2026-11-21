@@ -63,7 +63,12 @@ end)
 -- bottom at 1080 and 325 at 1440 (ModeCDM's layout part), 42 x 34 icons with
 -- their 2px edges, lines 1px apart, so its second row ends 56 under that
 -- middle: the last member's bottom is 55 under it. With you shown, the five
--- members fill the stand-in, so its middle is 162 over that.
+-- members fill the stand-in, so its middle is 162 over that, and its top
+-- (the first member's) 162 over the middle: the column hangs from its top
+-- right (owner, November 20, 2026: hung from its middle, a stand-in a few
+-- units shorter than 5 x 64 + 4 off the pixel-perfect scale left a gap
+-- under the Player mana frame; from the top, the first member always sits
+-- snug under the frame, the Player block's shadow on its top pixel).
 local HEALER = { width = 136, health = 58, power = 3, right = -323,
     middle = { ["1080"] = 300 - 540 - 55 + 162, ["1440"] = 325 - 720 - 55 + 162 } }
 local HEALER_ICONS = { heals = { 22, 18, 3 }, dispellable = { 22, 20, 2 }, otherDebuffs = { 20, 18, 3 } }
@@ -92,5 +97,7 @@ addon.Layouts:Contribute("healer", "partyFrames", function(db, ctx)
     -- the middle puts its 20px icons 1px over the 18px debuff row.
     local dispellable = db.auras.dispellable
     dispellable.anchor, dispellable.place, dispellable.grow, dispellable.y = "LEFT", "inside", "right", -1
-    ctx.Place(M.ELEMENT_ID, "screen", "RIGHT", "CENTER", HEALER.right, ctx.V(HEALER.middle))
+    local g = M.Geometry({ db = db }, 1)
+    local column = M.MAX_MEMBERS * g.height + (M.MAX_MEMBERS - 1) * SPACING
+    ctx.Place(M.ELEMENT_ID, "screen", "TOPRIGHT", "CENTER", HEALER.right, ctx.V(HEALER.middle) + column / 2)
 end)

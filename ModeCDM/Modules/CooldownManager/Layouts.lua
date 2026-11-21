@@ -116,7 +116,7 @@ end)
 -- Essential's first line (33 under its second); Essential 42 x 34 (4px
 -- bigger), seven to a line, at the same place; on it a thin Combo Points
 -- strip (6px, Mode-Border) and the Cast Bar
--- (16 tall) at a fixed place over that strip, so nothing moves when a class
+-- (20 tall: 16 until the owner's 1440 check, November 20, 2026) at a fixed place over that strip, so nothing moves when a class
 -- has no combo points; then Tracked Buffs and Emphasized Buffs as before.
 -- With Power off the resources stand apart, so the Cast Bar hangs from
 -- Essential. Defensive Cooldowns is hidden (its spells, none in a new
@@ -125,7 +125,7 @@ end)
 -- 16 lower (x -122 and 122, y -16): 3px clear of the Target's 44px portrait
 -- ring, whose right edge is at x -142.
 local COMBO = M.ResourceElementId("combo")
-local HEALER = { essential = { 42, 34 }, utility = 70, combo = 6, cast = 16, side = { x = 122, y = -16 } }
+local HEALER = { essential = { 42, 34 }, utility = 70, combo = 6, cast = 20, side = { x = 122, y = -16 } }
 
 addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     db.enabled = true

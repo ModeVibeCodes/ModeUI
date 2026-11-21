@@ -317,9 +317,11 @@ The Cooldown Manager's icons, tracked bars and resource bars:
   three 1px Ivory lines at power values. **Group Resources** puts Power, Combo
   Points and Alternate Mana in one edge with a 1px black line between them;
   only the block has a floor, so its strips can be thinner.
-- **Cast Bar** (the player's, on its own): the resource bars' look, Dark by
-  default with the Comet head alone (`Comet:SetTrail(false)`; a light trail on
-  a dark fill read odd), and the spell icon in its own border.
+- **Cast Bar** (the player's, on its own): the resource bars' look, filled in
+  your class color by default (owner, November 20, 2026) with the full Comet;
+  Not Interruptible and Interrupted keep their own colors. Dark stays a
+  choice, with the Comet head alone (`Comet:SetTrail(false)`; a light trail on
+  a dark fill read odd). The spell icon in its own border.
 
 ## Bars (`Style.Bar`)
 

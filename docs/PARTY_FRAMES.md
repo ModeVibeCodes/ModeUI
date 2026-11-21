@@ -191,8 +191,12 @@ still show only in a party.
   bottom right, 22 x 18, up to 3. Group Buffs, Tracked Buffs and Defensives
   hidden (Defensives until its double icon is fixed). Gradient Opacity 35.
   The right edge at x -323; the last member's bottom edge level with
-  Essential's second row (bands lined up, shadows on one pixel): the
-  stand-in's middle at y -133 at 1080 and -288 at 1440.
+  Essential's second row (bands lined up, shadows on one pixel). Hung from
+  its top right (owner, November 20, 2026; seed `healer@4`): the stand-in's
+  top at y 29 at 1080 and -126 at 1440, so the first member sits snug under
+  the Player mana frame's bar block (its shadow on the member's top pixel)
+  whatever the stand-in's height (off the pixel-perfect scale members round
+  to whole pixels, and a column hung from its middle moved down).
 - **Not yet:** one cap of 3 for the whole bottom-left row (each group keeps
   its own maximum today, so several types can show more than 3 together).
 - **Defensives showing twice** (owner): no spell list is involved. With

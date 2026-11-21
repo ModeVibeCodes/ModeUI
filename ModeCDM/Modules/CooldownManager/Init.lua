@@ -62,7 +62,9 @@ addon:RegisterModule("cooldownManager", M)
 -- Version 9 (owner, November 18, 2026): the five default bars (Presets.lua)
 -- join a profile after its own bars, while there's room; up to 15 custom
 -- bars. A new profile starts with them.
-M.VERSION = 9
+-- Version 10 (owner, November 20, 2026): the Cast Bar in your class color;
+-- a Bar Mode still at Dark (the old default) takes Color.
+M.VERSION = 10
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone

@@ -55,10 +55,13 @@ world.run([==[
             'Cooldown Manager icons in Mode-Empty, neutral and darker')
         local column = PF.MAX_MEMBERS * pg.height + (PF.MAX_MEMBERS - 1) * party.spacing
         local p = pos.partyFrames
-        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -323, 'party right edge -323')
-        local partyBottom, partyTop = p.y - column / 2, p.y + column / 2
+        -- Hung from its top right (owner, November 20, 2026), so the first
+        -- member sits snug under the Player block whatever the stand-in's
+        -- height off the pixel-perfect scale.
+        assert(p.target == 'screen' and p.point == 'TOPRIGHT' and p.relativePoint == 'CENTER' and p.x == -323, 'party top right at x -323')
+        local partyTop, partyBottom = p.y, p.y - column
         assert(partyBottom == e2Bottom + 1, 'the column ends level with Essential row 2: ' .. variant .. ' ' .. partyBottom .. ' vs ' .. e2Bottom)
-        assert(p.y == (variant == '1440' and -288 or -133), 'party middle')
+        assert(p.y == (variant == '1440' and -126 or 29), 'party top')
         -- Inside: name top left with the role on its end, health in the middle;
         -- debuffs 20 x 18 (3), Dispellable 22 x 20 (2) on its own row, healing buffs 22 x 18 (3).
         assert(party.nameAnchor == 'TOPLEFT' and party.roleAfterName and party.healthTextAnchor == 'CENTER' and party.healthTextSize == 12)
@@ -112,12 +115,12 @@ world.run([==[
         assert(fp.point == 'TOPLEFT' and fp.relativePoint == 'CENTER' and fp.x == -322 and fp.y == blockBottom - 1 - 14 - 1, 'Focus under the cast bar')
 
         -- ModeCDM: Power and Alternate Mana off; Combo Points a 6px strip 1px
-        -- on Essential; the Cast Bar 16 tall at a fixed place over it; Utility 70 under.
+        -- on Essential; the Cast Bar 20 tall at a fixed place over it; Utility 70 under.
         assert(not cdm.resources.power.show and not cdm.resources.mana.show and cdm.resourceLayout == 'separate')
         local combo = cdm.resources.combo
         assert(combo.height == 6 and combo.edgeStyle == 'obsidian' and addon.Style.EdgeMinHeight(CDM.EDGE, 'obsidian', 1) <= 6, 'a thin strip')
         At(CDM.ResourceElementId('combo'), 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 1)
-        assert(cdm.castBar.height == 16, 'Cast Bar 16')
+        assert(cdm.castBar.height == 20 and cdm.castBar.barMode == 'color' and cdm.castBar.barColorMode == 'class', 'Cast Bar 20, in your class color')
         At(CDM.CAST_ELEMENT, 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 8)
         At('cooldownManagerUtility', 'cooldownManagerEssential', 'TOP', 'BOTTOM', 0, -70)
         local ids = {}
@@ -152,7 +155,7 @@ world.run([==[
         end
     end
     -- Made into a profile once, at login, beside Mode-DPS/TANK; the active profile stays.
-    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@3'] == true)
+    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@4'] == true)
     assert(ModeUIDB.profiles['Mode-Healer'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-Healer', 'healer'), 'its name is taken')
 ]==], "healer build")

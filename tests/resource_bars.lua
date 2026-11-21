@@ -379,7 +379,7 @@ cdm5.resources.health.edgeMetal = 'steel'
 H.Load({ before = STUBS, saved = five }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 9 and M.db.resourceLayout == 'separate', 'version 9, Separate Resources')
+    assert(M.db.version == 10 and M.db.resourceLayout == 'separate', 'version 10, Separate Resources')
     assert(db.power.height == 16 and db.mana.height == 8 and db.combo.height == 12, 'default heights move; a chosen one stays')
     assert(db.power.edgeStyle == 'obsidian' and db.power.edgeMetal == 'default' and db.health.edgeMetal == 'steel', 'Mode-Border in its own metal; a chosen metal stays')
     assert(db.combo.text == 'current' and db.combo.textShow and db.combo.textAnchor == nil and db.combo.layout == 'grouped', 'the count on, grouped points')
@@ -401,7 +401,7 @@ r6.mana.marks = { { value = 0, power = 'MANA' }, { value = 0, power = 'any' }, {
 H.Load({ before = STUBS, saved = six }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 9, 'version 9')
+    assert(M.db.version == 10, 'version 10')
     assert(db.power.height == 16 and db.combo.height == 10 and db.mana.height == 7, 'version 6 heights move; a chosen one stays')
     assert(db.mana.textShow == false and db.mana.text == 'current' and db.power.textShow and db.combo.textShow, 'None becomes Show Text off')
     assert(db.combo.textAnchor == nil and db.power.textAnchor == nil, 'the anchor goes: always in the middle')
