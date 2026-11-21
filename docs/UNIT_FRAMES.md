@@ -1345,6 +1345,14 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
   refreshes them every 0.1 s, as Blizzard's own Target of Target does with
   `OnUpdate`.
 
+## Target health color (layout version 25, November 20, 2026)
+
+Health Color is each frame's own, a matched Target's too (`M.ownKeys`): the
+Target's health defaults to Class Color (its class or reaction color) while
+the Player's stays dark. Version 25 moves a Target still at Default (Dark)
+to Class Color; a picked color stays. The Health Bar tab shows Health Color
+for a matched Target.
+
 ## Settings (`modules.unitFrames`)
 
 `layoutVersion` is 17. Each frame (`player`, `target`, `targettarget`,

@@ -298,8 +298,14 @@ world.run([==[
     assert(M:SetOption('sortBy', 'group') and h.attributes.groupBy == nil)
     assert(M:SetOption('reverseOrder', true) and M.members[1].unit == 'party2' and M:SetOption('reverseOrder', false))
     assert(M:SetOption('growth', 'right') and h.attributes.point == 'LEFT' and h.attributes.xOffset > 0 and h.attributes.yOffset == 0)
-    assert(Point(h)[1] == 'TOPLEFT', 'the header is anchored at the corner it grows from')
+    -- The header hangs by the point it lays members out from (Blizzard centers
+    -- each member on it and sizes the header itself), at that point of the stand-in.
+    assert(Point(h)[1] == 'LEFT', 'the header is anchored by the point it grows from')
     assert(M:SetOption('spacing', 10) and h.attributes.xOffset == 10 and M:SetOption('growth', 'down'))
+    local gl, gw, gb, gh = M.ghost:GetLeft(), M.ghost:GetWidth(), M.ghost:GetBottom(), M.ghost:GetHeight()
+    local hp = Point(h)
+    assert(hp[1] == 'TOP' and hp[3] == 'BOTTOMLEFT' and math.abs(hp[4] - (gl + gw / 2)) <= 0.5 and math.abs(hp[5] - (gb + gh)) <= 0.5,
+        'growing down: by its top, on the stand-in top middle, so the header width never moves the column')
     assert(M:SetOption('showPlayer', false) and M.members[1].unit == 'party1' and M:SetOption('showPlayer', true))
     assert(not M:SetOption('growth', 'sideways') and not M:SetOption('width', 9000) and not M:SetOption('nope', 1), 'validated')
     -- Settings never change in combat.
@@ -812,9 +818,10 @@ H.Load({ before = STUBS, saved = used }).run([==[
     assert(right == -359 and top == 114, 'right edge at -359 (the Player portrait), the top 74 over 40')
     -- Four members from the top: 4 x 36 + 3 = 147, their middle half a pixel over 40.
     assert(top - 147 / 2 == 40.5)
-    -- The secure header starts at the stand-in's top left (its edges from UIParent's BOTTOMLEFT).
+    -- The secure header hangs by its top on the stand-in's top middle (from
+    -- UIParent's BOTTOMLEFT): members centered on it line up with the stand-in.
     local point, _, relative, hx, hy = unpack(M.header.anchor)
-    assert(point == 'TOPLEFT' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() and hy == ghost:GetBottom() + 184)
+    assert(point == 'TOP' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() + 68 and hy == ghost:GetBottom() + 184)
     assert(M.header:GetAttribute('showPlayer') == false and M.header:GetAttribute('point') == 'TOP', 'four members, from the top')
 ]==], "party_layout_world")
 print("party frames: Mode-DPS/TANK layout checks passed")

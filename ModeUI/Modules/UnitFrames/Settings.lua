@@ -204,7 +204,7 @@ function M:CreateConfigPage(parent)
     -- direction are each frame's own, so a matched Target keeps them.
     Tab("Health Bar", function()
         When(function() return Matched() end, function()
-            W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look; its width and fill direction stay its own. Turn off Match Player Frame on the Frame tab to customize the rest.", 52))
+            W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look; its width, fill direction and health color stay its own. Turn off Match Player Frame on the Frame tab to customize the rest.", 52))
         end)
         -- The Player can be a mana frame: its bar shows mana, not health (owner,
         -- November 19, 2026: two pills, Show: Health or Mana).
@@ -222,12 +222,13 @@ function M:CreateConfigPage(parent)
         -- health bar's height, the bar block's inside its 2px rim.
         Style(function() Slider("Frame Height", "healthHeight", "px"); Mark("health") end)
         Choice("Fill Direction", "fillDirection")
+        Style(function() Toggles({ { "Fill End Line", "fillEdge" }, { "Shields", "showShields" } }) end)
+        -- Health Color is each frame's own, a matched Target's too: Default is
+        -- the dark fill; the Target takes Class Color by default.
+        page:Group("Color")
+        Choice("Health Color", "healthColorMode")
+        When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
         Style(function()
-            Toggles({ { "Fill End Line", "fillEdge" }, { "Shields", "showShields" } })
-            page:Group("Color")
-            -- Default is the dark fill #1C1D1C; the empty bar stays the background texture.
-            Choice("Health Color", "healthColorMode")
-            When(function() return db().healthColorMode == "custom" end, function() Color("Custom Health Color", "healthColor") end)
             page.unitFrameForeground, page.unitFrameBackground, page.unitFrameForegroundOpacity, page.unitFrameBackgroundOpacity =
                 Textures("foregroundTexture", "backgroundTexture", "barForegroundOpacity", "barBackgroundOpacity")
         end)

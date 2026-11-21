@@ -196,7 +196,12 @@ still show only in a party.
   top at y 29 at 1080 and -126 at 1440, so the first member sits snug under
   the Player mana frame's bar block (its shadow on the member's top pixel)
   whatever the stand-in's height (off the pixel-perfect scale members round
-  to whole pixels, and a column hung from its middle moved down).
+  to whole pixels, and a column hung from its middle moved down). The live
+  header hangs by the point it lays members out from (Top for a column
+  growing down) on the stand-in's same point, not by a corner: Blizzard's
+  SecureGroupHeaders centers each member on that point and sizes the header
+  itself, so a header a little wider than its members moved the column 2px
+  right of the Player frame's edge (owner, November 20, 2026).
 - **Not yet:** one cap of 3 for the whole bottom-left row (each group keeps
   its own maximum today, so several types can show more than 3 together).
 - **Defensives showing twice** (owner): no spell list is involved. With

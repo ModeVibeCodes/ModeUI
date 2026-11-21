@@ -13,7 +13,8 @@ addon.Themes:Contribute("obsidian", "unitFrames", function(db)
     for _, unit in ipairs(M.units) do
         local fdb = db[unit]
         if type(fdb) == "table" then
-            fdb.healthColorMode = "default"
+            -- Dark health; the Target's in the class or reaction color.
+            fdb.healthColorMode = unit == "target" and "class" or "default"
             fdb.foregroundTexture, fdb.backgroundTexture, fdb.barBackgroundOpacity = FILL, TRACK, 85
             fdb.powerBackgroundTexture, fdb.powerBackgroundOpacity = TRACK, 85
             fdb.nameColorMode = "class"

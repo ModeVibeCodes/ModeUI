@@ -85,7 +85,8 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 22: health text colored by health, 22px auras five to a row, 11px cast text.
 -- Version 23: semi-transparent empty bars (Slate at 60%, no black plate behind).
 -- Version 24: the portrait ring in the class or reaction color (owner).
-M.LAYOUT_VERSION = 24
+-- Version 25: the Target's health in the class or reaction color, its own even when matched (owner).
+M.LAYOUT_VERSION = 25
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 
 local Tone = addon.Style.Tone
@@ -223,7 +224,7 @@ end
 -- its bottom right corner (owner, November 13, 2026).
 -- The Player and Target portraits are 165% of the bar block (owner, November 18, 2026).
 M.frameDefaults = { player = Frame("left", { portraitScale = 165 }),
-    target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse", portraitScale = 165 }),
+    target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse", portraitScale = 165, healthColorMode = "class" }),
     targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false, 160, { prismGlow = "always" })), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 },
@@ -318,7 +319,10 @@ function M.StatusDefaults(unit)
     return defaults
 end
 -- Frame Width (barWidth) too, so a matched Target can be wider or narrower;
--- Bar Shows, so a Player mana frame never turns a matched Target into one.
-M.ownKeys = { castBar = true, buffs = true, debuffs = true, barWidth = true, status = true, barShows = true }
+-- Bar Shows, so a Player mana frame never turns a matched Target into one;
+-- Health Color, so the Target's health is the class or reaction color by
+-- default while the Player's is dark (owner, November 20, 2026).
+M.ownKeys = { castBar = true, buffs = true, debuffs = true, barWidth = true, status = true, barShows = true,
+    healthColorMode = true, healthColor = true }
 M.defaults = { layoutVersion = M.LAYOUT_VERSION, comboPoints = Copy(M.comboDefaults) }
 for _, unit in ipairs(M.units) do M.defaults[unit] = Copy(M.frameDefaults[unit]) end

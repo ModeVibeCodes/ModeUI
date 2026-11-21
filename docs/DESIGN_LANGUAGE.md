@@ -334,7 +334,8 @@ The Cooldown Manager's icons, tracked bars and resource bars:
   addons.
 - **Dark health:** health is `darkFill` (`#161618`) in Mode-FG, on Unit Frames
   and Party Frames by default (**Dark**/Default; Class and Custom remain
-  options). Nameplates keep reaction and class colors; power keeps its power
+  options), but the Target frame's, which is its class or reaction color by
+  default (owner, November 20, 2026; its own even while it matches the Player). Nameplates keep reaction and class colors; power keeps its power
   color; cast bars their cast colors.
 - **Empty part: Mode-BG** on Slate (`#46464B`): the lighter graphite empty
   part (100% to 76% down), for every bar. Never tinted, class-colored bars
