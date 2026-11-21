@@ -287,7 +287,10 @@ instead, so their size never changes.
   `totem` Earth, Fire, Water, Air), the hint in place of Blizzard's colored
   frames; the empty slots show the face and the same rim. The totem picker
   (flyout) is a Surface panel in Mode-Border with Mode buttons, and its
-  arrows the Mode chevron in Ivory.
+  arrows the Mode chevron in Ivory. The totem timers under the Player frame
+  (Blizzard's TotemFrame) are Mode icons (24 x 20, cropped, not round) in the
+  `frameThin` edge, the rim in the element's color for a Shaman's totems, a
+  flat swipe, and the time in the Mode typeface Bold 10, Text bright.
 
 ## Cooldown icons
 

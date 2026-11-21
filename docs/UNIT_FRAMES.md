@@ -1353,6 +1353,16 @@ the Player's stays dark. Version 25 moves a Target still at Default (Dark)
 to Class Color; a picked color stays. The Health Bar tab shows Health Color
 for a matched Target.
 
+## Totem timers (November 20, 2026)
+
+`Totems.lua` reskins Blizzard's TotemFrame (the timers it hangs below its
+Player frame) while the ModeUI Player frame is on, look only: each timer a
+Mode icon (24 x 20, cropped, the circle mask taken off) in the `frameThin`
+edge, its rim the element's color for a Shaman (`Tone.totem`), Blizzard's
+gold ring faded, a flat swipe, the time in Urbanist Bold 10 Text bright
+(a hook puts the color back after Blizzard's per-frame recolor). The Player
+frame off brings Blizzard's look back. `tests/totem_timers.lua`.
+
 ## Settings (`modules.unitFrames`)
 
 `layoutVersion` is 17. Each frame (`player`, `target`, `targettarget`,
