@@ -94,7 +94,7 @@ function M:LayoutCast(f, unit)
     box.edge:Layout()
     box.textLayer:SetFrameLevel(box.edge.holder:GetFrameLevel() + 1)
     -- Spell name from the left, seconds left on the right, in the frame's font.
-    -- Cast text in Bold when the font is Geist.
+    -- Cast text in Bold when the font is Urbanist.
     local path, size = addon.Style.Weighted(self:FontPath(fdb), "bold"), cdb.fontSize
     -- The cast bar's own Outline (on by default), so its text reads over the
     -- fill and the spark.

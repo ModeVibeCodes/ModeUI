@@ -27,7 +27,7 @@ function Kit.AuraIconParts(icon)
     Style.ApplyAsset(icon.back, "Solid"); Style.Paint(icon.back, Style.Tone.shadow)
     -- In pieces: an aura icon is shorter than the ring art, whose sliced
     -- corners shrink (docs/DESIGN_LANGUAGE.md, "Pieces").
-    icon.edge = Style.Edge(icon.inner, "frameThin", { style = "thin", pieces = true })
+    icon.edge = Style.Edge(icon.inner, "frameThin", { style = "obsidian", pieces = true })
     -- The rim's base ring: aura containers recolor it by dispel type
     -- (Kit.DispelAuraRim), the lighting layers over it hidden.
     icon.rim = icon.edge.rimTexture
@@ -99,7 +99,7 @@ function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon.icon:SetTexCoord(0.08, 0.92, 0.5 - span / 2, 0.5 + span / 2)
     icon.textLayer:SetFrameLevel(icon.cooldown:GetFrameLevel() + 2)
     local countSize = math.max(7, math.floor(height * 0.45 + 0.5))
-    -- Counts and timers in Geist Bold (another font keeps its one weight).
+    -- Counts and timers in Urbanist Bold (another font keeps its one weight).
     fontPath = Style.Weighted(fontPath, "bold")
     Kit.Font(icon.count, style, countSize, fontPath, px)
     icon.count:ClearAllPoints()
@@ -132,7 +132,7 @@ function Kit.DispelAuraRim(button, options, color, icon)
     for _, texture in ipairs(icon.edge:RimTextures()) do button:AddDispelTypeTexture(texture, options) end
 end
 -- Lets an aura's art follow a module's Border choice (style and metal ids).
-function Kit.AuraBorderStyle(icon, styleId, metalId) icon.edge:SetStyle(styleId or "thin", metalId) end
+function Kit.AuraBorderStyle(icon, styleId, metalId) icon.edge:SetStyle(styleId or "obsidian", metalId) end
 -- Shows or hides the whole edge (a group's Border: None).
 function Kit.ShowAuraRim(icon, shown) icon.edge:SetShown(shown and true or false) end
 

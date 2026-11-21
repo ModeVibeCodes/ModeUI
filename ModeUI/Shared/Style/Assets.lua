@@ -14,45 +14,37 @@ Style.ASSET_BASE = BASE
 -- file: path under BASE. slice: nine-slice margins in source pixels. tile: drawn
 -- 1:1 and repeated (texture coordinates follow the region's size). fill/lift:
 -- how Style.Bar draws a bar texture (a fill multiplied by the bar color, plus a
--- white overlay adding light). lsm: the LibSharedMedia name, so other addons can
+-- white overlay adding light; unregistered keys like Surface are surfaces
+-- only). lsm: the LibSharedMedia name, so other addons can
 -- use it too (statusbar and background).
 Style.ASSETS = {
     -- Borders (white, tinted): every ring's art is "Edge<key>", registered by
     -- Shared/Style/Edge.lua from Shared/Style/EdgeData.lua; the portrait
     -- ring's lighting discs are "Ring<profile>", registered by Icon.lua.
     Soft = { file = "Borders\\Soft", slice = 12 },
-    -- Bars.
+    -- Bars and surfaces (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme").
+    -- Mode-FG: the dark glass fill (a base multiplied by the color and a
+    -- white lift over it); every bar's fill and every panel, title strip,
+    -- button face and card. Mode-BG: the lighter graphite empty part, tinted
+    -- Slate. Solid: a flat fill. The Mode-Blizz textures (Matte, Gradient,
+    -- Button, Glass, Cast, Panel, Title and the old BG) were retired on
+    -- November 20, 2026 (archive/mode-blizz/).
     Solid = { file = "Bars\\Solid", lsm = "Mode Solid" },
-    Matte = { file = "Bars\\Matte", fill = "MatteBase", lift = "MatteLift", lsm = "Mode Matte" },
-    MatteBase = { file = "Bars\\MatteBase" },
-    MatteLift = { file = "Bars\\MatteLift" },
-    BG = { file = "Bars\\BG", lsm = "Mode BG" },
-    Gradient = { file = "Bars\\Gradient", fill = "Solid", lift = "GradientLift", lsm = "Mode Gradient" },
-    GradientLift = { file = "Bars\\GradientLift" },
-    Button = { file = "Bars\\Button", fill = "ButtonBase", lift = "ButtonLift", lsm = "Mode Button" },
-    ButtonBase = { file = "Bars\\ButtonBase" },
-    ButtonLift = { file = "Bars\\ButtonLift" },
-    Glass = { file = "Bars\\Glass", fill = "GlassBase", lift = "GlassLift", lsm = "Mode Glass" },
-    GlassBase = { file = "Bars\\GlassBase" },
-    GlassLift = { file = "Bars\\GlassLift" },
-    Cast = { file = "Bars\\Cast", fill = "CastBase", lift = "CastLift", lsm = "Mode Cast" },
-    CastBase = { file = "Bars\\CastBase" },
-    CastLift = { file = "Bars\\CastLift" },
-    Panel = { file = "Bars\\Panel", tile = true, lift = "PanelLift", lsm = "Mode Panel" },
-    PanelLift = { file = "Bars\\PanelLift" },
-    Title = { file = "Bars\\Title", tile = true, lsm = "Mode Title" },
+    FG = { file = "Bars\\FG", fill = "FGBase", lift = "FGLift", lsm = "Mode-FG" },
+    FGBase = { file = "Bars\\FGBase" },
+    FGLift = { file = "Bars\\FGLift" },
+    BG = { file = "Bars\\BG", lsm = "Mode-BG" },
+    -- The surface of large panels (windows, chat, tooltips, meters, menus): a
+    -- flat fill with the approved mock's soft sheen (white 4.5% at the top,
+    -- gone 40% down; no top line, which would show as a band when stretched).
+    Surface = { file = "Bars\\Solid", fill = "Solid", lift = "SurfaceLift" },
+    SurfaceLift = { file = "Bars\\SurfaceLift" },
     Shield = { file = "Bars\\Shield", tile = true, lsm = "Mode Shield" },
     CometHead = { file = "Bars\\CometHead" },
     CometTrail = { file = "Bars\\CometTrail" },
     LineGlow = { file = "Bars\\LineGlow" },
     TextGlow = { file = "Glows\\TextGlow" },
-    -- Mode-Obsidian (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): the
-    -- dark glass health fill, the lighter graphite empty part and the Prism
-    -- glow behind a frame on mouseover and focus (sliced).
-    Obsidian = { file = "Bars\\Obsidian", fill = "ObsidianBase", lift = "ObsidianLift", lsm = "Mode-Obsidian" },
-    ObsidianBase = { file = "Bars\\ObsidianBase" },
-    ObsidianLift = { file = "Bars\\ObsidianLift" },
-    ObsidianTrack = { file = "Bars\\ObsidianTrack", lsm = "Mode-Obsidian Track" },
+    -- The Prism glow behind a frame on mouseover and focus (sliced).
     Prism = { file = "Glows\\Prism", slice = 14 },
     -- Controls and masks.
     Knob = { file = "Controls\\Knob", slice = 3 },
@@ -70,13 +62,24 @@ Style.GLYPHS = { "CleanUp", "Quest" }
 for _, name in ipairs(Style.GLYPHS) do Style.ASSETS["Icon" .. name] = { file = "Icons\\" .. name } end
 
 -- The bar textures every picker offers, in menu order ("Mode" heading, short names).
-Style.BAR_TEXTURES = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield", "Obsidian",
-    "ObsidianTrack" }
+Style.BAR_TEXTURES = { "FG", "BG", "Solid", "Shield" }
 
--- The asset behind a bar texture choice ("media:Mode <Name>"), and its key.
+-- Saved texture choices from before November 20, 2026 and the choice each
+-- became: empty parts Mode-BG, every fill and surface Mode-FG (the look step
+-- in Shared/Runtime/DB.lua moves saved ones; until then they draw as these).
+Style.OLD_MEDIA = {
+    ["media:Mode BG"] = "media:Mode-BG", ["media:Mode-Obsidian Track"] = "media:Mode-BG",
+    ["media:Mode-Obsidian"] = "media:Mode-FG", ["media:Mode Matte"] = "media:Mode-FG",
+    ["media:Mode Gradient"] = "media:Mode-FG", ["media:Mode Button"] = "media:Mode-FG",
+    ["media:Mode Glass"] = "media:Mode-FG", ["media:Mode Cast"] = "media:Mode-FG",
+    ["media:Mode Panel"] = "media:Mode-FG", ["media:Mode Title"] = "media:Mode-FG",
+}
+
+-- The asset behind a bar texture choice ("media:Mode-<Name>"), and its key.
 local byMedia
 function Style.MediaAsset(choice)
     if type(choice) ~= "string" then return end
+    choice = Style.OLD_MEDIA[choice] or choice
     if not byMedia then
         byMedia = {}
         for key, asset in pairs(Style.ASSETS) do if asset.lsm then byMedia["media:" .. asset.lsm] = key end end
@@ -109,7 +112,7 @@ function Style.ApplyAsset(texture, key)
 end
 
 -- Source sizes of the tiled assets (texture coordinates map them 1:1).
-local TILE_SIZE = { Panel = { 256, 64 }, Title = { 128, 128 }, Shield = { 32, 32 } }
+local TILE_SIZE = { Shield = { 32, 32 } }
 Style.TILE_SIZE = TILE_SIZE
 
 -- Texture coordinates that draw a tiled asset 1:1 over a region `width` x

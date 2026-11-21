@@ -3,7 +3,7 @@ local addon = ns.ModeUI or {}
 local M = addon.CooldownManager
 if not M or not addon.Layouts then return end
 
--- ModeCDM's part of the Mode-Default layout (DPS / Tank; owner's layout
+-- ModeCDM's part of the Mode-DPS/TANK layout (DPS / Tank; owner's layout
 -- editor, November 18, 2026; ModeUI/Shared/Runtime/Layouts.lua). It writes a
 -- brand-new profile only. From the bottom up: Essential Cooldowns above the
 -- action bars, Utility below it; on Essential the grouped Resource Bars, the
@@ -12,9 +12,10 @@ if not M or not addon.Layouts then return end
 -- Measured in UI units, a pixel each at the pixel-perfect scale: a bar's
 -- place is its Edit Mode stand-in's (one line of icons with their edges).
 --
--- The owner's tuning (November 18, 2026, testing at 1080p): every bar in
--- Mode-Round Gunmetal, icons at Spacing -1 (neighbours share one shadow
--- pixel), cooldown numbers in cooldownHot; Essential and Emphasized Buffs
+-- The owner's tuning (November 18, 2026, testing at 1080p): icons at
+-- Spacing -1 (neighbours share one shadow pixel), cooldown numbers in
+-- cooldownHot; every bar in Mode-Empty with a neutral, darker rim
+-- (Tone.emptyRim; owner, November 20, 2026, for Mode-Obsidian); Essential and Emphasized Buffs
 -- 38 x 30, Defensive Cooldowns 36 x 30 on the Player frame's top border;
 -- Power filled in your class color, Combo Points and Alternate Mana in color.
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -24,7 +25,8 @@ local SPACING = -1
 
 -- Every bar's look in this layout.
 local function Look(style)
-    style.spacing, style.edgeStyle, style.edgeMetal = SPACING, "round", "gunmetal"
+    style.spacing, style.edgeStyle, style.edgeMetal = SPACING, "obsidianEmpty", "default"
+    style.edgeColor = Copy(Tone.emptyRim)
     style.cooldownColor = Copy(Tone.cooldownHot)
 end
 -- A bar's shape: icon size, Icons per Line, Growth, New Lines; and the look.
@@ -59,6 +61,13 @@ local function Presets(db, ctx, places)
     end
 end
 
+-- Tracked Bars hang under Utility, 4 apart, centered (owner, November 20,
+-- 2026: at their default place their Edit Mode stand-in covered the Target
+-- frame).
+local function TrackedBars(ctx)
+    ctx.Place(M.ElementId("buffBar"), M.ElementId("utility"), "TOP", "BOTTOM", 0, -4)
+end
+
 addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     db.enabled = true
     Shape(db.essential, 38, 30, 7, "centerH", "down")
@@ -75,6 +84,10 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     db.resourceLayout = "grouped"
     local bars = db.resources
     bars.power.height, bars.combo.height, bars.mana.height = 10, 8, 8
+    -- Text that fits its bar (owner, November 20, 2026: 11px numbers spilled
+    -- over the 10px Power bar, and "0" over the 8px Combo Points): Power's at
+    -- 9, Combo Points without (their lit points are the count).
+    bars.power.textSize, bars.combo.textShow = 9, false
     for _, id in ipairs(M.resourceGroup) do bars[id].barMode = "color" end
     bars.power.colorMode = "class"
     bars.health.show = false
@@ -92,6 +105,7 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     Shape(db.buffIcon, 30, 24, 10, "centerH", "up")
     ctx.Place(M.ElementId("buffIcon"), CAST, "BOTTOM", "TOP", 0, 1)
 
+    TrackedBars(ctx)
     -- The default bars at their sizes and places here.
     Presets(db, ctx, { defensives = { target = "unitFramesPlayerBars", x = 1, y = 0 } })
 end)
@@ -101,8 +115,8 @@ end)
 -- Player frame shows your mana). From the bottom up: Utility 70 under
 -- Essential's first line (33 under its second); Essential 42 x 34 (4px
 -- bigger), seven to a line, at the same place; on it a thin Combo Points
--- strip (6px, Mode-Thin: Mode-Round can't draw under 10) and the Cast Bar
--- (16 tall) at a fixed place over that strip, so nothing moves when a class
+-- strip (6px, Mode-Border) and the Cast Bar
+-- (20 tall: 16 until the owner's 1440 check, November 20, 2026) at a fixed place over that strip, so nothing moves when a class
 -- has no combo points; then Tracked Buffs and Emphasized Buffs as before.
 -- With Power off the resources stand apart, so the Cast Bar hangs from
 -- Essential. Defensive Cooldowns is hidden (its spells, none in a new
@@ -111,7 +125,7 @@ end)
 -- 16 lower (x -122 and 122, y -16): 3px clear of the Target's 44px portrait
 -- ring, whose right edge is at x -142.
 local COMBO = M.ResourceElementId("combo")
-local HEALER = { essential = { 42, 34 }, utility = 70, combo = 6, cast = 16, side = { x = 122, y = -16 } }
+local HEALER = { essential = { 42, 34 }, utility = 70, combo = 6, cast = 20, side = { x = 122, y = -16 } }
 
 addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     db.enabled = true
@@ -120,15 +134,16 @@ addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     Shape(db.utility, 36, 30, 6, "centerH", "down")
     ctx.Place(M.ElementId("utility"), E, "TOP", "BOTTOM", 0, -HEALER.utility)
     Look(db.buffBar)
+    TrackedBars(ctx)
 
     -- Resources apart: Power and Alternate Mana off, Combo Points a 6px
-    -- Mode-Thin Gunmetal strip as wide as Essential, 1px over it.
+    -- Mode-Border strip as wide as Essential, 1px over it.
     db.resourceLayout = "separate"
     local bars = db.resources
     bars.power.show, bars.mana.show, bars.health.show = false, false, false
     local combo = bars.combo
-    combo.height, combo.barMode, combo.matchWidth = HEALER.combo, "color", true
-    combo.edgeStyle, combo.edgeMetal = "thin", "gunmetal"
+    combo.height, combo.barMode, combo.matchWidth, combo.textShow = HEALER.combo, "color", true, false
+    combo.edgeStyle, combo.edgeMetal = "obsidian", "default"
     ctx.Match(COMBO, "width", E)
     ctx.Place(COMBO, E, "BOTTOM", "TOP", 0, 1)
 

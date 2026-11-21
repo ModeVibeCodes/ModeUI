@@ -56,10 +56,8 @@ local function Build()
     frame:SetClampedToScreen(true)
     local bg = frame:CreateTexture(nil, "BACKGROUND", nil, -7)
     bg:SetAllPoints()
-    Style.ApplyAsset(bg, "Panel")
+    Style.ApplyAsset(bg, "Solid")
     Style.Paint(bg, Tone.graphite.panel)
-    frame:SetScript("OnSizeChanged", function(self, w, h) Style.TileCoords(bg, "Panel", w, h, Style.Pixel(self)) end)
-    Style.TileCoords(bg, "Panel", 980, 600, Style.Pixel(frame))
     frame.edge = Style.Edge(frame, "window")
     if UISpecialFrames then table.insert(UISpecialFrames, "ModeUIStyleSheet") end
 
@@ -104,20 +102,20 @@ local function Build()
     Label(frame, "Bars", 16, -216, 12, "semibold", Tone.graphite.text)
     local states = { { 60, 20, 20, "Fits" }, { 85, 15, 30, "Stops at end" }, { 100, 0, 25, "Full health" } }
     for i, state in ipairs(states) do
-        local bar = BarIn(frame, 20, -244 - (i - 1) * 46, 184, 34, "frame", "Matte", Tone.darkFill, state[1])
+        local bar = BarIn(frame, 20, -244 - (i - 1) * 46, 184, 34, "frame", "FG", Tone.darkFill, state[1])
         local shield = Style.Shield(bar)
         shield:Update(nil, { max = 100, shield = state[2], total = state[3] })
         if state[1] >= 100 then shield.full:SetAlpha(1) end
         Label(frame, state[4], 214, -254 - (i - 1) * 46, 10)
     end
-    local class = BarIn(frame, 330, -244, 184, 34, "frame", "Gradient", Tone.reaction.friendly, 64)
+    local class = BarIn(frame, 330, -244, 184, 34, "frame", "FG", Tone.reaction.friendly, 64)
     Style.Shield(class):Update(nil, { max = 100, shield = 18, total = 18 })
     Label(frame, "class color, Gradient", 524, -254, 10)
-    BarIn(frame, 330, -290, 132, 11, "frameThin", "BG", Tone.reaction.hostile, 58)
+    BarIn(frame, 330, -290, 132, 11, "frameThin", "FG", Tone.reaction.hostile, 58)
     Label(frame, "nameplate, BG", 472, -290, 10)
-    BarIn(frame, 330, -320, 250, 18, "frame", "Cast", Tone.cast.casting, 72, { spark = true })
+    BarIn(frame, 330, -320, 250, 18, "frame", "FG", Tone.cast.casting, 72, { spark = true })
     Label(frame, "cast, Comet spark", 590, -322, 10)
-    BarIn(frame, 330, -350, 184, 3, "frameThin", "Gradient", Tone.power, 70)
+    BarIn(frame, 330, -350, 184, 3, "frameThin", "FG", Tone.power, 70)
     Label(frame, "power 3px", 524, -348, 10)
 
     -- Bar textures.
@@ -137,10 +135,10 @@ local function Build()
     local c = addon.Domain.UnitColor.PlayerClass("player")
     local classColor = c and { c.r, c.g, c.b } or Tone.reaction.friendly
     Style.SetName(name, addon.Domain.Name.Get("player"), classColor, "gradient")
-    Label(frame, "Geist Regular 0123456789", 640, -160, 12, "regular", Tone.graphite.text)
-    Label(frame, "Geist Medium 0123456789", 640, -178, 12, "medium", Tone.graphite.text)
-    Label(frame, "Geist SemiBold 0123456789", 640, -196, 12, "semibold", Tone.graphite.text)
-    Label(frame, "Geist Bold 0123456789", 640, -214, 12, "bold", Tone.graphite.text)
+    Label(frame, "Urbanist Regular 0123456789", 640, -160, 12, "regular", Tone.graphite.text)
+    Label(frame, "Urbanist Medium 0123456789", 640, -178, 12, "medium", Tone.graphite.text)
+    Label(frame, "Urbanist SemiBold 0123456789", 640, -196, 12, "semibold", Tone.graphite.text)
+    Label(frame, "Urbanist Bold 0123456789", 640, -214, 12, "bold", Tone.graphite.text)
     return frame
 end
 

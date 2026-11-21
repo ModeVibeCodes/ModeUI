@@ -1,6 +1,6 @@
 -- Windows: Blizzard windows (stubbed with Forever's template keys) skinned in
 -- the Mode look: faded art, the Graphite panel, the `window` edge on its own
--- layer, the Mode Title strip, title font, close and maximize/minimize buttons, insets (field under
+-- layer, the Mode-FG title strip, title font, close and maximize/minimize buttons, insets (field under
 -- the content), tabs, buttons, fields, dropdowns and their menus, side tabs,
 -- right side tabs, scroll bars, list rows and window text; the Guild window's
 -- portrait overlay, filigree and roster; load-on-demand windows, secure
@@ -230,16 +230,16 @@ world.run([==[
     assert(FriendsFrame.NineSlice.TopEdge.alpha == 0 and FriendsFrame.NineSlice.Center.alpha == 0 and FriendsFrame.Bg.alpha == 0)
     assert(FriendsFrame.PortraitContainer.alpha == 0 and FriendsFrame.TopTileStreaks.alpha == 0, 'portrait and streaks faded')
     local parts = Skin.parts[FriendsFrame]
-    assert(parts.faceKey == 'Panel' and parts.face.vertexColor[1] == Tone.graphite.panel[1] and parts.face.vertexColor[4] == 1, 'Mode Panel in Graphite, to the edge')
+    assert(parts.faceKey == 'Surface' and parts.face.vertexColor[1] == Tone.graphite.panel[1] and parts.face.vertexColor[4] == 1, 'the Surface in Graphite, to the edge')
     assert(parts.modeEdge.preset == 'window' and parts.modeEdge.holder:IsShown(), 'the window edge')
     assert(parts.edgeFrame:GetFrameLevel() == FriendsFrame:GetFrameLevel() + 520, 'the edge above the window\'s children')
     assert(parts.modeEdge.below:GetFrameLevel() < FriendsFrame:GetFrameLevel(), 'its soft drop under the window, never over its content')
     assert(parts.strip:IsShown() and parts.strip:GetHeight() == 22 and parts.divider:GetHeight() == 1, 'title strip and divider')
-    local s = Point(parts.strip); assert(s[4] == 3 and s[5] == -3 and parts.strip.vertexColor[1] == Tone.graphite.raised[1], 'Mode Title strip inside the edge')
+    local s = Point(parts.strip); assert(s[4] == 3 and s[5] == -3 and parts.strip.vertexColor[1] == Tone.graphite.raised[1] and parts.strip.texture == addon.Style.AssetPath('FGBase'), 'the Mode-FG title strip inside the edge')
     local e = Point(parts.edgeFrame); assert(e[4] == 3 and e[5] == -3, 'the window edge sits inside the window, clear of side tabs')
     local title = FriendsFrame.TitleContainer.TitleText
     local path = Kit.FontPath(M.db, 'windows')
-    assert(title.font[1] == addon.Style.Weighted(path, 'semibold') and title.font[2] == 13 and title.color[1] == C.heading[1], 'Geist SemiBold title')
+    assert(title.font[1] == addon.Style.Weighted(path, 'semibold') and title.font[2] == 13 and title.color[1] == C.heading[1] and title.font[1]:find('Urbanist%-SemiBold'), 'Urbanist SemiBold title')
     -- Window Text: every text in the face, at its own size and outline.
     local note = FriendsFrame.Inset.note
     assert(note.font[1] == path and note.font[2] == 11 and note.font[3] == 'OUTLINE', 'window text in the Mode face, game size kept')
@@ -248,19 +248,19 @@ world.run([==[
     assert(FriendsFrameCloseButton.normal.alpha == 0 and close.icon.texture:find('Close') and FriendsFrameCloseButton:GetWidth() == 18)
     local p = Point(FriendsFrameCloseButton); assert(p[1] == 'TOPRIGHT' and p[4] == -5 and p[5] == -5, '2px inside the edge')
     assert(close.modeEdge.preset == 'control')
-    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Thin in
-    -- Steel by default; a switch restyles every window edge in place, sizes
-    -- unchanged; controls keep their role's border.
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Border in
+    -- its own metal by default; a switch restyles every window edge in place,
+    -- sizes unchanged; controls keep their role's border.
     local Metal = Tone.metal
-    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and parts.modeEdge.styleId == 'thin'
-        and parts.modeEdge:Metal() == Metal.steel, 'windows in Mode-Thin, Steel')
+    assert(M.db.edgeStyle == 'obsidian' and M.db.edgeMetal == 'default' and parts.modeEdge.styleId == 'obsidian'
+        and parts.modeEdge:Metal() == Metal.obsidian, 'windows in Mode-Border')
     local reach, width = parts.modeEdge:Outset(), FriendsFrame:GetWidth()
-    assert(M:SetOption('edgeStyle', 'round') and parts.modeEdge.styleId == 'round' and parts.modeEdge:Metal() == Metal.silver, 'Mode-Round, its own metal')
+    assert(M:SetOption('edgeStyle', 'obsidianEmpty') and parts.modeEdge.styleId == 'obsidianEmpty' and parts.modeEdge:Metal() == Metal.obsidian, 'Mode-Empty, its own metal')
     assert(parts.modeEdge:Outset() == reach and FriendsFrame:GetWidth() == width and Point(parts.edgeFrame)[4] == 3, 'same reach, same size')
-    assert(close.modeEdge.styleId == 'thin', 'controls keep their role\'s style')
+    assert(close.modeEdge.styleId == 'obsidian', 'controls keep their role\'s style')
     assert(M:SetOption('edgeMetal', 'gunmetal') and parts.modeEdge:Metal() == Metal.gunmetal, 'Gunmetal')
-    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
-    assert(M:SetOption('edgeStyle', 'thin') and M:SetOption('edgeMetal', 'default') and parts.modeEdge.styleId == 'thin' and parts.modeEdge:Metal() == Metal.steel)
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'obsidianEmpty', 'unknown styles are refused')
+    assert(M:SetOption('edgeStyle', 'obsidian') and M:SetOption('edgeMetal', 'default') and parts.modeEdge.styleId == 'obsidian' and parts.modeEdge:Metal() == Metal.obsidian)
     FriendsFrameCloseButton.scripts.OnEnter(FriendsFrameCloseButton)
     assert(close.icon.vertexColor[1] == Tone.ivory[1] and Lit(close), 'Ivory cross and line on hover')
     -- Inset: its face sits on its parent, under the content; the card edge frames it.
@@ -277,16 +277,16 @@ world.run([==[
     local b2 = Point(t2.bar)
     assert(b2[1] == 'BOTTOMLEFT' and b2[2] == FriendsFrameTab2.Text and b2[3] == 'TOPLEFT' and b2[5] == 3, 'tabs under the window: the bar over the label, as wide as it')
     local button = FriendsFrame.testButton
-    assert(button.Left.alpha == 0 and Skin.parts[button].faceKey == 'Button' and Skin.parts[button].modeEdge.preset == 'control', 'a Mode Button')
+    assert(button.Left.alpha == 0 and Skin.parts[button].faceKey == 'FG' and Skin.parts[button].modeEdge.preset == 'control', 'a Mode Button')
     button.scripts.OnEnter(button); assert(Lit(Skin.parts[button]), 'Ivory line on hover')
     -- The face is the base times Graphite, its light on its own texture (not the baked file).
     local bp = Skin.parts[button]
-    assert(bp.face.texture:find('ButtonBase', 1, true) and bp.lift and bp.lift.texture:find('ButtonLift', 1, true) and bp.lift.vertexColor[1] == 1, 'Mode Button: base and lift')
-    assert(parts.face.texture:find('Panel', 1, true) and parts.lift.texture:find('PanelLift', 1, true), 'the window panel has its lift too')
+    assert(bp.face.texture:find('FGBase', 1, true) and bp.lift and bp.lift.texture:find('FGLift', 1, true) and bp.lift.vertexColor[1] == 1, 'Mode-FG button: base and lift')
+    assert(parts.face.texture:find('Solid', 1, true) and parts.lift.texture:find('SurfaceLift', 1, true), 'the window Surface has its soft sheen too')
     local slice = FriendsFrame.testSlice
-    assert(slice.Center.alpha == 0 and slice.Left.alpha == 0 and Skin.parts[slice].faceKey == 'Button', 'three-slice buttons (the Game Menu) too')
+    assert(slice.Center.alpha == 0 and slice.Left.alpha == 0 and Skin.parts[slice].faceKey == 'FG', 'three-slice buttons (the Game Menu) too')
     local well = Skin.parts[FriendsFrame.Inset]
-    assert(well.face.texture:find('Title', 1, true) and well.face.vertexColor[1] == Tone.graphite.base[1], 'insets: a well in Mode Grain, a step darker than the window')
+    assert(well.face.texture:find('FGBase', 1, true) and well.face.vertexColor[1] == Tone.graphite.base[1], 'insets: a well in Mode-FG, a step darker than the window')
     -- The Game Menu: Mode Buttons whose edges sit 1px apart.
     local m1 = Skin.parts[GameMenuFrame.item1]
     local top, bottom = Point(m1.box), Point(m1.box, 2)
@@ -386,7 +386,7 @@ world.run([==[
     dropdown.callbacks.OnMenuOpen.fn(dropdown.callbacks.OnMenuOpen.owner, dropdown)
     assert(background.alpha == 0, 'Blizzard\'s menu background faded')
     local panel = select(1, menu:GetChildren())
-    assert(panel and panel:IsShown() and Skin.parts[panel].faceKey == 'Panel' and Skin.parts[panel].modeEdge.preset == 'window', 'a Mode window lent to the menu')
+    assert(panel and panel:IsShown() and Skin.parts[panel].faceKey == 'Surface' and Skin.parts[panel].modeEdge.preset == 'window', 'a Mode window lent to the menu')
     assert(Lit(dd), 'open dropdown: Ivory line')
     dropdown.menu = nil
     dropdown.callbacks.OnMenuClose.fn(dropdown.callbacks.OnMenuClose.owner, dropdown, menu)
@@ -399,7 +399,7 @@ world.run([==[
     assert(right.art.alpha == 0 and CharacterStatsPaneScrollBox.ClassBackground.alpha == 0 and CharacterStatsPaneScrollBox.Border.alpha == 0)
     assert(Skin.parts[right].field and Skin.parts[right].divider:GetWidth() == 1, 'an Onyx field and a divider')
     local header, statRow = unpack(CharacterStatsPaneScrollBox.ScrollBox.rows)
-    assert(header.Background.alpha == 0 and Skin.parts[header].faceKey == 'Matte' and header.Title.color[1] == C.heading[1], 'category: a card')
+    assert(header.Background.alpha == 0 and Skin.parts[header].faceKey == 'FG' and header.Title.color[1] == C.heading[1], 'category: a card')
     assert(statRow.Background.desaturated and statRow.Background.vertexColor[4] == 0.35 and statRow.Label.color[1] == C.label[1], 'rows: gray stripe')
     local strip = PaperDollFrame.TopBackgroundStripHost
     assert(strip.TopBackgroundStrip.alpha == 0 and Skin.parts[strip].divider, 'the rock strip goes')
@@ -544,7 +544,7 @@ world.run([==[
     M.Initialize(old)
     assert(old.version == 3 and old.borderColor == nil and old.windows.social == false and old.backgroundOpacity == 80)
     assert(old.looks.social.scale == 100 and old.style == 'modeui' and old.charStatList.mainStat, 'new settings filled in')
-    assert(old.edgeStyle == 'thin' and old.edgeMetal == 'default', 'Border Style and Border Metal filled in')
+    assert(old.edgeStyle == 'obsidian' and old.edgeMetal == 'default', 'Border Style and Border Metal filled in')
     -- Version 2: values at their old defaults take the Mode ones; picks stay.
     local two = { version = 2, backgroundColor = { 11 / 255, 11 / 255, 13 / 255 }, backgroundOpacity = 94, fontMedia = 'Expressway',
         borderColor = { 1, 0, 0 }, borderSize = 3, looks = { social = { custom = true, backgroundOpacity = 94, border = true, titleBar = true, scale = 110 } } }

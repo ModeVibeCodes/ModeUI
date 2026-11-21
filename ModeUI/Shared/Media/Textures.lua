@@ -6,16 +6,7 @@ local M = addon.Media
 -- Source originals and runtime cutouts share one bundled asset registry.
 M.textureBase = addon.Style.TEXTURE_ROOT
 M.Textures = {
-    ModeSurface = { file = "Mode/Surface.tga", slice = 12, rounded = true },
-    ModePageDetail = { file = "Mode/PageAbstract.tga", transparent = true },
-    ModePillSurface = { file = "Mode/PillSurface.tga", rounded = true },
-    ModeBorder = { file = "Mode/Border.tga", slice = 12, transparent = true },
-    -- Fixed-size controls use full sprites: no slice margins can flatten their
-    -- small alpha corners. Fresh paths avoid reusing previously cached images.
-    ModeCheckSurface = { file = "Mode/CheckSurfaceRound.tga", rounded = true },
-    ModeCheckMark = { file = "Mode/CheckSurfaceRound.tga", rounded = true },
-    ModeToggleSurface = { file = "Mode/ToggleSurfacePill.tga", rounded = true },
-    ModeThumb = { file = "Mode/Thumb.tga", rounded = true },
+    -- The settings scroll bar's thumb.
     ModeScrollThumb = { file = "Mode/ScrollThumb.tga", rounded = true },
     -- Unit Frames Satin Matte (tools/build_unit_frame_textures.py): neutral
     -- luminance tinted in-game; slices cover each corner radius.
@@ -38,11 +29,9 @@ M.Textures = {
     NameplateStripes = { file = "Nameplates/Stripes.tga", transparent = true },
     -- Skins (Shared/Skin): the close button's cross.
     ModeClose = { file = "Mode/Close.tga", transparent = true },
-    -- Window shrink and expand glyphs, and a soft diagonal glint (the Cooldown
-    -- Manager's window).
+    -- Window shrink and expand glyphs.
     ModeMinimize = { file = "Mode/Minimize.tga", transparent = true },
     ModeMaximize = { file = "Mode/Maximize.tga", transparent = true },
-    ModeSheen = { file = "Mode/Sheen.tga", transparent = true },
     -- Chat compartment glyphs: the chat menu's speech bubble and Channels' "#".
     ChatMenu = { file = "Chat/Menu.tga", transparent = true },
     ChatChannels = { file = "Chat/Channels.tga", transparent = true },

@@ -1,26 +1,25 @@
 local _, addon = ...
 -- The one bar factory (docs/DESIGN_LANGUAGE.md, "Bars"): a StatusBar whose empty
--- part is Mode BG on Slate, whose fill is a Mode texture multiplied by the fill
+-- part is Mode-BG on Slate, whose fill is a Mode texture multiplied by the fill
 -- color plus its light overlay, with the 1px fill-end line and the Comet spark.
 -- Values may be secret; they only ever reach SetMinMaxValues and SetValue.
 local Style = addon.Style
 local Tone = Style.Tone
 
 -- Default fill texture per role.
-Style.BAR_ROLES = { health = "Matte", healthClass = "Gradient", power = "Gradient", cast = "Cast",
-    nameplate = "BG", meter = "Panel", resource = "Button", status = "Matte", timer = "Gradient", aura = "Solid" }
+-- Every role fills with Mode-FG (the dark glass fill, tinted by the fill
+-- color) but aura timers, which are flat.
+Style.BAR_ROLES = { health = "FG", healthClass = "FG", power = "FG", cast = "FG",
+    nameplate = "FG", meter = "FG", resource = "FG", status = "FG", timer = "FG", aura = "Solid" }
 
 
 local Bar = {}
 
--- The fill-end line's look in the theme in use: color, alpha and how many
--- pixels it stays in from the bar's top and bottom. Mode-Blizz: white, the
--- full height (Style.Bar at 70%; module bars at 22%, Kit.FillEdge).
--- Mode-Obsidian: ice white at 85%, 1px in, so it sits inside the border
--- (owner, November 20, 2026).
-function Style.FillEnd(alpha)
-    if Style.Theme and Style.Theme() == "obsidian" then return Tone.fillEnd, 0.85, 1 end
-    return Tone.mono.white, alpha or 0.7, 0
+-- The fill-end line's look: color, alpha and how many pixels it stays in
+-- from the bar's top and bottom: ice white at 85%, 1px in, so it sits inside
+-- the border (owner, November 20, 2026). `alpha` is no longer used.
+function Style.FillEnd()
+    return Tone.fillEnd, 0.85, 1
 end
 
 -- A bar in `parent`. opts: role (picks the default texture), texture (a key from
@@ -53,7 +52,7 @@ function Style.Bar(parent, opts)
     bar.fillColor = Tone.darkFill
     bar.reverse = opts.reverse and true or false
     bar:SetReverseFill(bar.reverse)
-    bar:SetTextureKey(opts.texture or Style.BAR_ROLES[bar.styleRole] or "Matte")
+    bar:SetTextureKey(opts.texture or Style.BAR_ROLES[bar.styleRole] or "FG")
     bar.showEndLine = opts.endLine ~= false
     bar.showSpark = opts.spark and true or false
     bar:SetMinMaxValues(0, 1)
@@ -74,7 +73,7 @@ function Style.SetBarTexture(bar, path)
 end
 
 -- A module's StatusBar (with a `sheen` texture) in a Mode texture that has a
--- lift ("media:Mode Glass" and so on): its base as the fill, multiplied by the
+-- lift ("media:Mode-FG"): its base as the fill, multiplied by the
 -- bar color, and the white lift over the fill on the sheen, so the light still
 -- reads on dark fills ("Bars", Light). False for any other choice.
 -- The lift fades with the fill: a module's fill opacity (the alpha it gives
@@ -84,7 +83,6 @@ local function FollowFillAlpha(bar, _, _, _, alpha)
 end
 function Style.ApplyBarLook(bar, choice)
     local asset, key = Style.MediaAsset(choice)
-    -- Mode Panel's own file is its base (it has no separate fill).
     if not (asset and asset.lift) then
         if bar.liftKey and bar.sheen then bar.sheen:SetAlpha(1) end
         bar.liftKey = nil
@@ -110,10 +108,10 @@ function Style.ApplyBarLook(bar, choice)
     return true
 end
 
--- Swaps the fill texture (a Style.BAR_TEXTURES key; unknown keys fall back to Matte).
+-- Swaps the fill texture (a Style.BAR_TEXTURES key; unknown keys fall back to Mode-FG).
 function Bar:SetTextureKey(key)
     local asset = Style.ASSETS[key]
-    if not asset or not asset.lsm then key = "Matte"; asset = Style.ASSETS.Matte end
+    if not asset or not asset.lsm then key = "FG"; asset = Style.ASSETS.FG end
     self.textureKey = key
     local fillKey = asset.fill or key
     self:SetStatusBarTexture(Style.AssetPath(fillKey))

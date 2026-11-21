@@ -229,7 +229,7 @@ function M:LayoutElements(f)
         local share = element == "name" and db.nameWidth / 100 or 1
         if element == "name" and afterName then text:SetWidth(0)
         else text:SetWidth(math.max(px, math.floor(g.innerWidth * share / px) * px - 2 * px)) end
-        -- Names in SemiBold and health text in Bold (Geist weights; another
+        -- Names in SemiBold and health text in Bold (Urbanist weights; another
         -- font keeps its one weight).
         local weighted = element == "name" and Style.Weighted(path, "semibold")
             or element == "healthText" and Style.Weighted(path, "bold") or path

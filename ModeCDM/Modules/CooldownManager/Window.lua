@@ -106,8 +106,8 @@ function M:CreateWindow()
     window:SetMovable(true); window:SetClampedToScreen(true); window:EnableMouse(true)
     window.canvas = W.Fill(window, T.background, "BACKGROUND")
     if T.id == "mode" then window.canvasSheen = W.ModeSheen(window) end
-    local column = window:CreateTexture(nil, "BACKGROUND", nil, 1)
-    column.modeAsset = "ModeSurface"; W.Paint(column, T.sidebar)
+    local column = W.Fill(window, T.sidebar, "BACKGROUND")
+    column:SetDrawLayer("BACKGROUND", 1); column:ClearAllPoints()
     column:SetPoint("TOPLEFT", 8, -8); column:SetPoint("BOTTOMLEFT", 8, 8); column:SetWidth(LIST_WIDTH - 8)
 
     -- Header: the title, then Open CDM, Edit Mode and close on the right; the

@@ -71,7 +71,7 @@ function M:LayoutPlate(plate)
             text:SetPoint(point, plate.health, point, x + Round(dx), Round(dy))
             text:SetWidth(math.max(px, width - 4 * px))
         end
-        -- Names in SemiBold, health text in Bold (Geist weights).
+        -- Names in SemiBold, health text in Bold (Urbanist weights).
         local weighted = Style.Weighted(path, text == plate.name and "semibold" or "bold")
         Kit.Font(text, db, size, weighted, px)
         text:SetJustifyH(justify)

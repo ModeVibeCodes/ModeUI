@@ -25,7 +25,7 @@ addon:RegisterModule("chat", M)
 -- still at the old #1C1E21 follows.
 -- Version 6 (November 15, 2026, Phase 7): the Mode design language. A fill
 -- still at #131212 moves to Graphite panel; a face still at "Expressway"
--- moves to the Mode typeface (Expressway when installed, else Geist).
+-- moves to the Mode typeface (Urbanist).
 M.VERSION = 6
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -54,7 +54,7 @@ M.defaults = {
     -- The window's border (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
     -- Mode-Thin in its own metal (owner, November 17, 2026). Tabs, buttons and
     -- the field keep their `control` edge. New keys: filled from these defaults.
-    edgeStyle = "thin", edgeMetal = "default",
+    edgeStyle = "obsidian", edgeMetal = "default",
     -- Edit box: inside the edge at the bottom or top, or below the window.
     editPosition = "bottom", editHeight = 24, editGap = 4,
     -- Tabs: Glass (true) or Solid; others tuck down Tuck Depth. awayTabOpacity

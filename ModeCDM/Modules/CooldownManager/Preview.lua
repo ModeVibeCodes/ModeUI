@@ -35,9 +35,11 @@ end
 -- order, or samples when a viewer tracks nothing yet; and whether they're real.
 function M:PreviewEntries(id)
     local entries, tracked = {}, {}
-    local function Entry(key, present)
+    local layout = self:BlizzardLayout()
+    local function Entry(key, present, frameless)
         entries[#entries + 1] = { key = key, icon = self:EntryIcon(key) or SAMPLE_ICON, name = self:SpellLabel(key),
-            faded = self:SpellSwitch(id, key, "hide") or not present, missing = not present }
+            faded = self:SpellSwitch(id, key, "hide") or not present, missing = not present, frameless = frameless,
+            untracked = self:NotTracked(key, layout) }
     end
     -- A viewer's own spells first (Blizzard's order), then the bar's own list.
     local list, listed = self:Entries(id), {}
@@ -49,10 +51,23 @@ function M:PreviewEntries(id)
             if not listed[key] then Entry(key, true) end
         end
     end
+    -- What your Blizzard CDM setup puts in a viewer that has no frame for it
+    -- (Blizzard's viewer hidden): it's still the viewer's spell (Tracking.lua).
+    local frameless = {}
+    for _, viewer in ipairs(self:Sources(id)) do
+        local framed = self:FramedKeys(viewer)
+        for _, key in ipairs(self:LayoutKeys(viewer, layout)) do
+            if not framed[key] and not tracked[key] then
+                tracked[key], frameless[key] = true, true
+                if viewer == id and not listed[key] and self:KeyOwner(viewer, key) == id then Entry(key, true, true) end
+            end
+        end
+    end
     for _, key in ipairs(list) do
         -- A custom spell counts as present while you know it; an item always.
         if self.IsItemEntry(key) then Entry(key, true)
-        elseif self.IsSpellEntry(key) then Entry(key, Cooldowns.Known(self:SpellOf(key))) else Entry(key, tracked[key] == true) end
+        elseif self.IsSpellEntry(key) then Entry(key, Cooldowns.Known(self:SpellOf(key)))
+        else Entry(key, tracked[key] == true, frameless[key]) end
     end
     if not self:IsCustom(id) then self:Ordered(id, entries, function(entry) return entry.key end) end
     if #entries > 0 or self:IsCustom(id) then return entries, true end
@@ -75,12 +90,17 @@ function M:GetPreviewSize()
     return math.max(320, g.extent.width * scale), g.extent.height * scale + 8 + HINT_HEIGHT
 end
 
+-- A spell's sample also names it in a tooltip, with the warning while
+-- Blizzard's Cooldown Manager doesn't track it (Tracking.lua).
 local function Hover(sample)
     sample:EnableMouse(true)
     sample.highlight = W.Fill(sample, T.primary, "OVERLAY", 0, 0.16)
     sample.highlight:Hide()
-    sample:SetScript("OnEnter", function() sample.highlight:Show() end)
-    sample:SetScript("OnLeave", function() sample.highlight:Hide() end)
+    sample:SetScript("OnEnter", function()
+        sample.highlight:Show()
+        if sample.key then M:ShowSpellTip(sample, sample.name, sample.untracked) end
+    end)
+    sample:SetScript("OnLeave", function() sample.highlight:Hide(); M:HideSpellTip(sample) end)
 end
 
 -- A sample that lights up under the mouse, opens its spell menu, and can
@@ -184,6 +204,7 @@ function M:RenderPreview(view)
         state.viewer, state.g = id, g
         self.Place(sample, view.holder, g, index)
         sample.key, sample.index, sample.dragIcon = entry.key, index, entry.icon
+        sample.name, sample.untracked = entry.name, entry.untracked == true
         if bar then self:SkinBar(sample, style, g, state) else self:SkinIcon(sample, style, g, state) end
         self:StyleTexts(id, sample, style, g, entry.key or false)
         local focus = view.menuKey ~= nil and entry.key == view.menuKey and view.textPart or nil
@@ -215,12 +236,16 @@ end
 function M:PreviewCaption(id, entries, real)
     local label = self:Label(id)
     local caption = self.db[id].show and label or string.format(L["%s is off"], label)
-    local missing = 0
-    for _, entry in ipairs(entries) do if entry.missing then missing = missing + 1 end end
+    local missing, frameless = 0, 0
+    for _, entry in ipairs(entries) do
+        if entry.missing then missing = missing + 1 end
+        if entry.frameless and not entry.missing then frameless = frameless + 1 end
+    end
     if self:IsCustom(id) and #entries == 0 then caption = caption .. " · " .. L["click + to add a spell"]
     elseif not real then caption = caption .. " · " .. L["no spells tracked yet"] end
     if self:HiddenCount(id) > 0 then caption = caption .. " · " .. string.format(L["%d hidden"], self:HiddenCount(id)) end
     if missing > 0 then caption = caption .. " · " .. string.format(L["%d not tracked or known now"], missing) end
+    if frameless > 0 then caption = caption .. " · " .. string.format(L["%d off screen while Blizzard's viewer is hidden"], frameless) end
     return caption
 end
 

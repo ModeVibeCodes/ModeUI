@@ -76,7 +76,7 @@ M.resourcePositions = {
 -- The Mode look (docs/DESIGN_LANGUAGE.md, "Bars"): the `frameThin` edge
 -- outside each box (Mode-Round in Gunmetal, owner's pick, November 17, 2026),
 -- Mode Gradient over Mode BG (Slate at 60%, so the world shows through),
--- Geist Bold text. Dark mode by default: the fill in darkFill and the text in
+-- Urbanist Bold text. Dark mode by default: the fill in darkFill and the text in
 -- the bar's own color. Combo points in the hostile red with their count;
 -- health in your class color.
 M.RESOURCE_EMPTY = math.floor(Tone.emptyAlpha * 100 + 0.5)
@@ -85,14 +85,14 @@ local function Style(show, height, colorMode, color, text, size, extra)
         show = show, width = 300, height = height, matchWidth = true,
         border = "mode",
         -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
-        edgeStyle = "round", edgeMetal = "gunmetal",
+        edgeStyle = "obsidian", edgeMetal = "default",
         -- Border Size: the band, 1 or 2px (owner, November 18, 2026).
         edgeSize = 1,
         -- Rim Color: the metal (edgeMetal), the bar's color, or a custom one;
         -- the last two paint the band flat.
         rimColor = "metal", rimCustom = Copy(Tone.ivory),
-        barTexture = "media:Mode Gradient", colorMode = colorMode, barColor = Copy(color), barOpacity = 100,
-        barBackground = "media:Mode BG", barBackgroundOpacity = M.RESOURCE_EMPTY,
+        barTexture = "media:Mode-FG", colorMode = colorMode, barColor = Copy(color), barOpacity = 100,
+        barBackground = "media:Mode-BG", barBackgroundOpacity = M.RESOURCE_EMPTY,
         -- Bar Mode: Color, or Dark (the unit frames' dark mode: the fill in
         -- darkFill, the text in the bar's color, class color or a custom one).
         barMode = "dark", darkText = "power", darkTextColor = Copy(Tone.textBright),

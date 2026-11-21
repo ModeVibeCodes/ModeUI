@@ -4,7 +4,7 @@ if not M or not addon.Layouts then return end
 
 -- Action Bars' part of the built-in Mode-Default layout (DPS / Tank,
 -- Shared/Runtime/Layouts.lua): Action Bars 1-4 a 2 x 2 grid centered on the
--- bottom edge, 28 x 24 buttons 2px apart, 12 in a row, in Mode-Blizz; the
+-- bottom edge, 28 x 24 buttons 2px apart, 12 in a row, in Mode-Border; the
 -- pet bar over the left column and the stance bar over the right one,
 -- filling from its right end; the micro menu in one row of 16 (28 x 22) in
 -- the top-left corner with the bag bar (28 x 22) beside it, both on
