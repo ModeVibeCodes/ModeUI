@@ -1365,15 +1365,18 @@ frame off brings Blizzard's look back. `tests/totem_timers.lua`.
 
 Placement (`db.totems`: Attach and Size): the timers leave Blizzard's Player
 frame layout (`ignoreFramePositionManager`, as Blizzard does for its cast
-bar) and hang from the ModeUI Player frame's bar block, growing left from
-its right edge: **Below, Right** (default; Mode-DPS/TANK: their top 1px
-under the block's shadow, outside the frame) or **Above, Right**
-(Mode-Healer: their bottom 1px over its top, 18 wide like the Target's
-buffs, the time on the icon); **Blizzard's Place** gives them back. Each
-button holds its icon and edge, neighbours share one shadow pixel; the
-row is laid out again after each Blizzard update. Fitted once per profile
-(`fitted`): a Player mana frame (Bar Shows Mana) still at the default place
-takes Above, Right at 18; any other keeps Below, Right.
+bar) and hang from the ModeUI Player frame's bar block: **Below, Right**
+(default; Mode-DPS/TANK: their top 1px under the block's shadow, outside
+the frame, growing left from its right edge), **Above, Right** (their
+bottom 1px over its top, growing left, the time on the icon) or **Above,
+Left** (Mode-Healer: the same height, from 1px past the portrait ring's
+shadow growing right, clear of the name at the top right, 24 wide, the
+time on the icon); **Blizzard's Place** gives them back. Each button holds
+its icon and edge, neighbours share one shadow pixel; the row is laid out
+again after each Blizzard update. Fitted once per profile (`fit` 1): a
+Player mana frame (Bar Shows Mana) still at the default place, or at the
+Above, Right at 18 (the first fitting's and healer@7's, which the owner
+found too small), takes Above, Left at 24; any other keeps its place.
 
 ## Settings (`modules.unitFrames`)
 

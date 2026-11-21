@@ -889,15 +889,19 @@ world.run([====[
     assert(v24.layoutVersion==25 and v24.target.healthColorMode=='class' and v24.player.healthColorMode=='default' and v24.focus.healthColorMode=='default')
     local v24c={layoutVersion=24,target={healthColorMode='custom'}}
     M.Initialize(v24c); assert(v24c.target.healthColorMode=='custom','a picked Target health color stays')
-    -- Totem timers fitted once to the Player frame: a mana frame over its top right at 18, others under it at 24; a later choice stays.
+    -- Totem timers fitted once to the Player frame: a mana frame over its left end at 24, others under it at 24; a later choice stays.
     local tm={layoutVersion=25,player={barShows='mana'}}; M.Initialize(tm)
-    assert(tm.totems.attach=='above' and tm.totems.size==18 and tm.totems.fitted,'a mana frame: over its top right')
+    assert(tm.totems.attach=='aboveLeft' and tm.totems.size==24 and tm.totems.fit==1,'a mana frame: over its left end')
     local tk={layoutVersion=25,player={barShows='mana'},totems={attach='below',size=24}}; M.Initialize(tk)
-    assert(tk.totems.attach=='above' and tk.totems.size==18,'a default place saved before the fitting moves too')
-    local tc={layoutVersion=25,player={barShows='mana'},totems={attach='below',size=24,fitted=true}}; M.Initialize(tc)
+    assert(tk.totems.attach=='aboveLeft','a default place saved before the fitting moves too')
+    local tf={layoutVersion=25,player={barShows='mana'},totems={attach='above',size=18,fitted=true}}; M.Initialize(tf)
+    assert(tf.totems.attach=='aboveLeft' and tf.totems.size==24 and tf.totems.fitted==nil,'the first fitting (Above, Right at 18) moves on')
+    local t7={layoutVersion=25,player={barShows='mana'},totems={attach='above',size=18}}; M.Initialize(t7)
+    assert(t7.totems.attach=='aboveLeft','healer@7 (Above, Right at 18, never fitted) moves on')
+    local tc={layoutVersion=25,player={barShows='mana'},totems={attach='below',size=24,fit=1}}; M.Initialize(tc)
     assert(tc.totems.attach=='below','a fitted place stays')
     local th={layoutVersion=25,player={barShows='health'}}; M.Initialize(th)
-    assert(th.totems.attach=='below' and th.totems.size==24 and th.totems.fitted,'a health frame: under it')
+    assert(th.totems.attach=='below' and th.totems.size==24 and th.totems.fit==1,'a health frame: under it')
     -- Version 21 -> 22: 22px auras five to a row, 11px cast text; choices kept.
     local v21={layoutVersion=21,player={buffs={size=20,perRow=8},debuffs={size=30,perRow=3},castBar={fontSize=10}}}
     M.Initialize(v21)

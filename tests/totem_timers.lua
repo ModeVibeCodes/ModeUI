@@ -80,6 +80,16 @@ world.run([==[
     p = Point(TotemFrame)
     assert(p[1] == 'BOTTOMRIGHT' and p[3] == 'TOPRIGHT' and p[4] == 1 and p[5] == 2 and earth.Icon.width == 18 and earth.Icon.height == 14, 'over the top right, 18 x 14')
     assert(Point(earth.Duration)[1] == 'CENTER' and earth.Duration.font[2] == 9, 'the time on the icon, 9')
+    -- Above, Left (the Healer layout): over the block's left end, past the portrait ring, growing right.
+    M.db.totems.attach, M.db.totems.size = 'aboveLeft', 24
+    TotemFrame:Update()
+    p = Point(TotemFrame)
+    local g, ghost = UF_GEOMETRY_PROBE or M.ghosts.player.geometry, M.ghosts.player
+    local x = ghost:GetLeft() + g.portrait + 2 - bars:GetLeft()
+    assert(p[1] == 'BOTTOMLEFT' and p[2] == bars and p[3] == 'TOPLEFT' and math.abs(p[4] - math.max(0, x)) < 1e-6 and p[5] == 2, 'over the left end, past the ring')
+    first, second = Point(earth), Point(air)
+    assert(first[1] == 'TOPLEFT' and first[4] == 0 and second[4] == 24 + 2 * reach - 1 and earth.Icon.width == 24, 'growing right, 24 wide')
+    assert(Point(earth.Duration)[1] == 'CENTER' and earth.Duration.font[2] == 10, 'the time on the icon, 10')
     -- Blizzard's Place: given back to Blizzard's layout.
     M.db.totems.attach = 'blizzard'
     TotemFrame:Update()

@@ -158,7 +158,7 @@ H.Load({ before = STUBS, saved = before }).run([==[
     assert(table.concat(P:List(), ',') == 'Default,Mine,Mode-Default,Mode-DPS/TANK,Mode-Healer,Mode-Healer (old)', table.concat(P:List(), ','))
     assert(P:Active() == 'Mode-Healer (old)' and addon.UnitFrames.db.player.barWidth == 142, 'the old Mode-Healer stays in use, renamed')
     assert(ModeUIDB.profiles['Mode-Healer'].modules.unitFrames.player.barShows == 'mana', 'a new Mode-Healer from the layout')
-    assert(ModeUIDB.builtLayouts['mode-default@4'] and ModeUIDB.builtLayouts['healer@7'])
+    assert(ModeUIDB.builtLayouts['mode-default@4'] and ModeUIDB.builtLayouts['healer@8'])
     assert(addon.db.theme == 'obsidian' and addon.db.themeParts.unitFrames == 'obsidian', 'the active profile is Mode-Obsidian')
 ]==], "reseed")
 local reseeded = H.Load({ before = STUBS, saved = before }).saved()

@@ -33,16 +33,20 @@ function M:TotemsOn() return self.active == true and self:FrameOn("player") end
 
 -- Checks db.totems (Migrations.lua, Initialize), and fits the place to the
 -- Player frame once (owner, November 20, 2026): a mana frame (the Healer
--- look: Bar Shows Mana) takes the timers over its top right at 18 wide, as
--- Mode-Healer does; any other frame keeps them under its bottom right. Only
--- a place still at the default moves, and only the first time, so a later
+-- look: Bar Shows Mana) takes the timers over its left end, past the
+-- portrait, growing right, at 24 wide, as Mode-Healer does; any other frame
+-- keeps them under its bottom right. Only a place still at the default moves
+-- (or at Above, Right at 18, which the first fitting and healer@7 gave and
+-- the owner found too small and on the name), once (`fit` 1), so a later
 -- choice stays.
 function M.ValidateTotems(db)
     local t = M.ValidateTable(db, "totems", M.totemDefaults, M.totemRanges, { attach = "totemAttach" })
-    if t.fitted then return end
+    if t.fit >= 1 then return end
     local mana = type(db.player) == "table" and db.player.barShows == "mana"
-    if mana and t.attach == M.totemDefaults.attach and t.size == M.totemDefaults.size then t.attach, t.size = "above", 18 end
-    t.fitted = true
+    local default = t.attach == M.totemDefaults.attach and t.size == M.totemDefaults.size
+    local first = t.attach == "above" and t.size == 18
+    if mana and (default or first) then t.attach, t.size = "aboveLeft", 24 end
+    t.fit, t.fitted = 1, nil
 end
 
 -- The time's color, put back after Blizzard's (a guard keeps the hook from
@@ -86,8 +90,9 @@ function M:SkinTotem(button)
     art.edge:SetTint(Shaman() and Element(button.slot) or nil)
     art.edge:Layout()
     if button.Duration then
-        -- Bold 10; 9 over a small icon (Above).
-        Style.Font(button.Duration, self.db.totems.attach == "above" and 9 or 10, "bold")
+        -- Bold 10; 9 over an icon under 22 wide (Above).
+        local over = self.db.totems.attach == "above" or self.db.totems.attach == "aboveLeft"
+        Style.Font(button.Duration, over and self.db.totems.size < 22 and 9 or 10, "bold")
         button.Duration:SetShadowColor(Tone.shadow[1], Tone.shadow[2], Tone.shadow[3], 0.95)
         button.Duration:SetShadowOffset(1, -1)
         PaintTime(button.Duration)
@@ -106,8 +111,11 @@ end
 
 -- Where the timers hang (db.totems; owner, November 20, 2026): from the
 -- ModeUI Player frame's bar block (the stand-in's, which the secure frame
--- copies), growing left from its right edge. Below: their top 1px under the
--- block's shadow, outside the frame; Above: their bottom 1px over its top.
+-- copies). Below: their top 1px under the block's shadow, outside the frame,
+-- from its right edge growing left; Above: their bottom 1px over its top,
+-- from its right edge growing left; Above, Left: the same height, from 1px
+-- past the portrait ring's shadow growing right (clear of the name, which a
+-- mana frame shows at its top right).
 -- Each button holds its icon and edge (frameThin: the 1px shadow and band
 -- round the icon), so the row's edges are the shadows; neighbours share one
 -- shadow pixel. Blizzard leaves a frame marked ignoreFramePositionManager
@@ -124,11 +132,13 @@ function M:PlaceTotems()
     local bw, bh = w + 2 * reach, h + 2 * reach
     local active = Buttons(frame)
     table.sort(active, function(a, b) return (a.layoutIndex or 0) < (b.layoutIndex or 0) end)
-    local above = cfg.attach == "above"
+    local left = cfg.attach == "aboveLeft"
+    local above = left or cfg.attach == "above"
     for i, button in ipairs(active) do
         button:ClearAllPoints()
         button:SetSize(bw, bh)
-        button:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(i - 1) * (bw - px), 0)
+        if left then button:SetPoint("TOPLEFT", frame, "TOPLEFT", (i - 1) * (bw - px), 0)
+        else button:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(i - 1) * (bw - px), 0) end
         button.Icon:ClearAllPoints(); button.Icon:SetPoint("CENTER", button, "CENTER", 0, 0)
         if button.Duration then
             -- Under the icon below the frame; over it above (it would cover the bar).
@@ -140,7 +150,15 @@ function M:PlaceTotems()
     local n = math.max(1, #active)
     frame:SetSize(n * bw - (n - 1) * px, bh)
     frame:ClearAllPoints()
-    if above then frame:SetPoint("BOTTOMRIGHT", bars, "TOPRIGHT", px, 2 * px)
+    if left then
+        -- Past the ring: the stand-in's left edge plus the portrait, then the
+        -- ring's shadow pixel and a 1px gap, measured from the block's left.
+        local ghost = self.ghosts and self.ghosts.player
+        local g = ghost and ghost.geometry
+        local gl, bl = ghost and ghost:GetLeft(), bars:GetLeft()
+        local x = (g and addon.IsNumber(gl) and addon.IsNumber(bl)) and (gl + g.portrait + 2 * px - bl) or 0
+        frame:SetPoint("BOTTOMLEFT", bars, "TOPLEFT", math.max(0, x), 2 * px)
+    elseif above then frame:SetPoint("BOTTOMRIGHT", bars, "TOPRIGHT", px, 2 * px)
     else frame:SetPoint("TOPRIGHT", bars, "BOTTOMRIGHT", px, -2 * px) end
 end
 

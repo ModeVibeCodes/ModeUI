@@ -103,7 +103,8 @@ end
 -- and bag window placed, Healer @4 with the party column snug under the
 -- mana frame and a 20px Cast Bar, @5 with it hung from the frame's bar
 -- block and the Focus 80 lower, @6 a pixel left with the 1080 places;
--- @7 and DPS / Tank @4 with the totem timers on the Player frame): a profile an earlier seed of it made under the
+-- @7 and DPS / Tank @4 with the totem timers on the Player frame; Healer @8
+-- with them over the left end): a profile an earlier seed of it made under the
 -- same name is kept, renamed "<name> (old)", so nothing the player tuned is
 -- lost; with no earlier seed, a profile of the player's own with that name
 -- is left alone and the layout is not made. A seeded profile is never made active here: the player
@@ -147,4 +148,4 @@ L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-DPS/TANK"
 -- Mode's healer layout (owner, November 19, 2026; the prototype in
 -- design/healer-layout/): a mana frame over the party column left of
 -- center, everything else as DPS / Tank but the Cooldown Manager's middle.
-L:Register("healer", { label = "Healer", profileName = "Mode-Healer", seed = "healer@7", allModules = true })
+L:Register("healer", { label = "Healer", profileName = "Mode-Healer", seed = "healer@8", allModules = true })

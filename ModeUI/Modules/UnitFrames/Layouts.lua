@@ -122,8 +122,8 @@ end
 
 addon.Layouts:Contribute("healer", "unitFrames", function(db, ctx)
     Common(db)
-    -- Totem timers over the mana frame's top right, growing left, 18 wide like the Target's buffs here (owner, November 20, 2026).
-    db.totems.attach, db.totems.size = "above", HEALER.buffs.size
+    -- Totem timers over the mana frame's left end, past the portrait, growing right, 24 wide (owner, November 20, 2026).
+    db.totems.attach, db.totems.size = "aboveLeft", 24
     local player, target, focus = db.player, db.target, db.focus
     target.matchPlayer = false
     for _, fdb in ipairs({ player, target }) do

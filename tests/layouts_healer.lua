@@ -106,7 +106,7 @@ world.run([==[
         assert(tw - (3 * 18 + 2) >= 70, 'room for a name of about 11 letters: ' .. tw - (3 * 18 + 2))
         -- The Target's height is the Player's (Match Height).
         assert(uf.target.matchHeight and profile.sizeMatches.unitFramesTarget.height == 'unitFramesPlayer', 'Target matches the Player height')
-        assert(uf.totems.attach == 'above' and uf.totems.size == 18, 'totem timers over the mana frame, 18 wide')
+        assert(uf.totems.attach == 'aboveLeft' and uf.totems.size == 24, 'totem timers over the mana frame left end, 24 wide')
         -- Names (12) on the border at the top right; inside, the Player's mana percent and the Target's current health.
         for _, unit in ipairs({ 'player', 'target' }) do
             local s = uf[unit].texts
@@ -161,7 +161,7 @@ world.run([==[
         end
     end
     -- Made into a profile once, at login, beside Mode-DPS/TANK; the active profile stays.
-    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@7'] == true)
+    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@8'] == true)
     assert(ModeUIDB.profiles['Mode-Healer'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-Healer', 'healer'), 'its name is taken')
 ]==], "healer build")
