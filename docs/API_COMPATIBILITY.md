@@ -1275,6 +1275,48 @@ uses is missing or changed.
   `## Category` headers collapse. `## IconTexture`/`## IconAtlas` give the
   icon. This is how `ModeCDM` sits under ModeUI.
 
+### Cooldown Manager, reading your setup — November 20, 2026
+
+Checked against the `forever` branch (`Blizzard_CooldownViewer`) and the
+local mainline 12.1.5 copy; `CooldownViewerSettingsDataProvider.lua` and
+`CooldownViewerSettingsLayoutManager.lua` match.
+
+- **Frames only while shown.** A viewer acquires its item frames in
+  `RefreshLayout`, called from `OnShow`, `SetIsEditing` and
+  `OnCooldownDataChanged` (registered only while shown). A viewer hidden by
+  `ShouldBeShown` (CVar off, Edit Mode Visibility Hidden, In Combat out of
+  combat) has no frames, or stale ones.
+- **Your setup.** A viewer's spells are
+  `CooldownViewerSettings:GetDataProvider():GetOrderedCooldownIDsForCategory(category)`:
+  known IDs whose `category` matches, in `displayData.orderedCooldownIDs`
+  order. That getter (and `GetOrderedCooldownIDs`, `GetCooldownInfoForID`)
+  runs `CheckBuildDisplayData` while the cache is dirty, which writes
+  `self.displayData` and `WriteCooldownOrderToActiveLayout`: addon code must
+  not call them. ModeUI calls only `GetDataProvider`, `IsDirty`,
+  `GetDisplayData`, `GetLayoutManager`, `IsLoaded`, `GetActiveLayout()` (no
+  access mode: never creates one) and
+  `CooldownViewerUtil.GetCurrentClassAndSpecTag`, which only return fields
+  or read the game.
+- **Rebuilding read-only.** While dirty, `Domain.Cooldowns.Layout` repeats
+  `CheckBuildDisplayData` on its own tables:
+  `GetCooldownViewerCategorySet(category, true)` for Essential, Utility,
+  TrackedBuff, TrackedBar, EquipSlotEssential, EquipSlotTracked,
+  SpecAgnosticEssential and SpecAgnosticTracked;
+  `GetCooldownViewerCooldownInfo` (a fresh table each call); IDs flagged
+  `Enum.CooldownSetSpellFlags.HideByDefault` (2) hidden; then, only when the
+  active layout's `classAndSpecTag` is your current spec's, its
+  `orderedCooldownIDs` (unknown IDs dropped, new ones appended) and each
+  `cooldownInfo[id].category` (`tonumber`). Hidden categories are
+  `Enum.CooldownViewerCategory.HiddenActive` (-1) and `HiddenPassive` (-2),
+  set in `CooldownViewerSettingsConstants.lua`.
+- **Changes.** `EventRegistry` `"CooldownViewerSettings.OnDataChanged"`
+  (from `CooldownViewerLayoutManagerMixin:NotifyListeners`). ModeUI reads
+  the setup each time the settings draw, so it needs no listener.
+- **Slash command.** Blizzard registers `SLASH_COMMAND.COOLDOWN_MANAGER`
+  ("COOLDOWNMANAGER") to `CooldownViewerSettings:TogglePanel()`; the typed
+  text comes from the client's global strings (the owner's /CDM).
+- **Unverified natively:** all of it, until the owner's in-game check.
+
 ## Party frames — November 13, 2026
 
 Checked against the Forever branch of Gethe/wow-ui-source (1.60.1, build 70938,

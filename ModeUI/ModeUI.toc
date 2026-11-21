@@ -46,6 +46,7 @@ Shared\Domain\DamageMeter.lua
 Shared\Domain\Containers.lua
 Shared\Domain\Items.lua
 Shared\Domain\Cooldowns.lua
+Shared\Domain\CooldownLayout.lua
 Shared\Domain\Location.lua
 Shared\Style\Assets.lua
 Shared\Style\Fonts.lua

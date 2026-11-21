@@ -67,13 +67,16 @@ in up to three sections (pointing at one names it and says what a click does):
   that the bar can take. Clicking one adds it: Blizzard's own icon for that
   spell moves onto the custom bar, so it keeps updating exactly as before,
   and its viewer closes up. A spell sits on one custom bar at a time; adding
-  it to another moves it.
+  it to another moves it. A spell your Blizzard CDM setup tracks while its
+  viewer has no frame for it (Blizzard's viewer hidden) shows here in full
+  color for information only, and can be added once the viewer shows.
 - **Not in Blizzard CDM**: every other spell the game has for your class and
   spec in those categories (`C_CooldownViewer.GetCooldownViewerCategorySet`
-  with unlearned spells), grayed; ones you haven't learned say so. On a
-  Cooldown Bar clicking one adds it as a custom spell (below). A buff can only
-  show once Blizzard's Cooldown Manager tracks it, so on a Buff Bar these only
-  point you there.
+  with unlearned spells), grayed; ones you haven't learned say so. Their
+  tooltip says **NOT TRACKED IN BLIZZARD CDM - ADD IT IN /CDM** (your racials
+  don't, since ModeUI tracks them itself). On a Cooldown Bar clicking one
+  adds it as a custom spell (below). A buff can only show once Blizzard's
+  Cooldown Manager tracks it, so on a Buff Bar these only point you there.
 - **Items in Your Bags** (Cooldown Bars): what you carry with a Use: effect,
   such as potions, healthstones and food.
 
@@ -167,6 +170,33 @@ The Active and Buff glows need Blizzard's own tracking, so they don't light
 on custom spells or items, and neither goes on a Buff Bar. Their icons hide
 while the module is off.
 
+### What you track in Blizzard's Cooldown Manager (November 20, 2026)
+
+Blizzard's viewers make their icon frames only while they show, so a viewer
+that's hidden (its Edit Mode Visibility, In Combat out of combat, or not
+shown since you logged in) has none. The settings read what you track from
+Blizzard's Cooldown Settings instead (`Shared/Domain/CooldownLayout.lua`,
+`Tracking.lua`; owner, November 20, 2026):
+
+- The preview fills **Essential Cooldowns**, **Utility Cooldowns**,
+  **Tracked Buffs** and **Tracked Bars** with every spell your Blizzard CDM
+  setup puts in them, in your order and in full color, even while Blizzard's
+  viewer has no frames: every buff tracked there is on Tracked Buffs (unless
+  you moved it to a Buff Bar). The caption says how many are off screen
+  while Blizzard's viewer is hidden. Sample icons show only when nothing is
+  tracked there.
+- A spell counts as tracked when your setup has it in one of the four
+  viewers, learned or not; anything hidden by default or set to Not
+  Displayed doesn't.
+- A spell or buff on a bar that Blizzard's Cooldown Manager doesn't track
+  (a cooldown ID; custom spells and items don't need it) says
+  **NOT TRACKED IN BLIZZARD CDM - ADD IT IN /CDM** in its tooltip in the
+  preview and at the top of its spell menu.
+
+On screen the icons are still Blizzard's own frames: a viewer hidden in
+Blizzard's Edit Mode shows nothing until it's on. ModeUI never changes
+Blizzard's Edit Mode settings.
+
 ## What stays Blizzard's
 
 - **Which spells are tracked, and their order** in each viewer: Blizzard's
@@ -236,6 +266,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Custom.lua` | the bar list, custom bars, what Essential and Utility took, and which spell shows where |
 | `Spells.lua`, `Items.lua`, `Racials.lua` | custom spells, items and racials on ModeUI's own icons |
 | `Blizzard.lua` | finding and hooking Blizzard's viewers and items |
+| `Tracking.lua` | what you track in Blizzard's Cooldown Manager for the preview and the + slot's list; the NOT TRACKED warning |
 | `Layout.lua` | Growth geometry, stand-ins and holders, placing the icons |
 | `Skin.lua`, `Bars.lua`, `Text.lua` | icon art (Mode-FG face, `frameThin` edge), swipe, gray and range tint; Tracked Bars; texts and a spell's own text looks |
 | `Glow.lua` | the four glows; a spell's alpha |
@@ -247,6 +278,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Layouts.lua` | ModeCDM's part of the Mode-DPS/TANK layout |
 
 Shared pieces it uses or added: `Shared/Domain/Cooldowns.lua`,
+`Shared/Domain/CooldownLayout.lua` (your Blizzard CDM setup, read only),
 `Shared/Domain/Items.lua`, `Shared/Kit/Slot.lua` (icon cropping and glows; the old slot art is gone), `Style.Edge` and `Edge:Regions()` (a glow's rim fades with a secret buff state), `Kit.OutlineFlags` (a thick outline), `Shared/Kit/Glows.lua`
 (Pixel, Blizzard and GCD glows on one shared ticker), `W.Confirm`
 (`Shared/Settings/Confirm.lua`), size matching and pixel gaps in the
@@ -353,6 +385,27 @@ window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
      out-of-range spell turns Rosewood; tracked bars are thin Mode Gradient
      bars in your class color with the comet spark; the Power bar under
      Utility lines up with Utility's edges. Your earlier settings are kept.
+8. What you track in Blizzard's Cooldown Manager (November 20, 2026)
+   - **Navigation:** press Escape, click **Edit Mode** and select Blizzard's
+     Tracked Buffs viewer; later type `/mcdm` and click **Tracked Buffs** in
+     the list.
+   - **Action:** set the viewer's **Visibility** to its hidden choice, close
+     Edit Mode and reload; in `/mcdm` on **Tracked Buffs**, point at an icon
+     in the preview; click **Emphasized Buffs** in the list, click the **+**
+     slot in the preview and point at an icon under **Not in Blizzard CDM**;
+     then click a spell on a bar whose buff you set to Not Displayed in
+     Blizzard's window (**Open CDM**). Afterwards set the viewer's
+     Visibility back.
+   - **Required state:** out of combat, buffs tracked in Blizzard's Cooldown
+     Manager, the module on.
+   - **Confirmation:** the Tracked Buffs preview shows every buff you track
+     there, in color and in your order (no sample icons), with "off screen
+     while Blizzard's viewer is hidden" in the caption; under **Tracked in
+     Blizzard CDM** those buffs show in color and clicking them does
+     nothing; a grayed icon's tooltip reads NOT TRACKED IN BLIZZARD CDM -
+     ADD IT IN /CDM, and so does the top of that spell's menu. No Lua
+     errors, and Blizzard's Cooldown Manager keeps working in combat
+     afterwards.
 
 ## Resource Bars
 

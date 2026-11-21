@@ -222,9 +222,22 @@
     spellsOf[106], spellsOf[303] = 5006, 7003
     classSets, unlearned = { [0] = { 101, 102, 103, 104, 105, 106 }, [1] = { 201, 202 }, [2] = { 301, 302, 303 }, [3] = { 401, 402 } }, { [106] = true }
     C_CooldownViewer.GetCooldownViewerCategorySet = function(category, allowUnlearned) assert(allowUnlearned == true); return classSets[category] or {} end
+    -- Each ID's category is the set it's in; 106 and 303 are hidden by
+    -- default (Enum.CooldownSetSpellFlags.HideByDefault), so your Blizzard
+    -- CDM setup tracks what the viewers show.
+    Enum.CooldownSetSpellFlags = { HideAura = 1, HideByDefault = 2 }
+    hiddenByDefault = { [106] = true, [303] = true }
     C_CooldownViewer.GetCooldownViewerCooldownInfo = function(id)
-        return spellsOf[id] and { cooldownID = id, spellID = spellsOf[id], isKnown = not unlearned[id] } or nil
+        local category
+        for set, ids in pairs(classSets) do for _, other in ipairs(ids) do if other == id then category = set end end end
+        return spellsOf[id] and { cooldownID = id, spellID = spellsOf[id], isKnown = not unlearned[id], category = category,
+            flags = hiddenByDefault[id] and 2 or 0 } or nil
     end
+    -- Tooltips: the lines set on GameTooltip.
+    tooltipLines = {}
+    function GameTooltip:SetText(text) tooltipLines = { text } end
+    function GameTooltip:AddLine(text) tooltipLines[#tooltipLines + 1] = text end
+    function GameTooltip:GetOwner() return self.owner end
     -- Items: names, counts, cooldowns, what's in the backpack. Linen Cloth
     -- (2589) has no Use: effect.
     itemNames = { [5512] = 'Healthstone', [191380] = 'Healing Potion', [7676] = 'Thistle Tea', [2589] = 'Linen Cloth' }
