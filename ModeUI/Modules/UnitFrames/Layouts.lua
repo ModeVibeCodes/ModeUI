@@ -35,8 +35,8 @@ local function TargetSize(db)
     return g.width * fdb.scale / 100, g.height * fdb.scale / 100
 end
 
--- What both layouts share: no text glow, Mode-Thin Steel on every frame and
--- cast bar, no soft drop under the Player and Target (the icons on them keep
+-- What both layouts share: no text glow, Mode-Border in its own metal on
+-- every frame and cast bar, no soft drop under the Player and Target (the icons on them keep
 -- a crisp 1px shadow line), aura icons 1px apart (neighbours share one
 -- shadow pixel; the border is inside the icon), the Target's buffs at its top
 -- left growing right, Target of Focus off.
@@ -45,7 +45,7 @@ local function Common(db)
     for _, unit in ipairs(FRAMES) do
         local fdb = db[unit]
         fdb.nameTextGlow, fdb.healthTextGlow = false, false
-        fdb.edgeStyle, fdb.edgeMetal = "thin", "steel"
+        fdb.edgeStyle, fdb.edgeMetal = "obsidian", "default"
         fdb.buffs.spacing, fdb.debuffs.spacing = 1, 1
     end
     db.player.dropShadow, db.target.dropShadow = false, false
@@ -56,6 +56,8 @@ end
 addon.Layouts:Contribute("mode-default", "unitFrames", function(db, ctx)
     local y = ctx.V(HEIGHT)
     Common(db)
+    -- Totem timers under the Player frame's bottom right, outside it, 1px apart, growing left (owner, November 20, 2026).
+    db.totems.attach, db.totems.size = "below", 24
     db.player.healthHeight, db.player.showPower = HEALTH, false
     db.player.barWidth, db.target.barWidth = WIDTH, WIDTH
     db.player.portraitScale, db.target.portraitScale = PORTRAIT, PORTRAIT
@@ -107,7 +109,7 @@ end)
 -- Target of Target is off. Unit frames place only on the screen (Build.lua,
 -- RegisterPosition), so each place is worked out from the frames' sizes.
 local HEALER = { health = 26, width = 142, portrait = 145, right = -323, partyTop = { ["1080"] = 29, ["1440"] = -126 },
-    text = 12, focus = { width = 134, health = 14, power = 3 }, cast = 12, buffs = { size = 18, perRow = 3, max = 9 } }
+    text = 12, focus = { width = 134, health = 14, power = 3 }, focusDrop = 80, cast = 12, buffs = { size = 18, perRow = 3, max = 9 } }
 
 -- Every health slot and the border empty, then each text in its slot; the
 -- border's text at `align`.
@@ -120,6 +122,8 @@ end
 
 addon.Layouts:Contribute("healer", "unitFrames", function(db, ctx)
     Common(db)
+    -- Totem timers over the mana frame's left end, past the portrait, growing right, 24 wide (owner, November 20, 2026).
+    db.totems.attach, db.totems.size = "aboveLeft", 24
     local player, target, focus = db.player, db.target, db.focus
     target.matchPlayer = false
     for _, fdb in ipairs({ player, target }) do
@@ -155,5 +159,7 @@ addon.Layouts:Contribute("healer", "unitFrames", function(db, ctx)
     ctx.Match(M.elementIds.target, "height", M.elementIds.player)
     -- The Target's cast bar: its rim (1px) round the bar, Gap -1 off the block.
     local castBottom = blockBottom - (target.castBar.gap + 2) - (target.castBar.height + 2)
-    ctx.Place(M.elementIds.focus, "screen", "TOPLEFT", "CENTER", HEALER.right + 1, castBottom - 1)
+    -- The Focus 80 under that (owner, November 20, 2026: 1 under the cast bar
+    -- crowded the party column's top).
+    ctx.Place(M.elementIds.focus, "screen", "TOPLEFT", "CENTER", HEALER.right + 1, castBottom - 1 - HEALER.focusDrop)
 end)

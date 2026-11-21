@@ -189,7 +189,8 @@ imported.run([[
     local M=addon.UnitFrames
     assert(ModeUIDB.importedFrom=='PlayTheGameTools:Mode','imported from the active PTG profile')
     assert(M.enabled and M.db.player.barWidth==260 and M.db.target.barWidth==210 and M.db.target.matchPlayer==false)
-    assert(M.db.layoutVersion==M.LAYOUT_VERSION and M.db.player.nameColorMode=='gradient','migrated to the current layout')
+    -- Migrated to the current layout, then Mode-Obsidian's part (class-colored names).
+    assert(M.db.layoutVersion==M.LAYOUT_VERSION and M.db.player.nameColorMode=='class','migrated to the current layout')
     local position=addon.PositionManager:GetPosition('unitFramesPlayer')
     assert(position.x==-300 and position.y==-150,'Player frame position imported')
     assert(PTGToolsDB.profiles.Mode.modules.unitFrames.layoutVersion==10,'PTG data left untouched')
@@ -307,8 +308,8 @@ for key, asset in pairs(assets.addon.Media.Textures) do
     local path = H.addonDir .. "Media/Textures/" .. asset.file
     local file = io.open(path, "rb"); if file then file:close() else missing[#missing + 1] = key end
 end
-for _, name in ipairs({ "Geist/Geist-Regular.ttf", "Geist/Geist-Medium.ttf", "Geist/Geist-SemiBold.ttf", "Geist/Geist-Bold.ttf",
-    "Damion/Damion-Regular.ttf" }) do
+for _, name in ipairs({ "Urbanist/Urbanist-Regular.ttf", "Urbanist/Urbanist-Medium.ttf", "Urbanist/Urbanist-SemiBold.ttf",
+    "Urbanist/Urbanist-Bold.ttf", "Damion/Damion-Regular.ttf" }) do
     local file = io.open(H.addonDir .. "Media/Fonts/" .. name, "rb"); if file then file:close() else missing[#missing + 1] = name end
 end
 -- Every full ModeUI file path written out in Lua or XML (ModeUI's and the
@@ -336,35 +337,66 @@ for _, companion in ipairs(H.COMPANIONS) do CheckPaths(H.Dir(companion), compani
 assert(#missing == 0, "missing assets: " .. table.concat(missing, ", "))
 print("assets: all present")
 
--- The Mode typeface (docs/DESIGN_LANGUAGE.md, "Text"): Expressway when the
--- client has it (an installed addon's copy; ModeUI ships none), else Geist.
--- "Mode", the name modules store, points at whichever it is.
+-- The Mode typeface (docs/DESIGN_LANGUAGE.md, "Text"): Urbanist (owner,
+-- November 20, 2026), whether or not the client has an Expressway (an
+-- installed addon's copy stays a font the player may pick). "Mode", the name
+-- modules store, points at it.
 local function Fonts(before)
     local world = H.Load({ before = before })
     return world.run([[ SlashCmdList.MODEUI()
         return addon.configWindow.crumbTitle.font[1], addon.Media:GetFont('Mode'), addon.Style.Typeface(),
-            addon.configWindow.title.font[1] ]], "font")
+            addon.configWindow.title.font[1], addon.Media:GetFont('Expressway') ]], "font")
 end
 -- The wordmark is Mode Script (Damion) either way.
 local title, mode, face, wordmark = Fonts(STUBS)
-assert(title:find("Geist", 1, true) and mode:find("Geist", 1, true) and face == "Geist", "Geist without Expressway")
+assert(title:find("Urbanist", 1, true) and mode:find("Urbanist", 1, true) and face == "Urbanist", "Urbanist")
 assert(wordmark:find("Damion", 1, true), "the wordmark keeps Mode Script")
 local provider = STUBS .. "\ntestProviderFonts = { [AYIJE_EXPRESSWAY] = true }\n"
 provider = "AYIJE_EXPRESSWAY = 'Interface' .. string.char(92) .. 'AddOns' .. string.char(92) .. 'AyijeUI' .. string.char(92) .. 'Media' .. string.char(92) .. 'Fonts' .. string.char(92) .. 'Expressway.ttf'\n" .. provider
-title, mode, face, wordmark = Fonts(provider)
-assert(title:find("Expressway", 1, true) and mode:find("Expressway", 1, true) and face == "Expressway", "Expressway when installed")
+local expressway
+title, mode, face, wordmark, expressway = Fonts(provider)
+assert(title:find("Urbanist", 1, true) and mode:find("Urbanist", 1, true) and face == "Urbanist", "Urbanist with Expressway installed too")
+assert(expressway and expressway:find("Expressway", 1, true), "an installed Expressway is still a font to pick")
 assert(wordmark:find("Damion", 1, true), "the wordmark keeps Mode Script with Expressway too")
--- Saved fonts still at the old default ("Mode Geist") become "Mode"; a pick stays.
+-- Saved fonts still at an old default ("Mode Geist", "ModeUI Lato") become
+-- "Mode"; a picked Geist weight becomes the same Urbanist weight; a pick stays.
 local saved = H.Load({ before = STUBS }).saved()
 local p = saved.profiles.Default
 p.typeface = nil
 p.modules.unitFrames.player.fontMedia = "Mode Geist"
+p.modules.unitFrames.target.fontMedia = "Mode Geist Bold"
 p.modules.nameplates.enemy.fontMedia = "Friz Quadrata"
 p.modules.partyFrames.fontMedia = "ModeUI Lato"
 p.globalMedia.font = "media:ModeUI Lato"
 H.Load({ before = STUBS, saved = saved }).run([[
-    assert(addon.db.typeface == 3 and addon.db.modules.unitFrames.player.fontMedia == 'Mode', 'the old default moves to Mode')
+    assert(addon.db.typeface == 4 and addon.db.modules.unitFrames.player.fontMedia == 'Mode', 'the old default moves to Mode')
+    assert(addon.db.modules.unitFrames.target.fontMedia == 'Mode-Urbanist Bold', 'a Geist weight becomes the same Urbanist weight')
     assert(addon.db.modules.nameplates.enemy.fontMedia == 'Friz Quadrata', 'a picked font stays')
     assert(addon.db.modules.partyFrames.fontMedia == 'Mode' and addon.db.globalMedia.font == 'game', 'the retired Lato moves to the Mode typeface')
 ]], "typeface")
-print("fonts: Expressway when installed, else Geist")
+-- Look step 1 (Mode-Obsidian only): saved Mode-Blizz textures become Mode-FG
+-- (fills and surfaces) or Mode-BG (empty parts), Mode-Obsidian's became
+-- Mode-FG and Mode-BG, and saved Mode-Blizz border styles the style they draw
+-- as; a texture of another addon stays.
+saved = H.Load({ before = STUBS }).saved()
+p = saved.profiles.Default
+p.look, p.theme, p.themeParts = nil, "blizz", nil
+p.modules.damageMeters.window1.barTexture = "media:Mode Panel"
+p.modules.damageMeters.window1.barBackground = "media:Mode BG"
+p.modules.nameplates.enemy.foregroundTexture = "media:Mode BG"
+p.modules.nameplates.enemy.castTexture = "media:Mode Cast"
+p.modules.partyFrames.healTexture = "media:Mode-Obsidian"
+p.modules.unitFrames.focus.castBar.foregroundTexture = "media:Other Bar"
+p.modules.unitFrames.player.edgeStyle = "thin"
+p.modules.unitFrames.player.portraitRingStyle = "blizz"
+p.modules.tooltip.edgeStyle = "blizzEmpty"
+H.Load({ before = STUBS, saved = saved }).run([[
+    local m = addon.db.modules
+    assert(addon.db.look == 1 and addon.db.theme == 'obsidian', 'every profile is Mode-Obsidian')
+    assert(m.damageMeters.window1.barTexture == 'media:Mode-FG' and m.damageMeters.window1.barBackground == 'media:Mode-BG', 'fill and empty part')
+    assert(m.nameplates.enemy.foregroundTexture == 'media:Mode-FG' and m.nameplates.enemy.castTexture == 'media:Mode-FG', 'Mode BG as a fill takes Mode-FG')
+    assert(m.partyFrames.healTexture == 'media:Mode-FG', 'Mode-Obsidian is Mode-FG')
+    assert(m.unitFrames.focus.castBar.foregroundTexture == 'media:Other Bar', "another addon's texture stays")
+    assert(m.unitFrames.player.edgeStyle == 'obsidian' and m.unitFrames.player.portraitRingStyle == 'obsidian' and m.tooltip.edgeStyle == 'obsidianEmpty', 'old styles')
+]], "look")
+print("fonts: Urbanist, Expressway or not; looks: Mode-Obsidian")

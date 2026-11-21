@@ -47,7 +47,7 @@ end
 local function Card(view)
     local card = CreateFrame("Frame", nil, view.frame)
     local fill = card:CreateTexture(nil, "BACKGROUND", nil, 1)
-    fill:SetAllPoints(); Style.ApplyAsset(fill, "MatteBase"); Style.Paint(fill, T.card)
+    fill:SetAllPoints(); Style.ApplyAsset(fill, "FGBase"); Style.Paint(fill, T.card)
     card.edge = Style.Edge(card, "card")
     card.title = W.Heading(card, L["Which Auras"]:upper(), T.fontSize.card, CARD_PAD, -CARD_PAD, 300)
     card.title:SetTextColor(unpack(T.primary))

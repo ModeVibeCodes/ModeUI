@@ -118,12 +118,12 @@ world.run([==[
     assert(not ChatFrame1Background:IsShown() and not ChatFrame2TopTexture:IsShown())
     ChatFrame1TopTexture:Show(); assert(not ChatFrame1TopTexture:IsShown(), 'Blizzard showing its art is undone')
     local panel = Skin.parts[ChatFrame1]
-    -- The Mode window: Mode Panel in Graphite at Background Opacity, the
+    -- The Mode window: Mode Surface in Graphite at Background Opacity, the
     -- `window` edge inside the box on its own frame above the window (the idle
     -- fade dims it with the window); no masks, no soft drop under a
     -- see-through fill.
-    assert(panel.faceKey == 'Panel' and panel.face.vertexColor[1] == G.panel[1] and panel.face.vertexColor[4] == 0.6, 'Mode Panel at 60%')
-    assert(panel.lift and panel.lift.texture:find('PanelLift', 1, true) and panel.lift.vertexColor[4] == 0.6, 'its lift at the same alpha')
+    assert(panel.faceKey == 'Surface' and panel.face.vertexColor[1] == G.panel[1] and panel.face.vertexColor[4] == 0.6, 'Mode Surface at 60%')
+    assert(panel.lift and panel.lift.texture:find('SurfaceLift', 1, true) and panel.lift.vertexColor[4] == 0.6, 'its lift at the same alpha')
     assert(Point(panel.face)[2] == ChatFrame1Background, 'the face on the box')
     assert(panel.modeEdge.preset == 'window' and panel.modeEdge.holder:IsShown(), 'the window edge')
     local e = Point(panel.edgeFrame)
@@ -148,7 +148,7 @@ world.run([==[
     assert(Clamp(-9, 19, 33, -39), 'clamped by the box')
     ChatFrame1:AnchorSelectionFrame(); assert(Clamp(-9, 19, 33, -39), 'Blizzard resetting the clamp is followed')
     assert(ChatFrame2.Selection == nil, 'only the Edit Mode window')
-    -- Edit box: inside the window's edge, a Mode-Blizz field 3px in on a band
+    -- Edit box: inside the window's edge, a Mode-Border field 3px in on a band
     -- shaded a little darker than the window.
     local band = Point(panel.band)
     assert(panel.band:IsShown() and band[1] == 'BOTTOMLEFT' and band[2] == ChatFrame1Background and band[4] == 3 and band[5] == 3)
@@ -157,7 +157,7 @@ world.run([==[
     assert(panel.band.vertexColor[1] == Tone.shadow[1] and math.abs(panel.band.vertexColor[4] - 0.15) < 1e-6, 'a little darker, not much')
     assert(ChatFrame1EditBoxLeft.alpha == 0 and ChatFrame1EditBox.focusMid.alpha == 0, 'edit box art faded')
     local inner = Skin.parts[ChatFrame1EditBox]
-    assert(inner.modeEdge.preset == 'control' and inner.modeEdge.styleId == 'blizz' and inner.modeEdge.holder:IsShown(), 'a Mode-Blizz field')
+    assert(inner.modeEdge.preset == 'control' and inner.modeEdge.styleId == 'obsidian' and inner.modeEdge.holder:IsShown(), 'a Mode-Border field')
     assert(inner.face.vertexColor[4] == 0, 'see-through on the band')
     ChatFrame1EditBox:SetFocus(); ChatFrame1EditBox.scripts.OnEditFocusGained(ChatFrame1EditBox)
     assert(inner.modeEdge.highlight[1] == Tone.ivory[1], 'its outer line Ivory while typing')
@@ -174,7 +174,7 @@ world.run([==[
     local flash = ChatFrame1.ScrollToBottomButton.Flash
     flash:Show(); assert(not flash:IsShown(), 'no flashing arrow')
     local scroll = Skin.parts[ChatFrame1.ScrollToBottomButton]
-    assert(scroll.faceKey == 'Button' and scroll.modeEdge.preset == 'control' and scroll.icon.vertexColor[1] == G.secondary[1], 'a Mode control')
+    assert(scroll.faceKey == 'FG' and scroll.modeEdge.preset == 'control' and scroll.icon.vertexColor[1] == G.secondary[1], 'a Mode control')
     ChatFrame1.ScrollToBottomButton.scripts.OnEnter(ChatFrame1.ScrollToBottomButton)
     assert(scroll.icon.vertexColor[1] == Tone.ivory[1] and scroll.modeEdge.highlight[1] == Tone.ivory[1], 'Ivory on hover')
     ChatFrame1.ScrollToBottomButton.scripts.OnLeave(ChatFrame1.ScrollToBottomButton)
@@ -184,15 +184,15 @@ world.run([==[
     assert(ChatFrame1Tab.Left.alpha == 0 and ChatFrame1Tab.ActiveMiddle.alpha == 0 and ChatFrame1Tab.HighlightRight.alpha == 0)
     local t1, t2 = Skin.parts[ChatFrame1Tab], Skin.parts[ChatFrame2Tab]
     assert(t1.pane:GetHeight() == 24 and t2.pane:GetHeight() == 21, 'selected full, others tucked 3px')
-    assert(t1.faceKey == 'Glass' and t1.face.vertexColor[4] == 0.75 and t1.lift:IsShown(), 'Glass: Mode Glass, see-through')
+    assert(t1.faceKey == 'FG' and t1.face.vertexColor[4] == 0.75 and t1.lift:IsShown(), 'Glass: Mode-FG, see-through')
     assert(t1.face.vertexColor[1] == G.track[1] and t2.face.vertexColor[1] == G.raised[1], 'the selected tab in the chosen tone')
     assert(t1.modeEdge.preset == 'control' and t1.modeEdge.highlight[1] == Tone.ivory[1] and t2.modeEdge.highlight == nil, 'Ivory line on the selected tab only')
     assert(Point(t1.edgeFrame)[2] == t1.pane and Point(t1.edgeFrame)[4] == 2, 'the edge inside the pane')
     local tf = Point(t1.face)
     assert(tf[2] == t1.pane and tf[4] == 2 and tf[5] == -2 and Point(t1.lift)[4] == 2, 'the face stops under the rim: no square corners past the round ones')
     assert(Point(ChatFrame1Tab.Text)[1] == 'CENTER' and Point(ChatFrame1Tab.Text)[2] == t1.pane, 'text on the pane\'s middle')
-    -- Mode-Thin, each ring in pieces: a pane is shorter than the sliced art.
-    assert(t1.modeEdge.styleId == 'thin' and t1.modeEdge.pieces and #t1.modeEdge.parts[1] == 8, 'tab edge: Mode-Thin in pieces')
+    -- Mode-Border, each ring in pieces: a pane is shorter than the sliced art.
+    assert(t1.modeEdge.styleId == 'obsidian' and t1.modeEdge.pieces and #t1.modeEdge.parts[1] == 8, 'tab edge: Mode-Border in pieces')
     local fieldEdge = Skin.parts[ChatFrame1EditBox].modeEdge
     assert(fieldEdge.pieces and scroll.modeEdge.pieces and M.compartment.parts.modeEdge.pieces, 'chat controls in pieces')
     assert(not panel.modeEdge.pieces, 'the window keeps its sliced rings')
@@ -286,18 +286,18 @@ world.run([==[
     M:SetOption('backgroundOpacity', 50)
     assert(not M:SetOption('border', false) and not M:SetOption('borderColor', { 1, 0, 0 }) and panel.modeEdge.holder:IsShown(), 'the edge is locked')
     -- Border Style and Border Metal (owner, November 17, 2026): the window in
-    -- Mode-Thin, Steel by default; any style keeps the layout; tabs and
+    -- Mode-Border in its own metal by default; any style keeps the layout; tabs and
     -- buttons keep their control edge.
-    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and panel.modeEdge.styleId == 'thin'
-        and panel.modeEdge:Metal() == Tone.metal.steel, 'the window in Mode-Thin, Steel')
+    assert(M.db.edgeStyle == 'obsidian' and M.db.edgeMetal == 'default' and panel.modeEdge.styleId == 'obsidian'
+        and panel.modeEdge:Metal() == Tone.metal.obsidian, 'the window in Mode-Border, its own metal')
     local boxBefore, outBefore = Point(ChatFrame1Background), panel.modeEdge:Outset()
     local tabStyle = t1.modeEdge.styleId
-    assert(M:SetOption('edgeStyle', 'round') and panel.modeEdge.styleId == 'round' and t1.modeEdge.styleId == tabStyle, 'Mode-Round on the window only')
+    assert(M:SetOption('edgeStyle', 'obsidianEmpty') and panel.modeEdge.styleId == 'obsidianEmpty' and t1.modeEdge.styleId == tabStyle, 'Mode-Empty on the window only')
     local boxAfter = Point(ChatFrame1Background)
     assert(boxAfter[4] == boxBefore[4] and boxAfter[5] == boxBefore[5] and panel.modeEdge:Outset() == outBefore, 'same box, same reach')
     assert(M:SetOption('edgeMetal', 'gunmetal') and panel.modeEdge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
-    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
-    assert(M:SetOption('edgeStyle', 'thin') and M:SetOption('edgeMetal', 'default') and panel.modeEdge:Metal() == Tone.metal.steel)
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'obsidianEmpty', 'unknown styles are refused')
+    assert(M:SetOption('edgeStyle', 'obsidian') and M:SetOption('edgeMetal', 'default') and panel.modeEdge:Metal() == Tone.metal.obsidian)
     assert(M:SetOption('editPosition', 'top') and Point(ChatFrame1Background)[5] == 9 + 30 and Point(panel.band)[1] == 'TOPLEFT', 'edit box at the top')
     assert(Point(panel.band)[5] == -3, 'the band inside the top edge')
     assert(Point(bar)[5] == -(3 + 30 + 4), 'the scroll bar under the band')
@@ -321,7 +321,7 @@ world.run([==[
     assert(M:SetOption('tuckDepth', 0)); assert(t2.pane:GetHeight() == 28, 'h2 ' .. tostring(t2.pane:GetHeight()))
     assert(M:SetOption('buttons', 'hidden') and not box:IsShown())
     assert(M:SetOption('buttons', 'compartment') and box:IsShown())
-    assert(M:SetOption('glassTabs', false) and t1.faceKey == 'Button' and t1.face.vertexColor[4] == 1, 'Solid: the Mode Button face')
+    assert(M:SetOption('glassTabs', false) and t1.faceKey == 'FG' and t1.face.vertexColor[4] == 1, 'Solid: the Mode-FG face, opaque')
     assert(M:SetOption('scrollBar', false)); bar:Show(); assert(not bar:IsShown() and bar.alpha == 0, 'Scroll Bar off')
     assert(Point(ChatFrame1Background, 2)[4] == 9, 'no gutter without the scroll bar')
     assert(M:SetOption('scrollBar', true)); bar:Show(); assert(bar:IsShown(), 'Scroll Bar on')
@@ -354,7 +354,7 @@ world.run([==[
     M.Initialize(old)
     assert(old.version == 6 and old.backgroundColor[1] == G.panel[1] and old.backgroundOpacity == 60 and old.scrollBar)
     assert(old.borderColor == nil and old.idleOpacity == 30 and old.tabHeight == 24 and old.fontMedia == 'Mode')
-    assert(old.edgeStyle == 'thin' and old.edgeMetal == 'default', 'saved settings take the border defaults')
+    assert(old.edgeStyle == 'obsidian' and old.edgeMetal == 'default', 'saved settings take the border defaults')
     local picked = { version = 1, backgroundColor = { 1, 0, 0 }, backgroundOpacity = 80 }
     M.Initialize(picked); assert(picked.backgroundColor[1] == 1 and picked.backgroundOpacity == 80, 'picked values stay')
     local two = { version = 2, backgroundColor = { Kit.onyx.slate[1], Kit.onyx.slate[2], Kit.onyx.slate[3] } }

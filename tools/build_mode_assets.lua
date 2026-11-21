@@ -16,13 +16,13 @@
 --                    its height, laid over the metal's base disc
 -- Bars/     luminance art multiplied by the bar color (SetVertexColor), and white
 --           "Lift" overlays (alpha only) that add light the multiply can't.
---   Solid (8x8), MatteBase/MatteLift, BG, ButtonBase/ButtonLift, GlassBase/GlassLift,
---   CastBase/CastLift, GradientLift, Panel (+PanelLift), Title, and the single
---   baked files Gradient, Button, Glass, Cast that other addons get through
---   LibSharedMedia (and Matte). Shield: a 32x32 tile, a 1px 45-degree line every 8 texels.
+--   Solid (8x8); FGBase/FGLift (+ baked FG): Mode-FG, the dark glass fill of
+--   every bar and surface; BG: Mode-BG, the lighter graphite empty part;
+--   SurfaceLift: the large panels' soft sheen (Surface).
+--   Shield: a 32x32 tile, a 1px 45-degree line every 8 texels.
 --   CometHead, CometTrail, LineGlow: the Comet spark and the shield finish line.
---   ObsidianBase/ObsidianLift (+ baked Obsidian), ObsidianTrack: Mode-Obsidian's
---   dark glass health fill and its lighter graphite empty part.
+--   (The Mode-Blizz textures and borders were retired on November 20, 2026;
+--   archive/mode-blizz/ keeps them and the builder that drew them.)
 -- Glows/   TextGlow: a soft capsule of light behind health numbers (stretched).
 --          Prism: Mode-Obsidian's glow round a frame on mouseover and focus (sliced at 14).
 -- Controls/ Knob (slide toggle block, radius 2), Blade (slider thumb).
@@ -72,7 +72,6 @@ local function Profile(stops, t)
     return stops[#stops][2]
 end
 local function EdgeShape(spec, w, h, inset, step)
-    if spec.cut then return T.CutRect(inset, inset, w - inset, h - inset, math.max(0, spec.cut - EDGE.CUT_STEP * step)) end
     return T.RoundedRect(inset, inset, w - inset, h - inset, math.max(0, spec.radius - step))
 end
 local rings, keys = EDGE.AllRings(), {}
@@ -119,28 +118,6 @@ local function Profile(points)  -- { {t, v}, ... } over the bar height, t in 0-1
     end
 end
 Luma("Bars/Solid", 8, 8, function() return 1 end)
-local matte = Profile({ { 0, 1 }, { 1, 0.78 } })
-local bg = Profile({ { 0, 0.66 }, { 0.38, 1 }, { 1, 1 } })
-Luma("Bars/MatteBase", BW, BH, matte)
-Luma("Bars/BG", BW, BH, bg)
--- Matte's sheen: a faint 1px top line, then a soft band of light that fades
--- out by the middle; gentle, so the face still reads as matte.
-local matteLift = function(x, y)
-    if y == 0 then return 0.16 end
-    return Profile({ { 0, 0.11 }, { 0.2, 0.08 }, { 0.5, 0.025 }, { 0.62, 0 }, { 1, 0 } })(x, y)
-end
-Lift("Bars/MatteLift", BW, BH, matteLift)
-local gradientLift = Profile({ { 0, 0.20 }, { 0.5, 0 }, { 1, 0 } })
-local buttonBase = function(x, y) if y == BH - 1 then return 0.55 end return Profile({ { 0, 1 }, { 0.55, 1 }, { 1, 0.86 } })(x, y) end
-local buttonLift = function(x, y) if y == 0 then return 0.30 end return Profile({ { 0, 0.10 }, { 0.55, 0 }, { 1, 0 } })(x, y) end
-local glassBase = Profile({ { 0, 1 }, { 0.56, 0.96 }, { 1, 0.84 } })
-local glassLift = Profile({ { 0, 0.20 }, { 0.44, 0.11 }, { 0.5, 0 }, { 1, 0 } })
-local castBase = Profile({ { 0, 1 }, { 0.58, 1 }, { 1, 0.74 } })
-local castLift = Profile({ { 0, 0.10 }, { 0.20, 0.34 }, { 0.42, 0.10 }, { 0.58, 0 }, { 1, 0 } })
-Lift("Bars/GradientLift", BW, BH, gradientLift)
-Luma("Bars/ButtonBase", BW, BH, buttonBase); Lift("Bars/ButtonLift", BW, BH, buttonLift)
-Luma("Bars/GlassBase", BW, BH, glassBase); Lift("Bars/GlassLift", BW, BH, glassLift)
-Luma("Bars/CastBase", BW, BH, castBase); Lift("Bars/CastLift", BW, BH, castLift)
 -- Single-file versions for other addons (LibSharedMedia): the lift baked over a
 -- base that leaves 10% headroom, so the light still reads after the multiply.
 local function Baked(path, base, lift)
@@ -149,39 +126,22 @@ local function Baked(path, base, lift)
         return math.min(1, (base(x, y) * 0.9) * (1 - a) + a)
     end)
 end
-Baked("Bars/Matte", matte, matteLift)
-Baked("Bars/Gradient", function() return 1 end, gradientLift)
-Baked("Bars/Button", buttonBase, buttonLift)
-Baked("Bars/Glass", glassBase, glassLift)
-Baked("Bars/Cast", castBase, castLift)
--- Mode-Obsidian (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): the dark
--- glass health fill (a base 100% to 82% down, a faint 1px top line and a soft
--- band of light fading out by the middle) and the lighter graphite empty part
--- (100% to 76% down, opaque; tinted Slate in game).
-local obsidianBase = Profile({ { 0, 1 }, { 1, 0.82 } })
-local obsidianLift = function(x, y)
+-- Mode-FG (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): the dark glass
+-- fill (a base 100% to 82% down, a faint 1px top line and a soft band of
+-- light fading out by the middle) and Mode-BG, the lighter graphite empty
+-- part (100% to 76% down, opaque; tinted Slate in game).
+local fgBase = Profile({ { 0, 1 }, { 1, 0.82 } })
+local fgLift = function(x, y)
     if y == 0 then return 0.12 end
     return Profile({ { 0, 0.07 }, { 0.25, 0.05 }, { 0.5, 0 }, { 1, 0 } })(x, y)
 end
-Luma("Bars/ObsidianBase", BW, BH, obsidianBase)
-Lift("Bars/ObsidianLift", BW, BH, obsidianLift)
-Baked("Bars/Obsidian", obsidianBase, obsidianLift)
-Luma("Bars/ObsidianTrack", BW, BH, Profile({ { 0, 1 }, { 1, 0.76 } }))
--- Panel (brushed): faint horizontal streaks, one value per row plus fine grain;
--- tiles in both directions, drawn 1:1.
-do
-    local rnd = T.Noise(7)
-    local rows = {}
-    for y = 0, 63 do rows[y] = rnd() end
-    local grain = T.Noise(19)
-    Luma("Bars/Panel", 256, 64, function(_, y) return 0.95 + (rows[y] - 0.5) * 0.08 + (grain() - 0.5) * 0.03 end)
-    Lift("Bars/PanelLift", BW, BH, Profile({ { 0, 0.08 }, { 0.6, 0 }, { 1, 0 } }))
-end
--- Title (grain): even fine noise, tiles both ways, drawn 1:1.
-do
-    local rnd = T.Noise(13)
-    Luma("Bars/Title", 128, 128, function() return 0.96 + (rnd() - 0.5) * 0.08 end)
-end
+Luma("Bars/FGBase", BW, BH, fgBase)
+Lift("Bars/FGLift", BW, BH, fgLift)
+Baked("Bars/FG", fgBase, fgLift)
+Luma("Bars/BG", BW, BH, Profile({ { 0, 1 }, { 1, 0.76 } }))
+-- The large panels' sheen (the approved mock's: white 4.5% at the top, gone
+-- 40% down), with no top line.
+Lift("Bars/SurfaceLift", BW, BH, Profile({ { 0, 0.045 }, { 0.4, 0 }, { 1, 0 } }))
 -- Shield (Hairline): a 1px line at 45 degrees every 8 texels; perpendicular spacing about 5.7px at 1:1.
 Shape("Bars/Shield", 32, 32, function(x, y)
     local d = (x + y) % 8

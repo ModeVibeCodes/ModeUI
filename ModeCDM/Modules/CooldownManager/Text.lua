@@ -14,7 +14,7 @@ if not M then return end
 --   spells["1234"].text = { cooldown = { show, size, anchor, x, y, color,
 --       font, fontMedia, outline ("none", "outline", "thick"), shadow } }
 -- starting from the bar's look (the Text tab) when first changed.
--- Every text is Geist Bold in the chosen face (docs/DESIGN_LANGUAGE.md,
+-- Every text is Urbanist Bold in the chosen face (docs/DESIGN_LANGUAGE.md,
 -- "Cooldown icons"); a font from SharedMedia keeps its own file.
 local Kit = addon.Kit
 local PAD = 2 -- pixels between a text and the edge it sits against

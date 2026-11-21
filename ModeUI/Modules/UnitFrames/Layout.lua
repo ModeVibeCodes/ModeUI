@@ -14,7 +14,7 @@ local function Sides(fdb)
     return "LEFT", "RIGHT", 1
 end
 
--- Text font: the Mode typeface ("Mode": Expressway when installed, else Geist) by default, or any font the player picks.
+-- Text font: the Mode typeface ("Mode": Urbanist) by default, or any font the player picks.
 function M:FontPath(fdb) return Kit.FontPath(fdb, self.id) end
 
 -- One physical pixel in this frame's units (Blizzard's PixelUtil factor over

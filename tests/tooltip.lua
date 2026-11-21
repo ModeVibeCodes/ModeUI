@@ -68,15 +68,15 @@ world.run([==[
     assert(Skin.parts[GameTooltip] == nil, 'nothing skinned while off')
 
     addon:SetModuleEnabled('tooltip', true)
-    -- Look: Blizzard's NineSlice faded; a Mode window: Mode Panel in
-    -- Graphite at 92% with its lift, the `window` edge inside it above the
+    -- Look: Blizzard's NineSlice faded; a Mode window: the Surface (Mode
+    -- Solid with the soft sheen) in Graphite at 92% with its lift, the `window` edge inside it above the
     -- lines, no soft drop under a see-through tooltip.
     local parts = Skin.parts[GameTooltip]
     assert(GameTooltip.NineSlice.alpha == 0 and GameTooltip.TopOverlay.alpha == 0, 'Blizzard\'s border and background faded')
-    assert(parts.faceKey == 'Panel' and parts.face.vertexColor[1] == G.panel[1] and parts.face.vertexColor[4] == 0.92 and parts.lift, 'Mode Panel at 92%')
+    assert(parts.faceKey == 'Surface' and parts.face.vertexColor[1] == G.panel[1] and parts.face.vertexColor[4] == 0.92 and parts.lift, 'the Surface at 92%')
     assert(parts.modeEdge.preset == 'window' and parts.modeEdge.holder:IsShown() and Point(parts.edgeFrame)[4] == 3, 'the window edge inside it')
     assert(parts.edgeFrame:GetFrameLevel() > GameTooltip:GetFrameLevel() and not parts.modeEdge.below:IsShown(), 'above the lines; no drop')
-    assert(parts.modeEdge.tint == nil, 'the edge\'s steel for plain content')
+    assert(parts.modeEdge.tint == nil, 'the edge\'s own metal for plain content')
     assert(GameTooltip.clamped == true and GameTooltip.clampInsets[1] == 0, 'kept on the screen, edge and all')
     assert(Skin.parts[ItemRefTooltip].modeEdge and Skin.parts[ShoppingTooltip1].modeEdge, 'item links and comparisons too')
     local path = Kit.FontPath(M.db, 'tooltip')
@@ -174,16 +174,16 @@ world.run([==[
     assert(M:SetOption('border', false) and not parts.modeEdge.holder:IsShown() and not parts.modeEdge.below:IsShown(), 'Border off: no edge')
     assert(Point(parts.face)[4] == 0, 'the face to the tooltip\'s sides without it')
     M:ResetToDefaults(); assert(M.db.backgroundOpacity == 92 and M.db.border and M.db.npcNameColor == 'reaction')
-    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Thin in
-    -- Steel by default; a switch restyles the edge in place, size unchanged.
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Border in
+    -- its own metal by default; a switch restyles the edge in place, size unchanged.
     local Metal, edge = Tone.metal, parts.modeEdge
-    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and edge.styleId == 'thin' and edge:Metal() == Metal.steel, 'Mode-Thin, Steel')
+    assert(M.db.edgeStyle == 'obsidian' and M.db.edgeMetal == 'default' and edge.styleId == 'obsidian' and edge:Metal() == Metal.obsidian, 'Mode-Border, its own metal')
     local reach, width = edge:Outset(), GameTooltip:GetWidth()
-    assert(M:SetOption('edgeStyle', 'blizz') and edge.styleId == 'blizz' and edge:Metal() == Metal.silver, 'Mode-Blizz, its own metal')
+    assert(M:SetOption('edgeStyle', 'obsidianEmpty') and edge.styleId == 'obsidianEmpty' and edge:Metal() == Metal.obsidian, 'Mode-Empty, its own metal')
     assert(edge:Outset() == reach and GameTooltip:GetWidth() == width and Point(parts.edgeFrame)[4] == 3, 'same reach, same size')
     assert(M:SetOption('edgeMetal', 'gunmetal') and edge:Metal() == Metal.gunmetal and Skin.parts[ItemRefTooltip].modeEdge:Metal() == Metal.gunmetal, 'every tooltip')
-    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'blizz', 'unknown styles are refused')
-    M:ResetToDefaults(); assert(edge.styleId == 'thin' and edge:Metal() == Metal.steel, 'reset: Mode-Thin again')
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'obsidianEmpty', 'unknown styles are refused')
+    M:ResetToDefaults(); assert(edge.styleId == 'obsidian' and edge:Metal() == Metal.obsidian, 'reset: Mode-Border again')
 
     SlashCmdList.MODEUI()
     local window = addon.configWindow
@@ -207,7 +207,7 @@ world.run([==[
     M.Initialize(old)
     assert(old.version == 5 and old.backgroundColor[1] == G.panel[1] and old.healthBar == nil and old.healthColor == nil)
     assert(old.classBorder == false and old.borderSize == nil, 'version 2 defaults: no class color; the size went with version 5')
-    assert(old.edgeStyle == 'thin' and old.edgeMetal == 'default', 'Border Style and Border Metal filled in')
+    assert(old.edgeStyle == 'obsidian' and old.edgeMetal == 'default', 'Border Style and Border Metal filled in')
     -- Version 3 -> 4: a fill still at the old health color (#1C1E21) takes #131212 (then Graphite).
     local three = { version = 3, backgroundColor = { 28 / 255, 30 / 255, 33 / 255 } }
     M.Initialize(three); assert(three.version == 5 and three.backgroundColor[1] == G.panel[1], 'the old health color follows')

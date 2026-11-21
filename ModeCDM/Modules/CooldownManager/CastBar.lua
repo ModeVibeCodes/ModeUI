@@ -113,10 +113,15 @@ end
 
 -- Paint -------------------------------------------------------------------------
 
--- Bar Mode Dark: the fill in darkFill; else Bar Color.
-function M:CastFillColor()
+-- Bar Mode Dark: the fill in darkFill; else your class color (Bar Color:
+-- Class Color) or Bar Color (Custom).
+function M:CastColor()
     local style = self.db.castBar
-    return style.barMode == "dark" and Tone.darkFill or style.barColor
+    local class = style.barColorMode == "class" and UnitColor.PlayerClass("player")
+    return class and { class.r, class.g, class.b } or style.barColor
+end
+function M:CastFillColor()
+    return self.db.castBar.barMode == "dark" and Tone.darkFill or self:CastColor()
 end
 -- The text: Text Color in Color mode; in Dark, Class Color, Bar Color or Custom.
 function M:CastTextColor()
@@ -149,8 +154,8 @@ function M:PaintCastFrame(frame, channel, notInterruptible)
     if frame.channel ~= channel then frame.channel = channel; box.comet:Layout(channel, frame.px) end
     box.comet:SetShown(style.spark)
     box.comet:SetTrail(style.barMode ~= "dark")
-    box.comet:SetColor(style.barColor)
-    local tint = (style.rimColor == "bar" and style.barColor) or (style.rimColor == "custom" and style.rimCustom) or nil
+    box.comet:SetColor(self:CastColor())
+    local tint = (style.rimColor == "bar" and self:CastColor()) or (style.rimColor == "custom" and style.rimCustom) or nil
     local key = tint and string.format("%.3f,%.3f,%.3f", tint[1], tint[2], tint[3]) or "metal"
     if frame.rimKey ~= key then
         frame.rimKey = key

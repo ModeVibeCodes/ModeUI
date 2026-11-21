@@ -33,7 +33,7 @@
   lifted over the name follow it.
 - **Healer layout** (`Modules/UnitFrames/Layouts.lua`, new profiles only):
   the Player a mana frame at Frame Height 26 (the owner's pick in game, a
-  little shorter than Mode-Default's 28), no power bar: a 30px bar block
+  little shorter than Mode-DPS/TANK's 28), no power bar: a 30px bar block
   with a 44px ring (Portrait Size 145), and Frame Width 142, so 136 of bar
   shows past the ring, the party column's width; 180 x 44. The name (12)
   just above the border at the top right (nothing hangs from these frames
@@ -50,8 +50,8 @@
   more rows going up, up to 9; its cast bar 12 tall, Gap -1, icon hidden.
   The Focus 136 x 20 (Frame Width 134, Health 14, Power 3, no portrait), 1px
   under the Target's cast bar, left edges lined up, its cast bar 12 tall,
-  Gap -1. Target of Target and Target of Focus off. Mode-Thin Steel, no text
-  glow, no Drop Shadow, as in Mode-Default.
+  Gap -1. Target of Target and Target of Focus off. Mode-Border in its own metal, no text
+  glow, no Drop Shadow, as in Mode-DPS/TANK.
 - In-game check: a Mode-Healer profile made before these values keeps its
   old ones (layouts only write new profiles). **Navigation:** `/modeui`,
   then **Profiles**. **Action:** if **Mode-Healer** is the profile in use,
@@ -61,7 +61,7 @@
   then **Reload**. **Required state:** a mana user with a target and a
   focus, out of combat, 1080p (alone is fine: the party frames show you).
   **Confirmation:** the Player frame is a blue mana bar about as tall as
-  Mode-Default's, your name on its border at the top right and mana percent
+  Mode-DPS/TANK's, your name on its border at the top right and mana percent
   inside at the right; it sits on the party frames, its right end on
   theirs; the Target sits 1px to its right with its name on the border and
   current health inside at the left; the Focus hangs 1px under the Target's
@@ -69,11 +69,11 @@
   Bar**: **Show** reads Mana (pick Health and the bar shows health again),
   and the slider reads **Frame Height** 26.
 
-## Mode-Default layout (November 18, 2026)
+## Mode-DPS/TANK layout (November 18, 2026)
 
-The unit frames' part of the built-in **Mode-Default** layout (DPS / Tank,
+The unit frames' part of the built-in **Mode-DPS/TANK** layout (DPS / Tank,
 `Shared/Runtime/Layouts.lua`), from the owner's layout editor, is in
-`Modules/UnitFrames/Layouts.lua`. It only builds the new Mode-Default
+`Modules/UnitFrames/Layouts.lua`. It only builds the new Mode-DPS/TANK
 profile; no existing profile changes. The same at 1080 and 1440 except the
 height (y) of the row:
 
@@ -88,7 +88,7 @@ height (y) of the row:
   soft drop), so the icons on their borders keep a crisp 1px shadow line
   instead of sitting in the drop's dark halo. Aura icons (buffs and debuffs)
   at Spacing 1 on every frame, sharing one shadow pixel. Every frame's (and
-  its cast bar's) border in **Mode-Thin Steel**. Every frame's border
+  its cast bar's) border in **Mode-Border in its own metal**. Every frame's border
   and cast bar border are drawn in pieces in every profile (Target of Target
   showed only corner specks; DESIGN_LANGUAGE.md, "Pieces"). Without a power bar the health
   bar fills the block, so a Bottom slot sits on the frame's bottom edge.
@@ -154,7 +154,7 @@ any Ring Style with any finish and Portrait Size 165.
   unchanged (`portraitRing`, `portraitRingStyle`, `portraitRingMetal`,
   `portraitRingColor`; `M.RingFinish` and `M:SetRingFinish` map the one
   choice onto them).
-- The default is **Mode-Blizz in Class Color**: the class color for players,
+- The default is **Mode-Border's ring lighting in Class Color**: the class color for players,
   the reaction color for NPCs. A colored ring (Class Color, Custom and the
   combat red) draws its Ring Style's own lighting in five tones made from the
   color (`Style.ColorTones`: hi and light 60% and 30% toward white, the color
@@ -270,7 +270,7 @@ and power bars; other values stay.
 
 ## Bold bar text, health by color, auras clear of the ring (layout version 22)
 
-- Text in the bars and the cast bar in Geist Bold; names on the border stay
+- Text in the bars and the cast bar in Bold; names on the border stay
   SemiBold. Cast text 11px.
 - Health texts in their Default color follow **Health Text Color** (Text tab):
   By Health (default: Rosewood at 30% and under, Ivory, Celadon at full,
@@ -292,7 +292,7 @@ cast text to 11.
   0.04–0.84 down) and sits on a dark disc, so nothing behind shows through.
 - One text shadow: the lifted second copy is off by default (it doubled the
   text); when turned on, its copy of a Gradient name carries no color codes.
-- Names in Geist SemiBold when the frame's font is Geist (`Style.Weighted`);
+- Names in SemiBold when the frame's font is the Mode typeface (`Style.Weighted`);
   the Gradient runs 40% toward white.
 - The cast bar icon sits on the portrait side; the Comet spark is clipped to
   the bar, so it never shows past the bar's start.
@@ -317,18 +317,18 @@ from `Shared/Style`:
 - **Frame:** the bar block (health, a 1px black line, power) inside a
   `Style.Edge` border, `frame` (2px band, a 1px black line just inside) on the
   Player and Target and `frameThin` (1px) on the smaller frames, in each
-  frame's **Border Style** and **Border Metal** (Frame tab; Mode-Blizz in
-  Silver by default), the cast bar with it. The border covers its
+  frame's **Border Style** and **Border Metal** (Frame tab; Mode-Border in
+  its own metal by default), the cast bar with it. The border covers its
   own rounded corners, so nothing is masked. Frames keep the Onyx frame's
   overall size, so positions and attachments carry over.
-- **Portrait:** a `Style.Ring` (Mode-Blizz, no gap) centred on the block's
+- **Portrait:** a `Style.Ring` (Mode-Border's ring lighting, no gap) centred on the block's
   portrait-side edge, drawn over the bars, which run under it. Portrait Ring:
-  Metal (the default until layout version 24: **Ring Style**, any Mode border style, Mode-Blizz by default,
+  Metal (the default until layout version 24: **Ring Style**, Mode-Border or Mode-Empty, Mode-Border by default,
   in **Ring Metal**, Default being the style's own), Class Color or Custom
-  (both Mode-BlizzEmpty, the flat color); the combat ring is Mode-BlizzEmpty
-  red.
-- **Bars:** Mode Matte health and Mode Gradient power over Mode BG on Slate at
-  100%; any SharedMedia texture still works. Combined shields
+  (in the ring style's lighting, in tones of the color); the combat ring is in
+  the combat red.
+- **Bars:** Mode-FG health (Dark) and power over Mode-BG on Slate at
+  85%; any SharedMedia texture still works. Combined shields
   (`Style.Shield`) on health, from Blizzard's heal prediction calculator
   (`UNIT_ABSORB_AMOUNT_CHANGED`, `UNIT_HEAL_PREDICTION`); **Shields** on the
   Health Bar tab turns them off.
@@ -337,10 +337,10 @@ from `Shared/Style`:
   Cast Bar tab says so. Blizzard's Player cast bar stays faded while either
   holds it (`Kit.NativeFade`, shared since November 18, 2026). Without ModeCDM
   nothing changes. Target and Focus cast bars are untouched.
-- **Cast bar:** a `frameThin` block, black inside, Mode Cast over Mode BG, with
+- **Cast bar:** a `frameThin` block, black inside, Mode-FG over Mode-BG, with
   the Comet spark (`Style.Comet`). Its 2px gap is clear space between the two
   borders' shadow rings, and with a portrait it starts where the ring ends.
-- **Text:** Geist ("Mode Geist"); names in the subtle Gradient
+- **Text:** the Mode typeface (Urbanist, "Mode"); names in the solid class color (Gradient an option)
   (`Style.GradientText`, a secret name keeps the plain color), the new default
   Name Color.
 - **Sizes:** Player and Target 184 wide, 34px health, 3px power, a 66px
@@ -1344,6 +1344,39 @@ character-panel portrait technique (`ModeThumb` rim plus Blizzard's
   `focustarget`, so while either frame is on a hidden-when-unused timer
   refreshes them every 0.1 s, as Blizzard's own Target of Target does with
   `OnUpdate`.
+
+## Target health color (layout version 25, November 20, 2026)
+
+Health Color is each frame's own, a matched Target's too (`M.ownKeys`): the
+Target's health defaults to Class Color (its class or reaction color) while
+the Player's stays dark. Version 25 moves a Target still at Default (Dark)
+to Class Color; a picked color stays. The Health Bar tab shows Health Color
+for a matched Target.
+
+## Totem timers (November 20, 2026)
+
+`Totems.lua` reskins Blizzard's TotemFrame (the timers it hangs below its
+Player frame) while the ModeUI Player frame is on, look only: each timer a
+Mode icon (24 x 20, cropped, the circle mask taken off) in the `frameThin`
+edge, its rim the element's color for a Shaman (`Tone.totem`), Blizzard's
+gold ring faded, a flat swipe, the time in Urbanist Bold 10 Text bright
+(a hook puts the color back after Blizzard's per-frame recolor). The Player
+frame off brings Blizzard's look back. `tests/totem_timers.lua`.
+
+Placement (`db.totems`: Attach and Size): the timers leave Blizzard's Player
+frame layout (`ignoreFramePositionManager`, as Blizzard does for its cast
+bar) and hang from the ModeUI Player frame's bar block: **Below, Right**
+(default; Mode-DPS/TANK: their top 1px under the block's shadow, outside
+the frame, growing left from its right edge), **Above, Right** (their
+bottom 1px over its top, growing left, the time on the icon) or **Above,
+Left** (Mode-Healer: the same height, from 1px past the portrait ring's
+shadow growing right, clear of the name at the top right, 24 wide, the
+time on the icon); **Blizzard's Place** gives them back. Each button holds
+its icon and edge, neighbours share one shadow pixel; the row is laid out
+again after each Blizzard update. Fitted once per profile (`fit` 1): a
+Player mana frame (Bar Shows Mana) still at the default place, or at the
+Above, Right at 18 (the first fitting's and healer@7's, which the owner
+found too small), takes Above, Left at 24; any other keeps its place.
 
 ## Settings (`modules.unitFrames`)
 

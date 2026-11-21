@@ -40,7 +40,7 @@ function M:LayoutTile(tile, size, height)
     size = Skin.Snap(size or self.TILE_SIZE, px)
     height = height or size
     tile:SetSize(size, height)
-    Skin.PaintBox(tile.parts, tile, "Button", self.TILE_FILL, 1, true)
+    Skin.PaintBox(tile.parts, tile, "FG", self.TILE_FILL, 1, true)
     self:PaintEdge(tile.parts.modeEdge, self.db.buttonBorder)
     return size, height
 end

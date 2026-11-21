@@ -170,14 +170,17 @@ world.run([==[
     local M = addon.PartyFrames
     assert(M and addon.modules.partyFrames == M and M.category == 'frames' and M.defaultEnabled == false)
     assert(not M.enabled and M.header == nil and M.ghost == nil, 'off by default; nothing built')
-    -- The Mode design language: Geist, Mode Glass on Mode BG, 150 x 34 + 3, Gradient names.
-    assert(M.db.version == 7 and M.db.fontMedia == 'Mode' and M.db.foregroundTexture == 'media:Mode Glass' and M.db.backgroundTexture == 'media:Mode BG')
+    -- The Mode-Obsidian look (the theme part runs on every profile): Urbanist,
+    -- Mode-FG on Mode-BG at 85%, 150 x 34 + 3, Gradient names, Backlit
+    -- dispels, the Prism glow on mouseover and focus.
+    assert(M.db.version == 7 and M.db.fontMedia == 'Mode' and M.db.foregroundTexture == 'media:Mode-FG' and M.db.backgroundTexture == 'media:Mode-BG')
+    assert(M.db.dispelFrom == 'bottom' and M.db.hoverGlow and M.db.focusGlow and not M.db.hoverHighlight, 'Backlit dispels, the glow in place of the mouse tint')
     assert(M.db.shieldsTexture == 'Shield' and M.db.shieldsColorMode == 'health' and M.db.shieldsOpacity == 100, 'the standard shield look')
-    assert(M.db.backgroundOpacity == 60 and M.db.powerBackgroundOpacity == 60, 'see-through empty bars')
+    assert(M.db.backgroundOpacity == 85 and M.db.powerBackgroundOpacity == 85, 'see-through empty bars')
     assert(M.db.nameShow and M.db.nameAnchor == 'LEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
     assert(M.db.spacing == 1 and M.db.auras.dispellable.show and M.db.auras.magic.filter == 'notMine' and M.db.auras.tracked1.spells[1] == nil)
     assert(M.db.healthHeight == 34 and M.db.width == 150 and M.db.powerHeight == 3 and M.db.borderStyle == nil and M.db.corner == nil)
-    assert(M.db.shieldTexture == nil and M.db.nameColorMode == 'gradient' and M.db.healthTextColor == 'health' and M.db.aggroHighlight and M.db.healthTextShow)
+    assert(M.db.shieldTexture == nil and M.db.nameColorMode == 'class' and M.db.healthTextColor == 'health' and M.db.aggroHighlight and M.db.healthTextShow)
     assert(M.db.auras.magic.glow == 'none' and M.db.dispel.Magic.gradient and not M.db.dispel.Magic.border and not M.db.dispel.Magic.health, 'glows off, the dispel Gradient by default')
     assert(PartyFrame.parent == UIParent, 'Blizzard untouched while off')
 
@@ -213,26 +216,27 @@ world.run([==[
     -- The group edge round the bars' area: a 1px rim, nothing masked.
     assert(p1.panel.edge.preset == 'group' and p1.geometry.border == 1 and #(p1.health:GetStatusBarTexture().masks or {}) == 0)
     assert(Point(p1.health)[2] == p1.panel.inner, 'the bars fill the area inside the rim')
-    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Blizz in
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Border in
     -- its own metal by default, the member and its inset power bar together;
-    -- any style keeps the size.
+    -- any style keeps the size; an old id (Mode-Round) draws as Mode-Border.
     local Metal = addon.Style.Tone.metal
-    assert(M.db.edgeStyle == 'blizz' and M.db.edgeMetal == 'default' and p1.panel.edge.styleId == 'blizz'
-        and p1.panel.edge:Metal() == Metal.silver and p1.powerEdge.styleId == 'blizz', 'members in Mode-Blizz, Silver')
+    assert(M.db.edgeStyle == 'obsidian' and M.db.edgeMetal == 'default' and p1.panel.edge.styleId == 'obsidian'
+        and p1.panel.edge:Metal() == Metal.obsidian and p1.powerEdge.styleId == 'obsidian', 'members in Mode-Border')
     local wide, tall = p1.geometry.width, p1.geometry.height
-    assert(M:SetOption('edgeStyle', 'round') and p1.panel.edge.styleId == 'round' and p1.powerEdge.styleId == 'round'
-        and p1.geometry.width == wide and p1.geometry.height == tall and p1.width == wide, 'Mode-Round, same size')
+    assert(M:SetOption('edgeStyle', 'obsidianEmpty') and p1.panel.edge.styleId == 'obsidianEmpty' and p1.powerEdge.styleId == 'obsidianEmpty'
+        and p1.geometry.width == wide and p1.geometry.height == tall and p1.width == wide, 'Mode-Empty, same size')
+    assert(M:SetOption('edgeStyle', 'round') and p1.panel.edge.styleId == 'obsidian', 'an old id draws as Mode-Border')
     assert(M:SetOption('edgeMetal', 'gunmetal') and p1.panel.edge:Metal() == Metal.gunmetal and p1.powerEdge:Metal() == Metal.gunmetal)
     assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
-    assert(M:SetOption('edgeStyle', 'blizz') and M:SetOption('edgeMetal', 'default') and p1.panel.edge.styleId == 'blizz'
-        and p1.panel.edge:Metal() == Metal.silver)
-    -- Mode Glass draws its base with the white lift over the fill; the empty
-    -- part is Slate at 60% with no black plate behind it.
+    assert(M:SetOption('edgeStyle', 'obsidian') and M:SetOption('edgeMetal', 'default') and p1.panel.edge.styleId == 'obsidian'
+        and p1.panel.edge:Metal() == Metal.obsidian)
+    -- Mode-FG draws its base with the white lift over the fill; the empty
+    -- part is Slate at 85% with no black plate behind it.
     local S = addon.Style
-    assert(p1.health.statusBarTexture == S.AssetPath('GlassBase') and p1.health.sheen:IsShown() and p1.health.sheen.texture == S.AssetPath('GlassLift'), 'Glass base + lift')
+    assert(p1.health.statusBarTexture == S.AssetPath('FGBase') and p1.health.sheen:IsShown() and p1.health.sheen.texture == S.AssetPath('FGLift'), 'Mode-FG base + lift')
     assert(Point(p1.health.sheen)[2] == p1.health:GetStatusBarTexture(), 'the lift follows the fill')
-    assert(math.abs(p1.health.bg.vertexColor[4] - 0.6) < 1e-6 and p1.panel.back.vertexColor[4] == 0, 'see-through, no plate')
-    assert(M:SetOption('healthColorMode', 'default') and p1.health.statusBarColor[1] == S.Tone.darkFill[1] and S.Hex('1C1D1C')[2] == S.Tone.darkFill[2], 'Dark is #1C1D1C')
+    assert(math.abs(p1.health.bg.vertexColor[4] - 0.85) < 1e-6 and p1.panel.back.vertexColor[4] == 0, 'see-through, no plate')
+    assert(M:SetOption('healthColorMode', 'default') and p1.health.statusBarColor[1] == S.Tone.darkFill[1] and S.Hex('161618')[2] == S.Tone.darkFill[2], 'Dark is #161618 (Mode-Obsidian)')
     assert(M:SetOption('healthColorMode', 'class'))
     -- Health Text Glow: on by default, a halo on the health text's side.
     local hg = p1.texts.healthText.glow
@@ -294,8 +298,14 @@ world.run([==[
     assert(M:SetOption('sortBy', 'group') and h.attributes.groupBy == nil)
     assert(M:SetOption('reverseOrder', true) and M.members[1].unit == 'party2' and M:SetOption('reverseOrder', false))
     assert(M:SetOption('growth', 'right') and h.attributes.point == 'LEFT' and h.attributes.xOffset > 0 and h.attributes.yOffset == 0)
-    assert(Point(h)[1] == 'TOPLEFT', 'the header is anchored at the corner it grows from')
+    -- The header hangs by the point it lays members out from (Blizzard centers
+    -- each member on it and sizes the header itself), at that point of the stand-in.
+    assert(Point(h)[1] == 'LEFT', 'the header is anchored by the point it grows from')
     assert(M:SetOption('spacing', 10) and h.attributes.xOffset == 10 and M:SetOption('growth', 'down'))
+    local gl, gw, gb, gh = M.ghost:GetLeft(), M.ghost:GetWidth(), M.ghost:GetBottom(), M.ghost:GetHeight()
+    local hp = Point(h)
+    assert(hp[1] == 'TOP' and hp[3] == 'BOTTOMLEFT' and math.abs(hp[4] - (gl + gw / 2)) <= 0.5 and math.abs(hp[5] - (gb + gh)) <= 0.5,
+        'growing down: by its top, on the stand-in top middle, so the header width never moves the column')
     assert(M:SetOption('showPlayer', false) and M.members[1].unit == 'party1' and M:SetOption('showPlayer', true))
     assert(not M:SetOption('growth', 'sideways') and not M:SetOption('width', 9000) and not M:SetOption('nope', 1), 'validated')
     -- Settings never change in combat.
@@ -392,11 +402,14 @@ world.run([==[
     assert(M:SetAuraOption('magic', 'border', 'type') and M:SetAuraOption('magic', 'borderSize', 2) and p1.auraIcons.magic[1].edge.rim == 2 and not M:SetAuraOption('magic', 'borderSize', 3), 'border size 1 or 2')
     assert(M:SetAuraOption('heals', 'show', false) and not p1.auraIcons.heals[1]:IsShown())
     assert(not M:SetAuraOption('heals', 'filter', 'nonsense') and not M:SetAuraOption('heals', 'width', 99) and not M:SetAuraOption('heals', 'glow', 'blink'), 'validated')
-    -- Debuff effects by type: the Gradient from the top edge by default (72% of
-    -- the health, from 56%), the rim and the health color when chosen.
+    -- Debuff effects by type: the Gradient rising from the bottom edge by
+    -- default (Backlit, Mode-Obsidian; 72% of the health, from 56%), the rim
+    -- and the health color when chosen.
     assert(p1.dispel.gradient:IsShown() and p1.dispel.gradient.gradient and p1.panel.edge.tint == nil, 'Magic gradient')
-    assert(math.abs(p1.dispel.gradient.height - p1.health.height * 0.72) < 0.01 and Point(p1.dispel.gradient)[1] == 'TOPLEFT')
-    assert(math.abs(p1.dispel.gradient.gradient[3].a - 0.56) < 1e-9 and p1.dispel.gradient.gradient[2].a == 0, 'fades out downward')
+    assert(math.abs(p1.dispel.gradient.height - p1.health.height * 0.72) < 0.01 and Point(p1.dispel.gradient)[1] == 'BOTTOMLEFT')
+    assert(math.abs(p1.dispel.gradient.gradient[2].a - 0.56) < 1e-9 and p1.dispel.gradient.gradient[3].a == 0, 'fades out upward')
+    assert(M:SetOption('dispelFrom', 'top') and Point(p1.dispel.gradient)[1] == 'TOPLEFT' and math.abs(p1.dispel.gradient.gradient[3].a - 0.56) < 1e-9, 'or from the top edge')
+    assert(M:SetOption('dispelFrom', 'bottom'))
     assert(M:SetDispelEffect('Magic', 'health', true) and p1.dispel.health:IsShown() and p1.dispel.health.vertexColor[3] == M.db.auraMagicColor[3])
     assert(M:SetDispelEffect('Magic', 'border', true) and p1.panel.edge.tint == M.db.auraMagicColor, 'the rim in the type color')
     assert(M:SetDispelEffect('Magic', 'border', false) and p1.panel.edge.tint == nil and M:SetDispelEffect('Magic', 'health', false))
@@ -477,8 +490,8 @@ world.run([==[
     assert(M:SetOption('showOvershields', false) and view.faces[1].health.shield.full:GetAlpha() == 0 and M:SetOption('showOvershields', true))
     M.previewStates.overshield = nil
     -- The look reaches the shield: texture, custom color, opacity (10-200%).
-    assert(M:SetOption('shieldsTexture', 'Glass') and view.faces[1].health.shield.look.texture == 'Glass' and not M:SetOption('shieldsTexture', 'Nope'))
-    assert(view.faces[1].health.shield.attachedLines.texture:find('Glass'), 'the lines take the texture')
+    assert(M:SetOption('shieldsTexture', 'FG') and view.faces[1].health.shield.look.texture == 'FG' and not M:SetOption('shieldsTexture', 'Glass'), 'Mode-FG; a retired texture is refused')
+    assert(view.faces[1].health.shield.attachedLines.texture:find('FG'), 'the lines take the texture')
     assert(M:SetOption('shieldsColorMode', 'custom') and view.faces[1].health.shield.look.color == M.db.shieldsColor)
     assert(M:SetOption('shieldsOpacity', 150) and view.faces[1].health.shield.look.opacity == 1.5 and not M:SetOption('shieldsOpacity', 250))
     assert(math.abs(view.faces[1].health.shield.attachedLift.vertexColor[4] - 0.63) < 1e-6, 'lift at 150% of 42%')
@@ -599,11 +612,11 @@ H.Load({ before = CONTAINERS }).run([==[
     assert(not sb.dispelEffects.health:IsShown() and #(sb.dispelEffects.health.masks or {}) == 0, 'nothing masked')
     assert(M:SetDispelEffect('Magic', 'border', true) and p1.dispelContainer.slots.Magic.button.dispelEffects.rim.tint == M.db.auraMagicColor)
     -- The dispel rim takes the Border Style's shape (in the type's color).
-    assert(p1.dispelContainer.slots.Magic.button.dispelEffects.rim.styleId == 'blizz')
+    assert(p1.dispelContainer.slots.Magic.button.dispelEffects.rim.styleId == 'obsidian')
     local before = p1.dispelContainer
-    assert(M:SetOption('edgeStyle', 'thin') and p1.dispelContainer ~= before, 'a new style: new slots')
+    assert(M:SetOption('edgeStyle', 'obsidianEmpty') and p1.dispelContainer ~= before, 'a new style: new slots')
     local rim = p1.dispelContainer.slots.Magic.button.dispelEffects.rim
-    assert(rim.styleId == 'thin' and rim.tint == M.db.auraMagicColor and M:SetOption('edgeStyle', 'blizz'))
+    assert(rim.styleId == 'obsidianEmpty' and rim.tint == M.db.auraMagicColor and M:SetOption('edgeStyle', 'obsidian'))
     slots = p1.dispelContainer
     assert(M:SetDispelEffect('Curse', 'health', true) and p1.dispelContainer ~= slots and p1.dispelContainer.slots.Curse.button.dispelEffects.health:IsShown())
     for _, kind in ipairs(M.dispelTypes) do
@@ -683,7 +696,7 @@ H.Load({ before = STUBS, saved = v1 }).run([==[
     -- Version 3: Dispellable by You takes the Magic group's place, first in its row.
     local d = db.auras.dispellable
     assert(d.anchor == 'BOTTOMRIGHT' and d.place == 'outside' and d.grow == 'down' and d.width == 16 and d.filter == 'mine' and d.show)
-    assert(db.powerOpacity == 100 and db.powerBackgroundOpacity == 60 and db.auras.tracked1.spells[1] == nil)
+    assert(db.powerOpacity == 100 and db.powerBackgroundOpacity == 85 and db.auras.tracked1.spells[1] == nil, 'the empty part at the default (Mode-Obsidian: 85)')
     assert(db.dispelHighlight == nil and db.dispel.Magic.gradient and not db.dispel.Magic.border, 'fill became the gradient')
 ]==], "party_v1")
 
@@ -701,16 +714,16 @@ H.Load({ before = STUBS, saved = v3 }).run([==[
     local db, M = addon.PartyFrames.db, addon.PartyFrames
     assert(db.version == 7 and db.width == 150 and db.healthHeight == 60 and db.powerHeight == 3, 'defaults move, a picked height stays')
     assert(db.borderStyle == nil and db.corner == nil and db.shieldTexture == nil and db.absorbColor == nil and db.overshieldOpacity == nil, 'retired')
-    assert(db.foregroundTexture == 'media:Mode Glass' and db.backgroundTexture == 'media:Mode BG' and db.fontMedia == 'Mode')
+    assert(db.foregroundTexture == 'media:Mode-FG' and db.backgroundTexture == 'media:Mode-BG' and db.fontMedia == 'Mode')
     assert(db.liftedShadow == false and db.nameColorMode == 'custom' and db.rangeOpacity == 55, 'a picked name color stays')
     assert(db.nameAnchor == 'LEFT' and db.nameX == 17 and db.healthTextAnchor == 'TOP', 'elements at the old place move; moved ones stay')
     assert(db.dispel.Magic.gradient and not db.dispel.Magic.border, 'border alone was the default: Gradient now')
     assert(db.dispel.Curse.border and db.dispel.Curse.health and not db.dispel.Curse.gradient, 'a picked set stays')
 ]==], "party_v3")
 
--- Version 4 -> 5: Mode Gradient health (the version 4 default) becomes Mode
--- Glass; another picked texture stays.
-for _, case in ipairs({ { 'media:Mode Gradient', 'media:Mode Glass' }, { 'media:Mode Matte', 'media:Mode Matte' } }) do
+-- Version 4 -> 5: Mode Gradient health (the version 4 default) becomes the
+-- default (Mode-FG now); another picked texture stays.
+for _, case in ipairs({ { 'media:Mode Gradient', 'media:Mode-FG' }, { 'media:Mode Matte', 'media:Mode Matte' } }) do
     local v4 = world.saved()
     local p4 = v4.profiles.Default.modules.partyFrames
     p4.version, p4.foregroundTexture = 4, case[1]
@@ -740,7 +753,7 @@ p6.edgeStyle, p6.edgeMetal = nil, nil
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local db = addon.PartyFrames.db
     assert(db.version == 7 and db.backgroundOpacity == 60 and db.powerBackgroundOpacity == 35, '100 becomes 60')
-    assert(db.edgeStyle == 'blizz' and db.edgeMetal == 'default', 'the border keys arrive with their defaults')
+    assert(db.edgeStyle == 'obsidian' and db.edgeMetal == 'default', 'the border keys arrive with their defaults')
 ]==], "party_v6")
 
 -- Invalid saved settings stop validation instead of being reset.
@@ -752,7 +765,7 @@ saved.profiles.Default.modules.partyFrames.auras.heals.anchor = 'NOWHERE'
 assert(not pcall(H.Load, { before = STUBS, saved = saved }), 'invalid aura group refused')
 print("party frames: all checks passed")
 
--- The Mode-Default layout (DPS / Tank, Modules/PartyFrames/Layouts.lua): the
+-- The Mode-DPS/TANK layout (DPS / Tank, Modules/PartyFrames/Layouts.lua): the
 -- values it writes at both screen heights, then the stand-in Edit Mode moves
 -- in a world that uses the profile.
 local layoutWorld = H.Load({ before = STUBS })
@@ -767,6 +780,7 @@ layoutWorld.run([==[
         assert(db.enabled == true and db.width == 136 and db.healthHeight == 30 and db.powerHeight == 3 and db.powerStyle == 'below')
         assert(db.spacing == 1 and db.growth == 'down' and db.showPlayer == false and db.powerShown == 'healers')
         assert(db.healthColorMode == 'default', 'health in Dark (owner, November 18, 2026)')
+        assert(db.foregroundTexture == 'media:Mode-FG' and db.backgroundTexture == 'media:Mode-BG' and db.edgeStyle == 'obsidian' and db.edgeMetal == 'default', 'the Mode-Obsidian look after the layout')
         for group, size in pairs(ICONS) do
             local a = db.auras[group]
             assert(a.width .. 'x' .. a.height == size and a.width - a.height == 6, group)
@@ -790,7 +804,7 @@ layoutWorld.run([==[
 -- Only this module's part (and its places) go into the Default profile, so
 -- the check stays on these frames whatever other modules add to the layout.
 local used = layoutWorld.saved()
-local built, default = used.profiles['Mode-Default'], used.profiles.Default
+local built, default = used.profiles['Mode-DPS/TANK'], used.profiles.Default
 default.modules.partyFrames = built.modules.partyFrames
 for _, id in ipairs({ 'partyFrames' }) do default.positions[id] = built.positions[id] end
 H.Load({ before = STUBS, saved = used }).run([==[
@@ -804,9 +818,39 @@ H.Load({ before = STUBS, saved = used }).run([==[
     assert(right == -359 and top == 114, 'right edge at -359 (the Player portrait), the top 74 over 40')
     -- Four members from the top: 4 x 36 + 3 = 147, their middle half a pixel over 40.
     assert(top - 147 / 2 == 40.5)
-    -- The secure header starts at the stand-in's top left (its edges from UIParent's BOTTOMLEFT).
+    -- The secure header hangs by its top on the stand-in's top middle (from
+    -- UIParent's BOTTOMLEFT): members centered on it line up with the stand-in.
     local point, _, relative, hx, hy = unpack(M.header.anchor)
-    assert(point == 'TOPLEFT' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() and hy == ghost:GetBottom() + 184)
+    assert(point == 'TOP' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() + 68 and hy == ghost:GetBottom() + 184)
     assert(M.header:GetAttribute('showPlayer') == false and M.header:GetAttribute('point') == 'TOP', 'four members, from the top')
 ]==], "party_layout_world")
-print("party frames: Mode-Default layout checks passed")
+-- The Healer layout: the column hangs from the Player frame's bar block, so
+-- its right edge is the block's real one, and it follows the block when the
+-- Player frame changes (owner, November 20, 2026: placed on the screen at
+-- x -323 it sat 2px right of the frame at 1.2 pixels a unit).
+local healerWorld = H.Load({ before = STUBS })
+local hs = healerWorld.saved()
+local hb, hd = hs.profiles['Mode-Healer'], hs.profiles.Default
+hd.modules.partyFrames, hd.modules.unitFrames = hb.modules.partyFrames, hb.modules.unitFrames
+for _, id in ipairs({ 'partyFrames', 'unitFramesPlayer', 'unitFramesTarget', 'unitFramesFocus' }) do hd.positions[id] = hb.positions[id] end
+H.Load({ before = STUBS, saved = hs }).run([==[
+    local PF, UF = addon.PartyFrames, addon.UnitFrames
+    assert(PF.active and UF.active and PF.ghost, 'both on')
+    local bars = _G[UF.BarsFrameName('player')]
+    -- The 1080 places sit one physical pixel left of the block's edge (the owner's nudge at 1.2 pixels a unit).
+    local nudge = addon.Kit.PixelSize(UIParent)
+    local function Right(f) return f:GetLeft() + f:GetWidth() + (f == PF.ghost and nudge or 0) end
+    local function Top(f) return f:GetBottom() + f:GetHeight() end
+    assert(math.abs(Right(PF.ghost) - Right(bars)) < 0.01 and math.abs(Top(PF.ghost) - (bars:GetBottom() - 1)) < 0.01, 'the column on the block')
+    local point, _, relative, hx, hy = unpack(PF.header.anchor)
+    assert(point == 'TOP' and math.abs(hx - (Right(bars) - nudge - PF.ghost:GetWidth() / 2)) <= 0.5, 'the header under the block, its right edge the block edge')
+    -- A wider Player frame: the block's right edge moves, the column follows.
+    assert(UF:SetFrameOption('player', 'barWidth', UF.db.player.barWidth + 10))
+    -- The client fires OnSizeChanged on the resized stand-in (the mock doesn't).
+    local resized = UF.ghosts.player.scripts.OnSizeChanged
+    assert(resized, 'the stand-in watches its size'); resized(UF.ghosts.player)
+    assert(math.abs(Right(PF.ghost) - Right(bars)) < 0.01, 'the column follows the block: ' .. Right(PF.ghost) .. ' vs ' .. Right(bars))
+    point, _, relative, hx, hy = unpack(PF.header.anchor)
+    assert(math.abs(hx - (Right(bars) - nudge - PF.ghost:GetWidth() / 2)) <= 0.5, 'the secure header follows too')
+]==], "party_healer")
+print("party frames: Mode-DPS/TANK layout checks passed")

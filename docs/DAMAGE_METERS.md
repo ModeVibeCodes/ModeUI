@@ -150,9 +150,9 @@ the pixel grid. From the outside in:
 
 | Part | Default | Setting |
 |---|---|---|
-| Edge | the Mode `window` edge (Mode-Thin by default: a 2px Steel bevel, a 1px black line just inside and a shadow ring, 3px in all) inside the window, above what it holds; no soft drop while the window is see-through (Background Opacity or Opacity under 100) | Border Style and Border Metal (Frame tab, Border group), per window |
-| Background | Mode Panel in Graphite panel (#121213) at 75% | Frame › Background Color, Background Opacity |
-| Header | 20px Mode Title strip in Graphite raised (#1A1A1C), tiled one texel per pixel | Header › Texture, Height, Header Color, Header Opacity |
+| Edge | the Mode `window` edge (Mode-Border by default: a 2px dark glass band with a lit top and a champagne bottom, a 1px black line just inside and a shadow ring, 3px in all) inside the window, above what it holds; no soft drop while the window is see-through (Background Opacity or Opacity under 100) | Border Style and Border Metal (Frame tab, Border group), per window |
+| Background | Surface in Graphite panel (#0B0B0C) at 75% | Frame › Background Color, Background Opacity |
+| Header | 20px Mode-FG strip in Graphite raised (#131314) | Header › Texture, Height, Header Color, Header Opacity |
 | Title | 11, the meter's own capitals ("Damage Done"), Graphite text, outlined, left | Text › Title; Header › Uppercase Title, Title Position, Title X, Title Y |
 | Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
 | Timer | 11, Graphite muted, outlined, at the right edge | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
@@ -160,9 +160,9 @@ the pixel grid. From the outside in:
 | Padding | 1px | Window › Padding |
 | Rows | 8 rows, 18 high, 1 apart, 240 wide | Window › Width, Rows, Row Height, Spacing |
 | Icon | square class icon, 1px gap | Bars › Icon |
-| Bar | Mode Panel (its base times the color, plus its lift), class colored | Bars › Foreground, Bar Opacity, Bar Color (Class or Custom), Other Color |
-| Empty bar | Mode BG tinted Slate, at 100% | Bars › Background, Background Opacity |
-| Name, Value | the Mode typeface 12 (Expressway when installed, else Geist), pure white, outlined, crisp shadow, 4px in | Text › Name or Value: Font, Size, Outline, Slug Text, Text Shadow, Color (Color or Class), Text Color; Text Inset |
+| Bar | Mode-FG (its base times the color, plus its lift), class colored | Bars › Foreground, Bar Opacity, Bar Color (Class or Custom), Other Color |
+| Empty bar | Mode-BG tinted Slate, at 100% | Bars › Background, Background Opacity |
+| Name, Value | the Mode typeface 12 (Urbanist), pure white, outlined, crisp shadow, 4px in | Text › Name or Value: Font, Size, Outline, Slug Text, Text Shadow, Color (Color or Class), Text Color; Text Inset |
 
 Each text (Name, Value, Title, Timer) has its own font, size, outline, shadow,
 slug and color (`nameFont`, `valueOutline`, `timerColor`...). Names and values
@@ -349,9 +349,9 @@ Bar Color and the title's Mode cyan → Ivory and Graphite text; the timer's
 #B9B9B9 → Graphite muted; Other Color #78808C → Graphite muted; each text's
 Expressway → the Mode typeface. Anything the user picked stays.
 
-## Mode-Default layout
+## Mode-DPS/TANK layout
 
-`Layouts.lua` adds the meters' part of the built-in Mode-Default layout (DPS /
+`Layouts.lua` adds the meters' part of the built-in Mode-DPS/TANK layout (DPS /
 Tank, `Shared/Runtime/Layouts.lua`; the owner's layout editor, November 18,
 2026). The same at 1080 and 1440:
 
@@ -366,7 +366,7 @@ it keeps its own settings and stays movable; it is centered on Window 1 at
 the same (even) width, so the sides line up to the pixel. The `window` edge
 sits inside the window (3 px: shadow ring and 2px band), so what shows is
 exactly Width wide: 230, the minimap's outer width in this layout
-(docs/MINIMAP.md, "Mode-Default layout"). Heights: 3 + 20 + 1 + 1 + 6 x 23 +
+(docs/MINIMAP.md, "Mode-DPS/TANK layout"). Heights: 3 + 20 + 1 + 1 + 6 x 23 +
 5 x 1 + 1 + 3 = 172, and 100 for 3 rows (both even, nothing added).
 
 ## Files
@@ -376,7 +376,7 @@ exactly Width wide: 230, the minimap's outer width in this layout
 | `Shared/Domain/DamageMeter.lua` | guarded `C_DamageMeter` reads, meter types, sessions, spells, class atlases, clock text |
 | `Shared/Kit/Text.lua` | `Kit.ShortNumber(value, decimals)`: abbreviated numbers with set decimals, secret-safe |
 | `Init.lua` | declaration, windows, positions, colors, defaults, ranges, choices |
-| `Layouts.lua` | the meters' part of the Mode-Default layout |
+| `Layouts.lua` | the meters' part of the Mode-DPS/TANK layout |
 | `Migrations.lua` | `Initialize(db)`: validation, the migrations, group loops |
 | `Group.lua` | groups: the head of a group, the settings a window draws with, where a grouped window hangs; Match Width and Match Height |
 | `Driver.lua` | lifecycle, events, the render throttle (4 a second, timer every 0.5s in combat), show rules, settings changes |

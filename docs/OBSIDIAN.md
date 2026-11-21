@@ -20,6 +20,39 @@ studies (Lookbook, Pane Studies, Lens Studies). The owner's picks:
 - Names: "Mode-<Name>" for everything new.
 - A guard against wanting to revert: a separate profile.
 
+## Update: the only look (November 20, 2026, after the owner's check)
+
+The owner saw Mode-Obsidian in the live addon ("it looks great") and asked
+for the next step, which supersedes decisions 1-3, 6 and the "Going back"
+section below:
+
+- **Mode-Obsidian is the only look.** The Mode-Blizz art (borders, ring
+  lighting, the Matte, Gradient, Button, Glass, Cast, Panel, Title and old BG
+  textures, the pre-Mode settings surfaces) and the Geist typeface no longer
+  ship; a copy is kept in `archive/mode-blizz/` (with the old `EdgeData.lua`
+  and builder; see its README). Every profile turns Mode-Obsidian when it is
+  checked; the first-start copy and New Mode-Obsidian Copy are retired.
+- **Renamed:** the bar textures **Mode-FG** (was Mode-Obsidian) and
+  **Mode-BG** (was Mode-Obsidian Track); the border styles **Mode-Border**
+  (was Mode-Obsidian) and **Mode-Empty** (was Mode-ObsidianEmpty). Style ids
+  stay `obsidian` and `obsidianEmpty`; old ids and texture names stay valid
+  and each profile moves its saved ones once (look step 1; Geist weights:
+  typeface step 4).
+- **Type:** Urbanist only (Mode-Urbanist); an installed Expressway is just a
+  font a player may pick.
+- **Softer edge:** the shadow ring at 65% (was 90%), the dark glass `deep`
+  `#19191C` (was `#0F0F11`), and longer fades on the lit top row (gone 42%
+  down, was 33%) and the champagne bottom row (from 62% down, was 72%).
+- **Every old surface in the new look:** buttons, icon faces, title strips
+  and cards are Mode-FG; large panels are **Surface** (Solid plus the mock's
+  soft sheen).
+- **Role profiles:** **Mode-DPS/TANK** (the DPS / Tank layout, Mode-Default
+  before) and **Mode-Healer**, remade in Mode-Obsidian under new seeds
+  (`mode-default@2`, `healer@2`). The Cooldown Manager's icons are
+  **Mode-Empty** in a neutral, darker rim (`Tone.emptyRim` `#343438`), by
+  default and in both layouts. An account the first seeds reached keeps its
+  old Mode-Default and gets its old Mode-Healer renamed "Mode-Healer (old)".
+
 ## How it is built (the decisions)
 
 1. **The theme is a profile setting** (`profile.theme`: `"blizz"` or
@@ -110,7 +143,11 @@ textures, is `design/obsidian/` (README.md, approved-mock.html, preview.png).
 | Text everywhere | Urbanist (Mode-Urbanist); warm whites (`#E8E3D9`, `#F7F3EA`) |
 | Settings window | the same palette, rebuilt from the theme's tokens; Border Style pickers list Mode-Obsidian and Mode-ObsidianEmpty; Profiles has New Mode-Obsidian Copy |
 
-## Going back
+## Going back (superseded: see the update above)
+
+Mode-Blizz no longer ships. To bring a piece back, see
+`archive/mode-blizz/README.md`; the last code with both looks is `3b601cd`.
+What follows was true before the update.
 
 - **In the game:** `/modeui`, Profiles: choose the profile you had before
   (the chat line after the first login names it), **Switch to This Profile**,
@@ -181,3 +218,10 @@ Entries are added as each piece lands (newest last).
 - 2026-11-20: every theme part puts border metals back to the style's own (`Themes.DefaultMetal`; new parts for Buffs & Debuffs and the Minimap), so a layout's Steel or Gunmetal no longer tints the Obsidian rims gray in the Mode-Obsidian copy (the original profile keeps them). Checked against the owner's real saved variables (the backup) in the test harness: the first start copies "2s" to Mode-Obsidian, runs every part, and all six profiles still pass validation.
 - 2026-11-20: fixes from an independent review of the whole diff (no runtime, secret-value or combat problems found): a module is marked in `themeParts` only when its part ran, so a part added later still runs; the Play The Game Tools import runs before the first start, and an account that imported gets a Mode-Obsidian copy (the import keeps its own profile); the first-start copy is checked before it is made active, and a copy that fails leaves the account as it was (tried again next start); on Player and Target the frame border's soft drop steps aside while the Prism glow shows; Action Bars and Buffs & Debuffs migrations write Mode-Blizz values whatever theme is in use; Party Frames lay out their glow with the member. Regression tests in `tests/obsidian.lua`.
 - Note for the first in-game run: the Urbanist fonts and the new textures are new files, so the game must be fully restarted (not just `/reload`) before they load.
+- 2026-11-20 (after the owner's in-game check): Mode-Obsidian only. Mode-Blizz art and Geist archived to `archive/mode-blizz/` (never loaded); renames Mode-FG, Mode-BG, Mode-Border, Mode-Empty; Urbanist only; the softer edge; Surface for large panels and Mode-FG for every other surface; the look step and typeface step 4; Mode-DPS/TANK and Mode-Healer remade in Mode-Obsidian (new seeds, the old Mode-Healer kept as "(old)"); the Cooldown Manager's icons in Mode-Empty with `Tone.emptyRim`. Checked against the owner's current saved variables in the test harness: all six profiles validate and no old texture, style or Geist name is left.
+- 2026-11-20 (owner's next in-game check): ModeUI's Edit Mode frames were restored by the client's layout cache (layout-local.txt) at login over the profile's places, and the anchor cache kept them there until Edit Mode; Shared/Placement/PositionRestore.lua keeps them out of the cache and places every element again after login, and Positioning notices a moved frame. Role layouts @3: the tooltip left of the meters, the bag window on the top meter's corner, Tracked Bars under Utility, resource texts that fit their bars.
+- 2026-11-20 (owner's 1440 Healer check): the party column hangs from its top right, snug under the mana frame; the Healer Cast Bar 20 tall; the Cast Bar in your class color by default in every profile (ModeCDM version 10); Healer layout seed @4.
+- 2026-11-20 (owner's next Healer check): the party header hangs by its Top on the stand-in's top middle (a corner anchor let the header's own width shift the column 2px right of the Player frame); the Target's health in its class or reaction color by default, its own while matched (Unit Frames layout version 25).
+- 2026-11-20 (owner's next Healer check, 1440p at 1.2 pixels a unit): the party column hangs from the Player frame's bar block (unitFramesPlayerBars) so its right edge is the frame's real one; the stand-in's size no longer moves a pinned edge; moves and resizes cascade to anchored elements; the Healer Focus 80 lower; seed healer@5.
+- 2026-11-20 (owner's check of healer@5): one physical pixel left with the 1080 places (the owner's 1440p runs at UI height 1200, 1.2 pixels a unit), measured at build as Kit.PixelSize(UIParent); seed healer@6.
+- 2026-11-20 (owner's totem check): the Healer's totem timers sit over the Player frame's left end, 1px past the portrait ring, growing right, 24 wide (Attach: Above, Left); a mana frame still at Above, Right 18 or the default moves once (`fit` 1); seed healer@8.

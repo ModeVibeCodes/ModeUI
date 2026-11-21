@@ -146,18 +146,6 @@ function H.Load(options)
     if options.saved then env.ModeUIDB = options.saved end
     if options.ptg then env.PTGToolsDB = options.ptg end
     if options.before then Compile(options.before, "before", env)() end
-    -- The Mode-Obsidian first start (Shared/Runtime/Themes.lua) copies the
-    -- active profile and makes the copy active; every test but
-    -- tests/obsidian.lua starts as if it had already run, on Mode-Blizz.
-    if not options.obsidian then
-        Compile([[
-            if ModeUIDB == nil then ModeUIDB = {} end
-            if type(ModeUIDB) == 'table' then
-                ModeUIDB.builtThemes = type(ModeUIDB.builtThemes) == 'table' and ModeUIDB.builtThemes or {}
-                ModeUIDB.builtThemes.obsidian = true
-            end
-        ]], "themes", env)()
-    end
     Compile("FireEvent('ADDON_LOADED','ModeUI')", "events", env)()
     if options.lateCompanions then LoadCompanions() end
     for _, companion in ipairs(options.companions == false and {} or H.COMPANIONS) do

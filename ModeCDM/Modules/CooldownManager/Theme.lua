@@ -7,10 +7,10 @@ if not M or not addon.Themes then return end
 -- (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"; ModeUI's
 -- Shared/Runtime/Themes.lua): icon faces still at Mono panel take
 -- Mode-Obsidian's, and every bar's empty part (tracked bars, resource bars,
--- the Cast Bar) is Mode-Obsidian Track at 85%. The bars are already Dark by
+-- the Cast Bar) is Mode-BG at 85%. The bars are already Dark by
 -- default; borders follow the theme in Style. Runs once per profile, when
 -- the companion starts.
-local TRACK = "media:Mode-Obsidian Track"
+local TRACK = "media:Mode-BG"
 local function Track(style)
     if type(style) ~= "table" then return end
     addon.Themes.DefaultMetal(style)

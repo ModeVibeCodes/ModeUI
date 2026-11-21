@@ -15,7 +15,9 @@ if not M then return end
 -- (a viewer's own spell hides there). It stays open while the page
 -- scrolls and closes on a click anywhere but it, its popouts and their
 -- menus, its icon, the close button, or combat. While it's open the spell
--- previews its glow.
+-- previews its glow. A spell Blizzard's Cooldown Manager doesn't track
+-- (a cooldown ID; custom spells and items don't need it) says so at the top
+-- (Tracking.lua).
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local Cooldowns = addon.Domain.Cooldowns
 local WIDTH, PAD, LINE = 304, 14, 28
@@ -75,6 +77,8 @@ function M:SpellMenu()
     menu.close = W.Button(menu, "X", 24, 24, "secondary")
     menu.close:SetPoint("TOPRIGHT", -10, -8)
     menu.close:SetScript("OnClick", function() menu:Hide() end)
+    menu.warning = W.Label(menu, "", nil, PAD, -40, INNER, T.text)
+    menu.warning:SetWordWrap(true)
     menu.section = W.Label(menu, L["This Spell"], nil, PAD, -40, INNER, T.muted)
     menu.showBox = Check(menu, L["Show on This Bar"], "hide")
     menu.glowBoxes = {}
@@ -148,7 +152,12 @@ function M:RefreshSpellMenu()
     if self.IsItemEntry(menu.key) then section = string.format(L["Item · ID %s"], menu.key:sub(2))
     elseif self.IsSpellEntry(menu.key) then section = string.format(L["Custom spell · ID %s"], menu.key:sub(2)) end
     menu.section:SetText(section)
-    local y = -58
+    local untracked = self:NotTracked(menu.key)
+    menu.warning:SetShown(untracked)
+    if untracked then menu.warning:SetText(addon.Style.ColorText(L[M.NOT_TRACKED], addon.Style.Tone.rosewood)) end
+    local top = untracked and -70 or -40 -- room for the warning on two lines
+    menu.section:ClearAllPoints(); menu.section:SetPoint("TOPLEFT", PAD, top)
+    local y = top - 18
     local function Line(box, shown)
         box:SetShown(shown); box.text:SetShown(shown)
         if not shown then return end

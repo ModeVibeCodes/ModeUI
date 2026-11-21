@@ -91,7 +91,8 @@ local function Stretch(img, x0, y0, w, h, tint, alpha)
 end
 
 -- Tones (Style.Tone under Mode-Obsidian).
-local metal = { hi = Hex("6E6E74"), light = Hex("8C806A"), mid = Hex("2A2A2D"), dark = Hex("18181A"), deep = Hex("0F0F11") }
+local SHADOW = 0.65 -- Tone.shadowAlpha (softened from 0.9, November 20, 2026)
+local metal = { hi = Hex("6E6E74"), light = Hex("8C806A"), mid = Hex("2A2A2D"), dark = Hex("18181A"), deep = Hex("19191C") }
 local BLACK = { 0, 0, 0 }
 local darkFill, slate, ice, mana = Hex("161618"), Hex("46464B"), Hex("D6EBFF"), Hex("4096FF")
 local class = Hex("FF7C0A")
@@ -104,7 +105,7 @@ local function Border(preset, hx, hy, hw, hh, tintBand)
         local img = TGA("Borders/" .. ring.key)
         local out = ring.out
         local tint, alpha
-        if ring.kind == "shadow" then tint, alpha = BLACK, 0.9
+        if ring.kind == "shadow" then tint, alpha = BLACK, SHADOW
         elseif ring.kind == "gap" then tint, alpha = BLACK, 1
         else tint, alpha = tintBand and (not ring.profile and tintBand) or metal[ring.tone], 1
             if tintBand and ring.profile then alpha = 0 end end
@@ -112,16 +113,16 @@ local function Border(preset, hx, hy, hw, hh, tintBand)
     end
 end
 
--- A bar: track (Mode-Obsidian Track tinted slate at 85%), fill (Mode-Obsidian
+-- A bar: track (Mode-BG tinted slate at 85%), fill (Mode-FG
 -- base x color, plus its lift), the ice end line 1px in.
 local function Bar(x0, y0, w, h, value, color, track, endLine, liftKey, baseKey)
-    local trackImg = TGA("Bars/" .. (track or "ObsidianTrack"))
+    local trackImg = TGA("Bars/" .. (track or "BG"))
     Stretch(trackImg, x0, y0, w, h, slate, 0.85)
     local fw = math.floor(w * value + 0.5)
     if fw > 0 then
-        Stretch(TGA("Bars/" .. (baseKey or "ObsidianBase")), x0, y0, fw, h, color, 1)
+        Stretch(TGA("Bars/" .. (baseKey or "FGBase")), x0, y0, fw, h, color, 1)
         if liftKey ~= false then
-            local lift = TGA("Bars/" .. (liftKey or "ObsidianLift"))
+            local lift = TGA("Bars/" .. (liftKey or "FGLift"))
             for y = 0, h - 1 do for x = 0, fw - 1 do
                 local p = lift[math.floor((y + 0.5) / h * lift.h) * lift.w + math.floor((x + 0.5) / fw * lift.w)]
                 Blend(x0 + x, y0 + y, { 1, 1, 1 }, p[4])
@@ -136,7 +137,7 @@ local bx, by, bw = 104, 52, 184
 -- the block's back (Tone.shadow) and health / hairline / power
 for y = 0, 37 do for x = 0, bw - 1 do Blend(bx + x, by + y, BLACK, 1) end end
 Bar(bx, by, bw, 34, 0.58, darkFill, nil, true)
-Bar(bx, by + 35, bw, 3, 0.64, mana, "ObsidianTrack", false, "GradientLift", "Solid")
+Bar(bx, by + 35, bw, 3, 0.64, mana, "BG", false, "FGLift", "Solid")
 Border("frame", bx, by, bw, 38)
 
 -- The portrait ring: 62px, class tones (Style.ColorTones).
@@ -189,7 +190,7 @@ for i = 0, 2 do
             local spec = D.SHAPES[ring.shape]
             if not ring.profile then
                 local tint = ring.kind == "shadow" and BLACK or Hex("B4CDB6")
-                Slice(TGA("Borders/" .. ring.key), spec.margin, x0 - ring.out, y0 - ring.out, 40 + 2 * ring.out, 34 + 2 * ring.out, tint, ring.kind == "shadow" and 0.9 or 1)
+                Slice(TGA("Borders/" .. ring.key), spec.margin, x0 - ring.out, y0 - ring.out, 40 + 2 * ring.out, 34 + 2 * ring.out, tint, ring.kind == "shadow" and SHADOW or 1)
             end
         end
     end

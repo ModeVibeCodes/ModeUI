@@ -253,6 +253,8 @@ function M:Refresh()
         end
     end
     self:SyncNative()
+    -- Blizzard's totem timers in the Mode look while the Player frame is on (Totems.lua).
+    self:SkinTotems()
     self:SetEvents(any)
     self.poller:SetShown(polled)
     self:RenderGhosts()

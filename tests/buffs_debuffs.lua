@@ -129,7 +129,7 @@ H.Load({ before = STUBS }).run([==[
     assert(layout.elementWidth == 32 and layout.elementHeight == 28 + 12 and layout.elementSpacing == 4)
     local b = buffs.groups.buffs_all.button
     assert(b.modeIcon and b.modeIcon.width == 32 and b.modeIcon.height == 28 and b.iconRegion == b.modeIcon.art, 'the Mode icon on a child')
-    assert(b.modeIcon.edge.styleId == 'blizz' and b.modeIcon.edge.rim == 1, 'Mode-Blizz, 1px band')
+    assert(b.modeIcon.edge.styleId == 'obsidian' and b.modeIcon.edge.rim == 1, 'Mode-Border, 1px band')
     assert(b.timerRegion == b.modeOutside and b.countRegion == b.modeIcon.count, 'time text below, stacks')
     -- Cropped by size: the art is 10% wider than its clipping frame on each side (30 x 26 inside a 1px band).
     assert(b.modeIcon.clip.clipsChildren and not b.modeIcon.icon:IsShown(), 'a clipping frame holds the art')
@@ -156,7 +156,7 @@ H.Load({ before = STUBS }).run([==[
     assert(pd.playerDebuffs_boss == nil and pd.playerDebuffs_Magic.candidates.isBossAura == nil)
     assert(pd.playerDebuffs_other.candidates.excludeDispelTypes.Bleed and pd.playerDebuffs_other.candidates.excludeDispelTypes.Magic)
     assert(pd.playerDebuffs_cc.button.timerRegion == pd.playerDebuffs_cc.button.modeIcon.timer, 'time on the icon')
-    assert(pd.playerDebuffs_cc.button.modeIcon.edge.styleId == 'blizzEmpty', 'the owner picked Mode-BlizzEmpty')
+    assert(pd.playerDebuffs_cc.button.modeIcon.edge.styleId == 'obsidianEmpty', 'the owner picked Mode-Empty')
     local pdi = pd.playerDebuffs_cc.button.modeIcon
     assert(pdi.width == 42 and pdi.height == 36 and pdi.edge.rim == 2, 'Player Debuffs: 42 x 36 with a 2px border')
     assert(M:BarLabel('playerDebuffs') == 'Player Debuffs (All)' and M:BarLabel('playerImportant') == 'Player Debuffs (Boss & Important)')
@@ -166,13 +166,13 @@ H.Load({ before = STUBS }).run([==[
     assert(pi.groups.playerImportant_important.filter == 'HARMFUL|IMPORTANT' and pi.groups.playerImportant_boss.filter == 'HARMFUL|!IMPORTANT'
         and pi.groups.playerImportant_boss.candidates.isBossAura == true, 'each aura once')
     local pii = pi.groups.playerImportant_important.button.modeIcon
-    assert(pii.width == 48 and pii.height == 42 and pii.edge.rim == 2 and pii.edge.styleId == 'blizzEmpty')
+    assert(pii.width == 48 and pii.height == 42 and pii.edge.rim == 2 and pii.edge.styleId == 'obsidianEmpty')
     local above = M.movers.playerImportant.points[1]
     assert(above[1] == 'BOTTOMRIGHT' and above[2] == M.movers.playerDebuffs and above[3] == 'TOPRIGHT' and above[5] == 6, '6px above (All)')
-    -- Defensives (owner's look): 42 x 34, Mode-Thin Silver 2px, no cancel, no tooltip, glowing.
+    -- Defensives (owner's look): 42 x 34, Mode-Border 2px, no cancel, no tooltip, glowing.
     local def = M.containers.custom1.groups.custom1_bigdef.button
     assert(def.modeIcon.glow:IsShown(), 'soft glow')
-    assert(def.modeIcon.width == 42 and def.modeIcon.height == 34 and def.modeIcon.edge.styleId == 'thin' and def.modeIcon.edge.rim == 2)
+    assert(def.modeIcon.width == 42 and def.modeIcon.height == 34 and def.modeIcon.edge.styleId == 'obsidian' and def.modeIcon.edge.rim == 2)
     assert(def.cancel == nil and def.clicks == false and M.containers.custom1.groups.custom1_tracked == nil, 'no cancel; no spells yet')
     -- Spells You Add: the bar's own buffs, left out of its other kinds.
     assert(M:AddBarSpell('custom1', 21562) and not M:AddBarSpell('custom1', 21562) and not M:AddBarSpell('buffs', 0.5))
@@ -230,8 +230,8 @@ H.Load({ before = STUBS }).run([==[
     assert(not M:SetBarOption('debuffs', 'kind', 'buffs'), 'Blizzard\'s stand-ins keep their kind')
     assert(not M:SetBarOption('buffs', 'width', 99) and not M:SetBarOption('buffs', 'edgeStyle', 'gold'))
     local before = M.containers.buffs
-    assert(M:SetBarOption('buffs', 'edgeStyle', 'thin') and M.containers.buffs ~= before and not before.enabled, 'a new look builds a new container')
-    assert(M.containers.buffs.groups.buffs_all.button.modeIcon.edge.styleId == 'thin')
+    assert(M:SetBarOption('buffs', 'edgeStyle', 'obsidianEmpty') and M.containers.buffs ~= before and not before.enabled, 'a new look builds a new container')
+    assert(M.containers.buffs.groups.buffs_all.button.modeIcon.edge.styleId == 'obsidianEmpty')
     local calls = M.containers.debuffs.candidateCalls or 0
     assert(M:SetBarOption('debuffs', 'max', 8) and (M.containers.debuffs.candidateCalls or 0) == calls, 'candidate filters only when the blacklist changes')
     assert(M:AddBlacklist(1459) and M.containers.debuffs.groups.debuffs_all.candidates.excludeSpellIDs[1459], 'the blacklist reaches every bar')
@@ -386,7 +386,9 @@ H.Load({ before = STUBS, saved = v2 }).run([==[
     assert(Same(bars.debuffs.timerColor, { 0.2, 0.4, 0.6 }), 'a color you picked stays')
     local d = bars.custom1
     assert(M.db.customBars[1].preset == 'defensives' and d.width == 42 and d.height == 34 and d.spacing == 2 and d.crop == 8)
-    assert(d.edgeStyle == 'thin' and d.edgeMetal == 'silver' and d.borderSize == 2 and d.cancel == false and d.tooltip == false)
+    -- The preset's Mode-Thin Silver became Mode-Border in its own metal (the
+    -- Mode-Obsidian part and the look step).
+    assert(d.edgeStyle == 'obsidian' and d.edgeMetal == 'default' and d.borderSize == 2 and d.cancel == false and d.tooltip == false)
     assert(d.cats.tracked and d.cats.bigdef, 'Spells You Add joins the preset')
 ]==], "buffs_debuffs_v3")
 
@@ -408,9 +410,9 @@ H.Load({ before = STUBS }).run([==[
         assert(db.customBars[1].preset == 'defensives' and db.customBars[1].id == 'custom1')
         local def = db.bars.custom1
         assert(def.width == 40 and def.height == 34 and def.max == 4 and def.borderSize == 2)
-        -- Every bar Mode-Thin in its own metal, 1px apart (owner, November 18, 2026); border sizes stay.
+        -- Every bar Mode-Border in its own metal, 1px apart (owner, November 18, 2026); border sizes stay.
         for id, bar in pairs(db.bars) do
-            assert(bar.edgeStyle == 'thin' and bar.edgeMetal == 'default' and bar.spacing == 1, id .. ': Mode-Thin, 1px apart')
+            assert(bar.edgeStyle == 'obsidian' and bar.edgeMetal == 'default' and bar.spacing == 1, id .. ': Mode-Border, 1px apart')
         end
         assert(db.bars.playerDebuffs.borderSize == 2 and db.bars.custom1.borderSize == 2, 'border sizes kept')
         -- Two rows of cells 24 + 10 + 2 tall, 1 apart: the Debuffs element is 73 tall.

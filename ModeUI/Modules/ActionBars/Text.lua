@@ -139,7 +139,7 @@ local function StylePart(self, button, part, style, g, sample)
     local hotkey = part == "hotkey" and not sample
     local look = { outline = style.outline, shadow = style.shadow, liftedShadow = style.liftedShadow, slug = style.slug,
         textColor = hotkey and { 1, 1, 1 } or color }
-    -- Geist Bold for keybinds, counts and cooldowns; Medium for macro names.
+    -- Urbanist Bold for keybinds, counts and cooldowns; Medium for macro names.
     local path = addon.Style.Weighted(Kit.FontPath(style, self.id), part == "macro" and "medium" or "bold")
     Kit.Font(text, look, size, path, g.px)
     local state = self.textState[text] or {}

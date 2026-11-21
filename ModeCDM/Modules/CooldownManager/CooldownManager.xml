@@ -11,6 +11,7 @@
     <Script file="Items.lua"/>
     <Script file="Racials.lua"/>
     <Script file="Blizzard.lua"/>
+    <Script file="Tracking.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Skin.lua"/>
     <Script file="Bars.lua"/>

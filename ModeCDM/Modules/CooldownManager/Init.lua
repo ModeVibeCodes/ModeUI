@@ -17,7 +17,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- The five default bars (Defensive Cooldowns and four buff bars): see
 -- Presets.lua. Its part of the Mode-Default layout: Layouts.lua.
 -- Files: Init (this), ResourceInit, CastInit, Presets, Migrations, Driver,
--- Custom, Spells, Items, Racials, Blizzard, Layout, Skin, Bars, Text, Glow,
+-- Custom, Spells, Items, Racials, Blizzard, Tracking, Layout, Skin, Bars, Text, Glow,
 -- Visibility, Resources, ResourceSnap, ResourceGroup, ResourceMarks,
 -- ResourceUpdate, CastBar, SpellMenu, GlowPopout, TextPopout, Picker,
 -- Preview, PreviewDrag, ResourcePreview, CastPreview, SettingsHelpers,
@@ -46,7 +46,7 @@ addon:RegisterModule("cooldownManager", M)
 -- Version 5: the Mode design language (docs/DESIGN_LANGUAGE.md, "Cooldown
 -- icons"): icons 40 by 34 (32 by 28 on the smaller bars) in the `frameThin`
 -- edge outside the icon (Border: Mode or None; Border Size, Border Color and
--- the slot rims retire), a Mode Button face in Mono panel, Geist Bold text
+-- the slot rims retire), a Mode Button face in Mono panel, Urbanist Bold text
 -- in the Mode colors, Celadon procs and buffs, Ivory active and ready glows;
 -- Tracked Bars in Mode Gradient on Mode BG with the Comet spark, in your
 -- class color (Bar Color: Class Color or Custom).
@@ -62,20 +62,23 @@ addon:RegisterModule("cooldownManager", M)
 -- Version 9 (owner, November 18, 2026): the five default bars (Presets.lua)
 -- join a profile after its own bars, while there's room; up to 15 custom
 -- bars. A new profile starts with them.
-M.VERSION = 9
+-- Version 10 (owner, November 20, 2026): the Cast Bar in your class color;
+-- a Bar Mode still at Dark (the old default) takes Color.
+M.VERSION = 10
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
 -- Blizzard's viewers, in list order. `bar` marks Tracked Bars (a bar beside
--- each icon); `buff` the viewers that show auras rather than cooldowns.
+-- each icon); `buff` the viewers that show auras rather than cooldowns;
+-- `category` the Blizzard Cooldown Manager category each shows (Tracking.lua).
 M.viewers = { "essential", "utility", "buffIcon", "buffBar" }
 M.viewerSpecs = {
-    essential = { label = "Essential Cooldowns" },
-    utility = { label = "Utility Cooldowns" },
-    buffIcon = { label = "Tracked Buffs", buff = true },
-    buffBar = { label = "Tracked Bars", buff = true, bar = true },
+    essential = { label = "Essential Cooldowns", category = "Essential" },
+    utility = { label = "Utility Cooldowns", category = "Utility" },
+    buffIcon = { label = "Tracked Buffs", buff = true, category = "TrackedBuff" },
+    buffBar = { label = "Tracked Bars", buff = true, bar = true, category = "TrackedBar" },
 }
 -- Custom bars: Cooldown Bars take spells from Essential and Utility, Buff
 -- Bars from Tracked Buffs. IDs are "custom1", "custom2"...; never reused.
@@ -166,11 +169,12 @@ local function Style(size, perLine, lineGrowth, small)
         matchWidth = false, matchHeight = false,
         border = "mode", backgroundColor = Copy(Tone.mono.panel), backgroundOpacity = 100,
         -- The border's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
-        -- icons and the Tracked Bars' boxes; Mode-Blizz in its own metal (owner, November 17, 2026).
-        edgeStyle = "blizz", edgeMetal = "default",
-        -- Border Size (the band, 1 or 2px) and Border Color (Mode-BlizzEmpty's
+        -- icons and the Tracked Bars' boxes; Mode-Empty with a neutral, darker
+        -- rim (owner, November 20, 2026).
+        edgeStyle = "obsidianEmpty", edgeMetal = "default",
+        -- Border Size (the band, 1 or 2px) and Border Color (Mode-Empty's
         -- flat band; owner, November 18, 2026).
-        edgeSize = 1, edgeColor = Copy(Tone.metal.silver.mid),
+        edgeSize = 1, edgeColor = Copy(Tone.emptyRim),
         -- The cooldown: icons go gray while a spell cools down; a flat swipe
         -- in Swipe Color at Swipe Opacity; Edge is the bright line on its
         -- rim, Ready Flash Blizzard's flash as it ends.
@@ -190,8 +194,9 @@ local function Style(size, perLine, lineGrowth, small)
         -- Tracked Bars: the bar's texture and color (your class color, or
         -- Bar Color when Custom), its background, the icon's side and the
         -- Comet spark.
-        barTexture = "media:Mode Gradient", barColorMode = "class", barColor = Copy(M.BAR_COLOR),
-        barBackground = "media:Mode BG", barBackgroundOpacity = 100, iconSide = "left", showSpark = true,
+        barTexture = "media:Mode-FG", barColorMode = "class", barColor = Copy(M.BAR_COLOR),
+        -- The empty part: Mode-BG at the Mode-Obsidian empty opacity (85%).
+        barBackground = "media:Mode-BG", barBackgroundOpacity = math.floor(Tone.emptyAlpha * 100 + 0.5), iconSide = "left", showSpark = true,
         -- Spells with their own switches, by cooldown ID: { ["1234"] = { hide = true, proc = false } }.
         spells = {},
     }

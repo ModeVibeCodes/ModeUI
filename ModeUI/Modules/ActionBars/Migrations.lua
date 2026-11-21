@@ -104,6 +104,7 @@ end
 -- Version 5 -> 6: the Mode design language. Values still at their version 5
 -- default take the new one; anything the player picked stays. Rounded and
 -- Square borders become the Mode edge; Border Size and Border Color retire.
+-- Colors take the Mode-Obsidian tokens (the only look since November 20, 2026).
 local V5 = { fontMedia = { "Expressway", addon.Style.FONT_DEFAULT }, outline = { true, false }, spacing = { 1, 4 },
     backgroundOpacity = { 75, 100 }, procGlow = { "mode", "border" }, hotkeySize = { 9, 10 }, cooldownSize = { 14, 13 } }
 local Same = addon.Style.SameColor
@@ -120,11 +121,11 @@ local function MigrateV5(db)
             end
             if style.border == "rounded" or style.border == "square" then style.border = "mode" end
             for _, key in ipairs(M.retiredKeys) do style[key] = nil end
-            if Same(style.backgroundColor, M.BACKGROUND_COLOR) then style.backgroundColor = addon.Style.BlizzTone("mono", "panel") end
+            if Same(style.backgroundColor, M.BACKGROUND_COLOR) then style.backgroundColor = Copy(Tone.mono.panel) end
             if Same(style.procColor, M.PROC_COLOR) then style.procColor = Copy(Tone.celadon) end
             if Same(style.readyColor, M.READY_COLOR) then style.readyColor = Copy(Tone.ivory) end
-            if Same(style.hotkeyColor, P.text) then style.hotkeyColor = addon.Style.BlizzTone("graphite", "secondary") end
-            if Same(style.countColor, P.text) then style.countColor = addon.Style.BlizzTone("textBright") end
+            if Same(style.hotkeyColor, P.text) then style.hotkeyColor = Copy(Tone.graphite.secondary) end
+            if Same(style.countColor, P.text) then style.countColor = Copy(Tone.textBright) end
         end
     end
 end
