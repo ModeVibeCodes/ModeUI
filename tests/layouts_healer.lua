@@ -16,7 +16,7 @@ world.run([==[
     local parts = {}
     for _, part in ipairs(L.parts.healer) do parts[#parts + 1] = part.module end
     table.sort(parts)
-    assert(table.concat(parts, ',') == 'actionBars,buffsDebuffs,cooldownManager,damageMeters,minimap,nameplates,partyFrames,unitFrames',
+    assert(table.concat(parts, ',') == 'actionBars,bags,buffsDebuffs,cooldownManager,damageMeters,minimap,nameplates,partyFrames,tooltip,unitFrames',
         'every part: ' .. table.concat(parts, ','))
     local UF, PF, CDM, BD = addon.UnitFrames, addon.PartyFrames, addon.CooldownManager, addon.BuffsDebuffs
     local SCREEN = { ['1080'] = 1080, ['1440'] = 1440 }
@@ -152,7 +152,7 @@ world.run([==[
         end
     end
     -- Made into a profile once, at login, beside Mode-DPS/TANK; the active profile stays.
-    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@2'] == true)
+    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@3'] == true)
     assert(ModeUIDB.profiles['Mode-Healer'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-Healer', 'healer'), 'its name is taken')
 ]==], "healer build")

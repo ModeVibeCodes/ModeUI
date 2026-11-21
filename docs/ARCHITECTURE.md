@@ -36,7 +36,7 @@ ModeUI/
     Style/                    the Mode design language: Tone, Assets, Fonts, ProviderMedia, Edge, Bar, Shield, Names, Icon (docs/DESIGN_LANGUAGE.md)
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
-    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors, size matching (SizeMatch.lua: Match Width/Height follow a picked element, saved in the profile's sizeMatches)
+    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors, size matching (SizeMatch.lua: Match Width/Height follow a picked element, saved in the profile's sizeMatches), PositionRestore.lua (the profile's places win over the client's layout cache: element frames are never saved by it, and every element is placed again once the client has restored frames after login)
     Skin/                     re-skinning Blizzard frames (Skin, Controls, Extras, Frame): Chat and Windows
     Settings/                 settings window framework (window, pages, search, tabs) and its launchers (game menu, minimap addon compartment)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker, Nudge: `W.Nudge(parent, getX, getY, setX, setY, range)`, four 1px arrows)

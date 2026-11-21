@@ -57,6 +57,12 @@ while the module is on; ModeUI never moves Blizzard's container. Tooltips
 that owners place themselves (action buttons with the classic tooltip style,
 bag items, settings) stay where they put them.
 
+In the role layouts (Mode-DPS/TANK, Mode-Healer; `Layouts.lua`, owner,
+November 20, 2026) the anchor's bottom-right sits on Damage Done's
+bottom-left, 4 left of it, with Anchor Point Bottom Right, so the tooltip
+stands just left of the damage meters, its bottom on the bottom meter's, and
+grows up and left.
+
 ## Combat
 
 **Hide in Combat** hides the main tooltip as it shows while you're in combat,

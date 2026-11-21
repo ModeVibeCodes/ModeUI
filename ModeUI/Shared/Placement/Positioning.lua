@@ -148,6 +148,13 @@ function P:ApplyFrame(module, force)
         if same then
             for index = 1, 8 do if nextAnchor[index] ~= module.appliedAnchor[index] then same = false; break end end
         end
+        -- Something else moved the frame since (the client's layout cache):
+        -- the remembered anchor no longer holds.
+        if same and frame:GetNumPoints() == 1 then
+            local p, to, rp, x, y = frame:GetPoint(1)
+            same = p == pointName and to == targetFrame and rp == relativePoint and x == x and y == y
+                and math.abs((x or 0) - nextAnchor[4]) < 0.01 and math.abs((y or 0) - nextAnchor[5]) < 0.01
+        elseif same then same = false end
         if same then return true end
         frame:ClearAllPoints()
         local ok = pcall(frame.SetPoint, frame, pointName, targetFrame, relativePoint, x, y)

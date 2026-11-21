@@ -61,6 +61,13 @@ local function Presets(db, ctx, places)
     end
 end
 
+-- Tracked Bars hang under Utility, 4 apart, centered (owner, November 20,
+-- 2026: at their default place their Edit Mode stand-in covered the Target
+-- frame).
+local function TrackedBars(ctx)
+    ctx.Place(M.ElementId("buffBar"), M.ElementId("utility"), "TOP", "BOTTOM", 0, -4)
+end
+
 addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     db.enabled = true
     Shape(db.essential, 38, 30, 7, "centerH", "down")
@@ -77,6 +84,10 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     db.resourceLayout = "grouped"
     local bars = db.resources
     bars.power.height, bars.combo.height, bars.mana.height = 10, 8, 8
+    -- Text that fits its bar (owner, November 20, 2026: 11px numbers spilled
+    -- over the 10px Power bar, and "0" over the 8px Combo Points): Power's at
+    -- 9, Combo Points without (their lit points are the count).
+    bars.power.textSize, bars.combo.textShow = 9, false
     for _, id in ipairs(M.resourceGroup) do bars[id].barMode = "color" end
     bars.power.colorMode = "class"
     bars.health.show = false
@@ -94,6 +105,7 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     Shape(db.buffIcon, 30, 24, 10, "centerH", "up")
     ctx.Place(M.ElementId("buffIcon"), CAST, "BOTTOM", "TOP", 0, 1)
 
+    TrackedBars(ctx)
     -- The default bars at their sizes and places here.
     Presets(db, ctx, { defensives = { target = "unitFramesPlayerBars", x = 1, y = 0 } })
 end)
@@ -122,6 +134,7 @@ addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     Shape(db.utility, 36, 30, 6, "centerH", "down")
     ctx.Place(M.ElementId("utility"), E, "TOP", "BOTTOM", 0, -HEALER.utility)
     Look(db.buffBar)
+    TrackedBars(ctx)
 
     -- Resources apart: Power and Alternate Mana off, Combo Points a 6px
     -- Mode-Border strip as wide as Essential, 1px over it.
@@ -129,7 +142,7 @@ addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     local bars = db.resources
     bars.power.show, bars.mana.show, bars.health.show = false, false, false
     local combo = bars.combo
-    combo.height, combo.barMode, combo.matchWidth = HEALER.combo, "color", true
+    combo.height, combo.barMode, combo.matchWidth, combo.textShow = HEALER.combo, "color", true, false
     combo.edgeStyle, combo.edgeMetal = "obsidian", "default"
     ctx.Match(COMBO, "width", E)
     ctx.Place(COMBO, E, "BOTTOM", "TOP", 0, 1)

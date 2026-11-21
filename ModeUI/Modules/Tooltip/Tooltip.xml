@@ -5,4 +5,5 @@
     <Script file="Colors.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="Layouts.lua"/>
 </Ui>

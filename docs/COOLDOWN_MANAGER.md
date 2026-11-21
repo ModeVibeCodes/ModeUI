@@ -629,13 +629,14 @@ Places are an element's `point` on the target's `relativePoint`, in UI units
 | Cooldown Manager | switched on | |
 | Essential Cooldowns | 38 by 30, 7 per line, Centered Horizontal, New Lines Down | center on the screen's bottom, 300 / 325 up |
 | Utility Cooldowns | 36 by 30, 6 per line, Centered Horizontal, Down | top on Essential's bottom, 69 down (36 under a second Essential row) |
-| Resource Bars | Group Resources; Power 10, Combo Points 8, Alternate Mana 8, all Bar Mode Color (Power in Class Color, Combo Points and Alternate Mana in their own colors); Health off; Power's Match Width on, matched to Essential (Edit Mode's pick) | Power: bottom on Essential's top, 1 up |
+| Resource Bars | Group Resources; Power 10 (text 9), Combo Points 8 (no text: the lit points are the count), Alternate Mana 8, all Bar Mode Color (Power in Class Color, Combo Points and Alternate Mana in their own colors); Health off; Power's Match Width on, matched to Essential (Edit Mode's pick) | Power: bottom on Essential's top, 1 up |
 | Cast Bar | height 12, Match Width on, matched to Essential; Icon Hidden | bottom on Power's top, 1 up |
 | Tracked Buffs | 30 by 24, 10 per line, Centered Horizontal, New Lines Up | bottom on the Cast Bar's top, 1 up |
 | Defensive Cooldowns | 36 by 30, otherwise its defaults (above) | bottom right on ModeUI Player Frame Bars' top right (the bar block), (1, 0): on the frame's top border |
 | Emphasized Buffs | 38 by 30, otherwise its defaults | bottom on Tracked Buffs' top, 1 up |
 | Left Buffs / Right Buffs | their defaults | screen center, 150 left / 150 right |
 | Ultra Emphasized Buffs | its defaults | screen center, 110 / 135 right and 115 up |
+| Tracked Bars | its defaults | top on Utility's bottom, 4 down (owner, November 20, 2026: at its default place the stand-in covered the Target frame; the Healer layout too) |
 
 Every icon bar (the four viewers and the five default bars) also takes the
 owner's tuning (November 18, 2026, tested at 1080p; the look since November 20, 2026): every bar in Mode-Empty with the neutral, darker `emptyRim`,

@@ -5,7 +5,7 @@ local _, addon = ...
 -- (Modules/<Name>/Layouts.lua, or a companion's), so a layout never reaches
 -- into another module's settings. A layout builds a new profile; it never
 -- changes an existing one, so nothing the player placed moves.
---   addon.Layouts:Register(id, { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@2", allModules = true })
+--   addon.Layouts:Register(id, { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@3", allModules = true })
 -- `allModules`: every module (but alwaysOn and planned ones) starts on.
 --   addon.Layouts:Contribute(id, moduleId, function(db, ctx) ... end)
 --   addon.Layouts:Build(id, variant) -> profile, or nil and a reason
@@ -98,14 +98,20 @@ function L:CurrentVariant()
 end
 
 -- Once per account and seed (ModeUIDB.builtLayouts[spec.seed]), a layout
--- with a `seed` becomes its own profile. A layout rebuilt for a new look
--- takes a new seed (November 20, 2026: Mode-DPS/TANK and Mode-Healer in
--- Mode-Obsidian, "<id>@2"): a profile an earlier seed of it made under the
--- same name (`earlierName`, the name the first seed used) is kept, renamed
--- "<name> (old)", so nothing the player tuned is lost; a profile of the player's own with that name is left alone and the
--- layout is not made. A seeded profile is never made active here: the player
+-- with a `seed` becomes its own profile. A layout rebuilt takes a new seed
+-- ("<id>@<n>"; November 20, 2026: @2 in Mode-Obsidian, @3 with the tooltip
+-- and bag window placed): a profile an earlier seed of it made under the
+-- same name is kept, renamed "<name> (old)", so nothing the player tuned is
+-- lost; with no earlier seed, a profile of the player's own with that name
+-- is left alone and the layout is not made. A seeded profile is never made active here: the player
 -- switches to it on the Profiles page. Runs at PLAYER_LOGIN, when every
 -- companion addon has registered its module.
+local function EarlierSeed(root, id, key)
+    for built, done in pairs(root.builtLayouts) do
+        if done and built ~= key and (built == id or built:match("^(.-)@%d+$") == id) then return true end
+    end
+    return false
+end
 function L:Seed()
     local root = addon.root
     if not addon.initialized or type(root) ~= "table" then return end
@@ -115,7 +121,7 @@ function L:Seed()
         if key and not root.builtLayouts[key] then
             root.builtLayouts[key] = true
             local name = spec.profileName
-            if spec.earlierName == name and addon.Profiles:Exists(name) and root.builtLayouts[id] and key ~= id then
+            if addon.Profiles:Exists(name) and EarlierSeed(root, id, key) then
                 local old = addon.Profiles:UniqueName(name .. " (old)")
                 if addon.Profiles:Rename(name, old) then
                     addon:PrintAction("Kept your earlier " .. name .. " as " .. old .. ".", "info")
@@ -134,10 +140,8 @@ addon.Events:On(L, "PLAYER_LOGIN", function() L:Seed() end)
 
 -- Mode's own layout for damage dealers and tanks, with every module on
 -- (Mode-Default until November 20, 2026).
-L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@2", allModules = true,
-    earlierName = "Mode-Default" })
+L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@3", allModules = true })
 -- Mode's healer layout (owner, November 19, 2026; the prototype in
 -- design/healer-layout/): a mana frame over the party column left of
 -- center, everything else as DPS / Tank but the Cooldown Manager's middle.
-L:Register("healer", { label = "Healer", profileName = "Mode-Healer", seed = "healer@2", allModules = true,
-    earlierName = "Mode-Healer" })
+L:Register("healer", { label = "Healer", profileName = "Mode-Healer", seed = "healer@3", allModules = true })

@@ -106,6 +106,11 @@ attached to another element. Dragging the header (unlocked, out of combat,
 not in Edit Mode) saves the same position Edit Mode would: the Grow From
 corner as an offset from the same corner of the screen, in whole pixels.
 
+In the role layouts (Mode-DPS/TANK, Mode-Healer; `Layouts.lua`, owner,
+November 20, 2026) the window's bottom-right corner sits on Healing Done's
+(the top damage meter's) top-left corner, 4 apart each way, growing from its
+bottom-right, so more bags push it up and left, away from the meters.
+
 ## Settings
 
 | Tab | Card | Settings |
