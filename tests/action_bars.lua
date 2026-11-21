@@ -19,10 +19,10 @@ world.run([==[
         assert(math.floor(style.cooldownColor[1] * 255 + 0.5) == 255 and math.floor(style.cooldownColor[2] * 255 + 0.5) == 177
             and math.floor(style.cooldownColor[3] * 255 + 0.5) == 47, 'cooldown numbers are #FFB12F')
         local function Hex(c) return string.format('%02X%02X%02X', math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5), math.floor(c[3] * 255 + 0.5)) end
-        assert(Hex(style.backgroundColor) == '0E0E0E' and Hex(style.macroColor) == '69A5B9', 'Mono panel face and macro colors')
+        assert(Hex(style.backgroundColor) == '09090A' and Hex(style.macroColor) == '69A5B9', 'Mono panel face (Mode-Obsidian) and macro colors')
         assert(style.border == 'mode' and style.borderSize == nil and style.borderColor == nil and style.spacing == 4, 'the Mode edge, 4px apart')
         assert(style.procGlow == 'border' and Hex(style.procColor) == 'B4CDB6' and Hex(style.readyColor) == 'EFE6D2' and style.readyGlow, 'Celadon proc rim, Ivory ready glow')
-        assert(style.fontMedia == 'Mode' and not style.outline and style.cooldownOpacity == 100, 'Geist, one shadow')
+        assert(style.fontMedia == 'Mode' and not style.outline and style.cooldownOpacity == 100, 'Urbanist, one shadow')
         assert(style.paging == (bar == 'bar1'), 'bar 1 pages; the others start fixed')
     end
     assert(M.db.bar1.show and not M.db.bar6.show and M.db.bar4.orientation == 'vertical' and M.db.pet.buttons == 10)
@@ -50,7 +50,7 @@ world.run([==[
     local S, Tone = addon.Style, addon.Style.Tone
     local art = M.art[ActionButton1]
     assert(art.edge.preset == 'frame' and art.edge.holder:IsShown() and art.edge.host == ActionButton1, 'the frame edge')
-    assert(art.face.texture == S.AssetPath('Button') and art.face.vertexColor[1] == Tone.mono.panel[1] and art.face.vertexColor[4] == 1, 'Mode Button face in Mono panel')
+    assert(art.face.texture == S.AssetPath('FGBase') and art.face.vertexColor[1] == Tone.mono.panel[1] and art.face.vertexColor[4] == 1, 'Mode-FG face in Mono panel')
     local icon = ActionButton1.icon
     assert(icon.mask == nil, 'Blizzard icon mask removed')
     assert(icon.points[1][4] == 0 and icon.points[2][4] == 0, 'the icon fills the button')
@@ -74,24 +74,24 @@ world.run([==[
     assert(M:SetOption('bar1', 'border', 'none') and not art.edge.holder:IsShown() and bar1.width == 12 * 44 - 4, 'None: no edge, no room for it')
     assert(M:ResetBar('bar1') and M.db.bar1.border == 'mode' and M.db.bar1.backgroundOpacity == 100 and art.edge.holder:IsShown())
     -- Border Style and Border Metal (owner, November 17, 2026): every bar in
-    -- Mode-Blizz in its own metal; any style keeps the layout; per bar.
-    for _, bar in ipairs(M.bars) do assert(M.db[bar].edgeStyle == 'blizz' and M.db[bar].edgeMetal == 'default', bar .. ' in Mode-Blizz') end
+    -- Mode-Border in its own metal; any style keeps the layout; per bar.
+    for _, bar in ipairs(M.bars) do assert(M.db[bar].edgeStyle == 'obsidian' and M.db[bar].edgeMetal == 'default', bar .. ' in Mode-Border') end
     local art2 = M.art[MultiBarBottomLeftButton1]
-    assert(art.edge.styleId == 'blizz' and art.edge:Metal() == Tone.metal.silver and slotArt.edge.styleId == 'blizz', 'buttons and slots in Mode-Blizz, Silver')
+    assert(art.edge.styleId == 'obsidian' and art.edge:Metal() == Tone.metal.obsidian and slotArt.edge.styleId == 'obsidian', 'buttons and slots in Mode-Border, its own metal')
     local wide, tall, step = bar1.width, bar1.height, Point(ActionButton2)[4]
-    assert(M:SetOption('bar1', 'edgeStyle', 'round') and art.edge.styleId == 'round' and slotArt.edge.styleId == 'round', 'Mode-Round')
+    assert(M:SetOption('bar1', 'edgeStyle', 'obsidianEmpty') and art.edge.styleId == 'obsidianEmpty' and slotArt.edge.styleId == 'obsidianEmpty', 'Mode-Empty')
     assert(bar1.width == wide and bar1.height == tall and Point(ActionButton2)[4] == step and art.edge:Outset() == 3, 'same layout, same reach')
-    assert(art2.edge.styleId == 'blizz', 'other bars keep their own')
+    assert(art2.edge.styleId == 'obsidian', 'other bars keep their own')
     assert(M:SetOption('bar1', 'edgeMetal', 'gunmetal') and art.edge:Metal() == Tone.metal.gunmetal and slotArt.edge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
     assert(not M:SetOption('bar1', 'edgeStyle', 'nope') and not M:SetOption('bar1', 'edgeMetal', 'gold') and not M:SetOption('bar1', 'edgeStyle', 'none'), 'unknown styles and metals are refused')
-    assert(M.db.bar1.edgeStyle == 'round' and M.db.bar1.edgeMetal == 'gunmetal')
+    assert(M.db.bar1.edgeStyle == 'obsidianEmpty' and M.db.bar1.edgeMetal == 'gunmetal')
     assert(M:SetOption('bar1', 'border', 'none') and not art.edge.holder:IsShown() and bar1.width == 12 * 44 - 4, 'None still hides the edge')
-    assert(M:ResetBar('bar1') and art.edge.styleId == 'blizz' and art.edge:Metal() == Tone.metal.silver and art.edge.holder:IsShown())
+    assert(M:ResetBar('bar1') and art.edge.styleId == 'obsidian' and art.edge:Metal() == Tone.metal.obsidian and art.edge.holder:IsShown())
 
     -- Text: font, tucked into its corner, keybind color kept unless out of range.
     local hotkey = ActionButton1.HotKey
-    assert(hotkey.font[2] == 10 and hotkey.font[3] ~= 'OUTLINE' and hotkey.font[1]:find('Geist%-Bold'), 'keybind: Geist Bold 10, no outline')
-    assert(ActionButton1.Count.font[2] == 11 and ActionButton1.Count.font[1]:find('Geist%-Bold'), 'count: Geist Bold 11')
+    assert(hotkey.font[2] == 10 and hotkey.font[3] ~= 'OUTLINE' and hotkey.font[1]:find('Urbanist%-Bold'), 'keybind: Urbanist Bold 10, no outline')
+    assert(ActionButton1.Count.font[2] == 11 and ActionButton1.Count.font[1]:find('Urbanist%-Bold'), 'count: Urbanist Bold 11')
     -- Short Keybinds: one-letter modifiers with no hyphen.
     assert(M.ShortKey('s-E') == 'sE' and M.ShortKey('SHIFT-E') == 'sE' and M.ShortKey('s-c-1') == 'sc1', 'modifiers shortened')
     assert(M.ShortKey('Mouse Button 4') == 'M4' and M.ShortKey('a-Mouse Button 4') == 'aM4' and M.ShortKey('BUTTON3') == 'M3')
@@ -121,7 +121,7 @@ world.run([==[
     assert(ActionButton1.icon.vertexColor[1] == 1)
     assert(ActionButton1.Name.alpha == 0, 'macro names hidden by default')
     local countdown = ActionButton1.cooldown.countdown
-    assert(countdown.font[2] == 13 and countdown.color[2] == Tone.cooldown[2], 'cooldown numbers: Geist Bold 13 in the cooldown color')
+    assert(countdown.font[2] == 13 and countdown.color[2] == Tone.cooldown[2], 'cooldown numbers: Urbanist Bold 13 in the cooldown color')
 
     -- Lifted shadow: a copy that follows Blizzard's text, even when secret.
     assert(M:SetOption('bar1', 'liftedShadow', true))
@@ -462,7 +462,7 @@ world.run([==[
     assert(ActionButton2.SpellActivationAlert:GetAlpha() == 0, "Blizzard's alert faded")
     assert(M:SetOption('bar1', 'procGlow', 'mode') and proc.soft:IsShown() and edge2.tint == nil, 'Mode Glow: a soft glow, the metal rim')
     assert(M:SetOption('bar1', 'procGlow', 'border') and M:SetOption('bar1', 'procColor', { 0, 1, 0 }) and edge2.tint[2] == 1, 'proc color')
-    assert(M:SetOption('bar1', 'edgeStyle', 'thin') and edge2.styleId == 'thin' and edge2.tint[2] == 1 and M:SetOption('bar1', 'edgeStyle', 'blizz'), 'a proc rim survives a style change')
+    assert(M:SetOption('bar1', 'edgeStyle', 'obsidianEmpty') and edge2.styleId == 'obsidianEmpty' and edge2.tint[2] == 1 and M:SetOption('bar1', 'edgeStyle', 'obsidian'), 'a proc rim survives a style change')
     assert(M:SetOption('bar1', 'procGlow', 'blizzard') and not proc:IsShown() and ActionButton2.SpellActivationAlert:GetAlpha() == 1, 'Blizzard style')
     assert(M:SetOption('bar1', 'procGlow', 'none') and not proc:IsShown() and ActionButton2.SpellActivationAlert:GetAlpha() == 0, 'None')
     assert(M:SetOption('bar1', 'procGlow', 'mode') and proc:IsShown())
@@ -605,10 +605,10 @@ world.run([==[
     assert(M:SetOption('bar1', 'border', 'none') and not pickerRow.visibleWhen() and M:SetOption('bar1', 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
 
     -- Copy and reset.
-    assert(M:SetOption('bar1', 'border', 'none') and M:SetOption('bar1', 'edgeStyle', 'round') and M:CopyStyleToAll('bar1'))
-    assert(M.db.bar5.edgeStyle == 'round', 'Border Style copies with the look')
+    assert(M:SetOption('bar1', 'border', 'none') and M:SetOption('bar1', 'edgeStyle', 'obsidianEmpty') and M:CopyStyleToAll('bar1'))
+    assert(M.db.bar5.edgeStyle == 'obsidianEmpty', 'Border Style copies with the look')
     assert(M.db.bar5.border == 'none' and M.db.bar5.width == 30 and M.db.bar5.orientation == 'vertical' and M.db.pet.buttons == 10, 'look copied, shape kept')
-    assert(M:ResetBar('bar5') and M.db.bar5.width == 40 and M.db.bar5.border == 'mode' and M.db.bar5.edgeStyle == 'blizz')
+    assert(M:ResetBar('bar5') and M.db.bar5.width == 40 and M.db.bar5.border == 'mode' and M.db.bar5.edgeStyle == 'obsidian')
 
     -- Switching off gives everything back; the look returns on reload.
     bar1:SetAttribute('modeshown', 'show') -- as the state handler would
@@ -628,7 +628,7 @@ restored.run([==[
     assert(M.enabled and M.db.bar1.width == 30 and M.db.bar2.buttons == 6 and M.db.bar3.border == 'none', 'settings persist')
     assert(addon.PositionManager:GetPosition('actionBarsBar1').y == 81, 'position persists')
     assert(ActionButton1:GetParent() == ModeUIActionBar1 and ActionButton1.width == 30)
-    assert(M.db.bar1.edgeStyle == 'round' and M.db.bar3.edgeStyle == 'round' and M.art[ActionButton1].edge.styleId == 'round', 'Border Style persists')
+    assert(M.db.bar1.edgeStyle == 'obsidianEmpty' and M.db.bar3.edgeStyle == 'obsidianEmpty' and M.art[ActionButton1].edge.styleId == 'obsidianEmpty', 'Border Style persists')
 ]==], "restore")
 
 -- Version 1: 42x38 buttons, white cooldown numbers, Fade Until Mouseover and
@@ -692,8 +692,8 @@ end
 H.Load({ before = STUBS, saved = noEdge }).run([==[
     local M = addon.ActionBars
     assert(M.db.version == 6 and M.db.bar1.width == 30 and M.db.bar3.border == 'none', 'nothing reset')
-    for _, bar in ipairs(M.bars) do assert(M.db[bar].edgeStyle == 'blizz' and M.db[bar].edgeMetal == 'default', bar .. ' takes the default border') end
-    assert(M.art[ActionButton1].edge.styleId == 'blizz')
+    for _, bar in ipairs(M.bars) do assert(M.db[bar].edgeStyle == 'obsidian' and M.db[bar].edgeMetal == 'default', bar .. ' takes the default border') end
+    assert(M.art[ActionButton1].edge.styleId == 'obsidian')
 ]==], "fill border style")
 local badEdge = restored.saved()
 badEdge.profiles.Default.modules.actionBars.bar2.edgeStyle = "nope"
@@ -717,7 +717,7 @@ H.Load({ before = STUBS }).run([==[
         for _, bar in ipairs({ 'bar1', 'bar2', 'bar3', 'bar4' }) do
             local s = db[bar]
             assert(s.show and s.width == 28 and s.height == 24 and s.spacing == 2 and s.buttons == 12 and s.perLine == 12
-                and s.orientation == 'horizontal' and s.start == 'TOPLEFT' and s.edgeStyle == 'blizz', bar)
+                and s.orientation == 'horizontal' and s.start == 'TOPLEFT' and s.edgeStyle == 'obsidian', bar)
             local g = M.Geometry(s, 12, 1)
             assert(g.width == 430 and g.height == 30, bar .. ' is 430 x 30')
         end

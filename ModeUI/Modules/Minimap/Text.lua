@@ -53,7 +53,7 @@ function M:LayoutText(width, height)
         bar:ClearAllPoints()
         bar:SetPoint("TOPLEFT", self.map, "BOTTOMLEFT", 0, -gap)
         bar:SetSize(width, barHeight)
-        Skin.PaintBox(bar.parts, bar, "Button", self.TILE_FILL, 1, true)
+        Skin.PaintBox(bar.parts, bar, "FG", self.TILE_FILL, 1, true)
         self:PaintEdge(bar.parts.modeEdge, db.border)
         bar.overlay:SetFrameLevel(bar:GetFrameLevel() + 4)
         extra = gap + barHeight

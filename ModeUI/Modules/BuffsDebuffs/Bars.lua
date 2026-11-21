@@ -9,7 +9,7 @@ if not M then return end
 -- leaves out the kinds before it, so an aura shows once. Weapon enchants are
 -- the container's item enchantments. Buttons are styled once as they're made
 -- (initializeFrame): the Mode icon (Kit.AuraIconParts) on a child frame with
--- room under it for time text, the Mode-Blizz edge, rim by debuff type, glow,
+-- room under it for time text, the Mode-Border edge, rim by debuff type, glow,
 -- swipe, stacks, tooltip and right-click cancel. A change to how buttons look
 -- builds a new container; filters, counts, sorting and layout change in place.
 local Kit = addon.Kit

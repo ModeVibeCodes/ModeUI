@@ -189,9 +189,9 @@ world.run([==[
     assert(Point(clean)[2] == frame.header.close and Point(frame.header.sort)[2] == clean, 'between Sort and close')
     -- The window: a Mode window with a Mode Title header and a Mode field.
     local wp = Skin.parts[frame]
-    assert(wp.faceKey == 'Panel' and wp.face.vertexColor[1] == G.panel[1] and wp.face.vertexColor[4] == 0.95, 'Mode Panel at 95%')
+    assert(wp.faceKey == 'Surface' and wp.face.vertexColor[1] == G.panel[1] and wp.face.vertexColor[4] == 0.95, 'Mode Surface at 95%')
     assert(wp.modeEdge.preset == 'window' and Point(wp.edgeFrame)[4] == 3 and not wp.modeEdge.below:IsShown(), 'the window edge inside; no drop')
-    assert(Skin.parts[frame.header].faceKey == 'Title' and Skin.parts[frame.header].face.vertexColor[1] == G.raised[1], 'a Mode Title header')
+    assert(Skin.parts[frame.header].faceKey == 'FG' and Skin.parts[frame.header].face.vertexColor[1] == G.raised[1], 'a Mode-FG header')
     assert(frame.divider.vertexColor[1] == G.line[1] and frame.header.title.color[1] == G.white[1], 'a Graphite line; the title in Graphite white')
     local field = Skin.parts[frame.search]
     assert(field.faceKey == 'Solid' and field.face.vertexColor[1] == G.base[1] and field.modeEdge.preset == 'control', 'search: a Mode field')
@@ -282,16 +282,16 @@ world.run([==[
     assert(M:SetOption('columns', 8) and frame.width == 2 * (g.border + g.pad) + 8 * 36 + 7 * 3, 'Columns')
     assert(not M:SetOption('columns', 40) and not M:SetOption('growFrom', 'CENTER') and not M:SetOption('slotColor', { 2, 0, 0 }), 'bad values refused')
     -- Border Style and Border Metal (owner, November 17, 2026): the window and
-    -- its Sort menu in Mode-Thin, Steel by default; slots keep theirs; any
-    -- style keeps the window's size.
+    -- its Sort menu in Mode-Border in its own metal by default; slots keep
+    -- theirs; any style keeps the window's size.
     local edge, menuEdge, slotEdge = wp.modeEdge, menu.parts.modeEdge, art[axe].box.modeEdge
-    assert(M.db.edgeStyle == 'thin' and M.db.edgeMetal == 'default' and edge.styleId == 'thin' and edge:Metal() == Tone.metal.steel, 'Mode-Thin in Steel')
+    assert(M.db.edgeStyle == 'obsidian' and M.db.edgeMetal == 'default' and edge.styleId == 'obsidian' and edge:Metal() == Tone.metal.obsidian, 'Mode-Border in its own metal')
     local width, height, slotStyle = frame.width, frame.height, slotEdge.styleId
-    assert(M:SetOption('edgeStyle', 'round') and edge.styleId == 'round' and menuEdge.styleId == 'round', 'Mode-Round: window and Sort menu')
+    assert(M:SetOption('edgeStyle', 'obsidianEmpty') and edge.styleId == 'obsidianEmpty' and menuEdge.styleId == 'obsidianEmpty', 'Mode-Empty: window and Sort menu')
     assert(frame.width == width and frame.height == height and slotEdge.styleId == slotStyle, 'same size; slots keep their edge')
     assert(M:SetOption('edgeMetal', 'gunmetal') and edge:Metal() == Tone.metal.gunmetal and menuEdge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
-    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
-    assert(M:SetOption('edgeStyle', 'thin') and M:SetOption('edgeMetal', 'default') and edge:Metal() == Tone.metal.steel)
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'obsidianEmpty', 'unknown styles are refused')
+    assert(M:SetOption('edgeStyle', 'obsidian') and M:SetOption('edgeMetal', 'default') and edge:Metal() == Tone.metal.obsidian)
     assert(M:SetOption('reagentSection', false) and M:SetOption('keyring', false))
     assert(not frame.labels[1].text:IsShown() and not frame.labels[2].text:IsShown(), 'sections off')
     assert(M.buttons[5][1]:IsShown() and not M.buttons[-2][1]:IsShown(), 'reagents join the bags; no keyring')
@@ -374,7 +374,7 @@ H.Load({ saved = v2, before = STUBS }).run([==[
     assert(db.backgroundColor[1] == Tone.graphite.panel[1] and db.headerColor[1] == Tone.graphite.raised[1], 'Graphite window and header')
     assert(db.slotColor[1] == Tone.mono.panel[1] and db.slotOpacity == 100 and db.slotSize == 36 and db.fontMedia == 'Mode', 'Mode slots')
     assert(db.spacing == 6, 'a picked spacing stays')
-    assert(db.edgeStyle == 'thin' and db.edgeMetal == 'default', 'saved settings take the border defaults')
+    assert(db.edgeStyle == 'obsidian' and db.edgeMetal == 'default', 'saved settings take the border defaults')
 ]==])
 local bad = world.saved()
 bad.profiles.Default.modules.bags.columns = 'many'

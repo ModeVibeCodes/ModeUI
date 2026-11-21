@@ -111,7 +111,7 @@ function Skin.PaintWindow(frame, style)
     if not parts or not parts.face then return end
     local px = Kit.PixelSize(frame)
     local options = parts.options or {}
-    Skin.PaintBox(parts, frame, "Panel", style.fill or M.panel, options.noFill and 0 or style.alpha, style.border ~= false)
+    Skin.PaintBox(parts, frame, "Surface", style.fill or M.panel, options.noFill and 0 or style.alpha, style.border ~= false)
     -- No soft drop where it would show through: a window with no fill (the
     -- World Map's) or a see-through one (Window Opacity under 100).
     local opaque = not addon.IsNumber(style.alpha) or style.alpha >= 1
@@ -127,7 +127,7 @@ function Skin.PaintWindow(frame, style)
     strip:SetHeight(height)
     Style.Paint(strip, M.title, options.noFill and style.alpha or 1)
     local width = frame:GetWidth()
-    if addon.IsNumber(width, 1) then Style.TileCoords(strip, "Title", width, height, px) end
+    if addon.IsNumber(width, 1) then Style.TileCoords(strip, "FG", width, height, px) end
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", strip, "BOTTOMLEFT", 0, 0)
     divider:SetPoint("TOPRIGHT", strip, "BOTTOMRIGHT", 0, 0)
@@ -180,7 +180,7 @@ function Skin.Window(frame, style, options)
     if not parts.strip then
         parts.strip = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
         parts.divider = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
-        Style.ApplyAsset(parts.strip, "Title"); Style.ApplyAsset(parts.divider, "Solid")
+        Style.ApplyAsset(parts.strip, "FGBase"); Style.ApplyAsset(parts.divider, "Solid")
         parts.regions[parts.strip], parts.regions[parts.divider] = true, true
     end
     Skin.PaintWindow(frame, style)

@@ -77,21 +77,6 @@ function P:CreateFromLayout(name, layout)
     return Result(true, "Created " .. clean .. " from the " .. spec.label .. " layout. Switch to it to use it.")
 end
 
--- A copy of `source` in a theme (Shared/Runtime/Themes.lua): the theme's
--- module parts run on the copy; the source stays as it is.
-function P:CreateThemed(name, source, theme)
-    local clean, reason = NewName(name)
-    if not clean then return Result(false, reason) end
-    if not self:Exists(source) then return Result(false, "Profile not found.") end
-    if not (addon.Themes:Valid(theme) and theme) then return Result(false, "Theme not found.") end
-    local copy = addon.ProfileCodec.Copy(Root().profiles[source])
-    copy.theme, copy.themeParts = theme, {}
-    local profile, why = DB():ValidateProfile(copy)
-    if not profile then return Result(false, why) end
-    Root().profiles[clean] = profile
-    return Result(true, "Copied " .. source .. " to " .. clean .. " in " .. addon.Themes:Label(theme) .. ". Switch to it to use it.")
-end
-
 function P:Rename(old, name)
     if not self:Exists(old) then return Result(false, "Profile not found.") end
     local clean, reason = NewName(name)

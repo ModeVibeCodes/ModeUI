@@ -335,7 +335,6 @@ local function MigrateV23(db)
         frame.classSoftness = nil
     end)
 end
-
 -- Pure defaults, one-time migration and validation; profile validation runs
 -- this on detached copies. Retired phase-1 top-level keys are left in place.
 function M.Initialize(db)
@@ -358,7 +357,8 @@ function M.Initialize(db)
     if db.layoutVersion == 20 then MigrateV20(db); db.layoutVersion = 21 end
     if db.layoutVersion == 21 then MigrateV21(db); db.layoutVersion = 22 end
     if db.layoutVersion == 22 then MigrateV22(db); db.layoutVersion = 23 end
-    if db.layoutVersion == 23 then MigrateV23(db); db.layoutVersion = M.LAYOUT_VERSION end
+    if db.layoutVersion == 23 then MigrateV23(db); db.layoutVersion = 24 end -- then 25: Init.lua, the Target's health color
+    if db.layoutVersion == 24 then if type(db.target) == "table" and db.target.healthColorMode == "default" then db.target.healthColorMode = "class" end; db.layoutVersion = 25 end
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

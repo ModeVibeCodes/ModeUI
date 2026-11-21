@@ -1,6 +1,6 @@
 -- The Healer layout (Shared/Runtime/Layouts.lua; owner, November 19, 2026;
 -- design/healer-layout/): builds a valid Mode-Healer profile at 1080 and 1440
--- from every module's part, made once per account at login like Mode-Default,
+-- from every module's part, made once per seed at login like Mode-DPS/TANK,
 -- and its places line up the way the owner asked: the Player mana frame's bar
 -- as wide as the party column and 1px over it, the Target 1px beside it, the
 -- Focus 1px under the Target's cast bar, the party column ending level with
@@ -16,7 +16,7 @@ world.run([==[
     local parts = {}
     for _, part in ipairs(L.parts.healer) do parts[#parts + 1] = part.module end
     table.sort(parts)
-    assert(table.concat(parts, ',') == 'actionBars,buffsDebuffs,cooldownManager,damageMeters,minimap,nameplates,partyFrames,unitFrames',
+    assert(table.concat(parts, ',') == 'actionBars,bags,buffsDebuffs,cooldownManager,damageMeters,minimap,nameplates,partyFrames,tooltip,unitFrames',
         'every part: ' .. table.concat(parts, ','))
     local UF, PF, CDM, BD = addon.UnitFrames, addon.PartyFrames, addon.CooldownManager, addon.BuffsDebuffs
     local SCREEN = { ['1080'] = 1080, ['1440'] = 1440 }
@@ -49,14 +49,24 @@ world.run([==[
         local party = m.partyFrames
         local pg = PF.Geometry({ db = party }, 1)
         assert(pg.width == 136 and pg.height == 64 and party.showPlayer and party.showSolo and party.spacing == 1, 'members 136 x 64, you shown, solo too')
-        assert(party.edgeStyle == 'thin' and party.edgeMetal == 'gunmetal' and party.foregroundTexture == 'media:Mode Matte'
-            and party.backgroundOpacity == 70, 'Mode-Thin Gunmetal, Mode Matte at 70')
+        assert(party.edgeStyle == 'obsidian' and party.edgeMetal == 'default' and party.foregroundTexture == 'media:Mode-FG'
+            and party.backgroundTexture == 'media:Mode-BG' and party.backgroundOpacity == 85, 'Mode-Border, Mode-FG over Mode-BG at 85')
+        assert(m.cooldownManager.essential.edgeStyle == 'obsidianEmpty' and addon.Style.SameColor(m.cooldownManager.essential.edgeColor, addon.Style.Tone.emptyRim),
+            'Cooldown Manager icons in Mode-Empty, neutral and darker')
         local column = PF.MAX_MEMBERS * pg.height + (PF.MAX_MEMBERS - 1) * party.spacing
         local p = pos.partyFrames
-        assert(p.target == 'screen' and p.point == 'RIGHT' and p.relativePoint == 'CENTER' and p.x == -323, 'party right edge -323')
-        local partyBottom, partyTop = p.y - column / 2, p.y + column / 2
+        -- Hung from the Player frame's bar block (owner, November 20, 2026): its
+        -- top right on the block's bottom right, 1 down, so its right edge is
+        -- the block's real one at any UI scale and the first member sits snug
+        -- under it.
+        -- With the 1080 places one physical pixel left (1 here: the simulated UI is pixel perfect).
+        assert(p.target == 'unitFramesPlayerBars' and p.point == 'TOPRIGHT' and p.relativePoint == 'BOTTOMRIGHT'
+            and p.x == (variant == '1440' and 0 or -addon.Kit.PixelSize(UIParent)) and p.y == -1, 'party hung from the Player bar block')
+        local pg0, pp0 = UF:Geometry(m.unitFrames.player, 1, addon.Style.EdgeDepth('frame')), pos.unitFramesPlayer
+        local partyTop = pp0.y - pg0.height / 2 + pg0.blockY - 1
+        local partyBottom = partyTop - column
         assert(partyBottom == e2Bottom + 1, 'the column ends level with Essential row 2: ' .. variant .. ' ' .. partyBottom .. ' vs ' .. e2Bottom)
-        assert(p.y == (variant == '1440' and -288 or -133), 'party middle')
+        assert(partyTop == (variant == '1440' and -126 or 29), 'party top')
         -- Inside: name top left with the role on its end, health in the middle;
         -- debuffs 20 x 18 (3), Dispellable 22 x 20 (2) on its own row, healing buffs 22 x 18 (3).
         assert(party.nameAnchor == 'TOPLEFT' and party.roleAfterName and party.healthTextAnchor == 'CENTER' and party.healthTextSize == 12)
@@ -104,18 +114,18 @@ world.run([==[
         end
         assert(uf.player.texts.right.content == 'powerPercent' and uf.target.texts.left.content == 'healthCurrent' and uf.target.texts.left.size == 12)
         assert(uf.target.castBar.gap == -1 and uf.target.castBar.height == 12 and not uf.targettarget.enabled)
-        -- Focus: 136 x 20, 1px under the Target's cast bar (12 + its 1px rim), left edges lined up.
+        -- Focus: 136 x 20, 80 under the Target's cast bar (12 + its 1px rim) and 1px, left edges lined up.
         local fg = UF:Geometry(uf.focus, 1, addon.Style.EdgeDepth('frameThin'))
         assert(fg.width == 136 and fg.height == 20, 'Focus 136 x 20')
-        assert(fp.point == 'TOPLEFT' and fp.relativePoint == 'CENTER' and fp.x == -322 and fp.y == blockBottom - 1 - 14 - 1, 'Focus under the cast bar')
+        assert(fp.point == 'TOPLEFT' and fp.relativePoint == 'CENTER' and fp.x == -322 and fp.y == blockBottom - 1 - 14 - 1 - 80, 'Focus 80 under the cast bar')
 
         -- ModeCDM: Power and Alternate Mana off; Combo Points a 6px strip 1px
-        -- on Essential; the Cast Bar 16 tall at a fixed place over it; Utility 70 under.
+        -- on Essential; the Cast Bar 20 tall at a fixed place over it; Utility 70 under.
         assert(not cdm.resources.power.show and not cdm.resources.mana.show and cdm.resourceLayout == 'separate')
         local combo = cdm.resources.combo
-        assert(combo.height == 6 and combo.edgeStyle == 'thin' and addon.Style.EdgeMinHeight(CDM.EDGE, 'thin', 1) <= 6, 'a thin strip')
+        assert(combo.height == 6 and combo.edgeStyle == 'obsidian' and addon.Style.EdgeMinHeight(CDM.EDGE, 'obsidian', 1) <= 6, 'a thin strip')
         At(CDM.ResourceElementId('combo'), 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 1)
-        assert(cdm.castBar.height == 16, 'Cast Bar 16')
+        assert(cdm.castBar.height == 20 and cdm.castBar.barMode == 'color' and cdm.castBar.barColorMode == 'class', 'Cast Bar 20, in your class color')
         At(CDM.CAST_ELEMENT, 'cooldownManagerEssential', 'BOTTOM', 'TOP', 0, 8)
         At('cooldownManagerUtility', 'cooldownManagerEssential', 'TOP', 'BOTTOM', 0, -70)
         local ids = {}
@@ -141,16 +151,17 @@ world.run([==[
         At(BD.ElementId(defensives), 'screen', 'LEFT', 'CENTER', -82, 170)
         assert(dw == 163 and math.abs(-82 + dw / 2) <= 0.5, 'Defensives centered on 0')
 
-        -- Everything else as Mode-Default.
+        -- Everything else as Mode-DPS/TANK.
         local dps = assert(L:Build('mode-default', variant))
         for _, id in ipairs({ 'actionBarsBar1', 'actionBarsMicro', 'modeMinimap', 'damageMetersWindow1', 'buffsDebuffsBuffs',
             'buffsDebuffsDebuffs', 'cooldownManagerBuffIcon' }) do
             local a1, b1 = pos[id], dps.positions[id]
-            assert(a1 and b1 and a1.target == b1.target and a1.x == b1.x and a1.y == b1.y, id .. ' as in Mode-Default')
+            assert(a1 and b1 and a1.target == b1.target and a1.x == b1.x and a1.y == b1.y, id .. ' as in Mode-DPS/TANK')
         end
     end
-    -- Made into a profile once, at login, beside Mode-Default; the active profile stays.
-    assert(P:Exists('Mode-Healer') and P:Exists('Mode-Default') and P:Active() == 'Default' and ModeUIDB.builtLayouts.healer == true)
+    -- Made into a profile once, at login, beside Mode-DPS/TANK; the active profile stays.
+    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@6'] == true)
+    assert(ModeUIDB.profiles['Mode-Healer'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-Healer', 'healer'), 'its name is taken')
 ]==], "healer build")
 

@@ -1,7 +1,7 @@
 local _, addon = ...
 -- The one border factory (docs/DESIGN_LANGUAGE.md, "Borders"). A border is a
 -- role (a preset: which rings it has, how far it reaches) drawn in a style
--- (Mode-Blizz, Mode-BlizzEmpty, Mode-Thin, Mode-Round) and a metal. It sits
+-- (Mode-Border, Mode-Empty) and a metal. It sits
 -- outside its host: the 1px shadow ring, the metal band (a base ring with up
 -- to three lighting layers), the 1px black line (on frames and windows just
 -- inside the host's edge), and a soft drop below. Every
@@ -21,21 +21,22 @@ for key, ring in pairs(D.AllRings()) do
     Style.ASSETS["Edge" .. key] = { file = "Borders\\" .. key, slice = D.SHAPES[ring.shape].margin }
 end
 
--- The style a saved style draws as in the theme in use: under Mode-Obsidian
--- every Mode metal style is Mode-Obsidian and Mode-BlizzEmpty is
--- Mode-ObsidianEmpty (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme").
-function Style.ThemeStyle(styleId) return D.ThemeStyle(styleId, Style.Theme and Style.Theme()) end
+-- The style a saved style id draws as: itself, or the style an id from
+-- before November 20, 2026 became (Mode-Blizz, Mode-Thin and Mode-Round draw
+-- as Mode-Border; Mode-BlizzEmpty as Mode-Empty). nil for anything else.
+function Style.ThemeStyle(styleId) return D.Style(styleId) end
 
--- The style choices ({ id, label }), with None when asked. `themed`: the
--- theme in use's own styles (what a Border picker lists); otherwise every
--- style (what a module's settings check accepts, so a style picked under
--- any theme stays valid).
+-- The style choices ({ id, label }), with None when asked. `themed`: what a
+-- Border picker lists (Mode-Border, Mode-Empty); otherwise every id a
+-- module's settings check accepts (the old ids too, so a saved one stays valid).
 function Style.EdgeStyleChoices(withNone, themed)
     local list = {}
-    local obsidian = Style.Theme and Style.Theme() == "obsidian"
-    local orders = not themed and { D.STYLE_ORDER, D.OBSIDIAN_ORDER } or { obsidian and D.OBSIDIAN_ORDER or D.STYLE_ORDER }
-    for _, order in ipairs(orders) do
-        for _, id in ipairs(order) do list[#list + 1] = { id = id, label = D.STYLES[id].label } end
+    for _, id in ipairs(D.STYLE_ORDER) do list[#list + 1] = { id = id, label = D.STYLES[id].label } end
+    if not themed then
+        local old = {}
+        for id in pairs(D.ALIASES) do old[#old + 1] = id end
+        table.sort(old)
+        for _, id in ipairs(old) do list[#list + 1] = { id = id, label = D.STYLES[D.ALIASES[id]].label } end
     end
     if withNone then list[#list + 1] = { id = "none", label = "None" } end
     return list
@@ -46,14 +47,14 @@ function Style.EdgeMetalChoices()
     for _, id in ipairs(D.METAL_ORDER) do list[#list + 1] = { id = id, label = D.METAL_LABELS[id] } end
     return list
 end
--- True for a style that paints its band one flat color (Mode-BlizzEmpty,
--- Mode-ObsidianEmpty), in the theme in use.
+-- True for a style that paints its band one flat color (Mode-Empty).
 function Style.IsFlatStyle(id)
-    local style = D.STYLES[Style.ThemeStyle(id)]
+    local style = D.STYLES[D.Style(id)]
     return style ~= nil and style.light == "flat"
 end
--- A saved style id that is a real style (anything else: nil, the role's default).
-function Style.EdgeStyle(id) return D.STYLES[id] and id or nil end
+-- A saved style id that is a style or an old id (anything else: nil, the
+-- role's default).
+function Style.EdgeStyle(id) return D.Style(id) and id or nil end
 
 local function Around(texture, holder, out, drop)
     texture:ClearAllPoints()

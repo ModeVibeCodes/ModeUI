@@ -92,7 +92,7 @@ function M:LayoutCast(plate)
     -- The Comet spark rides the fill's leading edge (a channel's on its left).
     plate.comet:Layout(plate.casting == "channel", px)
     local size = db.castFontSize
-    -- Cast texts in Geist Bold (another font keeps its one weight).
+    -- Cast texts in Urbanist Bold (another font keeps its one weight).
     local bold = Style.Weighted(path, "bold")
     local function Place(text, justify, shown)
         Kit.Font(text, db, size, bold, px)

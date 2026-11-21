@@ -48,27 +48,30 @@ end
 
 -- The picker's bar textures: each has a LibSharedMedia name, and the names are the design's.
 local bars = world.run([[ return addon.Style.BAR_TEXTURES ]])
-local EXPECTED = { "Solid", "Matte", "BG", "Gradient", "Button", "Glass", "Cast", "Panel", "Title", "Shield", "Obsidian", "ObsidianTrack" }
+local EXPECTED = { "FG", "BG", "Solid", "Shield" }
 Check(table.concat(bars, ",") == table.concat(EXPECTED, ","), "bar textures in menu order: " .. table.concat(bars, ","))
--- Mode-Obsidian's are "Mode-<Name>" (owner, November 20, 2026).
-local LSM_NAMES = { Obsidian = "Mode-Obsidian", ObsidianTrack = "Mode-Obsidian Track" }
+-- Mode-FG and Mode-BG are "Mode-<Name>" (owner, November 20, 2026).
+local LSM_NAMES = { FG = "Mode-FG", BG = "Mode-BG" }
 for _, key in ipairs(bars) do
     local name = LSM_NAMES[key] or ("Mode " .. key)
     Check(keys[key] and keys[key][7] == name, key .. ": LibSharedMedia name should be " .. name)
 end
 
--- Fonts: the four static Geist weights and the OFL beside them.
+-- Fonts: the four static Urbanist weights and the OFL beside them; Geist is
+-- retired (kept outside the addon in archive/mode-blizz/).
 for _, weight in ipairs({ "Regular", "Medium", "SemiBold", "Bold" }) do
-    local file = io.open(H.addonDir .. "Media/Fonts/Geist/Geist-" .. weight .. ".ttf", "rb")
-    Check(file, "missing Geist-" .. weight .. ".ttf")
+    local file = io.open(H.addonDir .. "Media/Fonts/Urbanist/Urbanist-" .. weight .. ".ttf", "rb")
+    Check(file, "missing Urbanist-" .. weight .. ".ttf")
     if file then
         local magic = file:read(4); file:close()
-        Check(magic == "\0\1\0\0", "Geist-" .. weight .. ".ttf is not a TrueType file")
+        Check(magic == "\0\1\0\0", "Urbanist-" .. weight .. ".ttf is not a TrueType file")
     end
 end
-Check(io.open(H.addonDir .. "Media/Fonts/Geist/OFL.txt", "rb"), "Geist needs its OFL.txt beside the fonts")
+Check(io.open(H.addonDir .. "Media/Fonts/Urbanist/OFL.txt", "rb"), "Urbanist needs its OFL.txt beside the fonts")
+Check(not io.open(H.addonDir .. "Media/Fonts/Geist/Geist-Regular.ttf", "rb"), "Geist no longer ships in the addon")
+Check(io.open(H.root .. "archive/mode-blizz/ModeUI/Media/Fonts/Geist/OFL.txt", "rb"), "the archived Geist keeps its OFL.txt")
 
--- LibSharedMedia: every bar texture as statusbar and background, every Geist weight as a font.
+-- LibSharedMedia: every bar texture as statusbar and background, every Urbanist weight as a font.
 local registered = world.run([[
     local lsm = LibStub("LibSharedMedia-3.0")
     local out = {}
@@ -84,10 +87,11 @@ for _, entry in ipairs(registered) do Check(entry[2] and entry[3], entry[1] .. "
 -- Applying an asset sets its path, wrap and slice margins; an unknown key does nothing.
 world.run([[
     local tex = CreateFrame("Frame"):CreateTexture()
-    assert(addon.Style.ApplyAsset(tex, "EdgecutHeavy12s2m"), "border ring art applies")
+    assert(addon.Style.ApplyAsset(tex, "EdgesoftHeavy12"), "border ring art applies")
+    assert(addon.Style.ASSETS.EdgecutHeavy12s2m == nil and addon.Style.ASSETS.Ringb2oh == nil, "Mode-Blizz art is retired")
     assert(addon.Style.ApplyAsset(tex, "NoSuchAsset") == false, "unknown keys are refused")
     assert(addon.Style.AssetPath("Shield"):find("Mode\\Bars\\Shield", 1, true))
-    assert(addon.Style.FontPath("semibold"):find("Geist%-SemiBold%.ttf$"))
+    assert(addon.Style.FontPath("semibold"):find("Urbanist%-SemiBold%.ttf$") and addon.Style.Typeface() == "Urbanist")
 ]])
 
 -- The core: every edge preset lays out on whole pixels with no masks, takes a
@@ -111,7 +115,7 @@ world.run([[
         -- Every style keeps the role's reach and rings, so a layout never moves.
         for _, choice in ipairs(Style.EdgeStyleChoices()) do
             edge:SetStyle(choice.id)
-            assert(edge.styleId == choice.id and edge:Layout() == (def.gap == true and 1 or 0) + def.rim, preset .. " in " .. choice.id .. ": same reach")
+            assert(edge.styleId == Style.ThemeStyle(choice.id) and edge:Layout() == (def.gap == true and 1 or 0) + def.rim, preset .. " in " .. choice.id .. ": same reach")
             assert((edge.shadow ~= nil) == (def.shadow == true) and (edge.gap ~= nil) == (def.gap ~= nil), preset .. " in " .. choice.id .. ": same rings")
             for i, ring in ipairs(edge.rings) do
                 assert(edge.textures[i].texture == Style.AssetPath("Edge" .. ring.key), preset .. " " .. ring.key .. ": its art")
@@ -175,41 +179,46 @@ world.run([[
     assert(plain.holder.points[1][1] == "TOPLEFT" and plain.holder.points[1][4] == 0, "an edge outside the root keeps the plain anchor")
     snapped:Layout(); assert(snapped.holder.points[1][1] == "BOTTOMLEFT", "a re-layout keeps the snap")
     PixelUtil = oldPixelUtil
-    -- The roles' defaults (owner, November 17, 2026): frames Mode-Blizz in
-    -- Silver, windows Mode-Thin in Steel. The reach of every role is what it
-    -- was: the heavy roles' black line sits just inside the host.
+    -- The roles' defaults: Mode-Border in its own metal (Mode-Empty on the
+    -- empty role). The reach of every role is what it was: the heavy roles'
+    -- black line sits just inside the host.
     assert(Style.EdgeReach("frame") == 3 and Style.EdgeReach("window") == 3 and Style.EdgeReach("frameThin") == 2
         and Style.EdgeReach("group") == 1 and Style.EdgeReach("control") == 2 and Style.EdgeReach("card") == 2, "reach by role")
     assert(Style.EdgeDepth("frame") == 2 and Style.EdgeDepth("frameThin") == 1 and Style.EdgeDepth("card") == 2, "band and outside black line")
-    -- Height floors: two slice margins per ring (cut 4/6, round 6/12) less the ring's reach outside the host.
-    assert(Style.EdgeMinHeight("frameThin", "blizz") == 6 and Style.EdgeMinHeight("frameThin", "thin") == 6
-        and Style.EdgeMinHeight("frameThin", "blizzEmpty") == 6 and Style.EdgeMinHeight("frameThin", "round") == 10, "thin floors")
-    assert(Style.EdgeMinHeight("frame", "blizz") == 12 and Style.EdgeMinHeight("frame", "round") == 24, "heavy floors (the inside black line)")
+    -- Height floors: two slice margins per ring (soft 4/6) less the ring's reach outside the host.
+    assert(Style.EdgeMinHeight("frameThin", "obsidian") == 6 and Style.EdgeMinHeight("frameThin", "obsidianEmpty") == 6
+        and Style.EdgeMinHeight("frameThin", "round") == 6, "thin floors (an old id draws as Mode-Border)")
+    assert(Style.EdgeMinHeight("frame", "obsidian") == 12 and Style.EdgeMinHeight("frame", "blizz") == 12, "heavy floors (the inside black line)")
     assert(Style.EdgeMinHeight("frameThin", nil) == 6, "the role's own style")
     local frame = Style.Edge(host, "frame")
     assert(frame.rings[#frame.rings].kind == "gap" and frame.rings[#frame.rings].out == 0, "the black line inside the host's edge")
-    assert(frame.styleId == "blizz" and frame:Metal() == Tone.metal.silver, "frames: Mode-Blizz, Silver")
-    -- The Specular band: a dark base with mid, light and hi layers, the metal's own tones.
+    assert(frame.styleId == "obsidian" and frame:Metal() == Tone.metal.obsidian, "frames: Mode-Border in its own metal")
+    -- The Mode-Border band: a dark glass base, the inner row's lit top and champagne bottom.
     local layers = {}
     for i, ring in ipairs(frame.rings) do if ring.kind == "band" then layers[#layers + 1] = { ring, frame.textures[i] } end end
-    assert(#layers == 4 and layers[1][1].tone == "dark" and layers[4][1].tone == "hi" and layers[4][1].profile == "s2h", "specular layers")
-    assert(layers[1][2].vertexColor[1] == Tone.metal.silver.dark[1] and layers[4][2]:IsShown(), "painted in Silver")
+    assert(#layers == 3 and layers[1][1].tone == "deep" and layers[2][1].profile == "o1h" and layers[3][1].tone == "light"
+        and layers[3][1].profile == "o1l", "Mode-Border layers")
+    assert(layers[1][2].vertexColor[1] == Tone.metal.obsidian.deep[1] and layers[3][2]:IsShown(), "painted in its own metal")
     frame:SetTint(Tone.celadon)
-    assert(layers[1][2].vertexColor[1] == Tone.celadon[1] and not layers[4][2]:IsShown(), "a tint is one flat color")
+    assert(layers[1][2].vertexColor[1] == Tone.celadon[1] and not layers[3][2]:IsShown(), "a tint is one flat color")
     frame:SetTint(nil)
     frame:SetStyle("blizz", "gunmetal")
-    assert(frame:Metal() == Tone.metal.gunmetal and layers[1][2].vertexColor[1] == Tone.metal.gunmetal.dark[1], "another metal repaints")
+    assert(frame.styleId == "obsidian" and frame:Metal() == Tone.metal.gunmetal and layers[1][2].vertexColor[1] == Tone.metal.gunmetal.deep[1],
+        "an old id draws as Mode-Border; another metal repaints")
     frame:SetStyle("blizzEmpty")
-    assert(#frame.rings == 3 and frame.textures[2].vertexColor[1] == Tone.metal.silver.mid[1] and not frame.textures[4]:IsShown(), "Mode-BlizzEmpty: flat Silver mid, back to the style's metal")
+    assert(frame.styleId == "obsidianEmpty" and #frame.rings == 3 and frame.textures[2].vertexColor[1] == Tone.metal.obsidian.hi[1]
+        and not frame.textures[4]:IsShown(), "Mode-BlizzEmpty draws as Mode-Empty: one flat tone, back to the style's metal")
     local window = Style.Edge(host, "window")
-    assert(window.styleId == "thin" and window:Metal() == Tone.metal.steel and #window.rings == 8, "windows: Mode-Thin bevel in Steel")
+    assert(window.styleId == "obsidian" and window:Metal() == Tone.metal.obsidian and #window.rings == 5, "windows: Mode-Border")
     window:SetStyle("round", "default")
-    assert(window.styleId == "round" and window:Metal() == Tone.metal.silver and window.rings[2].key:find("^roundHeavy"), "Mode-Round, Silver")
-    assert(Style.EdgeStyleChoices(true, true)[5].id == "none" and Style.EdgeStyleChoices(true)[7].id == "none" and Style.EdgeMetalChoices()[1].id == "default", "picker choices")
+    assert(window.styleId == "obsidian" and window.rings[2].key:find("^softHeavy"), "an old id: Mode-Border")
+    local themed, all = Style.EdgeStyleChoices(true, true), Style.EdgeStyleChoices(true)
+    assert(themed[1].label == "Mode-Border" and themed[2].label == "Mode-Empty" and themed[3].id == "none", "a picker lists Mode-Border and Mode-Empty")
+    assert(all[7].id == "none" and Style.EdgeMetalChoices()[1].id == "default", "a settings check accepts the old ids too")
     frame:SetStyle(nil)
     frame:SetRim(1)
-    assert(frame:Layout() == 1 and #frame.rings == 6 and frame.rings[3].profile == "s1m" and frame.rings[6].kind == "gap",
-        "a 1px band: the 1px Specular band, and the shadow and black line stay")
+    assert(frame:Layout() == 1 and #frame.rings == 5 and frame.rings[3].profile == "o1h" and frame.rings[5].kind == "gap",
+        "a 1px band: the 1px Mode-Border band, and the shadow and black line stay")
     -- A host whose scale changes after layout (a nameplate aura button made
     -- once) keeps one physical pixel per holder unit: the holder ignores its
     -- parents' scale and takes the pixel factor itself.
@@ -222,26 +231,29 @@ world.run([[
     PixelUtil = nil
     auraEdge:Layout()
     assert(not auraEdge.holder:IsIgnoringParentScale() and auraEdge.holder.scale == 1, "without the factor: the host's pixel size")
-    -- Bars: every picker texture applies; unknown keys fall back to Matte.
+    -- Bars: every picker texture applies; unknown keys fall back to Mode-FG.
     local bar = Style.Bar(host, { role = "health" })
-    assert(bar.textureKey == "Matte", "health bars default to Mode Matte")
+    assert(bar.textureKey == "FG", "health bars default to Mode-FG")
     for _, key in ipairs(Style.BAR_TEXTURES) do bar:SetTextureKey(key); assert(bar.textureKey == key) end
-    bar:SetTextureKey("NoSuchTexture"); assert(bar.textureKey == "Matte")
-    assert(Style.Bar(host, { role = "power" }).textureKey == "Gradient", "power is Mode Gradient")
-    assert(Style.Bar(host, { role = "cast" }).textureKey == "Cast", "cast bars are Mode Cast")
-    -- Matte draws its base with the sheen lift; health and power empty parts are see-through.
-    assert(bar:SetTextureKey("Matte") == nil and bar.lift:IsShown() and bar.lift.texture == Style.AssetPath("MatteLift"), "Matte has a sheen")
-    assert(math.abs(bar.bg.vertexColor[4] - Tone.emptyAlpha) < 1e-9 and Tone.emptyAlpha == 0.6, "see-through health empty part")
+    bar:SetTextureKey("NoSuchTexture"); assert(bar.textureKey == "FG")
+    assert(Style.Bar(host, { role = "power" }).textureKey == "FG", "power is Mode-FG")
+    assert(Style.Bar(host, { role = "cast" }).textureKey == "FG", "cast bars are Mode-FG")
+    -- Mode-FG draws its base with the lift; health and power empty parts are see-through.
+    assert(bar:SetTextureKey("FG") == nil and bar.lift:IsShown() and bar.lift.texture == Style.AssetPath("FGLift"), "Mode-FG has a lift")
+    assert(bar.bg.texture == Style.AssetPath("BG"), "the empty part is Mode-BG")
+    assert(math.abs(bar.bg.vertexColor[4] - Tone.emptyAlpha) < 1e-9 and Tone.emptyAlpha == 0.85, "see-through health empty part")
     assert(Style.Bar(host, { role = "cast" }).bg.vertexColor[4] == 1, "cast bars stay solid")
-    assert(Style.SameColor(Tone.darkFill, Style.Hex("1C1D1C")), "the dark fill")
+    assert(Style.SameColor(Tone.darkFill, Style.Hex("161618")), "the dark fill")
     -- Module bars (Kit.BarForeground): a Mode texture with a lift draws its base
     -- and the white lift on the sheen, over the fill; others hide the sheen.
-    assert(Style.MediaAsset("media:Mode Glass") == Style.ASSETS.Glass and select(2, Style.MediaAsset("media:Mode Matte")) == "Matte")
+    -- A Mode-Blizz texture saved before November 20, 2026 draws as the one it became.
+    assert(Style.MediaAsset("media:Mode-FG") == Style.ASSETS.FG and Style.MediaAsset("media:Mode Glass") == Style.ASSETS.FG
+        and select(2, Style.MediaAsset("media:Mode Matte")) == "FG" and select(2, Style.MediaAsset("media:Mode-Obsidian Track")) == "BG")
     assert(Style.MediaAsset("media:Other") == nil and Style.MediaAsset(nil) == nil)
     local kbar = addon.Kit.Bar(host)
-    addon.Kit.BarForeground(kbar, "media:Mode Glass", 20, 1)
-    assert(kbar.statusBarTexture == Style.AssetPath("GlassBase") and kbar.sheen:IsShown() and kbar.sheen.texture == Style.AssetPath("GlassLift"), "Glass base + lift")
-    assert(kbar.sheen.points[1][2] == kbar:GetStatusBarTexture() and kbar.liftKey == "Glass", "the lift covers the fill")
+    addon.Kit.BarForeground(kbar, "media:Mode-FG", 20, 1)
+    assert(kbar.statusBarTexture == Style.AssetPath("FGBase") and kbar.sheen:IsShown() and kbar.sheen.texture == Style.AssetPath("FGLift"), "Mode-FG base + lift")
+    assert(kbar.sheen.points[1][2] == kbar:GetStatusBarTexture() and kbar.liftKey == "FG", "the lift covers the fill")
     -- The lift fades with the fill's opacity (a hook on SetStatusBarColor).
     local hooks = {}
     hooksecurefunc = hooksecurefunc or function(t, name, hook)
@@ -249,15 +261,15 @@ world.run([[
         t[name] = function(...) old(...); hook(...) end
     end
     local fbar = addon.Kit.Bar(host)
-    addon.Kit.BarForeground(fbar, "media:Mode Matte", 20, 1)
+    addon.Kit.BarForeground(fbar, "media:Mode-FG", 20, 1)
     fbar:SetStatusBarColor(0.1, 0.1, 0.1, 0.4)
     assert(fbar.sheen:GetAlpha() == 0.4, "the lift fades with the fill")
     addon.Kit.BarForeground(fbar, "flat", 20, 1)
     assert(fbar.sheen:GetAlpha() == 1, "a texture without a lift resets the sheen")
-    addon.Kit.BarForeground(kbar, "media:Mode BG", 20, 1)
-    assert(not kbar.sheen:IsShown() and kbar.liftKey == nil, "BG has no lift")
+    addon.Kit.BarForeground(kbar, "media:Mode-BG", 20, 1)
+    assert(not kbar.sheen:IsShown() and kbar.liftKey == nil, "Mode-BG has no lift")
     addon.Kit.BarForeground(kbar, "mode", 20, 1)
-    assert(kbar.sheen:IsShown() and kbar.sheen.points[1][2] ~= kbar:GetStatusBarTexture(), "the older Mode Gradient sheen anchors back to the bar")
+    assert(kbar.sheen:IsShown() and kbar.liftKey == "FG", "the older Mode Gradient choice draws as Mode-FG")
     bar:SetFill(Tone.reaction.hostile)
     bar:SetSpark(true); assert(bar.head:IsShown() and not bar.endLine:IsShown(), "a spark replaces the end line")
     bar:SetSpark(false); assert(not bar.head:IsShown() and bar.endLine:IsShown())
@@ -280,38 +292,41 @@ world.run([[
     local look = Style.Shield(Style.Bar(host))
     assert(look.look.texture == 'Shield' and look.look.opacity == 1 and look.look.color == nil, 'standard look')
     look:SetLook({ texture = 'Nope' }); assert(look.look.texture == 'Shield', 'unknown texture falls back')
-    look:SetLook({ texture = 'Glass', opacity = 5, color = Tone.celadon })
-    assert(look.look.opacity == 2 and look.attachedLines.texture:find('Glass') and look.attachedLift.vertexColor[4] == 0.84)
+    look:SetLook({ texture = 'Glass' }); assert(look.look.texture == 'Shield', 'a retired texture falls back')
+    look:SetLook({ texture = 'FG', opacity = 5, color = Tone.celadon })
+    assert(look.look.opacity == 2 and look.attachedLines.texture:find('FG') and look.attachedLift.vertexColor[4] == 0.84)
     look:SetLook(nil); assert(look.look.texture == 'Shield' and look.look.opacity == 1 and look.look.color == nil)
     -- Icons: wider than tall.
     assert(Style.IconHeight(30) == 26 and Style.IconHeight(40) == 34 and Style.IconHeight(44) == 38 and Style.IconHeight(56) == 50)
     local ring = Style.Ring(host, 66)
     assert(ring.portrait and ring.mask and ring.rim == 3 and ring.shadow, "portrait ring, 3px of metal and a shadow ring")
-    assert(ring.line and ring.line.vertexColor[1] == Tone.shadow[1] and ring.line.vertexColor[3] == Tone.shadow[3], "the 1px black line inside the metal")    -- Mode-Blizz's specular layers in Silver by default; a color is Mode-BlizzEmpty.
-    local silver = Tone.metal.silver
-    assert(#ring.layers == 4 and ring.disc.vertexColor[1] == silver.dark[1] and ring.layers[4].texture.vertexColor[1] == silver.hi[1], "Mode-Blizz, Silver")
+    assert(ring.line and ring.line.vertexColor[1] == Tone.shadow[1] and ring.line.vertexColor[3] == Tone.shadow[3], "the 1px black line inside the metal")
+    -- Mode-Border's ring lighting by default: the color, a lit top, a deeper bottom.
+    local obsidian = Tone.metal.obsidian
+    assert(#ring.layers == 3 and ring.disc.vertexColor[1] == obsidian.mid[1] and ring.layers[2].texture.vertexColor[1] == obsidian.hi[1]
+        and ring.layers[3].texture.vertexColor[1] == obsidian.dark[1], "Mode-Border's ring")
     for _, profile in ipairs(Style.EDGE_DATA.RingProfiles()) do assert(Style.ASSETS["Ring" .. profile], "ring art is registered") end
     Style.PaintRing(ring, nil, "steel")
-    assert(ring.disc.vertexColor[1] == Tone.metal.steel.dark[1] and ring.layers[2].texture:IsShown(), "another metal")
+    assert(ring.disc.vertexColor[1] == Tone.metal.steel.mid[1] and ring.layers[2].texture:IsShown(), "another metal")
     Style.PaintRing(ring, Tone.celadon)
     local function Near(a, b) return math.abs(a - b) < 1e-9 end
     local cel = Style.ColorTones(Tone.celadon)
     assert(Near(cel.mid[1], Tone.celadon[1]) and Near(cel.dark[2], Tone.celadon[2] * 0.55) and Near(cel.hi[3], Tone.celadon[3] + (1 - Tone.celadon[3]) * 0.6), "tones made from a color")
-    assert(Near(ring.disc.vertexColor[1], cel.dark[1]) and ring.layers[2].texture:IsShown() and Near(ring.layers[2].texture.vertexColor[1], Tone.celadon[1])
-        and Near(ring.layers[4].texture.vertexColor[1], cel.hi[1]), "a color: Specular lighting in its own tones")
+    assert(Near(ring.disc.vertexColor[1], cel.mid[1]) and ring.layers[2].texture:IsShown() and Near(ring.layers[2].texture.vertexColor[1], cel.hi[1])
+        and Near(ring.layers[3].texture.vertexColor[1], cel.dark[1]), "a color: the ring's lighting in its own tones")
     assert(ring.line.vertexColor[1] == Tone.shadow[1] and ring.shadow.vertexColor[1] == Tone.shadow[1], "a colored ring keeps its black line and shadow")
-    -- Every Mode border style draws on the ring; bevel's inner row sits 1px in.
+    -- Every border style draws on the ring (an old id as the style it became).
     for _, choice in ipairs(Style.EdgeStyleChoices()) do
         Style.SetRingStyle(ring, choice.id)
-        assert(ring.styleId == choice.id and #ring.layers == #Style.EDGE_DATA.RingLayers(choice.id), choice.id)
+        assert(ring.styleId == Style.ThemeStyle(choice.id) and #ring.layers == #Style.EDGE_DATA.RingLayers(choice.id), choice.id)
     end
     Style.SetRingStyle(ring, "thin"); Style.PaintRing(ring)
-    assert(#ring.layers == 6 and ring.disc.vertexColor[1] == Tone.metal.steel.mid[1], "Mode-Thin: Steel bevel")
+    assert(ring.styleId == "obsidian" and #ring.layers == 3 and ring.disc.vertexColor[1] == obsidian.mid[1], "Mode-Thin draws as Mode-Border")
     Style.SetRingStyle(ring, "blizzEmpty"); Style.PaintRing(ring)
-    assert(#ring.layers == 1 and ring.disc.vertexColor[1] == silver.mid[1] and not ring.pool[2]:IsShown(), "Mode-BlizzEmpty: flat Silver")
+    assert(#ring.layers == 1 and ring.disc.vertexColor[1] == obsidian.mid[1] and not ring.pool[2]:IsShown(), "Mode-BlizzEmpty draws as Mode-Empty: flat")
     Style.SetRingStyle(ring, "bogus")
-    assert(ring.styleId == "blizz" and #ring.layers == 4 and ring.pool[4]:IsShown(), "unknown style: Mode-Blizz")
-    assert(Style.SameColor(Style.Hex("575757"), Tone.slate), "Slate, a little lighter")
+    assert(ring.styleId == "obsidian" and #ring.layers == 3 and ring.pool[3]:IsShown(), "unknown style: Mode-Border")
+    assert(Style.SameColor(Style.Hex("46464B"), Tone.slate), "Slate, Mode-Obsidian's")
     -- Health text glow: a halo in the text's color, sized from the format and
     -- set on the text's justified side; it follows the color and visibility.
     local hooked = {}

@@ -21,8 +21,8 @@ world.run([==[
     local db = M.db.resources
     assert(M.db.version == M.VERSION, 'resource bars need no settings version of their own')
     assert(db.power.show and db.combo.show and db.mana.show and not db.health.show, 'Health starts off')
-    assert(db.power.border == 'mode' and db.power.barTexture == 'media:Mode Gradient' and db.power.barBackground == 'media:Mode BG' and db.power.fontMedia == 'Mode', 'the Mode look')
-    assert(db.power.barBackgroundOpacity == 60 and db.power.borderColor == nil and not db.power.outline, 'Slate at 60%; one edge color; no outline')
+    assert(db.power.border == 'mode' and db.power.barTexture == 'media:Mode-FG' and db.power.barBackground == 'media:Mode-BG' and db.power.fontMedia == 'Mode', 'the Mode look')
+    assert(db.power.barBackgroundOpacity == 85 and db.power.borderColor == nil and not db.power.outline, 'Slate at 85% (the Mode-Obsidian part); one edge color; no outline')
     assert(db.power.matchWidth and db.power.colorMode == 'power' and db.power.text == 'current' and db.combo.text == 'current', 'the combo point count')
     assert(db.power.textShow and db.combo.textShow and not db.mana.textShow and db.power.textAnchor == nil, 'Show Text; always in the middle')
     assert(db.power.height == 16 and db.combo.height == 10 and db.mana.height == 8 and db.health.height == 14, 'version 7 heights')
@@ -33,7 +33,7 @@ world.run([==[
     addon:SetModuleEnabled('cooldownManager', true)
     local power, combo, mana, health = M.resourceFrames.power, M.resourceFrames.combo, M.resourceFrames.mana, M.resourceFrames.health
     assert(ModeUIResourcePower and ModeUIResourceCombo and ModeUIResourceMana and ModeUIResourceHealth, 'a stand-in per bar')
-    assert(ModeUIResourcePower.height == 20 and ModeUIResourceCombo.height == 14 and ModeUIResourceMana.height == 14, '16, 10 and 8 (drawn at the 10px floor) in their edges')
+    assert(ModeUIResourcePower.height == 20 and ModeUIResourceCombo.height == 14 and ModeUIResourceMana.height == 12, '16, 10 and 8 in their edges')
     -- The geometry checks below use 10px Power and 6px strips.
     assert(M:SetResourceOption('power', 'height', 10) and M:SetResourceOption('combo', 'height', 6) and M:SetResourceOption('mana', 'height', 6))
     assert(PM:GetPosition('cooldownManagerResourcePower').target == 'cooldownManagerUtility', 'Power under Utility')
@@ -43,7 +43,7 @@ world.run([==[
     assert(PM:GetSizeMatch('cooldownManagerResourcePower', 'width'), "Edit Mode's Match Width is on")
     assert(power:IsShown() and not ModeUIResourcePower:IsShown(), 'bar shown on its hidden stand-in')
 
-    -- Power: the frameThin edge outside the box, Mode Gradient over Mode BG, no masks.
+    -- Power: the frameThin edge outside the box, Mode-FG over Mode-BG, no masks.
     local box = power.boxes[1]
     local bar = box.bar
     assert(box.edge.preset == 'frameThin' and box.edge.holder:IsShown() and box.edge.holder.frameLevel > box:GetFrameLevel(), 'the Mode edge')
@@ -51,7 +51,7 @@ world.run([==[
     assert(bar.points[1][4] == 0 and bar.points[2][4] == 0, 'the bar fills its box')
     local fill = bar:GetStatusBarTexture()
     assert(not (fill.masks and #fill.masks > 0) and not (bar.bg.masks and #bar.bg.masks > 0), 'no masks')
-    assert(bar.sheen:IsShown() and bar.bg.vertexColor[1] == addon.Style.Tone.slate[1] and bar.bg.vertexColor[4] == 0.6, 'Mode Gradient lift; Slate at 60%')
+    assert(bar.sheen:IsShown() and bar.bg.vertexColor[1] == addon.Style.Tone.slate[1] and math.abs(bar.bg.vertexColor[4] - 0.85) < 1e-6, 'Mode-FG lift; Slate at 85%')
     -- Energy 50 of 100 (units.player), in the energy color, with the current value.
     assert(bar.low == 0 and bar.high == 100 and bar.value == 50 and bar.ease == 1, 'filled, smoothly')
     local energy, Tone = Power.colors.ENERGY, addon.Style.Tone
@@ -97,7 +97,7 @@ world.run([==[
     assert(combo:IsShown() and combo.count == 5 and ModeUIResourceCombo.width == 454, 'five points, matched to Power')
     -- Grouped (the default): one edge round the points, a line between them, no edge on a point.
     assert(combo.outer.edge.holder:IsShown() and not combo.boxes[1].edge.holder:IsShown(), 'one border round the points')
-    assert(combo.boxes[1].height == 10 and ModeUIResourceCombo.height == 14, 'Mode-Round floor: 6px drawn at 10')
+    assert(combo.boxes[1].height == 6 and ModeUIResourceCombo.height == 10, 'Mode-Border floor: 6px drawn at 6')
     local line = combo.dividers[1]
     assert(line:IsShown() and line.width == 1 and Point(line)[4] == Point(combo.boxes[1])[4] + combo.boxes[1].width
         and Point(combo.boxes[2])[4] == Point(line)[4] + 1, 'a 1px line between points')
@@ -154,15 +154,15 @@ world.run([==[
     assert(M:SetResourceOption('health', 'colorMode', 'custom'))
 
     -- Border Style and Rim Color (owner, November 17, 2026): each bar its
-    -- own, Mode-Round in Gunmetal; a style's floor keeps its corners whole.
-    for _, id in ipairs(M.resources) do assert(db[id].edgeStyle == 'round' and db[id].edgeMetal == 'gunmetal' and db[id].rimColor == 'metal', id .. ' in Mode-Round, Gunmetal') end
-    assert(box.edge.styleId == 'round' and box.edge:Metal() == Tone.metal.gunmetal, 'Mode-Round, Gunmetal')
-    assert(M:SetResourceOption('power', 'edgeStyle', 'blizz') and M:SetResourceRim('power', 'steel') and box.edge.styleId == 'blizz'
-        and box.edge:Metal() == Tone.metal.steel and M:ResourceRim('power') == 'steel', 'Mode-Blizz in Steel')
+    -- own, Mode-Border in its own metal; a style's floor keeps its corners whole.
+    for _, id in ipairs(M.resources) do assert(db[id].edgeStyle == 'obsidian' and db[id].edgeMetal == 'default' and db[id].rimColor == 'metal', id .. ' in Mode-Border, its own metal') end
+    assert(box.edge.styleId == 'obsidian' and box.edge:Metal() == Tone.metal.obsidian, 'Mode-Border, its own metal')
+    assert(M:SetResourceOption('power', 'edgeStyle', 'obsidianEmpty') and M:SetResourceRim('power', 'steel') and box.edge.styleId == 'obsidianEmpty'
+        and box.edge:Metal() == Tone.metal.steel and M:ResourceRim('power') == 'steel', 'Mode-Empty in Steel')
     assert(Point(box)[4] == 2 and Point(box)[5] == -2 and box.width == 450 and box.height == 10 and ModeUIResourcePower.height == 14, 'same box, same reach')
-    assert(M:SetResourceOption('power', 'height', 4) and box.height == 6 and ModeUIResourcePower.height == 10, 'Mode-Blizz floor: 6px')
-    assert(M:SetResourceOption('power', 'edgeStyle', 'round') and box.height == 10 and db.power.height == 4, 'Mode-Round floor: 10px; the saved height stays')
-    assert(M:SetResourceOption('power', 'height', 10) and M:SetResourceOption('power', 'edgeStyle', 'blizz'))
+    assert(M:SetResourceOption('power', 'height', 4) and box.height == 6 and ModeUIResourcePower.height == 10, 'Mode-Empty floor: 6px')
+    assert(M:SetResourceOption('power', 'edgeStyle', 'round') and box.height == 6 and db.power.height == 4, 'Mode-Round draws as Mode-Border: 6px floor; the saved height stays')
+    assert(M:SetResourceOption('power', 'height', 10) and M:SetResourceOption('power', 'edgeStyle', 'obsidianEmpty'))
     -- Border Size (owner, November 18, 2026): a 2px band reaches 3px; the box moves in and the bar grows.
     assert(db.power.edgeSize == 1 and M:SetResourceOption('power', 'edgeSize', 2) and box.edge.rim == 2)
     assert(Point(box)[4] == 3 and Point(box)[5] == -3 and box.width == 448 and ModeUIResourcePower.height == 16, 'a 2px band: 3px reach')
@@ -170,9 +170,9 @@ world.run([==[
     -- Rim Color: Bar Color and Custom paint the edge flat; a metal brings the light back.
     assert(M:SetResourceRim('power', 'bar') and box.edge.tint and box.edge.tint[1] == energy[1], 'Bar Color rim')
     assert(M:SetResourceRim('power', 'custom') and M:SetResourceOption('power', 'rimCustom', { 0, 0, 1 }) and box.edge.tint[3] == 1, 'Custom rim')
-    assert(M:SetResourceRim('power', 'default') and box.edge.tint == nil and db.power.edgeMetal == 'default' and box.edge:Metal() == Tone.metal.silver, 'Default Metal: the style own')
+    assert(M:SetResourceRim('power', 'default') and box.edge.tint == nil and db.power.edgeMetal == 'default' and box.edge:Metal() == Tone.metal.obsidian, 'Default Metal: the style own')
     assert(not M:SetResourceRim('power', 'gold'), 'unknown rims are refused')
-    assert(combo.boxes[1].edge.styleId == 'round', 'other bars keep their own')
+    assert(combo.boxes[1].edge.styleId == 'obsidian', 'other bars keep their own')
     -- Tick Marks: a line at 40 Energy, placed from the readable maximum; hidden on another power.
     assert(power.marks == nil, 'no ticks while Show Tick Marks is off')
     assert(M:SetResourceMark('power', 1, 'value', 40) and M:SetResourceMark('power', 1, 'power', 'ENERGY') and power.marks == nil)
@@ -206,7 +206,7 @@ world.run([==[
     assert(not M:SetResourceOption('power', 'height', 100) and not M:SetResourceOption('power', 'visibility', 'sometimes'), 'bad values refused')
     assert(not M:SetResourceOption('power', 'unknown', 1))
     assert(M:SetResourceOption('power', 'border', 'none') and not box.edge.holder:IsShown() and Point(box)[4] == 0 and ModeUIResourcePower.height == 10, 'no border, no reach')
-    assert(db.power.edgeStyle == 'blizz', 'None keeps the Border Style')
+    assert(db.power.edgeStyle == 'obsidianEmpty', 'None keeps the Border Style')
     assert(M:SetResourceOption('power', 'reverse', true) and bar.reverseFill == true)
     assert(M:SetResourceOption('power', 'smooth', false)); FireEvent('UNIT_POWER_FREQUENT', 'player'); assert(bar.ease == nil, 'Smooth off snaps')
     assert(not M:SetResourceOption('power', 'textAnchor', 'LEFT') and Point(power.text)[1] == 'CENTER', 'no Anchor: always in the middle')
@@ -228,7 +228,7 @@ world.run([==[
 
     -- Reset keeps Show Bar and the size.
     assert(M:ResetResource('power') and db.power.border == 'mode' and db.power.visibility == 'always' and db.power.opacity == 100)
-    assert(db.power.edgeStyle == 'round' and db.power.edgeMetal == 'gunmetal' and box.edge.styleId == 'round' and box.edge:Metal() == Tone.metal.gunmetal, 'Reset: Mode-Round, Gunmetal again')
+    assert(db.power.edgeStyle == 'obsidian' and db.power.edgeMetal == 'default' and box.edge.styleId == 'obsidian' and box.edge:Metal() == Tone.metal.obsidian, 'Reset: Mode-Border in its own metal again')
     assert(db.power.barMode == 'dark' and M:SetResourceOption('power', 'barMode', 'color'), 'Reset: Dark again')
     assert(db.power.matchWidth == false and db.power.show, 'size and show stay')
     assert(M:SetResourceOption('power', 'matchWidth', true) and ModeUIResourcePower.width == 454)
@@ -270,7 +270,7 @@ world.run([==[
     local function Hidden() for _, row in ipairs(rows) do if not row.visibleWhen() then return true end end return false end
     assert(page.resourceBorderStylePicker and page.resourceRimPicker and #rows > 0, 'Border Style and Rim Color in Border')
     assert(M:SetResourceOption('power', 'border', 'none') and Hidden() and M:SetResourceOption('power', 'border', 'mode'), 'hidden with Border None')
-    assert(M:SetResourceOption('power', 'edgeStyle', 'thin') and view.bar.boxes[1].edge.styleId == 'thin' and M:SetResourceOption('power', 'edgeStyle', 'blizz'), 'the preview follows the style')
+    assert(M:SetResourceOption('power', 'edgeStyle', 'obsidian') and view.bar.boxes[1].edge.styleId == 'obsidian' and M:SetResourceOption('power', 'edgeStyle', 'obsidianEmpty'), 'the preview follows the style')
     assert(M:SetResourceOption('power', 'text', 'percent') and view.bar.text.text == '65%', 'the preview follows the settings')
     assert(page.resourceStatus.text == 'Shows now. Move it in Edit Mode.')
     window.rows[1].scripts.OnClick(window.rows[1])
@@ -284,7 +284,7 @@ world.run([==[
     assert(not power:IsShown() and not combo:IsShown() and M.resourceEvents.on == false)
     addon:SetModuleEnabled('cooldownManager', true)
     assert(power:IsShown())
-    assert(M:SetResourceOption('combo', 'height', 12) and M:SetResourceOption('combo', 'edgeStyle', 'thin') and combo.boxes[1].edge.styleId == 'thin')
+    assert(M:SetResourceOption('combo', 'height', 12) and M:SetResourceOption('combo', 'edgeStyle', 'obsidianEmpty') and combo.boxes[1].edge.styleId == 'obsidianEmpty')
     -- In combat: bars keep updating and follow a form change; settings wait.
     testCombat, testLockdown = true, true; FireEvent('PLAYER_REGEN_DISABLED')
     units.player.token = 'RAGE'; FireEvent('UNIT_DISPLAYPOWER', 'player')
@@ -295,7 +295,7 @@ world.run([==[
     units.player.token, units.player.power = 'ENERGY', 50; FireEvent('UNIT_DISPLAYPOWER', 'player')
     -- Group Resources: Power, Combo Points and Alternate Mana in one border on
     -- Power's stand-in, a 1px black line between them; each keeps its own look.
-    assert(M:SetResourceOption('combo', 'height', 6) and M:SetResourceOption('combo', 'edgeStyle', 'round'))
+    assert(M:SetResourceOption('combo', 'height', 6) and M:SetResourceOption('combo', 'edgeStyle', 'obsidian'))
     units.player.class = 'DRUID'; units.player.token = 'ENERGY'; FireEvent('UPDATE_SHAPESHIFT_FORM')
     assert(M:SetResourceLayout('grouped') and M.db.resourceLayout == 'grouped')
     local block = power.block
@@ -314,23 +314,23 @@ world.run([==[
     -- Bear Form: no combo points, the block closes up.
     units.player.token = 'RAGE'; FireEvent('UNIT_DISPLAYPOWER', 'player')
     assert(not combo:IsShown() and block.height == 17 and Point(mana)[5] == -11 and not block.lines[2]:IsShown(), 'Bear Form: Power and mana')
-    -- Alternate Mana off: Power alone, raised to the Mode-Round floor... Power is in Mode-Blizz here (6px floor).
+    -- Alternate Mana off: Power alone (Mode-Empty here; every style floors at 6px).
     assert(M:SetResourceOption('mana', 'show', false) and block.height == 10 and not block.lines[1]:IsShown())
-    assert(M:SetResourceOption('power', 'edgeStyle', 'round') and block.height == 10, 'the block keeps the floor')
-    assert(M:SetResourceOption('power', 'height', 6) and block.height == 10 and power.boxes[1].height == 10, 'Power grows to the floor')
+    assert(M:SetResourceOption('power', 'edgeStyle', 'obsidian') and block.height == 10, 'the block keeps its height')
+    assert(M:SetResourceOption('power', 'height', 4) and block.height == 6 and power.boxes[1].height == 6, 'Power grows to the 6px floor')
     assert(M:SetResourceOption('power', 'height', 10) and M:SetResourceOption('mana', 'show', true))
     -- Power off: the others stand apart on their own stand-ins again.
     assert(M:SetResourceOption('power', 'show', false) and not power:IsShown() and Point(mana)[2] == ModeUIResourceMana
-        and mana.boxes[1].edge.holder:IsShown() and ModeUIResourceMana.height == 14, 'Power off breaks the block up')
+        and mana.boxes[1].edge.holder:IsShown() and ModeUIResourceMana.height == 10, 'Power off breaks the block up')
     assert(M:SetResourceOption('power', 'show', true) and Point(mana)[2] == block and block:IsShown(), 'and Power on joins it again')
     -- Rim Color on Power tints the block.
     assert(M:SetResourceRim('power', 'custom') and block.edge.tint ~= nil and M:SetResourceRim('power', 'default') and block.edge.tint == nil, 'the block takes Power rim')
     -- Back to Separate Resources: each bar on its own stand-in again.
     assert(M:SetResourceLayout('separate') and not block:IsShown() and Point(mana)[2] == ModeUIResourceMana and power.boxes[1].edge.holder:IsShown())
-    assert(ModeUIResourcePower.height == 14 and ModeUIResourceMana.height == 14, 'own sizes again')
+    assert(ModeUIResourcePower.height == 14 and ModeUIResourceMana.height == 10, 'own sizes again')
     units.player.class = 'ROGUE'; units.player.token = 'ENERGY'; FireEvent('UNIT_DISPLAYPOWER', 'player')
     assert(not M:SetResourceLayout('stacked'), 'unknown layouts refused')
-    assert(M:SetResourceOption('combo', 'height', 12) and M:SetResourceOption('combo', 'edgeStyle', 'thin'))
+    assert(M:SetResourceOption('combo', 'height', 12) and M:SetResourceOption('combo', 'edgeStyle', 'obsidianEmpty'))
     -- A viewer can attach to a resource bar.
     assert(PM:SetAnchor('cooldownManagerBuffBar', 'cooldownManagerResourcePower', 'right'))
     assert(Point(ModeUICooldownBuffBar)[2] == ModeUIResourcePower)
@@ -342,7 +342,7 @@ local restored = H.Load({ before = STUBS, saved = saved })
 restored.run([==[
     local db = addon.CooldownManager.db.resources
     assert(db.health.show and db.combo.height == 12 and db.combo.text == 'current' and db.health.colorMode == 'custom', 'kept')
-    assert(db.combo.edgeStyle == 'thin' and addon.CooldownManager.resourceFrames.combo.boxes[1].edge.styleId == 'thin', 'Border Style kept')
+    assert(db.combo.edgeStyle == 'obsidianEmpty' and addon.CooldownManager.resourceFrames.combo.boxes[1].edge.styleId == 'obsidianEmpty', 'Border Style kept')
     assert(Point(ModeUICooldownBuffBar)[2] == ModeUIResourcePower, 'a viewer attached to a resource bar finds it after a reload')
 ]==], "restore")
 local before = restored.saved()
@@ -358,7 +358,7 @@ for _, style in pairs(noEdge.profiles.Default.modules.cooldownManager.resources)
 H.Load({ before = STUBS, saved = noEdge }).run([==[
     local db = addon.CooldownManager.db.resources
     assert(db.combo.height == 12 and db.health.show, 'nothing reset')
-    for _, id in ipairs(addon.CooldownManager.resources) do assert(db[id].edgeStyle == 'round' and db[id].edgeMetal == 'gunmetal', id .. ' takes the default border') end
+    for _, id in ipairs(addon.CooldownManager.resources) do assert(db[id].edgeStyle == 'obsidian' and db[id].edgeMetal == 'default', id .. ' takes the default border') end
 ]==], "fill border style")
 
 -- Version 5 -> 6 -> 7: values still at version 5's defaults move (Mode-Round,
@@ -379,9 +379,9 @@ cdm5.resources.health.edgeMetal = 'steel'
 H.Load({ before = STUBS, saved = five }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 9 and M.db.resourceLayout == 'separate', 'version 9, Separate Resources')
+    assert(M.db.version == 10 and M.db.resourceLayout == 'separate', 'version 10, Separate Resources')
     assert(db.power.height == 16 and db.mana.height == 8 and db.combo.height == 12, 'default heights move; a chosen one stays')
-    assert(db.power.edgeStyle == 'round' and db.power.edgeMetal == 'gunmetal' and db.health.edgeMetal == 'steel', 'Mode-Round in Gunmetal; a chosen metal stays')
+    assert(db.power.edgeStyle == 'obsidian' and db.power.edgeMetal == 'default' and db.health.edgeMetal == 'steel', 'Mode-Border in its own metal; a chosen metal stays')
     assert(db.combo.text == 'current' and db.combo.textShow and db.combo.textAnchor == nil and db.combo.layout == 'grouped', 'the count on, grouped points')
     assert(db.power.barMode == 'dark' and db.power.rimColor == 'metal' and #db.power.marks == 1 and not db.power.marksShow, 'new settings from their defaults')
 ]==], "version 6")
@@ -401,7 +401,7 @@ r6.mana.marks = { { value = 0, power = 'MANA' }, { value = 0, power = 'any' }, {
 H.Load({ before = STUBS, saved = six }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 9, 'version 9')
+    assert(M.db.version == 10, 'version 10')
     assert(db.power.height == 16 and db.combo.height == 10 and db.mana.height == 7, 'version 6 heights move; a chosen one stays')
     assert(db.mana.textShow == false and db.mana.text == 'current' and db.power.textShow and db.combo.textShow, 'None becomes Show Text off')
     assert(db.combo.textAnchor == nil and db.power.textAnchor == nil, 'the anchor goes: always in the middle')

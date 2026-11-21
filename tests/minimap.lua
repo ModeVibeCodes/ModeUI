@@ -136,7 +136,7 @@ world.run([==[
     MinimapCluster.IndicatorFrame.MailFrame:Show(); assert(tiles.mail:IsShown() and Point(tiles.mail)[1] == 'BOTTOMRIGHT', 'new mail')
     assert(not tiles.expansion:IsShown() and ExpansionLandingPageMinimapButton:GetParent() == tiles.expansion, 'expansion button off by default')
     local tp = tiles.tracking.parts
-    assert(tp.modeEdge.preset == 'group' and tp.modeEdge.rim == 1 and tp.faceKey == 'Button' and tp.face.vertexColor[1] == Tone.mono.raised[1], 'Mode tiles, Thin')
+    assert(tp.modeEdge.preset == 'group' and tp.modeEdge.rim == 1 and tp.faceKey == 'FG' and tp.face.vertexColor[1] == Tone.mono.raised[1], 'Mode-FG tiles, Thin')
     assert(M:SetButton('mail', 'corner', 'TOPLEFT') and Point(tiles.mail)[1] == 'TOPLEFT' and Point(tiles.mail)[5] == -(5 + 20 + 4), 'stacked under tracking')
     assert(not M:SetButton('mail', 'corner', 'MIDDLE') and M:SetButton('mail', 'corner', 'BOTTOMRIGHT'))
     assert(M:SetButton('calendar', 'shown', false) and not tiles.calendar:IsShown())
@@ -163,7 +163,7 @@ world.run([==[
     assert(M:SetOption('textLayout', 'bar') and M.bar:IsShown() and not t.zone:IsShown(), 'Bar Below')
     -- The bar: a Mode strip in the same frame edge, the two edges 1 px apart (3 + 1 + 3).
     assert(M.mover:GetHeight() == 184 + 7 + 22 and M.barTexts.zone:IsShown(), 'the bar under the map, edges 1 px apart')
-    assert(M.bar.parts.modeEdge.preset == 'frame' and M.bar.parts.faceKey == 'Button', 'a Mode strip')
+    assert(M.bar.parts.modeEdge.preset == 'frame' and M.bar.parts.faceKey == 'FG', 'a Mode-FG strip')
     -- On the bar: clock at the right, coordinates just left of it, the zone
     -- from the left up to them, cut short rather than run under them.
     local bt = M.barTexts
@@ -223,23 +223,24 @@ world.run([==[
     assert(M:SetOption('borderColor', 'class') and M.edge.tint ~= nil, 'the class color')
     M:SetOption('size', 200); M:SetOption('difference', 16); M:SetOption('border', 'mode')
     M:SetOption('borderColor', 'rim'); assert(M.edge.tint == nil and M.edge.rim == 2, 'the metal again, lit')
-    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Blizz in
-    -- Silver by default on the map, its bar and every tile; a switch restyles
-    -- them in place, sizes unchanged; Border Color still tints over any style.
+    -- Border Style and Border Metal (owner, November 17, 2026): Mode-Border in
+    -- its own metal by default on the map, its bar and every tile; a switch
+    -- restyles them in place, sizes unchanged; Border Color still tints over
+    -- any style.
     local Metal, tileEdge, barEdge = Tone.metal, tiles.tracking.parts.modeEdge, M.bar.parts.modeEdge
-    assert(M.db.edgeStyle == 'blizz' and M.db.edgeMetal == 'default' and M.edge.styleId == 'blizz' and M.edge:Metal() == Metal.silver
-        and tileEdge.styleId == 'blizz' and barEdge.styleId == 'blizz', 'Mode-Blizz, Silver')
-    assert(M:EdgeMetal() == Metal.silver, 'the Border Metal swatch shows Silver')
+    assert(M.db.edgeStyle == 'obsidian' and M.db.edgeMetal == 'default' and M.edge.styleId == 'obsidian' and M.edge:Metal() == Metal.obsidian
+        and tileEdge.styleId == 'obsidian' and barEdge.styleId == 'obsidian', 'Mode-Border, its own metal')
+    assert(M:EdgeMetal() == Metal.obsidian, 'the Border Metal swatch shows its own metal')
     local width, height, reach, moverHeight = M.map:GetWidth(), M.map:GetHeight(), M.edge:Outset(), M.mover:GetHeight()
-    assert(M:SetOption('edgeStyle', 'round') and M.edge.styleId == 'round' and tileEdge.styleId == 'round', 'Mode-Round on the map and tiles')
-    assert(M:SetOption('textLayout', 'bar') and barEdge.styleId == 'round', 'and the bar as it shows')
+    assert(M:SetOption('edgeStyle', 'obsidianEmpty') and M.edge.styleId == 'obsidianEmpty' and tileEdge.styleId == 'obsidianEmpty', 'Mode-Empty on the map and tiles')
+    assert(M:SetOption('textLayout', 'bar') and barEdge.styleId == 'obsidianEmpty', 'and the bar as it shows')
     M:SetOption('textLayout', 'map')
     assert(M.map:GetWidth() == width and M.map:GetHeight() == height and M.edge:Outset() == reach and M.mover:GetHeight() == moverHeight and M.edge.rim == 2, 'same size, same rim')
     assert(M:SetOption('edgeMetal', 'gunmetal') and M.edge:Metal() == Metal.gunmetal and tileEdge:Metal() == Metal.gunmetal and M:EdgeMetal() == Metal.gunmetal)
-    assert(M:SetOption('borderColor', 'accent') and M.edge.tint[1] == Tone.ivory[1] and M.edge.styleId == 'round', 'Border Color tints any style')
-    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'round', 'unknown styles are refused')
-    M:SetOption('borderColor', 'rim'); M:SetOption('edgeStyle', 'blizz'); M:SetOption('edgeMetal', 'default')
-    assert(M.edge.styleId == 'blizz' and M.edge:Metal() == Metal.silver and M.edge.tint == nil)
+    assert(M:SetOption('borderColor', 'accent') and M.edge.tint[1] == Tone.ivory[1] and M.edge.styleId == 'obsidianEmpty', 'Border Color tints any style')
+    assert(not M:SetOption('edgeStyle', 'nope') and not M:SetOption('edgeMetal', 'gold') and M.db.edgeStyle == 'obsidianEmpty', 'unknown styles are refused')
+    M:SetOption('borderColor', 'rim'); M:SetOption('edgeStyle', 'obsidian'); M:SetOption('edgeMetal', 'default')
+    assert(M.edge.styleId == 'obsidian' and M.edge:Metal() == Metal.obsidian and M.edge.tint == nil)
 
     -- Edit Mode: three stand-ins; the eye shows to be moved.
     QueueStatusButton:Hide()
@@ -260,14 +261,14 @@ world.run([==[
     assert(table.concat(tabs, ',') == 'Shape,Text,Buttons,Behavior', 'four tabs')
     assert(page.sizeSlider and #page.differenceButtons == 7 and page.cornerButtons == nil and #page.borderButtons == 2)
     assert(#page.swatches == 5 and page.textToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
-    assert(page.borderStyle:IsShown() and page.borderStyle.label:GetText() == 'Mode-Blizz' and page.borderMetal.label:GetText() == 'Default',
+    assert(page.borderStyle:IsShown() and page.borderStyle.label:GetText() == 'Mode-Border' and page.borderMetal.label:GetText() == 'Default',
         'Border Style and Border Metal in the Border group')
     page.differenceButtons[2]:GetScript('OnClick')(); assert(M.db.difference == 8 and Minimap.mask:find('Mask%-200%-8%-0$'))
     local picker = page.buttonRows.mail.picker
     assert(picker[1].label:GetText() == 'Top Left' and picker[4].label:GetText() == 'Bottom Right', 'the corners by name (never blank in the dropdown)')
     picker[1]:GetScript('OnClick')(); assert(M.db.buttons.mail.corner == 'TOPLEFT')
     page.swatches[2]:GetScript('OnClick')(); assert(M.db.borderColor == 'black')
-    assert(page.swatches[1].color.vertexColor[1] == Tone.metal.silver.mid[1], 'the first swatch shows the metal drawn')
+    assert(page.swatches[1].color.vertexColor[1] == Tone.metal.obsidian.mid[1], 'the first swatch shows the metal drawn')
     window:Hide()
 
     addon:SetModuleEnabled('minimap', false)
@@ -286,7 +287,7 @@ world.run([==[
     assert(one.fontMedia == 'Mode' and one.buttonSize == 26 and one.buttonSpacing == 5, 'defaults follow; a picked spacing stays')
     local thin = { version = 1, border = 'thin', borderColor = 'class' }
     M.Initialize(thin); assert(thin.border == 'thin' and thin.borderColor == 'class', 'Thin and Class Color stay')
-    assert(one.edgeStyle == 'blizz' and one.edgeMetal == 'default' and thin.edgeStyle == 'blizz', 'Border Style and Border Metal filled in')
+    assert(one.edgeStyle == 'obsidian' and one.edgeMetal == 'default' and thin.edgeStyle == 'obsidian', 'Border Style and Border Metal filled in')
 ]==], "minimap")
 
 local restored = H.Load({ before = STUBS, saved = world.saved() })

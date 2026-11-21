@@ -82,6 +82,7 @@ Shared\Placement\PositionManager.lua
 Shared\Placement\PositionAnchors.lua
 Shared\Placement\SizeMatch.lua
 Shared\Placement\PositionDrag.lua
+Shared\Placement\PositionRestore.lua
 Shared\Placement\PositionGuides.lua
 Shared\Placement\FrameAnchors.lua
 Shared\Media\Media.lua

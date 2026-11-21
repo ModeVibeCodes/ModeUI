@@ -48,10 +48,10 @@ local function Common(db, ctx)
     end
     assert(defensives, "no Defensives bar")
     Bar(bars[defensives], { width = 40, height = 34, max = 4 })
-    -- Every bar uniform (owner, November 18, 2026): Mode-Thin in its own metal,
+    -- Every bar uniform (owner, November 18, 2026): Mode-Border in its own metal,
     -- icons 1px apart so neighbours share one shadow pixel, as the Cooldown
     -- Manager's do. Border sizes stay each bar's own.
-    for _, bar in pairs(bars) do bar.edgeStyle, bar.edgeMetal, bar.spacing = "thin", "default", 1 end
+    for _, bar in pairs(bars) do bar.edgeStyle, bar.edgeMetal, bar.spacing = "obsidian", "default", 1 end
 
     local x = -(GAP + MAP_EDGE + SHADOW)
     -- Buffs: the icons' tops on the minimap's top.

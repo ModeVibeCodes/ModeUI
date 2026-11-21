@@ -14,8 +14,8 @@ D.accountKeys = { schemaVersion = true, profiles = true, activeProfile = true, p
     failedProfile = true, window = true, importedFrom = true, mediaRegistry = true, optimizationOriginals = true,
     -- Built-in layouts already made into a profile once (Shared/Runtime/Layouts.lua).
     builtLayouts = true,
-    -- Themes the first start already set up, and the profile that was active
-    -- before (Shared/Runtime/Themes.lua).
+    -- Kept from the Mode-Obsidian first start (November 20, 2026; retired
+    -- with the Mode-Blizz look): what it set up and the profile active before.
     builtThemes = true, previousProfile = true }
 D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {}, builtLayouts = {}, builtThemes = {} }
 D.profileDefaults = {
@@ -27,16 +27,19 @@ D.profileDefaults = {
     -- Edit Mode's Match Width and Match Height picks (Placement/SizeMatch.lua).
     sizeMatches = {},
     -- The typeface step this profile's fonts are at (see Typeface below).
-    typeface = 3,
-    -- The look (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): "blizz" or
-    -- "obsidian", and the modules whose part of that theme already ran
+    typeface = 4,
+    -- The look (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): always
+    -- "obsidian", and the modules whose part of it already ran
     -- (Shared/Runtime/Themes.lua).
-    theme = "blizz",
+    theme = "obsidian",
     themeParts = {},
+    -- The look step this profile's textures and border styles are at (see
+    -- Look below).
+    look = 1,
 }
 -- The keys a profile may contain (import/export accept nothing else).
 D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true, typeface = true, theme = true,
-    themeParts = true }
+    themeParts = true, look = true }
 
 -- Typeface step 2 (November 15, 2026, the owner's decision): the Mode font is
 -- "Mode" (Expressway when the client has it, else Geist; Style/Fonts.lua).
@@ -47,13 +50,42 @@ D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatc
 -- Typeface step 3 (November 15, 2026, Phase 8): the bundled Lato is gone
 -- (decision 4), so a saved "ModeUI Lato" becomes "Mode" too, and a global
 -- interface font still at Lato goes back to the default.
+-- Typeface step 4 (November 20, 2026, the owner's decision): Geist is gone;
+-- the Mode typeface is Urbanist. A saved Geist weight becomes the same
+-- Urbanist weight (Geist's regular, once the default, becomes "Mode").
 local OLD_TYPEFACES = { ["Mode Geist"] = 2, ["ModeUI Lato"] = 3 }
+local GEIST = { ["Mode Geist"] = "Mode", ["Mode Geist Medium"] = "Mode-Urbanist Medium",
+    ["Mode Geist SemiBold"] = "Mode-Urbanist SemiBold", ["Mode Geist Bold"] = "Mode-Urbanist Bold" }
 local function Typeface(node, depth, from)
     if type(node) ~= "table" or depth > 12 then return end
     for key, value in pairs(node) do
         local step = key == "fontMedia" and OLD_TYPEFACES[value]
         if step and step > from then node[key] = addon.Style.FONT_DEFAULT
+        elseif key == "fontMedia" and from < 4 and GEIST[value] then node[key] = GEIST[value]
         elseif type(value) == "table" then Typeface(value, depth + 1, from) end
+    end
+end
+
+-- Look step 1 (November 20, 2026, the owner's decision): Mode-Obsidian is the
+-- only look. A saved Mode-Blizz texture becomes the Mode-Obsidian texture of
+-- its part (Style.OLD_MEDIA: empty parts Mode-BG, fills and surfaces
+-- Mode-FG; Mode-Obsidian and Mode-Obsidian Track became Mode-FG and Mode-BG),
+-- and a saved Mode-Blizz border style the style it draws as (EdgeData's
+-- ALIASES: Mode-Border, Mode-Empty). Runs after every module's own
+-- migrations and theme part.
+-- Mode BG also drew fills (nameplate health): a key that isn't an empty
+-- part's takes Mode-FG.
+local STYLE_KEYS = { edgeStyle = true, portraitRingStyle = true }
+local function EmptyPart(key) return type(key) == "string" and (key:find("[Bb]ackground") or key:find("[Ee]mpty")) ~= nil end
+local function Look(node, depth)
+    if type(node) ~= "table" or depth > 12 then return end
+    local Style = addon.Style
+    for key, value in pairs(node) do
+        if type(value) == "string" then
+            if value == "media:Mode BG" and not EmptyPart(key) then node[key] = "media:Mode-FG"
+            elseif Style.OLD_MEDIA[value] then node[key] = Style.OLD_MEDIA[value]
+            elseif STYLE_KEYS[key] and Style.EDGE_DATA.ALIASES[value] then node[key] = Style.EDGE_DATA.ALIASES[value] end
+        elseif type(value) == "table" then Look(value, depth + 1) end
     end
 end
 D.DEFAULT_PROFILE = "Default"
@@ -79,9 +111,13 @@ function D:ValidateProfile(source)
         assert(type(source) == "table", "Profile must be a table.")
         local profile = Copy(source)
         local typeface = profile.typeface
-        assert(typeface == nil or typeface == 1 or typeface == 2 or typeface == 3, "Invalid typeface step.")
+        assert(typeface == nil or typeface == 1 or typeface == 2 or typeface == 3 or typeface == 4, "Invalid typeface step.")
         assert(addon.Themes:Valid(profile.theme), "Invalid theme.")
         assert(profile.themeParts == nil or type(profile.themeParts) == "table", "Invalid theme parts.")
+        local look = profile.look
+        assert(look == nil or look == 1, "Invalid look step.")
+        -- Mode-Obsidian is the only look (Themes.lua).
+        profile.theme = addon.Themes.DEFAULT
         ApplyDefaults(profile, self.profileDefaults, "profile")
         for _, id in ipairs(addon.moduleOrder) do
             local module = addon.modules[id]
@@ -103,10 +139,18 @@ function D:ValidateProfile(source)
         assert(type(profile.positions) == "table", "Invalid positions.")
         assert(addon.PositionManager.ValidSizeMatches(profile.sizeMatches), "Invalid size matches.")
         local from = typeface or 1
-        if from < 3 then
+        if from < 4 then
             Typeface(profile.modules, 0, from)
             if profile.globalMedia.font == "media:ModeUI Lato" then profile.globalMedia.font = "game" end
-            profile.typeface = 3
+            local font = type(profile.globalMedia.font) == "string" and profile.globalMedia.font:match("^media:(.+)$")
+            if font and GEIST[font] then profile.globalMedia.font = "media:" .. GEIST[font] end
+            profile.typeface = 4
+        end
+        if look == nil then
+            local OLD = addon.Style.OLD_MEDIA
+            Look(profile.modules, 0)
+            if OLD[profile.globalMedia.texture] then profile.globalMedia.texture = OLD[profile.globalMedia.texture] end
+            profile.look = 1
         end
         return profile
     end)
@@ -114,11 +158,9 @@ function D:ValidateProfile(source)
     return nil, tostring(result):gsub("^[^:]*:%d+: ", ""):sub(1, 240)
 end
 
--- A profile from defaults, in the active profile's theme (a new profile
--- made while Mode-Obsidian is in use is Mode-Obsidian too).
+-- A profile from defaults.
 function D:NewProfile()
-    local theme = type(addon.db) == "table" and addon.db.theme or nil
-    return self:ValidateProfile({ theme = theme ~= "blizz" and theme or nil })
+    return self:ValidateProfile({})
 end
 
 -- Schema 1 kept one flat settings table; it becomes the Default profile.
@@ -186,8 +228,6 @@ function addon:InitializeDatabase()
     local root = ModeUIDB
     local version = root.schemaVersion
     assert(version == nil or version == 1 or version == SCHEMA_VERSION, "ModeUI: unsupported database version; settings were not reset.")
-    -- A fresh account (no saved settings at all) starts in Mode-Obsidian.
-    local fresh = root.profiles == nil and version == nil and next(root) == nil
     if root.profiles == nil then MigrateV1(root) end
     root.schemaVersion = SCHEMA_VERSION
     ApplyDefaults(root, D.accountDefaults, "ModeUIDB")
@@ -219,17 +259,12 @@ function addon:InitializeDatabase()
     end
     local active = root.profiles[root.activeProfile]
     if type(active) == "table" then ImportFromPlayTheGameTools(root, active) end
-    -- The first start with themes: Mode-Obsidian (Shared/Runtime/Themes.lua).
-    -- An account that just imported Play The Game Tools settings gets a copy,
-    -- so the imported look stays in its own profile.
-    addon.Themes:Seed(root, fresh and root.importedFrom == "none")
-    active = root.profiles[root.activeProfile]
     local profile, reason = D:ValidateProfile(active)
     assert(profile, "ModeUI: profile " .. root.activeProfile .. " is invalid (" .. tostring(reason) .. "); settings were not reset.")
     root.profiles[root.activeProfile] = profile
     self.root, self.db = root, profile
-    -- The theme's tokens, now that the profile is checked (Style/Tone.lua).
-    addon.Style.ApplyTheme(profile.theme)
+    -- The look's tokens, now that the profile is checked (Style/Tone.lua).
+    addon.Style.ApplyTheme()
     self.Profiles.status = status
     return profile
 end

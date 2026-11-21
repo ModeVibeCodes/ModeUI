@@ -25,24 +25,25 @@ The shape `softHeavy` has a 6px corner (the `frame` and `window` roles), and
 
 | File | Job |
 |---|---|
-| `softHeavy01`, `softThin01`, `softThin02` | the 1px shadow ring: Mode-Obsidian's black outer line (90%) |
+| `softHeavy01`, `softThin01`, `softThin02` | the 1px shadow ring: Mode-Border's black outer line (65%, softened from 90% on November 20, 2026) |
 | `softHeavy12`, `softThin12`, `softHeavy11`, `softThin11` | the band's base: dark glass (`Tone.metal.obsidian.deep`), 2px or 1px |
-| `softHeavy21o1h`, `softHeavy11o1h`, `softThin11o1h`, `softThin21o1h`, `softThin01o1h` | the lit top row (`hi`), fading out a third of the way down the sides |
-| `softHeavy21o1l`, `softHeavy11o1l`, `softThin11o1l`, `softThin21o1l`, `softThin01o1l` | the champagne bottom row (`light`), fading in over the last quarter |
+| `softHeavy21o1h`, `softHeavy11o1h`, `softThin11o1h`, `softThin21o1h`, `softThin01o1h` | the lit top row (`hi`), fading out 42% of the way down the sides |
+| `softHeavy21o1l`, `softHeavy11o1l`, `softThin11o1l`, `softThin21o1l`, `softThin01o1l` | the champagne bottom row (`light`), fading in from 62% down |
 | `softHeavy21`, `softHeavy31`, `softThin21` | the inner row of a 2px band, and the black line inside the host (`frame`, `window`) |
 | `Ringorh`, `Ringord` | the class-colored portrait ring: its lit top and its deeper bottom, over the plain disc (`Masks/Circle`) |
 
 The rings in other depths and thicknesses come from the same data.
-Mode-ObsidianEmpty (proc, ready, aggro and quest rims) uses the base rings
+Mode-Empty (proc, ready, aggro and quest rims; the Cooldown Manager's icons) uses the base rings
 alone, painted one flat color.
 
 ## Bars (`Bars/`)
 
 | File | LibSharedMedia | Job |
 |---|---|---|
-| `ObsidianBase` + `ObsidianLift` | `Mode-Obsidian` | the dark glass health fill: a base 100% to 82% down, times the fill color (dark health: `#161618`), plus a faint 1px top line and a soft band of light fading out by the middle |
-| `Obsidian` | `Mode-Obsidian` | the same, baked into one file for other addons |
-| `ObsidianTrack` | `Mode-Obsidian Track` | the lighter graphite empty part: 100% to 76% down, tinted Slate (`#46464B`) at 85% |
+| `FGBase` + `FGLift` | `Mode-FG` | the dark glass fill of every bar: a base 100% to 82% down, times the fill color (dark health: `#161618`), plus a faint 1px top line and a soft band of light fading out by the middle |
+| `FG` | `Mode-FG` | the same, baked into one file for other addons |
+| `BG` | `Mode-BG` | the lighter graphite empty part: 100% to 76% down, tinted Slate (`#46464B`) at 85% |
+| `SurfaceLift` | (none) | the large panels' soft sheen (Surface: Solid plus this lift; white 4.5% at the top, gone 40% down) |
 
 The health fill's end line is not a texture. It is a 1px ice-white line
 (`Tone.fillEnd`, `#D6EBFF` at 85%), 1px in from the bar's top and bottom
@@ -58,13 +59,14 @@ The health fill's end line is not a texture. It is a 1px ice-white line
 
 | File | LibSharedMedia | Job |
 |---|---|---|
-| `Urbanist-Regular.ttf`, `-Medium`, `-SemiBold`, `-Bold` | `Mode-Urbanist`, `Mode-Urbanist Medium`, `Mode-Urbanist SemiBold`, `Mode-Urbanist Bold` | the Mode typeface under Mode-Obsidian (SIL OFL 1.1, `OFL.txt` beside them; `THIRD_PARTY_NOTICES.md`) |
+| `Urbanist-Regular.ttf`, `-Medium`, `-SemiBold`, `-Bold` | `Mode-Urbanist`, `Mode-Urbanist Medium`, `Mode-Urbanist SemiBold`, `Mode-Urbanist Bold` | the Mode typeface (SIL OFL 1.1, `OFL.txt` beside them; `THIRD_PARTY_NOTICES.md`) |
 
 ## Names
 
-Everything the theme adds is named "Mode-<Name>", as the owner asked:
-the theme and its profile (**Mode-Obsidian**), the border styles
-(**Mode-Obsidian**, **Mode-ObsidianEmpty**), the bar textures
-(**Mode-Obsidian**, **Mode-Obsidian Track**), the glow (**Mode-Prism**) and
-the typeface (**Mode-Urbanist**). Files on disk keep the folder's existing
-style (`Bars/Obsidian.tga`), since the asset registry and its test expect it.
+Everything the look adds is named "Mode-<Name>", as the owner asked. On
+November 20, 2026 the owner renamed them: the border styles **Mode-Border**
+and **Mode-Empty** (Mode-Obsidian and Mode-ObsidianEmpty before), the bar
+textures **Mode-FG** and **Mode-BG** (Mode-Obsidian and Mode-Obsidian Track
+before); the glow is **Mode-Prism** and the typeface **Mode-Urbanist**. The
+look itself is still called Mode-Obsidian, and since that day it is the only
+one. Files on disk keep the folder's existing style (`Bars/FG.tga`).

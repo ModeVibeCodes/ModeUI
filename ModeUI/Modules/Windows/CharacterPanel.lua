@@ -49,7 +49,7 @@ function M:SkinStatRow(row)
         box:ClearAllPoints()
         box:SetPoint("TOPLEFT", row, "TOPLEFT", 0, -Skin.Snap(8, px))
         box:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, Skin.Snap(6, px))
-        Skin.PaintBox(parts, box, "Matte", C.card, 1, true)
+        Skin.PaintBox(parts, box, "FG", C.card, 1, true)
         row.Title:SetTextColor(C.heading[1], C.heading[2], C.heading[3], 1)
     elseif row.Label then
         local stripe = row.Background
@@ -97,13 +97,13 @@ function M:SkinCharacterPanel(frame)
         -- Mode Grain in Graphite base behind the stats.
         if not parts.field then
             parts.field = right:CreateTexture(nil, "BACKGROUND", nil, -7)
-            addon.Style.ApplyAsset(parts.field, "Title")
+            addon.Style.ApplyAsset(parts.field, "Solid")
             parts.field:SetAllPoints(right)
             parts.regions[parts.field] = true
         end
         addon.Style.Paint(parts.field, C.field)
         local w, h = right:GetWidth(), right:GetHeight()
-        if addon.IsNumber(w, 1) and addon.IsNumber(h, 1) then addon.Style.TileCoords(parts.field, "Title", w, h, Kit.PixelSize(right)) end
+        if addon.IsNumber(w, 1) and addon.IsNumber(h, 1) then addon.Style.TileCoords(parts.field, "Solid", w, h, Kit.PixelSize(right)) end
         local divider = Line(right, "divider")
         local px = Kit.PixelSize(right)
         divider:ClearAllPoints()
@@ -127,7 +127,7 @@ function M:SkinCharacterPanel(frame)
         Fade(strip.TopBackgroundStrip); Fade(strip.TopBackgroundStripBottomEdge)
         -- A Mode Matte band in Graphite raised behind the level line.
         local band = Skin.Box(strip)
-        Skin.PaintBox(band, strip, "Matte", C.card, 1)
+        Skin.PaintBox(band, strip, "FG", C.card, 1)
         local line = Line(strip, "divider")
         line:ClearAllPoints()
         line:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", 0, 0)

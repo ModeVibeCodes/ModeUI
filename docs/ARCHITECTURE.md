@@ -36,7 +36,7 @@ ModeUI/
     Style/                    the Mode design language: Tone, Assets, Fonts, ProviderMedia, Edge, Bar, Shield, Names, Icon (docs/DESIGN_LANGUAGE.md)
     Kit/                      frame builders: bars, text with lifted shadow, icons, gradients
     Media/                    media registry and discovery (code; assets stay in ModeUI/Media)
-    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors, size matching (SizeMatch.lua: Match Width/Height follow a picked element, saved in the profile's sizeMatches)
+    Placement/                positions, Edit Mode (guides, nudging, grid, keeping stacks on screen), Preview, frame anchors, size matching (SizeMatch.lua: Match Width/Height follow a picked element, saved in the profile's sizeMatches), PositionRestore.lua (the profile's places win over the client's layout cache: element frames are never saved by it, and every element is placed again once the client has restored frames after login)
     Skin/                     re-skinning Blizzard frames (Skin, Controls, Extras, Frame): Chat and Windows
     Settings/                 settings window framework (window, pages, search, tabs) and its launchers (game menu, minimap addon compartment)
       Widgets/                one file per widget kind (Core, Shape, Art, Text, Button, Switch, Header, Input, AnchorPicker, Nudge: `W.Nudge(parent, getX, getY, setX, setY, range)`, four 1px arrows)
@@ -218,7 +218,7 @@ All in `Shared/Runtime/`, loaded in this order:
 | `DB.lua` | `ModeUIDB`: defaults, schema check and migration, never reset; each module's `Initialize(db)` validates its own settings; one-time PTG import | `addon:InitializeDatabase()`, `addon.Database` |
 | `Profiles.lua` | account-wide named profiles; switching applies on reload | `addon.Profiles` |
 | `Layouts.lua` | built-in layouts: a whole screen of settings a new profile starts from; each module adds its own part; once per account a seeded layout becomes its own profile at `PLAYER_LOGIN` | `addon.Layouts:Register(id, spec)`, `:Contribute(id, moduleId, fn(db, ctx))`, `:Build(id, variant)`, `addon.Profiles:CreateFromLayout(name, id)`; see "Layouts" below |
-| `Themes.lua` | themes (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): `profile.theme` ("blizz" or "obsidian"), each module's part of a theme, run once per profile; the first start's Mode-Obsidian profile; see "Themes" below | `addon.Themes:Contribute(theme, moduleId, fn(db))`, `:CatchUp(profile, moduleId, db)`, `:Seed(root, fresh)`, `.SwapColor(t, key, group, role)`, `addon.Profiles:CreateThemed(name, source, theme)` |
+| `Themes.lua` | the look (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian theme"): `profile.theme` (always "obsidian"), each module's part, run once per profile; formerly the first start's Mode-Obsidian profile; see "Themes" below | `addon.Themes:Contribute(theme, moduleId, fn(db))`, `:CatchUp(profile, moduleId, db)`, `:Seed(root, fresh)`, `.SwapColor(t, key, group, role)`, `addon.Profiles:CreateThemed(name, source, theme)` |
 | `Reload.lua` | reload requests and the reasons shown to the user | `addon.ReloadManager:Request(key, reason)`, `:Clear(key)`, `:Reload()` |
 | `Lifecycle.lua` | categories and the module registry; enable/disable; combat broadcast | `addon:RegisterCategory(id, def)`, `addon:RegisterModule(id, module)`, `addon:SetModuleEnabled(id, on)`, `addon:BroadcastCombatState(inCombat)` |
 | `API.lua` | the `ModeUI-Core` LibStub API for companion addons and probes, loaded after `Shared/Style/` (read only, except `Companion`) | `LibStub("ModeUI-Core").Style`, `.Domain`, `.IsPublic`, `.IsNumber`, `.InCombat`, `.Ready()`, `.Companion(name)` (ModeUI's addon table, for the companions it lists) |
@@ -261,7 +261,7 @@ files (before `Shared/Domain`, whose power colors it holds).
 |---|---|
 | `Tone.lua` | every color token (Mono and Graphite ramps, Slate, metals, accents, gameplay and module colors: power types, threat, debuff types, stats, name accents...), `Style.LEGACY` (pre-Mode defaults saved settings still hold or migrations recognize, `Kit.palette` and `Kit.onyx` among them), `Style.SameColor` and `Style.ColorText(text, color)` |
 | `Assets.lua` | the "Mode <Name>" texture registry: file, slice margins, wrap, LibSharedMedia type and name; `Style.TEXTURE_ROOT` (ModeUI's texture folder); the module icons and glyphs (`Style.ICONS`, `Style.GLYPHS`) |
-| `Fonts.lua` | the Mode typeface ("Mode": Expressway when the client has it, else Geist), its weights, the installed Expressway copies it may use (`Style.PROVIDER_FONTS`); Mode Script (`Style.SCRIPT_FONT`, Damion, the wordmark only) |
+| `Fonts.lua` | the Mode typeface ("Mode": Urbanist), its weights, the installed Expressway copies a player may pick (`Style.PROVIDER_FONTS`); Mode Script (`Style.SCRIPT_FONT`, Damion, the wordmark only) |
 | `ProviderMedia.lua` | other addons' media by reference (`Style.PROVIDER_MEDIA`: kind, name, path), registered by Media only when installed; no asset bundled |
 | `Edge.lua` | the one border factory and its presets (frame, frameThin, group, window, ring, line, empty) |
 | `Bar.lua`, `Shield.lua` | the one bar factory: Mode BG empty part, fill-end line, Comet spark, Combined shields; `Style.ApplyBarLook` (a module bar in a Mode texture: base plus lift) and `Style.SetBarTexture` (any other fill file) |
@@ -374,7 +374,7 @@ post-hook (`hooksecurefunc`, `HookScript`).
   `InterfaceTheme.fontSize` (page 24, card 19, brand 21 for the ModeUI wordmark, section 14, body 13, small 12, group 12).
   The shape textures come from `tools/build_shape_textures.lua`. Rims are near-black (`Kit.onyx.border`). Anchoring settings
   use `W.AnchorPicker` (a compass of eight anchors around a small plate). Text and the interface use the Mode typeface
-  (Expressway when installed, else Geist). Every color is a `Style.Tone` token.
+  (Urbanist). Every color is a `Style.Tone` token.
 - **Globals.** Only `ModeUIDB`, `SLASH_MODEUI1`/`SlashCmdList.MODEUI`,
   `SLASH_MODEUICDM1`/`SlashCmdList.MODEUICDM` (`/mcdm`, the Cooldown Manager's
   window, asked for by the owner on November 13, 2026),
@@ -420,7 +420,8 @@ and an entry in the README's module table.
 `Shared/Runtime/Layouts.lua` (owner, November 18, 2026). A layout is a whole
 screen of ModeUI settings that a **new** profile starts from; it never
 changes an existing profile, so nothing a player placed moves. The first is
-**Mode-Default** (label DPS / Tank), built from the owner's layout editor
+**Mode-DPS/TANK** (label DPS / Tank; Mode-Default until November 20, 2026, when
+both role layouts were remade in Mode-Obsidian under new seeds), built from the owner's layout editor
 (plan and editor: https://claude.ai/artifact/6FWUxBmvD5qerXYSV5vYuT, copied to
 `design/layout-editor/`). The second is **Mode-Healer** (label Healer,
 owner, November 19, 2026), from the prototype at
@@ -449,7 +450,7 @@ center, the party column ending level with Essential's second row.
   them safely is still to be researched.
 - **Every module on.** A layout marked `allModules` switches every module
   on in the profile it builds (all but `alwaysOn` and planned ones), before
-  the parts run; Mode-Default and Mode-Healer do (owner, November 18 and
+  the parts run; Mode-DPS/TANK and Mode-Healer do (owner, November 18 and
   19, 2026).
 - **Screens.** A layout has places for 1080p and 1440p at the pixel-perfect
   scale (1 UI unit = 1 pixel); a profile takes the set nearest the UI height
@@ -461,10 +462,13 @@ center, the party column ending level with Essential's second row.
   installed (ModeCDM missing) is skipped.
 - **Profiles.** `Profiles:CreateFromLayout(name, id)`; the Profiles page has
   **New from DPS / Tank Layout** and **New from Healer Layout** (an empty
-  name takes the layout's profile name, made unique). A layout marked `seed` becomes its own profile once per account
-  at `PLAYER_LOGIN` (when every companion has registered), recorded in
-  `ModeUIDB.builtLayouts`; it is never made active, and a deleted one is not
-  made again.
+  name takes the layout's profile name, made unique). A layout with a `seed` becomes its own profile once per account
+  and seed at `PLAYER_LOGIN` (when every companion has registered), recorded
+  in `ModeUIDB.builtLayouts[seed]`; it is never made active, and a deleted
+  one is not made again. A layout remade for a new look takes a new seed
+  (`"<id>@2"`, November 20, 2026): a profile the earlier seed made under the
+  same name (`earlierName`) is kept as "<name> (old)" and the new one is made
+  beside it.
 - **Tests.** `tests/layouts.lua` builds the whole layout at both screens,
   checks every place hangs from a known target, seeding once, and ModeUI
   starting with the profile active; each module's own test checks its part.
@@ -473,45 +477,48 @@ center, the party column ending level with Essential's second row.
 
 ## Themes
 
-`Shared/Runtime/Themes.lua` (owner, November 20, 2026; the plan and log in
-`docs/OBSIDIAN.md`). A theme is the whole look: `profile.theme` is
-`"blizz"` (Mode-Blizz, every profile without the key) or `"obsidian"`
-(Mode-Obsidian). Style draws by the active profile's theme
-(`Style.Theme()`):
+`Shared/Runtime/Themes.lua` (owner, November 20, 2026; the history in
+`docs/OBSIDIAN.md`). Mode-Obsidian is the only look: `profile.theme` is
+always `"obsidian"` (`Database:ValidateProfile` sets it; a profile from
+before may say `"blizz"` or nothing). The Mode-Blizz art, the Geist typeface
+and the code that drew them are kept outside the addon in
+`archive/mode-blizz/` and never load.
 
-- **Tokens:** `Style.ApplyTheme(theme)` (run by `DB.lua` once the active
-  profile is checked) sets the surface tokens in place and keeps the
-  Mode-Blizz values to put back; code that copies token colors registers
+- **Tokens:** `Style.ApplyTheme()` sets the Mode-Obsidian surface tokens in
+  place at load (so defaults copied from tokens are already Mode-Obsidian's)
+  and again once the profile is checked; the Mode-Blizz values stay only for
+  migrations (`Style.BlizzTone`). Code that copies token colors registers
   `Style.OnThemeApplied(fn)` (the settings window's palette does).
-- **Borders:** `Style.ThemeStyle(id)` maps a saved style to the one it draws
-  as (Mode-Obsidian: every Mode metal style is Mode-Obsidian), in
-  `Style.Edge`, `Edge:SetStyle`, `Style.SetRingStyle` and the Border picker,
-  so saved `edgeStyle` keys never change. Pickers list the theme's styles
-  (`Style.EdgeStyleChoices(withNone, true)`); a module's settings check
-  accepts every style (`Style.EdgeStyleChoices()`), so a style picked under
-  one theme stays valid under the other.
-- **Typeface and bars:** `Style.FontPath` gives Urbanist under Mode-Obsidian;
-  `Style.FillEnd` gives the fill-end line's color, alpha and inset.
-- **Parts.** Each module adds its Obsidian defaults from
-  `Modules/<Name>/Theme.lua` (ModeCDM from its own folder):
-  `addon.Themes:Contribute("obsidian", moduleId, function(db) ... end)`. A part
-  runs once per profile and module (`profile.themeParts[moduleId]`), right
-  after the module's `Initialize` in `Database:ValidateProfile` (and in
+- **Borders:** two styles, Mode-Border (`obsidian`) and Mode-Empty
+  (`obsidianEmpty`). `Style.ThemeStyle(id)` maps an old saved id (`blizz`,
+  `thin`, `round`; `blizzEmpty`) to the style it draws as, in `Style.Edge`,
+  `Edge:SetStyle`, `Style.SetRingStyle` and the Border picker. Pickers list
+  the two styles (`Style.EdgeStyleChoices(withNone, true)`); a module's
+  settings check also accepts the old ids (`Style.EdgeStyleChoices()`).
+- **Textures:** Mode-FG and Mode-BG (`Style.ASSETS` FG and BG), Surface for
+  large panels; an old saved texture name draws as the one it became
+  (`Style.OLD_MEDIA`, in `Style.MediaAsset` and `Media:GetStatusBar`).
+- **Migrations** (`DB.lua`, once per profile, after every module's own and
+  its part): look step 1 moves saved old texture names (`Style.OLD_MEDIA`;
+  Mode BG drawing a fill takes Mode-FG) and old `edgeStyle` and
+  `portraitRingStyle` ids; typeface step 4 moves saved Geist weights to
+  Urbanist's.
+- **Parts.** Each module moves its own settings from the Mode-Blizz
+  defaults to Mode-Obsidian's from `Modules/<Name>/Theme.lua` (ModeCDM from
+  its own folder): `addon.Themes:Contribute("obsidian", moduleId, function(db) ... end)`.
+  A part runs once per profile and module (`profile.themeParts[moduleId]`),
+  right after the module's `Initialize` in `Database:ValidateProfile` (and in
   `StartLateModules` for a companion), so the player's later changes stay.
   A part never touches another module's settings; `Themes.SwapColor` moves a
   saved color still at its Mode-Blizz token to Mode-Obsidian's.
-- **Profiles.** The first start with themes (once per account,
-  `ModeUIDB.builtThemes`) copies the active profile to **Mode-Obsidian**,
-  makes the copy active and remembers the old one (`previousProfile`); a
-  fresh account's Default just takes the theme. A new profile, and a
-  layout's, takes the active profile's theme (`Layouts:Build` runs the
-  theme's parts again after the layout's). The Profiles page has **New
-  Mode-Obsidian Copy**.
-- **Tests.** `tests/obsidian.lua` covers the first start, the mapping, the
-  tokens, the typeface, the parts and the copies. Every other test starts as
-  if the first start had run, on Mode-Blizz (`tests/harness.lua`; a test
-  passes `obsidian = true` to see it), and `tests/settings_fit.lua` audits
-  every page in both themes.
+- **Profiles.** Every profile is Mode-Obsidian; a layout's runs the parts
+  again after the layout's (`Layouts:Build`). The first-start
+  "Mode-Obsidian" copy and the Profiles page's New Mode-Obsidian Copy were
+  retired with Mode-Blizz (`builtThemes` and `previousProfile` stay readable
+  account keys).
+- **Tests.** `tests/obsidian.lua` covers an old profile turning
+  Mode-Obsidian, the mapping, the tokens, the typeface and the parts;
+  `tests/smoke.lua` the look and typeface steps.
 
 ## Companion addons
 

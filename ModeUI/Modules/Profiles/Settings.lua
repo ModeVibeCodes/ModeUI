@@ -94,14 +94,6 @@ function M:CreateConfigPage(parent)
             return ok
         end)
     end
-    -- The selected profile copied into Mode-Obsidian (docs/DESIGN_LANGUAGE.md,
-    -- "Mode-Obsidian theme"); an empty name takes "Mode-Obsidian".
-    page.obsidianInput = InputAction("New Mode-Obsidian Copy", addon.Themes.PROFILE_NAME, "Create", function(text)
-        local name = text:match("^%s*$") and P:UniqueName(addon.Themes.PROFILE_NAME) or text
-        local ok = P:CreateThemed(name, Selected(), "obsidian")
-        if ok then selected = P:Name(name) end
-        return ok
-    end)
     -- Results of profile actions (created, imported, reload to switch): kept.
     local status = W.Tip(Label(page:Row("Status", 56), T.muted))
     local note = W.Label(page:Row("About Profiles", 96), "A profile holds all of ModeUI's settings: which modules are on, Unit Frames and their Edit Mode positions, Optimizations and Class Colors. Changes save to the active profile as you make them. Switching applies after a reload, so the frames start cleanly from the new settings; use Reload in the header, or reload when you close the window. Play The Game Tools keeps its own, separate profiles.", nil, 0, -4, 420, T.muted)

@@ -96,7 +96,7 @@ local function PlaceLayers(ring)
 end
 
 -- Draws the ring's metal in a border style (a Style.EDGE_STYLES id; anything
--- else: Mode-Blizz): the base disc, then each lighting disc over it, in order.
+-- else: Mode-Border): the base disc, then each lighting disc over it, in order.
 -- Paint it again after (Style.PaintRing).
 function Style.SetRingStyle(ring, styleId)
     styleId = Style.ThemeStyle(Style.EdgeStyle(styleId) or D.RING.style)

@@ -9,7 +9,7 @@ local T, W = addon.InterfaceTheme, addon.ConfigWidgets
 local RECIPES = {
     -- Secondary, the default: a Mode Gradient face in a Steel Sheen rim that
     -- turns Ivory on hover.
-    button = { fill = "button", asset = "Gradient", rim = "rim", label = "text", hoverRim = "primary", press = true,
+    button = { fill = "button", asset = "FG", rim = "rim", label = "text", hoverRim = "primary", press = true,
         selectedFill = "accentFill", selectedRim = "primary", selectedLabel = "primary", weight = "heading" },
     -- Ivory (Done) and Rosewood (Reset): flat faces with dark text and a rim of
     -- their own color, 70% toward black.

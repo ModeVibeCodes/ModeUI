@@ -37,6 +37,8 @@ function PM:StopDragging(id)
     if element.legacy then element.module:StopDragging(); return true end
     if not element.dragging then return true, "unchanged" end
     element.frame:StopMovingOrSizing()
+    -- Never left "user placed": the client would put it back at login (PositionRestore.lua).
+    if self.KeepOutOfLayoutCache then self:KeepOutOfLayoutCache(element.frame) end
     if element.frame:GetScript("OnUpdate") == element.dragUpdate then element.frame:SetScript("OnUpdate", nil) end
     element.dragging, element.module.dragging = false, false
     if self.HideGuides then self:HideGuides() end

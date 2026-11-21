@@ -9,4 +9,5 @@
     <Script file="Slots.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="Layouts.lua"/>
 </Ui>

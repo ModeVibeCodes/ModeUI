@@ -16,12 +16,12 @@ find the class and level lines.
 | Part | Look |
 |---|---|
 | Tooltips | `GameTooltip`, `ItemRefTooltip` (clicked item links), `ShoppingTooltip1/2` and `ItemRefShoppingTooltip1/2` (comparisons), `GameNoHeaderTooltip`, `GameSmallHeaderTooltip`, `FriendsTooltip`. |
-| Frame | Blizzard's NineSlice (border and background) is faded: `SharedTooltip_SetBackdropStyle` re-applies its atlases and colors, never its alpha, so it stays gone. Azerite and corrupted overlays are faded. Each tooltip is a Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Mode Panel (its base and lift) in Background Color at Background Opacity (92%), the `window` edge inside it on its own frame above the lines. A see-through tooltip has no soft drop. **Border** off hides the edge; on, **Border Style** and **Border Metal** choose its look (Mode-Thin in Steel by default). |
+| Frame | Blizzard's NineSlice (border and background) is faded: `SharedTooltip_SetBackdropStyle` re-applies its atlases and colors, never its alpha, so it stays gone. Azerite and corrupted overlays are faded. Each tooltip is a Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Surface (Solid and its soft sheen) in Background Color at Background Opacity (92%), the `window` edge inside it on its own frame above the lines. A see-through tooltip has no soft drop. **Border** off hides the edge; on, **Border Style** and **Border Metal** choose its look (Mode-Thin in Steel by default). |
 | Fill color | Graphite panel (#121213), as every Mode window. |
 | Rim color | **Quality Border** (on): the edge's rim in an item's quality color. **Class Border** (off by default): a player's class color. Otherwise the edge's lit metal. A unit the game keeps secret keeps the metal. |
 | Screen | The tooltip is kept on the screen, border and all, wherever its anchor sits. |
 | Size | **Minimum Width** (0–400 px), **Padding** (extra room around the text, 0–20 px), **Scale**. Blizzard resets width and padding as it restyles a tooltip, so ModeUI sets them each time it fills. |
-| Text | Every line in the Mode typeface (Expressway when installed, else Geist): the first at Header Size (14) in SemiBold, the rest at Text Size (12). |
+| Text | Every line in the Mode typeface (Urbanist): the first at Header Size (14) in SemiBold, the rest at Text Size (12). |
 | Health bar | Blizzard's bar under unit tooltips is hidden. |
 
 ## Text colors
@@ -56,6 +56,12 @@ Blizzard's own tooltip spot (its Edit Mode HUD Tooltip) no longer applies
 while the module is on; ModeUI never moves Blizzard's container. Tooltips
 that owners place themselves (action buttons with the classic tooltip style,
 bag items, settings) stay where they put them.
+
+In the role layouts (Mode-DPS/TANK, Mode-Healer; `Layouts.lua`, owner,
+November 20, 2026) the anchor's bottom-right sits on Damage Done's
+bottom-left, 4 left of it, with Anchor Point Bottom Right, so the tooltip
+stands just left of the damage meters, its bottom on the bottom meter's, and
+grows up and left.
 
 ## Combat
 

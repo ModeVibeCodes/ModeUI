@@ -115,7 +115,7 @@ function M:OpenMenu(window, anchor)
     end
     for index = #items + 1, #menu.entries do menu.entries[index]:Hide() end
     menu:SetSize(2 * COLUMN_WIDTH + 3 * PAD, math.max(heights[1], heights[2]) + PAD)
-    Skin.PaintBox(menu.parts, menu, "Panel", Skin.mode.panel, 1, true)
+    Skin.PaintBox(menu.parts, menu, "Surface", Skin.mode.panel, 1, true)
     -- In the window's Border Style and Border Metal.
     local style = self:Style(window)
     menu.parts.modeEdge:SetStyle(style.edgeStyle, style.edgeMetal)
