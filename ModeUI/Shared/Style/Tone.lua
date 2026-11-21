@@ -52,6 +52,8 @@ local Tone = {
     },
     -- Mode-Obsidian's fill-end line: ice white (owner, November 20, 2026).
     fillEnd = Hex("D6EBFF"),
+    -- The shield's finish line and the spark end line (Style.EndSpark).
+    finishLine = Hex("F6F8FB"),
     shadow = { 0, 0, 0 },
     shadowAlpha = 0.82,
     softAlpha = 0.55,

@@ -91,7 +91,7 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Power (`powerType`) | Mana `#4096FF`, Rage, Energy, Focus, Happiness (Mode-toned), any other type a neutral gray |
 | Threat (`threat`) | aggro `#FF4848`, losing or pulling `#FFA040` |
 | Stats (`stat`) | the Character window's stats: Strength `#E85C50`, Agility `#FFD140`, Stamina `#E8B04B`, Intellect and mana regen `#4096FF`, Spirit and healing `#7FDB97`, physical power `#FF8A3D`, spell power `#B07CFF`, crit `#FF6B6B`, hit `#FFB12F`, haste `#7FDBFF`, avoidance `#9AD0EC`, armor `#B9B9B9` |
-| Other | cooldown text `#FFB12F`; the Mode-Default layout's Cooldown Manager numbers `#FF3948` (`cooldownHot`, the owner's pick, November 18, 2026); quest lines in tooltips and the quest and gossip windows' button rims `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`), the owner's picks (November 18, 2026); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
+| Other | cooldown text `#FFB12F`; the Mode-Default layout's Cooldown Manager numbers `#FF3948` (`cooldownHot`, the owner's pick, November 18, 2026); quest lines in tooltips and the quest and gossip windows' button rims `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); the shield and spark end lines `#F6F8FB` (`finishLine`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`), the owner's picks (November 18, 2026); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF` (default), Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
 
 `Style.LEGACY` holds the pre-Mode defaults that saved settings still hold or
 migrations recognize (the Onyx palette `Kit.palette` / `Kit.onyx` alias it,
@@ -323,6 +323,12 @@ Phase 6 probe):
   default, or a custom color for the lift and the lines) and its **Opacity**
   (100% is the standard look above; up to 200%, capped at full alpha). The
   finish line stays bright.
+- **Spark end line** (`Style.EndSpark`): the shield's finish line on a bar
+  that rides on another (Party Frames incoming heals): a bright 1px line
+  (`finishLine`, `#F6F8FB`) on the fill's end with the Line Glow (5px)
+  behind it, tinted from the bar's color lightened 45%. It sits in a clip
+  that follows the fill, so an empty bar shows no line, and a bar cut off at
+  the health bar's end shows none either.
 - **Power bars:** 3px on every unit and group frame.
 
 ## Text (`Style.Font`, `Style.SetName`)

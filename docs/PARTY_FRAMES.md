@@ -36,7 +36,9 @@ member is:
   only when both empty bars are at 100%. Power: by power
   type or Custom.
 - **Incoming Heals** (Bars tab): ride on the end of the health fill, with
-  Show, Texture, Color and Opacity.
+  Show, Texture, Color and Opacity, and **Spark End Line** (on by default): a
+  bright 1px line with a glow in the heal color where the heals stop
+  (`Style.EndSpark`); none while the heals pass the bar's end.
 - **Shields** (their own tab): Combined (`Style.Shield`): below full health
   the shield sits on the health's end and stops at the bar's end; at full
   health the whole shield fills back from max (**Show Overshields**). Its look

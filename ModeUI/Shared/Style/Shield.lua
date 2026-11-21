@@ -164,7 +164,8 @@ function Shield:Paint()
     local lift, lines = math.min(1, LIFT_ALPHA * look.opacity), math.min(1, LINE_ALPHA * look.opacity)
     for _, layer in ipairs({ self.attachedLift, self.fullLift }) do layer:SetVertexColor(tint[1], tint[2], tint[3], lift) end
     for _, layer in ipairs({ self.attachedLines, self.fullLines }) do layer:SetVertexColor(line[1], line[2], line[3], lines) end
-    for _, line in ipairs({ self.finish, self.fullFinish }) do line:SetVertexColor(0.965, 0.973, 0.984, 1) end
+    local finish = Tone.finishLine
+    for _, line in ipairs({ self.finish, self.fullFinish }) do line:SetVertexColor(finish[1], finish[2], finish[3], 1) end
 end
 
 -- Feeds the shield from Domain.Group.Prediction(unit, calculator): `shield`

@@ -146,6 +146,7 @@ function M:LayoutBars(f)
     hp:SetPoint("TOP" .. near, fill, "TOP" .. far, 0, 0); hp:SetPoint("BOTTOM" .. near, fill, "BOTTOM" .. far, 0, 0)
     hp:SetWidth(g.innerWidth)
     Kit.FillTexture(hp, db.healTexture, g.innerWidth, healthHeight, px, db.healPredictionColor, db.healPredictionOpacity / 100)
+    hp.spark:Layout(reverse, px); hp.spark:SetColor(db.healPredictionColor); hp.spark:SetShown(db.healEndLine)
     h.reverse = reverse
     h.shield:SetShown(db.showAbsorbs)
     h.shield:SetLook({ texture = db.shieldsTexture, opacity = db.shieldsOpacity / 100,

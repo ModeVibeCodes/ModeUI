@@ -207,6 +207,14 @@ world.run([==[
     assert(p1.health.value.label == 'p1hp' and p1.health.high.label == 'p1max', 'secret health straight to the bar')
     assert(p1.texts.name.text.label == 'p1name', 'secret name straight to SetText')
     assert(p1.healPrediction.value.label == 'heals' and Point(p1.healPrediction)[2] == p1.health:GetStatusBarTexture(), 'heals ride on health')
+    -- The spark end line on the heals' end, in a clip that follows their fill
+    -- (empty heals show no line), its glow tinted from the heal color.
+    local spark, healFill = p1.healPrediction.spark, p1.healPrediction:GetStatusBarTexture()
+    assert(spark and spark.clip.clipsChildren and spark.clip:IsShown() and Point(spark.clip)[2] == healFill, 'spark clip follows the heals')
+    local sp = Point(spark.line); assert(sp[1] == 'TOPRIGHT' and sp[2] == healFill and sp[3] == 'TOPRIGHT', 'spark on the heals end')
+    assert(spark.line.vertexColor[1] == addon.Style.Tone.finishLine[1] and spark.glow.vertexColor[1] == addon.Style.Lighten(M.db.healPredictionColor, 0.45)[1])
+    assert(M:SetOption('healEndLine', false) and not spark.clip:IsShown() and M:SetOption('healEndLine', true) and spark.clip:IsShown())
+    assert(M:SetOption('fillDirection', 'reverse') and Point(spark.line)[1] == 'TOPLEFT' and M:SetOption('fillDirection', 'standard'), 'reverse fill: spark on the left')
     -- Combined shields (Style.Shield): the secret shield on the health's end, the whole one back from max.
     local shield = p1.health.shield
     assert(shield and shield.attached.value.label == 'absorbs' and shield.full.reverseFill == true and p1.health.reverseFill == false)

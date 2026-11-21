@@ -140,6 +140,8 @@ M.defaults = {
     -- Incoming heals ride on the health; shields are Combined (Style.Shield):
     -- on the health's end, and the whole shield back from full health.
     showHealPrediction = true, healTexture = "flat", healPredictionColor = Copy(Tone.healPrediction), healPredictionOpacity = 45,
+    -- The spark end line on the heals' end (Style.EndSpark).
+    healEndLine = true,
     showAbsorbs = true, showOvershields = true,
     -- The shields' look (Shields tab, Shield:SetLook): Mode Shield, tinted
     -- from the health, at the standard strength.

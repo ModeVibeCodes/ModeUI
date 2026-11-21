@@ -198,6 +198,51 @@ function Comet:SetShown(shown) self.clip:SetShown(shown) end
 function Comet:SetTrail(shown) self.trail:SetShown(shown ~= false) end
 function Bar:SetEndLine(shown) self.showEndLine = shown and true or false; self:LayoutStyle() end
 
+-- The spark end line (docs/DESIGN_LANGUAGE.md, "Bars"): the shield's bright
+-- 1px finish line with the Line Glow behind it, on any StatusBar's fill end
+-- (a bar riding on another, like incoming heals). Both sit in a clip that
+-- follows the fill, so an empty bar (no width) shows no line, and a bar its
+-- parent clips off shows none either, without the value being compared.
+local EndSpark = {}
+EndSpark.__index = EndSpark
+function Style.EndSpark(statusBar)
+    local spark = setmetatable({ bar = statusBar }, EndSpark)
+    spark.clip = CreateFrame("Frame", nil, statusBar)
+    spark.clip:SetClipsChildren(true)
+    spark.glow = spark.clip:CreateTexture(nil, "OVERLAY", nil, 1)
+    Style.ApplyAsset(spark.glow, "LineGlow")
+    spark.line = spark.clip:CreateTexture(nil, "OVERLAY", nil, 2)
+    Style.ApplyAsset(spark.line, "Solid")
+    spark:SetColor(nil)
+    return spark
+end
+-- Lay out after the bar's fill texture is set (a new file may bring a new fill).
+function EndSpark:Layout(reverse, px)
+    local fill = self.bar:GetStatusBarTexture()
+    if not fill then return end
+    px = px or Style.Pixel(self.bar)
+    self.clip:ClearAllPoints()
+    self.clip:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
+    self.clip:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+    local side = reverse and "LEFT" or "RIGHT"
+    self.line:ClearAllPoints()
+    self.line:SetPoint("TOP" .. side, fill, "TOP" .. side, 0, 0)
+    self.line:SetPoint("BOTTOM" .. side, fill, "BOTTOM" .. side, 0, 0)
+    self.line:SetWidth(px)
+    self.glow:ClearAllPoints()
+    self.glow:SetPoint("TOP", self.line, "TOP", 0, 0)
+    self.glow:SetPoint("BOTTOM", self.line, "BOTTOM", 0, 0)
+    self.glow:SetWidth(5 * px)
+end
+-- The glow takes the bar's color lightened 45% (nil: white); the line stays bright.
+function EndSpark:SetColor(color)
+    local glow = color and Style.Lighten(color, 0.45) or Tone.mono.white
+    self.glow:SetVertexColor(glow[1], glow[2], glow[3], 1)
+    local line = Tone.finishLine
+    self.line:SetVertexColor(line[1], line[2], line[3], 1)
+end
+function EndSpark:SetShown(shown) self.clip:SetShown(shown and true or false) end
+
 -- Positions the end line and the spark on the fill's leading edge, in whole pixels.
 function Bar:LayoutStyle()
     local px = Style.Pixel(self)
