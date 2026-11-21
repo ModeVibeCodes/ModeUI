@@ -317,7 +317,15 @@ H.Load({ before = STUBS }).run([==[
     assert(M.db.bars.playerDebuffs.cats.boss, 'Boss Debuffs back on from the preview card'); boss:GetScript('OnClick')(boss)
     assert(not M.db.bars.playerDebuffs.cats.boss)
     assert(view.pool[1].edge.tint ~= nil, 'debuff samples take their type color')
+    -- The game may have no icon for a hidden spell (in game: Well Fed and
+    -- Sated); the picker still lays out, with the question mark.
+    local texture = C_Spell.GetSpellTexture
+    C_Spell.GetSpellTexture = function() return nil end
     assert(M:OpenPicker(page.blacklistButton) and M.picker:IsShown(), 'the blacklist picker')
+    C_Spell.GetSpellTexture = texture
+    assert(M.picker.buttons[1].icon.texture == 134400 and M.picker.buttons[1]:IsShown(), 'a hidden spell without an icon')
+    assert(select(2, M.picker.byId:GetPoint(1)) ~= nil and M.picker:GetHeight() > 200, 'laid out to the Spell ID row')
+    M:RefreshPicker()
     assert(M.picker.buttons[1].spell == 104280 and M.picker.buttons[3].spell == 21562, 'hidden first, then auras on you')
     local ok = M:AddBlacklistByID(21562)
     assert(ok and M:IsBlacklisted(21562) and not M:AddBlacklistByID(999999), 'by ID')

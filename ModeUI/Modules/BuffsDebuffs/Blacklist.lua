@@ -177,7 +177,8 @@ function M:RefreshPicker(keepResult)
             local button = Button(picker, index)
             local id = isHeld and item or item.id
             button.spell, button.held = id, isHeld
-            button.icon:SetTexture((isHeld and Spells.SpellIcon(id)) or item.icon or Spells.SpellIcon(id) or QUESTION)
+            -- A held entry is a bare spell ID; the game may have no icon for it.
+            button.icon:SetTexture((not isHeld and item.icon) or Spells.SpellIcon(id) or QUESTION)
             local name = Spells.SpellName(id) or tostring(id)
             if isHeld and picker.target then
                 button.rim:SetTint(nil)
