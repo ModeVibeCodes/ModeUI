@@ -383,7 +383,7 @@ function M.Initialize(db)
             M.ValidateTable(frame, group, M.AuraDefaults(unit, group), M.auraRanges, M.AuraChoices(group))
         end
     end
-    M.ValidateTable(db, "comboPoints", M.comboDefaults, M.comboRanges, { arc = "comboArc" })
+    M.ValidateTable(db, "comboPoints", M.comboDefaults, M.comboRanges, { arc = "comboArc" }); M.ValidateTable(db, "totems", M.totemDefaults, M.totemRanges, { attach = "totemAttach" })
 end
 
 -- A nested settings table (combo points, and per-frame cast bar and auras):

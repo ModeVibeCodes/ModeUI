@@ -1363,6 +1363,16 @@ gold ring faded, a flat swipe, the time in Urbanist Bold 10 Text bright
 (a hook puts the color back after Blizzard's per-frame recolor). The Player
 frame off brings Blizzard's look back. `tests/totem_timers.lua`.
 
+Placement (`db.totems`: Attach and Size): the timers leave Blizzard's Player
+frame layout (`ignoreFramePositionManager`, as Blizzard does for its cast
+bar) and hang from the ModeUI Player frame's bar block, growing left from
+its right edge: **Below, Right** (default; Mode-DPS/TANK: their top 1px
+under the block's shadow, outside the frame) or **Above, Right**
+(Mode-Healer: their bottom 1px over its top, 18 wide like the Target's
+buffs, the time on the icon); **Blizzard's Place** gives them back. Each
+button holds its icon and edge, neighbours share one shadow pixel; the
+row is laid out again after each Blizzard update.
+
 ## Settings (`modules.unitFrames`)
 
 `layoutVersion` is 17. Each frame (`player`, `target`, `targettarget`,

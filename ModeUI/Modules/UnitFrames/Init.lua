@@ -245,6 +245,14 @@ M.comboRanges = { size = { 6, 24, 1 }, spacing = { 0, 12, 1 }, distance = { 0, 2
 -- bars; without a portrait the points line up under the bars.
 M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer", label = "Outer Side" },
     { id = "bottomOuter", label = "Lower Outer" }, { id = "top", label = "Top" }, { id = "bottom", label = "Bottom" } }
+-- Blizzard's totem timers (Totems.lua; owner, November 20, 2026), in
+-- db.totems: where they hang from the Player frame's bar block (Below: under
+-- its bottom right, outside it, 1px apart; Above: over its top right; or
+-- Blizzard's own place), growing left, and their icons' width (the height
+-- follows the icon rule, Style.IconHeight).
+M.totemDefaults = { attach = "below", size = 24 }
+M.totemRanges = { size = { 14, 40, 1 } }
+M.choices.totemAttach = { { id = "below", label = "Below, Right" }, { id = "above", label = "Above, Right" }, { id = "blizzard", label = "Blizzard's Place" } }
 -- Each frame's cast bar (owner, November 13, 2026), in db[unit].castBar: a
 -- box with the frame's rim and gap under (or over) the bar block, its bar
 -- lined up with the health bar. On for the Player, Target and Focus.

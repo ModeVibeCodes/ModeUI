@@ -31,6 +31,13 @@ local TIMERS = [==[
     -- Blizzard's update: the totem pool laid out again; each frame the time recolored gold.
     function frame:Update() for _, b in ipairs(active) do b.Duration:SetVertexColor(1, 0.82, 0) end end
     UnitClass = function() return 'Shaman', 'SHAMAN' end
+    -- Blizzard's Player frame bottom container (ManagedFrameSystem).
+    local container = { removed = 0, added = 0 }
+    function container:RemoveManagedFrame(f) self.removed = self.removed + 1 end
+    function container:AddManagedFrame(f) self.added = self.added + 1 end
+    function GetPlayerBottomManagedFrameContainer() return container end
+    totemContainer = container
+    active[1].layoutIndex, active[2].layoutIndex = 2, 4
 ]==]
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. TIMERS
 
@@ -55,6 +62,31 @@ world.run([==[
     assert(earth.Duration.font[2] == 10 and earth.Duration.font[1]:find('Urbanist%-Bold'), 'the Mode typeface, Bold 10')
     TotemFrame:Update()
     assert(math.abs(earth.Duration.vertexColor[1] - Tone.textBright[1]) < 1e-9 and math.abs(earth.Duration.vertexColor[3] - Tone.textBright[3]) < 1e-9, 'the time stays Text bright')
+    -- Attached (Below, the default): taken from Blizzard's layout, hung from
+    -- the Player frame's bar block, 1px outside its bottom right, growing left.
+    local bars = _G[M.BarsFrameName('player')]
+    local p = Point(TotemFrame)
+    assert(TotemFrame.ignoreFramePositionManager == true and totemContainer.removed == 1 and TotemFrame.parent == UIParent, "out of Blizzard's layout")
+    assert(p[1] == 'TOPRIGHT' and p[2] == bars and p[3] == 'BOTTOMRIGHT' and p[4] == 1 and p[5] == -2, 'under the bar block, 1px outside')
+    local reach = S.EdgeReach('frameThin')
+    assert(earth.width == 24 + 2 * reach and earth.height == 20 + 2 * reach, 'each button holds its icon and edge')
+    local first, second = Point(earth), Point(air)
+    assert(first[1] == 'TOPRIGHT' and first[4] == 0 and second[4] == -(24 + 2 * reach - 1), 'from the right, growing left, one shared shadow pixel')
+    assert(TotemFrame.width == 2 * (24 + 2 * reach) - 1, 'the row as wide as its timers')
+    assert(Point(earth.Duration)[1] == 'TOP' and Point(earth.Duration)[3] == 'BOTTOM', 'the time under the icon')
+    -- Above (the Healer layout): over its top right, smaller icons, the time on the icon.
+    M.db.totems.attach, M.db.totems.size = 'above', 18
+    TotemFrame:Update()
+    p = Point(TotemFrame)
+    assert(p[1] == 'BOTTOMRIGHT' and p[3] == 'TOPRIGHT' and p[4] == 1 and p[5] == 2 and earth.Icon.width == 18 and earth.Icon.height == 14, 'over the top right, 18 x 14')
+    assert(Point(earth.Duration)[1] == 'CENTER' and earth.Duration.font[2] == 9, 'the time on the icon, 9')
+    -- Blizzard's Place: given back to Blizzard's layout.
+    M.db.totems.attach = 'blizzard'
+    TotemFrame:Update()
+    assert(TotemFrame.ignoreFramePositionManager == nil and totemContainer.added == 1 and earth.width == 37, "back in Blizzard's layout")
+    M.db.totems.attach, M.db.totems.size = 'below', 24
+    TotemFrame:Update()
+    assert(TotemFrame.ignoreFramePositionManager == true and totemContainer.removed == 2, 'taken again')
     -- Another class's summons keep the edge's own metal.
     UnitClass = function() return 'Druid', 'DRUID' end
     TotemFrame:Update()
@@ -63,6 +95,7 @@ world.run([==[
     -- The Player frame off: Blizzard's look back.
     assert(M:SetFrameOption('player', 'enabled', false))
     assert(not M:TotemsOn() and not art.edge.holder:IsShown() and earth.Border.alpha == 1, "Blizzard's ring back")
+    assert(TotemFrame.ignoreFramePositionManager == nil and totemContainer.added == 2, "back in Blizzard's layout with the frame off")
     assert(earth.Icon.width == 22 and earth.Icon.Texture.addedMask == earth.Icon.TextureMask and earth.Duration.fontObject == GameFontNormalSmall, 'round again')
     assert(earth.Icon.Cooldown.swipeTexture == 'circle', 'the round swipe')
     TotemFrame:Update()

@@ -5,7 +5,7 @@ local _, addon = ...
 -- (Modules/<Name>/Layouts.lua, or a companion's), so a layout never reaches
 -- into another module's settings. A layout builds a new profile; it never
 -- changes an existing one, so nothing the player placed moves.
---   addon.Layouts:Register(id, { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@3", allModules = true })
+--   addon.Layouts:Register(id, { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@4", allModules = true })
 -- `allModules`: every module (but alwaysOn and planned ones) starts on.
 --   addon.Layouts:Contribute(id, moduleId, function(db, ctx) ... end)
 --   addon.Layouts:Build(id, variant) -> profile, or nil and a reason
@@ -102,7 +102,8 @@ end
 -- ("<id>@<n>"; November 20, 2026: @2 in Mode-Obsidian, @3 with the tooltip
 -- and bag window placed, Healer @4 with the party column snug under the
 -- mana frame and a 20px Cast Bar, @5 with it hung from the frame's bar
--- block and the Focus 80 lower, @6 a pixel left with the 1080 places): a profile an earlier seed of it made under the
+-- block and the Focus 80 lower, @6 a pixel left with the 1080 places;
+-- @7 and DPS / Tank @4 with the totem timers on the Player frame): a profile an earlier seed of it made under the
 -- same name is kept, renamed "<name> (old)", so nothing the player tuned is
 -- lost; with no earlier seed, a profile of the player's own with that name
 -- is left alone and the layout is not made. A seeded profile is never made active here: the player
@@ -142,8 +143,8 @@ addon.Events:On(L, "PLAYER_LOGIN", function() L:Seed() end)
 
 -- Mode's own layout for damage dealers and tanks, with every module on
 -- (Mode-Default until November 20, 2026).
-L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@3", allModules = true })
+L:Register("mode-default", { label = "DPS / Tank", profileName = "Mode-DPS/TANK", seed = "mode-default@4", allModules = true })
 -- Mode's healer layout (owner, November 19, 2026; the prototype in
 -- design/healer-layout/): a mana frame over the party column left of
 -- center, everything else as DPS / Tank but the Cooldown Manager's middle.
-L:Register("healer", { label = "Healer", profileName = "Mode-Healer", seed = "healer@6", allModules = true })
+L:Register("healer", { label = "Healer", profileName = "Mode-Healer", seed = "healer@7", allModules = true })
