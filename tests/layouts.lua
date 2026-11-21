@@ -11,7 +11,7 @@ local world = H.Load({ before = STUBS })
 world.run([==[
     local L, P = addon.Layouts, addon.Profiles
     local spec = assert(L:Get('mode-default'))
-    assert(spec.label == 'DPS / Tank' and spec.profileName == 'Mode-DPS/TANK' and spec.seed == 'mode-default@3', 'the DPS / Tank layout')
+    assert(spec.label == 'DPS / Tank' and spec.profileName == 'Mode-DPS/TANK' and spec.seed == 'mode-default@4', 'the DPS / Tank layout')
     local MODULES = { 'actionBars', 'bags', 'buffsDebuffs', 'cooldownManager', 'damageMeters', 'minimap', 'nameplates', 'partyFrames', 'tooltip', 'unitFrames' }
     local parts = {}
     for _, part in ipairs(L.parts['mode-default']) do parts[#parts + 1] = part.module end
@@ -112,6 +112,7 @@ world.run([==[
         assert(profile.modules.tooltip.position == 'anchor' and profile.modules.tooltip.anchorPoint == 'BOTTOMRIGHT', 'the tooltip grows away from the meters')
         assert(bags.target == 'damageMetersWindow2' and bags.point == 'BOTTOMRIGHT' and bags.relativePoint == 'TOPLEFT' and bags.x == -4 and bags.y == 4, 'bags on the top meter')
         assert(profile.modules.bags.growFrom == 'BOTTOMRIGHT', 'the bag window grows away from the meters')
+        assert(uf.totems.attach == 'below' and uf.totems.size == 24, 'totem timers under the Player frame')
         -- Tracked Bars under Utility (their stand-in covered the Target frame);
         -- resource texts that fit their bars.
         local tracked = profile.positions.cooldownManagerBuffBar
@@ -127,7 +128,7 @@ world.run([==[
     end
     assert(not L:Build('nope'), 'unknown layout')
     -- Made into a profile once, at login; the active profile stays.
-    assert(P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['mode-default@3'] == true, 'Mode-DPS/TANK made')
+    assert(P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['mode-default@4'] == true, 'Mode-DPS/TANK made')
     assert(ModeUIDB.profiles['Mode-DPS/TANK'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-DPS/TANK', 'mode-default'), 'its name is taken')
     assert(not P:CreateFromLayout('Other', 'nope') and not P:Exists('Other'), 'unknown layout refused')
@@ -157,7 +158,7 @@ H.Load({ before = STUBS, saved = before }).run([==[
     assert(table.concat(P:List(), ',') == 'Default,Mine,Mode-Default,Mode-DPS/TANK,Mode-Healer,Mode-Healer (old)', table.concat(P:List(), ','))
     assert(P:Active() == 'Mode-Healer (old)' and addon.UnitFrames.db.player.barWidth == 142, 'the old Mode-Healer stays in use, renamed')
     assert(ModeUIDB.profiles['Mode-Healer'].modules.unitFrames.player.barShows == 'mana', 'a new Mode-Healer from the layout')
-    assert(ModeUIDB.builtLayouts['mode-default@3'] and ModeUIDB.builtLayouts['healer@6'])
+    assert(ModeUIDB.builtLayouts['mode-default@4'] and ModeUIDB.builtLayouts['healer@7'])
     assert(addon.db.theme == 'obsidian' and addon.db.themeParts.unitFrames == 'obsidian', 'the active profile is Mode-Obsidian')
 ]==], "reseed")
 local reseeded = H.Load({ before = STUBS, saved = before }).saved()

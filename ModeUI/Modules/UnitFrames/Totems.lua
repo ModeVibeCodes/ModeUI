@@ -8,7 +8,7 @@ if not M then return end
 -- while the ModeUI Player frame is on. A reskin only: Blizzard keeps the
 -- frame, its pool of buttons, their places, clicks (right-click dismisses)
 -- and tooltips; ModeUI paints over them.
---   * the icon a Mode icon: 24 x 20, cropped, never round (Blizzard's circle
+--   * the icon a Mode icon (Size wide, 24 by default: 24 x 20), cropped, never round (Blizzard's circle
 --     mask taken off), in the `frameThin` edge, its rim the element's color
 --     for a Shaman's totems (Tone.totem; other summons keep the edge's metal);
 --   * Blizzard's gold ring faded; the swipe flat, not round;
@@ -17,7 +17,6 @@ if not M then return end
 -- so a hook paints it back.
 local Style, Kit = addon.Style, addon.Kit
 local Tone = Style.Tone
-local WIDTH = 24
 M.totemArt = setmetatable({}, { __mode = "k" })
 
 local function Element(slot)
@@ -52,14 +51,15 @@ function M:SkinTotem(button)
         self.totemArt[button] = art
         if button.Duration and hooksecurefunc then hooksecurefunc(button.Duration, "SetVertexColor", PaintTime) end
     end
-    local height = Style.IconHeight(WIDTH)
-    icon:SetSize(WIDTH, height)
+    local width = self.db.totems.size
+    local height = Style.IconHeight(width)
+    icon:SetSize(width, height)
     local texture = icon.Texture
     if icon.TextureMask and texture.RemoveMaskTexture and not art.unmasked then
         art.unmasked = pcall(texture.RemoveMaskTexture, texture, icon.TextureMask)
     end
     texture:ClearAllPoints(); texture:SetAllPoints(icon)
-    Kit.CropIcon(texture, { px = Kit.PixelSize(icon), w = WIDTH, h = height, inset = 0 })
+    Kit.CropIcon(texture, { px = Kit.PixelSize(icon), w = width, h = height, inset = 0 })
     if button.Border then button.Border:SetAlpha(0) end
     local cooldown = icon.Cooldown
     if cooldown and cooldown.SetSwipeTexture then
@@ -72,7 +72,8 @@ function M:SkinTotem(button)
     art.edge:SetTint(Shaman() and Element(button.slot) or nil)
     art.edge:Layout()
     if button.Duration then
-        Style.Font(button.Duration, 10, "bold")
+        -- Bold 10; 9 over a small icon (Above).
+        Style.Font(button.Duration, self.db.totems.attach == "above" and 9 or 10, "bold")
         button.Duration:SetShadowColor(Tone.shadow[1], Tone.shadow[2], Tone.shadow[3], 0.95)
         button.Duration:SetShadowOffset(1, -1)
         PaintTime(button.Duration)
@@ -89,6 +90,68 @@ local function Buttons(frame)
     return list
 end
 
+-- Where the timers hang (db.totems; owner, November 20, 2026): from the
+-- ModeUI Player frame's bar block (the stand-in's, which the secure frame
+-- copies), growing left from its right edge. Below: their top 1px under the
+-- block's shadow, outside the frame; Above: their bottom 1px over its top.
+-- Each button holds its icon and edge (frameThin: the 1px shadow and band
+-- round the icon), so the row's edges are the shadows; neighbours share one
+-- shadow pixel. Blizzard leaves a frame marked ignoreFramePositionManager
+-- alone (ManagedFrameSystem: AddManagedFrame), as it does its own cast bar.
+function M:TotemsAttached()
+    return self:TotemsOn() and self.db.totems.attach ~= "blizzard" and _G[self.BarsFrameName("player")] ~= nil
+end
+function M:PlaceTotems()
+    local frame, bars = _G.TotemFrame, _G[self.BarsFrameName("player")]
+    local cfg = self.db.totems
+    local px = Kit.PixelSize(frame)
+    local reach = Style.EdgeReach("frameThin") * px
+    local w, h = cfg.size, Style.IconHeight(cfg.size)
+    local bw, bh = w + 2 * reach, h + 2 * reach
+    local active = Buttons(frame)
+    table.sort(active, function(a, b) return (a.layoutIndex or 0) < (b.layoutIndex or 0) end)
+    local above = cfg.attach == "above"
+    for i, button in ipairs(active) do
+        button:ClearAllPoints()
+        button:SetSize(bw, bh)
+        button:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(i - 1) * (bw - px), 0)
+        button.Icon:ClearAllPoints(); button.Icon:SetPoint("CENTER", button, "CENTER", 0, 0)
+        if button.Duration then
+            -- Under the icon below the frame; over it above (it would cover the bar).
+            button.Duration:ClearAllPoints()
+            if above then button.Duration:SetPoint("CENTER", button.Icon, "CENTER", 0, 0)
+            else button.Duration:SetPoint("TOP", button, "BOTTOM", 0, 0) end
+        end
+    end
+    local n = math.max(1, #active)
+    frame:SetSize(n * bw - (n - 1) * px, bh)
+    frame:ClearAllPoints()
+    if above then frame:SetPoint("BOTTOMRIGHT", bars, "TOPRIGHT", px, 2 * px)
+    else frame:SetPoint("TOPRIGHT", bars, "BOTTOMRIGHT", px, -2 * px) end
+end
+
+-- Takes the timers from Blizzard's Player frame layout (once), or gives them back.
+function M:AttachTotems(on)
+    local frame = _G.TotemFrame
+    local container = _G.GetPlayerBottomManagedFrameContainer and _G.GetPlayerBottomManagedFrameContainer()
+    if on and not self.totemsTaken then
+        self.totemsTaken = true
+        frame.ignoreFramePositionManager = true
+        if container and container.RemoveManagedFrame then pcall(container.RemoveManagedFrame, container, frame) end
+        frame:SetParent(UIParent)
+    elseif not on and self.totemsTaken then
+        self.totemsTaken = false
+        frame.ignoreFramePositionManager = nil
+        frame:ClearAllPoints()
+        for _, button in ipairs(Buttons(frame)) do
+            button:SetSize(37, 37)
+            if button.Duration then button.Duration:ClearAllPoints(); button.Duration:SetPoint("TOP", button, "BOTTOM", 0, 5) end
+        end
+        if container and container.AddManagedFrame then pcall(container.AddManagedFrame, container, frame) end
+        if frame.Layout then pcall(frame.Layout, frame) end
+    end
+end
+
 -- Every timer showing now, and each time Blizzard updates them.
 function M:SkinTotems()
     local frame = _G.TotemFrame
@@ -97,8 +160,11 @@ function M:SkinTotems()
         self.totemHooked = true
         hooksecurefunc(frame, "Update", function(f) if M:TotemsOn() then M:SkinTotems() end end)
     end
-    if not self:TotemsOn() then self:RestoreTotems(); return end
+    if not self:TotemsOn() then self:AttachTotems(false); self:RestoreTotems(); return end
     for _, button in ipairs(Buttons(frame)) do self:SkinTotem(button) end
+    local attached = self:TotemsAttached()
+    self:AttachTotems(attached)
+    if attached then self:PlaceTotems() end
 end
 
 -- ModeUI's Player frame off: Blizzard's own look back on every timer.

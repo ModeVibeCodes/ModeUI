@@ -290,7 +290,10 @@ instead, so their size never changes.
   arrows the Mode chevron in Ivory. The totem timers under the Player frame
   (Blizzard's TotemFrame) are Mode icons (24 x 20, cropped, not round) in the
   `frameThin` edge, the rim in the element's color for a Shaman's totems, a
-  flat swipe, and the time in the Mode typeface Bold 10, Text bright.
+  flat swipe, and the time in the Mode typeface Bold 10, Text bright. They
+  hang from the Player frame's bar block, growing left from its right edge:
+  under it, 1px outside (default, Mode-DPS/TANK), or over it at 18 wide with
+  the time on the icon (Mode-Healer).
 
 ## Cooldown icons
 
