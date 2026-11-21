@@ -12,7 +12,7 @@ if not M then return end
 -- Color at Background Opacity, and the `window` edge inside the box on its
 -- own frame above the window (no masks; the rim covers its own corners). A
 -- see-through window has no soft drop, which would only darken it. The edit
--- box is a field in the `control` edge drawn Mode-Blizz, its outer line Ivory
+-- box is a field in the `control` edge drawn Mode-Border, its outer line Ivory
 -- while typing: inside the edge at the bottom or top, see-through on a band
 -- shaded a little darker than the window, EDIT_PAD in from its sides; or
 -- Below, Edit Gap under the window on a Graphite base. Sizes are whole
@@ -252,7 +252,7 @@ function M:SkinScrollButton(frame, px)
 end
 
 -- The edit box: Blizzard's left, middle, right and focus art faded. A field
--- in the `control` edge (inside it) drawn Mode-Blizz, Ivory while it has
+-- in the `control` edge (inside it) drawn Mode-Border, Ivory while it has
 -- focus: see-through on the window's band inside the edge, on a Graphite base
 -- Below. Its text, header and prompt use the chat face at the window's text
 -- size.

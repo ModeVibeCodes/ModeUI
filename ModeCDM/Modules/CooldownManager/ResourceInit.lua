@@ -76,7 +76,7 @@ M.resourcePositions = {
 -- The Mode look (docs/DESIGN_LANGUAGE.md, "Bars"): the `frameThin` edge
 -- outside each box (Mode-Round in Gunmetal, owner's pick, November 17, 2026),
 -- Mode Gradient over Mode BG (Slate at 60%, so the world shows through),
--- Geist Bold text. Dark mode by default: the fill in darkFill and the text in
+-- Urbanist Bold text. Dark mode by default: the fill in darkFill and the text in
 -- the bar's own color. Combo points in the hostile red with their count;
 -- health in your class color.
 M.RESOURCE_EMPTY = math.floor(Tone.emptyAlpha * 100 + 0.5)

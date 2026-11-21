@@ -118,6 +118,35 @@ world.run([==[
     assert(addon.Profiles.CreateThemed == nil, 'no themed copies: there is one look')
 ]==])
 
+-- Every module's defaults are the look (owner, November 20, 2026: "the
+-- defaulting of any module adheres to the new look"): on a profile of
+-- defaults alone, no theme part has anything left to change.
+world.run([==[
+    local skip = {}
+    for id in pairs(addon.Themes.parts.obsidian) do skip[id] = 'obsidian' end
+    local profile = assert(addon.Database:ValidateProfile({ themeParts = skip }))
+    local Copy = addon.ProfileCodec.Copy
+    local function Same(a, b, path)
+        if type(a) ~= type(b) then return false, path end
+        if type(a) ~= 'table' then
+            if type(a) == 'number' then return math.abs(a - b) < 1e-6, path end
+            return a == b, path
+        end
+        for k, v in pairs(a) do local ok, where = Same(v, b[k], path .. '.' .. tostring(k)); if not ok then return false, where end end
+        for k in pairs(b) do if a[k] == nil then return false, path .. '.' .. tostring(k) end end
+        return true
+    end
+    for id, part in pairs(addon.Themes.parts.obsidian) do
+        local db = profile.modules[id]
+        if db then
+            local themed = Copy(db)
+            part(themed)
+            local ok, where = Same(db, themed, id)
+            assert(ok, id .. ': a default is not the look: ' .. tostring(where))
+        end
+    end
+]==])
+
 -- A second start: nothing new is made.
 local again = H.Load({ before = STUBS, saved = world.saved() })
 again.run([==[

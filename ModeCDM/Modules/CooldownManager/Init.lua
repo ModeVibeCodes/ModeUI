@@ -46,7 +46,7 @@ addon:RegisterModule("cooldownManager", M)
 -- Version 5: the Mode design language (docs/DESIGN_LANGUAGE.md, "Cooldown
 -- icons"): icons 40 by 34 (32 by 28 on the smaller bars) in the `frameThin`
 -- edge outside the icon (Border: Mode or None; Border Size, Border Color and
--- the slot rims retire), a Mode Button face in Mono panel, Geist Bold text
+-- the slot rims retire), a Mode Button face in Mono panel, Urbanist Bold text
 -- in the Mode colors, Celadon procs and buffs, Ivory active and ready glows;
 -- Tracked Bars in Mode Gradient on Mode BG with the Comet spark, in your
 -- class color (Bar Color: Class Color or Custom).
@@ -167,7 +167,7 @@ local function Style(size, perLine, lineGrowth, small)
         border = "mode", backgroundColor = Copy(Tone.mono.panel), backgroundOpacity = 100,
         -- The border's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border"):
         -- icons and the Tracked Bars' boxes; Mode-Empty with a neutral, darker
-        -- rim (owner, November 20, 2026; Mode-Blizz before).
+        -- rim (owner, November 20, 2026).
         edgeStyle = "obsidianEmpty", edgeMetal = "default",
         -- Border Size (the band, 1 or 2px) and Border Color (Mode-Empty's
         -- flat band; owner, November 18, 2026).
@@ -192,7 +192,8 @@ local function Style(size, perLine, lineGrowth, small)
         -- Bar Color when Custom), its background, the icon's side and the
         -- Comet spark.
         barTexture = "media:Mode-FG", barColorMode = "class", barColor = Copy(M.BAR_COLOR),
-        barBackground = "media:Mode-BG", barBackgroundOpacity = 100, iconSide = "left", showSpark = true,
+        -- The empty part: Mode-BG at the Mode-Obsidian empty opacity (85%).
+        barBackground = "media:Mode-BG", barBackgroundOpacity = math.floor(Tone.emptyAlpha * 100 + 0.5), iconSide = "left", showSpark = true,
         -- Spells with their own switches, by cooldown ID: { ["1234"] = { hide = true, proc = false } }.
         spells = {},
     }

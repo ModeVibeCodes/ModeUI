@@ -123,12 +123,12 @@ M.barDefaults = {
 }
 -- A new custom bar, and the one every profile starts with: Defensives, a
 -- preset (it always shows buffs; owner, November 18, 2026: 42 x 34, 2px
--- apart, Mode-Thin Silver 2px, no right-click cancel, no tooltips).
+-- apart, Mode-Border 2px in its own metal, no right-click cancel, no tooltips).
 M.customDefaults = Bar("buffs", { "all" }, { max = 8, perRow = 8, width = 36 })
 M.PRESETS = { defensives = { kind = "buffs", cancel = false } }
 M.firstCustom = { name = "Defensives", preset = "defensives", bar = Bar("buffs", { "tracked", "bigdef", "extdef", "important" },
     { max = 4, perRow = 6, width = 42, height = 34, spacing = 2, crop = 8, timer = "center", edgeStyle = "obsidian",
-        edgeMetal = "silver", borderSize = 2, glow = "soft", cancel = false, tooltip = false }) }
+        edgeMetal = "default", borderSize = 2, glow = "soft", cancel = false, tooltip = false }) }
 
 -- Places (owner's canvas layout): Buffs in Blizzard's Buff Frame spot (its
 -- Edit Mode place), Debuffs under them, Player Buffs under the ModeUI Player

@@ -445,6 +445,9 @@ world.run([====[
     assert(not M:SetTextOption('player','powerLeft','content','mana') and not M:SetTextOption('player','middle','size',10) and not M:SetTextOption('player','left','size',40),'validated')
     assert(not M:SetTextOption('player','left','align','LEFT'),'only the border text has an alignment')
 
+    -- Names default to the solid class color (Mode-Obsidian); Gradient is a choice.
+    assert(M.defaults.player.nameColorMode=='class' and M.defaults.focus.prismGlow=='always' and M.defaults.player.prismGlow=='hover','Mode-Obsidian defaults')
+    assert(M:SetFrameOption('player','nameColorMode','gradient'))
     M:UpdateAll()
     local function Near(a,b) return math.abs(a-b)<1e-9 end
     local rc=addon.ClassColors:GetColor('ROGUE');local rogue={rc.r,rc.g,rc.b}
@@ -456,8 +459,11 @@ world.run([====[
     assert(t.texts.border.text.label=='name','secret target name passed straight to SetText')
     -- The suite's text style: every text has an opaque one-pixel shadow and a lifted
     -- shadow (one translucent black copy 2px down-right); a glowing text (the
-    -- name and health by default) has neither: the glow takes their place.
+    -- name and health, switched on; off by default in Mode-Obsidian) has neither:
+    -- the glow takes their place.
     local px=p.geometry.px
+    assert(not M.defaults.player.nameTextGlow and not M.defaults.player.healthTextGlow,'no text glow by default')
+    assert(M:SetFrameOption('player','nameTextGlow',true) and M:SetFrameOption('player','healthTextGlow',true))
     for _,text in ipairs({p.texts.border,p.texts.right}) do
         assert(text.halo and text.halo.on and text.shadowColor[4]==0 and not text.lift:IsShown(),'the glow replaces the shadows')
     end
@@ -879,9 +885,9 @@ world.run([====[
     M.Initialize(v21)
     assert(v21.layoutVersion==24 and v21.player.buffs.size==22 and v21.player.buffs.perRow==5 and v21.player.castBar.fontSize==11)
     assert(v21.player.debuffs.size==30 and v21.player.debuffs.perRow==3 and v21.player.healthTextColor=='health')
-    -- Text glow (Style.TextHalo): health numbers in Deep at 15%, names in Ink at 20%.
+    -- Text glow (Style.TextHalo): off by default; health numbers in Deep at 15%, names in Ink at 20%.
     local d0=M.db.player
-    assert(d0.healthTextGlow==true and v21.player.healthTextGlow==true and d0.healthTextGlowColor=='deep' and d0.healthTextGlowStrength==15)
+    assert(v21.player.healthTextGlow==false and d0.healthTextGlowColor=='deep' and d0.healthTextGlowStrength==15)
     assert(d0.nameTextGlow==true and d0.nameTextGlowColor=='ink' and d0.nameTextGlowStrength==20 and v21.player.nameTextGlowColor=='ink','new keys fill in')
     local ht0=assert(p.textKinds.health[1],'a health text').text
     local halo=ht0.halo

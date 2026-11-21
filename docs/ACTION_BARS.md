@@ -57,11 +57,11 @@ The Mode design language (`docs/DESIGN_LANGUAGE.md`, "Action buttons"):
   icons are wider than tall. Sizes are whole physical pixels, and each bar is
   an even number of pixels each way, so a centered bar stays on the pixel grid.
 - **Border:** **Mode** (by default) is the `frame` edge outside the button,
-  in the bar's **Border Style** (Mode-Blizz by default: a 2px Silver Specular
+  in the bar's **Border Style** (Mode-Border by default: a 2px dark glass band, lit top and champagne bottom; was a 2px Silver Specular
   band, a 1px black line, a 1px shadow ring and a soft drop) and **Border
   Metal** (shown while Border is Mode). **None** hides it. Each bar leaves room for its buttons' edges, and
   **Spacing** (4px by default) counts between the edges' shadows.
-- **Background:** the **Mode Button** face behind the icon, in the
+- **Background:** the **Mode-FG** face (its base) behind the icon, in the
   **Background Color** (Mono panel, #0E0E0E, by default) at **Background
   Opacity** (100% by default). It shows in ModeUI's empty slots and in
   Blizzard's own empty buttons (the game's Always Show Buttons option, or
@@ -95,9 +95,9 @@ Four texts, each with **Show This Text**, **Anchor** (a compass with Center),
 
 Each text's box hugs its letters, 2 pixels inside the icon, and is justified to
 its anchor's side, top or bottom. So the keybind sits right in the top-right
-corner. Keybinds, counts and cooldown numbers are Geist Bold, macro names Geist
+corner. Keybinds, counts and cooldown numbers are the Mode typeface (Urbanist) Bold, macro names
 Medium (another font keeps its one weight). Every bar shares one font setup:
-**Font** (Mode Geist by default), **Outline** (off), **Slug Text** (on) and
+**Font** (Mode, the Urbanist typeface, by default), **Outline** (off), **Slug Text** (on) and
 **Text Shadow** (None, Crisp by default, or Lifted).
 
 - Blizzard shows and hides these texts itself, so a hidden text is faded rather
@@ -134,15 +134,15 @@ Medium (another font keeps its one weight). Every bar shares one font setup:
   Version 1 placed each bar on its own. Bars still at version 1's places move to
   the stacked ones; a bar you moved stays where it is.
 
-## Mode-Default layout
+## Mode-DPS/TANK layout
 
-`Layouts.lua` adds this module's part of the built-in Mode-Default layout
+`Layouts.lua` adds this module's part of the built-in Mode-DPS/TANK layout
 (DPS / Tank, `Shared/Runtime/Layouts.lua`); it only writes a new profile. The
 same at 1080 and 1440. The module is on.
 
 - **Action Bars 1-4**: 28 x 24 buttons (owner's tuning, November 18, 2026),
   Spacing 2, 12 buttons, 12 per line, Rows (Action Bar 4 turns from Columns),
-  First Button Top Left, Border Style Mode-Blizz (the default). Each is
+  First Button Top Left, Border Style Mode-Border (the default). Each is
   12 x (28 + 6) + 11 x 2 = 430 wide and 30 tall (the `frame` edge's 3px each
   side is inside the bar, `M.Geometry`). A centered 2 x 2 grid: Action Bar 1's BOTTOMRIGHT on the screen's
   BOTTOM (-4, 8); Action Bar 2's LEFT on Action Bar 1's RIGHT (8, 0); 3 and 4
@@ -460,7 +460,7 @@ Version 2 changed these from version 1:
 | File | Job |
 |---|---|
 | `Init.lua` | declaration, the bars and their Blizzard buttons, anchor targets, defaults, ranges, choices |
-| `Layouts.lua` | its part of the Mode-Default layout |
+| `Layouts.lua` | its part of the Mode-DPS/TANK layout |
 | `Migrations.lua` | `Initialize(db)`: defaults, validation and the migrations to version 4 |
 | `Driver.lua` | lifecycle, events, `/kb`, settings changes, copy and reset, the font and color owner, moving version 1 places |
 | `Bars.lua` | secure bars, moving Blizzard's buttons, hiding Blizzard's art, the vehicle-bar watch, the paging snippet, Edit Mode stand-ins and live follow, switching off |

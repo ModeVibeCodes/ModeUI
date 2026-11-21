@@ -5,7 +5,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- border, parchment, portrait, filigree and title art is faded and replaced
 -- by the Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): a
 -- Graphite panel in Mode Panel inside the `window` edge, a Mode Title strip,
--- Geist text, and Mode tabs, buttons, fields, dropdowns, scroll bars and
+-- Urbanist text, and Mode tabs, buttons, fields, dropdowns, scroll bars and
 -- window buttons (Shared/Skin). Window Style swaps every
 -- window between ModeUI and Blizzard's own look; each window can also be
 -- left Blizzard's, given its own look and a scale. The Character window adds
@@ -17,13 +17,13 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- CharacterPanel, Settings, SettingsCharacter.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Windows"], category = "interface", defaultEnabled = false,
-    configDescription = L["Blizzard's windows in the Mode look: Graphite panels, the Mode window edge, Geist titles and Mode controls."],
+    configDescription = L["Blizzard's windows in the Mode look: Graphite panels, the Mode window edge, Urbanist titles and Mode controls."],
     modeLayout = { decorateOnly = true } }
 addon.Windows = M
 addon:RegisterModule("windows", M)
 
 -- Version 3: the Mode design language (Graphite panel at 100%, the `window`
--- edge: Border Color and Border Size retire; Geist).
+-- edge: Border Color and Border Size retire; Urbanist).
 M.VERSION = 3
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 

@@ -99,7 +99,7 @@ function Kit.LayoutAuraIcon(icon, width, height, px, style, fontPath)
     icon.icon:SetTexCoord(0.08, 0.92, 0.5 - span / 2, 0.5 + span / 2)
     icon.textLayer:SetFrameLevel(icon.cooldown:GetFrameLevel() + 2)
     local countSize = math.max(7, math.floor(height * 0.45 + 0.5))
-    -- Counts and timers in Geist Bold (another font keeps its one weight).
+    -- Counts and timers in Urbanist Bold (another font keeps its one weight).
     fontPath = Style.Weighted(fontPath, "bold")
     Kit.Font(icon.count, style, countSize, fontPath, px)
     icon.count:ClearAllPoints()

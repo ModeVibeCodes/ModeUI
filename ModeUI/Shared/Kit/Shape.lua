@@ -116,7 +116,7 @@ end
 -- is 80% gray, so its tint is a fifth lighter), else the Onyx track.
 function Kit.BarBackgroundColor(choice)
     -- Mode-BG is tinted Slate (docs/DESIGN_LANGUAGE.md, "Bars"); so is a
-    -- saved Mode BG or Mode-Obsidian Track (Style.OLD_MEDIA).
+    -- saved older name for it (Style.OLD_MEDIA).
     choice = addon.Style.OLD_MEDIA[choice] or choice
     if choice == "media:Mode-BG" then return addon.Style.Tone.slate end
     if choice == "slate" then return Kit.onyx.slate end

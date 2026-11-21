@@ -33,7 +33,7 @@ addon:RegisterModule("nameplates", M)
 -- Version 9: the Mode design language: the frameThin edge (the target's
 -- outer line in Ivory, focus in Rosewood), Mode BG fills and empty parts,
 -- Mode Cast cast bars with the Comet spark (Cast Texture), Gradient names
--- in SemiBold, Bold health text colored by health, Geist with one shadow.
+-- in SemiBold, Bold health text colored by health, Urbanist with one shadow.
 -- Version 10: auras wear the frameThin edge (Border Size 1 or 2, 1 by
 -- default; Corners retire), and auras without a type keep the Gunmetal metal.
 -- Version 11: semi-transparent empty bars (Slate at 60%).
@@ -85,7 +85,7 @@ local function Style(kind)
         threatPullingColor = Copy(M.threatPalette.warning),
         healthText = enemy and "percent" or "none", healthFontSize = 9, healthTextColor = "health", healthTextGlow = true,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
-        showName = true, nameFontSize = 10, nameColorMode = "gradient", nameAnchor = "TOP", nameX = 0, nameY = 0,
+        showName = true, nameFontSize = 10, nameColorMode = "class", nameAnchor = "TOP", nameX = 0, nameY = 0,
         showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
         castInterruptedColor = Copy(P.hostile),
         castAnchor = "BOTTOM", castX = 0, castY = enemy and -2 or 0,
@@ -104,7 +104,7 @@ local function Style(kind)
         -- Target indicator: border, glow, arrows, border and arrows, or none.
         targetStyle = "border", targetColor = Copy(addon.Style.Tone.ivory), targetThickness = 1, targetArrowSize = 12, targetArrowGap = 4,
         -- Focus: a highlight, its own health bar texture, and fading other plates.
-        focusStyle = "border", focusColor = Copy(addon.Style.Tone.rosewood), focusStripeOpacity = 40, focusTexture = "default",
+        focusStyle = "glow", focusColor = Copy(addon.Style.Tone.rosewood), focusStripeOpacity = 40, focusTexture = "default",
         focusFadeOthers = 100,
         -- Combo points on your target's plate (a Rogue's, or a Cat Form Druid's).
         showCombo = enemy, comboAnchor = "BOTTOM", comboX = 0, comboY = 0, comboSize = 8, comboSpacing = 2,

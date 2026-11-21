@@ -71,7 +71,33 @@ if arg and arg[1] == "--baseline" then
     return
 end
 
+-- The retired Mode-Blizz look (November 20, 2026; archive/mode-blizz/):
+-- no code names its textures, border style ids, asset keys or Geist. Only
+-- a module's Migrations.lua and Theme.lua (its history) and the code that maps old saved
+-- values (Shared/Style, Shared/Runtime/DB.lua) may.
+local RETIRED = {
+    "media:Mode BG", "media:Mode Matte", "media:Mode Gradient", "media:Mode Button", "media:Mode Glass", "media:Mode Cast",
+    "media:Mode Panel", "media:Mode Title", "media:Mode%-Obsidian\"", "Mode%-Obsidian Track", "Mode%-ObsidianEmpty",
+    "[Ss]tyle%s*=%s*\"blizz\"", "[Ss]tyle%s*=%s*\"blizzEmpty\"", "[Ss]tyle%s*=%s*\"thin\"", "[Ss]tyle%s*=%s*\"round\"",
+    "ApplyAsset%([^,]+,%s*\"Matte", "ApplyAsset%([^,]+,%s*\"Gradient\"", "ApplyAsset%([^,]+,%s*\"Button\"",
+    "ApplyAsset%([^,]+,%s*\"Glass", "ApplyAsset%([^,]+,%s*\"Cast", "ApplyAsset%([^,]+,%s*\"Panel\"", "ApplyAsset%([^,]+,%s*\"Title\"",
+    "PaintBox%([^\n]-\"Matte\"", "PaintBox%([^\n]-\"Panel\"", "PaintBox%([^\n]-\"Title\"", "PaintBox%([^\n]-\"Glass\"",
+    "PaintBox%([^\n]-\"Button\"", "PaintBox%([^\n]-\"Gradient\"", "Geist", "Mode%-Blizz",
+}
+local retired = {}
+for _, path in ipairs(files) do
+    -- A module's Theme.lua moves old profiles from the Mode-Blizz defaults, so it may say so.
+    if not (Exempt(path) or path:match("Migrations%.lua$") or path:match("Modules/[^/]+/Theme%.lua$")
+        or path == "Shared/Runtime/DB.lua" or path == "Shared/Runtime/Themes.lua") then
+        local text = H.Read(source[path] or (H.addonDir .. path))
+        for _, pattern in ipairs(RETIRED) do
+            if text:find(pattern) then retired[#retired + 1] = path .. ": names the retired look (" .. pattern .. ")" end
+        end
+    end
+end
+
 local failures = {}
+for _, line in ipairs(retired) do failures[#failures + 1] = line end
 local loaded = {}
 for _, path in ipairs(files) do loaded[path] = true end
 for path, counts in pairs(found) do

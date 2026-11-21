@@ -47,7 +47,7 @@ function M:NameColor(unit, identity)
     return self.nameAccents[mode] or self.ACCENT
 end
 
--- Portrait ring (Style.Ring): its Ring Style (Mode-Blizz by default) in its
+-- Portrait ring (Style.Ring): its Ring Style (Mode-Border by default) in its
 -- Ring Finish: a metal, Class Color (the default; the reaction color for NPCs)
 -- or Custom. A color, and the combat red, is the style's lighting in tones
 -- made from it (Style.ColorTones).

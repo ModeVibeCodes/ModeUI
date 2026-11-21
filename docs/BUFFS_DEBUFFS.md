@@ -25,7 +25,7 @@ in-game recheck (see [In-game gate](#in-game-gate)).
 ## What the owner asked for
 
 - Blizzard's player buffs and debuffs by the minimap in the Mode look, in the
-  **Mode-Blizz** border, icons **6px shorter than wide**.
+  **Mode-Border** border, icons **6px shorter than wide**.
 - The Player frame's buffs and debuffs controlled here: aura bars the player
   makes, each picking categorized groups, resized, styled (look, borders,
   effects), with a **blacklist**, free-positioned with anchoring options.
@@ -183,7 +183,7 @@ forbids anchoring frames to a container, so other bars anchor to movers.
 | Player Buffs | Important, Heals Over Time, Yours; 12 max, 8 a row | under the ModeUI Player Frame's right end (top right on bottom right, -6, -2) | 24 x 20, 2px apart, grows left, time on the icon |
 | Player Debuffs (All) | Crowd Control, Dispellable by You, Magic, Curse, Disease, Poison, Bleed, Other (Boss Debuffs off by default, owner November 18); 8 max, 6 a row | above the ModeUI Player Frame (top right on top right, 2, 131) | 42 x 36 (owner, after the first in-game look), 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
 | Player Debuffs (Boss & Important) (owner, November 17) | Important (`IMPORTANT`), Boss (that aren't Important); 6 max, 6 a row | 6px above Player Debuffs (All), right edges lined up (bottom right on its top right, 0, 6) | 48 x 42, 2px border, 3px apart, Mode-BlizzEmpty, rims by type, time on the icon |
-| Defensives (custom, a preset) | Spells You Add, Big and External Defensives, Important; 4 max | left of center (-151, 27) | 42 x 34, 2px apart, Icon Zoom 8, Mode-Thin Silver 2px, Soft glow in Aura Gold, time on the icon, swipe, no tooltips, no right-click cancel (owner, November 18) |
+| Defensives (custom, a preset) | Spells You Add, Big and External Defensives, Important; 4 max | left of center (-151, 27) | 42 x 34, 2px apart, Icon Zoom 8, Mode-Border in its own metal 2px, Soft glow in Aura Gold, time on the icon, swipe, no tooltips, no right-click cancel (owner, November 18) |
 
 Boss Debuffs can still be picked in Player Debuffs (All). Defensives is a
 **preset**: a custom bar (renamed, deleted, styled like any) that always
@@ -305,9 +305,9 @@ default; right-click cancel off). Unit Frames keeps `player.buffs` and
 `player.debuffs` untouched; `M.Adopt` (a module hook in
 `DB:ValidateProfile`) turns this module on once when either showed.
 
-### Mode-Default layout
+### Mode-DPS/TANK layout
 
-`Layouts.lua` adds this module's part of the built-in Mode-Default layout
+`Layouts.lua` adds this module's part of the built-in Mode-DPS/TANK layout
 (DPS / Tank, `Shared/Runtime/Layouts.lua`); it only writes a new profile. The
 same at 1080 and 1440. The module is on.
 
@@ -319,7 +319,7 @@ same at 1080 and 1440. The module is on.
 | Defensives (`custom1`) | 40 x 34, 4 max | RIGHT on the screen's CENTER, (-124, 166) |
 
 Every bar (these, Player Debuffs (All), Boss & Important and any custom bar)
-is Mode-Thin in its own metal at Spacing 1, so neighbours share one shadow
+is Mode-Border in its own metal at Spacing 1, so neighbours share one shadow
 pixel as the Cooldown Manager's icons do (owner, November 18, 2026); border
 sizes stay each bar's own (2px on Player Debuffs, Boss & Important and
 Defensives). Player Debuffs (All) and Boss & Important otherwise keep their defaults. The owner's
@@ -349,7 +349,7 @@ smaller each way than the editor drew them (32 x 26 with the shadow, not
 ### Healer layout
 
 `Layouts.lua` adds this module's part of the Mode-Healer layout (owner,
-November 19, 2026; new profiles only). Everything as Mode-Default but:
+November 19, 2026; new profiles only). Everything as Mode-DPS/TANK but:
 
 - **Player Debuffs** on the right of the screen: 6px right of ModeCDM's Right
   Buffs bar (its right edge at 139; the bar's 1px shadow sits outside its
@@ -367,7 +367,7 @@ November 19, 2026; new profiles only). Everything as Mode-Default but:
 ### Files
 
 `Modules/BuffsDebuffs/`: `Init.lua` (declaration, bars, kinds, defaults),
-`Layouts.lua` (its part of the Mode-Default layout),
+`Layouts.lua` (its part of the Mode-DPS/TANK layout),
 `Migrations.lua` (validation, Adopt), `Driver.lua` (lifecycle, setters,
 custom bars, blacklist), `Placement.lua` (sizes, movers, holders),
 `Icons.lua` (an icon's look: size, crop, border, texts), `Bars.lua`

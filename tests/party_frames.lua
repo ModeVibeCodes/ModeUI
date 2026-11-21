@@ -180,7 +180,7 @@ world.run([==[
     assert(M.db.nameShow and M.db.nameAnchor == 'LEFT' and M.db.leaderPlace == 'outside' and M.db.auras.heals.filter == 'all')
     assert(M.db.spacing == 1 and M.db.auras.dispellable.show and M.db.auras.magic.filter == 'notMine' and M.db.auras.tracked1.spells[1] == nil)
     assert(M.db.healthHeight == 34 and M.db.width == 150 and M.db.powerHeight == 3 and M.db.borderStyle == nil and M.db.corner == nil)
-    assert(M.db.shieldTexture == nil and M.db.nameColorMode == 'gradient' and M.db.healthTextColor == 'health' and M.db.aggroHighlight and M.db.healthTextShow)
+    assert(M.db.shieldTexture == nil and M.db.nameColorMode == 'class' and M.db.healthTextColor == 'health' and M.db.aggroHighlight and M.db.healthTextShow)
     assert(M.db.auras.magic.glow == 'none' and M.db.dispel.Magic.gradient and not M.db.dispel.Magic.border and not M.db.dispel.Magic.health, 'glows off, the dispel Gradient by default')
     assert(PartyFrame.parent == UIParent, 'Blizzard untouched while off')
 

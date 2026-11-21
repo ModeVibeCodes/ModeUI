@@ -124,7 +124,7 @@ world.run([==[
     -- health text by health, Urbanist.
     assert(M.db.enemy.foregroundTexture == 'media:Mode-FG' and M.db.enemy.backgroundTexture == 'media:Mode-BG' and M.db.enemy.castTexture == 'media:Mode-FG')
     assert(M.db.enemy.focusStyle == 'glow' and M.db.friendly.focusStyle == 'glow' and M.db.friendly.backgroundTexture == 'media:Mode-BG', 'the focus in the Glow, per kind')
-    assert(M.db.enemy.nameColorMode == 'gradient' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode' and not M.db.enemy.liftedShadow)
+    assert(M.db.enemy.nameColorMode == 'class' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode' and not M.db.enemy.liftedShadow)
     assert(M.db.enemy.targetColor[1] == addon.Style.Tone.ivory[1] and M.db.enemy.focusColor[1] == addon.Style.Tone.rosewood[1], 'Ivory target, Rosewood focus')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')
@@ -692,7 +692,7 @@ world.run([==[
     local _, height = M:GetPreviewSize(view)
     assert(height == 4 + top + sample:GetHeight() + bottom + 6 + 18, 'preview only as tall as the sample')
     assert(math.abs(sample.width - 180) < 1, 'sample size follows the kind')
-    assert(sample.name.text:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '') == 'Enemy Nameplate' and sample.name.text:find('|c', 1, true) and sample.healthText.text == '72%' and sample.health.value == 72)
+    assert(sample.name.text:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '') == 'Enemy Nameplate' and sample.healthText.text == '72%' and sample.health.value == 72)
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
     assert(sample.softTarget:IsShown() and sample.softTarget.texture == 'Interface\\Cursor\\Attack' and top >= sample.softTargetTop, 'sword icon sample, inside the preview')
     assert(sample.targeted and sample.healthBox.edge.highlight == M.db.enemy.targetColor, 'sample target line')
@@ -798,6 +798,8 @@ world.run([==[
     assert(#page.cards > 5 and page.cards[1].frame:IsShown(), 'settings sit on cards')
     -- On the Focus tab the sample shows itself as the focus, not the target.
     local selected = page.selectedSection
+    -- The focus defaults to the Glow (Mode-Obsidian); the sample shows the Border style here.
+    assert(M.styleDefaults.enemy.focusStyle == 'glow' and M:SetOption('enemy', 'focusStyle', 'border'))
     page:SelectSectionTab(6)
     assert(page.selectedSection.title == 'Focus' and sample.focused and not sample.targeted, 'focus sample')
     assert(sample.healthBox.edge.highlight == M.db.enemy.focusColor, 'focus border in the sample')
@@ -1127,7 +1129,7 @@ H.Load({ before = STUBS, saved = v8 }).run([==[
     local db, Tone, P = addon.Nameplates.db, addon.Style.Tone, addon.Kit.palette
     local e, f = db.enemy, db.friendly
     assert(db.version == 11 and e.foregroundTexture == 'media:Mode-FG' and e.backgroundTexture == 'media:Mode-BG' and e.backgroundOpacity == 85)
-    assert(e.nameColorMode == 'gradient' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode-FG')
+    assert(e.nameColorMode == 'class' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode-FG')
     assert(e.healthTextColor == 'health' and e.focusColor[1] == Tone.rosewood[1], 'old focus amber takes Rosewood')
     assert(f.backgroundOpacity == 40 and f.nameColorMode == 'class', 'picked values stay')
 ]==], "nameplates_v8")

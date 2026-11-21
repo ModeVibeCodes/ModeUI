@@ -25,7 +25,7 @@ addon:RegisterModule("chat", M)
 -- still at the old #1C1E21 follows.
 -- Version 6 (November 15, 2026, Phase 7): the Mode design language. A fill
 -- still at #131212 moves to Graphite panel; a face still at "Expressway"
--- moves to the Mode typeface (Expressway when installed, else Geist).
+-- moves to the Mode typeface (Urbanist).
 M.VERSION = 6
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 

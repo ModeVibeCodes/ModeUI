@@ -79,7 +79,7 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- get Full Width and Bar Width.
 -- Version 20: the Mode design language (docs/DESIGN_LANGUAGE.md): 3px power,
 -- Mode Matte health, Mode Gradient power, Mode Cast casts, Mode BG empty bars,
--- Geist, Gradient names, the Steel Sheen ring, 2px cast gap, Combined shields.
+-- the Mode typeface, Gradient names, the Steel Sheen ring, 2px cast gap, Combined shields.
 -- Version 21 (owner's in-game check): Portrait Size 140, the single Mode text
 -- shadow (no lifted copy), the cast bar icon on the portrait side.
 -- Version 22: health text colored by health, 22px auras five to a row, 11px cast text.
@@ -171,17 +171,19 @@ local function Frame(side, extra)
         -- (owner, November 18, 2026); Metal draws the style and metal below.
         portraitRing = "class", portraitRingColor = Copy(M.ACCENT),
         -- The ring's own Mode border style and metal (Style.SetRingStyle):
-        -- Mode-Blizz in its Silver (owner, November 17, 2026).
+        -- Mode-Border in its own metal (owner, November 17, 2026).
         portraitRingStyle = "obsidian", portraitRingMetal = "default",
         -- The color of names in text slots (TextSlots.lua places every text).
-        nameColorMode = "gradient", nameColor = Copy(M.ACCENT),
+        -- Names in the solid class or reaction color (Mode-Obsidian).
+        nameColorMode = "class", nameColor = Copy(M.ACCENT),
         healthColorMode = "default", healthColor = Copy(M.palette.green),
         -- Health texts in the bars: colored by health (Style.PaintHealthText).
         healthTextColor = "health",
         -- Text glow (Style.TextHalo, owner's picks, November 17, 2026): health
         -- numbers in Deep at 15%, names in Ink at 20%.
-        healthTextGlow = true, healthTextGlowColor = "deep", healthTextGlowStrength = 15,
-        nameTextGlow = true, nameTextGlowColor = "ink", nameTextGlowStrength = 20,
+        -- Off by default (Mode-Obsidian: no glow behind text); the looks stay ready.
+        healthTextGlow = false, healthTextGlowColor = "deep", healthTextGlowStrength = 15,
+        nameTextGlow = false, nameTextGlowColor = "ink", nameTextGlowStrength = 20,
         powerColorMode = "type", powerColor = Copy(M.palette.mana),
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true,
         -- The suite's text style: every text gets a crisp opaque 1px shadow plus
@@ -194,15 +196,15 @@ local function Frame(side, extra)
         -- other way from the Player by default (owner, November 13, 2026).
         fillDirection = "standard",
         -- The frame's and its cast bar's border (docs/DESIGN_LANGUAGE.md,
-        -- "Choosing a border"): Mode-Blizz in its own metal (owner, November 17, 2026).
+        -- "Choosing a border"): Mode-Border in its own metal (owner, November 17, 2026).
         edgeStyle = "obsidian", edgeMetal = "default",
         -- Player and Target: the Mode Frame border's soft drop (owner, November
         -- 18, 2026: off where icons sit on the border, as in Mode-Default).
         dropShadow = true,
         -- The Prism glow round the bar block (docs/DESIGN_LANGUAGE.md,
-        -- "Mode-Obsidian theme"): Off, on Mouseover, or Always (the Focus
-        -- frame under Mode-Obsidian), in the unit's class or reaction color.
-        prismGlow = "none" }
+        -- "Mode-Obsidian theme"): Off, on Mouseover (the default), or Always
+        -- (the Focus frame's), in the unit's class or reaction color.
+        prismGlow = "hover" }
     for key, value in pairs(extra or {}) do frame[key] = value end
     return frame
 end
@@ -212,15 +214,17 @@ end
 -- Target of Focus is the same under the Focus frame, and Focus is the same
 -- frame at 90% scale, placed on its own.
 -- 22px health and 3px power (docs/DESIGN_LANGUAGE.md, "Sizes").
-local function Small(scale, attach, width)
-    return { barWidth = width or 130, healthHeight = 22, powerHeight = 3, scale = scale, showPortrait = false, attach = attach }
+local function Small(scale, attach, width, extra)
+    local frame = { barWidth = width or 130, healthHeight = 22, powerHeight = 3, scale = scale, showPortrait = false, attach = attach }
+    for key, value in pairs(extra or {}) do frame[key] = value end
+    return frame
 end
 -- The Target mirrors the Player by default: health text on the left, level in
 -- its bottom right corner (owner, November 13, 2026).
 -- The Player and Target portraits are 165% of the bar block (owner, November 18, 2026).
 M.frameDefaults = { player = Frame("left", { portraitScale = 165 }),
     target = Frame("right", { matchPlayer = true, mirrorText = true, fillDirection = "reverse", portraitScale = 165 }),
-    targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false, 160)), focustarget = Frame("left", Small(75, true)) }
+    targettarget = Frame("left", Small(75, true)), focus = Frame("right", Small(90, false, 160, { prismGlow = "always" })), focustarget = Frame("left", Small(75, true)) }
 M.frameRanges = { scale = { 50, 200, 1 }, barWidth = { 100, 400, 1 }, healthHeight = { 10, 60, 1 },
     powerHeight = { 2, 30, 1 }, portraitScale = { 100, 200, 5 },
     barForegroundOpacity = { 10, 100, 5 }, barBackgroundOpacity = { 0, 100, 5 }, powerForegroundOpacity = { 10, 100, 5 },

@@ -80,7 +80,7 @@ function M.IconArt(host)
     Style.ApplyAsset(art.face, "FGBase")
     return art
 end
--- A bar's edge look: its band width, style and metal, Mode-BlizzEmpty's band
+-- A bar's edge look: its band width, style and metal, Mode-Empty's band
 -- in Border Color.
 function M.StyleEdge(edge, style)
     edge:SetRim(style.edgeSize)

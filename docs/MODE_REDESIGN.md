@@ -17,8 +17,8 @@ see the revisions below).
 
 Rebuild every ModeUI module in the Mode design language
 (`docs/DESIGN_LANGUAGE.md`): one set of color tokens (`Style.Tone`), border
-presets (`Style.Edge`), bar textures ("Mode <Name>" in `Style.Asset`), the
-Mode typeface (Expressway when installed, else Geist) and the `Style.Bar` / `Style.Shield` / `Style.Comet` factories, all in
+presets (`Style.Edge`: Mode-Border and Mode-Empty), bar textures (Mode-FG and
+Mode-BG in `Style.Asset`), the Mode typeface (Urbanist) and the `Style.Bar` / `Style.Shield` / `Style.Comet` factories, all in
 `ModeUI/Shared/Style/`. Modules never hard-code colors, borders, masks,
 texture paths or font files; `tests/design.lua` enforces it.
 
