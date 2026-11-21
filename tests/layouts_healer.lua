@@ -55,13 +55,17 @@ world.run([==[
             'Cooldown Manager icons in Mode-Empty, neutral and darker')
         local column = PF.MAX_MEMBERS * pg.height + (PF.MAX_MEMBERS - 1) * party.spacing
         local p = pos.partyFrames
-        -- Hung from its top right (owner, November 20, 2026), so the first
-        -- member sits snug under the Player block whatever the stand-in's
-        -- height off the pixel-perfect scale.
-        assert(p.target == 'screen' and p.point == 'TOPRIGHT' and p.relativePoint == 'CENTER' and p.x == -323, 'party top right at x -323')
-        local partyTop, partyBottom = p.y, p.y - column
+        -- Hung from the Player frame's bar block (owner, November 20, 2026): its
+        -- top right on the block's bottom right, 1 down, so its right edge is
+        -- the block's real one at any UI scale and the first member sits snug
+        -- under it.
+        assert(p.target == 'unitFramesPlayerBars' and p.point == 'TOPRIGHT' and p.relativePoint == 'BOTTOMRIGHT' and p.x == 0 and p.y == -1,
+            'party hung from the Player bar block')
+        local pg0, pp0 = UF:Geometry(m.unitFrames.player, 1, addon.Style.EdgeDepth('frame')), pos.unitFramesPlayer
+        local partyTop = pp0.y - pg0.height / 2 + pg0.blockY - 1
+        local partyBottom = partyTop - column
         assert(partyBottom == e2Bottom + 1, 'the column ends level with Essential row 2: ' .. variant .. ' ' .. partyBottom .. ' vs ' .. e2Bottom)
-        assert(p.y == (variant == '1440' and -126 or 29), 'party top')
+        assert(partyTop == (variant == '1440' and -126 or 29), 'party top')
         -- Inside: name top left with the role on its end, health in the middle;
         -- debuffs 20 x 18 (3), Dispellable 22 x 20 (2) on its own row, healing buffs 22 x 18 (3).
         assert(party.nameAnchor == 'TOPLEFT' and party.roleAfterName and party.healthTextAnchor == 'CENTER' and party.healthTextSize == 12)
@@ -109,10 +113,10 @@ world.run([==[
         end
         assert(uf.player.texts.right.content == 'powerPercent' and uf.target.texts.left.content == 'healthCurrent' and uf.target.texts.left.size == 12)
         assert(uf.target.castBar.gap == -1 and uf.target.castBar.height == 12 and not uf.targettarget.enabled)
-        -- Focus: 136 x 20, 1px under the Target's cast bar (12 + its 1px rim), left edges lined up.
+        -- Focus: 136 x 20, 80 under the Target's cast bar (12 + its 1px rim) and 1px, left edges lined up.
         local fg = UF:Geometry(uf.focus, 1, addon.Style.EdgeDepth('frameThin'))
         assert(fg.width == 136 and fg.height == 20, 'Focus 136 x 20')
-        assert(fp.point == 'TOPLEFT' and fp.relativePoint == 'CENTER' and fp.x == -322 and fp.y == blockBottom - 1 - 14 - 1, 'Focus under the cast bar')
+        assert(fp.point == 'TOPLEFT' and fp.relativePoint == 'CENTER' and fp.x == -322 and fp.y == blockBottom - 1 - 14 - 1 - 80, 'Focus 80 under the cast bar')
 
         -- ModeCDM: Power and Alternate Mana off; Combo Points a 6px strip 1px
         -- on Essential; the Cast Bar 20 tall at a fixed place over it; Utility 70 under.
@@ -155,7 +159,7 @@ world.run([==[
         end
     end
     -- Made into a profile once, at login, beside Mode-DPS/TANK; the active profile stays.
-    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@4'] == true)
+    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@5'] == true)
     assert(ModeUIDB.profiles['Mode-Healer'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-Healer', 'healer'), 'its name is taken')
 ]==], "healer build")

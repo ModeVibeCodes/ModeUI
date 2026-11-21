@@ -107,7 +107,7 @@ end)
 -- Target of Target is off. Unit frames place only on the screen (Build.lua,
 -- RegisterPosition), so each place is worked out from the frames' sizes.
 local HEALER = { health = 26, width = 142, portrait = 145, right = -323, partyTop = { ["1080"] = 29, ["1440"] = -126 },
-    text = 12, focus = { width = 134, health = 14, power = 3 }, cast = 12, buffs = { size = 18, perRow = 3, max = 9 } }
+    text = 12, focus = { width = 134, health = 14, power = 3 }, focusDrop = 80, cast = 12, buffs = { size = 18, perRow = 3, max = 9 } }
 
 -- Every health slot and the border empty, then each text in its slot; the
 -- border's text at `align`.
@@ -155,5 +155,7 @@ addon.Layouts:Contribute("healer", "unitFrames", function(db, ctx)
     ctx.Match(M.elementIds.target, "height", M.elementIds.player)
     -- The Target's cast bar: its rim (1px) round the bar, Gap -1 off the block.
     local castBottom = blockBottom - (target.castBar.gap + 2) - (target.castBar.height + 2)
-    ctx.Place(M.elementIds.focus, "screen", "TOPLEFT", "CENTER", HEALER.right + 1, castBottom - 1)
+    -- The Focus 80 under that (owner, November 20, 2026: 1 under the cast bar
+    -- crowded the party column's top).
+    ctx.Place(M.elementIds.focus, "screen", "TOPLEFT", "CENTER", HEALER.right + 1, castBottom - 1 - HEALER.focusDrop)
 end)

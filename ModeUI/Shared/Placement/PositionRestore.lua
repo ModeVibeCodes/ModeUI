@@ -30,7 +30,17 @@ end
 local register = PM.RegisterElement
 function PM:RegisterElement(id, frame, options)
     local ok, element = register(self, id, frame, options)
-    if ok then self:KeepOutOfLayoutCache(frame) end
+    if ok then
+        self:KeepOutOfLayoutCache(frame)
+        -- A size change moves its edges: what hangs from them follows (below).
+        if not frame.modeSizeWatch and frame.HookScript then
+            frame.modeSizeWatch = true
+            frame:HookScript("OnSizeChanged", function(f)
+                local watched = self.frames[f]
+                if watched and not self.cascading then self:Cascade(watched) end
+            end)
+        end
+    end
     return ok, element
 end
 
@@ -54,6 +64,44 @@ function PM:Reassert()
     end
     self:NotifyPosition()
     return true
+end
+
+-- An element hung from another (the healer party column from the Player
+-- frame's bar block) follows it on screen through its anchor, but a module
+-- that copies its stand-in onto a secure frame only hears about its own
+-- moves. So a move tells the elements anchored to it as well (and theirs).
+local notify = PM.NotifyPosition
+function PM:NotifyPosition(id, changed)
+    notify(self, id, changed)
+    if changed and id then self:Cascade(id) end
+end
+-- Each element anchored to `id` (or to its bar block), and theirs: placed
+-- again from its saved position, then its module told. Outside combat.
+function PM:Cascade(id)
+    if self.cascading or Combat() then return end
+    self.cascading = true
+    local seen, queue = { [id] = true }, { id }
+    while #queue > 0 do
+        local moved = table.remove(queue, 1)
+        for _, other in ipairs(self.order) do
+            local element = self.elements[other]
+            -- A Unit Frames element and its bar block share one stand-in.
+            local target = element and element.position.target
+            if element and not seen[other] and (target == moved or (target and target:find("^" .. moved .. "Bars$"))) then
+                seen[other] = true
+                queue[#queue + 1] = other
+                element.subject.appliedAnchor = nil
+                self:ApplyPosition(other, true)
+                if element.onPositionChanged and not element.notifying then
+                    element.notifying = true
+                    local ok, message = pcall(element.onPositionChanged, element, self:GetPosition(other))
+                    element.notifying = false
+                    if not ok then print("ModeUI: position callback failed: " .. tostring(message)) end
+                end
+            end
+        end
+    end
+    self.cascading = false
 end
 
 local function Later(delay)

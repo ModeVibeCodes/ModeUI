@@ -73,7 +73,7 @@ function M:CreateGhost()
     ghost:SetPoint("CENTER", UIParent, "CENTER", default.x, default.y)
     ghost:Show()
     local ok, reason = addon.PositionManager:RegisterElement(self.ELEMENT_ID, ghost, { moduleId = self.id,
-        defaultPosition = default, allowedTargets = { "screen" }, label = L["Party Frames"],
+        defaultPosition = default, allowedTargets = { "screen", "unitFramesPlayerBars" }, label = L["Party Frames"],
         canDrag = function() return self.active == true end,
         onPositionChanged = function() addon.Defer:Run("partyFrames:position", function() self:SyncHeaderPosition() end) end })
     assert(ok, "ModeUI: party frame position registration failed: " .. tostring(reason))
@@ -94,7 +94,12 @@ function M:GhostCorner()
 end
 
 -- Sizes the stand-in for a full party. A size change moves its saved offset
--- by however far the start corner moved, so the group stays put on screen.
+-- by however far the start corner moved, so the group stays put on screen,
+-- but not along an axis the saved place pins by an edge (a TOPRIGHT point
+-- pins the right and top edges): the size must never move that edge
+-- (owner, November 20, 2026: off the pixel-perfect scale the stand-in
+-- rounds to 136.67 units, and keeping its left edge moved the right edge
+-- off the Player frame's).
 function M:LayoutGhost()
     local ghost, PM = self.ghost, addon.PositionManager
     local beforeX, beforeY = nil, nil
@@ -108,6 +113,9 @@ function M:LayoutGhost()
     local x, y = PM:GetOffsets(self.ELEMENT_ID)
     if not (afterX and addon.IsNumber(x) and addon.IsNumber(y)) then return end
     local dx, dy = beforeX - afterX, beforeY - afterY
+    local point = (PM:GetPosition(self.ELEMENT_ID) or {}).point
+    if point and (point:find("LEFT") or point:find("RIGHT")) then dx = 0 end
+    if point and (point:find("TOP") or point:find("BOTTOM")) then dy = 0 end
     if math.abs(dx) > 0.01 or math.abs(dy) > 0.01 then PM:SetOffsets(self.ELEMENT_ID, x + dx, y + dy) end
 end
 

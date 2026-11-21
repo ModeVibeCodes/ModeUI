@@ -57,20 +57,16 @@ end)
 -- reach the health text), your healing buffs at the right (22 x 18, up to 3,
 -- growing left). Group, Tracked and Defensive buffs hidden (Defensives until
 -- its double icon is fixed). The dispel overlay: the top edge gradient at 35.
--- Place: the right edge at x -323; the last member's bottom edge level with
--- the Cooldown Manager's Essential second row (its bands lined up, the
--- shadows on one pixel). Essential's first line is centered 300 up from the
--- bottom at 1080 and 325 at 1440 (ModeCDM's layout part), 42 x 34 icons with
--- their 2px edges, lines 1px apart, so its second row ends 56 under that
--- middle: the last member's bottom is 55 under it. With you shown, the five
--- members fill the stand-in, so its middle is 162 over that, and its top
--- (the first member's) 162 over the middle: the column hangs from its top
--- right (owner, November 20, 2026: hung from its middle, a stand-in a few
--- units shorter than 5 x 64 + 4 off the pixel-perfect scale left a gap
--- under the Player mana frame; from the top, the first member always sits
--- snug under the frame, the Player block's shadow on its top pixel).
-local HEALER = { width = 136, health = 58, power = 3, right = -323,
-    middle = { ["1080"] = 300 - 540 - 55 + 162, ["1440"] = 325 - 720 - 55 + 162 } }
+-- Place: hung from the Player mana frame's bar block (below), so its right
+-- edge is the block's and its first member sits snug under it. The Unit
+-- Frames part places that block (right edge x -323) so the last member's
+-- bottom edge is level with the Cooldown Manager's Essential second row (its
+-- bands lined up, the shadows on one pixel): 5 x 64 + 4 = 324 under it.
+-- (November 20, 2026, the owner's 1440 checks: hung from its middle on the
+-- screen, a stand-in rounding a few units short off the pixel-perfect scale
+-- left a gap under the frame; hung on the screen at x -323, it sat 2px right
+-- of the frame's real edge.)
+local HEALER = { width = 136, health = 58, power = 3 }
 local HEALER_ICONS = { heals = { 22, 18, 3 }, dispellable = { 22, 20, 2 }, otherDebuffs = { 20, 18, 3 } }
 for group in pairs(M.groupDispelType) do HEALER_ICONS[group] = { 20, 18, 3 } end
 
@@ -97,7 +93,12 @@ addon.Layouts:Contribute("healer", "partyFrames", function(db, ctx)
     -- the middle puts its 20px icons 1px over the 18px debuff row.
     local dispellable = db.auras.dispellable
     dispellable.anchor, dispellable.place, dispellable.grow, dispellable.y = "LEFT", "inside", "right", -1
-    local g = M.Geometry({ db = db }, 1)
-    local column = M.MAX_MEMBERS * g.height + (M.MAX_MEMBERS - 1) * SPACING
-    ctx.Place(M.ELEMENT_ID, "screen", "TOPRIGHT", "CENTER", HEALER.right, ctx.V(HEALER.middle) + column / 2)
+    -- Hung from the Player frame's bar block: its top right on the block's
+    -- bottom right, 1 down (the block's shadow on the first member's top
+    -- pixel). The block's right edge is where the frame really draws at any
+    -- UI scale (owner, November 20, 2026: placed on the screen at x -323, the
+    -- column sat 2px right of it at 1.2 pixels a unit, where the frame's
+    -- parts round to whole pixels). Unit Frames' part puts the block so the
+    -- column ends level with Essential's second row.
+    ctx.Place(M.ELEMENT_ID, "unitFramesPlayerBars", "TOPRIGHT", "BOTTOMRIGHT", 0, -1)
 end)

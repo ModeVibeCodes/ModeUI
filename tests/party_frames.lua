@@ -824,4 +824,31 @@ H.Load({ before = STUBS, saved = used }).run([==[
     assert(point == 'TOP' and relative == 'BOTTOMLEFT' and hx == ghost:GetLeft() + 68 and hy == ghost:GetBottom() + 184)
     assert(M.header:GetAttribute('showPlayer') == false and M.header:GetAttribute('point') == 'TOP', 'four members, from the top')
 ]==], "party_layout_world")
+-- The Healer layout: the column hangs from the Player frame's bar block, so
+-- its right edge is the block's real one, and it follows the block when the
+-- Player frame changes (owner, November 20, 2026: placed on the screen at
+-- x -323 it sat 2px right of the frame at 1.2 pixels a unit).
+local healerWorld = H.Load({ before = STUBS })
+local hs = healerWorld.saved()
+local hb, hd = hs.profiles['Mode-Healer'], hs.profiles.Default
+hd.modules.partyFrames, hd.modules.unitFrames = hb.modules.partyFrames, hb.modules.unitFrames
+for _, id in ipairs({ 'partyFrames', 'unitFramesPlayer', 'unitFramesTarget', 'unitFramesFocus' }) do hd.positions[id] = hb.positions[id] end
+H.Load({ before = STUBS, saved = hs }).run([==[
+    local PF, UF = addon.PartyFrames, addon.UnitFrames
+    assert(PF.active and UF.active and PF.ghost, 'both on')
+    local bars = _G[UF.BarsFrameName('player')]
+    local function Right(f) return f:GetLeft() + f:GetWidth() end
+    local function Top(f) return f:GetBottom() + f:GetHeight() end
+    assert(math.abs(Right(PF.ghost) - Right(bars)) < 0.01 and math.abs(Top(PF.ghost) - (bars:GetBottom() - 1)) < 0.01, 'the column on the block')
+    local point, _, relative, hx, hy = unpack(PF.header.anchor)
+    assert(point == 'TOP' and math.abs(hx - (Right(bars) - PF.ghost:GetWidth() / 2)) <= 0.5, 'the header under the block, its right edge the block edge')
+    -- A wider Player frame: the block's right edge moves, the column follows.
+    assert(UF:SetFrameOption('player', 'barWidth', UF.db.player.barWidth + 10))
+    -- The client fires OnSizeChanged on the resized stand-in (the mock doesn't).
+    local resized = UF.ghosts.player.scripts.OnSizeChanged
+    assert(resized, 'the stand-in watches its size'); resized(UF.ghosts.player)
+    assert(math.abs(Right(PF.ghost) - Right(bars)) < 0.01, 'the column follows the block: ' .. Right(PF.ghost) .. ' vs ' .. Right(bars))
+    point, _, relative, hx, hy = unpack(PF.header.anchor)
+    assert(math.abs(hx - (Right(bars) - PF.ghost:GetWidth() / 2)) <= 0.5, 'the secure header follows too')
+]==], "party_healer")
 print("party frames: Mode-DPS/TANK layout checks passed")

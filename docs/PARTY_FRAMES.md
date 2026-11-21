@@ -190,13 +190,17 @@ still show only in a party.
   22 x 20, up to 2 (three would reach the health text); Healing Buffs at the
   bottom right, 22 x 18, up to 3. Group Buffs, Tracked Buffs and Defensives
   hidden (Defensives until its double icon is fixed). Gradient Opacity 35.
-  The right edge at x -323; the last member's bottom edge level with
-  Essential's second row (bands lined up, shadows on one pixel). Hung from
-  its top right (owner, November 20, 2026; seed `healer@4`): the stand-in's
-  top at y 29 at 1080 and -126 at 1440, so the first member sits snug under
-  the Player mana frame's bar block (its shadow on the member's top pixel)
-  whatever the stand-in's height (off the pixel-perfect scale members round
-  to whole pixels, and a column hung from its middle moved down). The live
+  Hung from the Player mana frame's bar block (owner, November 20, 2026;
+  seed `healer@5`): its top right on the block's bottom right, 1 down, so
+  its right edge is the block's real one at any UI scale and the first
+  member sits snug under it (the block's shadow on its top pixel); the last
+  member's bottom edge is level with Essential's second row (bands lined
+  up, shadows on one pixel). Placed on the screen, it was off by a few
+  pixels at 1.2 pixels a unit: hung from its middle the stand-in rounded
+  short, and at x -323 it sat 2px right of the frame. A size change of the
+  stand-in no longer moves an edge its saved place pins (Ghost.lua), and an
+  element's move or resize re-places what hangs from it
+  (Shared/Placement/PositionRestore.lua). The live
   header hangs by the point it lays members out from (Top for a column
   growing down) on the stand-in's same point, not by a corner: Blizzard's
   SecureGroupHeaders centers each member on that point and sizes the header
