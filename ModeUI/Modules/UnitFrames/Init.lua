@@ -249,8 +249,9 @@ M.choices.comboArc = { { id = "topOuter", label = "Upper Outer" }, { id = "outer
 -- db.totems: where they hang from the Player frame's bar block (Below: under
 -- its bottom right, outside it, 1px apart; Above: over its top right; or
 -- Blizzard's own place), growing left, and their icons' width (the height
--- follows the icon rule, Style.IconHeight).
-M.totemDefaults = { attach = "below", size = 24 }
+-- follows the icon rule, Style.IconHeight). `fitted`: the place was fitted
+-- to the Player frame once (Totems.lua, M.ValidateTotems).
+M.totemDefaults = { attach = "below", size = 24, fitted = false }
 M.totemRanges = { size = { 14, 40, 1 } }
 M.choices.totemAttach = { { id = "below", label = "Below, Right" }, { id = "above", label = "Above, Right" }, { id = "blizzard", label = "Blizzard's Place" } }
 -- Each frame's cast bar (owner, November 13, 2026), in db[unit].castBar: a

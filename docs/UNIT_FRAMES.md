@@ -1371,7 +1371,9 @@ under the block's shadow, outside the frame) or **Above, Right**
 (Mode-Healer: their bottom 1px over its top, 18 wide like the Target's
 buffs, the time on the icon); **Blizzard's Place** gives them back. Each
 button holds its icon and edge, neighbours share one shadow pixel; the
-row is laid out again after each Blizzard update.
+row is laid out again after each Blizzard update. Fitted once per profile
+(`fitted`): a Player mana frame (Bar Shows Mana) still at the default place
+takes Above, Right at 18; any other keeps Below, Right.
 
 ## Settings (`modules.unitFrames`)
 

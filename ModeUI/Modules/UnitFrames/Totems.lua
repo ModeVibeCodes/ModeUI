@@ -31,6 +31,20 @@ local function Shaman()
 end
 function M:TotemsOn() return self.active == true and self:FrameOn("player") end
 
+-- Checks db.totems (Migrations.lua, Initialize), and fits the place to the
+-- Player frame once (owner, November 20, 2026): a mana frame (the Healer
+-- look: Bar Shows Mana) takes the timers over its top right at 18 wide, as
+-- Mode-Healer does; any other frame keeps them under its bottom right. Only
+-- a place still at the default moves, and only the first time, so a later
+-- choice stays.
+function M.ValidateTotems(db)
+    local t = M.ValidateTable(db, "totems", M.totemDefaults, M.totemRanges, { attach = "totemAttach" })
+    if t.fitted then return end
+    local mana = type(db.player) == "table" and db.player.barShows == "mana"
+    if mana and t.attach == M.totemDefaults.attach and t.size == M.totemDefaults.size then t.attach, t.size = "above", 18 end
+    t.fitted = true
+end
+
 -- The time's color, put back after Blizzard's (a guard keeps the hook from
 -- answering its own call).
 local painting = false
