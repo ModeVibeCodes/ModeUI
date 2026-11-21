@@ -59,8 +59,9 @@ world.run([==[
         -- top right on the block's bottom right, 1 down, so its right edge is
         -- the block's real one at any UI scale and the first member sits snug
         -- under it.
-        assert(p.target == 'unitFramesPlayerBars' and p.point == 'TOPRIGHT' and p.relativePoint == 'BOTTOMRIGHT' and p.x == 0 and p.y == -1,
-            'party hung from the Player bar block')
+        -- With the 1080 places one physical pixel left (1 here: the simulated UI is pixel perfect).
+        assert(p.target == 'unitFramesPlayerBars' and p.point == 'TOPRIGHT' and p.relativePoint == 'BOTTOMRIGHT'
+            and p.x == (variant == '1440' and 0 or -addon.Kit.PixelSize(UIParent)) and p.y == -1, 'party hung from the Player bar block')
         local pg0, pp0 = UF:Geometry(m.unitFrames.player, 1, addon.Style.EdgeDepth('frame')), pos.unitFramesPlayer
         local partyTop = pp0.y - pg0.height / 2 + pg0.blockY - 1
         local partyBottom = partyTop - column
@@ -159,7 +160,7 @@ world.run([==[
         end
     end
     -- Made into a profile once, at login, beside Mode-DPS/TANK; the active profile stays.
-    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@5'] == true)
+    assert(P:Exists('Mode-Healer') and P:Exists('Mode-DPS/TANK') and P:Active() == 'Default' and ModeUIDB.builtLayouts['healer@6'] == true)
     assert(ModeUIDB.profiles['Mode-Healer'].theme == 'obsidian', 'in Mode-Obsidian')
     assert(not P:CreateFromLayout('Mode-Healer', 'healer'), 'its name is taken')
 ]==], "healer build")

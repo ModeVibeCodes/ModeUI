@@ -100,5 +100,11 @@ addon.Layouts:Contribute("healer", "partyFrames", function(db, ctx)
     -- column sat 2px right of it at 1.2 pixels a unit, where the frame's
     -- parts round to whole pixels). Unit Frames' part puts the block so the
     -- column ends level with Essential's second row.
-    ctx.Place(M.ELEMENT_ID, "unitFramesPlayerBars", "TOPRIGHT", "BOTTOMRIGHT", 0, -1)
+    -- With the 1080 places, one physical pixel further left (the owner's
+    -- Edit Mode nudge on 1440p at UI height 1200, 1.2 pixels a unit, November
+    -- 20, 2026: the frame and the secure header each round to whole pixels
+    -- there, the other way). The 1440 places are a pixel-perfect UI, where
+    -- the edges meet exactly.
+    local nudge = ctx.V({ ["1080"] = addon.Kit.PixelSize(UIParent), ["1440"] = 0 })
+    ctx.Place(M.ELEMENT_ID, "unitFramesPlayerBars", "TOPRIGHT", "BOTTOMRIGHT", -nudge, -1)
 end)

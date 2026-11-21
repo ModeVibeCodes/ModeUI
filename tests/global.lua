@@ -47,7 +47,7 @@ world.run([==[
 world.run([==[
     local P=addon.Profiles
     -- Mode-DPS/TANK and Mode-Healer: the DPS / Tank and Healer layouts, each made into a profile once per seed at login (Shared/Runtime/Layouts.lua).
-    assert(table.concat(P:List(),',')=='Default,Mode-DPS/TANK,Mode-Healer' and P:Active()=='Default' and ModeUIDB.builtLayouts['mode-default@3'] and ModeUIDB.builtLayouts['healer@5'])
+    assert(table.concat(P:List(),',')=='Default,Mode-DPS/TANK,Mode-Healer' and P:Active()=='Default' and ModeUIDB.builtLayouts['mode-default@3'] and ModeUIDB.builtLayouts['healer@6'])
     -- Every profile is Mode-Obsidian.
     for _, name in ipairs(P:List()) do assert(ModeUIDB.profiles[name].theme=='obsidian' and ModeUIDB.profiles[name].look==1 and ModeUIDB.profiles[name].typeface==4, name..' in Mode-Obsidian') end
     assert(not P:Create('','x') and not P:Create('Bad|Name') and not P:Create(string.rep('x',49)),'names validated')

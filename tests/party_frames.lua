@@ -837,11 +837,13 @@ H.Load({ before = STUBS, saved = hs }).run([==[
     local PF, UF = addon.PartyFrames, addon.UnitFrames
     assert(PF.active and UF.active and PF.ghost, 'both on')
     local bars = _G[UF.BarsFrameName('player')]
-    local function Right(f) return f:GetLeft() + f:GetWidth() end
+    -- The 1080 places sit one physical pixel left of the block's edge (the owner's nudge at 1.2 pixels a unit).
+    local nudge = addon.Kit.PixelSize(UIParent)
+    local function Right(f) return f:GetLeft() + f:GetWidth() + (f == PF.ghost and nudge or 0) end
     local function Top(f) return f:GetBottom() + f:GetHeight() end
     assert(math.abs(Right(PF.ghost) - Right(bars)) < 0.01 and math.abs(Top(PF.ghost) - (bars:GetBottom() - 1)) < 0.01, 'the column on the block')
     local point, _, relative, hx, hy = unpack(PF.header.anchor)
-    assert(point == 'TOP' and math.abs(hx - (Right(bars) - PF.ghost:GetWidth() / 2)) <= 0.5, 'the header under the block, its right edge the block edge')
+    assert(point == 'TOP' and math.abs(hx - (Right(bars) - nudge - PF.ghost:GetWidth() / 2)) <= 0.5, 'the header under the block, its right edge the block edge')
     -- A wider Player frame: the block's right edge moves, the column follows.
     assert(UF:SetFrameOption('player', 'barWidth', UF.db.player.barWidth + 10))
     -- The client fires OnSizeChanged on the resized stand-in (the mock doesn't).
@@ -849,6 +851,6 @@ H.Load({ before = STUBS, saved = hs }).run([==[
     assert(resized, 'the stand-in watches its size'); resized(UF.ghosts.player)
     assert(math.abs(Right(PF.ghost) - Right(bars)) < 0.01, 'the column follows the block: ' .. Right(PF.ghost) .. ' vs ' .. Right(bars))
     point, _, relative, hx, hy = unpack(PF.header.anchor)
-    assert(math.abs(hx - (Right(bars) - PF.ghost:GetWidth() / 2)) <= 0.5, 'the secure header follows too')
+    assert(math.abs(hx - (Right(bars) - nudge - PF.ghost:GetWidth() / 2)) <= 0.5, 'the secure header follows too')
 ]==], "party_healer")
 print("party frames: Mode-DPS/TANK layout checks passed")

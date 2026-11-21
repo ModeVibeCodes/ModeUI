@@ -191,7 +191,10 @@ still show only in a party.
   bottom right, 22 x 18, up to 3. Group Buffs, Tracked Buffs and Defensives
   hidden (Defensives until its double icon is fixed). Gradient Opacity 35.
   Hung from the Player mana frame's bar block (owner, November 20, 2026;
-  seed `healer@5`): its top right on the block's bottom right, 1 down, so
+  seed `healer@6`): its top right on the block's bottom right, 1 down (and,
+  with the 1080 places, one physical pixel left: the owner's Edit Mode nudge
+  on 1440p at UI height 1200, where the frame and the secure header round
+  to whole pixels the other way; the 1440 places are pixel perfect), so
   its right edge is the block's real one at any UI scale and the first
   member sits snug under it (the block's shadow on its top pixel); the last
   member's bottom edge is level with Essential's second row (bands lined
