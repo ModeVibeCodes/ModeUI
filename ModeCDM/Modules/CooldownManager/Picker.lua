@@ -10,14 +10,18 @@ if not M then return end
 --       Essential and Utility themselves, Tracked Buffs and Bars for a Buff
 --       Bar); clicking adds it (a spell on another bar moves). A spell
 --       removed from this bar shows here too; clicking brings it back.
+--       A spell your Blizzard CDM setup tracks that has no frame yet
+--       (Blizzard's viewer hidden) shows in full color, for information
+--       only (owner, November 20, 2026; Tracking.lua).
 --   Not in Blizzard CDM  every other spell the game has for your class and
---       spec there, learned or not, grayed. On a cooldown bar clicking one
+--       spec there, learned or not, grayed; its tooltip says
+--       NOT TRACKED IN BLIZZARD CDM - ADD IT IN /CDM. On a cooldown bar clicking one
 --       adds it as a custom spell (its own icon, shown while you know it); a
 --       buff can only show once Blizzard's Cooldown Manager tracks it.
 --   Items in Your Bags  (cooldown bars) what you carry with a Use: effect.
 -- Then, on cooldown bars, Spell ID (a spell you know) and Item ID fields.
 -- "Cooldown bars" here: Cooldown Bars, Essential and Utility.
--- Pointing at an icon names it and says what a click does. It stays open to
+-- Pointing at an icon names it and says what a click does, also in a tooltip. It stays open to
 -- add several, and closes on a click elsewhere, the close button, or combat.
 local W, T, L, Kit = addon.ConfigWidgets, addon.InterfaceTheme, addon.L, addon.Kit
 local Cooldowns = addon.Domain.Cooldowns
@@ -113,8 +117,9 @@ local function Button(picker, index)
     button:SetScript("OnEnter", function()
         button.highlight:SetShown(button.add ~= nil)
         picker.hover:SetText(button.where)
+        M:ShowSpellTip(button, button.name, button.untracked, button.where)
     end)
-    button:SetScript("OnLeave", function() button.highlight:Hide(); picker.hover:SetText(L[HINT]) end)
+    button:SetScript("OnLeave", function() button.highlight:Hide(); picker.hover:SetText(L[HINT]); M:HideSpellTip(button) end)
     button:SetScript("OnClick", function()
         if not button.add then return end
         local ok, message = button.add()
@@ -149,11 +154,11 @@ function M:UntrackedCandidates(id)
     if not self:TakesEntries(id) then return list end
     for _, key in ipairs(self:Entries(id)) do here[key] = true end
     for viewer in pairs(Cooldowns.VIEWERS) do
-        for _, item in ipairs(self:Items(viewer)) do
-            local key = self:SpellKey(item)
-            if key then tracked[key] = true end
-        end
+        for key in pairs(self:FramedKeys(viewer)) do tracked[key] = true end
     end
+    -- Tracked in your Blizzard CDM setup, framed or not (learned or not).
+    local layout = self:BlizzardLayout()
+    for cooldownID in pairs(layout and layout.category or {}) do tracked[string.format("%d", cooldownID)] = true end
     for _, entry in ipairs(Cooldowns.ClassCooldowns(CATEGORIES[self:TakesOwn(id) and "cooldown" or "buff"])) do
         local key = string.format("%d", entry.cooldownID)
         if not tracked[key] and not here[key] and not here["s" .. entry.spellID] then
@@ -163,7 +168,7 @@ function M:UntrackedCandidates(id)
     -- Your racials, on a bar that doesn't show them already.
     if self:TakesOwn(id) then
         for _, key in ipairs(self:RacialKeys()) do
-            if not here[key] then list[#list + 1] = { key = key, spell = tonumber(key:sub(2)), known = true } end
+            if not here[key] then list[#list + 1] = { key = key, spell = tonumber(key:sub(2)), known = true, racial = true } end
         end
     end
     return list
@@ -191,9 +196,13 @@ function M:RefreshPicker(keepResult)
     local id = picker.barId
     if not self:TakesEntries(id) then picker:Hide(); return end
     local cooldownBar = self:TakesOwn(id)
-    local tracked = {}
-    -- What shows elsewhere, and what was removed from this bar.
-    for _, candidate in ipairs(self:Candidates(id)) do
+    local tracked, have = {}, {}
+    -- What shows elsewhere, and what was removed from this bar; then what
+    -- your Blizzard CDM setup tracks with no frame yet (information only).
+    local candidates = self:Candidates(id)
+    for _, candidate in ipairs(candidates) do have[candidate.key] = true end
+    for _, candidate in ipairs(self:FramelessCandidates(id, have)) do candidates[#candidates + 1] = candidate end
+    for _, candidate in ipairs(candidates) do
         if candidate.owner ~= id or self:SpellSwitch(id, candidate.key, "hide") then tracked[#tracked + 1] = candidate end
     end
     picker.title:SetText(string.format(L["Add to %s"], self:Label(id)))
@@ -203,8 +212,15 @@ function M:RefreshPicker(keepResult)
         button.icon:SetTexture(candidate.icon or 134400)
         local back = candidate.owner == id
         local other = not back and candidate.owner ~= candidate.source
+        button.key, button.name, button.untracked = candidate.key, candidate.name, false
+        if candidate.frameless then
+            -- In your Blizzard CDM: full color, nothing to click until Blizzard's viewer makes its frame.
+            button.icon:SetDesaturated(false); button.icon:SetAlpha(1)
+            button.where = string.format(L["%s · in Blizzard CDM (%s) · shows once Blizzard's viewer is on"], candidate.name, self:Label(candidate.source))
+            button.add = nil
+            return
+        end
         button.icon:SetDesaturated(other or back); button.icon:SetAlpha(back and 0.6 or 1)
-        button.key = candidate.key
         if back then
             button.where = string.format(L["%s · removed from this bar (shows again)"], candidate.name)
             button.add = function() return M:SetSpellSwitch(id, candidate.key, "hide", false) end
@@ -216,6 +232,9 @@ function M:RefreshPicker(keepResult)
     end)
     used = used + #tracked
     picker.empty:SetShown(#tracked == 0)
+    -- Everything tracked may be on this bar already (Essential's own spells).
+    picker.empty:SetText(#candidates > 0 and L["Everything tracked for this bar is on it: add more in Blizzard's Cooldown Manager (Open CDM)."]
+        or L["Nothing tracked here yet: add spells in Blizzard's Cooldown Manager (Open CDM)."])
     if #tracked == 0 then
         picker.empty:ClearAllPoints(); picker.empty:SetPoint("TOPLEFT", PAD, y)
         y = y - 34
@@ -226,6 +245,8 @@ function M:RefreshPicker(keepResult)
         button.icon:SetDesaturated(true); button.icon:SetAlpha(entry.known and 0.75 or 0.4)
         button.key = cooldownBar and "s" .. entry.spell or entry.key
         local name = Cooldowns.SpellName(entry.spell) or string.format(L["Spell %s"], entry.spell)
+        -- Your racials need no Blizzard CDM (ModeUI tracks them itself).
+        button.name, button.untracked = name, not entry.racial
         local state = entry.known and L["Not in Blizzard CDM"] or L["Not in Blizzard CDM · not learned"]
         if cooldownBar then
             button.where = string.format(L["%s · %s · adds as a custom spell"], name, state)
@@ -240,6 +261,7 @@ function M:RefreshPicker(keepResult)
     y = Section(picker, picker.headings[3], items, y, used, function(button, item)
         button.icon:SetTexture(item.icon or 134400)
         button.icon:SetDesaturated(false); button.icon:SetAlpha(1)
+        button.name, button.untracked = item.name, false
         button.where = string.format(L["%s · item"], item.name)
         button.key, button.add = item.key, function() return M:AddCustomItem(id, item.id) end
     end)
