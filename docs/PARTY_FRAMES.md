@@ -15,9 +15,9 @@ member is:
 
 - **Bars**: health, a 1px black line and a 3px power bar inside the `group`
   edge (docs/DESIGN_LANGUAGE.md: **Border Style** and **Border Metal** on the
-  Layout tab, Mode-Blizz by default, a 1px Silver Specular band; the rim art covers the
-  bars' corners, so nothing is masked). 150 × 34 health by default, Mode
-  Glass on Mode BG (the owner's pick), **Spacing** 1: every size is whole pixels, so the rims
+  Layout tab, Mode-Border by default, a 1px dark glass band with a lit top and a champagne bottom; the rim art covers the
+  bars' corners, so nothing is masked). 150 × 34 health by default, Mode-FG in
+  Dark (`#161618`) on Mode-BG at 85%, **Spacing** 1: every size is whole pixels, so the rims
   sit exactly one pixel apart. **Arrange** Vertical or Horizontal, with its **Direction**. Foreground and background
   textures, Bar Opacity, Background Opacity, fill direction and the fill end
   line, as on the Unit Frames.
@@ -36,7 +36,9 @@ member is:
   only when both empty bars are at 100%. Power: by power
   type or Custom.
 - **Incoming Heals** (Bars tab): ride on the end of the health fill, with
-  Show, Texture, Color and Opacity.
+  Show, Texture, Color and Opacity, and **Spark End Line** (on by default): a
+  bright 1px line with a glow in the heal color where the heals stop
+  (`Style.EndSpark`); none while the heals pass the bar's end.
 - **Shields** (their own tab): Combined (`Style.Shield`): below full health
   the shield sits on the health's end and stops at the bar's end; at full
   health the whole shield fills back from max (**Show Overshields**). Its look
@@ -49,9 +51,9 @@ member is:
   **Nudge** arrows (1px) and **Size**: Name, Health Text (Percent, Percent No
   Sign, Current Health or Missing Health), Dead and Offline, Role, Leader, Raid
   Marker, Ready Check, and Summon and Resurrect. By default the role icon and
-  the name sit on the left, the health text on the right. Names are Geist
+  the name sit on the left, the health text on the right. Names are the Mode typeface (Urbanist)
   SemiBold in the **Gradient** (class color toward white; Soft Class, Text
-  Color and Custom are options); health text is Geist Bold, colored **By
+  Color and Custom are options); health text is Bold, colored **By
   Health** (Rosewood at 30% and under, through Ivory, to Celadon) or in the
   Text Color, with a soft glow in its own color (**Health Text Glow**, on by
   default).
@@ -182,7 +184,7 @@ still show only in a party.
   you and your party (Show Player on; Show When Solo on, so alone you see
   your own frame), 136 x 64 each (135 x 65 asked; members
   are an even number of pixels): Health 58, the line, Power 3 on healers.
-  Mode-Thin Gunmetal, Mode Matte in Dark, Background Opacity 70. The name
+  Mode-Border in its own metal, Mode-FG in Dark over Mode-BG, Background Opacity 85. The name
   (11) at the top left, 4px in, with the role icon (10) 2px after it; health
   percent (12) in the middle. Debuffs (Other Debuffs and each dispel type)
   at the bottom left, 20 x 18, up to 3 each; Dispellable by You on its own
@@ -190,9 +192,25 @@ still show only in a party.
   22 x 20, up to 2 (three would reach the health text); Healing Buffs at the
   bottom right, 22 x 18, up to 3. Group Buffs, Tracked Buffs and Defensives
   hidden (Defensives until its double icon is fixed). Gradient Opacity 35.
-  The right edge at x -323; the last member's bottom edge level with
-  Essential's second row (bands lined up, shadows on one pixel): the
-  stand-in's middle at y -133 at 1080 and -288 at 1440.
+  Hung from the Player mana frame's bar block (owner, November 20, 2026;
+  seed `healer@6`): its top right on the block's bottom right, 1 down (and,
+  with the 1080 places, one physical pixel left: the owner's Edit Mode nudge
+  on 1440p at UI height 1200, where the frame and the secure header round
+  to whole pixels the other way; the 1440 places are pixel perfect), so
+  its right edge is the block's real one at any UI scale and the first
+  member sits snug under it (the block's shadow on its top pixel); the last
+  member's bottom edge is level with Essential's second row (bands lined
+  up, shadows on one pixel). Placed on the screen, it was off by a few
+  pixels at 1.2 pixels a unit: hung from its middle the stand-in rounded
+  short, and at x -323 it sat 2px right of the frame. A size change of the
+  stand-in no longer moves an edge its saved place pins (Ghost.lua), and an
+  element's move or resize re-places what hangs from it
+  (Shared/Placement/PositionRestore.lua). The live
+  header hangs by the point it lays members out from (Top for a column
+  growing down) on the stand-in's same point, not by a corner: Blizzard's
+  SecureGroupHeaders centers each member on that point and sizes the header
+  itself, so a header a little wider than its members moved the column 2px
+  right of the Player frame's edge (owner, November 20, 2026).
 - **Not yet:** one cap of 3 for the whole bottom-left row (each group keeps
   its own maximum today, so several types can show more than 3 together).
 - **Defensives showing twice** (owner): no spell list is involved. With
@@ -202,11 +220,11 @@ still show only in a party.
   Mode-Default round 7 are still on Big and External. Fix to come after the
   in-game `/dump` check (the Healer prototype's Blizzard API tab).
 
-## Mode-Default layout (November 18, 2026)
+## Mode-DPS/TANK layout (November 18, 2026)
 
-The party frames' part of the built-in **Mode-Default** layout (DPS / Tank,
+The party frames' part of the built-in **Mode-DPS/TANK** layout (DPS / Tank,
 `Shared/Runtime/Layouts.lua`), from the owner's layout editor, is in
-`Modules/PartyFrames/Layouts.lua`. It only builds the new Mode-Default
+`Modules/PartyFrames/Layouts.lua`. It only builds the new Mode-DPS/TANK
 profile; no existing profile changes.
 
 - On, without you (`showPlayer = false`: you have your own frame), growing

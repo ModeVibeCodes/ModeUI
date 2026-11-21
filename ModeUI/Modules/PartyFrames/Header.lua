@@ -151,11 +151,17 @@ function M:SyncHeaderPosition()
     local right, top = left + width, bottom + height
     local px = Kit.PixelSize(header)
     local function Snap(v) return math.floor(v / px + 0.5) * px end
-    -- By the corner the group grows from (the header is one member wide or
-    -- tall), so members joining or leaving never move the first one.
-    local corner = self.growthCorners[self.db.growth]
-    local x = corner:find("RIGHT") and right or left
-    local y = corner:find("TOP") and top or bottom
+    -- By the point the header lays its members out from (its `point`
+    -- attribute: TOP for a column growing down), at the same point of the
+    -- stand-in, so members joining or leaving never move the first one. Not
+    -- by a corner: SecureGroupHeaders.lua centers each member on that point
+    -- and sets the header's own width from child1:GetWidth() whenever it lays
+    -- them out, so a header a little wider than its members moved the whole
+    -- column sideways by half the difference (owner, November 20, 2026: the
+    -- party column 2px right of the Player frame's right edge).
+    local point = self.growthPoints[self.db.growth][1]
+    local x = point:find("RIGHT") and right or point:find("LEFT") and left or (left + right) / 2
+    local y = point:find("TOP") and top or point:find("BOTTOM") and bottom or (bottom + top) / 2
     header:ClearAllPoints()
-    header:SetPoint(corner, UIParent, "BOTTOMLEFT", Snap(x), Snap(y))
+    header:SetPoint(point, UIParent, "BOTTOMLEFT", Snap(x), Snap(y))
 end

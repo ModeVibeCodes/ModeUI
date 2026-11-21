@@ -62,52 +62,22 @@ local function Paint(texture, color, alpha)
             texture:SetVertexColor(color[1], color[2], color[3], alpha or color[4] or 1)
             return
         end
-        if texture.modeAsset=="ModePillSurface" then
-            if addon.Media:ApplyTexture(texture,"ModeToggleSurface",color) then
-                texture:SetVertexColor(color[1],color[2],color[3],alpha or color[4] or 1)
-            else Clear(texture) end
-            return
-        end
-        if texture.modeAsset=="ModeCheckSurface" or texture.modeAsset=="ModeCheckMark" or texture.modeAsset=="ModeToggleSurface" then
-            -- The already bundled circular thumb remains a rounded fallback
-            -- while a new small-control file is unavailable to this client.
-            if addon.Media:ApplyTexture(texture,"ModeThumb",color) then
-                texture:SetVertexColor(color[1],color[2],color[3],alpha or color[4] or 1)
-            else Clear(texture) end
-            return
-        end
-        -- Missing borders must never become opaque rectangles over controls.
-        if texture.modeAsset:find("Border",1,true) then Clear(texture);return end
     end
     texture:SetColorTexture(color[1], color[2], color[3], alpha or color[4] or 1)
 end
 W.Paint = Paint
 
--- Static neutral sheen over the large Figma material, below all controls/text.
--- Reuses the gradient API already used by the Forever map renderer.
+-- A faint neutral sheen over a large surface, below all controls and text:
+-- Mode Solid with a white gradient rising to 1.8% at the top.
 function W.ModeSheen(frame,inset)
     local texture=frame:CreateTexture(nil,"BACKGROUND",nil,2)
     inset=inset or 0
     texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
-    texture.modeAsset="ModeSurface";Paint(texture,{1,1,1,1})
+    if not addon.Style.ApplyAsset(texture,"Solid") then Clear(texture);return texture end
     local white = addon.Style.Tone.mono.white
     if not addon.Kit.Gradient(texture, { white[1], white[2], white[3], 0 }, { white[1], white[2], white[3], 0.018 }) then
-        texture:SetAlpha(0.008)
+        texture:SetVertexColor(white[1], white[2], white[3], 0.008)
     end
-    return texture
-end
-
--- Fixed abstract material below page controls and the existing sheen. Missing
--- artwork stays transparent so the darker base remains usable after /reload.
-function W.ModePageDetail(frame,inset)
-    local texture=frame:CreateTexture(nil,"BACKGROUND",nil,1)
-    inset=inset or 0
-    texture:SetPoint("TOPLEFT",inset,-inset);texture:SetPoint("BOTTOMRIGHT",-inset,inset)
-    texture.modeAsset="ModePageDetail"
-    if addon.Media:ApplyTexture(texture,"ModePageDetail") then
-        local white = addon.Style.Tone.mono.white
-        texture:SetVertexColor(white[1], white[2], white[3], 0.18)
-    else Clear(texture) end
     return texture
 end
 

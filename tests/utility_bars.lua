@@ -89,12 +89,12 @@ world.run([==[
     assert(SpellbookMicroButton.Background:GetAlpha() == 0 and CharacterMicroButton.PortraitMask:GetAlpha() == 0
         and CharacterMicroButton.Shadow:GetAlpha() == 0 and MainMenuMicroButton.MainMenuBarPerformanceBar:GetAlpha() == 0)
     assert(M.art[SpellbookMicroButton] and M.art[SpellbookMicroButton].edge.holder:IsShown(), 'the Mode edge')
-    -- Border Style and Border Metal: the micro menu and bag bar have their own, Mode-Blizz by default.
+    -- Border Style and Border Metal: the micro menu and bag bar have their own, Mode-Border by default.
     local microEdge, bagEdge = M.art[SpellbookMicroButton].edge, M.art[MainMenuBarBackpackButton].edge
-    assert(M.db.micro.edgeStyle == 'blizz' and M.db.bags.edgeMetal == 'default' and microEdge.styleId == 'blizz' and bagEdge.styleId == 'blizz')
-    assert(M:SetOption('micro', 'edgeStyle', 'thin') and M:SetOption('micro', 'edgeMetal', 'steel') and microEdge.styleId == 'thin'
-        and microEdge:Metal() == addon.Style.Tone.metal.steel and micro.width == 4 * 42 - 4 and bagEdge.styleId == 'blizz', 'Mode-Thin in Steel, same width')
-    assert(M:SetOption('micro', 'edgeStyle', 'blizz') and M:SetOption('micro', 'edgeMetal', 'default') and microEdge.styleId == 'blizz')
+    assert(M.db.micro.edgeStyle == 'obsidian' and M.db.bags.edgeMetal == 'default' and microEdge.styleId == 'obsidian' and bagEdge.styleId == 'obsidian')
+    assert(M:SetOption('micro', 'edgeStyle', 'obsidianEmpty') and M:SetOption('micro', 'edgeMetal', 'steel') and microEdge.styleId == 'obsidianEmpty'
+        and microEdge:Metal() == addon.Style.Tone.metal.steel and micro.width == 4 * 42 - 4 and bagEdge.styleId == 'obsidian', 'Mode-Empty in Steel, same width')
+    assert(M:SetOption('micro', 'edgeStyle', 'obsidian') and M:SetOption('micro', 'edgeMetal', 'default') and microEdge.styleId == 'obsidian')
     local inset = M.skinState[SpellbookMicroButton].g.inset
     local function Inset(region, host) local p = region.points and region.points[1]; return p and p[1] == 'TOPLEFT' and p[2] == host and p[4] == inset end
     assert(Inset(SpellbookMicroButton.normal, SpellbookMicroButton) and Inset(CharacterMicroButton.Portrait, CharacterMicroButton), 'glyph and portrait inside the border')

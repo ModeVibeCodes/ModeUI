@@ -221,6 +221,6 @@ function M:PaintStats()
     local host = CharacterModelScene or area
     local level = host:GetFrameLevel()
     if Number(level) then frame:SetFrameLevel(level + 60) end
-    Skin.PaintBox(frame.parts, frame, "Matte", C.field, db.charStatsBackground and 0.7 or 0, db.charStatsBackground)
+    Skin.PaintBox(frame.parts, frame, "FG", C.field, db.charStatsBackground and 0.7 or 0, db.charStatsBackground)
     frame:SetShown(count > 0)
 end

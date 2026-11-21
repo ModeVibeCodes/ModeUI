@@ -109,8 +109,8 @@ function M:LayoutTexts(f, unit)
         local justify = place.h or align
         text:ClearAllPoints()
         if shown then
-            -- Names in the font's SemiBold when it is Geist (docs/DESIGN_LANGUAGE.md, "Text").
-            -- Names on the border in SemiBold, text in the bars in Bold, when the font is Geist.
+            -- Names in the font's SemiBold when it is Urbanist (docs/DESIGN_LANGUAGE.md, "Text").
+            -- Names on the border in SemiBold, text in the bars in Bold, when the font is Urbanist.
             local weight = place.bar == "border" and "semibold" or "bold"
             Font(text, fdb, s.size, addon.Style.Weighted(path, weight), g.px)
             if place.bar == "border" then self:PlaceOnBorder(f, g, text, s, dx, near, sign)

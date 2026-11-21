@@ -365,6 +365,13 @@ function M.Initialize(db)
     -- Version 8 -> 9: the five default bars the profile doesn't hold, after
     -- its own (Presets.lua); its bars stay as they are.
     if db.version == 8 then M.SeedPresets(db); db.version = 9 end
+    -- Version 9 -> 10: the Cast Bar filled in your class color; a Bar Mode
+    -- still at Dark, the old default, takes Color (Bar Color fills in as
+    -- Class Color).
+    if db.version == 9 then
+        if type(db.castBar) == "table" and db.castBar.barMode == "dark" then db.castBar.barMode = "color" end
+        db.version = 10
+    end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end

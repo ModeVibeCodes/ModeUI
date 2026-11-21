@@ -99,13 +99,13 @@ world.run([==[
     assert(M and not M.enabled and not M.built, 'Damage Meters start off and build nothing')
     assert(M.db.window1.show and not M.db.window2.show and not M.db.window3.show, 'one window on by default')
     assert(M.db.window1.meterType == 'damageDone' and M.db.window2.meterType == 'healingDone' and M.db.window3.meterType == 'damageTaken')
-    assert(M.db.window1.barTexture == 'media:Mode Panel' and M.db.window1.barBackground == 'media:Mode BG' and M.db.window1.barBackgroundOpacity == 100, 'Mode Panel on Mode BG')
+    assert(M.db.window1.barTexture == 'media:Mode-FG' and M.db.window1.barBackground == 'media:Mode-BG' and M.db.window1.barBackgroundOpacity == 100, 'Mode-FG on Mode-BG')
     assert(M.db.window1.nameFontMedia == 'Mode' and M.db.window1.titleFontMedia == 'Mode', 'the Mode typeface')
     assert(M.db.window1.backgroundColor[1] == G.panel[1] and M.db.window1.titleColor[1] == G.text[1] and M.db.window1.barColor[1] == Tone.ivory[1], 'Graphite, Ivory')
     assert(M.db.window1.decimals == 0 and not M.db.window1.locked and M.db.window1.group == 'none', 'whole numbers, unlocked, on its own')
     for _, part in ipairs(M.textParts) do assert(M.db.window1[part .. 'Outline'], part .. ' outlined') end
     assert(M.db.window1.nameColor[1] == 1 and M.db.window1.nameColor[2] == 1 and M.db.window1.nameColor[3] == 1, 'pure white names')
-    assert(M.db.window1.headerTexture == 'media:Mode Title' and M.db.window1.headerColor[1] == G.raised[1], 'a Mode Title header')
+    assert(M.db.window1.headerTexture == 'media:Mode-FG' and M.db.window1.headerColor[1] == G.raised[1], 'a Mode-FG header')
     assert(DM.Clock(65) == '1:05' and DM.Clock(Secret('t')) == '' and DM.Clock(nil) == '', 'clock text')
     assert(#DM.types == 10 and DM.typeById.dps.perSecond and DM.typeById.interrupts.count, 'the meters Blizzard offers')
     local ok, short = Kit.ShortNumber(165.71428571429, 1)
@@ -135,19 +135,19 @@ world.run([==[
     assert(p[1] == 'TOPLEFT' and p[4] == 4 and p[5] == -25 and row1.width == 232 and row1.height == 18, 'first row inside the edge, header, line and padding')
     assert(Point(row2)[5] == -44, 'next row one row and one pixel down')
     assert(row1.icon.width == 18 and Point(row1.bar)[4] == 19, 'square icon, a pixel gap, then the bar')
-    -- The Mode window: Mode Panel in Graphite at 75% with its lift, the
+    -- The Mode window: the Surface in Graphite at 75% with its sheen, the
     -- `window` edge inside it above what it holds; no masks; no soft drop
     -- under a see-through window.
     local wp = w1.parts
-    assert(wp.faceKey == 'Panel' and wp.face.vertexColor[1] == G.panel[1] and wp.face.vertexColor[4] == 0.75 and wp.lift, 'Mode Panel at 75%')
+    assert(wp.faceKey == 'Surface' and wp.face.vertexColor[1] == G.panel[1] and wp.face.vertexColor[4] == 0.75 and wp.lift, 'the Surface at 75%')
     assert(wp.modeEdge.preset == 'window' and wp.modeEdge.holder:IsShown() and Point(wp.edgeFrame)[4] == 3, 'the window edge inside it')
     assert(wp.edgeFrame:GetFrameLevel() > w1.rows[1].bar:GetFrameLevel(), 'drawn above the rows')
     assert(not wp.modeEdge.below:IsShown(), 'no drop under a see-through window')
     assert(w1.border == nil and w1.fill == nil and row1.bar:GetStatusBarTexture().capMasks == nil, 'no masks')
     assert(w1.divider:IsShown() and Point(w1.divider)[5] == -23 and w1.divider.vertexColor[1] == G.line[1], 'a Graphite line under the header')
-    -- Bars: Mode Panel (its base and lift) on Mode BG tinted Slate.
-    assert(row1.bar.statusBarTexture:find('Panel', 1, true) and row1.bar.sheen.texture:find('PanelLift', 1, true) and row1.bar.sheen:IsShown(), 'Mode Panel with its lift')
-    assert(row1.bar.bg.texture and row1.bar.bg.vertexColor[1] == Tone.slate[1] and row1.bar.bg.vertexColor[4] == 1, 'on Mode BG in Slate')
+    -- Bars: Mode-FG (its base and lift) on Mode-BG tinted Slate.
+    assert(row1.bar.statusBarTexture:find('FGBase', 1, true) and row1.bar.sheen.texture:find('FGLift', 1, true) and row1.bar.sheen:IsShown(), 'Mode-FG with its lift')
+    assert(row1.bar.bg.texture and row1.bar.bg.vertexColor[1] == Tone.slate[1] and row1.bar.bg.vertexColor[4] == 1, 'on Mode-BG in Slate')
 
     -- Header (owner): the timer at the right edge, then the fight letter, Reset
     -- and the lock to its left; 16px glyphs, 2px apart, centered in the header.
@@ -160,11 +160,11 @@ world.run([==[
     assert(b.session.text.text == 'C', 'C for Current Fight')
     assert(b.session.rim == nil and b.session.text.color[1] == Tone.ivory[1] and b.session.text.color[2] == Tone.ivory[2], 'just the letter, in Ivory')
     local hb, hp = w1.header.bar, w1.header.parts
-    assert(hp.faceKey == 'Title' and hp.face:IsShown() and hp.face.vertexColor[1] == G.raised[1] and not hb:IsShown(), 'the header is a Mode Title strip in Graphite raised')
+    assert(hp.faceKey == 'FG' and hp.face:IsShown() and hp.face.vertexColor[1] == G.raised[1] and not hb:IsShown(), 'the header is a Mode-FG strip in Graphite raised')
     assert(M:SetOption('window1', 'headerTexture', 'flat') and hb:IsShown() and not hp.face:IsShown() and not hb.sheen:IsShown()
         and M:SetOption('window1', 'headerColor', { 0, 0, 1 }) and hb.statusBarColor[3] == 1, 'header texture and color')
-    assert(M:SetOption('window1', 'headerTexture', 'mode') and hb:IsShown() and hb.sheen:IsShown(), 'Mode Gradient on the bar')
-    assert(M:SetOption('window1', 'headerTexture', 'media:Mode Title') and M:SetOption('window1', 'headerColor', G.raised) and hp.face:IsShown())
+    assert(M:SetOption('window1', 'headerTexture', 'mode') and hb:IsShown() and hb.sheen:IsShown(), 'a saved Mode Gradient: Mode-FG on the bar')
+    assert(M:SetOption('window1', 'headerTexture', 'media:Mode-FG') and M:SetOption('window1', 'headerColor', G.raised) and hp.face:IsShown())
     assert(b.lock.icon.texture:find('DamageMeters/Unlock', 1, true) and b.reset.icon.texture:find('DamageMeters/Reset', 1, true))
     assert(w1.grip:IsShown() and Point(w1.grip)[1] == 'BOTTOMRIGHT' and w1.grip.width == 16, 'resize grip while unlocked')
 
@@ -340,27 +340,27 @@ world.run([==[
     assert(not M:SetOption('window1', 'borderSize', 3) and M.db.window1.border == nil, 'the border has no settings')
     assert(not M:SetOption('window1', 'group', 'window1'), 'not grouped with itself')
     assert(M:SetOption('window1', 'barTexture', 'flat') and row1.bar.statusBarTexture == Kit.FLAT and not row1.bar.sheen:IsShown(), 'Flat texture')
-    assert(M:SetOption('window1', 'barTexture', 'mode') and row1.bar.sheen:IsShown(), 'Mode Gradient')
-    assert(M:SetOption('window1', 'barTexture', 'media:Mode Panel'))
+    assert(M:SetOption('window1', 'barTexture', 'mode') and row1.bar.sheen:IsShown(), 'a saved Mode Gradient draws as Mode-FG')
+    assert(M:SetOption('window1', 'barTexture', 'media:Mode-FG'))
     assert(M:SetOption('window1', 'header', false) and not w1.header:IsShown() and not w1.divider:IsShown() and Point(row1)[5] == -4, 'no header: rows start under the edge')
     assert(w1.g.corner == 3 + 4, 'the grip clear of the round corner')
     assert(M:SetOption('window1', 'backgroundOpacity', 100) and w1.parts.modeEdge.below:IsShown(), 'an opaque window has its soft drop')
     assert(M:SetOption('window1', 'opacity', 90) and not w1.parts.modeEdge.below:IsShown(), 'not while the window fades')
     assert(M:SetOption('window1', 'opacity', 100) and M:SetOption('window1', 'backgroundOpacity', 75))
     -- Border Style and Border Metal (owner, November 17, 2026): each window in
-    -- Mode-Thin, Steel by default; its menu follows; any style keeps the size.
+    -- Mode-Border in its own metal by default; its menu follows; any style keeps the size.
     local edge = w1.parts.modeEdge
-    assert(M.db.window1.edgeStyle == 'thin' and M.db.window2.edgeMetal == 'default' and edge.styleId == 'thin'
-        and edge:Metal() == Tone.metal.steel, 'Mode-Thin in Steel')
+    assert(M.db.window1.edgeStyle == 'obsidian' and M.db.window2.edgeMetal == 'default' and edge.styleId == 'obsidian'
+        and edge:Metal() == Tone.metal.obsidian, 'Mode-Border in its own metal')
     local width, height, rowTop = w1.width, w1.height, Point(row1)[5]
-    assert(M:SetOption('window1', 'edgeStyle', 'round') and edge.styleId == 'round' and M.db.window2.edgeStyle == 'thin', 'Mode-Round, this window only')
+    assert(M:SetOption('window1', 'edgeStyle', 'obsidianEmpty') and edge.styleId == 'obsidianEmpty' and M.db.window2.edgeStyle == 'obsidian', 'Mode-Empty, this window only')
     assert(w1.width == width and w1.height == height and Point(row1)[5] == rowTop, 'same size, rows in place')
     assert(M:SetOption('window1', 'edgeMetal', 'gunmetal') and edge:Metal() == Tone.metal.gunmetal, 'Gunmetal')
     w1.header.scripts.OnClick(w1.header, 'LeftButton')
-    assert(menu.parts.modeEdge.styleId == 'round' and menu.parts.modeEdge:Metal() == Tone.metal.gunmetal, 'the menu in the window\'s border')
+    assert(menu.parts.modeEdge.styleId == 'obsidianEmpty' and menu.parts.modeEdge:Metal() == Tone.metal.gunmetal, 'the menu in the window\'s border')
     M:CloseMenu()
-    assert(not M:SetOption('window1', 'edgeStyle', 'nope') and not M:SetOption('window1', 'edgeMetal', 'gold') and M.db.window1.edgeStyle == 'round', 'unknown styles are refused')
-    assert(M:SetOption('window1', 'edgeStyle', 'thin') and M:SetOption('window1', 'edgeMetal', 'default') and edge:Metal() == Tone.metal.steel)
+    assert(not M:SetOption('window1', 'edgeStyle', 'nope') and not M:SetOption('window1', 'edgeMetal', 'gold') and M.db.window1.edgeStyle == 'obsidianEmpty', 'unknown styles are refused')
+    assert(M:SetOption('window1', 'edgeStyle', 'obsidian') and M:SetOption('window1', 'edgeMetal', 'default') and edge:Metal() == Tone.metal.obsidian)
     assert(M:SetOption('window1', 'header', true) and M:SetOption('window1', 'icon', 'none') and not row1.icon:IsShown() and Point(row1.bar)[4] == 0, 'no icon: the bar fills the row')
     assert(M:SetOption('window1', 'clickThrough', true) and not row1.mouse and not w1.grip:IsShown(), 'Click Through')
     assert(M:SetOption('window1', 'clickThrough', false) and row1.mouse)
@@ -542,9 +542,9 @@ world.run([==[
     local shell = view.window
     assert(M.db.window1.rows == 10 and shell.g.rows == 5 and not (shell.rows[6] and shell.rows[6]:IsShown()) and shell.scale <= 0.8, 'a sample of five rows, drawn smaller')
     assert(shell.width == 320 and shell.rows[1].name.text == '1. Valeria' and shell.rows[1].value.text == '1.2M (13.6K)', 'preview: the sample fight in the edited window')
-    assert(page.borderStyle and page.borderMetal and shell.parts.modeEdge.styleId == 'thin', 'Border pickers on Frame; the preview in the window\'s border')
-    assert(M:SetOption('window1', 'edgeStyle', 'blizz') and shell.parts.modeEdge.styleId == 'blizz', 'the preview follows')
-    assert(M:SetOption('window1', 'edgeStyle', 'thin'))
+    assert(page.borderStyle and page.borderMetal and shell.parts.modeEdge.styleId == 'obsidian', 'Border pickers on Frame; the preview in the window\'s border')
+    assert(M:SetOption('window1', 'edgeStyle', 'obsidianEmpty') and shell.parts.modeEdge.styleId == 'obsidianEmpty', 'the preview follows')
+    assert(M:SetOption('window1', 'edgeStyle', 'obsidian'))
     assert(shell.header.title.text == 'Damage Done' and view.caption.text == 'Window 1 · sample fight' and shell.buttons.session.text.text == 'C')
     page.SetEditing('window2')
     assert(page.windowEditing() == 'window2' and shell.header.title.text == 'Healing Done' and shell.rows[1].name.text == '1. Ysolde', 'follows the window being edited')
@@ -625,6 +625,8 @@ H.Load({ before = STUBS, saved = v1 }).run([==[
 local v2 = restored.saved()
 local mod = v2.profiles.Default.modules.damageMeters
 mod.version = 2
+-- A version 2 profile is from before Mode-Obsidian: no look step, no theme parts.
+v2.profiles.Default.look, v2.profiles.Default.themeParts, v2.profiles.Default.theme = nil, nil, nil
 for _, window in ipairs({ "window1", "window2", "window3" }) do
     local style = mod[window]
     for _, part in ipairs({ "name", "value", "title", "timer" }) do
@@ -645,7 +647,7 @@ H.Load({ before = STUBS, saved = v2 }).run([==[
     assert(s.titleColor[3] == 0 and s.titleSize == 13, 'title kept')
     assert(s.decimals == 0 and M.db.window2.decimals == 2 and M.db.window2.nameColorMode == 'class', 'one decimal becomes whole; a choice stays')
     local G = addon.Style.Tone.graphite
-    assert(s.headerColor[1] == G.raised[1] and s.headerTexture == 'media:Mode Title', 'the old header becomes Onyx, then Graphite raised')
+    assert(s.headerColor[1] == G.raised[1] and s.headerTexture == 'media:Mode-FG', 'the old header becomes Onyx, then Graphite raised; Mode Title becomes Mode-FG')
     assert(s.font == nil and s.textColor == nil and s.liftedShadow == nil, 'old keys gone')
 ]==], "migrate v2")
 
@@ -706,6 +708,8 @@ H.Load({ before = STUBS, saved = v7 }).run([==[
 local v8 = restored.saved()
 local eight = v8.profiles.Default.modules.damageMeters
 eight.version = 8
+-- A version 8 profile is from before Mode-Obsidian: no look step, no theme parts.
+v8.profiles.Default.look, v8.profiles.Default.themeParts, v8.profiles.Default.theme = nil, nil, nil
 local ONYX, CYAN, MUTED = { 19 / 255, 18 / 255, 18 / 255 }, { 0, 240 / 255, 1 }, { 185 / 255, 185 / 255, 185 / 255 }
 for _, window in ipairs({ "window1", "window2" }) do
     local style = eight[window]
@@ -720,11 +724,11 @@ H.Load({ before = STUBS, saved = v8 }).run([==[
     local M, Kit, Tone = addon.DamageMeters, addon.Kit, addon.Style.Tone
     local G, s, two = Tone.graphite, M.db.window1, M.db.window2
     assert(M.db.version == 9 and s.backgroundColor[1] == G.panel[1] and s.headerColor[1] == G.raised[1], 'Graphite window and header')
-    assert(s.headerTexture == 'media:Mode Title' and s.barTexture == 'media:Mode Panel' and s.barBackground == 'media:Mode BG' and s.barBackgroundOpacity == 100, 'Mode textures')
+    assert(s.headerTexture == 'media:Mode-FG' and s.barTexture == 'media:Mode-FG' and s.barBackground == 'media:Mode-BG' and s.barBackgroundOpacity == 100, 'Mode textures, then the look step')
     assert(s.otherColor[1] == G.muted[1] and s.nameFontMedia == 'Mode' and s.timerFontMedia == 'Mode', 'Graphite muted, the Mode typeface')
     assert(s.barColor[1] == Tone.ivory[1] and s.titleColor[1] == G.text[1] and s.timerColor[1] == G.muted[1], 'Ivory bars, Graphite header text')
     assert(two.barTexture == 'flat' and two.backgroundColor[1] == 1 and two.nameFontMedia == 'Friz' and two.valueFontMedia == 'Mode', 'picked values stay')
-    assert(s.edgeStyle == 'thin' and s.edgeMetal == 'default' and two.edgeStyle == 'thin' and two.edgeMetal == 'default', 'saved windows take the border defaults')
+    assert(s.edgeStyle == 'obsidian' and s.edgeMetal == 'default' and two.edgeStyle == 'obsidian' and two.edgeMetal == 'default', 'saved windows take the border defaults')
 ]==], "migrate v8")
 
 -- Bad saved data stops startup rather than being reset.

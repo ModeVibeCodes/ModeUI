@@ -49,23 +49,24 @@ end)
 -- and your party (you alone too: Show When Solo) in a column under the
 -- Player mana frame, 136 x 64 each (135 x 65 asked; members are an even
 -- number of pixels): 58 health, the line and a 3px power row on healers.
--- Mode-Thin Gunmetal, Mode Matte health in Dark on a slightly firmer empty
--- bar (70). The name at the top left with
+-- Mode-Border, Mode-FG health in Dark on Mode-BG at 85 (Mode-Obsidian,
+-- November 20, 2026). The name at the top left with
 -- the role icon on its end, health percent in the middle (12). Inside the
 -- bottom edge: debuffs at the left (20 x 18, up to 3, growing right),
 -- Dispellable by You on the row above them (22 x 20, up to 2: three would
 -- reach the health text), your healing buffs at the right (22 x 18, up to 3,
 -- growing left). Group, Tracked and Defensive buffs hidden (Defensives until
 -- its double icon is fixed). The dispel overlay: the top edge gradient at 35.
--- Place: the right edge at x -323; the last member's bottom edge level with
--- the Cooldown Manager's Essential second row (its bands lined up, the
--- shadows on one pixel). Essential's first line is centered 300 up from the
--- bottom at 1080 and 325 at 1440 (ModeCDM's layout part), 42 x 34 icons with
--- their 2px edges, lines 1px apart, so its second row ends 56 under that
--- middle: the last member's bottom is 55 under it. With you shown, the five
--- members fill the stand-in, so its middle is 162 over that.
-local HEALER = { width = 136, health = 58, power = 3, right = -323,
-    middle = { ["1080"] = 300 - 540 - 55 + 162, ["1440"] = 325 - 720 - 55 + 162 } }
+-- Place: hung from the Player mana frame's bar block (below), so its right
+-- edge is the block's and its first member sits snug under it. The Unit
+-- Frames part places that block (right edge x -323) so the last member's
+-- bottom edge is level with the Cooldown Manager's Essential second row (its
+-- bands lined up, the shadows on one pixel): 5 x 64 + 4 = 324 under it.
+-- (November 20, 2026, the owner's 1440 checks: hung from its middle on the
+-- screen, a stand-in rounding a few units short off the pixel-perfect scale
+-- left a gap under the frame; hung on the screen at x -323, it sat 2px right
+-- of the frame's real edge.)
+local HEALER = { width = 136, health = 58, power = 3 }
 local HEALER_ICONS = { heals = { 22, 18, 3 }, dispellable = { 22, 20, 2 }, otherDebuffs = { 20, 18, 3 } }
 for group in pairs(M.groupDispelType) do HEALER_ICONS[group] = { 20, 18, 3 } end
 
@@ -75,8 +76,8 @@ addon.Layouts:Contribute("healer", "partyFrames", function(db, ctx)
     db.spacing, db.growth, db.showPlayer, db.powerShown = SPACING, "down", true, "healers"
     -- Shown when solo too (owner, November 19, 2026): your own frame in the column.
     db.showSolo = true
-    db.healthColorMode, db.foregroundTexture, db.backgroundOpacity = "default", "media:Mode Matte", 70
-    db.edgeStyle, db.edgeMetal = "thin", "gunmetal"
+    db.healthColorMode, db.foregroundTexture, db.backgroundOpacity = "default", "media:Mode-FG", 85
+    db.edgeStyle, db.edgeMetal = "obsidian", "default"
     -- Name top left (4 in from the edges), the role icon 2px after it; health in the middle.
     db.nameAnchor, db.nameX, db.nameY, db.nameSize = "TOPLEFT", 2, -2, 11
     db.roleAfterName, db.roleX, db.roleY, db.roleSize = true, 2, 0, 10
@@ -92,5 +93,18 @@ addon.Layouts:Contribute("healer", "partyFrames", function(db, ctx)
     -- the middle puts its 20px icons 1px over the 18px debuff row.
     local dispellable = db.auras.dispellable
     dispellable.anchor, dispellable.place, dispellable.grow, dispellable.y = "LEFT", "inside", "right", -1
-    ctx.Place(M.ELEMENT_ID, "screen", "RIGHT", "CENTER", HEALER.right, ctx.V(HEALER.middle))
+    -- Hung from the Player frame's bar block: its top right on the block's
+    -- bottom right, 1 down (the block's shadow on the first member's top
+    -- pixel). The block's right edge is where the frame really draws at any
+    -- UI scale (owner, November 20, 2026: placed on the screen at x -323, the
+    -- column sat 2px right of it at 1.2 pixels a unit, where the frame's
+    -- parts round to whole pixels). Unit Frames' part puts the block so the
+    -- column ends level with Essential's second row.
+    -- With the 1080 places, one physical pixel further left (the owner's
+    -- Edit Mode nudge on 1440p at UI height 1200, 1.2 pixels a unit, November
+    -- 20, 2026: the frame and the secure header each round to whole pixels
+    -- there, the other way). The 1440 places are a pixel-perfect UI, where
+    -- the edges meet exactly.
+    local nudge = ctx.V({ ["1080"] = addon.Kit.PixelSize(UIParent), ["1440"] = 0 })
+    ctx.Place(M.ELEMENT_ID, "unitFramesPlayerBars", "TOPRIGHT", "BOTTOMRIGHT", -nudge, -1)
 end)

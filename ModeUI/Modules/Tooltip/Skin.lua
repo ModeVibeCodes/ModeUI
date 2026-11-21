@@ -52,7 +52,7 @@ function M:Paint(tooltip, rimColor)
     if not parts or not parts.modeEdge then return end
     local db = self.db
     local alpha = db.backgroundOpacity / 100
-    Skin.PaintBox(parts, tooltip, "Panel", db.backgroundColor, alpha, db.border)
+    Skin.PaintBox(parts, tooltip, "Surface", db.backgroundColor, alpha, db.border)
     parts.modeEdge:SetDrop(db.border and alpha >= 1)
     -- Border Style and Border Metal; a quality or class rim tints it flat.
     parts.modeEdge:SetStyle(db.edgeStyle, db.edgeMetal)

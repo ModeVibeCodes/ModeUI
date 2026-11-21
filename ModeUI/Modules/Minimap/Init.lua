@@ -82,8 +82,8 @@ M.defaults = {
     -- Border: the map's edge (and the text bar's), the tiles' edges, their rim color.
     border = "mode", buttonBorder = "thin", borderColor = "rim",
     -- Border Style and Border Metal of every edge here (docs/DESIGN_LANGUAGE.md,
-    -- "Choosing a border"): Mode-Blizz in its own metal (owner, November 17, 2026).
-    edgeStyle = "blizz", edgeMetal = "default",
+    -- "Choosing a border"): Mode-Border in its own metal (owner, November 17, 2026).
+    edgeStyle = "obsidian", edgeMetal = "default",
     -- Text: layout, zone color, clock, coordinates.
     textLayout = "map", zoneColor = "pvp", clock = true, coords = true, clockFormat = "24", textSize = 13,
     font = "game", fontMedia = addon.Style.FONT_DEFAULT,

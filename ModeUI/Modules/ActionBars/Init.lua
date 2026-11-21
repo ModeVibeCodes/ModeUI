@@ -33,7 +33,7 @@ addon:RegisterModule("actionBars", M)
 -- Version 6: the Mode design language (docs/DESIGN_LANGUAGE.md, "Action
 -- buttons"): 40 by 34 buttons in the `frame` edge (Border: Mode or None;
 -- Border Size and Border Color retire), 4px apart outside their shadows, a
--- Mode Button face in Mono panel, Geist Bold text in the Mode colors, the
+-- Mode Button face in Mono panel, Urbanist Bold text in the Mode colors, the
 -- Celadon rim for procs and Ivory ready glows.
 M.VERSION = 6
 local P, Tone = Kit.palette, addon.Style.Tone
@@ -136,8 +136,8 @@ local function Style(bar)
         width = size[1], height = size[2], spacing = 4,
         border = "mode", backgroundColor = Copy(Tone.mono.panel), showEmpty = true, backgroundOpacity = 100,
         -- The buttons' border style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a
-        -- border"): Mode-Blizz in its own metal (owner, November 17, 2026).
-        edgeStyle = "blizz", edgeMetal = "default",
+        -- border"): Mode-Border in its own metal (owner, November 17, 2026).
+        edgeStyle = "obsidian", edgeMetal = "default",
         visibility = "always", customVisibility = "[combat] show; hide", opacity = 100, fadeOpacity = 0,
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = true,
         -- Paging: Action Bar 1 follows the game's own paging (stances, forms,

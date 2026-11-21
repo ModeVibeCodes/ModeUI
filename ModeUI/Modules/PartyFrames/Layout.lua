@@ -146,6 +146,7 @@ function M:LayoutBars(f)
     hp:SetPoint("TOP" .. near, fill, "TOP" .. far, 0, 0); hp:SetPoint("BOTTOM" .. near, fill, "BOTTOM" .. far, 0, 0)
     hp:SetWidth(g.innerWidth)
     Kit.FillTexture(hp, db.healTexture, g.innerWidth, healthHeight, px, db.healPredictionColor, db.healPredictionOpacity / 100)
+    hp.spark:Layout(reverse, px); hp.spark:SetColor(db.healPredictionColor); hp.spark:SetShown(db.healEndLine)
     h.reverse = reverse
     h.shield:SetShown(db.showAbsorbs)
     h.shield:SetLook({ texture = db.shieldsTexture, opacity = db.shieldsOpacity / 100,
@@ -228,7 +229,7 @@ function M:LayoutElements(f)
         local share = element == "name" and db.nameWidth / 100 or 1
         if element == "name" and afterName then text:SetWidth(0)
         else text:SetWidth(math.max(px, math.floor(g.innerWidth * share / px) * px - 2 * px)) end
-        -- Names in SemiBold and health text in Bold (Geist weights; another
+        -- Names in SemiBold and health text in Bold (Urbanist weights; another
         -- font keeps its one weight).
         local weighted = element == "name" and Style.Weighted(path, "semibold")
             or element == "healthText" and Style.Weighted(path, "bold") or path

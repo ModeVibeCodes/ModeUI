@@ -23,8 +23,8 @@ addon.Theme = {
 local Style = addon.Style
 local Tone, G = Style.Tone, Style.Tone.graphite
 local function C(color, alpha) return { color[1], color[2], color[3], alpha or 1 } end
--- Built from the tokens as they are now (Mode-Blizz at load; Palette()
--- again once a theme sets them, Style.OnThemeApplied below).
+-- Built from the tokens as they are now (Mode-Obsidian, set at load; Palette()
+-- again whenever the look is applied, Style.OnThemeApplied below).
 local function Palette() return {
     primary = C(Tone.ivory), accentFill = C(Style.Mix(Tone.ivory, G.raised, 0.12)),
     -- Flat rims of the Ivory and Rosewood buttons: their color 70% toward black.

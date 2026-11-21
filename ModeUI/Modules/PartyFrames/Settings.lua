@@ -151,7 +151,7 @@ function M:CreateConfigPage(parent)
     page.fillToggles = c.Toggles({ { "Fill End Line", "fillEdge" } })
     -- Incoming heals ride on the health's end.
     page:Group(L["Incoming Heals"])
-    page.healToggles = c.Toggles({ { "Show Incoming Heals", "showHealPrediction" } }); c.Mark("heals")
+    page.healToggles = c.Toggles({ { "Show Incoming Heals", "showHealPrediction" }, { "Spark End Line", "healEndLine" } }); c.Mark("heals")
     local heal = c.Columns({ "Texture", "Color", "Opacity" })
     c.Texture(heal[1], "healTexture", M.FillChoices); c.Color(heal[2], "healPredictionColor"); c.Slider(heal[3], "healPredictionOpacity", "%")
 

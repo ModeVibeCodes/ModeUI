@@ -12,22 +12,22 @@ frame and fades Blizzard's art. Each plate has:
 
 - **Health and cast boxes** (docs/DESIGN_LANGUAGE.md, settings version 9 from
   the approved Nameplates probe): the bar inside the `frameThin` edge, in each
-  kind's **Border Style** and **Border Metal** (Mode-Round by default: Soft
-  round corners, a 1px Silver bevel, a 1px shadow ring). The rim art sits outside the bar and
+  kind's **Border Style** and **Border Metal** (Mode-Border by default: soft
+  round corners, a 1px dark glass band with a lit top and a champagne bottom, a 1px shadow ring). The rim art sits outside the bar and
   covers its own corners, so nothing is masked. Each ring is drawn in pieces
   (DESIGN_LANGUAGE.md, "Pieces"; owner, November 18, 2026): a plate's bars
   are shorter than the ring art, whose sliced corners shrank and looked
   square. Aura icons are drawn in pieces too, each piece taking the dispel
-  color (`Kit.DispelAuraRim`). Health fills in **Mode BG**
-  on Mode BG (Slate); the cast bar has its own **Cast Bar** texture (**Mode
+  color (`Kit.DispelAuraRim`). Health fills in **Mode-FG**
+  on Mode-BG (Slate) at 85%; the cast bar has its own **Cast Bar** texture (**Mode
   Cast**) and the **Comet** spark on the fill's leading edge (a channel's on
   its left), hidden while an interrupted cast is held.
-- **Name** in Geist SemiBold, in the **Gradient** (the class or reaction color
+- **Name** in SemiBold, in the **Gradient** (the class or reaction color
   toward white) by default; Class or Reaction and Text Color are options.
-  **Health text** (Percent, Current Health, Current and Percent, None) in Geist
+  **Health text** (Percent, Current Health, Current and Percent, None) in
   Bold, colored **By Health** (Rosewood at 30% and under, through Ivory, to
   Celadon) or in the Text Color, with a soft glow in its own color (**Health
-  Text Glow**, on by default). Cast texts are Geist Bold. One shadow, no
+  Text Glow**, on by default). Cast texts are Bold. One shadow, no
   lifted copy.
 - **Health color**: Reaction and Class, Reaction, Onyx or Custom, used exactly
   as they are (true colors). **Threat Colors** (enemies, on by default) gives
@@ -42,7 +42,7 @@ frame and fades Blizzard's art. Each plate has:
   text stay solid (the edge draws outside the bar, so nothing sits behind it), and the
   target glow texture is hollow. The cast bar keeps a solid background: a
   channel drains by covering the cast color with the track color.
-- **Textures**: **Foreground** (Mode Gradient by default, Flat, or any SharedMedia
+- **Textures**: **Foreground** (Mode-FG by default, Flat, or any SharedMedia
   status bar) and **Background** (Flat or SharedMedia), for the health and cast bars.
 - **Cast bar**: amber when interruptible, gray when not; channels drain from right
   to left. **Spell Icon** Left, Right, Outside Left, Outside Right or Hidden, with
@@ -91,9 +91,9 @@ The cast bar sits **Below** or **Above** the health bar, with its own offsets.
 The raid marker has a **Size**. Anchors are picked with the anchor compass
 (`W.AnchorPicker`).
 
-## Mode-Default layout
+## Mode-DPS/TANK layout
 
-`Layouts.lua` adds the nameplates' part of the built-in Mode-Default layout
+`Layouts.lua` adds the nameplates' part of the built-in Mode-DPS/TANK layout
 (DPS / Tank, `Shared/Runtime/Layouts.lua`; owner, November 18, 2026): the
 module on, and aura icons at **Aura Spacing** 1 for Enemy and Friendly, so
 neighbours share one shadow pixel like every icon in the layout. Everything

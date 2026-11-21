@@ -150,7 +150,7 @@ function M:PaintWindow()
     frame:SetScale(db.scale / 100)
     local g = self:Geometry()
     local alpha = db.backgroundOpacity / 100
-    Skin.PaintBox(frame.parts, frame, "Panel", db.backgroundColor, alpha, true)
+    Skin.PaintBox(frame.parts, frame, "Surface", db.backgroundColor, alpha, true)
     -- Border Style and Border Metal; every style has the same reach.
     frame.parts.modeEdge:SetStyle(db.edgeStyle, db.edgeMetal)
     frame.parts.modeEdge:SetDrop(alpha >= 1)
@@ -159,7 +159,7 @@ function M:PaintWindow()
     header:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -g.border)
     header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -g.border, -g.border)
     header:SetHeight(math.max(g.px, g.header))
-    Skin.PaintBox(header.parts, header, "Title", db.headerColor, 1)
+    Skin.PaintBox(header.parts, header, "FG", db.headerColor, 1)
     local divider = frame.divider
     divider:ClearAllPoints()
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", g.border, -(g.border + g.header))

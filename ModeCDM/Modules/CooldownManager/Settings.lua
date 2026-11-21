@@ -240,7 +240,7 @@ function M:BuildLookTab(ui)
             page.borderStylePicker, page.borderMetalPicker = W.BorderPickers(page,
                 { get = function() return db().edgeStyle end, set = ui.Set("edgeStyle") },
                 { get = function() return db().edgeMetal end, set = ui.Set("edgeMetal") })
-            -- Border Size (the band's width) and, for Mode-BlizzEmpty, Border Color.
+            -- Border Size (the band's width) and, for Mode-Empty, Border Color.
             local size = ui.Columns({ "Border Size" })
             page.borderSizeSelect = ui.SelectIn(size[1], 180, function() return M.choices.edgeSize end,
                 function() return db().edgeSize end, ui.Set("edgeSize"))

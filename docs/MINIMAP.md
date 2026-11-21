@@ -14,7 +14,7 @@ The owner's November 14 design, rebuilt in the Mode design language on
 November 15 (owner: "Mode edge, keep what fits"):
 
 - A rectangle **16 px wider than tall** (200 × 184 by default) in the Mode
-  `frame` edge in **Border Style** and **Border Metal** (Mode-Blizz in Silver
+  `frame` edge in **Border Style** and **Border Metal** (Mode-Border in its own metal
   by default: cut corners, the Specular band, a shadow ring and the soft
   drop; the tiles and the text bar take the same). **Map Border** sets its rim: **Mode** (2px, the
   default) or **Thin** (1px). **Border Color** tints the rim: Metal (no tint:
@@ -24,7 +24,7 @@ November 15 (owner: "Mode edge, keep what fits"):
   lifted shadow. Zone text by PvP status in the gameplay reaction tones
   (friendly, contested, hostile; sanctuaries Ivory) or white.
 - Tracking (top left), Calendar (top right) and New Mail (bottom right) on
-  small Mode tiles (a Mode Button face in Mono raised, in the `group` edge,
+  small Mode tiles (a Mode-FG face in Mono raised, in the `group` edge,
   **Button Border** Thin or Mode, the same Border Color); the Expansion
   Button off by default. The group-finder eye on its own tile in the
   bottom-left corner.
@@ -104,9 +104,9 @@ follow (Expressway → the Mode typeface, Button Size 22 → 26, Spacing 2 → 3
 Picked values stay. Positions are ModeUI Edit Mode
 positions: `modeMinimap`, `modeMinimapQueue`, `modeMinimapButtons`.
 
-## Mode-Default layout
+## Mode-DPS/TANK layout
 
-`Layouts.lua` adds the minimap's part of the built-in Mode-Default layout
+`Layouts.lua` adds the minimap's part of the built-in Mode-DPS/TANK layout
 (DPS / Tank, `Shared/Runtime/Layouts.lua`; the owner's layout editor,
 November 18, 2026). The same at 1080 and 1440: on, Size 224, Wider Than Tall
 By 0 (square), Map Border Mode, Text Layout On Map; `modeMinimap` TOPRIGHT on

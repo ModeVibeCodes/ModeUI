@@ -57,7 +57,7 @@ M.defaults = {
     -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a
     -- border"): the window and its Sort menu in Mode-Thin in its own metal
     -- (owner, November 17, 2026). Slots and controls keep their own edges.
-    edgeStyle = "thin", edgeMetal = "default",
+    edgeStyle = "obsidian", edgeMetal = "default",
     showTitle = true, headerColor = Copy(M.HEADER_COLOR), titleSize = 13,
     -- Bag Bar: the equipped bags in the footer, where a new bag can go on.
     showSearch = true, showMoney = true, showFreeSlots = true, showBagBar = true, locked = false,

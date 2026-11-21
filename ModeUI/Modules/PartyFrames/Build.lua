@@ -33,6 +33,8 @@ function M:BuildFace(f)
     -- (possibly secret) amount draws at the right length without arithmetic.
     f.healPrediction = Kit.Bar(f.health)
     f.healPrediction.bg:Hide(); f.healPrediction:SetMinMaxValues(0, 1); f.healPrediction:SetValue(0)
+    -- The spark end line where the heals stop (Style.EndSpark).
+    f.healPrediction.spark = Style.EndSpark(f.healPrediction)
     f.health.shield = Style.Shield(f.health)
     -- The Prism glow round the member (mouseover and focus: Update.lua).
     f.prism = Style.Glow(panel)

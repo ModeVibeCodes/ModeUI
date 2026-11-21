@@ -15,11 +15,11 @@ bag and the keyring show together on one grid of slots.
 
 | Part | Look and behavior |
 |---|---|
-| Window | A Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Mode Panel in Background Color (Graphite panel at 95%) with the `window` edge inside it; no soft drop while it is see-through. |
-| Header | A Mode Title strip in Header Color (Graphite raised) over a one-pixel Graphite line: the **Bags** title on the left (SemiBold, Graphite white); **Sort** (a dropdown that names the view order, with the Mode chevron), **Clean Up** (a broom glyph, Mode "IconCleanUp") and the close cross on the right, in Graphite secondary and Ivory under the mouse. Unlocked, dragging the header moves the window (out of combat). |
+| Window | A Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Surface in Background Color (Graphite panel at 95%) with the `window` edge inside it; no soft drop while it is see-through. |
+| Header | A Mode-FG strip in Header Color (Graphite raised) over a one-pixel Graphite line: the **Bags** title on the left (SemiBold, Graphite white); **Sort** (a dropdown that names the view order, with the Mode chevron), **Clean Up** (a broom glyph, Mode "IconCleanUp") and the close cross on the right, in Graphite secondary and Ivory under the mouse. Unlocked, dragging the header moves the window (out of combat). |
 | Search | A Mode field under the header (a Graphite base in the `control` edge, Ivory while typing). It sets the game's own bag search (`C_Container.SetItemSearch`, the one Blizzard's bag search box uses), so names, types and tooltip text match; items that don't match fade to 25%. Escape clears it; closing the bags clears it. |
-| Slots | Columns wide (12), Slot Size wide (36 px) and a little shorter (30 px, `Style.IconHeight`, as every Mode icon), Spacing (3 px) apart, Padding (8 px) inside the edge. Each slot is a Mode slot (the approved probe): a face in Slot Color (Mono panel) at Slot Opacity (100%), the icon filling it, cropped to its shape, and the `group` edge (1px, Mode-Blizz) just outside it. The window and the Sort menu take **Border Style** and **Border Metal** (Window tab, Border group; Mode-Thin by default). Pushed and highlight states are flat Mode overlays. |
-| Rims | The slot edge's rim: a new item in Ivory, until you point at it. A quest item: Quest Color (#FFB12F, the quest tone). Otherwise the item's quality color from Minimum Quality (Uncommon) up, else the edge's own Gunmetal. |
+| Slots | Columns wide (12), Slot Size wide (36 px) and a little shorter (30 px, `Style.IconHeight`, as every Mode icon), Spacing (3 px) apart, Padding (8 px) inside the edge. Each slot is a Mode slot (the approved probe): a face in Slot Color (Mono panel) at Slot Opacity (100%), the icon filling it, cropped to its shape, and the `group` edge (1px, Mode-Border) just outside it. The window and the Sort menu take **Border Style** and **Border Metal** (Window tab, Border group; Mode-Thin by default). Pushed and highlight states are flat Mode overlays. |
+| Rims | The slot edge's rim: a new item in Ivory, until you point at it. A quest item: Quest Color (#FFB12F, the quest tone). Otherwise the item's quality color from Minimum Quality (Uncommon) up, else the edge's own metal. |
 | Marks | Stack counts (bottom right) and item level on weapons and armor (bottom left, in the quality color or white) in the Mode typeface's Bold, a coin on gray items you can sell (Junk Coin) and those items grayed (Fade Junk), and a small quest mark top right on quest items (Quest Icon: the Mode "IconQuest" glyph in Quest Color on a dark disc). Cooldown numbers are the Mode typeface's Bold at Count Size, in the cooldown color, centered. Locked items (being moved) are gray. Cooldowns use the button's own swipe. |
 | Sections | The backpack and equipped bags first (each its own block with Separate Bags), then **Reagents** (the reagent bag, Reagent Section) and **Keyring** (Keyring, when the game shows a keyring), each under a small Graphite muted title and a Graphite line. |
 | Footer | Left to right (owner, November 15, 2026): the **Bag Bar** (Bag Bar): one small Mode slot (26 x 22) per equipped bag slot, the four bags then the reagent bag, with the bag's icon (a faint bag glyph when empty), its free slots and its quality on the `group` edge. Drop a bag on a slot, or click it with a bag on the cursor, to equip it; drag a bag off to pick it up; pointing at one shows its tooltip and fades the other bags' slots. Then the **free slots** in the held bags ("29 free"): the number in Bold, Celadon with room, Ivory when a tenth or less is left, Rosewood when full, over a thin capacity bar that fills as the bags fill. The money on the right (gold, silver, copper with the game's coin icons). |
@@ -122,6 +122,11 @@ window; the stand-in covers it. In Edit Mode the stand-in can be dragged or
 attached to another element. Dragging the header (unlocked, out of combat,
 not in Edit Mode) saves the same position Edit Mode would: the Grow From
 corner as an offset from the same corner of the screen, in whole pixels.
+
+In the role layouts (Mode-DPS/TANK, Mode-Healer; `Layouts.lua`, owner,
+November 20, 2026) the window's bottom-right corner sits on Healing Done's
+(the top damage meter's) top-left corner, 4 apart each way, growing from its
+bottom-right, so more bags push it up and left, away from the meters.
 
 ## Settings
 

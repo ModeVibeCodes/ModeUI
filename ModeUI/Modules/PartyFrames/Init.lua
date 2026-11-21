@@ -34,7 +34,7 @@ addon:RegisterModule("partyFrames", M)
 -- Version 4: the Mode design language: the group edge (no Border or Corner
 -- Size), 150 x 34 + 3 power, Mode Gradient on Mode BG, Combined shields (the
 -- shield and overshield textures and colors retire), Gradient names, health
--- text colored by health, the dispel Gradient by default, an aggro rim, Geist.
+-- text colored by health, the dispel Gradient by default, an aggro rim, Urbanist.
 -- Version 5: Mode Glass health by default; shields get their own tab with a
 -- texture, a color (follow the health or custom) and an opacity.
 -- Version 6: auras wear the frameThin edge (Border Size 1 or 2; Mode is the
@@ -124,15 +124,15 @@ M.defaults = {
     -- Each member: 150 x 34 health and 3px power in the group edge, Mode
     -- Glass on Mode BG.
     width = 150, healthHeight = 34,
-    foregroundTexture = "media:Mode Glass", backgroundTexture = "media:Mode BG", healthOpacity = 100, backgroundOpacity = EMPTY,
-    fillDirection = "standard", fillEdge = true, healthColorMode = "class", healthColor = Copy(P.green),
+    foregroundTexture = "media:Mode-FG", backgroundTexture = "media:Mode-BG", healthOpacity = 100, backgroundOpacity = EMPTY,
+    fillDirection = "standard", fillEdge = true, healthColorMode = "default", healthColor = Copy(P.green),
     -- The member's border, its inset power bar's and the dispel rim's shape
-    -- (docs/DESIGN_LANGUAGE.md, "Choosing a border"): Mode-Blizz in its own
+    -- (docs/DESIGN_LANGUAGE.md, "Choosing a border"): Mode-Border in its own
     -- metal (owner, November 17, 2026).
-    edgeStyle = "blizz", edgeMetal = "default",
+    edgeStyle = "obsidian", edgeMetal = "default",
     -- Power Bars and Resources: who shows it, where, how it looks, its text.
     powerShown = "all", powerStyle = "below", powerHeight = 3, powerWidth = 70, powerAlign = "CENTER", powerX = 0, powerY = 3,
-    powerForegroundTexture = "media:Mode Gradient", powerBackgroundTexture = "media:Mode BG", powerOpacity = 100, powerBackgroundOpacity = EMPTY,
+    powerForegroundTexture = "media:Mode-FG", powerBackgroundTexture = "media:Mode-BG", powerOpacity = 100, powerBackgroundOpacity = EMPTY,
     powerFillDirection = "standard", powerColorMode = "type", powerColor = Copy(P.mana),
     powerTextShow = false, powerText = "percent", powerTextSize = 9, powerTextAlign = "CENTER", powerTextX = 0, powerTextY = 0,
     -- Out of range, dead and offline members fade.
@@ -140,25 +140,27 @@ M.defaults = {
     -- Incoming heals ride on the health; shields are Combined (Style.Shield):
     -- on the health's end, and the whole shield back from full health.
     showHealPrediction = true, healTexture = "flat", healPredictionColor = Copy(Tone.healPrediction), healPredictionOpacity = 45,
+    -- The spark end line on the heals' end (Style.EndSpark).
+    healEndLine = true,
     showAbsorbs = true, showOvershields = true,
     -- The shields' look (Shields tab, Shield:SetLook): Mode Shield, tinted
     -- from the health, at the standard strength.
     shieldsTexture = "Shield", shieldsColorMode = "health", shieldsColor = Copy(addon.Style.Tone.textBright), shieldsOpacity = 100,
     -- Highlights: your target (the rim in Ivory), aggro (the rim in the
     -- hostile red) and the mouse.
-    targetHighlight = "border", targetColor = Copy(addon.Style.Tone.ivory), hoverHighlight = true, aggroHighlight = true,
+    targetHighlight = "border", targetColor = Copy(addon.Style.Tone.ivory), hoverHighlight = false, aggroHighlight = true,
     -- The Prism glow round a member (docs/DESIGN_LANGUAGE.md, "Mode-Obsidian
     -- theme"): on mouseover, and on your focus, in the member's class color.
-    hoverGlow = false, focusGlow = false,
+    hoverGlow = true, focusGlow = true,
     -- Debuff effects by type: border, health color and a gradient from the
     -- top edge (56% fading over 72% of the health), each per type.
     dispelFilter = "mine", dispelGradientOpacity = 56,
     -- Where the gradient rises from: the top edge, or the bottom (Backlit,
     -- Mode-Obsidian).
-    dispelFrom = "top",
+    dispelFrom = "bottom",
     dispel = { Magic = Effects(), Curse = Effects(), Disease = Effects(), Poison = Effects(), Bleed = Effects() },
     -- Text.
-    nameColorMode = "gradient", nameColor = Copy(P.text), healthText = "percent", healthTextColor = "health", healthTextGlow = true, nameWidth = 60,
+    nameColorMode = "class", nameColor = Copy(P.text), healthText = "percent", healthTextColor = "health", healthTextGlow = true, nameWidth = 60,
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = false,
     -- After Name: the role icon on the name's end (its Offset X and Y from there).
     textColor = Copy(P.text), hideDamagerRole = false, roleAfterName = false,
