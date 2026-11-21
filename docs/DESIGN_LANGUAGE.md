@@ -134,7 +134,7 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Power (`powerType`) | Mana `#4096FF`, Rage, Energy, Focus, Happiness (Mode-toned), any other type a neutral gray |
 | Threat (`threat`) | aggro `#FF4848`, losing or pulling `#FFA040` |
 | Stats (`stat`) | the Character window's stats: Strength `#E85C50`, Agility `#FFD140`, Stamina `#E8B04B`, Intellect and mana regen `#4096FF`, Spirit and healing `#7FDB97`, physical power `#FF8A3D`, spell power `#B07CFF`, crit `#FF6B6B`, hit `#FFB12F`, haste `#7FDBFF`, avoidance `#9AD0EC`, armor `#B9B9B9` |
-| Other | cooldown text `#FFB12F`; the role layouts' Cooldown Manager numbers `#FF3948` (`cooldownHot`, owner, November 18, 2026); quest lines in tooltips and the quest and gossip windows' button rims `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF`, Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
+| Other | cooldown text `#FFB12F`; the role layouts' Cooldown Manager numbers `#FF3948` (`cooldownHot`, owner, November 18, 2026); quest lines in tooltips and the quest and gossip windows' button rims `#FFB12F` (`quest`); lit combo points `#F05454` (`comboPoint`); the totem bar's element rims Earth `#C9924F`, Fire `#E8664F`, Water `#4FA8E8`, Air `#A98FE6` (`totem`); incoming heals `#5CD684` (`healPrediction`); a custom aura glow `#FFD15C` (`auraGlow`); Buffs & Debuffs stack counts `#53F24F` (`auraStack`) and time text white (`mono.white`); the portrait's combat ring `#FF6B6B` (`combatRing`); macro names `#69A5B9` (`macro`); unit frame name accents Sky `#91C6FF`, Champagne, Lilac, Frost (`nameAccent`); class colors come from `Domain.UnitColor` (Class Colors may override) |
 
 `Style.LEGACY` holds the pre-Mode defaults that saved settings still hold or
 migrations recognize (the Onyx palette `Kit.palette` / `Kit.onyx` alias it,
@@ -280,6 +280,14 @@ instead, so their size never changes.
   (Rosewood out of range); count bottom right in Bold 11, Text bright;
   cooldown numbers centered in Bold 13, the cooldown color; macro names
   Medium. One shadow.
+- **Totem bar** (Blizzard's multi-cast bar; owner, November 20, 2026): its
+  totem, Call and Recall buttons are Mode buttons in Action Bar 1's look, at
+  Blizzard's 30 x 30 and places (Blizzard's Edit Mode still places the bar).
+  Each element slot's rim is that element's color, flat (Mode-Empty's way:
+  `totem` Earth, Fire, Water, Air), the hint in place of Blizzard's colored
+  frames; the empty slots show the face and the same rim. The totem picker
+  (flyout) is a Surface panel in Mode-Border with Mode buttons, and its
+  arrows the Mode chevron in Ivory.
 
 ## Cooldown icons
 

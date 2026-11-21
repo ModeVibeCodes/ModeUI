@@ -83,11 +83,13 @@ function M:Apply()
         self:HideBlizzard()
         self:HookProcs()
         for _, bar in ipairs(self.bars) do self:ApplyBar(bar) end
+        self:ApplyTotemBar()
         self:RenderGhosts()
         self.applied = true
     elseif self.applied then
         self.applied = false
         self:Restore()
+        self:RestoreTotemBar()
     end
     if self.built then self:UpdateFade(); self:RefreshGlows() end
     if addon.EditMode then addon.EditMode:RefreshElements() end

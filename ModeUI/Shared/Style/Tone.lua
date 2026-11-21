@@ -81,6 +81,9 @@ local Tone = {
     threat = { aggro = Hex("FF4848"), warning = Hex("FFA040") },
     -- Lit combo points (nameplates, the Target frame).
     comboPoint = Hex("F05454"),
+    -- The totem bar's element rims (owner, November 20, 2026): Earth, Fire,
+    -- Water and Air, the hint in place of Blizzard's colored totem frames.
+    totem = { earth = Hex("C9924F"), fire = Hex("E8664F"), water = Hex("4FA8E8"), air = Hex("A98FE6") },
     -- Aura rims and glows by debuff type on nameplates and group frames (a
     -- brighter cut of Blizzard's family; Tone.dispel is Blizzard's own), and
     -- crowd control without a type.

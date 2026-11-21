@@ -9,6 +9,7 @@
     <Script file="Text.lua"/>
     <Script file="Utility.lua"/>
     <Script file="Bars.lua"/>
+    <Script file="Totem.lua"/>
     <Script file="Visibility.lua"/>
     <Script file="Keybind.lua"/>
     <Script file="Glow.lua"/>

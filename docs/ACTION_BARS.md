@@ -292,6 +292,24 @@ lines, Edit Mode and opacity settings as the action bars.
 - **Switching off** gives the buttons back where they were and the two Blizzard
   bars their alpha; Blizzard's look returns on reload.
 
+## Totem bar
+
+`Totem.lua` (owner, November 20, 2026) reskins Blizzard's multi-cast totem
+bar (`MultiCastActionBarFrame`, Forever's `Blizzard_ActionBar/Shared`) while
+Action Bars are on. Look only: Blizzard keeps its buttons, sizes, places and
+Edit Mode system. The totem buttons, Call of the Elements and Totemic Recall
+are Mode buttons in Action Bar 1's look at Blizzard's 30 x 30 (`SkinButton`);
+Blizzard's colored totem frames are faded and each element slot's rim takes
+that element's color, flat (`Tone.totem`: Earth, Fire, Water, Air), on the
+button and on the empty slot behind it. The totem picker is a Surface panel
+in Mode-Border with cropped icons, and Blizzard's arrows are the Mode chevron
+in Ivory. Blizzard re-sets only the coordinates of the art it swaps, so the
+fades hold; the hooks (`MultiCastSlotButton_Update`,
+`MultiCastActionButton_Update`, `MultiCastFlyoutFrame_ToggleFlyout`,
+`MultiCastFlyoutFrameOpenButton_Show`) only repaint. Switching Action Bars
+off brings Blizzard's art back. `tests/totem_bar.lua` checks it on a
+stand-in of Blizzard's frames.
+
 ## Settings page
 
 The preview above the five tabs is **your own bar**: the bar being edited, with
@@ -463,6 +481,7 @@ Version 2 changed these from version 1:
 | `Layouts.lua` | its part of the Mode-DPS/TANK layout |
 | `Migrations.lua` | `Initialize(db)`: defaults, validation and the migrations to version 4 |
 | `Driver.lua` | lifecycle, events, `/kb`, settings changes, copy and reset, the font and color owner, moving version 1 places |
+| `Totem.lua` | the totem bar reskin (element rims, the picker, switching off) |
 | `Bars.lua` | secure bars, moving Blizzard's buttons, hiding Blizzard's art, the vehicle-bar watch, the paging snippet, Edit Mode stand-ins and live follow, switching off |
 | `Layout.lua` | pixel-perfect geometry and button counts |
 | `Skin.lua` | rim, gap, background, icon crop (drawn by `Kit.Slot`, shared with the Cooldown Manager), state overlays, empty slots |
