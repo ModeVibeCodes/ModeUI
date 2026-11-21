@@ -3,8 +3,9 @@ local M = addon.Bags
 if not M then return end
 
 -- Lifecycle, events and settings. Nothing is built until the module is first
--- switched on, and the window's slots only when it first opens. While the
--- window is closed, bag changes just mark it stale; it redraws as it opens.
+-- switched on; then the window and every slot's button are made at once
+-- (never in combat: EnsureButtons). While the window is closed, bag changes
+-- just mark it stale; it redraws as it opens.
 local Events, L, Containers = addon.Events, addon.L, addon.Domain.Containers
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
@@ -16,7 +17,9 @@ end
 -- Bag contents change: everything is drawn again (once, after the game's
 -- burst of BAG_UPDATEs). The rest touch only what they name.
 local EVENTS = {
-    BAG_UPDATE_DELAYED = "Update", BAG_CONTAINER_UPDATE = "Update", PLAYER_ENTERING_WORLD = "Update",
+    BAG_UPDATE_DELAYED = "Update", BAG_CONTAINER_UPDATE = "BagsChanged", PLAYER_ENTERING_WORLD = "EnteredWorld",
+    -- Comes just before the combat lockdown starts.
+    PLAYER_REGEN_DISABLED = "EnsureButtons",
     -- These come in bursts (item data arriving for many items at once).
     QUEST_LOG_UPDATE = "QueueUpdate", GET_ITEM_INFO_RECEIVED = "QueueUpdate",
     ITEM_LOCK_CHANGED = "UpdateStates", INVENTORY_SEARCH_UPDATE = "UpdateStates", BAG_NEW_ITEMS_UPDATED = "UpdateStates",
@@ -27,6 +30,7 @@ function M:OnEnable()
     self.active = true
     addon.ReloadManager:Clear("bags")
     self:BuildWindow()
+    self:EnsureButtons()
     self:HookBlizzard()
     for event, method in pairs(EVENTS) do Events:On(self, event, function() self[method](self) end) end
     Events:On(self, "PLAYER_REGEN_ENABLED", function() self:CombatEnded() end)
@@ -48,6 +52,7 @@ end
 
 function M:CombatEnded()
     if self.capturePending then self:Capture() end
+    self:EnsureButtons()
     if self.layoutPending then self.layoutPending = nil; self:Update() end
 end
 
@@ -76,6 +81,23 @@ function M:Update()
     if not self.open then self.stale = true; self:Measure(); return end
     self.stale = nil
     self:Layout()
+end
+
+-- A bag was equipped, removed or swapped: its slots get their buttons.
+function M:BagsChanged()
+    self:EnsureButtons()
+    self:Update()
+end
+
+-- A loading screen: every slot gets its button, and slots never drawn yet
+-- are drawn once behind it (the window open for one frame, then back to
+-- Blizzard's state), as Bagnon does, so each button has been set up and
+-- shown by the game out of combat before it's first used in combat.
+function M:EnteredWorld()
+    self:EnsureButtons()
+    if self.open or InCombatLockdown() or not self:HasUndrawn() then self:Update(); return end
+    self:SetOpen(true)
+    C_Timer.After(0, function() self:SetOpen(self:BlizzardOpen()) end)
 end
 
 -- One redraw a tenth of a second after the first of a burst.

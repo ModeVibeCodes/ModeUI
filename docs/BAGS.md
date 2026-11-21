@@ -81,10 +81,27 @@ The template isn't secure or protected in Blizzard's source, so ModeUI shows,
 places and sizes slots in combat. If the client ever reports one as
 protected, the layout waits for the end of combat.
 
+**No button is made in combat (November 20, 2026).** In game, right-clicking
+an item in combat raised `ADDON_ACTION_FORBIDDEN` ("ModeUI tried to call the
+protected function 'UNKNOWN()'", from `C_Container.UseContainerItem` in
+`ContainerFrameItemButton_OnClick`). The slots were made the first time the
+window opened, so opening the bags first in combat made them during the
+combat lockdown. Bagnon fixed the same error in its 12.1.5 release by never making a button in
+combat, keeping each button on one slot, and drawing the inventory once
+behind the loading screen. ModeUI now does the same (`EnsureButtons`):
+every held slot's button (keyring included) is made when the module starts,
+on `PLAYER_ENTERING_WORLD`, on `BAG_CONTAINER_UPDATE`, after combat and on
+`PLAYER_REGEN_DISABLED` (which comes before the lockdown), never while
+`InCombatLockdown()` is true. A slot with no button yet waits for the end of
+combat. On `PLAYER_ENTERING_WORLD`, if any slot was never drawn, the window
+opens for one frame behind the loading screen and then follows Blizzard's
+bags again. Each button keeps its bag and slot for good.
+
 ## Redraws
 
 - `BAG_UPDATE_DELAYED`, `BAG_CONTAINER_UPDATE`, `PLAYER_ENTERING_WORLD`: the
-  whole window is drawn again.
+  whole window is drawn again (the last two also make any missing buttons;
+  see above). `PLAYER_REGEN_DISABLED`: missing buttons only.
 - `QUEST_LOG_UPDATE`, `GET_ITEM_INFO_RECEIVED`: one redraw a tenth of a
   second after the first of a burst (item levels arrive as the game loads
   item data).
@@ -92,7 +109,7 @@ protected, the layout waits for the end of combat.
   rims, locks and search fades only. `BAG_UPDATE_COOLDOWN`: cooldowns.
   `PLAYER_MONEY`: the footer.
 - While the window is closed, changes only mark it stale; it redraws as it
-  opens. Its size is still worked out (no slots are built), so Edit Mode's
+  opens. Its size is still worked out (slots aren't placed), so Edit Mode's
   stand-in matches it.
 
 ## Placement

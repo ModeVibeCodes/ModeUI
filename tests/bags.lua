@@ -133,8 +133,16 @@ world.run([==[
     assert(frame and not frame:IsShown() and frame.toplevel and frame.clamped, 'window built, closed')
     assert(ContainerFrameCombinedBags:GetParent() == M.hider and not M.hider:IsShown(), 'Blizzard\'s combined bags wait under a hidden frame')
     assert(ContainerFrame1:GetParent() == M.hider and ContainerFrame7:GetParent() == UIParent, 'held bags captured, the bank bag frame left alone')
-    assert(M.slots == nil and frame.width == 2 * (M.g.border + M.g.pad) + 12 * 36 + 11 * 3 and M.mover.width == frame.width,
-        'sized for Edit Mode before any slot is built')
+    -- Every slot's button is made as the module starts, out of combat (one
+    -- made in combat taints Blizzard's item use), none of them drawn yet.
+    assert(#M.slots == 40 and M:HasButton(-2, 4) and M:HasButton(5, 4) and not M.buttons[0][1]:IsShown() and M:HasUndrawn(),
+        'every slot made at start')
+    assert(frame.width == 2 * (M.g.border + M.g.pad) + 12 * 36 + 11 * 3 and M.mover.width == frame.width, 'sized for Edit Mode')
+    -- A loading screen draws them once behind it, then the window closes.
+    FireEvent('PLAYER_ENTERING_WORLD')
+    assert(not M:HasUndrawn() and M.buttons[0][1]:IsShown() and not frame:IsShown() and not M.open, 'drawn once, closed again')
+    FireEvent('PLAYER_ENTERING_WORLD')
+    assert(not frame:IsShown() and not M.open, 'nothing new: stays closed')
 
     -- Blizzard opens its bags (the B key): the window follows.
     OpenAllBags()
@@ -277,6 +285,19 @@ world.run([==[
     assert(M.stale, 'marked stale while closed')
     OpenAllBags()
     assert(M.buttons[1][1].icon.texture == 109 and not M.stale, 'redrawn as it opens')
+    -- A bag grows during combat lockdown: its new slots get no button until
+    -- combat ends. Just before combat (PLAYER_REGEN_DISABLED, before the
+    -- lockdown) and after it, every slot gets one.
+    testCombat, testLockdown = true, true
+    bags[2] = 10; FireEvent('BAG_CONTAINER_UPDATE')
+    assert(not M:HasButton(2, 9) and M.layoutPending and M.buttons[2][8]:IsShown(), 'no button made in combat; the rest drawn')
+    testCombat, testLockdown = false, false
+    FireEvent('PLAYER_REGEN_ENABLED')
+    assert(M.buttons[2][9]:IsShown() and M.buttons[2][10]:IsShown() and not M.layoutPending, 'made and placed after combat')
+    bags[2] = 12; testCombat = true; FireEvent('PLAYER_REGEN_DISABLED')
+    assert(M:HasButton(2, 12), 'made just before the lockdown')
+    testCombat, bags[2] = false, 8; FireEvent('BAG_CONTAINER_UPDATE')
+    assert(not M.buttons[2][9]:IsShown() and M.buttons[2][8]:IsShown(), 'back to 8 slots')
 
     -- Settings: live, validated.
     assert(M:SetOption('columns', 8) and frame.width == 2 * (g.border + g.pad) + 8 * 36 + 7 * 3, 'Columns')

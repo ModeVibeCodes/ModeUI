@@ -168,7 +168,8 @@ end
 
 -- Places every slot and sizes the window. Blizzard's item buttons aren't
 -- protected (its source); should the client report one as protected, the
--- layout waits for the end of combat.
+-- layout waits for the end of combat, as does a slot whose button wasn't
+-- made before combat (EnsureButtons).
 function M:Layout()
     local frame = self.frame
     if not frame then return end
@@ -182,14 +183,13 @@ function M:Layout()
         if section.label then labels = labels + 1; self:PaintLabel(labels, section.label, section.y, g) end
         for _, place in ipairs(section.slots) do
             local entry = place.entry
-            local button = self:Button(entry.bag, entry.slot)
-            self.entries[button] = entry
-            self:PaintSlot(button, g)
-            button:ClearAllPoints()
-            button:SetPoint("TOPLEFT", frame, "TOPLEFT", place.x, -place.y)
-            button:Show()
-            self:PaintItem(button, entry.item)
-            used[button] = true
+            -- A slot without a button waits for the end of combat
+            -- (EnsureButtons).
+            if InCombatLockdown() and not self:HasButton(entry.bag, entry.slot) then
+                self.layoutPending = true
+            else
+                self:PlaceSlot(entry, place, g, frame, used)
+            end
         end
     end
     for i = labels + 1, #frame.labels do frame.labels[i].text:Hide(); frame.labels[i].line:Hide() end
@@ -198,4 +198,16 @@ function M:Layout()
         if not used[button] then button:Hide(); self.entries[button] = nil end
     end
     self:SizeWindow(g.width, plan.height)
+end
+
+-- One slot's button at its place in the window.
+function M:PlaceSlot(entry, place, g, frame, used)
+    local button = self:Button(entry.bag, entry.slot)
+    self.entries[button] = entry
+    self:PaintSlot(button, g)
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", frame, "TOPLEFT", place.x, -place.y)
+    button:Show()
+    self:PaintItem(button, entry.item)
+    used[button], self.drawn[button] = true, true
 end

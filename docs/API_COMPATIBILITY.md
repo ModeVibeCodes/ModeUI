@@ -939,6 +939,13 @@ icon). [Details](BAGS.md).
   handlers start from Blizzard's code with values from the client.
   `CreateFrame("ItemButton", name, parent, template)` with a name: the
   template names children `$parentCooldown` and `$parentIconQuestTexture`.
+  **Never in combat:** a button made from it during combat lockdown led to
+  `ADDON_ACTION_FORBIDDEN` "UNKNOWN()" from `UseContainerItem` when it was
+  right-clicked in combat (seen in game, November 20, 2026). Bagnon's 12.1.5
+  changelog fixes the same by making every button out of combat, never
+  reusing one for another slot and drawing the inventory once at startup.
+  ModeUI follows that (`docs/BAGS.md`). Why the template taints only when made
+  in combat isn't documented.
 - **Equipped bags (Bag Bar).** Blizzard's own bag slot buttons
   (`BaseBagSlotButtonMixin`,
   [Shared/MainMenuBarBagButtons.lua](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_MainMenuBarBagButtons/Shared/MainMenuBarBagButtons.lua))
@@ -967,7 +974,8 @@ icon). [Details](BAGS.md).
   (`FrameUtil.SetParentMaintainRenderLayering`), so ModeUI post-hooks both.
   The frames aren't protected, so `SetParent` works in combat.
 - **Unverified natively:** using items and splitting stacks from ModeUI's
-  buttons in combat (expected to work, as Blizzard's handler runs) and the
+  buttons in combat now that no button is made in combat (it failed while
+  buttons were made the first time the window opened) and the
   bag bar's open highlights while Blizzard's frames are hidden. The junk
   coin uses the atlas Forever's own template names (`bags-junkcoin`).
 

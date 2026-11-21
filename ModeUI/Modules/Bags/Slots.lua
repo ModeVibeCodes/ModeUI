@@ -19,6 +19,8 @@ local Tone = Style.Tone
 local Containers = addon.Domain.Containers
 M.art = setmetatable({}, { __mode = "k" })
 M.entries = setmetatable({}, { __mode = "k" })
+-- Buttons the window has shown at least once.
+M.drawn = setmetatable({}, { __mode = "k" })
 
 -- Blizzard's regions on the button that ModeUI's look replaces.
 local FADED = { "IconBorder", "IconOverlay", "IconOverlay2", "searchOverlay", "ItemContextOverlay", "NewItemTexture",
@@ -40,6 +42,40 @@ function M:Button(bag, slot)
     button:HookScript("OnEnter", function() if M.open then M:PaintState(button) end end)
     list[slot], self.slots[index] = button, button
     return button
+end
+
+-- Every slot's button, made while the game isn't in combat lockdown. A
+-- button made from the template in combat taints Blizzard's click that
+-- uses an item (ADDON_ACTION_FORBIDDEN "UNKNOWN()" from UseContainerItem,
+-- seen in game; Bagnon's 12.1.5 fix for the same is to never make one in
+-- combat). So buttons are made when the module starts, at each loading
+-- screen, when bags change, after combat and just before it
+-- (PLAYER_REGEN_DISABLED comes before the lockdown), and Layout never makes
+-- one in combat. Each button keeps its bag and slot for good. Returns
+-- whether any were made.
+function M:EnsureButtons()
+    if not self.frame or InCombatLockdown() then return false end
+    local bags = Containers.HeldBags()
+    if Containers.HasKeyring() then bags[#bags + 1] = Containers.KEYRING end
+    local made = false
+    for _, bag in ipairs(bags) do
+        for slot = 1, Containers.NumSlots(bag) do
+            if not self:HasButton(bag, slot) then self:Button(bag, slot); made = true end
+        end
+    end
+    return made
+end
+
+function M:HasButton(bag, slot)
+    return self.buttons ~= nil and self.buttons[bag] ~= nil and self.buttons[bag][slot] ~= nil
+end
+
+-- Whether a held slot's button has never been shown in the window.
+function M:HasUndrawn()
+    for _, button in ipairs(self.slots or {}) do
+        if not self.drawn[button] then return true end
+    end
+    return false
 end
 
 function M:BuildArt(button)
