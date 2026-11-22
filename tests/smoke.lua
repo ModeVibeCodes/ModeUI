@@ -14,11 +14,11 @@ assert(cdm.SavedVariables == nil and cdm.Title:gsub("|c%x%x%x%x%x%x%x%x", ""):gs
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS })
 world.run([[
-    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,bags,minimap,unitFrames,nameplates,partyFrames,buffsDebuffs,cooldownManager')
+    assert(addon.initialized and table.concat(addon.moduleOrder,',')=='appearance,profiles,optimizations,classColors,windows,chat,damageMeters,actionBars,tooltip,bags,minimap,unitFrames,nameplates,partyFrames,buffsDebuffs,cooldownManager')
     -- Sidebar order and captions (docs/DESIGN_LANGUAGE.md): Interface, Panels, System.
     assert(table.concat(addon.categoryOrder,',')=='frames,interface,global' and addon.categories.frames.title=='Interface'
         and addon.categories.interface.title=='Panels' and addon.categories.global.title=='System')
-    assert(table.concat(addon.categories.global.modules,',')=='profiles,optimizations,classColors')
+    assert(table.concat(addon.categories.global.modules,',')=='appearance,profiles,optimizations,classColors')
     assert(table.concat(addon.categories.interface.modules,',')=='windows,chat,damageMeters,actionBars,tooltip,bags,minimap')
     assert(table.concat(addon.categories.frames.modules,',')=='unitFrames,nameplates,partyFrames,buffsDebuffs')
     assert(addon.InterfaceTheme.id=='mode' and not addon.InterfaceTheme.blizzardArt,'Mode theme only')
@@ -62,7 +62,7 @@ world.run([[
     assert(Top(rows.home)>Top(rows.unitFrames) and Top(rows.unitFrames)>Top(rows.chat) and Top(rows.chat)>Top(rows.profiles),'General, then Interface, Panels, System')
     assert(rows.unitFrames.label:GetText()=='Unit Frames' and rows.unitFrames.icon and rows.unitFrames.dot and not rows.profiles.dot,'icons and on/off dots')
     local count=0;for _ in pairs(rows) do count=count+1 end
-    assert(count==15,'General and fourteen modules in the sidebar')
+    assert(count==16,'General and fifteen modules in the sidebar')
     assert(window.profileSelect and window.searchInput and window.closeButton,'header: search, profile, close')
     assert(window.doneButton and window.editButton and window.reloadButton and window.previewButton,'footer buttons')
     -- A simple module keeps the sidebar and the whole page, with a breadcrumb.
@@ -363,16 +363,18 @@ assert(wordmark:find("Damion", 1, true), "the wordmark keeps Mode Script with Ex
 local saved = H.Load({ before = STUBS }).saved()
 local p = saved.profiles.Default
 p.typeface = nil
+-- From before the suite too (suite step 1 runs after the typeface steps).
+p.suite = nil
 p.modules.unitFrames.player.fontMedia = "Mode Geist"
 p.modules.unitFrames.target.fontMedia = "Mode Geist Bold"
 p.modules.nameplates.enemy.fontMedia = "Friz Quadrata"
 p.modules.partyFrames.fontMedia = "ModeUI Lato"
 p.globalMedia.font = "media:ModeUI Lato"
 H.Load({ before = STUBS, saved = saved }).run([[
-    assert(addon.db.typeface == 4 and addon.db.modules.unitFrames.player.fontMedia == 'Mode', 'the old default moves to Mode')
+    assert(addon.db.typeface == 4 and addon.db.modules.unitFrames.player.fontMedia == '', 'the old default moves to Mode')
     assert(addon.db.modules.unitFrames.target.fontMedia == 'Mode-Urbanist Bold', 'a Geist weight becomes the same Urbanist weight')
     assert(addon.db.modules.nameplates.enemy.fontMedia == 'Friz Quadrata', 'a picked font stays')
-    assert(addon.db.modules.partyFrames.fontMedia == 'Mode' and addon.db.globalMedia.font == 'game', 'the retired Lato moves to the Mode typeface')
+    assert(addon.db.modules.partyFrames.fontMedia == '' and addon.db.globalMedia.font == 'media:Mode', 'the retired Lato moves to the Mode typeface')
 ]], "typeface")
 -- Look step 1 (Mode-Obsidian only): saved Mode-Blizz textures become Mode-FG
 -- (fills and surfaces) or Mode-BG (empty parts), Mode-Obsidian's became

@@ -98,7 +98,7 @@ world.run([==[
     assert(M and addon.modules.minimap == M and not M.enabled, 'registered, off by default')
     assert(M.db.size == 200 and M.db.difference == 16 and M.db.corners == nil, 'the approved shape; the edge has fixed corners')
     assert(M.db.border == 'mode' and M.db.buttonBorder == 'thin' and M.db.textLayout == 'map', 'the Mode edge, Thin tiles, text on the map')
-    assert(M.db.fontMedia == 'Mode' and M.db.buttonSize == 26 and M.db.buttonSpacing == 3, 'the Mode typeface; the probe\'s tray')
+    assert(M.db.fontMedia == '' and M.db.buttonSize == 26 and M.db.buttonSpacing == 3, 'the Mode typeface; the probe\'s tray')
     assert(Minimap:GetParent() == MinimapCluster.MinimapContainer and M.holder == nil, 'nothing moved while off')
 
     addon:SetModuleEnabled('minimap', true)
@@ -261,7 +261,7 @@ world.run([==[
     assert(table.concat(tabs, ',') == 'Shape,Text,Buttons,Behavior', 'four tabs')
     assert(page.sizeSlider and #page.differenceButtons == 7 and page.cornerButtons == nil and #page.borderButtons == 2)
     assert(#page.swatches == 5 and page.textToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
-    assert(page.borderStyle:IsShown() and page.borderStyle.label:GetText() == 'Mode-Border' and page.borderMetal.label:GetText() == 'Default',
+    assert(page.borderStyle:IsShown() and page.borderStyle.label:GetText() == 'Mode-Border' and page.borderMetal.label:GetText() == 'Suite',
         'Border Style and Border Metal in the Border group')
     page.differenceButtons[2]:GetScript('OnClick')(); assert(M.db.difference == 8 and Minimap.mask:find('Mask%-200%-8%-0$'))
     local picker = page.buttonRows.mail.picker

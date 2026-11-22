@@ -17,7 +17,7 @@ world.run([====[
     -- The Mode-Obsidian look (docs/DESIGN_LANGUAGE.md; the theme part runs on
     -- every profile): Urbanist, Mode-FG health and power over Mode-BG at 85%,
     -- 3px power, Combined shields.
-    assert(M.db.player.fontMedia == 'Mode' and M.db.player.texture==nil)
+    assert(M.db.player.fontMedia == '' and M.db.player.texture==nil)
     assert(M.db.player.foregroundTexture=='media:Mode-FG' and M.db.player.powerForegroundTexture=='media:Mode-FG'
         and M.db.player.backgroundTexture=='media:Mode-BG' and M.db.player.barBackgroundOpacity==85 and M.db.player.powerBackgroundOpacity==85)
     assert(M.db.player.powerHeight==3 and M.db.focus.powerHeight==3 and M.db.player.showShields==true)

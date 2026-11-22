@@ -124,7 +124,7 @@ world.run([==[
     -- health text by health, Urbanist.
     assert(M.db.enemy.foregroundTexture == 'media:Mode-FG' and M.db.enemy.backgroundTexture == 'media:Mode-BG' and M.db.enemy.castTexture == 'media:Mode-FG')
     assert(M.db.enemy.focusStyle == 'glow' and M.db.friendly.focusStyle == 'glow' and M.db.friendly.backgroundTexture == 'media:Mode-BG', 'the focus in the Glow, per kind')
-    assert(M.db.enemy.nameColorMode == 'class' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == 'Mode' and not M.db.enemy.liftedShadow)
+    assert(M.db.enemy.nameColorMode == 'class' and M.db.enemy.healthTextColor == 'health' and M.db.enemy.fontMedia == '' and not M.db.enemy.liftedShadow)
     assert(M.db.enemy.targetColor[1] == addon.Style.Tone.ivory[1] and M.db.enemy.focusColor[1] == addon.Style.Tone.rosewood[1], 'Ivory target, Rosewood focus')
     assert(M.db.enemy.threatColors and not M.db.friendly.threatColors and M.db.friendly.healthText == 'none')
     assert(not addon.Events:IsOn(M, 'NAME_PLATE_UNIT_ADDED'), 'no events while off')

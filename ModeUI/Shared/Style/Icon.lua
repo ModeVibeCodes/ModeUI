@@ -144,11 +144,12 @@ function Style.ColorTones(color)
 end
 
 -- The ring's look: its style's lighting in a border metal (`metalId`, a
--- Tone.metal key; anything else: the style's own metal), or in tones made
+-- Tone.metal key; anything else: the suite's metal, else the style's), or in tones made
 -- from `color` (a class or reaction color, a custom color, the combat red;
 -- Style.ColorTones). The shadow ring and the black line keep their black.
 function Style.PaintRing(ring, color, metalId)
-    local tones = color and Style.ColorTones(color) or Tone.metal[metalId] or Tone.metal[D.STYLES[ring.styleId].metal]
+    local tones = color and Style.ColorTones(color) or Tone.metal[metalId] or Tone.metal[Style.suiteMetal]
+        or Tone.metal[D.STYLES[ring.styleId].metal]
     for _, layer in ipairs(ring.layers) do
         layer.texture:Show()
         Style.Paint(layer.texture, tones[layer.tone])

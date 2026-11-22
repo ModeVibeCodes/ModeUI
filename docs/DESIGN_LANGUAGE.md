@@ -579,6 +579,63 @@ A hybrid window, its palette rebuilt from the tokens (`Style.OnThemeApplied`):
   dropdowns, cards, color swatches, 1px nudges, anchor compass. Labels sit
   above controls with the value on the label line.
 
+### Standard tabs
+
+The owner's settings review (November 21, 2026): the same idea lives in the
+same place in every module. Every Interface and Panels module page (and its
+Edit Mode panel) uses these tabs, in this order, showing only the ones it has
+(`W.STANDARD_TABS`, `Shared/Settings/Taxonomy.lua`); System pages keep their
+own. Edit Mode adds **Place**.
+
+| Tab | Sections, in order | Holds |
+| --- | --- | --- |
+| General | Show, Link, Size, Arrange | a part's own switch, Hide Blizzard's, Match Player, width, height, scale, count, rows, growth, Spacing |
+| Fill | Bars, Empty part, Shields, Background | textures, color modes and colors, the empty part, absorbs, background color and opacity |
+| Border | Border, Icon borders, Rims | Border (Mode-Border, Mode-Empty, None), Border Metal, Border Size, Padding; aura, button and slot borders; rims recolored by meaning (quality, class, debuff type, target, aggro) |
+| Glow | Effects, Highlights, Aura glows, Text glows | proc, ready, Prism and pulse glows with their style, color and time; mouseover, hover and focus highlights; crowd control and dispel glows; name and health text glows |
+| Text | Text style, then one card per text | Font, Outline, Shadow, Slug Text; each text's Show, Size, Anchor, Offset, Color |
+| Auras | Which auras, Icons, Timer, Stacks | filters, groups, lists, icon size and growth, swipe and timer text, stacks |
+| Behavior | When it shows, Fade, Paging and clicks | conditions, combat, fades, paging, click behavior |
+
+Where one tab holds several parts (Unit Frames' health, power and cast bars
+all in Fill), each part gets its own card, named for the part. In code a
+module opens a tab with `page:Tab(title)` (a later call goes back to the same
+tab, so a part's cards can be added from one block of code) and finishes with
+`W.StandardTabs(page[, pinned])`.
+
+**One term per idea** (`W.RETIRED_LABELS` lists the retired ones):
+
+| Use | Means | Not |
+| --- | --- | --- |
+| Show &lt;Part&gt; | a part's own switch | Turn On, Enabled (except the module switch) |
+| Spacing | room between items in a row or grid | Gap |
+| Padding | room between an edge and what's inside it (below zero: the rim over the icon) | Border Gap, Border Shift |
+| Border | which rim: Mode-Border, Mode-Empty or None | Border Style |
+| Border Size | a rim's thickness in pixels | Border Thickness |
+| Size | a text's size, in its own card | Font Size, Text Size |
+| Outline, Shadow | text edge treatment | Text Outline, Text Shadow, Drop Shadow |
+| Background Opacity, Bar Opacity | always prefixed by what fades | Opacity on its own |
+| None, Class Color | the same menu values everywhere | Hidden or Off for none, Class |
+| Copy To…, Reset… | the only two actions, each with a scope menu | Copy & Apply, Copy Style to…, Reset to Defaults |
+
+`tests/settings_taxonomy.lua` builds every element page and fails on a tab
+outside the standard set or order, an empty tab, or a retired label.
+
+### Suite defaults (Global › Appearance)
+
+The suite owns the look; elements own their fit. **Appearance** (System)
+sets the **Font** every module's text follows and the **Border Metal** every
+border follows. A module's Font shows "Suite" and its Border Metal "Suite"
+while it follows; picking anything else makes it the module's own, and the
+Appearance page lists those modules under **Customized**, each with **Back to
+suite**. Changes apply after a reload. Saved: `globalMedia.font` (a font key,
+"media:Mode" by default) and `globalMedia.edgeMetal` ("default": each style's
+own metal); a module follows with `fontMedia = ""` and `font = "game"`, and
+`edgeMetal = "default"`. The settings window itself keeps the Mode typeface.
+**Border** (Mode-Border, Mode-Empty or None) stays the element's own: which of
+the two rims it wears is part of its role. The Cooldown Manager keeps its own
+fonts.
+
 ## Texture library
 
 Every texture ModeUI draws from its own art is a key in `Style.ASSETS`,

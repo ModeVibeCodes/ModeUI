@@ -111,6 +111,7 @@ Shared\Settings\Pages.lua
 Shared\Settings\PageGrid.lua
 Shared\Settings\PageControls.lua
 Shared\Settings\SectionTabs.lua
+Shared\Settings\Taxonomy.lua
 Shared\Settings\ModeLayout.lua
 Shared\Settings\Previews.lua
 Shared\Settings\Search.lua
@@ -130,6 +131,7 @@ Shared\Settings\Launchers.lua
 Shared\Settings\EditAnchor.lua
 Shared\Settings\EditPanel.lua
 Shared\Settings\EditMode.lua
+Modules\Appearance\Appearance.xml
 Modules\Profiles\Profiles.xml
 Modules\Optimizations\Optimizations.xml
 Modules\ClassColors\ClassColors.xml

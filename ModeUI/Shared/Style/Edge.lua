@@ -271,9 +271,14 @@ function Edge:Outset()
     return ((self.def.gap == true and 1 or 0) + self.rim + (self.def.shadow and 1 or 0)) * (self.px or 1)
 end
 
--- The metal the band is painted in: the chosen one, else the style's.
+-- The suite's border metal (Global > Appearance): what a "Suite" (default)
+-- Border Metal draws in; nil keeps each style's own. Set once the profile
+-- loads (a change asks for a reload).
+function Style.SetSuiteMetal(id) Style.suiteMetal = id ~= "default" and Tone.metal[id] and id or nil end
+
+-- The metal the band is painted in: the chosen one, else the suite's, else the style's.
 function Edge:Metal()
-    local metal = Tone.metal[self.metalId] or Tone.metal[D.STYLES[self.styleId].metal]
+    local metal = Tone.metal[self.metalId] or Tone.metal[Style.suiteMetal] or Tone.metal[D.STYLES[self.styleId].metal]
     return metal
 end
 

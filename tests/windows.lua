@@ -221,7 +221,7 @@ world.run([==[
     local function Lit(parts) return parts.modeEdge.highlight ~= nil and parts.modeEdge.highlight[1] == Tone.ivory[1] end
     assert(M and addon.modules.windows == M and not M.enabled, 'registered, off by default')
     assert(M.db.windows.social and M.db.windows.collections and M.db.backgroundOpacity == 100 and M.db.style == 'modeui')
-    assert(M.db.borderSize == nil and M.db.borderColor == nil and M.db.fontMedia == 'Mode' and M.db.looks.social.scale == 100)
+    assert(M.db.borderSize == nil and M.db.borderColor == nil and M.db.fontMedia == '' and M.db.looks.social.scale == 100)
     assert(addon.Style.SameColor(M.db.backgroundColor, Tone.graphite.panel), 'the Graphite panel')
     assert(Skin.parts[FriendsFrame] == nil, 'nothing skinned while off')
 

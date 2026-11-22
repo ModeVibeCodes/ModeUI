@@ -107,7 +107,7 @@ world.run([==[
     local Tone = addon.Style.Tone
     local G = Tone.graphite
     assert(M and addon.modules.chat == M and not M.enabled, 'registered, off by default')
-    assert(M.db.fontMedia == 'Mode' and M.db.idleOpacity == 40 and M.db.buttons == 'compartment', 'the Mode typeface')
+    assert(M.db.fontMedia == '' and M.db.idleOpacity == 40 and M.db.buttons == 'compartment', 'the Mode typeface')
     assert(M.db.backgroundColor[1] == G.panel[1] and M.db.backgroundOpacity == 60, 'Graphite panel, 60%')
     assert(M.db.border == nil and M.db.borderSize == nil and M.db.borderColor == nil, 'the border has no settings')
     assert(M.db.tabHeight == 24 and M.db.editPosition == 'bottom' and M.db.scrollBar)

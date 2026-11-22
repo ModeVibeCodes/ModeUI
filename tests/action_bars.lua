@@ -22,7 +22,7 @@ world.run([==[
         assert(Hex(style.backgroundColor) == '09090A' and Hex(style.macroColor) == '69A5B9', 'Mono panel face (Mode-Obsidian) and macro colors')
         assert(style.border == 'mode' and style.borderSize == nil and style.borderColor == nil and style.spacing == 4, 'the Mode edge, 4px apart')
         assert(style.procGlow == 'border' and Hex(style.procColor) == 'B4CDB6' and Hex(style.readyColor) == 'EFE6D2' and style.readyGlow, 'Celadon proc rim, Ivory ready glow')
-        assert(style.fontMedia == 'Mode' and not style.outline and style.cooldownOpacity == 100, 'Urbanist, one shadow')
+        assert(style.fontMedia == '' and not style.outline and style.cooldownOpacity == 100, 'Urbanist, one shadow')
         assert(style.paging == (bar == 'bar1'), 'bar 1 pages; the others start fixed')
     end
     assert(M.db.bar1.show and not M.db.bar6.show and M.db.bar4.orientation == 'vertical' and M.db.pet.buttons == 10)

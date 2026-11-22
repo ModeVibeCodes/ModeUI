@@ -43,14 +43,15 @@ local function MediaDropdown(parent, timer, border)
         elseif media=="builtin:game" or media=="builtin:chat" then
             button.label:SetText(media=="builtin:chat" and "Chat font" or "Game font")
         elseif media=="" and a.font=="game" then
-            button.label:SetText("Use Global Setting")
+            button.label:SetText("Suite")
         else
             button.label:SetText(addon.Media:MediaLabel(media~="" and media or (a.font=="chat" and "Chat font" or "Game font")))
         end
         if not menu:IsShown() then return end
         W.PlacePopup(menu,button)
         local choices = statusbar and addon.Media:GetStatusBars() or border and addon.Media:GetBorders() or timer:GetFonts()
-        if not statusbar and not border then table.insert(choices,1,{key="global",label="Use Global Setting"}) end
+        -- "Suite": follow Global > Appearance (not on the Appearance page itself).
+        if not statusbar and not border and not timer.suite then table.insert(choices,1,{key="global",label="Suite"}) end
         for index, choice in ipairs(choices) do
             local row = rows[index]
             if not row then

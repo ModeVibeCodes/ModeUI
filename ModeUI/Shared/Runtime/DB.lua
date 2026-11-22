@@ -19,9 +19,11 @@ D.accountKeys = { schemaVersion = true, profiles = true, activeProfile = true, p
     builtThemes = true, previousProfile = true }
 D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {}, builtLayouts = {}, builtThemes = {} }
 D.profileDefaults = {
-    -- Shared media read by the Mode widgets and the unit frames' "Use Global
-    -- Setting" choices. ModeUI has no page to change them yet.
-    globalMedia = { font = "game", texture = "default", border = "thin", overrides = {} },
+    -- The suite's look (Global > Appearance): the font every module's text
+    -- follows while its own Font is "Suite" (fontMedia "" with font "game"),
+    -- and edgeMetal, the metal of every border whose Border Metal is "Suite"
+    -- ("default"). texture and border are older keys nothing reads.
+    globalMedia = { font = "media:Mode", texture = "default", border = "thin", overrides = {}, edgeMetal = "default" },
     modules = {},
     positions = {},
     -- Edit Mode's Match Width and Match Height picks (Placement/SizeMatch.lua).
@@ -36,10 +38,12 @@ D.profileDefaults = {
     -- The look step this profile's textures and border styles are at (see
     -- Look below).
     look = 1,
+    -- The suite step this profile is at (see Suite below).
+    suite = 1,
 }
 -- The keys a profile may contain (import/export accept nothing else).
 D.profileKeys = { globalMedia = true, modules = true, positions = true, sizeMatches = true, typeface = true, theme = true,
-    themeParts = true, look = true }
+    themeParts = true, look = true, suite = true }
 
 -- Typeface step 2 (November 15, 2026, the owner's decision): the Mode font is
 -- "Mode" (Expressway when the client has it, else Geist; Style/Fonts.lua).
@@ -88,6 +92,28 @@ local function Look(node, depth)
         elseif type(value) == "table" then Look(value, depth + 1) end
     end
 end
+-- Suite step 1 (November 21, 2026, the owner's settings review): Global >
+-- Appearance owns the font. The global font, never settable before and still
+-- at "game", becomes the Mode typeface; every module text still at the Mode
+-- typeface ("Mode" with font "game", the default everywhere) follows the
+-- suite instead (fontMedia ""), so it draws exactly as before and changes with
+-- Appearance from now on. A font the player picked stays theirs. Damage
+-- Meters keeps a font per text (<part>Font, <part>FontMedia). The Cooldown
+-- Manager keeps its own fonts (its own addon and look).
+local SUITE_SKIP = { cooldownManager = true }
+local function Suite(node, depth)
+    if type(node) ~= "table" or depth > 12 then return end
+    local default = addon.Style.FONT_DEFAULT
+    for key, value in pairs(node) do
+        if type(value) == "table" then Suite(value, depth + 1)
+        elseif type(key) == "string" and value == default then
+            local base = key == "fontMedia" and "font" or key:match("^(.*)FontMedia$") and key:match("^(.*)FontMedia$") .. "Font"
+            if base and node[base] == "game" then node[key] = "" end
+        end
+    end
+end
+D.SUITE_SKIP = SUITE_SKIP
+D.Suite = Suite
 D.DEFAULT_PROFILE = "Default"
 
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
@@ -116,6 +142,8 @@ function D:ValidateProfile(source)
         assert(profile.themeParts == nil or type(profile.themeParts) == "table", "Invalid theme parts.")
         local look = profile.look
         assert(look == nil or look == 1, "Invalid look step.")
+        local suite = profile.suite
+        assert(suite == nil or suite == 1, "Invalid suite step.")
         -- Mode-Obsidian is the only look (Themes.lua).
         profile.theme = addon.Themes.DEFAULT
         ApplyDefaults(profile, self.profileDefaults, "profile")
@@ -152,6 +180,13 @@ function D:ValidateProfile(source)
             if OLD[profile.globalMedia.texture] then profile.globalMedia.texture = OLD[profile.globalMedia.texture] end
             profile.look = 1
         end
+        if suite == nil then
+            if profile.globalMedia.font == "game" then profile.globalMedia.font = "media:" .. addon.Style.FONT_DEFAULT end
+            for id, db in pairs(profile.modules) do if not SUITE_SKIP[id] then Suite(db, 0) end end
+            profile.suite = 1
+        end
+        local metal = profile.globalMedia.edgeMetal
+        assert(metal == "default" or (type(metal) == "string" and addon.Style.Tone.metal[metal] ~= nil), "Invalid suite border metal.")
         return profile
     end)
     if ok then return result end
@@ -265,6 +300,8 @@ function addon:InitializeDatabase()
     self.root, self.db = root, profile
     -- The look's tokens, now that the profile is checked (Style/Tone.lua).
     addon.Style.ApplyTheme()
+    -- The suite's border metal (Global > Appearance) for every "Suite" metal.
+    addon.Style.SetSuiteMetal(profile.globalMedia.edgeMetal)
     self.Profiles.status = status
     return profile
 end

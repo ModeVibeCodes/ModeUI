@@ -100,7 +100,7 @@ world.run([==[
     assert(M.db.window1.show and not M.db.window2.show and not M.db.window3.show, 'one window on by default')
     assert(M.db.window1.meterType == 'damageDone' and M.db.window2.meterType == 'healingDone' and M.db.window3.meterType == 'damageTaken')
     assert(M.db.window1.barTexture == 'media:Mode-FG' and M.db.window1.barBackground == 'media:Mode-BG' and M.db.window1.barBackgroundOpacity == 100, 'Mode-FG on Mode-BG')
-    assert(M.db.window1.nameFontMedia == 'Mode' and M.db.window1.titleFontMedia == 'Mode', 'the Mode typeface')
+    assert(M.db.window1.nameFontMedia == '' and M.db.window1.titleFontMedia == '', 'the Mode typeface')
     assert(M.db.window1.backgroundColor[1] == G.panel[1] and M.db.window1.titleColor[1] == G.text[1] and M.db.window1.barColor[1] == Tone.ivory[1], 'Graphite, Ivory')
     assert(M.db.window1.decimals == 0 and not M.db.window1.locked and M.db.window1.group == 'none', 'whole numbers, unlocked, on its own')
     for _, part in ipairs(M.textParts) do assert(M.db.window1[part .. 'Outline'], part .. ' outlined') end

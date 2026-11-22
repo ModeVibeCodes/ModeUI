@@ -377,6 +377,7 @@ function W.Page(parent, minimumWidth)
         self.cursor = self.cursor + CARD_TITLE
     end
     W.PageControls(page, ROW_HEIGHT)
+    W.TabControls(page)
     function page:Finish()
         content:SetHeight(self.cursor + 12)
         self:Layout()

@@ -122,7 +122,7 @@ world.run([==[
     assert(M and addon.modules.bags == M and not M.enabled and M.category == 'interface', 'registered under Interface, off by default')
     assert(M.db.columns == 12 and M.db.slotSize == 36 and M.db.spacing == 3 and M.db.sortMode == 'bags' and M.db.growFrom == 'BOTTOMRIGHT')
     assert(M.db.backgroundColor[1] == G.panel[1] and M.db.headerColor[1] == G.raised[1] and M.db.slotColor[1] == Tone.mono.panel[1], 'the Mode window colors')
-    assert(M.db.borderColor == nil and M.db.corner == nil and M.db.slotBorderSize == nil and M.db.fontMedia == 'Mode', 'Mode edges, the Mode typeface')
+    assert(M.db.borderColor == nil and M.db.corner == nil and M.db.slotBorderSize == nil and M.db.fontMedia == '', 'Mode edges, the Mode typeface')
     assert(M.frame == nil and _G.ModeUIBagsFrame == nil, 'nothing built while off')
     OpenAllBags()
     assert(ContainerFrameCombinedBags:GetParent() == UIParent, 'Blizzard\'s bags untouched while off')

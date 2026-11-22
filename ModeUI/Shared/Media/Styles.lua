@@ -19,7 +19,11 @@ end
 function M:ResolveFont(key)
     if key=="game" then return self.gameFont end
     if key=="chat" then return self.chatFont end
-    if type(key)=="string" and key:sub(1,6)=="media:" then return self:GetFont(key:sub(7)) end
+    if type(key)=="string" and key:sub(1,6)=="media:" then
+        local name=key:sub(7)
+        -- The Mode typeface before LibSharedMedia has it registered.
+        return self:GetFont(name) or (name==addon.Style.FONT_DEFAULT and addon.Style.FontPath("regular") or nil)
+    end
 end
 function M:GetSurfaceTexture(scope, key)
     key=key or self:GlobalStyle("texture",scope) or "default"

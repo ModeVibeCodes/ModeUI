@@ -103,8 +103,9 @@ end
 -- (docs/DESIGN_LANGUAGE.md, "Text"); headings use its SemiBold.
 function M:GetInterfaceFont(fallbackPath, scope, weight)
     local theme = addon.InterfaceTheme
-    local selection = self:GlobalStyle("font", scope)
-    if theme and theme.id == "mode" and (selection == nil or selection == "game") then
+    -- The settings window keeps the Mode typeface whatever font the suite
+    -- (Global > Appearance) gives module text.
+    if theme and theme.id == "mode" then
         return addon.Style.FontPath(weight == "heading" and "semibold" or weight or "regular")
     end
     local inherited=self:ResolveFont(self:GlobalStyle("font",scope))

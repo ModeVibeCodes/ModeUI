@@ -173,7 +173,7 @@ world.run([==[
     -- The Mode-Obsidian look (the theme part runs on every profile): Urbanist,
     -- Mode-FG on Mode-BG at 85%, 150 x 34 + 3, Gradient names, Backlit
     -- dispels, the Prism glow on mouseover and focus.
-    assert(M.db.version == 7 and M.db.fontMedia == 'Mode' and M.db.foregroundTexture == 'media:Mode-FG' and M.db.backgroundTexture == 'media:Mode-BG')
+    assert(M.db.version == 7 and M.db.fontMedia == '' and M.db.foregroundTexture == 'media:Mode-FG' and M.db.backgroundTexture == 'media:Mode-BG')
     assert(M.db.dispelFrom == 'bottom' and M.db.hoverGlow and M.db.focusGlow and not M.db.hoverHighlight, 'Backlit dispels, the glow in place of the mouse tint')
     assert(M.db.shieldsTexture == 'Shield' and M.db.shieldsColorMode == 'health' and M.db.shieldsOpacity == 100, 'the standard shield look')
     assert(M.db.backgroundOpacity == 85 and M.db.powerBackgroundOpacity == 85, 'see-through empty bars')

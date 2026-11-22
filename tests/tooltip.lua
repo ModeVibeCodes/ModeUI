@@ -60,7 +60,7 @@ world.run([==[
     local Tone = addon.Style.Tone
     local G = Tone.graphite
     assert(M and addon.modules.tooltip == M and not M.enabled, 'registered, off by default')
-    assert(M.db.position == 'anchor' and M.db.border and not M.db.hideInCombat and M.db.fontMedia == 'Mode', 'the Mode typeface')
+    assert(M.db.position == 'anchor' and M.db.border and not M.db.hideInCombat and M.db.fontMedia == '', 'the Mode typeface')
     assert(M.db.borderSize == nil and M.db.borderColor == nil and M.db.rounded == nil and M.db.gradient == nil, 'the edge has no shape or color settings')
     assert(M.db.qualityBorder and not M.db.classBorder, 'quality borders on, class borders off')
     assert(M.db.backgroundColor[1] == G.panel[1], 'Graphite panel')
