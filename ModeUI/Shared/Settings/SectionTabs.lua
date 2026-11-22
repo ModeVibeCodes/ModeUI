@@ -4,9 +4,13 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- Text tabs, 34 px tall, on one hairline: the chosen tab is in the text color
 -- with a 2 px accent underline, the others muted.
 local TAB_HEIGHT, TAB_PADDING, TAB_GAP = 34, 14, 4
--- When the tabs don't fit, a thin scroll slider under the hairline shows how
--- far along they are and drags them; it takes this much room below the tabs.
-local SLIDER_ROOM = 8
+-- When the tabs don't fit (a narrow page, such as Edit Mode's panel): arrows
+-- at both ends step through them, and a scroll bar under the hairline (a
+-- track with a thumb as long as the share in view, lighter under the mouse)
+-- shows how far along they are and drags them. It takes this much room below
+-- the tabs; the arrows take ARROW_ROOM at each end.
+local SLIDER_ROOM, SLIDER_HEIGHT, ARROW_ROOM = 14, 6, 30
+W.SECTION_SLIDER_ROOM = SLIDER_ROOM
 
 -- Session-only presentation of existing section/row metadata, also used by search.
 function W.SectionTabs(page, order)
@@ -33,13 +37,19 @@ function W.SectionTabs(page, order)
     local right = W.Button(strip, ">", 26, 28, "secondary"); right:SetPoint("RIGHT")
     strip.buttons, strip.sections, strip.viewport = {}, sections, viewport
     strip.previousButton, strip.nextButton = left, right
-    left:Hide(); right:Hide() -- overflow scrolls with the mouse wheel and the slider below
+    left:Hide(); right:Hide()
+    left:ClearAllPoints(); left:SetPoint("TOPLEFT", 0, -3)
+    right:ClearAllPoints(); right:SetPoint("TOPRIGHT", 0, -3)
     local slider = CreateFrame("Slider", nil, strip)
     slider:SetOrientation("HORIZONTAL")
-    slider:SetHeight(4)
-    slider:SetPoint("BOTTOMLEFT", 0, 0); slider:SetPoint("BOTTOMRIGHT", 0, 0)
+    slider:SetHeight(SLIDER_HEIGHT)
+    slider:SetPoint("BOTTOMLEFT", 0, 1); slider:SetPoint("BOTTOMRIGHT", 0, 1)
     slider:SetMinMaxValues(0, 0); slider:SetValue(0)
-    local thumb = W.ScrollThumb(slider, 2)
+    strip.sliderTrack = W.Fill(slider, T.track, "BACKGROUND")
+    local thumb = W.ScrollThumb(slider, SLIDER_HEIGHT)
+    thumb:SetVertexColor(unpack(T.muted))
+    slider:HookScript("OnEnter", function() thumb:SetVertexColor(unpack(T.text)) end)
+    slider:HookScript("OnLeave", function() thumb:SetVertexColor(unpack(T.muted)) end)
     slider:EnableMouseWheel(true)
     slider:Hide()
     strip.slider, strip.sliderThumb = slider, thumb
@@ -60,8 +70,9 @@ function W.SectionTabs(page, order)
         strip:SetHeight(TAB_HEIGHT + 1 + room)
         strip.baseline:ClearAllPoints()
         strip.baseline:SetPoint("BOTTOMLEFT", 0, room); strip.baseline:SetPoint("BOTTOMRIGHT", 0, room)
-        viewport:ClearAllPoints(); viewport:SetPoint("TOPLEFT", 0, 0); viewport:SetPoint("BOTTOMRIGHT", 0, room)
-        slider:SetShown(overflow)
+        local inset = overflow and ARROW_ROOM or 0
+        viewport:ClearAllPoints(); viewport:SetPoint("TOPLEFT", inset, 0); viewport:SetPoint("BOTTOMRIGHT", -inset, room)
+        slider:SetShown(overflow); left:SetShown(overflow); right:SetShown(overflow)
         if page.UpdatePreviewLayout then page:UpdatePreviewLayout()
         elseif page.tabContentTop then W.PinnedSectionTabs(page) end
     end
@@ -84,7 +95,7 @@ function W.SectionTabs(page, order)
         self.maximum = math.max(0, x - visible)
         slider:SetMinMaxValues(0, self.maximum)
         -- The thumb is as long as the share of the tabs in view.
-        if x > 0 then thumb:SetSize(math.max(24, visible * visible / x), T.id == "mode" and 2 or 4) end
+        if x > 0 then thumb:SetSize(math.max(24, visible * visible / x), SLIDER_HEIGHT) end
         SetOverflow(self.maximum > 0)
         self:Scroll(offset)
         for i,section in ipairs(sections) do

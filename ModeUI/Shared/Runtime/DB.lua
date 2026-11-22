@@ -20,7 +20,7 @@ D.accountKeys = { schemaVersion = true, profiles = true, activeProfile = true, p
     -- Edit Mode's Names and Focus choices (Placement/EditMode.lua).
     editMode = true }
 D.accountDefaults = { window = { x = 0, y = 0 }, profiles = {}, optimizationOriginals = {}, builtLayouts = {}, builtThemes = {},
-    editMode = { names = "inside", focus = "strong" } }
+    editMode = { names = "inside", focus = "strong", panelWidth = 432, panelHeight = 560 } }
 D.profileDefaults = {
     -- The suite's look (Global > Appearance): the font every module's text
     -- follows while its own Font is "Suite" (fontMedia "" with font "game"),
@@ -275,6 +275,10 @@ function addon:InitializeDatabase()
     end
     for _, key in ipairs({ "names", "focus" }) do
         assert(type(root.editMode[key]) == "string", "ModeUI: invalid Edit Mode " .. key .. "; settings were not reset.")
+    end
+    for _, key in ipairs({ "panelWidth", "panelHeight" }) do
+        local value = root.editMode[key]
+        assert(type(value) == "number" and value == value and value > 0 and value < math.huge, "ModeUI: invalid Edit Mode " .. key .. "; settings were not reset.")
     end
     for name in pairs(root.profiles) do
         assert(addon.Profiles:Name(name) == name, "ModeUI: invalid profile name; settings were not reset.")

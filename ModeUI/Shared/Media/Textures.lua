@@ -41,6 +41,8 @@ M.Textures = {
     DamageMeterLock = { file = "DamageMeters/Lock.tga", transparent = true },
     DamageMeterUnlock = { file = "DamageMeters/Unlock.tga", transparent = true },
     DamageMeterGrip = { file = "DamageMeters/Grip.tga", transparent = true },
+    -- The same grip on Edit Mode's panel (Shared/Settings/EditPanel.lua).
+    ResizeGrip = { file = "DamageMeters/Grip.tga", transparent = true },
 }
 
 

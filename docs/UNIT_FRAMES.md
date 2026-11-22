@@ -702,9 +702,10 @@ November 13, 2026, after the first look in game, per the owner:
 - **The open tab picks the sample** for parts only one frame has: on the
   Combo Points tab the preview shows the Target whatever Editing says
   (`M.previewSectionUnits`).
-- **Tab slider.** Settings pages whose tabs don't fit get a thin scroll slider
-  under the tab strip (Shared/Settings/SectionTabs.lua), shown only while they
-  overflow; dragging it or the mouse wheel scrolls the tabs.
+- **Tab slider.** Settings pages whose tabs don't fit get `<` and `>` buttons
+  at both ends and a 6px scroll bar under the tab strip
+  (Shared/Settings/SectionTabs.lua), shown only while they overflow; the
+  buttons, dragging the bar or the mouse wheel scroll the tabs.
 
 ## Settings preview
 

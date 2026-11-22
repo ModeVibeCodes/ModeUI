@@ -135,6 +135,7 @@ Shared\Settings\Launchers.lua
 Shared\Settings\EditAnchor.lua
 Shared\Settings\EditPage.lua
 Shared\Settings\EditPanel.lua
+Shared\Settings\EditPanelGrip.lua
 Shared\Settings\EditMode.lua
 Modules\Appearance\Appearance.xml
 Modules\Profiles\Profiles.xml

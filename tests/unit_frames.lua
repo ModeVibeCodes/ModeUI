@@ -1168,14 +1168,14 @@ restored.run([====[
     page.SetEditing('targettarget');local small=view.faces.targettarget
     assert(small:IsShown() and not face:IsShown() and math.abs(small.scale-0.75*M.PREVIEW_SCALE)<1e-9 and not small.portrait:IsShown() and not small.castBox:IsShown())
     local w,h=M:GetPreviewSize(view);assert(w==M.PREVIEW_WIDTH and h==M.PREVIEW_HEIGHT)
-    -- More tabs than fit: a thin slider under them shows the overflow and drags it.
+    -- More tabs than fit: arrows at both ends and a scroll bar under them show the overflow and drag it.
     local strip=page.sectionTabs
     assert(strip.slider and not strip.slider:IsShown() and strip.maximum==0,'no slider while every tab fits')
     local top=strip:GetHeight();strip.viewport.width=300;strip:Layout()
-    assert(strip.maximum>0 and strip.slider:IsShown() and strip:GetHeight()==top+8,'shown with room below the tabs')
+    assert(strip.maximum>0 and strip.slider:IsShown() and strip:GetHeight()==top+addon.ConfigWidgets.SECTION_SLIDER_ROOM and strip.previousButton:IsShown() and strip.nextButton:IsShown(),'shown with room below the tabs, arrows at both ends')
     strip.slider:SetValue(60);assert(strip.viewport:GetHorizontalScroll()==60,'dragging scrolls the tabs')
     strip:Scroll(10);assert(strip.slider:GetValue()==10,'the wheel moves the slider')
-    strip.viewport.width=nil;strip:Layout();assert(not strip.slider:IsShown() and strip:GetHeight()==top)
+    strip.viewport.width=nil;strip:Layout();assert(not strip.slider:IsShown() and not strip.previousButton:IsShown() and strip:GetHeight()==top)
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelect.label:GetText():find('^Focus  '))
     assert(Visible(Row('General','Scale')) and not Visible(Toggle('General','Match Player Frame')),'only the Target matches the Player')

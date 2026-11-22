@@ -60,6 +60,24 @@ world.run([[
     assert(panel.pinned and point == 'TOPRIGHT' and relative == UIParent and relativePoint == 'TOPRIGHT', 'pinned to the right edge')
     strip.pinButton.scripts.OnClick(strip.pinButton)
     assert(not panel.pinned and select(1, panel:GetPoint(1)) == 'TOPLEFT', 'docked beside the element again')
+    -- The grip in its corner resizes it (bottom-left while pinned); saved for the account.
+    local grip = strip.resizeGrip
+    assert(grip and grip:IsShown() and grip.points[1][1] == 'BOTTOMRIGHT' and panel:GetWidth() == 432, 'a grip in the corner')
+    strip.pinButton.scripts.OnClick(strip.pinButton)
+    assert(grip.points[1][1] == 'BOTTOMLEFT', 'pinned: bottom-left')
+    strip.pinButton.scripts.OnClick(strip.pinButton)
+    local at, panelScale, oldCursor = { 500, 300 }, panel:GetEffectiveScale(), GetCursorPosition
+    GetCursorPosition = function() return at[1], at[2] end
+    grip.scripts.OnMouseDown(grip)
+    at = { 500 + 60 * panelScale, 300 - 20 * panelScale }
+    grip.scripts.OnUpdate(grip, 0.1); grip.scripts.OnMouseUp(grip)
+    GetCursorPosition = oldCursor
+    assert(math.abs(panel:GetWidth() - 492) < 0.01 and math.abs(panel:GetHeight() - 580) < 0.01, 'wider and taller')
+    assert(addon.root.editMode.panelWidth == panel:GetWidth() and addon.root.editMode.panelHeight == panel:GetHeight(), 'saved')
+    assert(select(1, panel:GetPoint(1)) == 'TOPLEFT' and grip.scripts.OnUpdate == nil, 'held by its top-left corner; done')
+    panel:ApplySize(100, 100)
+    assert(panel:GetWidth() == 432 and panel:GetHeight() == 320, 'never smaller than its default width or 320 tall')
+    panel:ApplySize(432, 560)
 
     -- Fit's placer: names clear of each other and of other elements, on screen;
     -- the smallest element chooses first.

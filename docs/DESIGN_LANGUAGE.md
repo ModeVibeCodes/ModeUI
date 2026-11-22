@@ -468,7 +468,11 @@ Blizzard's windows (the Skin layer, `Shared/Skin`, through `Skin.Box` and
   `control` edge, Ivory with focus, hover or an open menu; a dropdown's menu is
   a Mode window.
 - **Tabs:** text tabs in SemiBold: the chosen one Ivory with a 2px Ivory bar
-  on its window side, the others Graphite muted. **Side tabs:** `control`
+  on its window side, the others Graphite muted. When they don't fit (a
+  narrow page, such as Edit Mode's panel), `<` and `>` buttons at both ends
+  step through them and a 6px scroll bar under the hairline (a Graphite
+  track, the thumb as long as the share in view, muted, lighter under the
+  mouse) shows how far along they are and drags them. **Side tabs:** `control`
   boxes, the chosen tone (Graphite track) and an Ivory line when checked.
 - **Insets:** cards: a Mode-FG face in Graphite raised (a step lighter than the
   window) inside the `card` edge. When the edge sits inside a box, the face
@@ -679,7 +683,11 @@ up: click an element and its panel opens beside it.
 - **Keys:** arrows nudge one pixel (Shift: ten), Tab and Shift-Tab step
   through the elements, Ctrl-Z undoes, Ctrl-Y or Ctrl-Shift-Z redoes, Esc lets
   go of the element and a second Esc closes Edit Mode.
-- **Panel** (432 px): docks beside the selected element on the side with
+- **Panel** (432 × 560 px by default): the grip in its bottom corner
+  (bottom-left while pinned) resizes it, from 432 × 320 up to 900 px wide
+  and the screen's height, saved for the account
+  (`ModeUIDB.editMode.panelWidth`, `panelHeight`); the page lays out again at
+  the new width. It docks beside the selected element on the side with
   more room, top edges level, never over it; dragged, it stays put until you
   pick another module's element; **Pin** keeps it at the screen's right edge.
   It steps aside while Anchor To or Match waits for a click. Header: the

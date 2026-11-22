@@ -11,6 +11,7 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- its side, Reset Offset) and Match Size (Match Width and Match Height: click
 -- one, then the element whose width or height to take; again to stop).
 -- Open Page leaves Edit Mode for the module's page in the settings window.
+-- The grip in its bottom corner resizes it (EditPanelGrip.lua).
 local WIDTH, HEIGHT, PAD, TOP = 432, 560, 14, 82
 addon.EDIT_PANEL_SIZE = { WIDTH, HEIGHT }
 local GAP = 16 -- between the element and the docked panel
@@ -275,7 +276,7 @@ function addon:CreateEditPanel(strip, controls)
         local x, y, w, h = P:Geometry(element.frame)
         local scale = self:GetScale() > 0 and self:GetScale() or 1
         if not x then self:ClearAllPoints(); self:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -16, -72); return end
-        local width, height = WIDTH * scale, HEIGHT * scale
+        local width, height = self:GetWidth() * scale, self:GetHeight() * scale
         local screenW, screenH = UIParent:GetWidth(), UIParent:GetHeight()
         local rightRoom, leftRoom = screenW - (x + w / 2), x - w / 2
         local left
@@ -293,6 +294,7 @@ function addon:CreateEditPanel(strip, controls)
         owner:SetText(element and element.module.title or "")
         settings:SetEnabled(element ~= nil and addon.modules[element.module.id] ~= nil)
         pin:SetSelected(self.pinned == true)
+        if self.grip then self.grip:Place() end
         local page
         if element and self:IsShown() then
             page = addon.EditPage:Borrow(element.module, host, element.id)
@@ -308,6 +310,7 @@ function addon:CreateEditPanel(strip, controls)
         elseif page and view ~= "settings" then page:Hide() end
         placeState.Refresh()
     end
+    self:CreateEditPanelGrip(panel)
     panel:SetScript("OnHide", function()
         placeState.Hide(); panel:StopMovingOrSizing()
         addon.EditPage:Return()
@@ -315,6 +318,6 @@ function addon:CreateEditPanel(strip, controls)
     end)
     controls.settingsButton, controls.selectedLabel, controls.panel = settings, selected, panel
     controls.settingsTab, controls.placeTab, controls.pinButton, controls.closeButton = settingsTab, placeTab, pin, close
-    controls.settingsHost, controls.ownerLabel = host, owner
+    controls.settingsHost, controls.ownerLabel, controls.resizeGrip = host, owner, panel.grip
     return panel
 end

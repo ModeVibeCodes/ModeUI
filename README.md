@@ -53,7 +53,7 @@ ModeUI has.
   and the rest of the screen dims around it. A slim bar sits at the top of the screen
   (**Elements**, **Names**: Inside, Fit, On Hover, Off or Hide All; **Focus**: Off, Dim or
   Strong; **Center Lines**, **Grid**, **Undo**, **Redo**, **Done**), and a panel docks beside
-  the selected element: **Settings** (that module's own settings, for that element) and
+  the selected element (drag the grip in its corner to resize it): **Settings** (that module's own settings, for that element) and
   **Place**: **Position** (X and Y, and the nudge arrows), **Snap To** (what it hangs from, **Anchor To...**, its
   side, **Reset Offset**) and **Match Size**; **Open Page** opens the full page. **Anchor
   To...** hangs the selected element from the next one you click, then offers its sides;
