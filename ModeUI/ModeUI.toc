@@ -93,6 +93,8 @@ Shared\Placement\PreviewStates.lua
 Shared\Placement\PositionHighlights.lua
 Shared\Placement\PositionGrid.lua
 Shared\Placement\EditHistory.lua
+Shared\Placement\EditLabels.lua
+Shared\Placement\EditFocus.lua
 Shared\Skin\Skin.lua
 Shared\Skin\Controls.lua
 Shared\Skin\Extras.lua

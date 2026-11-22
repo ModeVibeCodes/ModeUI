@@ -529,7 +529,18 @@ Built in one pass, all on the mock client:
 - **Not done (open):** a sample nameplate in Edit Mode, sample states for
   usually empty elements (boss, arena), a Chat element, an Edit Mode key
   binding, the Silver/Steel/Gunmetal question for the suite metal.
-- Waiting on the owner's in-game look.
+- The owner checked it in game (November 22): working. Next, names were
+  crowded where elements sit close together.
+
+### Revision: Edit Mode names and focus (November 22, 2026)
+
+From the owner's picks on the Edit Mode labels study: **Names** (Inside by
+default; Fit, On Hover, Off and Hide All to compare in game), **Focus**
+(Strong by default; Dim and Off), the selected element's single chip (name
+and size, X and Y while moving) and the nudge arrows moved to Place. Overlap
+picking (smallest element first, Elements here) waits until the owner has
+seen whether the dim is enough. Mock client only; waiting on the owner's
+in-game look.
 
 ## Decisions
 

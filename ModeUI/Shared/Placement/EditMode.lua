@@ -32,6 +32,41 @@ function E:SetHighlights(show)
     self:RefreshElements()
 end
 
+-- Names and Focus (docs/DESIGN_LANGUAGE.md, "Edit Mode"), saved for the
+-- account (ModeUIDB.editMode). Names: inside each element, where they fit
+-- (EditLabels.lua), only under the mouse, or off. Focus: the dim around the
+-- selected element (EditFocus.lua). An unknown saved value reads as the default.
+E.NAMES = { { id = "inside", label = "Inside" }, { id = "fit", label = "Fit" }, { id = "hover", label = "On Hover" },
+    { id = "none", label = "Off" } }
+E.FOCUS = { { id = "off", label = "Off" }, { id = "dim", label = "Dim" }, { id = "strong", label = "Strong" } }
+local function Choice(list, id)
+    for _, choice in ipairs(list) do if choice.id == id then return choice end end
+end
+local function Saved() return addon.root and addon.root.editMode end
+function E:Names()
+    local saved = Saved()
+    return saved and Choice(self.NAMES, saved.names) and saved.names or "inside"
+end
+function E:Focus()
+    local saved = Saved()
+    return saved and Choice(self.FOCUS, saved.focus) and saved.focus or "strong"
+end
+function E:ChoiceLabel(list, id) local choice = Choice(list, id); return choice and choice.label or "" end
+function E:SetNames(id)
+    if not Choice(self.NAMES, id) then return false end
+    local saved = Saved()
+    if saved then saved.names = id end
+    self:RefreshElements()
+    return true
+end
+function E:SetFocus(id)
+    if not Choice(self.FOCUS, id) then return false end
+    local saved = Saved()
+    if saved then saved.focus = id end
+    self:RefreshElements()
+    return true
+end
+
 function E:Bounds(element)
     return addon.PositionManager:GetScreenBounds(element.id)
 end

@@ -69,7 +69,8 @@ function PM:ShowGuides(element)
     if Combat() or not addon.editMode then return self:HideGuides() end
     if not self.guides then
         local frame = CreateFrame("Frame", nil, UIParent)
-        frame:SetAllPoints(UIParent); frame:SetFrameStrata("DIALOG"); frame:EnableMouse(false)
+        -- Above the focus dim (EditFocus.lua), below the top bar and the panel.
+        frame:SetAllPoints(UIParent); frame:SetFrameStrata("DIALOG"); frame:SetFrameLevel(60); frame:EnableMouse(false)
         self.guides = { frame = frame, x = Line(frame), y = Line(frame) }
     end
     local x, y = P:ReadFrame(element.subject)

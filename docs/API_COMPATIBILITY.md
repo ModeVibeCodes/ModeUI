@@ -363,7 +363,12 @@ guarded, and native behavior on Forever is unverified until checked in game.
   measured place, from `Positioning:Geometry` (`GetCenter`, effective scale), so a
   protected frame never anchors to another frame. The alignment guides are
   textures on a plain full-screen frame (`SetColorTexture`). The nudge arrows use
-  `Texture:SetRotation` when present.
+  `Texture:SetRotation` when present. Edit Mode's focus dim (November 22) is
+  four textures on a plain DIALOG frame with the mouse off; a decoration lifts
+  above it with `SetFrameStrata` on its own (child) frame. The element under
+  the mouse comes from `GetCursorPosition` over `UIParent:GetEffectiveScale()`
+  every 0.05 s, compared with each element's `Positioning:Geometry` rectangle,
+  so no script is hooked on a module's frame. Needs the owner's in-game check.
 
 ### Action bars, paging and glows — November 13, 2026
 

@@ -2,8 +2,9 @@ local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- Edit Mode's top bar (docs/DESIGN_LANGUAGE.md, "Edit Mode"): a slim bar
 -- across the top of the screen with Elements (every element you can pick,
--- including ones hidden behind others), the screen-wide switches
--- (Highlights, Center Lines, Grid and its spacing), Undo, Redo and Done; drag
+-- including ones hidden behind others), Names (Inside, Fit, On Hover, Off, or
+-- Hide All for no outlines either) and Focus (Off, Dim, Strong), the
+-- screen-wide switches (Center Lines, Grid and its spacing), Undo, Redo and Done; drag
 -- it to move it. The selected element's panel docks beside it
 -- (EditPanel.lua). Keys: arrows nudge one pixel (ten with Shift), Tab and
 -- Shift-Tab step through the elements, Ctrl-Z undoes and Ctrl-Y (or
@@ -88,7 +89,27 @@ function addon:CreateEditWindow()
         button:SetScript("OnClick", function() set(not get()); self:RefreshEditWindow() end)
         return button
     end
-    local highlights = Switch("Highlights", 96, function() return E.highlights end, function(on) E:SetHighlights(on) end)
+    -- Names and Focus: saved choices (Placement/EditMode.lua); Hide All is the
+    -- old Highlights switch (no outlines or names), for this session only.
+    local function Choices(list, extra)
+        local items = {}
+        for _, choice in ipairs(list) do items[#items + 1] = { id = choice.id, label = choice.label } end
+        if extra then items[#items + 1] = extra end
+        return items
+    end
+    local namesHost = CreateFrame("Frame", nil, window); namesHost:SetSize(150, 26); Place(namesHost, 150)
+    local names = W.Select(namesHost, 150, function() return Choices(E.NAMES, { id = "hidden", label = "Hide All" }) end, function()
+        local id = E.highlights and E:Names() or "hidden"
+        return id, "Names: " .. (E.highlights and E:ChoiceLabel(E.NAMES, id) or "Hide All")
+    end, function(id)
+        if id == "hidden" then E:SetHighlights(false)
+        else E.highlights = true; E:SetNames(id) end
+        self:RefreshEditWindow()
+    end)
+    local focusHost = CreateFrame("Frame", nil, window); focusHost:SetSize(128, 26); Place(focusHost, 128, 14)
+    local focus = W.Select(focusHost, 128, function() return Choices(E.FOCUS) end, function()
+        return E:Focus(), "Focus: " .. E:ChoiceLabel(E.FOCUS, E:Focus())
+    end, function(id) E:SetFocus(id); self:RefreshEditWindow() end)
     -- Center Lines and Grid draw on the screen behind the elements (PositionGrid.lua).
     local centerLines = Switch("Center Lines", 108, function() return E.centerLines end, function(on) E:SetCenterLines(on) end)
     local grid = Switch("Grid", 60, function() return E.grid end, function(on) E:SetGrid(on) end, 4)
@@ -116,14 +137,14 @@ function addon:CreateEditWindow()
         panel:SetShown(window:IsShown() and element ~= nil and not picking)
         exit.label:SetText(picking and "Cancel" or "Done")
         panel:Refresh()
-        highlights:SetSelected(E.highlights)
+        names:Refresh(); focus:Refresh()
         centerLines:SetSelected(E.centerLines); grid:SetSelected(E.grid)
         gridSize:Refresh(); gridSize:SetEnabled(E.grid)
         undo:SetEnabled(E.history:CanUndo()); redo:SetEnabled(E.history:CanRedo())
     end
     -- Clearing focus runs the numeric input's normal apply.
     function self:CommitEditInputs() window.xInput:ClearFocus(); window.yInput:ClearFocus() end
-    window.exitButton, window.highlightButton = exit, highlights
+    window.exitButton, window.namesSelect, window.focusSelect = exit, names, focus
     window.centerLinesButton, window.gridButton = centerLines, grid
     window.elementsButton, window.gridSizeSelect, window.undoButton, window.redoButton = elements, gridSize, undo, redo
     window:EnableKeyboard(true)

@@ -159,7 +159,7 @@ world.run([[
     local strip,panel,PM=addon.editWindow,addon.editPanel,addon.PositionManager
     local element=addon.EditMode:Selected()
     assert(element and element.module.id=='unitFrames','opened from Unit Frames: one of its frames is selected')
-    assert(strip:GetHeight()==44 and strip:GetWidth()<=900 and panel:IsShown() and select(2,panel:GetPoint(1))==UIParent,'top bar; the panel docked on screen')
+    assert(strip:GetHeight()==44 and strip:GetWidth()<=1060 and panel:IsShown() and select(2,panel:GetPoint(1))==UIParent,'top bar; the panel docked on screen')
     local page=window.pages.unitFrames
     assert(panel:GetWidth()==432 and strip.settingsTab.selected and page:GetParent()==strip.settingsHost and page:IsShown() and page.inEditPanel,'the Unit Frames page in the panel')
     assert(page.previewArea and not page.previewArea:IsShown() and page.cardColumns==1,'no preview, one card per row')
@@ -168,7 +168,7 @@ world.run([[
     local left=select(4,panel:GetPoint(1))*panel:GetScale()
     assert(left>=ex+ew/2 or left+panel:GetWidth()*panel:GetScale()<=ex-ew/2,'beside the element')
     -- Every button's text fits inside it (nothing clipped at any size).
-    for _,name in ipairs({'highlightButton','centerLinesButton','gridButton','exitButton','elementsButton','undoButton','redoButton',
+    for _,name in ipairs({'namesSelect','focusSelect','centerLinesButton','gridButton','exitButton','elementsButton','undoButton','redoButton',
         'settingsButton','settingsTab','placeTab','pinButton','anchorToButton','resetOffset','matchWidthButton','matchHeightButton'}) do
         local button=strip[name];assert(button and button.label:GetStringWidth()<=button:GetWidth()-8,name..' text fits')
     end

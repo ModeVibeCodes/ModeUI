@@ -254,6 +254,7 @@ function methods:SetJustifyH(value) self.justifyH = value end
 function methods:GetJustifyH() return self.justifyH or "CENTER" end
 function methods:SetJustifyV(value) self.justifyV = value end
 function methods:SetFrameStrata(value) self.strata = value end
+function methods:GetFrameStrata() return self.strata or (self.parent and self.parent.GetFrameStrata and self.parent:GetFrameStrata()) or "MEDIUM" end
 function methods:SetFrameLevel(value) self.frameLevel = value end
 function methods:SetClipsChildren(value) self.clipsChildren = value end
 function methods:SetSnapToPixelGrid(value) self.snapToPixelGrid = value end

@@ -256,7 +256,7 @@ function P:UpdateHighlight()
     if not x then return end
     if not self.highlight then
         local outline = CreateFrame("Frame", nil, UIParent)
-        outline:SetFrameStrata("DIALOG")
+        outline:SetFrameStrata("DIALOG"); outline:SetFrameLevel(60) -- above the focus dim
         outline:EnableMouse(false)
         for index, points in ipairs({ {"TOPLEFT", "TOPRIGHT"}, {"BOTTOMLEFT", "BOTTOMRIGHT"},
             {"TOPLEFT", "BOTTOMLEFT"}, {"TOPRIGHT", "BOTTOMRIGHT"} }) do

@@ -47,12 +47,14 @@ ModeUI has.
 - **Edit Mode** (the window's footer, or `/modeui edit`) lets you drag every unit frame, the
   party frames and each action bar and damage meter window, and set them up in place. Guides
   show when an element nears the center, an offset of 0, the screen's edges or another
-  element's center or edges, and it snaps there. The arrows beside the selected element (or the
-  arrow keys) move it one pixel; Tab picks the next element, Ctrl-Z / Ctrl-Y undo and redo, Esc
-  lets go and a second Esc closes. A slim bar sits at the top of the screen (**Elements**,
-  **Highlights**, **Center Lines**, **Grid**, **Undo**, **Redo**, **Done**), and a panel docks
-  beside the selected element: **Settings** (that module's own settings, for that element) and
-  **Place**: **Position** (X and Y), **Snap To** (what it hangs from, **Anchor To...**, its
+  element's center or edges, and it snaps there. The arrow keys (or the arrows in **Place**)
+  move it one pixel; Tab picks the next element, Ctrl-Z / Ctrl-Y undo and redo, Esc lets go and
+  a second Esc closes. The selected element shows its name and size (X and Y while it moves),
+  and the rest of the screen dims around it. A slim bar sits at the top of the screen
+  (**Elements**, **Names**: Inside, Fit, On Hover, Off or Hide All; **Focus**: Off, Dim or
+  Strong; **Center Lines**, **Grid**, **Undo**, **Redo**, **Done**), and a panel docks beside
+  the selected element: **Settings** (that module's own settings, for that element) and
+  **Place**: **Position** (X and Y, and the nudge arrows), **Snap To** (what it hangs from, **Anchor To...**, its
   side, **Reset Offset**) and **Match Size**; **Open Page** opens the full page. **Anchor
   To...** hangs the selected element from the next one you click, then offers its sides;
   anchoring always starts at X and Y 0. **Match Width** and **Match Height**: click one, then the

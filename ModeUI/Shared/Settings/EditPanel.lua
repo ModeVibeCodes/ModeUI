@@ -6,7 +6,8 @@ local W, T = addon.ConfigWidgets, addon.InterfaceTheme
 -- where you put it until you pick another module's element). Header: the
 -- element's name and module, Pin, and close (clears the selection). Two tabs:
 -- **Settings**, the module's own page scoped to the element (EditPage.lua),
--- and **Place**: Position (X and Y), Snap To (what it hangs from, Anchor To…,
+-- and **Place**: Position (X and Y, and four arrows that nudge it one pixel),
+-- Snap To (what it hangs from, Anchor To…,
 -- its side, Reset Offset) and Match Size (Match Width and Match Height: click
 -- one, then the element whose width or height to take; again to stop).
 -- Open Page leaves Edit Mode for the module's page in the settings window.
@@ -87,6 +88,9 @@ local function BuildPlace(self, view, controls)
     local E, PM, P, A = self.EditMode, self.PositionManager, self.Positioning, self.EditAnchor
     local state = { refreshing = false }
     Caption(view, "POSITION", -6)
+    -- Nudge: one physical pixel a click, as the arrow keys do.
+    local nudges = PM:NudgeButtons(view, function() local element = E:Selected(); return element and element.id end)
+    for i, button in ipairs(nudges) do button:SetPoint("TOPRIGHT", -PAD - (4 - i) * 24, -2) end
     local function Coordinate(axis, top)
         local function Get()
             local element = E:Selected()
@@ -188,6 +192,8 @@ local function BuildPlace(self, view, controls)
         xInput:SetEnabled(available); yInput:SetEnabled(available)
         xSlider:SetEnabled(available); ySlider:SetEnabled(available)
         refreshX(); refreshY()
+        local nudging = available and PM:CanDrag(element) or false
+        for _, button in ipairs(nudges) do button:SetEnabled(nudging); button:SetAlpha(nudging and 1 or 0.45) end
         targets:SetEnabled(anchoring); placements:SetEnabled(anchoring and available); reset:SetEnabled(anchoring and available)
         local picking, axisPick = A:Active(), A:Matching()
         anchorTo:SetEnabled((picking and not axisPick) or A:CanPick(element))
@@ -208,7 +214,7 @@ local function BuildPlace(self, view, controls)
     controls.xInput, controls.yInput, controls.xSlider, controls.ySlider = xInput, yInput, xSlider, ySlider
     controls.targetDropdown, controls.placementDropdown, controls.resetOffset = targets, placements, reset
     controls.anchorToButton, controls.matchWidthButton, controls.matchHeightButton = anchorTo, matchWidth, matchHeight
-    controls.matchedLabel = matched
+    controls.matchedLabel, controls.nudgeButtons = matched, nudges
     return state
 end
 

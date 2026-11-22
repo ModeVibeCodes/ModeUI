@@ -643,13 +643,37 @@ ModeUI's own Edit Mode (Blizzard's is left alone: ModeUI never writes to
 up: click an element and its panel opens beside it.
 
 - **Top bar** (across the top, draggable): Edit Mode, **Elements** (every
-  element you can pick, including ones hidden behind others), Highlights,
-  Center Lines, Grid with its spacing (16-96 px), **Undo**, **Redo** and
+  element you can pick, including ones hidden behind others), **Names**,
+  **Focus**, Center Lines, Grid with its spacing (16-96 px), **Undo**, **Redo** and
   **Done** (Cancel while Anchor To or Match waits for a click). Opened from a
   module's page, that module's first element is selected. `/modeui edit`
   opens and closes it.
 - **Selection:** element names in `Tone.edit.name`; the selected element's
-  outline and the guides in `Tone.edit.select`, others in `Tone.edit.idle`.
+  outline and the guides in `Tone.edit.select`, the one under the mouse in
+  `Tone.edit.hover`, others in `Tone.edit.idle`. Only the element and its
+  chip take the mouse. The selected element has one chip: its name and size
+  ("Target Frame 200×52"), X and Y from the screen's center while it is
+  dragged or nudged; above it, else below, else inside, clear of the top bar
+  and the panel.
+- **Names** (saved for the account, `ModeUIDB.editMode.names`; default
+  Inside): **Inside** puts each name in its element's top-left corner, cut
+  short to fit (none on elements under 40 × 16); **Fit** gives each name the
+  first clear spot of above, below, inside, left and right, smallest
+  elements first, and a name with no clear spot waits for the mouse
+  (`Shared/Placement/EditLabels.lua`); **On Hover** names only the element
+  under the mouse; **Off** names only the selected element; **Hide All**
+  hides outlines and names for the session (the old Highlights switch). The
+  element under the mouse is always named, except with Off.
+- **Focus** (saved for the account, `ModeUIDB.editMode.focus`; default
+  Strong): with an element selected, the screen around it darkens with
+  `Tone.edit.scrim` at 0.40 (**Dim**) or 0.65 (**Strong**): four plain
+  textures around the element in the DIALOG strata at level 20, taking no
+  clicks (`Shared/Placement/EditFocus.lua`). Other outlines and names sink
+  under it (Strong hides the other outlines); the selected element's and the
+  hovered element's decoration lift above it (level 40); the guides (60),
+  the panel and the top bar (80) stay on top. It fades in over 0.12 s, halves
+  while dragging so snap targets stay visible, and steps away while Anchor
+  To or Match waits for a click.
 - **Keys:** arrows nudge one pixel (Shift: ten), Tab and Shift-Tab step
   through the elements, Ctrl-Z undoes, Ctrl-Y or Ctrl-Shift-Z redoes, Esc lets
   go of the element and a second Esc closes Edit Mode.
@@ -661,7 +685,7 @@ up: click an element and its panel opens beside it.
   page (the same page object as the settings window, borrowed while Edit Mode
   is open), scoped to the element (`module:OpenElementSettings`), one card
   per row, without its preview: the element on screen is the preview.
-  **Place**: Position (X, Y), Snap To (what it hangs from, Anchor To…, side,
+  **Place**: Position (X, Y, and four arrows that nudge it one pixel), Snap To (what it hangs from, Anchor To…, side,
   Reset Offset) and Match Size. **Open Page** leaves Edit Mode for the page in
   the settings window. A module with its own window (the Cooldown Manager)
   offers Place and Open Page.

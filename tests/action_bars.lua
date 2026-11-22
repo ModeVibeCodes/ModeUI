@@ -216,8 +216,11 @@ world.run([==[
     assert(element and element.label == 'Action Bar 1' and PM.elements.actionBarsPet and PM.elements.actionBarsStance)
     assert(addon:SetEditMode(true))
     assert(mover1:IsShown() and mover1.width == bar1.width and not mover1.label, 'the box carries no name')
-    local handle = element.decoration and element.decoration.handle
-    assert(handle and Point(handle)[1] == 'BOTTOM' and Point(handle)[3] == 'TOP', 'the handle sits centered above the bar')
+    assert(addon.EditMode:Select('actionBarsBar1'))
+    local handle = element.decoration and element.decoration.chip
+    local chipPoint, barHeight = Point(handle), select(4, addon.Positioning:Geometry(mover1))
+    assert(handle:IsShown() and chipPoint[1] == 'BOTTOMLEFT' and chipPoint[2] == element.decoration.frame and chipPoint[5] >= barHeight,
+        'the selected bar\'s name chip sits above it')
     assert(element.decoration.label.text == 'Action Bar 1' and element.decoration.label.color[2] == 1, 'named in volt green')
     assert(mover1.fill.vertexColor[3] == Kit.palette.accent[3], 'highlighted')
     assert(not M.slots.bar1[1] or not ModeUIActionBar1Mover.slots[1]:IsShown(), 'the real bar shows under its highlight')
@@ -242,11 +245,10 @@ world.run([==[
     -- The mock doesn't chain anchors as the client does; re-anchor bar 2's stand-in.
     PM:ApplyPosition('actionBarsBar2', true); M:SyncAll()
     assert(Point(ModeUIActionBar2)[5] == before + 1, 'bars stacked on it move too')
-    local decoration = element.decoration
-    assert(decoration and #decoration.nudges == 4, 'nudge arrows on the element')
+    local nudges = addon.editWindow.nudgeButtons
+    assert(nudges and #nudges == 4 and nudges[1]:GetParent():GetParent() == addon.editPanel, 'nudge arrows in Place')
     addon.EditMode:Select('actionBarsBar1')
-    assert(decoration.nudges[1]:IsShown(), 'shown on the selected element')
-    decoration.nudges[1].scripts.OnClick(decoration.nudges[1])
+    nudges[1].scripts.OnClick(nudges[1])
     assert(PM:GetPosition('actionBarsBar1').x == -1, 'left arrow moves one pixel left')
     addon.editWindow.scripts.OnKeyDown(addon.editWindow, 'RIGHT')
     assert(PM:GetPosition('actionBarsBar1').x == 0 and not addon.editWindow.propagate, 'arrow keys nudge too')
@@ -257,15 +259,18 @@ world.run([==[
     element.dragUpdate()
     assert(PM.guides and PM.guides.x:IsShown(), 'center guide near an X of 0')
     assert(PM:StopDragging('actionBarsBar1') and PM:GetPosition('actionBarsBar1').x == 0 and not PM.guides.frame:IsShown(), 'snapped to 0')
-    -- The selected element shows its X and Y from the screen's center.
+    -- The selected element's chip: its size, then X and Y from the screen's center while it moves.
     addon.EditMode:Select('actionBarsBar1')
-    local coords = element.decoration.coords
-    assert(coords:IsShown() and Point(coords)[1] == 'RIGHT' and Point(coords)[3] == 'LEFT', 'X and Y left of the name')
-    coords.scripts.OnUpdate(coords, 1)
+    local Labels, chip = addon.EditLabels, element.decoration
+    local _, _, barW, barH = addon.Positioning:Geometry(mover1)
+    Labels.movedAt = -100; Labels:Tick()
+    assert(chip.sub:GetText() == (math.floor(barW + 0.5) .. '×' .. math.floor(barH + 0.5)), 'its size')
+    assert(PM:Nudge('actionBarsBar1', 1, 0)); Labels:Tick()
     local sx, sy = UIParent:GetCenter()
     local mx, my = mover1:GetCenter()
-    assert(coords.text:GetText() == ('X ' .. math.floor(mx - sx + 0.5) .. '   Y ' .. math.floor(my - sy + 0.5)), 'from the screen center')
-    assert(not PM.elements.actionBarsBar2.decoration.coords:IsShown(), 'only on the selected element')
+    assert(chip.sub:GetText() == ('X ' .. math.floor(mx - sx + 0.5) .. '  Y ' .. math.floor(my - sy + 0.5)), 'X and Y from the screen center')
+    assert((PM.elements.actionBarsBar2.decoration.sub:GetText() or '') == '', 'only on the selected element')
+    assert(PM:Nudge('actionBarsBar1', -1, 0))
     -- Center Lines (on) and Grid (off) in the Edit Mode window.
     local window, E = addon.editWindow, addon.EditMode
     assert(PM.grid and PM.grid.frame:IsShown() and PM.grid.centerX:IsShown() and PM.grid.centerY:IsShown(), 'center lines by default')
@@ -283,7 +288,9 @@ world.run([==[
     local A = addon.EditAnchor
     assert(A:Start('actionBarsBar4') and PM.picking)
     assert(mover1:IsMouseEnabled() and not PM:CanDrag(element), 'the bar takes the click, but does not drag')
-    assert(element.decoration.handle:IsMouseEnabled(), 'its name handle takes the click too')
+    local nameChip = element.decoration.chip
+    assert(not nameChip:IsShown() or nameChip:IsMouseEnabled(), 'a shown name chip takes the click too')
+    assert(not (addon.EditFocus.frame and addon.EditFocus.frame:IsShown()), 'the focus dim steps away while picking')
     assert(not PM:StartDragging('actionBarsBar1'), 'no dragging while picking')
     A:Stop()
     -- Pointing Action Bar 1 at bar 2 (which sits on it) says why it can't.

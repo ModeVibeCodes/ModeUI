@@ -61,12 +61,100 @@ world.run([[
     strip.pinButton.scripts.OnClick(strip.pinButton)
     assert(not panel.pinned and select(1, panel:GetPoint(1)) == 'TOPLEFT', 'docked beside the element again')
 
+    -- Fit's placer: names clear of each other and of other elements, on screen;
+    -- the smallest element chooses first.
+    local Labels, Focus = addon.EditLabels, addon.EditFocus
+    local crowd = {
+        { id = 'big', rect = { x = 40, y = 40, w = 200, h = 60 }, w = 80 },
+        { id = 'small', rect = { x = 100, y = 104, w = 30, h = 30 }, w = 70 },
+        { id = 'wide', rect = { x = 40, y = 138, w = 200, h = 20 }, w = 90 },
+    }
+    local spots = Labels.Place(crowd, {}, 400, 300)
+    assert(spots.small and spots.small.x == 100 - 70 - 4, 'boxed in above and below, the smallest (placed first) goes left')
+    local placed = {}
+    for _, item in ipairs(crowd) do
+        local s = spots[item.id]
+        if s then
+            local r = { x = s.x, y = s.y, w = item.w, h = Labels.HEIGHT }
+            assert(r.x >= 0 and r.y >= 0 and r.x + r.w <= 400 and r.y + r.h <= 300, item.id .. ' on screen')
+            for _, other in ipairs(crowd) do assert(other == item or not Labels.Hit(r, other.rect, 0), item.id .. ' clear of ' .. other.id) end
+            for _, p in ipairs(placed) do assert(not Labels.Hit(r, p, 0), item.id .. ' clear of the other names') end
+            placed[#placed + 1] = r
+        end
+    end
+
+    -- Names and Focus: saved for the account, Inside and Strong by default.
+    assert(addon.root.editMode.names == 'inside' and E:Names() == 'inside' and E:Focus() == 'strong', 'Inside and Strong by default')
+    assert(not E:SetNames('bogus') and not E:SetFocus('bogus'), 'only known choices')
+    assert(strip.namesSelect.label:GetText() == 'Names: Inside' and strip.focusSelect.label:GetText() == 'Focus: Strong', 'the top bar shows both')
+    -- Strong: the dim surrounds the Target, which lifts above it; the other outlines hide.
+    assert(E:Select('unitFramesTarget'))
+    local target, player = PM:Element('unitFramesTarget'), PM:Element('unitFramesPlayer')
+    assert(Focus.frame and Focus.frame:IsShown() and Focus.frame.strata == 'DIALOG' and Focus.alpha == Focus.STRENGTH.strong, 'the dim is on')
+    local tx, ty, tw, th = addon.Positioning:Geometry(target.frame)
+    assert(math.abs(Focus.pieces[1].rect[4] - (ty + th / 2 + Focus.PAD)) < 0.01 and math.abs(Focus.pieces[3].rect[3] - (tx - tw / 2 - Focus.PAD)) < 0.01,
+        'the opening is the Target')
+    local td, pd = target.decoration, player.decoration
+    assert(td.frame:IsShown() and td.frame.strata == 'DIALOG' and td.frame:GetFrameLevel() == Focus.LIFT, 'the Target lifts above it')
+    assert(td.chip:IsShown() and td.label:GetText() == 'Target Frame' and td.sub:GetText():find('×', 1, true), 'its chip: name and size')
+    assert(not pd.frame:IsShown(), 'Strong hides the other outlines')
+    assert(pd.tag:IsShown() and pd.tag.text:GetText() == 'Player Frame' and not pd.chip:IsShown(), 'Inside: the name in its corner')
+    -- The mouse over the Player: its outline and name come up through the dim.
+    -- (Nothing reacts under the panel; the mock screen is smaller than it, so it moves aside.)
+    local dockedAt = { panel:GetPoint(1) }
+    panel:ClearAllPoints(); panel:SetPoint('TOPLEFT', UIParent, 'TOPRIGHT', 20, 0)
+    local px, py = addon.Positioning:Geometry(player.frame)
+    local cursor, scale = GetCursorPosition, UIParent:GetEffectiveScale()
+    GetCursorPosition = function() return px * scale, py * scale end
+    Labels:Tick()
+    assert(PM.hovered == 'unitFramesPlayer' and pd.frame:IsShown() and pd.frame.strata == 'DIALOG' and pd.chip:IsShown(), 'hovered: lifted and named')
+    GetCursorPosition = function() return -50, -50 end
+    Labels:Tick()
+    assert(PM.hovered == nil and not pd.frame:IsShown(), 'and back under it')
+    GetCursorPosition = cursor
+    -- Dim: the other outlines stay, under it; it halves while dragging.
+    assert(E:SetFocus('dim') and addon.root.editMode.focus == 'dim' and Focus.alpha == Focus.STRENGTH.dim)
+    assert(pd.frame:IsShown() and pd.frame.strata ~= 'DIALOG', 'Dim: the Player stays, under the dim')
+    target.dragging = true; Focus:Track()
+    assert(math.abs(Focus.alpha - Focus.STRENGTH.dim / 2) < 0.001, 'half while dragging')
+    target.dragging = false; Focus:Track()
+    -- Fit: every name that fits shows, none over another.
+    assert(E:SetNames('fit') and not pd.tag:IsShown())
+    local shown = {}
+    for _, element in pairs(PM.elements) do
+        local d = element.decoration
+        if d and d.chip:IsShown() then
+            local p = d.chip.points[1]
+            local rect = Labels.FrameRect(element.frame)
+            shown[#shown + 1] = { x = rect.x + p[4], y = rect.y + p[5], w = d.chip:GetWidth(), h = Labels.HEIGHT }
+        end
+    end
+    assert(#shown >= 2 and Labels.spots.unitFramesPlayer, 'names placed')
+    for i = 1, #shown do for j = i + 1, #shown do assert(not Labels.Hit(shown[i], shown[j], 0), 'no name over another') end end
+    panel:ClearAllPoints(); panel:SetPoint(unpack(dockedAt))
+    -- Off: only the selected element is named; Hide All hides everything.
+    assert(E:SetNames('none') and not pd.chip:IsShown() and not pd.tag:IsShown() and td.chip:IsShown(), 'Off')
+    strip.namesSelect.menu:Show(); strip.namesSelect:Refresh()
+    local hideAll
+    for _, row in ipairs(strip.namesSelect.rows or {}) do if row.choice and row.choice.id == 'hidden' then hideAll = row end end
+    if hideAll then hideAll.scripts.OnClick(hideAll) else E:SetHighlights(false) end
+    assert(not E.highlights and not td.frame:IsShown(), 'Hide All')
+    assert(E:SetNames('inside')); E.highlights = true; E:RefreshElements()
+    assert(td.frame:IsShown() and E:Names() == 'inside')
+    -- Anchor To and Match step the dim away; Focus Off removes it.
+    local started = addon.EditAnchor:Start('unitFramesTarget', 'width'); assert(started, 'Match Width starts')
+    assert(not Focus.frame:IsShown(), 'no dim while picking')
+    addon.EditAnchor:Stop()
+    assert(Focus.frame:IsShown() and E:SetFocus('off') and not Focus.frame:IsShown(), 'Focus Off')
+    assert(E:SetFocus('strong'))
+
     -- Esc lets go; a second Esc closes Edit Mode; the page goes back.
     strip.scripts.OnKeyDown(strip, 'ESCAPE')
     assert(addon.editMode and E:Selected() == nil and not panel:IsShown() and addon.EditPage:Page() == nil, 'Esc lets go')
     strip.scripts.OnKeyDown(strip, 'ESCAPE')
     assert(not addon.editMode and not strip:IsShown() and page:GetParent() == addon.configWindow.pageHost, 'second Esc closes')
+    assert(not addon.EditFocus.frame:IsShown() and not addon.EditLabels.watcher:IsShown(), 'no dim or watcher after Edit Mode')
     SlashCmdList.MODEUI('edit'); assert(addon.editMode)
     SlashCmdList.MODEUI('edit'); assert(not addon.editMode, '/modeui edit closes it again')
 ]], 'edit mode')
-print('edit mode: edges, grid, Esc, undo, docked panel')
+print('edit mode: edges, grid, Esc, undo, docked panel, names, focus')

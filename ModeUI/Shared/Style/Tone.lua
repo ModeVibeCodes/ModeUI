@@ -116,8 +116,10 @@ local Tone = {
     power = Hex("3A6FB8"),
     -- Edit Mode (docs/DESIGN_LANGUAGE.md, "Edit Mode"): the selected element's
     -- outline and the guides (select), an idle outline, element names (name,
-    -- readable on any scene), the grid's lines and the hover outline.
-    edit = { select = Hex("80EF80"), idle = Hex("85858B"), name = Hex("CCFF00"), grid = Hex("DADADA"), hover = Hex("EFE6D2") },
+    -- readable on any scene), the grid's lines, the hover outline and the
+    -- focus dim around the selected element (scrim; its strength is the alpha).
+    edit = { select = Hex("80EF80"), idle = Hex("85858B"), name = Hex("CCFF00"), grid = Hex("DADADA"), hover = Hex("EFE6D2"),
+        scrim = Hex("050506") },
     -- Text.
     text = Hex("DADADA"),
     textBright = Hex("F2F2F2"),
