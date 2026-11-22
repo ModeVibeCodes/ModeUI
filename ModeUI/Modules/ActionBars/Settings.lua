@@ -3,10 +3,12 @@ local M, W, T, L = addon.ActionBars, addon.ConfigWidgets, addon.InterfaceTheme, 
 if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
--- preview of the bar being edited sits above the tabs (Bar, Buttons, Text,
--- Glows, Visibility, Copy & Apply); clicking a part of it jumps to its settings.
--- Editing (which bar) sits in the preview header, shared by every tab; each
--- tab holds cards of related settings, side by side where they fit.
+-- preview of the bar being edited sits above the standard tabs (General,
+-- Fill, Border, Glow, Text, Behavior); clicking a part of it jumps to its
+-- settings. Editing (which bar) and Keybind Mode sit in the preview header,
+-- shared by every tab; each tab holds cards of related settings, side by side
+-- where they fit. Copy To... and Reset... (the footer) act on the bar in
+-- Editing (M:CopyActions, M:ResetScopes below).
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing, textPart = "bar1", "hotkey"
@@ -121,8 +123,8 @@ function M:CreateConfigPage(parent)
         page.barSelect:ClearAllPoints(); page.barSelect:SetPoint("RIGHT", 0, 0)
         page.editingLabel:ClearAllPoints(); page.editingLabel:SetPoint("RIGHT", page.barSelect, "LEFT", -8, 0)
         page.editingLabel:SetWidth(52); page.editingLabel:SetJustifyH("RIGHT")
-        -- A bar that's off or hidden offers to turn it on, right there.
-        page.turnOnButton = W.Button(corner, L["Turn On"], 80, 24, "choice")
+        -- A bar that's off or hidden offers Show Bar, right there.
+        page.turnOnButton = W.Button(corner, L["Show Bar"], 80, 24, "choice")
         page.turnOnButton:SetPoint("RIGHT", page.editingLabel, "LEFT", -8, 0)
         page.turnOnButton:SetScript("OnClick", function() M:TurnOnBar(editing); page:Refresh(); page:Layout() end)
         Refresh(function() page.turnOnButton:SetShown(M:BarState(editing) ~= nil) end)
@@ -130,242 +132,177 @@ function M:CreateConfigPage(parent)
         page:UpdatePreviewLayout()
     end
 
-    -- Each tab says so when the bar being edited is hidden.
-    local function Tab(title, build)
-        page:Section(L[title], nil, false)
-        if title ~= "Bar" and title ~= "Copy & Apply" then
-            When(function() return not db().show end, function() W.Tip(Note("This bar is hidden. Turn on Show Bar on the Bar tab to use it.")) end)
+    -- The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"). Opening a
+    -- tab the first time adds, on every tab but General, a line for when the
+    -- bar being edited is hidden.
+    local function Tab(title)
+        local fresh = true
+        for _, section in ipairs(page.sections) do if section.title == title then fresh = false end end
+        page:Tab(title)
+        if fresh and title ~= "General" then
+            When(function() return not db().show end, function() W.Tip(Note("This bar is hidden. Turn on Show Bar on the General tab to use it.")) end)
         end
-        build()
     end
 
-    Tab("Bar", function()
-        page.showToggles = Toggles({ { "Show Bar", "show" } }); Mark("bar")
-        local status = W.Label(page:Row(L["Status"], 48), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
-        Refresh(function() status:SetText(M:Status()) end)
-        page.statusLabel = status
-        page:Group(L["Layout"])
-        local shape = Columns({ "Buttons", "Buttons per Line" })
-        local function Count()
-            local list = M:IsUtility(editing) and M.buttons and M.buttons[editing]
-            return list and math.max(1, #list) or M.barSpecs[editing].count
-        end
-        -- The pet and stance bars hold ten buttons; the micro menu and bag bar
-        -- the buttons Blizzard gives them.
-        Refresh(function() if shape[1].slider then shape[1].slider:SetMinMaxValues(1, Count()) end end)
-        page.buttonsSlider = SliderIn(shape[1], M.ranges.buttons, function() return db().buttons end, Set("buttons"), nil, Count)
-        page.perLineSlider = Slider(shape[2], "perLine")
-        page.orientationPills = Pills("Lines", M.choices.orientation, function() return db().orientation end, Set("orientation"), 110)
-        page.startPills = Pills("First Button", M.choices.start, function() return db().start end, Set("start"), 100)
-        page:Group(L["Size"])
-        local size = Columns({ "Width", "Height", "Spacing" })
-        page.widthSlider = Slider(size[1], "width", "px"); Mark("buttons")
-        page.heightSlider = Slider(size[2], "height", "px")
-        page.spacingSlider = Slider(size[3], "spacing", "px")
-        When(Action, function()
-            page:Group(L["Keybinds"])
-            local keys = page:Row(L["Keybind Mode"], 48)
-            page.keybindButton = W.Button(keys, L["Keybind Mode"], 190, 30, "secondary")
-            page.keybindButton:SetPoint("LEFT"); page.keybindButton:SetScript("OnClick", function() M:SetKeybindMode(true) end)
-            W.Tip(Note("Or type /kb. Hover a button and press a key to bind it; Escape clears it.", 32))
+    -- General: the bar's own switch, its size and how its buttons are laid out.
+    Tab("General")
+    page.showToggles = Toggles({ { "Show Bar", "show" } }); Mark("bar")
+    local status = W.Label(page:Row(L["Status"], 48), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
+    Refresh(function() status:SetText(M:Status()) end)
+    page.statusLabel = status
+    page:Group(L["Size"])
+    local size = Columns({ "Width", "Height" })
+    page.widthSlider = Slider(size[1], "width", "px"); Mark("buttons")
+    page.heightSlider = Slider(size[2], "height", "px")
+    page:Group(L["Arrange"])
+    local shape = Columns({ "Buttons", "Buttons per Line", "Spacing" })
+    local function Count()
+        local list = M:IsUtility(editing) and M.buttons and M.buttons[editing]
+        return list and math.max(1, #list) or M.barSpecs[editing].count
+    end
+    -- The pet and stance bars hold ten buttons; the micro menu and bag bar
+    -- the buttons Blizzard gives them.
+    Refresh(function() if shape[1].slider then shape[1].slider:SetMinMaxValues(1, Count()) end end)
+    page.buttonsSlider = SliderIn(shape[1], M.ranges.buttons, function() return db().buttons end, Set("buttons"), nil, Count)
+    page.perLineSlider = Slider(shape[2], "perLine")
+    page.spacingSlider = Slider(shape[3], "spacing", "px")
+    page.orientationPills = Pills("Lines", M.choices.orientation, function() return db().orientation end, Set("orientation"), 110)
+    page.startPills = Pills("First Button", M.choices.start, function() return db().start end, Set("start"), 100)
+    When(function() return not Action() end, function()
+        Note("Blizzard's own buttons, in the Mode look: the ones the game shows are laid out in order, so a button it hides leaves no gap.", 40)
+    end)
+
+    -- Fill: the button face behind the icon, and the icon while it cools down.
+    Tab("Fill")
+    page:Group(L["Background"])
+    local background = Columns({ "Background Color", "Background Opacity" })
+    Color(background[1], "backgroundColor")
+    page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
+    page.slotToggles = Toggles({ { "Show Empty Slots", "showEmpty" } })
+    Note("The background is the Mode Button face behind the icon; it shows in empty slots at Background Opacity. Dragging a spell shows every button so it can be dropped.", 48)
+    -- On Cooldown: what an icon looks like until its ability is ready.
+    When(Action, function()
+        page:Group(L["On Cooldown"])
+        Note("While an ability is on cooldown (longer than the global cooldown), its icon can turn gray and fade until it's ready again. Action bars 1-8 only.", 40)
+        page.cooldownColorPills = Pills("Icon Color", ICON_COLORS,
+            function() return db().cooldownDesaturate and "desaturate" or "full" end,
+            function(mode) M:SetOption(editing, "cooldownDesaturate", mode == "desaturate") end, 110); Mark("cooldown")
+        local dim = Columns({ "Icon Opacity" })
+        page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
+        Note("Desaturate turns the icon gray; Full Color keeps it as it is. Click a button in the preview to set it for that button alone.", 32)
+    end)
+
+    -- Border: Show Border (border "mode" or "none"), then Border and Border
+    -- Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+    Tab("Border")
+    page:Group(L["Border"])
+    page.borderToggles = Toggles({ { "Show Border", get = function() return db().border ~= "none" end,
+        set = function(on) M:SetOption(editing, "border", on and "mode" or "none") end } })
+    When(function() return db().border ~= "none" end, function()
+        page.borderStylePicker, page.borderMetalPicker = W.BorderPickers(page,
+            { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
+            { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
+    end)
+
+    -- Glow: how buttons react to procs and cooldowns.
+    Tab("Glow")
+    When(function() return not Action() end, function() W.Tip(Note("Glows are for action bars; the micro menu and bag bar have none.", 32)) end)
+    When(Action, function()
+        page:Group(L["Proc Glow"])
+        page.procPills = Pills("Style", M.choices.procGlow, function() return db().procGlow end, Set("procGlow"), 96); Mark("glows")
+        When(function() return db().procGlow == "mode" or db().procGlow == "border" end, function()
+            local proc = Columns({ "Proc Color" })
+            Color(proc[1], "procColor")
+            page.procToggles = Toggles({ { "Pulse", "procPulse" } })
         end)
+        Note("A proc is the game lighting up a spell you should use now. Blizzard keeps the game's own animation; None shows nothing.", 32)
+        page:Group(L["Cooldown Ready"])
+        page.readyToggles = Toggles({ { "Glow When Ready", "readyGlow" } })
+        When(function() return db().readyGlow end, function()
+            page.readyPills = Pills("Style", M.choices.readyStyle, function() return db().readyStyle end, Set("readyStyle"))
+            local ready = Columns({ "Glow Color", "Glow Time" })
+            Color(ready[1], "readyColor")
+            page.readySlider = Slider(ready[2], "readyDuration", "s")
+        end)
+        Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. How an icon looks while it cools down is on the Fill tab. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
+    end)
+
+    -- Text: the shared text style, then pick a text for its place, size and color.
+    Tab("Text")
+    When(function() return not HasText() end, function() W.Tip(Note("The micro menu has no text.", 32)) end)
+    When(HasText, function()
+        page:Group(L["Text Style"])
+        local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
+        page.fontToggles = Toggles({ { "Outline", "outline" }, { "Slug Text", "slug" } })
+        page.shadowPills = Pills("Shadow", addon.Kit.SHADOW_CHOICES, function() return addon.Kit.ShadowMode(db()) end, function(mode)
+            local shadow, lifted = addon.Kit.ShadowKeys(mode)
+            M:SetOption(editing, "shadow", shadow); M:SetOption(editing, "liftedShadow", lifted)
+        end)
+        page:Group(L["Text"])
+        local parts = {}
+        for _, part in ipairs(M.textParts) do parts[#parts + 1] = { id = part, label = M.textPartLabels[part] } end
+        When(Action, function() page.textPartButtons = Pills("Text", parts, Part, page.SetTextPart, 104); Mark("text") end)
         When(function() return not Action() end, function()
-            Note("Blizzard's own buttons, in the Mode look: the ones the game shows are laid out in order, so a button it hides leaves no gap.", 40)
+            Note("Count is the backpack's free bag slots, shown while the game's Display Free Bag Slots option is on.", 40)
         end)
-        -- Paging, for bars 1-8.
-        When(function() return M.pages[editing] ~= nil end, function()
-            page:Group(L["Paging"])
-            page.pagingToggles = Toggles({ { "Page Switching", "paging" } }); Mark("paging")
-            When(function() return db().paging end, function()
-                local host = page:Row(L["Page Conditions"], 48)
-                local box = W.TextInput(host, 300, "[mod:shift] 2; [bonusbar:1] 7", M.MAX_CONDITIONS)
-                -- Enter keeps the conditions; Escape leaves them as they were.
-                box.onEnter = function(text) M:SetOption(editing, "pageConditions", text); page:Refresh() end
-                Refresh(function() if not box:HasFocus() then box:SetText(db().pageConditions) end end)
-                page.pageConditionsInput = box
-            end)
-            W.Tip(Note("Page Conditions pick a page by macro conditions, like \"[mod:shift] 2; [bonusbar:1] 7\" (pages 1-6 are the game's bars, 7-10 stance and form pages). When none match, the bar shows its own page. Action Bar 1 with no conditions follows the game's own paging (stances, forms, vehicles, page keys); with Page Switching off it stays on page 1.", 64))
+        page.textToggles = Toggles({ { "Show This Text", "part", get = function() return db()[PartKey("Show")] end, set = SetPart("Show") } })
+        When(function() return textPart == "hotkey" end, function()
+            page.shortToggles = Toggles({ { "Short Keybinds", "hotkeyShort" } })
+            Note("Short Keybinds writes modifiers as one letter: Shift-E is sE, Ctrl-1 is c1, Alt-Mouse Button 4 is aM4.", 32)
         end)
-    end)
-
-    Tab("Buttons", function()
-        page:Group(L["Border"])
-        page.borderPills = Pills("Border", M.choices.border, function() return db().border end, Set("border"))
-        -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
-        When(function() return db().border ~= "none" end, function()
-            page.borderStylePicker, page.borderMetalPicker = W.BorderPickers(page,
-                { get = function() return db().edgeStyle end, set = Set("edgeStyle") },
-                { get = function() return db().edgeMetal end, set = Set("edgeMetal") })
-        end)
-        page:Group(L["Background"])
-        local background = Columns({ "Background Color", "Background Opacity" })
-        Color(background[1], "backgroundColor")
-        page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
-        page.slotToggles = Toggles({ { "Show Empty Slots", "showEmpty" } })
-        Note("The background is the Mode Button face behind the icon; it shows in empty slots at Background Opacity. Dragging a spell shows every button so it can be dropped.", 48)
-        -- On Cooldown: what an icon looks like until its ability is ready.
-        When(Action, function()
-            page:Group(L["On Cooldown"])
-            Note("While an ability is on cooldown (longer than the global cooldown), its icon can turn gray and fade until it's ready again. Action bars 1-8 only.", 40)
-            page.cooldownColorPills = Pills("Icon Color", ICON_COLORS,
-                function() return db().cooldownDesaturate and "desaturate" or "full" end,
-                function(mode) M:SetOption(editing, "cooldownDesaturate", mode == "desaturate") end, 110); Mark("cooldown")
-            local dim = Columns({ "Icon Opacity" })
-            page.cooldownOpacitySlider = Slider(dim[1], "cooldownOpacity", "%")
-            Note("Desaturate turns the icon gray; Full Color keeps it as it is. Click a button in the preview to set it for that button alone.", 32)
+        local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })
+        local anchorButtons, anchorRefresh = W.AnchorPicker(page:Row(L["Anchor"], W.ANCHOR_PICKER_HEIGHT + 16),
+            function() return db()[PartKey("Anchor")] end, SetPart("Anchor"), labels, { center = true })
+        Refresh(anchorRefresh); page.textAnchorButtons = anchorButtons
+        local place = Columns({ "Size", "Offset X", "Offset Y" })
+        page.textSizeSlider = PartSlider(place[1], "Size")
+        PartSlider(place[2], "X", "px"); PartSlider(place[3], "Y", "px")
+        local color = Columns({ "Color" })
+        Color(color[1], "partColor")
+        When(function() return textPart == "cooldown" end, function()
+            Note("Cooldown numbers follow the game's own option for showing them, and use the crisp shadow.", 32)
         end)
     end)
 
-    -- Text: pick a text, then its place, size and color; the font is shared.
-    Tab("Text", function()
-        When(function() return not HasText() end, function() W.Tip(Note("The micro menu has no text.", 32)) end)
-        When(HasText, function()
-            page:Group(L["Text"])
-            local parts = {}
-            for _, part in ipairs(M.textParts) do parts[#parts + 1] = { id = part, label = M.textPartLabels[part] } end
-            When(Action, function() page.textPartButtons = Pills("Text", parts, Part, page.SetTextPart, 104); Mark("text") end)
-            When(function() return not Action() end, function()
-                Note("Count is the backpack's free bag slots, shown while the game's Display Free Bag Slots option is on.", 40)
-            end)
-            page.textToggles = Toggles({ { "Show This Text", "part", get = function() return db()[PartKey("Show")] end, set = SetPart("Show") } })
-            When(function() return textPart == "hotkey" end, function()
-                page.shortToggles = Toggles({ { "Short Keybinds", "hotkeyShort" } })
-                Note("Short Keybinds writes modifiers as one letter: Shift-E is sE, Ctrl-1 is c1, Alt-Mouse Button 4 is aM4.", 32)
-            end)
-            local labels = setmetatable({}, { __index = function(_, key) return L[M.anchorLabels[key] or key] end })
-            local anchorButtons, anchorRefresh = W.AnchorPicker(page:Row(L["Anchor"], W.ANCHOR_PICKER_HEIGHT + 16),
-                function() return db()[PartKey("Anchor")] end, SetPart("Anchor"), labels, { center = true })
-            Refresh(anchorRefresh); page.textAnchorButtons = anchorButtons
-            local place = Columns({ "Size", "Offset X", "Offset Y" })
-            page.textSizeSlider = PartSlider(place[1], "Size")
-            PartSlider(place[2], "X", "px"); PartSlider(place[3], "Y", "px")
-            local color = Columns({ "Color" })
-            Color(color[1], "partColor")
-            When(function() return textPart == "cooldown" end, function()
-                Note("Cooldown numbers follow the game's own option for showing them, and use the crisp shadow.", 32)
-            end)
-            page:Group(L["Font"])
-            local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
-            page.fontToggles = Toggles({ { "Outline", "outline" }, { "Slug Text", "slug" } })
-            page.shadowPills = Pills("Text Shadow", addon.Kit.SHADOW_CHOICES, function() return addon.Kit.ShadowMode(db()) end, function(mode)
-                local shadow, lifted = addon.Kit.ShadowKeys(mode)
-                M:SetOption(editing, "shadow", shadow); M:SetOption(editing, "liftedShadow", lifted)
-            end)
-        end)
+    -- Behavior: when the bar shows, how it fades, and paging.
+    Tab("Behavior")
+    page:Group(L["When to Show"])
+    local show = Columns({ "Show" })
+    -- The micro menu and bag bar: Always, Mouseover or Hidden.
+    local short = {}
+    for _, choice in ipairs(M.choices.visibility) do if M.utilityVisibility[choice.id] then short[#short + 1] = choice end end
+    page.visibilitySelect = SelectIn(show[1], 260, function() return Action() and M.choices.visibility or short end,
+        function() return db().visibility end, Set("visibility")); Mark("visibility")
+    When(function() return db().visibility == "custom" end, function()
+        local host = page:Row(L["Conditions"], 48)
+        local box = W.TextInput(host, 300, "[combat] show; hide", M.MAX_CONDITIONS)
+        -- Enter keeps the conditions; Escape leaves them as they were.
+        box.onEnter = function(text) M:SetOption(editing, "customVisibility", text); page:Refresh() end
+        Refresh(function() if not box:HasFocus() then box:SetText(db().customVisibility) end end)
+        page.conditionsInput = box
+        W.Tip(Note("Macro conditions, like \"[combat][mod:shift] show; hide\". Conditions the game can't read show the bar always.", 32))
     end)
-
-    -- Glows: how buttons react to procs and cooldowns.
-    Tab("Glows", function()
-        When(function() return not Action() end, function() W.Tip(Note("Glows are for action bars; the micro menu and bag bar have none.", 32)) end)
-        When(Action, function()
-            page:Group(L["Proc Glow"])
-            page.procPills = Pills("Style", M.choices.procGlow, function() return db().procGlow end, Set("procGlow"), 96); Mark("glows")
-            When(function() return db().procGlow == "mode" or db().procGlow == "border" end, function()
-                local proc = Columns({ "Proc Color" })
-                Color(proc[1], "procColor")
-                page.procToggles = Toggles({ { "Pulse", "procPulse" } })
-            end)
-            Note("A proc is the game lighting up a spell you should use now. Blizzard keeps the game's own animation; None shows nothing.", 32)
-            page:Group(L["Cooldown Ready"])
-            page.readyToggles = Toggles({ { "Glow When Ready", "readyGlow" } })
-            When(function() return db().readyGlow end, function()
-                page.readyPills = Pills("Style", M.choices.readyStyle, function() return db().readyStyle end, Set("readyStyle"))
-                local ready = Columns({ "Glow Color", "Glow Time" })
-                Color(ready[1], "readyColor")
-                page.readySlider = Slider(ready[2], "readyDuration", "s")
-            end)
-            Note("Glow When Ready lights a button for Glow Time when a cooldown longer than the global cooldown ends. How an icon looks while it cools down is on the Buttons tab. Click a button in the preview to switch its glows on or off. Action bars 1-8 only.", 48)
-        end)
+    page:Group(L["Fade"])
+    local opacity = Columns({ "Bar Opacity" })
+    page.opacitySlider = Slider(opacity[1], "opacity", "%")
+    When(function() return db().visibility == "mouseover" end, function()
+        local faded = Columns({ "Faded Opacity" })
+        page.fadeSlider = Slider(faded[1], "fadeOpacity", "%")
     end)
-
-    Tab("Visibility", function()
-        page:Group(L["When to Show"])
-        local show = Columns({ "Show" })
-        -- The micro menu and bag bar: Always, Mouseover or Hidden.
-        local short = {}
-        for _, choice in ipairs(M.choices.visibility) do if M.utilityVisibility[choice.id] then short[#short + 1] = choice end end
-        page.visibilitySelect = SelectIn(show[1], 260, function() return Action() and M.choices.visibility or short end,
-            function() return db().visibility end, Set("visibility")); Mark("visibility")
-        When(function() return db().visibility == "custom" end, function()
-            local host = page:Row(L["Conditions"], 48)
-            local box = W.TextInput(host, 300, "[combat] show; hide", M.MAX_CONDITIONS)
+    Note("Mouseover keeps the bar at Faded Opacity until the mouse is over it. Hidden bars still show in Edit Mode and Keybind Mode. Action bars hide during pet battles (the micro menu and bag bar stay). Action Bar 1 hides while the game shows its own vehicle bar, and the pet and stance bars while you control a vehicle.", 48)
+    -- Paging, for bars 1-8.
+    When(function() return M.pages[editing] ~= nil end, function()
+        page:Group(L["Paging"])
+        page.pagingToggles = Toggles({ { "Page Switching", "paging" } }); Mark("paging")
+        When(function() return db().paging end, function()
+            local host = page:Row(L["Page Conditions"], 48)
+            local box = W.TextInput(host, 300, "[mod:shift] 2; [bonusbar:1] 7", M.MAX_CONDITIONS)
             -- Enter keeps the conditions; Escape leaves them as they were.
-            box.onEnter = function(text) M:SetOption(editing, "customVisibility", text); page:Refresh() end
-            Refresh(function() if not box:HasFocus() then box:SetText(db().customVisibility) end end)
-            page.conditionsInput = box
-            W.Tip(Note("Macro conditions, like \"[combat][mod:shift] show; hide\". Conditions the game can't read show the bar always.", 32))
+            box.onEnter = function(text) M:SetOption(editing, "pageConditions", text); page:Refresh() end
+            Refresh(function() if not box:HasFocus() then box:SetText(db().pageConditions) end end)
+            page.pageConditionsInput = box
         end)
-        page:Group(L["Opacity"])
-        local opacity = Columns({ "Opacity" })
-        page.opacitySlider = Slider(opacity[1], "opacity", "%")
-        When(function() return db().visibility == "mouseover" end, function()
-            local faded = Columns({ "Faded Opacity" })
-            page.fadeSlider = Slider(faded[1], "fadeOpacity", "%")
-        end)
-        Note("Mouseover keeps the bar at Faded Opacity until the mouse is over it. Hidden bars still show in Edit Mode and Keybind Mode. Action bars hide during pet battles (the micro menu and bag bar stay). Action Bar 1 hides while the game shows its own vehicle bar, and the pet and stance bars while you control a vehicle.", 48)
-    end)
-
-    -- Copy & Apply: the bar in Editing is the source; tick bars, then apply.
-    Tab("Copy & Apply", function()
-        page:Group(L["Copy From"])
-        -- The source is the bar in Editing; choosing here changes both.
-        local from = Columns({ "Bar" })
-        page.applySource = SelectIn(from[1], 240, BarChoices, Bar, page.SetEditing)
-        Note("Its size, borders, background, text, glows and opacity are copied; each bar keeps its own buttons, lines, paging and show settings.", 32)
-        page:Group(L["Apply To"])
-        local targets = {}
-        page.applyTargets = targets
-        local function Chosen()
-            local list = {}
-            for _, bar in ipairs(M.bars) do if bar ~= editing and targets[bar] then list[#list + 1] = bar end end
-            return list
-        end
-        -- A pick list: each bar has a check box; the source can't be picked.
-        local function TargetChoices()
-            local list = {}
-            for _, bar in ipairs(M.bars) do
-                local source = bar == editing
-                list[#list + 1] = { id = bar, label = source and (L[M.barSpecs[bar].label] .. "  " .. addon.Style.ColorText(L["Source"], addon.Style.Tone.graphite.muted)) or BarLabel(bar),
-                    selected = not source and targets[bar] == true, disabled = source }
-            end
-            return list
-        end
-        local function TargetLabel()
-            local chosen = Chosen()
-            if #chosen == 0 then return nil, L["Choose bars"] end
-            if #chosen == 1 then return nil, L[M.barSpecs[chosen[1]].label] end
-            return nil, string.format(L["%d bars selected"], #chosen)
-        end
-        local to = Columns({ "Bars" })
-        page.applyTargetSelect = SelectIn(to[1], 240, TargetChoices, TargetLabel, function(bar)
-            if bar ~= editing then targets[bar] = not targets[bar] or nil end
-        end, { multi = true })
-        local apply = page:Row("", 62)
-        apply.rowLabel:Hide(); apply:ClearAllPoints(); apply:SetAllPoints(apply.row)
-        page.applyButton = W.Button(apply, L["Apply to Selected"], 150, 30, "secondary")
-        page.applyButton:SetPoint("TOPLEFT", 0, -2)
-        page.applyAllButton = W.Button(apply, L["Apply to All Bars"], 150, 30, "secondary")
-        page.applyAllButton:SetPoint("LEFT", page.applyButton, "RIGHT", 8, 0)
-        local result = W.Label(apply, "", nil, 0, 0, 160, T.muted)
-        result:ClearAllPoints(); result:SetPoint("TOPLEFT", page.applyButton, "BOTTOMLEFT", 0, -6)
-        page.applyResult = result
-        local function Report(ok, count)
-            result:SetText(ok and string.format(L["Applied to %d bars."], count or 0) or L["Choose bars first."])
-        end
-        page.applyButton:SetScript("OnClick", function()
-            local chosen = false
-            for bar in pairs(targets) do if bar ~= editing then chosen = true end end
-            if not chosen then Report(false); return end
-            Report(M:CopyStyleTo(editing, targets))
-        end)
-        page.applyAllButton:SetScript("OnClick", function() Report(M:CopyStyleToAll(editing)) end)
-        Refresh(function() if editing ~= page.applyResultBar then result:SetText(""); page.applyResultBar = editing end end)
-        page:Group(L["Reset"])
-        local reset = page:Row("", 40)
-        reset.rowLabel:Hide(); reset:ClearAllPoints(); reset:SetAllPoints(reset.row)
-        page.resetButton = W.Button(reset, L["Reset to Defaults"], 150, 30, "secondary")
-        page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetBar(editing) end)
-        Note("Puts the bar in Editing back to ModeUI's defaults.", 32)
+        W.Tip(Note("Page Conditions pick a page by macro conditions, like \"[mod:shift] 2; [bonusbar:1] 7\" (pages 1-6 are the game's bars, 7-10 stance and form pages). When none match, the bar shows its own page. Action Bar 1 with no conditions follows the game's own paging (stances, forms, vehicles, page keys); with Page Switching off it stays on page 1.", 64))
     end)
 
     -- While this page is open, each bar on screen wears a name tag (Preview.lua).
@@ -376,7 +313,7 @@ function M:CreateConfigPage(parent)
         addon.configWindow:HookScript("OnShow", function() M:RenderBarTags() end)
         addon.configWindow:HookScript("OnHide", function() M:RenderBarTags() end)
     end
-    W.SectionTabs(page)
+    W.StandardTabs(page)
     page:Finish(); return page
 end
 
@@ -387,4 +324,35 @@ function M:JumpTo(target, part)
     if part then page.SetTextPart(part) end
     page:Reveal(page.jumpTargets[target])
     return true
+end
+
+-- Copy To... (the settings footer): the look of the bar in Editing (its size,
+-- borders, background, text, glows and opacity) to every bar or to one other
+-- bar; each bar keeps its own buttons, lines, paging and show settings.
+function M:CopyActions()
+    local from = self.page and self.page.barEditing() or "bar1"
+    local name = L[self.barSpecs[from].label]
+    local keeps = L["Each bar keeps its own buttons, lines, paging and show settings."]
+    local function Prompt(where)
+        return string.format(L["Copy %s's size, borders, background, text, glows and opacity to %s?"], name, where) .. " " .. keeps
+    end
+    local items = { { label = string.format(L["%s's look to every bar"], name),
+        run = function() self:CopyStyleToAll(from) end, prompt = Prompt(L["every bar"]) } }
+    for _, bar in ipairs(self.bars) do
+        if bar ~= from then
+            local target = L[self.barSpecs[bar].label]
+            items[#items + 1] = { label = string.format(L["%s's look to %s"], name, target),
+                run = function() self:CopyStyleTo(from, { [bar] = true }) end, prompt = Prompt(target) }
+        end
+    end
+    return items
+end
+
+-- Reset... (the settings footer): the bar in Editing back to ModeUI's
+-- defaults; what it shows and when stays its own (M:ResetBar).
+function M:ResetScopes()
+    local bar = self.page and self.page.barEditing() or "bar1"
+    local name = L[self.barSpecs[bar].label]
+    return { { label = name, run = function() self:ResetBar(bar) end,
+        prompt = string.format(L["Put %s back to ModeUI's defaults?"], name) } }
 end

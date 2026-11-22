@@ -2,16 +2,27 @@ local _, addon = ...
 local M, W, L = addon.PartyFrames, addon.ConfigWidgets, addon.L
 if not M then return end
 
--- The Text and Icons tab (pick an element, then its switch, place, offset,
--- nudge and size) and the Highlights and Overlay tab (your target, the mouse,
--- the dispel overlay by type, fading). The preview shows the element, or the
--- picked dispel type, while the tab is open.
+-- The Text tab (the text style, then pick a text or icon: its switch, place,
+-- offset, nudge and size), Border › Rims (your target, aggro) and Dispel
+-- Overlay (by type), Glow › Highlights (the mouse, hover and focus glows) and
+-- Behavior › Fade. The preview shows the element on the Text tab, and the
+-- picked dispel type and your target on the Border tab.
 
 function M:BuildElementsTab(page, c, Element)
     local function Key(suffix) return Element() .. suffix end
     local function Set(suffix) return function(value) M:SetOption(Key(suffix), value) end end
-    page:Section(L["Text and Icons"], nil, false)
-    page:Group(L["Elements"])
+    page:Tab("Text")
+    page:Group(L["Text Style"])
+    local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), c.owner); c.Refresh(fontRefresh)
+    page.textToggles = c.Toggles({ { "Outline", "outline" }, { "Slug Text", "slug" } })
+    page.shadowPills = c.Pills("Shadow", addon.Kit.SHADOW_CHOICES, function() return addon.Kit.ShadowMode(M.db) end, function(mode)
+        local shadow, lifted = addon.Kit.ShadowKeys(mode)
+        M:SetOption("shadow", shadow); M:SetOption("liftedShadow", lifted)
+    end)
+    local color = c.Columns({ "Text Color" })
+    c.Color(color[1], "textColor")
+
+    page:Group(L["Texts and Icons"])
     local list = {}
     for _, id in ipairs(M.elements) do list[#list + 1] = { id = id, label = M.elementLabels[id] } end
     page.elementSelect = c.SelectIn(page:Row(L["Element"], 48), 220, function() return list end, Element, page.SetElement)
@@ -27,7 +38,7 @@ function M:BuildElementsTab(page, c, Element)
     -- Texts are sized in font points, icons in pixels.
     local function Text() return M.textElements[Element()] == true end
     c.When(Text, function()
-        page.textSizeSlider = c.SliderIn(c.Columns({ "Text Size" })[1], M.elementSizeRanges.text,
+        page.textSizeSlider = c.SliderIn(c.Columns({ "Size" })[1], M.elementSizeRanges.text,
             function() return M.db[Key("Size")] end, Set("Size"))
     end)
     c.When(function() return not Text() end, function()
@@ -46,31 +57,20 @@ function M:BuildElementsTab(page, c, Element)
         local health = c.Columns({ "Shows", "Health Text Color" })
         page.healthTextSelect = c.Select(health[1], 200, M.choices.healthText, "healthText")
         page.healthTextColorSelect = c.Select(health[2], 200, M.choices.healthTextColor, "healthTextColor")
-        page.healthTextGlowToggles = c.Toggles({ { "Health Text Glow", "healthTextGlow" } })
     end)
     c.When(function() return Element() == "role" end, function()
         -- After Name: Anchor and Place step aside; Offset X and Y count from the name's end.
         page.roleToggles = c.Toggles({ { "Hide Damage Role", "hideDamagerRole" }, { "After Name", "roleAfterName" } })
     end)
-    page:Group(L["Font"])
-    local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), c.owner); c.Refresh(fontRefresh)
-    page.textToggles = c.Toggles({ { "Outline", "outline" }, { "Slug Text", "slug" } })
-    page.shadowPills = c.Pills("Text Shadow", addon.Kit.SHADOW_CHOICES, function() return addon.Kit.ShadowMode(M.db) end, function(mode)
-        local shadow, lifted = addon.Kit.ShadowKeys(mode)
-        M:SetOption("shadow", shadow); M:SetOption("liftedShadow", lifted)
-    end)
-    local color = c.Columns({ "Text Color" })
-    c.Color(color[1], "textColor")
 end
 
-function M:BuildHighlightsTab(page, c, Kind)
-    page:Section(L["Highlights and Overlay"], nil, false)
-    page:Group(L["Your Target"])
-    local target = c.Columns({ "Style", "Color" })
+function M:BuildRims(page, c, Kind)
+    page:Tab("Border")
+    page:Group(L["Rims"])
+    local target = c.Columns({ "Your Target", "Target Color" })
     page.targetSelect = c.Select(target[1], 200, M.choices.highlightStyle, "targetHighlight"); c.Mark("target")
     c.Color(target[2], "targetColor")
-    page.hoverToggles = c.Toggles({ { "Mouse Highlight", "hoverHighlight" }, { "Aggro Rim", "aggroHighlight" },
-        { "Hover Glow", "hoverGlow" }, { "Focus Glow", "focusGlow" },
+    page.rimToggles = c.Toggles({ { "Aggro Rim", "aggroHighlight" },
         { "Preview as Your Target", "previewTarget", get = function() return page.partyShowTarget == true end,
             set = function(value) page.partyShowTarget = value or nil; page:Refresh() end } })
 
@@ -93,15 +93,19 @@ function M:BuildHighlightsTab(page, c, Kind)
     page.dispelToggles = c.Toggles({ { "Border", "border", get = border.get, set = border.set },
         { "Health Color", "health", get = health.get, set = health.set },
         { "Gradient", "gradient", get = gradient.get, set = gradient.set } })
-    -- The type's color, shared with aura rims and glows.
-    for _, kind in ipairs(M.dispelTypes) do
-        c.When(function() return Kind() == kind end, function()
-            c.Color(c.Columns({ "Type Color" })[1], M.dispelColorKeys[kind])
-        end)
-    end
-    c.Note("Border turns the member's border the type's color, Health Color fills the health bar with it, and Gradient fades it down over the bar. They show while the member has such a debuff (Which Debuffs), in combat too. The preview shows the picked type while this tab is open.", 48)
+    c.Note("Border turns the member's border the type's color (Type Colors), Health Color fills the health bar with it, and Gradient fades it down over the bar. They show while the member has such a debuff (Which Debuffs), in combat too. The preview shows the picked type while this tab is open.", 48)
+end
 
-    page:Group(L["Fading"])
+function M:BuildHighlights(page, c)
+    page:Tab("Glow")
+    page:Group(L["Highlights"])
+    page.hoverToggles = c.Toggles({ { "Mouse Highlight", "hoverHighlight" }, { "Hover Glow", "hoverGlow" },
+        { "Focus Glow", "focusGlow" } })
+end
+
+function M:BuildFading(page, c)
+    page:Tab("Behavior")
+    page:Group(L["Fade"])
     page.rangeToggles = c.Toggles({ { "Fade Out of Range", "rangeFade" } })
     local fading = c.Columns({ "Out of Range Opacity", "Dead and Offline Opacity" })
     page.rangeSlider = c.Slider(fading[1], "rangeOpacity", "%"); page.deadSlider = c.Slider(fading[2], "deadOpacity", "%")

@@ -334,7 +334,7 @@ world.run([==[
     -- Settings page and preview: the player's own bar.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Bar,Buttons,Text,Glows,Visibility,Copy & Apply', 'six tabs')
+    assert(table.concat(sections, ',') == 'General,Fill,Border,Glow,Text,Behavior', 'the standard tabs, in order')
     assert(page.buttonsSlider.high == 10, 'pet bar slider stops at ten')
     page.SetEditing('bar1')
     assert(page.buttonsSlider.high == 12)
@@ -364,7 +364,7 @@ world.run([==[
     page.SetTextPart('cooldown')
     assert(first.cooldownText.text ~= '', 'a sample cooldown while editing the cooldown text')
     first.scripts.OnMouseUp(first, 'LeftButton')
-    assert(page.selectedSection.title == 'Bar', 'button click opens Bar')
+    assert(page.selectedSection.title == 'General', 'button click opens General')
     -- The glow menu opens to the left of the clicked button, which previews its glow.
     local menu = ModeUIActionBarGlowMenu
     assert(menu:IsShown() and menu.index == 1 and view.glowIndex == 1 and menu.title.text == 'Action Bar 1, button 1', 'glow menu for button 1')
@@ -420,11 +420,12 @@ world.run([==[
     assert(not menu:IsShown(), 'X closes it')
     first.scripts.OnMouseUp(first, 'LeftButton')
     menu.more.scripts.OnClick(menu.more)
-    assert(not menu:IsShown() and page.selectedSection.title == 'Glows' and not preview.proc:IsShown(), 'All Glow Settings opens Glows')
+    assert(not menu:IsShown() and page.selectedSection.title == 'Glow' and not preview.proc:IsShown(), 'All Glow Settings opens Glow')
     first.scripts.OnMouseUp(first, 'LeftButton'); page.SetEditing('bar2')
     assert(not menu:IsShown(), 'switching bars closes the menu'); page.SetEditing('bar1')
     assert(M:SetOption('bar1', 'width', 30) and first.width == 30 and ActionButton1.width == 30, 'preview and bar follow the size')
-    assert(page.keybindButton and page.keybindHeaderButton and page.keybindHeaderButton:GetParent() == page.previewArea, 'Keybind Mode on the Bar tab and in the preview header')
+    assert(not page.keybindButton and page.keybindHeaderButton and page.keybindHeaderButton:GetParent() == page.previewArea, 'Keybind Mode once, in the preview header')
+    for _, row in ipairs(page.rows) do assert(row.settingsTitle ~= 'Keybind Mode' and row.settingsGroupTitle ~= 'Keybinds', 'no second Keybind Mode in the tabs') end
     page.keybindHeaderButton.scripts.OnClick(page.keybindHeaderButton)
     assert(M.binding and not addon.configWindow:IsShown(), 'the header button starts Keybind Mode')
     M:SetKeybindMode(false); addon.configWindow:Show()
@@ -516,64 +517,50 @@ world.run([==[
     C_Timer.After = after
     assert(M:SetOption('bar1', 'readyGlow', true) and M:SetOption('bar1', 'cooldownOpacity', 100))
 
-    -- The Editing list marks bars that are off or hidden, and offers Turn On.
+    -- The Editing list marks bars that are off or hidden, and offers Show Bar.
     page.barSelect.scripts.OnClick(page.barSelect)
     local labels = {}
     for _, row in ipairs(page.barSelect.rows) do if row:IsShown() then labels[row.choice.id] = row.label.text end end
     page.barSelect.menu:Hide()
     assert(labels.bar1 == 'Action Bar 1' and labels.bar6:find('Action Bar 6', 1, true) and labels.bar6:find('Off', 1, true), 'off bars are marked')
-    assert(not page.turnOnButton:IsShown(), 'no Turn On for a bar that shows')
+    assert(page.turnOnButton.label.text == 'Show Bar' and not page.turnOnButton:IsShown(), 'no Show Bar button for a bar that shows')
     page.SetEditing('bar6')
-    assert(page.turnOnButton:IsShown() and page.barSelect.label.text:find('Off', 1, true), 'Turn On for an off bar')
+    assert(page.turnOnButton:IsShown() and page.barSelect.label.text:find('Off', 1, true), 'Show Bar for an off bar')
     page.turnOnButton.scripts.OnClick(page.turnOnButton)
-    assert(M.db.bar6.show and not page.turnOnButton:IsShown() and page.barSelect.label.text == 'Action Bar 6', 'Turn On shows the bar')
+    assert(M.db.bar6.show and not page.turnOnButton:IsShown() and page.barSelect.label.text == 'Action Bar 6', 'Show Bar shows the bar')
     assert(M:SetOption('bar6', 'visibility', 'hidden') and page.turnOnButton:IsShown() and page.barSelect.label.text:find('Hidden', 1, true), 'hidden bars are marked too')
     page.turnOnButton.scripts.OnClick(page.turnOnButton)
-    assert(M.db.bar6.visibility == 'always', 'Turn On brings a hidden bar back to Always')
+    assert(M.db.bar6.visibility == 'always', 'Show Bar brings a hidden bar back to Always')
     assert(M:SetOption('bar6', 'show', false))
     page.SetEditing('bar1')
 
-    -- Copy & Apply, its own tab: tick bars, then apply this bar's look to them.
-    local copyTab
-    for _, section in ipairs(page.sections) do if section.title == 'Copy & Apply' then copyTab = section end end
-    assert(copyTab and page.sections[#page.sections] == copyTab, 'Copy & Apply is the last tab')
-    local pick = page.applyTargetSelect
-    -- Clicks the pick list's row for a bar; the menu stays open.
-    local function Pick(bar)
-        if not pick.menu:IsShown() then pick.scripts.OnClick(pick) end
-        for _, row in ipairs(pick.rows) do
-            if row:IsShown() and row.choice.id == bar then
-                if row.choice.disabled then return 'disabled' end
-                row.scripts.OnClick(row); return true
-            end
-        end
-    end
+    -- Copy To... and Reset... (the settings footer) act on the bar in Editing;
+    -- the page holds no copy or reset controls.
+    for _, section in ipairs(page.sections) do assert(section.title ~= 'Copy & Apply', 'no Copy & Apply tab') end
     for _, row in ipairs(page.rows) do
-        if row.settingsGroupTitle == 'Apply To' or row.settingsGroupTitle == 'Copy From' or row.settingsGroupTitle == 'Reset' then
-            assert(row.section == copyTab, 'copy, apply and reset sit on the Copy & Apply tab')
-        end
-        assert(row.settingsGroupTitle ~= 'Apply Style' and row.settingsGroupTitle ~= 'This Bar', 'the Bar tab no longer holds them')
+        local group = row.settingsGroupTitle
+        assert(group ~= 'Apply To' and group ~= 'Copy From' and group ~= 'Reset', 'no copy or reset cards in the page')
     end
-    assert(page.applySource.label.text == 'Action Bar 1', 'Copy From shows the bar in Editing')
+    assert(not page.applyButton and not page.applyAllButton and not page.resetButton and not page.applySource, 'no in-page copy or reset buttons')
+    local copies = addon:ConfigActionItems('copy', M)
+    assert(#copies == #M.bars and copies[1].label == "Action Bar 1's look to every bar", 'every bar, then one item per other bar')
+    local copyTo = {}
+    for _, item in ipairs(copies) do copyTo[item.label] = item; assert(item.prompt:find('Each bar keeps', 1, true), 'the prompt says what stays') end
+    assert(not copyTo["Action Bar 1's look to Action Bar 1"] and copyTo["Action Bar 1's look to Action Bar 8"], 'the edited bar is skipped')
     assert(M:SetOption('bar1', 'backgroundOpacity', 35))
-    assert(pick.label.text == 'Choose bars', 'nothing picked yet')
-    assert(Pick('bar3') and Pick('bar5') and Pick('bar1') == 'disabled', 'the source cannot be picked')
-    assert(pick.menu:IsShown(), 'the pick list stays open for more picks')
-    local marks = {}
-    for _, row in ipairs(pick.rows) do if row:IsShown() then marks[row.choice.id] = row.checkMark:IsShown() end end
-    assert(marks.bar3 and marks.bar5 and not marks.bar4 and not marks.bar1, 'picked bars show a check')
-    assert(pick.label.text == '2 bars selected', 'the field counts the picks')
-    pick.menu:Hide()
-    assert(page.applyTargets.bar3 and page.applyTargets.bar5 and not page.applyTargets.bar1, 'the edited bar is skipped')
-    page.applyButton.scripts.OnClick(page.applyButton)
-    assert(M.db.bar3.backgroundOpacity == 35 and M.db.bar5.backgroundOpacity == 35 and M.db.bar4.backgroundOpacity == 100, 'applied to the ticked bars only')
-    assert(M.db.bar5.orientation == 'vertical' and page.applyResult.text == 'Applied to 2 bars.', 'shape kept; result shown')
+    copyTo["Action Bar 1's look to Action Bar 3"].run(); copyTo["Action Bar 1's look to Action Bar 5"].run()
+    assert(M.db.bar3.backgroundOpacity == 35 and M.db.bar5.backgroundOpacity == 35 and M.db.bar4.backgroundOpacity == 100, 'copied to the chosen bars only')
+    assert(M.db.bar5.orientation == 'vertical', 'shape kept')
     assert(M.db.bar3.paging == false and M.db.bar3.pageConditions:find('mod:shift', 1, true), 'paging stays per bar')
-    Pick('bar3'); assert(pick.label.text == 'Action Bar 5', 'one pick shows its name'); Pick('bar5'); pick.menu:Hide()
-    page.applyButton.scripts.OnClick(page.applyButton)
-    assert(page.applyResult.text == 'Choose bars first.', 'nothing ticked')
-    page.applyAllButton.scripts.OnClick(page.applyAllButton)
-    assert(M.db.bar4.backgroundOpacity == 35 and M.db.pet.backgroundOpacity == 35 and page.applyResult.text == 'Applied to 11 bars.', 'Apply to All Bars')
+    copies[1].run()
+    assert(M.db.bar4.backgroundOpacity == 35 and M.db.pet.backgroundOpacity == 35, 'to every bar')
+    page.SetEditing('bar2')
+    assert(addon:ConfigActionItems('copy', M)[1].label == "Action Bar 2's look to every bar", 'the source is read from Editing when asked')
+    local resets = addon:ConfigActionItems('reset', M)
+    assert(#resets == 1 and resets[1].label == 'Action Bar 2' and resets[1].prompt == "Put Action Bar 2 back to ModeUI's defaults?", 'Reset... offers the bar in Editing')
+    resets[1].run()
+    assert(M.db.bar2.backgroundOpacity == 100 and M.db.bar1.backgroundOpacity == 35, 'only that bar goes back')
+    page.SetEditing('bar1')
     for _, bar in ipairs(M.bars) do assert(M:SetOption(bar, 'backgroundOpacity', 100)) end
 
     -- Opacity drags set alpha only: no rebuild of the bars or the page per step.
@@ -586,23 +573,29 @@ world.run([==[
     M.Apply = apply
     assert(M:SetOption('bar1', 'opacity', 100) and M:SetOption('bar1', 'fadeOpacity', 0))
 
-    -- On Cooldown sits on the Buttons tab: a line about cooldowns, then the choices.
+    -- On Cooldown sits on the Fill tab: a line about cooldowns, then the choices.
     local pills = page.cooldownColorPills
     local cooldownRow
     for _, row in ipairs(page.rows) do if row.settingsGroupTitle == 'On Cooldown' then cooldownRow = row end end
-    assert(cooldownRow and cooldownRow.section.title == 'Buttons', 'On Cooldown is on the Buttons tab')
+    assert(cooldownRow and cooldownRow.section.title == 'Fill', 'On Cooldown is on the Fill tab')
     pills[2].scripts.OnClick(pills[2])
     assert(M.db.bar1.cooldownDesaturate == false, 'Full Color keeps the icon as it is')
     pills[1].scripts.OnClick(pills[1])
     assert(M.db.bar1.cooldownDesaturate == true, 'Desaturate turns it gray')
-    -- Border Style and Border Metal sit in Border on the Buttons tab, while the border shows.
+    -- Show Border, then Border and Border Metal (while the border shows), in Border on the Border tab.
     local borderGroup, pickerRow
     for _, row in ipairs(page.rows) do
-        if row.settingsGroupTitle == 'Border' and row.section.title == 'Buttons' then borderGroup = row
+        if row.settingsGroupTitle == 'Border' and row.section.title == 'Border' then borderGroup = row
         elseif borderGroup and not pickerRow and row.card == borderGroup.card and row.visibleWhen then pickerRow = row end
     end
-    assert(page.borderStylePicker and page.borderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border Style and Border Metal in Border')
+    assert(page.borderStylePicker and page.borderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border and Border Metal in Border')
     assert(M:SetOption('bar1', 'border', 'none') and not pickerRow.visibleWhen() and M:SetOption('bar1', 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
+    local showBorder = page.borderToggles[1].button
+    assert(showBorder.selected, 'Show Border reads border "mode"')
+    showBorder.scripts.OnClick(showBorder)
+    assert(M.db.bar1.border == 'none' and not showBorder.selected and not pickerRow.visibleWhen(), 'Show Border off saves border "none"')
+    showBorder.scripts.OnClick(showBorder)
+    assert(M.db.bar1.border == 'mode' and showBorder.selected, 'and on saves "mode"')
 
     -- Copy and reset.
     assert(M:SetOption('bar1', 'border', 'none') and M:SetOption('bar1', 'edgeStyle', 'obsidianEmpty') and M:CopyStyleToAll('bar1'))

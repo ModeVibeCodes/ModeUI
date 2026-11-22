@@ -67,11 +67,15 @@ function addon:BuildConfigNavigation(window)
         if window.RefreshNavigation then window:RefreshNavigation() end
         if window.profileSelect then window.profileSelect:Refresh() end
         local module = self.modules[window.selectedPage]
-        local reset = module ~= nil and module.ResetToDefaults ~= nil
-        window.resetButton:SetShown(reset)
-        -- Edit Mode sits beside Reset, or beside Done when there is no Reset.
+        local reset = module ~= nil and (module.ResetToDefaults ~= nil or module.ResetScopes ~= nil)
+        local copy = module ~= nil and module.CopyActions ~= nil
+        window.resetButton:SetShown(reset); window.copyButton:SetShown(copy)
+        -- Done, then Reset…, Copy To… and Edit Mode, each beside the last shown.
+        local last = reset and window.resetButton or window.doneButton
+        window.copyButton:ClearAllPoints(); window.copyButton:SetPoint("RIGHT", last, "LEFT", -8, 0)
+        if copy then last = window.copyButton end
         window.editButton:ClearAllPoints()
-        window.editButton:SetPoint("RIGHT", reset and window.resetButton or window.doneButton, "LEFT", -8, 0)
+        window.editButton:SetPoint("RIGHT", last, "LEFT", -8, 0)
         for _, page in pairs(pages) do page:Refresh() end
     end
 

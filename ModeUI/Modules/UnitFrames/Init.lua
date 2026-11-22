@@ -124,7 +124,7 @@ M.ringFinishes = { M.choices.ring[2], M.choices.ring[3] }
 -- Bar Shows (owner, November 19, 2026: the Healer layout's "mana frame"):
 -- the health bar shows the unit's health, or its mana (Update.lua).
 M.choices.barShows = { { id = "health", label = "Health" }, { id = "mana", label = "Mana" } }
-M.choices.prismGlow = { { id = "none", label = "Off" }, { id = "hover", label = "Mouseover" }, { id = "always", label = "Always" } }
+M.choices.prismGlow = { { id = "none", label = "None" }, { id = "hover", label = "Mouseover" }, { id = "always", label = "Always" } }
 -- Setting key -> choice list.
 M.choiceKeys = { portraitSide = "side", portraitStyle = "portraitStyle", portraitRing = "ring", healthTextColor = "healthText",
     nameColorMode = "nameColor", healthColorMode = "healthColor", powerColorMode = "powerColor", attachPoint = "attachPoint",
@@ -266,7 +266,7 @@ M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", heig
 -- Mode's icons and frames do (owner, November 19, 2026).
 M.castRanges = { height = { 6, 40, 1 }, gap = { -1, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }
 M.choices.castPosition = { { id = "below", label = "Below Frame" }, { id = "above", label = "Above Frame" } }
-M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "Hidden" } }
+M.choices.castIcon = { { id = "far", label = "Away from Portrait" }, { id = "near", label = "Portrait Side" }, { id = "none", label = "None" } }
 M.castChoices = { position = "castPosition", icon = "castIcon" }
 local CAST_OFF = { targettarget = true, focustarget = true }
 function M.CastDefaults(unit)

@@ -2,14 +2,14 @@ local _, addon = ...
 local M, W, T, L = addon.BuffsDebuffs, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 if not M then return end
 
--- The Blacklist tab and its picker: spells no Mode bar shows, sent to the
+-- The Blacklist card (Auras tab) and its picker: spells no Mode bar shows, sent to the
 -- game as excludeSpellIDs on every group. The game honors it for every buff;
 -- for your own debuffs only when it never keeps that spell's aura secret
 -- (Domain.Auras.NeverSecret), so the picker says which those are. Click
 -- + Add or Remove Auras, then click an aura on you now to hide it, or a
 -- hidden one to bring it back; any spell can be added by ID. The picker
 -- closes on a click elsewhere, its close button, or combat. Opened for a bar
--- (Bars tab, Spells You Add) the same picker holds that bar's own buffs.
+-- (Auras tab, Spells You Add) the same picker holds that bar's own buffs.
 local Auras, Spells, Style = addon.Domain.Auras, addon.Domain.Cooldowns, addon.Style
 local WIDTH, PAD, SIZE, GAP, COLUMNS = 320, 14, 32, 6, 8
 local INNER = WIDTH - 2 * PAD
@@ -56,7 +56,7 @@ local function Target(self, picker)
 end
 
 function M:BuildBlacklistTab(page, c)
-    page:Section(L["Blacklist"], nil, false)
+    page:Tab("Auras")
     page:Group(L["Blacklist"])
     c.Note("Auras no Mode bar shows. Buffs always stay hidden. Your own debuffs stay hidden only when the game never keeps them secret (Sated and Exhaustion, for example); the picker marks the rest.", 64)
     local row = page:Row(L["Hidden Auras"], 48)

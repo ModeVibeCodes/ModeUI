@@ -2,20 +2,35 @@ local _, addon = ...
 local M, W, L = addon.Windows, addon.ConfigWidgets, addon.L
 if not M then return end
 
--- The Windows page's Character tab: the window's style, its stats display
--- (which stats, where, how big), rarity borders and enchant text. `H` holds
--- the page helpers from Settings.lua.
+-- The Character window's settings on the Windows page's standard tabs: its
+-- style (General), the stats display's background (Fill), rarity borders
+-- (Border), and the stats display (which stats, where, how big, their colors)
+-- and enchant text (Text). `H` holds the page helpers from Settings.lua.
 local ANCHOR_LABELS = { TOPLEFT = "Top Left", TOP = "Top", TOPRIGHT = "Top Right", LEFT = "Left", CENTER = "Center",
     RIGHT = "Right", BOTTOMLEFT = "Bottom Left", BOTTOM = "Bottom", BOTTOMRIGHT = "Bottom Right" }
 local NUDGES = { { "Left", -1, 0 }, { "Up", 0, 1 }, { "Down", 0, -1 }, { "Right", 1, 0 } }
 
 function M:CreateCharacterSettings(page, H)
+    page:Tab("General")
     page:Group(L["Character Window"])
     page.characterStylePills = H.Pills("Style", { { id = true, label = "ModeUI" }, { id = false, label = "Blizzard" } },
         function() return M.db.windows.character end, function(value) M:SetWindow("character", value) end, 120)
 
-    page:Group(L["Stats Display"])
-    page.statsToggles = H.Toggles({ { "Show Stats", "charStats" }, { "Stats Background", "charStatsBackground" } }, 2)
+    page:Tab("Fill")
+    page:Group(L["Character Stats"])
+    page.statsBackgroundToggles = H.Toggles({ { "Stats Background", "charStatsBackground" } }, 2)
+
+    page:Tab("Border")
+    page:Group(L["Rarity Borders"])
+    page.borderToggles = H.Toggles({ { "Rarity Borders", "charBorders" } }, 2)
+    H.When(function() return M.db.charBorders end, function()
+        local size = H.Columns({ "Border Size" })
+        page.charBorderSlider = H.Slider(size[1], "charBorderSize", "px")
+    end)
+
+    page:Tab("Text")
+    page:Group(L["Character Stats"])
+    page.statsToggles = H.Toggles({ { "Show Stats", "charStats" } }, 2)
     H.When(function() return M.db.charStats end, function()
         local items = {}
         for _, stat in ipairs(M.STATS) do
@@ -48,7 +63,7 @@ function M:CreateCharacterSettings(page, H)
             page.nudgeButtons[step[1]] = button
             x = x + 68
         end
-        local size = H.Columns({ "Stats Text Size" })
+        local size = H.Columns({ "Size" })
         page.statsSizeSlider = H.Slider(size[1], "charStatsSize")
         -- Stat Colors: a row for each stat shown (Main Stat uses its attribute's).
         page:Group(L["Stat Colors"])
@@ -68,17 +83,10 @@ function M:CreateCharacterSettings(page, H)
         end
     end)
 
-    page:Group(L["Rarity Borders"])
-    page.borderToggles = H.Toggles({ { "Rarity Borders", "charBorders" } }, 2)
-    H.When(function() return M.db.charBorders end, function()
-        local size = H.Columns({ "Border Size" })
-        page.charBorderSlider = H.Slider(size[1], "charBorderSize", "px")
-    end)
-
     page:Group(L["Enchant Text"])
-    page.enchantToggles = H.Toggles({ { "Enchant Text", "charEnchants" } }, 2)
+    page.enchantToggles = H.Toggles({ { "Show Enchant Text", "charEnchants" } }, 2)
     H.When(function() return M.db.charEnchants end, function()
-        local size = H.Columns({ "Enchant Text Size" })
+        local size = H.Columns({ "Size" })
         page.enchantSizeSlider = H.Slider(size[1], "charEnchantSize")
     end)
 end

@@ -22,14 +22,10 @@ addon.PreviewStates:Register(M.id, {
     sample = function(_, phase) return phase end,
 })
 
--- Tabs for a part only one frame has show that frame, whatever Editing says.
-M.previewSectionUnits = { ["Class Resource"] = "target" }
--- The frame the page is editing (or the one the open tab is about), else the Player.
+-- The frame the page is editing, else the Player. (The class resource's
+-- cards show while Editing is the Target, so the sample is the Target then.)
 function M:PreviewUnit()
     local page = self.page
-    local section = page and page.selectedSection
-    local fixed = section and self.previewSectionUnits[section.title]
-    if fixed then return fixed end
     return page and page.unitFrameEditing and page.unitFrameEditing() or "player"
 end
 

@@ -139,9 +139,10 @@ function M:PaintSample(plate, style, sample, progress)
     if style.showRaidIcon and sample.raid then RaidIcon.ApplyIndex(plate.raidIcon, sample.raid) else plate.raidIcon:Hide() end
     if style.showSoftTarget and sample.softTarget then plate.softTarget:SetTexture(sample.softTarget); plate.softTarget:Show() else plate.softTarget:Hide() end
     self:PaintIndicator(plate, sample.quest, sample.classification, tostring(sample.level), Level.DifficultyColor(sample.level))
-    -- On the Focus tab the sample is your focus instead of your target.
+    -- While the page shows the focus highlight (the Glow tab) the sample is your
+    -- focus instead of your target.
     local page = self.page
-    local focus = page and page.selectedSection and page.selectedSection.title == L["Focus"] or false
+    local focus = page and page.nameplateFocusSample and page.nameplateFocusSample() or false
     self:PaintTarget(plate, style.targetStyle ~= "none" and sample.targeted == true and not focus)
     self:PaintFocus(plate, focus, focus)
     self:PaintSampleCombo(plate, style)

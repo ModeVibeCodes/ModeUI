@@ -7,7 +7,7 @@ if not M then return end
 -- as Edit Mode) at up to 125% so borders and spacing read, and a caption of
 -- what it shows. In the window's preview pane, its Which Auras card fills the
 -- room under the bar (owner, November 18, 2026); a narrow window keeps that
--- card on the Bars tab instead.
+-- card on the Auras tab instead.
 local W, T, L, Style = addon.ConfigWidgets, addon.InterfaceTheme, addon.L, addon.Style
 local TITLE, CAPTION, MAX_SCALE, MAX_HEIGHT, MIN_WIDTH = 40, 22, 1.25, 170, 300
 local CARD_PAD, BUTTON_HEIGHT, BUTTON_GAP, BUTTON_MIN = 12, 26, 6, 120

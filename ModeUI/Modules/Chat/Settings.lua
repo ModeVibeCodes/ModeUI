@@ -2,9 +2,12 @@ local _, addon = ...
 local M, W, T, L = addon.Chat, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 if not M then return end
 
--- Only defines the page; ModeUI builds it the first time it's opened. Three
--- tabs (Window, Tabs, Fade), pinned above the scrolling cards, with controls
--- side by side. Changes show on the real chat windows right away.
+-- Only defines the page; ModeUI builds it the first time it's opened, on the
+-- standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs") pinned above the
+-- scrolling cards: General (buttons, tab size, edit box), Fill (background,
+-- tab style), Border, Text and Behavior (idle and tab fades). Changes show on
+-- the real chat windows right away. Reset… in the footer runs
+-- M:ResetToDefaults.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local owner = M:AppearanceOwner()
@@ -50,29 +53,10 @@ function M:CreateConfigPage(parent)
         return W.Note(label)
     end
 
-    page:Section(L["Window"], nil, false)
+    page:Tab("General")
     local status = W.Label(page:Row(L["Status"], 48), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
     Refresh(function() status:SetText(M:Status()) end)
     page.statusLabel = status
-    page:Group(L["Text"])
-    local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
-    page.textToggles = Toggles({ { "Outline", "outline" }, { "Text Shadow", "shadow" } })
-    Note("The Mode typeface by default (Urbanist). Each window keeps its own Font Size, set from its tab's right-click menu.", 48)
-    page:Group(L["Background"])
-    local background = Columns({ "Background Color", "Background Opacity" })
-    Color(background[1], "backgroundColor")
-    page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
-    page:Group(L["Border"])
-    page.borderStyle, page.borderMetal = W.BorderPickers(page,
-        { get = function() return M.db.edgeStyle end, set = Set("edgeStyle") },
-        { get = function() return M.db.edgeMetal end, set = Set("edgeMetal") })
-    Note("The window's border; the tabs and buttons keep the Mode control edge. A see-through window has no drop shadow.", 48)
-    page:Group(L["Edit Box"])
-    page.editPills = Pills("Position", M.choices.editPosition, function() return M.db.editPosition end, Set("editPosition"))
-    local edit = Columns({ "Edit Box Height", "Edit Gap" })
-    page.editHeightSlider = Slider(edit[1], "editHeight", "px")
-    page.editGapSlider = Slider(edit[2], "editGap", "px")
-    Note("Bottom and Top join the edit box to the window, inside its edge, with a line that turns Ivory while you type. Below keeps it a separate field, Edit Gap under the window.", 48)
     page:Group(L["Buttons"])
     local buttons = {}
     for _, item in ipairs(M.choices.buttons) do buttons[#buttons + 1] = { label = L[item.label], value = item.id, width = 120 } end
@@ -80,35 +64,56 @@ function M:CreateConfigPage(parent)
     Refresh(pillsRefresh)
     page.scrollToggles = Toggles({ { "Scroll Bar", "scrollBar" } })
     Note("The compartment holds Channels, voice chat and the chat menu at the end of the tab row. The scroll bar shows while the mouse is over the chat; Scroll to Bottom shows whenever a window is scrolled up.", 48)
-    page:Group(L["Defaults"])
-    local tools = page:Row(L["Chat Look"], 48)
-    page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
-    page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetToDefaults() end)
+    page:Group(L["Tabs"])
+    local size = Columns({ "Tab Height", "Tuck Depth" })
+    page.tabHeightSlider = Slider(size[1], "tabHeight", "px")
+    page.tuckSlider = Slider(size[2], "tuckDepth", "px")
+    Note("Tabs rest on the window's edge: the one you're in stands full height with an Ivory label and line, the others tuck down Tuck Depth.", 48)
+    page:Group(L["Edit Box"])
+    page.editPills = Pills("Position", M.choices.editPosition, function() return M.db.editPosition end, Set("editPosition"))
+    local edit = Columns({ "Edit Box Height", "Edit Box Spacing" })
+    page.editHeightSlider = Slider(edit[1], "editHeight", "px")
+    page.editGapSlider = Slider(edit[2], "editGap", "px")
+    Note("Bottom and Top join the edit box to the window, inside its edge, with a line that turns Ivory while you type. Below keeps it a separate field, Edit Box Spacing under the window.", 48)
 
-    page:Section(L["Tabs"], nil, false)
-    page:Group(L["Tab Style"])
+    page:Tab("Fill")
+    page:Group(L["Background"])
+    local background = Columns({ "Background Color", "Background Opacity" })
+    Color(background[1], "backgroundColor")
+    page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
+    page:Group(L["Tabs"])
     page.tabStylePills = Pills("Style", { { id = true, label = "Glass" }, { id = false, label = "Solid" } },
         function() return M.db.glassTabs end, Set("glassTabs"))
-    local size = Columns({ "Tab Height", "Tab Text Size" })
-    page.tabHeightSlider = Slider(size[1], "tabHeight", "px")
-    page.tabSizeSlider = Slider(size[2], "tabFontSize")
-    local tuck = Columns({ "Tuck Depth" })
-    page.tuckSlider = Slider(tuck[1], "tuckDepth", "px")
-    Note("Glass tabs are see-through Mode Glass panes; Solid tabs are Mode Button faces. Tabs rest on the window's edge: the one you're in stands full height with an Ivory label and line, the others tuck down Tuck Depth.", 48)
-    page:Group(L["Tab Fade"])
-    local fade = Columns({ "Other Tabs", "Tabs When Idle" })
-    page.unselectedSlider = Slider(fade[1], "unselectedTabOpacity", "%")
-    page.awaySlider = Slider(fade[2], "awayTabOpacity", "%")
-    Note("Other Tabs is how visible the tabs you're not in are. Tabs When Idle is how visible every tab and the buttons are once the chat has gone Idle Delay seconds without use: 100 keeps them shown at full, 0 hides them. A tab flashing for a whisper always shows.", 48)
+    Note("Glass tabs are see-through Mode Glass panes; Solid tabs are Mode Button faces.", 48)
 
-    page:Section(L["Fade"], nil, false)
+    page:Tab("Border")
+    page:Group(L["Border"])
+    page.borderStyle, page.borderMetal = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = Set("edgeStyle") },
+        { get = function() return M.db.edgeMetal end, set = Set("edgeMetal") })
+    Note("The window's border; the tabs and buttons keep the Mode control edge. A see-through window has no drop shadow.", 48)
+
+    page:Tab("Text")
+    page:Group(L["Text Style"])
+    local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
+    page.textToggles = Toggles({ { "Outline", "outline" }, { "Shadow", "shadow" } })
+    Note("The Mode typeface by default (Urbanist). Each window keeps its own Font Size, set from its tab's right-click menu.", 48)
+    page:Group(L["Tab Text"])
+    page.tabSizeSlider = Slider(Columns({ "Size" })[1], "tabFontSize")
+
+    page:Tab("Behavior")
     page:Group(L["Idle Fade"])
     page.idleToggles = Toggles({ { "Idle Fade", "idleFade" }, { "Wake on Whispers", "wakeOnWhisper" } })
     local idle = Columns({ "Idle Opacity", "Idle Delay" })
     page.idleOpacitySlider = Slider(idle[1], "idleOpacity", "%")
     page.idleDelaySlider = Slider(idle[2], "idleDelay", "s")
     Note("The chat eases down to Idle Opacity after Idle Delay seconds without the mouse over it or typing. Moving the mouse over it or pressing Enter brings it back.", 48)
+    page:Group(L["Tab Fade"])
+    local fade = Columns({ "Other Tabs", "Tabs When Idle" })
+    page.unselectedSlider = Slider(fade[1], "unselectedTabOpacity", "%")
+    page.awaySlider = Slider(fade[2], "awayTabOpacity", "%")
+    Note("Other Tabs is how visible the tabs you're not in are. Tabs When Idle is how visible every tab and the buttons are once the chat has gone Idle Delay seconds without use: 100 keeps them shown at full, 0 hides them. A tab flashing for a whisper always shows.", 48)
 
-    W.PinnedSectionTabs(page)
+    W.StandardTabs(page, true)
     page:Finish(); return page
 end

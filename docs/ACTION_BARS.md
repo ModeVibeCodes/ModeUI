@@ -53,13 +53,13 @@ weak tables keyed by the button. Its only hooks are `hooksecurefunc` on:
 
 The Mode design language (`docs/DESIGN_LANGUAGE.md`, "Action buttons"):
 
-- **Buttons are 40 by 34** by default (Width and Height on the **Bar** tab):
+- **Buttons are 40 by 34** by default (Width and Height on the **General** tab):
   icons are wider than tall. Sizes are whole physical pixels, and each bar is
   an even number of pixels each way, so a centered bar stays on the pixel grid.
 - **Border:** **Mode** (by default) is the `frame` edge outside the button,
-  in the bar's **Border Style** (Mode-Border by default: a 2px dark glass band, lit top and champagne bottom; was a 2px Silver Specular
+  in the bar's **Border** (Mode-Border by default: a 2px dark glass band, lit top and champagne bottom; was a 2px Silver Specular
   band, a 1px black line, a 1px shadow ring and a soft drop) and **Border
-  Metal** (shown while Border is Mode). **None** hides it. Each bar leaves room for its buttons' edges, and
+  Metal** (shown while Show Border is on, the saved `border` "mode"). Show Border off (`"none"`) hides it. Each bar leaves room for its buttons' edges, and
   **Spacing** (4px by default) counts between the edges' shadows.
 - **Background:** the **Mode-FG** face (its base) behind the icon, in the
   **Background Color** (Mono panel, #0E0E0E, by default) at **Background
@@ -98,7 +98,7 @@ its anchor's side, top or bottom. So the keybind sits right in the top-right
 corner. Keybinds, counts and cooldown numbers are the Mode typeface (Urbanist) Bold, macro names
 Medium (another font keeps its one weight). Every bar shares one font setup:
 **Font** (Mode, the Urbanist typeface, by default), **Outline** (off), **Slug Text** (on) and
-**Text Shadow** (None, Crisp by default, or Lifted).
+**Shadow** (None, Crisp by default, or Lifted), in the Text tab's **Text Style** card.
 
 - Blizzard shows and hides these texts itself, so a hidden text is faded rather
   than hidden.
@@ -142,7 +142,7 @@ same at 1080 and 1440. The module is on.
 
 - **Action Bars 1-4**: 28 x 24 buttons (owner's tuning, November 18, 2026),
   Spacing 2, 12 buttons, 12 per line, Rows (Action Bar 4 turns from Columns),
-  First Button Top Left, Border Style Mode-Border (the default). Each is
+  First Button Top Left, Border Mode-Border (the default). Each is
   12 x (28 + 6) + 11 x 2 = 430 wide and 30 tall (the `frame` edge's 3px each
   side is inside the bar, `M.Geometry`). A centered 2 x 2 grid: Action Bar 1's BOTTOMRIGHT on the screen's
   BOTTOM (-4, 8); Action Bar 2's LEFT on Action Bar 1's RIGHT (8, 0); 3 and 4
@@ -206,7 +206,7 @@ above it, in volt green (#CCFF00); the highlight itself carries no text.
 
 ## Keybind Mode
 
-Type **/kb**, or click **Keybind Mode** on the **Bar** tab.
+Type **/kb**, or click **Keybind Mode** in the settings preview's header.
 
 - Every bar that's switched on shows, with every slot, so empty places can be
   bound too. Each place shows its current key.
@@ -240,7 +240,7 @@ Type **/kb**, or click **Keybind Mode** on the **Bar** tab.
 Every bar hides during pet battles. The pet bar also needs a pet. The pet and
 stance bars hide in vehicles and while possessing, as Blizzard's do. Action Bar
 1 hides while the game shows its own vehicle bar (`OverrideActionBar`), which
-then owns keys 1-12. **Show Bar** (on the **Bar** tab) off turns a bar off
+then owns keys 1-12. **Show Bar** (on the **General** tab) off turns a bar off
 completely, in Edit Mode too. Keybinds still work for hidden bars, as they do
 for Blizzard's.
 
@@ -312,7 +312,7 @@ stand-in of Blizzard's frames.
 
 ## Settings page
 
-The preview above the five tabs is **your own bar**: the bar being edited, with
+The preview above the tabs is **your own bar**: the bar being edited, with
 the spells, keybinds, counts, macro names and running cooldowns on its buttons
 right now. Empty places show as empty slots, and the preview redraws when your
 bars, bindings or cooldowns change. While you edit the **Cooldown** text, the
@@ -323,33 +323,36 @@ While the page is open, each bar on screen wears a small name tag in its middle
 ("Action Bar 1", "Pet Bar", …), so you can tell the bars apart without Edit
 Mode. The bar being edited has a cyan tag; clicking any tag edits that bar.
 
-Clicking a button opens the **Bar** tab and its glow menu (see Glows); clicking a text opens the **Text** tab
-on that text. The tabs:
+Clicking a button opens the **General** tab and its glow menu (see Glows); clicking a text opens the **Text** tab
+on that text. The page uses the standard tabs (docs/DESIGN_LANGUAGE.md,
+"Standard tabs"), with these cards:
 
-- **Bar**: Show Bar, status, layout, size, Keybind Mode, paging
-- **Buttons**: border style, size and color; background color and opacity;
-  empty slots; On Cooldown (Icon Color, Icon Opacity)
-- **Text**: which text, then its place, size and color, and the font
-- **Glows**: proc glow, glow when ready
-- **Visibility**: Show, custom conditions, opacity, Faded Opacity
-- **Copy & Apply**: Copy From (the bar in Editing), Apply To, Reset
+- **General**: Show Bar and status; **Size** (Width, Height); **Arrange**
+  (Buttons, Buttons per Line, Spacing, Lines, First Button)
+- **Fill**: **Background** (Background Color, Background Opacity, Show Empty
+  Slots); **On Cooldown** (Icon Color, Icon Opacity)
+- **Border**: **Border** (Show Border, then Border and Border Metal while it
+  shows). Show Border is the saved `border` key: on is `"mode"`, off `"none"`.
+- **Glow**: **Proc Glow**, **Cooldown Ready**
+- **Text**: **Text Style** (Font, Outline, Slug Text, Shadow), then **Text**
+  (which text, Show This Text, its anchor, Size, offsets and color)
+- **Behavior**: **When to Show** (Show, Conditions); **Fade** (Bar Opacity,
+  Faded Opacity); **Paging** (Page Switching, Page Conditions)
 
 **Editing** (the bar being changed) sits at the top right of the preview, so it's
 always in view and shared by every tab. Its list marks bars that are **Off** (Show
 Bar off) or **Hidden** (Show set to Hidden). When the chosen bar is either, a
-**Turn On** button appears beside it: it switches Show Bar on, and sets Show back
+**Show Bar** button appears beside it: it switches Show Bar on, and sets Show back
 to Always if it was Hidden. A tab also says so when that bar is off.
 
-**Copy & Apply** tab: **Copy From** is a dropdown showing the source, the bar in
-Editing; choosing a bar there changes Editing too. **Apply To** is a pick list:
-each bar has a check box, clicking a bar ticks or unticks it and the list stays
-open, and the field reads "Choose bars", the bar's name, or "3 bars selected".
-The source shows as **Source** and can't be picked. The list closes on a click
-outside it. Then **Apply to Selected**, or **Apply to All Bars**. The picked
-bars get the source's size, borders, background, text, glows and opacity; each
+**Copy To…** and **Reset…** (the settings footer) act on the bar in Editing.
+**Copy To…** offers "Action Bar 1's look to every bar", then one item per
+other bar ("Action Bar 1's look to Action Bar 3"); each asks first. The bars
+get the source's size, borders, background, text, glows and opacity; each
 keeps its own buttons, lines, paging, show settings and per-button glow
-switches. The result ("Applied to 2 bars.") shows beside the buttons. **Reset**
-holds **Reset to Defaults** for the bar in Editing.
+switches (`M:CopyActions`, from `M:CopyStyleTo` and `M:CopyStyleToAll`).
+**Reset…** puts the bar in Editing back to ModeUI's defaults, keeping the same
+settings (`M:ResetScopes`, from `M:ResetBar`).
 
 ## Paging
 
@@ -358,7 +361,7 @@ actions. The bar's state driver picks a page from macro conditions, and a
 snippet in the game's secure environment sets it on each button
 (`actionpage`), so pages change in combat too.
 
-- **Page Switching** (on the **Bar** tab) turns it on or off for a bar.
+- **Page Switching** (on the **Behavior** tab) turns it on or off for a bar.
 - **Page Conditions**: macro conditions that name a page, like
   `[mod:shift] 2; [bonusbar:1] 7`. Pages 1-6 are the game's bars; 7-10 are
   stance and form pages (`bonusbar:1` to `4`). When none match, the bar shows
@@ -373,7 +376,7 @@ snippet in the game's secure environment sets it on each button
 
 ## Glows
 
-How buttons react, on the **Glows** tab (per bar):
+How buttons react, on the **Glow** tab (per bar):
 
 - **Proc Glow**: how a proc (the game lighting up a spell to use now) shows.
   **Border** (by default) swaps the button's edge rim to the **Proc Color**
@@ -387,7 +390,7 @@ How buttons react, on the **Glows** tab (per bar):
   `C_ActionBar.GetActionCooldown` on `SPELL_UPDATE_COOLDOWN`; its `isActive` and
   `isOnGCD` fields are never secret, so this works in combat and ignores the
   global cooldown.
-- **On Cooldown** (Buttons tab) starts by saying what it covers: an ability on
+- **On Cooldown** (Fill tab) starts by saying what it covers: an ability on
   a cooldown longer than the global cooldown.
 - **Icon Color**: **Desaturate** (the default) turns the icon gray while that
   cooldown runs and gives its color back when it's ready; **Full Color** keeps
@@ -402,7 +405,7 @@ How buttons react, on the **Glows** tab (per bar):
   together, a soft glow wins over a border (Blizzard's own proc animation counts
   as a glow); two of the same kind, the proc glow wins. The other comes back when
   the winner ends.
-- **The glow menu**: click a button in the preview. It opens the Bar tab and a
+- **The glow menu**: click a button in the preview. It opens the General tab and a
   menu to the left of the button, which stays open while the page scrolls and
   closes on a click anywhere else, its **X**, switching bars, leaving the page
   or combat. It has:
@@ -413,7 +416,7 @@ How buttons react, on the **Glows** tab (per bar):
     them onto another button (any bar), or give every button on this bar the
     same switches.
   - **This Bar**: the bar's Proc Glow and Ready Glow styles.
-  - **All Glow Settings** opens the Glows tab.
+  - **All Glow Settings** opens the Glow tab.
 
   While the menu is open its button previews its glow (Blizzard's own animation
   for the Blizzard style). A proc lit on the real bar also shows on its preview
@@ -530,8 +533,12 @@ Shared additions:
   - Pick bars with **Editing** and check that the preview shows that bar's
     spells and keybinds.
   - On the **Text** tab, pick **Cooldown** and watch the sample cooldown.
-  - On **Buttons**, move **Background Opacity**.
-  - On **Visibility**, set Action Bar 3's **Show** to **Mouseover**, then
+  - On **Fill**, move **Background Opacity**.
+  - On **Border**, switch **Show Border** off, then on.
+  - With **Action Bar 1** in **Editing**, click **Copy To…** in the footer, pick
+    **Action Bar 1's look to Action Bar 3** and click **Copy**. Then pick
+    **Action Bar 3** in **Editing**, click **Reset…** and click **Reset**.
+  - On **Behavior**, set Action Bar 3's **Show** to **Mouseover**, then
     Action Bar 2's to **Hidden**.
   - Click **Edit Mode** in the window header, drag Action Bar 1 slowly across
     the screen's center and let go near it.
@@ -553,6 +560,10 @@ Shared additions:
     centered above it, and moves with the mouse without lag.
   - A cyan line appears near the center, and the bar snaps onto it.
   - Each arrow click moves the bar one pixel.
+  - Show Border off hides the buttons' edges and the Border and Border Metal
+    fields; on brings both back.
+  - Copy gives Action Bar 3 Action Bar 1's size and look (its own buttons and
+    lines stay); Reset puts Action Bar 3 back to its defaults.
   - Action Bar 3 shows only under the mouse. Action Bar 2 shows only in Edit
     Mode and `/kb`.
   - The new key works and is listed in the game's Key Bindings.

@@ -339,11 +339,22 @@ world.run([==[
     M:SetEditMode(true); assert(M.mover:IsShown() and M.mover.label:GetText() == 'Bags')
     M:SetEditMode(false); assert(not M.mover:IsShown())
 
-    -- The page: built on demand, with five tabs.
+    -- The page: built on demand, on the standard tabs; Reset… in the footer
+    -- instead of an in-page button.
     SlashCmdList.MODEUI(); addon:SelectConfigPage('bags')
     local page = M.page
-    assert(page and page.columnsSlider and page.sortSelect and page.growPills and page.resetButton, 'page controls')
-    assert(page.borderStyle and page.borderMetal, 'Border Style and Border Metal on the Window tab')
+    assert(page and page.columnsSlider and page.sortSelect and page.growPills and not page.resetButton, 'page controls')
+    assert(page.borderStyle and page.borderMetal, 'Border and Border Metal')
+    local tabs = {}
+    for i, section in ipairs(page.sectionTabs.sections) do tabs[i] = section.title end
+    assert(table.concat(tabs, ',') == 'General,Fill,Border,Text', table.concat(tabs, ','))
+    local function TabOf(title)
+        for _, row in ipairs(page.rows) do if row.settingsTitle == title then return row.section.title end end
+    end
+    assert(TabOf('Minimum Quality') == 'Border' and TabOf('Grow From') == 'General' and TabOf('Color') == 'Text',
+        'slot quality rims on Border, Position on General, the item level color in its text card')
+    local resets = addon:ConfigActionItems('reset', M)
+    assert(#resets == 1 and resets[1].label == 'All of Bags' and #addon:ConfigActionItems('copy', M) == 0, 'Reset… resets all of Bags')
     -- Sort on the page is a dropdown of the same orders.
     local select = page.sortSelect
     assert(select.label:GetText() == 'Bag Order', select.label:GetText())

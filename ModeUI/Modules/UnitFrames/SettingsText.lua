@@ -2,7 +2,7 @@ local _, addon = ...
 local M, W = addon.UnitFrames, addon.ConfigWidgets
 if not M then return end
 
--- The Text tab (docs/DESIGN_LANGUAGE.md, "Settings window"): the general text
+-- The Text tab (docs/DESIGN_LANGUAGE.md, "Standard tabs"): the general text
 -- settings (font, names), then one tile per kind of text (Name, Level,
 -- Health, Power), every tile with the same controls: what it shows, where it
 -- sits (a spot on the frame, TextSlots.lua), its size, color and offset. Each
@@ -41,13 +41,13 @@ function M:BuildTextKinds(ui)
         local function Shown() return Spot(kind) ~= nil end
         local function Group()
             page:Group(kind.title)
-            -- What it shows: its contents, or Hidden.
+            -- What it shows: its contents, or None.
             local show = page:Row("Show")
-            local choices = { { id = "none", label = "Hidden" } }
+            local choices = { { id = "none", label = "None" } }
             for _, content in ipairs(kind.contents) do choices[#choices + 1] = { id = content, label = Label(M.choices.textContent, content) } end
             controls.show = ui.SelectIn(show, 160, function() return choices end, function()
                 local _, s = Spot(kind)
-                return s and s.content or "none", s and Label(M.choices.textContent, s.content) or "Hidden"
+                return s and s.content or "none", s and Label(M.choices.textContent, s.content) or "None"
             end, function(content)
                 local slot = Spot(kind) or kind.home
                 M:SetTextOption(ui.Editing(), slot, "content", content)
@@ -158,17 +158,17 @@ function M:TextColorSwatch(ui, spot, shown)
 end
 
 -- General text settings: the font, name colors, health text color, then the
--- tiles for each kind of text.
+-- tiles for each kind of text; the text glows are in the Glow tab. A matched
+-- Target takes them from the Player.
 function M:BuildTextTab(ui)
     local page, When = ui.page, ui.When
-    ui.Tab("Text", function()
-        page:Group("Font")
+    ui.Card("Text", "Text Style", function()
         local _, refresh = W.FontDropdown(page:Row("Font"), ui.owner); page.refreshers[#page.refreshers + 1] = refresh
-        ui.Toggles({ { "Text Outline", "outline" } })
+        ui.Toggles({ { "Outline", "outline" } })
         -- One choice for both shadows: None, Crisp (1px) or Lifted (1px plus a lighter one under it).
         local choices = {}
         for _, choice in ipairs(addon.Kit.SHADOW_CHOICES) do choices[#choices + 1] = { label = choice.label, value = choice.id, width = 96 } end
-        local _, shadow = W.Exclusive(page:Row("Text Shadow", 48), choices, function() return addon.Kit.ShadowMode(ui.db()) end,
+        local _, shadow = W.Exclusive(page:Row("Shadow", 48), choices, function() return addon.Kit.ShadowMode(ui.db()) end,
             function(mode)
                 local on, lifted = addon.Kit.ShadowKeys(mode)
                 M:SetFrameOption(ui.Editing(), "shadow", on); M:SetFrameOption(ui.Editing(), "liftedShadow", lifted)
@@ -176,13 +176,15 @@ function M:BuildTextTab(ui)
         page.refreshers[#page.refreshers + 1] = shadow
         -- Default for numbers; names keep the Name Color and the level stays muted.
         ui.Color("Text Color", "textColor")
-        page:Group("Colors")
+    end)
+    ui.Card("Text", "Text Colors", function()
         ui.Choice("Name Color", "nameColorMode")
         When(function() return ui.db().nameColorMode == "custom" end, function() ui.Color("Custom Name Color", "nameColor") end)
         -- Health texts: by health (Rosewood low, Ivory, Celadon full) or the Text Color.
         ui.Choice("Health Text Color", "healthTextColor")
-        -- Text glow (Style.TextHalo): each kind on its own, with its color and strength.
-        page:Group("Glow")
+    end)
+    -- Glow > Text Glows (Style.TextHalo): each kind on its own, with its color and strength.
+    ui.Card("Glow", "Text Glows", function()
         ui.Toggles({ { "Health Text Glow", "healthTextGlow" }, { "Name Text Glow", "nameTextGlow" } })
         When(function() return ui.db().healthTextGlow end, function()
             ui.Choice("Health Glow Color", "healthTextGlowColor"); ui.Slider("Health Glow Strength", "healthTextGlowStrength", "%")
@@ -190,6 +192,6 @@ function M:BuildTextTab(ui)
         When(function() return ui.db().nameTextGlow end, function()
             ui.Choice("Name Glow Color", "nameTextGlowColor"); ui.Slider("Name Glow Strength", "nameTextGlowStrength", "%")
         end)
-        M:BuildTextKinds(ui)
     end)
+    ui.Card("Text", nil, function() M:BuildTextKinds(ui) end)
 end

@@ -286,12 +286,44 @@ H.Load({ before = STUBS }).run([==[
     SlashCmdList.MODEUI(); addon:SelectConfigPage('buffsDebuffs')
     local page = M.page
     assert(page and page:IsShown() and page.barSelect and page.categoryGrids.buffs and page.categoryGrids.debuffs and page.borderStyleSelect, 'page built')
+    -- The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), the bar
+    -- picker once above them, and Reset… in the footer, not on the page.
     local tabs = {}
-    for _, section in ipairs(page.sections) do tabs[#tabs + 1] = section.title end
-    assert(table.concat(tabs, ',') == 'Bars,Look,Texts,Blacklist,Module', 'five tabs')
-    assert(page.heightSlider and page.cropSlider and page.borderGapSlider and page.borderSizeSlider and page.borderShiftSlider
-        and page.borderNudge and page.borderTintToggles, 'size and border controls')
+    for _, section in ipairs(page.sectionTabs.sections) do tabs[#tabs + 1] = section.title end
+    assert(table.concat(tabs, ',') == 'General,Border,Glow,Text,Auras,Behavior', table.concat(tabs, ','))
+    assert(page.barSelect:GetParent().row.section == nil and page.lookBarSelect == nil and page.textBarSelect == nil, 'one bar picker above the tabs')
+    assert(page.resetButton == nil, 'no in-page reset')
+    assert(page.heightSlider and page.cropSlider and page.paddingSlider and page.borderSizeSlider and page.pushOutSlider
+        and page.borderNudge and page.borderTintToggles and page.fineTuneToggles, 'size and border controls')
     assert(page.timerSizeSlider and page.timerNudge and page.countCorner and page.countNudge and page.outlinePills and page.maxSlider and page.growPills, 'text and behavior controls')
+    -- Padding: one slider over borderGap (0..4) and an inward borderShift (below zero).
+    local function TabNamed(title) for _, section in ipairs(page.sections) do if section.title == title then return section end end end
+    page:SelectSectionTab(TabNamed('Border'))
+    local bar = function() return M.db.bars.buffs end
+    -- A drag, let go (the slider applies the last value on mouse up).
+    local function Pad(value) local slider = page.paddingSlider; slider:SetValue(value, true); slider.scripts.OnMouseUp(slider, 'LeftButton') end
+    Pad(-2)
+    assert(bar().borderGap == 0 and bar().borderShift == -2 and M:BorderPadding('buffs') == -2, 'below zero: the border in over the icon')
+    Pad(3)
+    assert(bar().borderGap == 3 and bar().borderShift == 0 and M:BorderPadding('buffs') == 3, 'above zero: the art inside the band')
+    -- Push Out and the offsets wait behind Fine-Tune Border (not saved), or show while set.
+    local function Visible(control) local row = control:GetParent().row; return row:IsShown() end
+    page:Layout(); assert(not Visible(page.pushOutSlider), 'fine-tune knobs hidden')
+    assert(M:SetBarOption('buffs', 'borderShift', 2)); page:Layout()
+    assert(Visible(page.pushOutSlider) and page.pushOutSlider:GetValue() == 2 and M:BorderPadding('buffs') == 3, 'a push out stays in sight')
+    Pad(1); assert(bar().borderGap == 1 and bar().borderShift == 2, 'padding keeps a push out')
+    Pad(-1); assert(bar().borderGap == 0 and bar().borderShift == -1, 'below zero takes over the shift')
+    Pad(0); assert(bar().borderGap == 0 and bar().borderShift == 0)
+    page:Layout(); assert(not Visible(page.pushOutSlider))
+    local fine = page.fineTuneToggles
+    page.fineTuneBorder = true; page:Layout(); assert(Visible(page.pushOutSlider), 'Fine-Tune Border shows them')
+    page.fineTuneBorder = nil; page:Layout()
+    assert(M.db.bars.buffs.fineTuneBorder == nil and fine, 'the toggle is the page\'s own')
+    -- Reset…: the whole module, with the prompt it always had.
+    local scopes = addon:ConfigActionItems('reset', M)
+    assert(#scopes == 1 and scopes[1].label == 'All of Buffs & Debuffs' and scopes[1].prompt:find('Places stay', 1, true))
+    assert(#addon:ConfigActionItems('copy', M) == 0, 'nothing to copy')
+    page:SelectSectionTab(1)
     -- The sample aura on the Texts tab follows the text settings.
     local sample = page.textSample
     assert(sample and sample.icon.count:GetText() == '3' and sample.icon.outside:GetText() == '12', 'a sample with both texts')

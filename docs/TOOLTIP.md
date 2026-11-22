@@ -16,7 +16,7 @@ find the class and level lines.
 | Part | Look |
 |---|---|
 | Tooltips | `GameTooltip`, `ItemRefTooltip` (clicked item links), `ShoppingTooltip1/2` and `ItemRefShoppingTooltip1/2` (comparisons), `GameNoHeaderTooltip`, `GameSmallHeaderTooltip`, `FriendsTooltip`. |
-| Frame | Blizzard's NineSlice (border and background) is faded: `SharedTooltip_SetBackdropStyle` re-applies its atlases and colors, never its alpha, so it stays gone. Azerite and corrupted overlays are faded. Each tooltip is a Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Surface (Solid and its soft sheen) in Background Color at Background Opacity (92%), the `window` edge inside it on its own frame above the lines. A see-through tooltip has no soft drop. **Border** off hides the edge; on, **Border Style** and **Border Metal** choose its look (Mode-Thin in Steel by default). |
+| Frame | Blizzard's NineSlice (border and background) is faded: `SharedTooltip_SetBackdropStyle` re-applies its atlases and colors, never its alpha, so it stays gone. Azerite and corrupted overlays are faded. Each tooltip is a Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Surface (Solid and its soft sheen) in Background Color at Background Opacity (92%), the `window` edge inside it on its own frame above the lines. A see-through tooltip has no soft drop. **Show Border** off hides the edge; on, **Border** and **Border Metal** choose its look (Mode-Thin in Steel by default). |
 | Fill color | Graphite panel (#121213), as every Mode window. |
 | Rim color | **Quality Border** (on): the edge's rim in an item's quality color. **Class Border** (off by default): a player's class color. Otherwise the edge's lit metal. A unit the game keeps secret keeps the metal. |
 | Screen | The tooltip is kept on the screen, border and all, wherever its anchor sits. |
@@ -71,9 +71,15 @@ anyway. Item links you click (`ItemRefTooltip`) still open.
 
 ## Settings
 
-Tabs pinned above the cards: **Look** (Status, Frame, Border, Size,
-Defaults), **Text** (Font, Names, Class and Level, Quests) and **Position**
-(Show At, Anchor Point, Move It, Combat). Turning the module off places the
+The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), pinned above
+the cards: **General** (Status; Size: Minimum Width, Padding, Scale;
+Position: Show At, Anchor Point, Move It), **Fill** (Background: Background
+Color, Background Opacity), **Border** (Border: Show Border, Border, Border
+Metal; Rim Colors: Quality Border, Class Border), **Text** (Text Style: Font,
+Outline, Shadow; Title Line: Size; Other Lines: Size; Names; Class and
+Level; Quests) and **Behavior** (Combat: Hide in Combat, Shift Shows It).
+**Reset…** in the footer puts every Tooltip setting back
+(`M:ResetToDefaults`). Turning the module off places the
 tooltip Blizzard's way again at once and asks for a reload to bring back
 Blizzard's look.
 
@@ -115,10 +121,10 @@ Tests: `tests/tooltip.lua`.
 - **Navigation:** type `/modeui`, then pick **Interface** › **Tooltip** in the sidebar.
 - **Action:** turn the module on with the switch in the page header. Hover
   another player, a hostile NPC, a friendly NPC, an item in your bags and a
-  quest mob. Open the **Position** tab, click **Edit Mode**, drag the
+  quest mob. Open the **General** tab, click **Edit Mode**, drag the
   **Tooltip** box into the screen's bottom-right corner (and try attaching
-  it to an action bar), leave Edit Mode, then hover an NPC again. Turn on
-  **Hide in Combat**, attack a training dummy and hover it, then hold Shift.
+  it to an action bar), leave Edit Mode, then hover an NPC again. On the
+  **Behavior** tab turn on **Hide in Combat**, attack a training dummy and hover it, then hold Shift.
 - **Required state:** out of combat to start; a training dummy or any enemy
   for the combat part.
 - **Confirmation:** tooltips are see-through Graphite windows with the thin

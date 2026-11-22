@@ -50,7 +50,7 @@ local function Sample(self, index, states)
     if states.heals then s.heal = 22; s.health = math.min(s.health, 70) end
     if states.shields then s.absorb = 14; s.health = math.min(s.health, 72) end
     if states.overshield then s.health, s.absorb, s.overshield = 100, nil, 24 end
-    -- The Power Bars and Resources tab: a healer with mana, so every Power Bar For choice shows it.
+    -- The power bar's tabs: a healer with mana, so every Power Bar For choice shows it.
     if states.power then s.powerToken, s.role, s.power = "MANA", "HEALER", 70 end
     return s
 end

@@ -10,7 +10,7 @@ if not M then return end
 -- Interruptibility may be secret and only picks a color through
 -- SetVertexColorFromBoolean (see Kit.ColorFromBoolean).
 --
--- Options: the spell icon (Left, Right or Hidden), the spell name, the cast's
+-- Options: the spell icon (Left, Right, outside either side, or None), the spell name, the cast's
 -- target (the caster's current target, in its class color for players) on a
 -- line past the bar, and a timer with the seconds left. The timer is worked out
 -- from public cast times, or read from the cast's duration object while the

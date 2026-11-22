@@ -8,7 +8,8 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- their own settings. Unit values can be secret and only reach widgets
 -- documented as accepting them. See docs/NAMEPLATES.md.
 -- Files: Init (this), Migrations, Driver, Plate, Layout, Target, Indicator, Focus,
--- Combo, SoftTarget, Update, CastBar, Auras, AuraContainers, Preview, Settings.
+-- Combo, SoftTarget, Update, CastBar, Auras, AuraContainers, Preview, Settings,
+-- SettingsActions.
 local L, Kit = addon.L, addon.Kit
 local M = { title = L["Nameplates"], category = "frames", defaultEnabled = false, layout = "strip",
     configDescription = L["Mode nameplates with health, names, cast bars, auras and raid markers."],
@@ -176,7 +177,7 @@ M.choices = {
     healthTextColor = { { id = "health", label = "By Health" }, { id = "text", label = "Text Color" } },
     castAnchor = { { id = "BOTTOM", label = "Below" }, { id = "TOP", label = "Above" } },
     castIcon = { { id = "LEFT", label = "Left" }, { id = "RIGHT", label = "Right" }, { id = "OUTLEFT", label = "Outside Left" },
-        { id = "OUTRIGHT", label = "Outside Right" }, { id = "none", label = "Hidden" } },
+        { id = "OUTRIGHT", label = "Outside Right" }, { id = "none", label = "None" } },
     focusStyle = { { id = "border", label = "Border" }, { id = "glow", label = "Glow" }, { id = "stripes", label = "Stripes" },
         { id = "none", label = "None" } },
     castTextAnchor = M.elementAnchors, castTimerAnchor = M.elementAnchors, castTargetAnchor = M.elementAnchors,

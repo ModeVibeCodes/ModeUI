@@ -3,13 +3,14 @@ local M, W, T, L = addon.BuffsDebuffs, addon.ConfigWidgets, addon.InterfaceTheme
 if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
--- preview of the bar being edited sits beside the tabs (with its Which Auras
--- card under it): Bars (which bar, its own spells, how it behaves), Look
--- (icons, border, glow), Texts (time and stacks), Blacklist and Module.
--- Pick the bar at the top of a tab (the list marks each ON or OFF); + New
--- Bar adds one of your own. Bars move in Edit Mode (the window header).
--- SettingsBar.lua, SettingsLook.lua, SettingsText.lua and Blacklist.lua
--- build the tabs.
+-- preview of the bar being edited sits beside the standard tabs (with its
+-- Which Auras card under it; docs/DESIGN_LANGUAGE.md, "Standard tabs"):
+-- General (shows, size, arrange), Border, Glow, Text (style, time, stacks),
+-- Auras (which auras, its own spells, the blacklist, icons) and Behavior
+-- (tooltips and clicks). Pick the bar above the tabs (the list marks each ON
+-- or OFF); + New Bar adds one of your own. Bars move in Edit Mode (the window
+-- header). SettingsBar.lua, SettingsLook.lua, SettingsText.lua and
+-- Blacklist.lua build the cards. Reset… (the footer) takes M:ResetScopes.
 
 -- Control builders the settings files share. Each takes the host it fills.
 function M:SettingsControls(page)
@@ -78,8 +79,8 @@ function M:BarChoices()
     return list
 end
 
--- The bar picker with + New Bar, Delete and the name (custom bars), at the
--- top of a tab. Every tab's picker edits the same bar.
+-- The bar picker with + New Bar, Delete and the name (custom bars), once
+-- above the tabs: every tab edits the bar picked here.
 -- The dropdown spans its row, so the buttons sit on a row of their own (a
 -- button beside it was pushed past the card's edge and clipped).
 function M:BuildBarPicker(page, c)
@@ -135,21 +136,24 @@ function M:CreateConfigPage(parent)
     end
     page.configPreview = W.Preview(page, M, { contentHeight = 160 })
     if page.UpdatePreviewLayout then page:UpdatePreviewLayout() end
+    -- Above the tabs: the bar every tab edits.
+    local select, add, delete = self:BuildBarPicker(page, c)
+    page.barSelect = select
+    function page.barSelectParts() return select, add, delete end
     self:BuildBarsTab(page, c)
+    self:BuildBlacklistTab(page, c)
     self:BuildLookTab(page, c)
     self:BuildTextsTab(page, c)
-    self:BuildBlacklistTab(page, c)
-    page:Section(L["Module"], nil, false)
-    self:BuildTextGroup(page, c)
-    page:Group(L["This Module"])
-    local tools = page:Row(L["Settings"], 48)
-    page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
-    page.resetButton:SetPoint("LEFT")
-    page.resetButton:SetScript("OnClick", function()
-        W.Confirm(L["Reset to Defaults"], L["Put every bar, the blacklist and the text back to their defaults? Places stay."], L["Reset"],
-            function() if M:ResetSettings() then page.SetEditing("buffs") end end)
-    end)
-    c.Note("Move a bar in Edit Mode (in the window header): drag it, nudge it, or pick Anchor To. Changes wait until you leave combat.", 48)
-    W.SectionTabs(page)
+    W.StandardTabs(page)
     page:Finish(); return page
+end
+
+-- Reset… (the footer): every bar, the blacklist and the text (places stay).
+function M:ResetScopes()
+    return { { label = L["All of Buffs & Debuffs"], prompt = L["Put every bar, the blacklist and the text back to their defaults? Places stay."],
+        run = function()
+            if M:ResetSettings() then
+                if M.page then M.page.SetEditing("buffs") else M.editingBar = "buffs" end
+            end
+        end } }
 end

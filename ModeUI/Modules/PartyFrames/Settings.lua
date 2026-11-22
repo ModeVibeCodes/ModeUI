@@ -3,14 +3,15 @@ local M, W, T, L = addon.PartyFrames, addon.ConfigWidgets, addon.InterfaceTheme,
 if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. A live
--- preview sits above the tabs (Layout, Bars, Power Bars and Resources, Text
--- and Icons, Highlights and Overlay, Auras): one member by default, a party or
--- raid sizes from its header buttons, each tab's element shown on it, and on
--- the Auras tab the group being edited. Clicking a part of it jumps to that
--- part's settings. Cards of related settings, side by side where they fit,
--- on the shared Mode widgets. Power Bars and Resources is in
--- SettingsPower.lua, Text and Icons and Highlights and Overlay in
--- SettingsElements.lua, the Auras tab in SettingsAuras.lua.
+-- preview sits above the standard tabs (docs/DESIGN_LANGUAGE.md, "Standard
+-- tabs": General, Fill, Border, Glow, Text, Auras, Behavior): one member by
+-- default, a party or raid sizes from its header buttons, each tab's parts
+-- shown on it, and on the Auras tab the group being edited. Clicking a part of
+-- it jumps to that part's settings. The aura group picker sits above the tabs
+-- that edit a group (Border, Glow, Auras). The power bar's cards are in
+-- SettingsPower.lua, the texts, rims, highlights and fading in
+-- SettingsElements.lua, the aura group's cards in SettingsAuras.lua. Reset…
+-- and Copy To… (the footer) take M:ResetScopes and M:CopyActions below.
 
 -- Control builders shared by the settings files. Each takes the host it
 -- fills: a row, or one cell of Columns.
@@ -104,12 +105,21 @@ function M:CreateConfigPage(parent)
         page.previewHeaderButtons = M:PreviewSampleButtons(page)
         page:UpdatePreviewLayout()
     end
+    local function Group() return auraGroup end
+    -- Above the tabs: which aura group the Border, Glow and Auras tabs edit.
+    self:BuildAuraPicker(page, c, Group)
 
-    page:Section(L["Layout"], nil, false)
-    page:Group(L["Group"])
+    page:Tab("General")
+    page:Group(L["Show"])
     page.layoutToggles = c.Toggles({ { "Show Yourself", "showPlayer" }, { "Show When Solo", "showSolo" },
-        { "Reverse Order", "reverseOrder" }, { "Hide Blizzard's Party Frames", "hideBlizzard" } })
+        { "Hide Blizzard's Party Frames", "hideBlizzard" } })
+    page:Group(L["Size"])
+    local size = c.Columns({ "Width", "Health Height", "Scale" })
+    page.widthSlider = c.Slider(size[1], "width", "px"); page.healthHeightSlider = c.Slider(size[2], "healthHeight", "px")
+    page.scaleSlider = c.Slider(size[3], "scale", "%")
+    page:Group(L["Arrange"])
     page.sortPills = c.Pills("Sort By", M.choices.sortBy, function() return M.db.sortBy end, c.Set("sortBy"), 120)
+    page.orderToggles = c.Toggles({ { "Reverse Order", "reverseOrder" } })
     -- Arrange: members in a column or a row, then which way it grows.
     local function Vertical() return M.db.growth == "down" or M.db.growth == "up" end
     page.arrangePills = c.Pills("Arrange", M.choices.arrange, function() return Vertical() and "vertical" or "horizontal" end,
@@ -120,25 +130,12 @@ function M:CreateConfigPage(parent)
     c.When(function() return not Vertical() end, function()
         page.horizontalPills = c.Pills("Direction", { M.choices.growth[3], M.choices.growth[4] }, function() return M.db.growth end, c.Set("growth"), 80)
     end)
-    local group = c.Columns({ "Spacing", "Scale" })
-    page.spacingSlider = c.Slider(group[1], "spacing", "px"); page.scaleSlider = c.Slider(group[2], "scale", "%")
+    page.spacingSlider = c.Slider(c.Columns({ "Spacing" })[1], "spacing", "px")
     c.Note("Role sorts tanks, then healers, then damage. Party frames show in a party, not a raid. Move them with Edit Mode in the window header; resizing keeps the corner they grow from in place.", 48)
-    page:Group(L["Size"])
-    local size = c.Columns({ "Width", "Health Height" })
-    page.widthSlider = c.Slider(size[1], "width", "px"); page.healthHeightSlider = c.Slider(size[2], "healthHeight", "px")
-    -- Every member's border, an inset power bar's and the dispel rim's shape
-    -- (docs/DESIGN_LANGUAGE.md, "Choosing a border").
-    page:Group(L["Border"])
-    page.borderStyleSelect, page.borderMetalSelect = W.BorderPickers(page,
-        { get = function() return M.db.edgeStyle end, set = c.Set("edgeStyle") },
-        { get = function() return M.db.edgeMetal end, set = c.Set("edgeMetal") })
-    page:Group(L["This Module"])
-    local tools = page:Row(L["Settings"], 48)
-    page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
-    page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetSettings() end)
+    self:BuildPowerSize(page, c)
 
-    page:Section(L["Bars"], nil, false)
-    page:Group(L["Health"])
+    page:Tab("Fill")
+    page:Group(L["Health Bar"])
     local health = c.Columns({ "Health Color", "Custom Color" })
     page.healthColorSelect = c.Select(health[1], 200, M.choices.healthColorMode, "healthColorMode"); c.Mark("health")
     c.Color(health[2], "healthColor", function() return M.db.healthColorMode == "custom" end)
@@ -149,31 +146,47 @@ function M:CreateConfigPage(parent)
     page.healthOpacitySlider = c.Slider(fade[1], "healthOpacity", "%"); page.backgroundOpacitySlider = c.Slider(fade[2], "backgroundOpacity", "%")
     page.fillPills = c.Pills("Fill", M.choices.fillDirection, function() return M.db.fillDirection end, c.Set("fillDirection"), 120)
     page.fillToggles = c.Toggles({ { "Fill End Line", "fillEdge" } })
+    self:BuildPowerFill(page, c)
     -- Incoming heals ride on the health's end.
     page:Group(L["Incoming Heals"])
     page.healToggles = c.Toggles({ { "Show Incoming Heals", "showHealPrediction" }, { "Spark End Line", "healEndLine" } }); c.Mark("heals")
-    local heal = c.Columns({ "Texture", "Color", "Opacity" })
+    local heal = c.Columns({ "Texture", "Color", "Heal Opacity" })
     c.Texture(heal[1], "healTexture", M.FillChoices); c.Color(heal[2], "healPredictionColor"); c.Slider(heal[3], "healPredictionOpacity", "%")
-
     -- Shields: Combined (Style.Shield), with their own texture, color and opacity.
-    page:Section(L["Shields"], nil, false)
     page:Group(L["Shields"])
     page.shieldToggles = c.Toggles({ { "Show Shields", "showAbsorbs" }, { "Show Overshields", "showOvershields" } }); c.Mark("shields")
     local shieldTextures = {}
     for _, key in ipairs(addon.Style.BAR_TEXTURES) do shieldTextures[#shieldTextures + 1] = { id = key, label = key } end
-    local look = c.Columns({ "Texture", "Opacity" })
+    local look = c.Columns({ "Texture", "Shield Opacity" })
     page.shieldTextureSelect = c.Select(look[1], 200, shieldTextures, "shieldsTexture")
     page.shieldOpacitySlider = c.Slider(look[2], "shieldsOpacity", "%")
     local tint = c.Columns({ "Color", "Custom Color" })
     page.shieldColorSelect = c.Select(tint[1], 200, M.choices.shieldsColorMode, "shieldsColorMode")
     c.Color(tint[2], "shieldsColor", function() return M.db.shieldsColorMode == "custom" end)
 
-    self:BuildPowerTab(page, c)
-    self:BuildElementsTab(page, c, function() return element end)
-    self:BuildHighlightsTab(page, c, function() return dispelType end)
-    self:BuildAuraTab(page, c, function() return auraGroup end)
+    -- Every member's border, an inset power bar's and the dispel rim's shape
+    -- (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+    page:Tab("Border")
+    page:Group(L["Border"])
+    page.borderStyleSelect, page.borderMetalSelect = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = c.Set("edgeStyle") },
+        { get = function() return M.db.edgeMetal end, set = c.Set("edgeMetal") })
+    self:BuildAuraBorders(page, c, Group)
+    self:BuildRims(page, c, function() return dispelType end)
+    self:BuildTypeColors(page, c)
 
-    W.SectionTabs(page)
+    page:Tab("Glow")
+    self:BuildHighlights(page, c)
+    self:BuildAuraGlows(page, c, Group)
+    page:Group(L["Text Glows"])
+    page.healthTextGlowToggles = c.Toggles({ { "Health Text Glow", "healthTextGlow" } })
+
+    self:BuildElementsTab(page, c, function() return element end)
+    self:BuildPowerText(page, c)
+    self:BuildAuraTab(page, c, Group)
+    self:BuildFading(page, c)
+
+    W.StandardTabs(page)
     -- The preview follows the open tab (each tab shows what it edits).
     local select = page.SelectSectionTab
     function page:SelectSectionTab(...)
@@ -184,4 +197,31 @@ function M:CreateConfigPage(parent)
     page:Finish(); return page
 end
 
+-- Reset… (the footer): the aura group being edited (its tracked buffs stay),
+-- or every Party Frames setting.
+function M:ResetScopes()
+    local group = self.page and self.page.partyAuraGroup and self.page.partyAuraGroup() or "heals"
+    local name = L[self.auraGroupLabels[group]]
+    return {
+        { label = string.format(L["%s Group"], name), run = function() M:ResetSettings(group) end,
+            prompt = string.format(L["Put the %s group back to its defaults? Its tracked buffs stay."], name) },
+        { label = L["All of Party Frames"], run = function() M:ResetSettings() end,
+            prompt = L["Put every Party Frames setting back to its default?"] },
+    }
+end
 
+-- Copy To… (the footer): the edited aura group's place and icon look onto
+-- another group (M:CopyAuraGroup); which auras each shows stays its own.
+function M:CopyActions()
+    local from = self.page and self.page.partyAuraGroup and self.page.partyAuraGroup() or "heals"
+    local name, items = L[self.auraGroupLabels[from]], {}
+    for _, to in ipairs(self.auraGroups) do
+        if to ~= from then
+            local target = L[self.auraGroupLabels[to]]
+            items[#items + 1] = { label = string.format(L["%s Look to %s"], name, target),
+                run = function() M:CopyAuraGroup(from, to) end,
+                prompt = string.format(L["Give %s the %s group's place and icon look? Which auras it shows stays its own."], target, name) }
+        end
+    end
+    return items
+end

@@ -337,7 +337,18 @@ world.run([==[
     local page = window.pages.chat
     assert(page and page:IsShown() and page.idleOpacitySlider and page.tabStylePills and page.editPills and page.tuckSlider)
     assert(page.tabContentTop and window.moduleHeader.title:GetText() == 'Chat', 'section tabs pinned, never over a card')
-    assert(page.borderStyle and page.borderMetal, 'Border Style and Border Metal on the Window tab')
+    assert(page.borderStyle and page.borderMetal, 'Border and Border Metal')
+    -- The standard tabs; Reset… in the footer instead of an in-page button.
+    local tabs = {}
+    for i, section in ipairs(page.sectionTabs.sections) do tabs[i] = section.title end
+    assert(table.concat(tabs, ',') == 'General,Fill,Border,Text,Behavior', table.concat(tabs, ','))
+    local function TabOf(title)
+        for _, row in ipairs(page.rows) do if row.settingsTitle == title then return row.section.title end end
+    end
+    assert(TabOf('Position') == 'General' and TabOf('Style') == 'Fill', 'the edit box on General, the tab style in Fill')
+    assert(not page.resetButton, 'no in-page reset')
+    local resets = addon:ConfigActionItems('reset', M)
+    assert(#resets == 1 and resets[1].label == 'All of Chat' and #addon:ConfigActionItems('copy', M) == 0, 'Reset… resets all of Chat')
     page.tabStylePills[2].scripts.OnClick(page.tabStylePills[2]); assert(M.db.glassTabs == false, 'Solid')
     page.tabStylePills[1].scripts.OnClick(page.tabStylePills[1]); assert(M.db.glassTabs == true, 'Glass')
     window:Hide()

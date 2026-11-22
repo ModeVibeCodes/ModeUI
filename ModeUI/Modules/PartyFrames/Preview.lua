@@ -70,25 +70,26 @@ function M:PreviewSection()
 end
 -- The aura group the Auras tab is editing while it is open, else nil.
 function M:PreviewAuraGroup()
-    if self:PreviewSection() == L["Auras"] and self.page.partyAuraGroup then return self.page.partyAuraGroup() end
+    if self:PreviewSection() == "Auras" and self.page.partyAuraGroup then return self.page.partyAuraGroup() end
 end
 
--- What the open tab edits, shown on the first sample: the heal on Bars, a
--- shield on Shields (the Mage sample shows the overshield), the power bar on Power Bars and Resources, the element
--- on Text and Icons, the dispel overlay (by type) and your target on
--- Highlights and Overlay.
+-- What the open tab edits, shown on the first sample: the power bar on
+-- General (a healer with mana); the heal, a shield (the Overshield state shows
+-- the overshield) and the power bar on Fill; the element and the power bar on
+-- Text; the dispel overlay (by type) and your target on Border.
 local ELEMENT_STATES = { readyCheck = "readyCheck", incoming = "summon", status = "dead", raidIcon = "raidIcon", leader = "leader" }
 function M:PreviewFocus()
     local page, section = self.page, self:PreviewSection()
     if not page or not section then return {} end
-    if section == L["Bars"] then return { heals = true } end
-    if section == L["Shields"] then return { shields = true } end
-    if section == L["Power Bars and Resources"] then return { power = true } end
-    if section == L["Text and Icons"] and page.partyElement then
+    if section == "General" then return { power = true } end
+    if section == "Fill" then return { heals = true, shields = true, power = true } end
+    if section == "Text" and page.partyElement then
+        local focus = { power = true }
         local state = ELEMENT_STATES[page.partyElement()]
-        return state and { [state] = true } or {}
+        if state then focus[state] = true end
+        return focus
     end
-    if section == L["Highlights and Overlay"] and page.partyDispelType then return { dispel = page.partyDispelType(), target = page.partyShowTarget } end
+    if section == "Border" and page.partyDispelType then return { dispel = page.partyDispelType(), target = page.partyShowTarget } end
     return {}
 end
 

@@ -16,10 +16,10 @@ measures messages, and it never writes Blizzard's globals or fields.
 | Part | Look |
 |---|---|
 | Window | Blizzard's background and border textures (`CHAT_FRAME_TEXTURES`) are hidden, so its own fades skip them. The box is a Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Surface (Solid and its soft sheen) in Graphite panel #0B0B0C at Background Opacity (60%), with the `window` edge inside the box (see Edge below). |
-| Edge | The `window` edge (`Skin.Box`, `Style.Edge`: Mode-Border by default, a 2px dark glass band (lit top, champagne bottom) with a 1px black line just inside and a shadow ring, 3 px in all), drawn inside the box on its own frame above the window, so the idle fade dims it with the window. Sliced Round 4 rim art covers its own corners: no masks. A see-through window (Background Opacity under 100) has no soft drop, which would only darken it. **Border Style** and **Border Metal** (Window tab, Border group) choose its look. The scroll bar starts clear of the top-right corner, and Scroll to Bottom sits clear of the bottom-right corner when no edit band fills it. |
+| Edge | The `window` edge (`Skin.Box`, `Style.Edge`: Mode-Border by default, a 2px dark glass band (lit top, champagne bottom) with a 1px black line just inside and a shadow ring, 3 px in all), drawn inside the box on its own frame above the window, so the idle fade dims it with the window. Sliced Round 4 rim art covers its own corners: no masks. A see-through window (Background Opacity under 100) has no soft drop, which would only darken it. **Border** and **Border Metal** (Border tab, Border card) choose its look. The scroll bar starts clear of the top-right corner, and Scroll to Bottom sits clear of the bottom-right corner when no edit band fills it. |
 | Box | Blizzard's `Background` region stays as the window's box, moved to Text Inset (6 px) plus the edge's 3 px around the messages, plus the edit box when it sits inside and the scroll bar's 10 px gutter (more on top for the combat log's quick buttons). The tab dock, button frame and alerts that Blizzard anchors to it follow. |
 | Text | The Mode typeface by default (the Font setting's "Mode": Urbanist), with a crisp one-pixel shadow. Each window keeps its own Font Size from its tab's right-click menu; Blizzard re-applies the size but keeps the face. |
-| Edit box | A field in the `control` edge in Mode-Border (soft round corners), Edit Box Height tall, its outer line Ivory while typing (owner, November 18, 2026). **Bottom** (default) or **Top**: inside the window's edge, see-through on a band shaded a little darker than the window (black at 15% over it), the field 3 px in from the band's sides. **Below**: its own Mode field Edit Gap under the window, on a Graphite base. Its text, header and prompt use the chat face. |
+| Edit box | A field in the `control` edge in Mode-Border (soft round corners), Edit Box Height tall, its outer line Ivory while typing (owner, November 18, 2026). **Bottom** (default) or **Top**: inside the window's edge, see-through on a band shaded a little darker than the window (black at 15% over it), the field 3 px in from the band's sides. **Below**: its own Mode field Edit Box Spacing under the window, on a Graphite base. Its text, header and prompt use the chat face. |
 | Tabs | Blizzard's tab art is faded. Each tab is a Mode control resting on the window's edge (the `control` edge inside the pane, Mode-Border, each ring drawn in pieces so its corners show on a pane shorter than the art; the edit field, compartment and Scroll to Bottom too), the label in the chat face's SemiBold: the selected tab stands Tab Height tall (24 px) in the chosen tone (Graphite track) with an Ivory label and outer line; the others tuck down Tuck Depth (3 px) in Graphite raised with Graphite secondary text. **Glass**: Mode-FG at 75%, so the world shows through. **Solid**: the Mode-FG face at full opacity. Whisper tabs keep their whisper color. Text sits on the pane's middle; a whisper tab's name (Blizzard's fixed width, justified left) sits left on the pane, 6 px in plus its conversation icon, which stays to its left. |
 | Edit Mode | The main window is one of Blizzard's Edit Mode systems. Blizzard's selection (the blue highlight) reaches 32 units left of and below the window, for the button column ModeUI moves into the compartment, and 60 above. ModeUI lays it over the Mode box and the tab row (and the field, with the edit box Below), 2 units past them for Blizzard's snap padding, and clamps the window by the box. So the highlight shows the window, and snapping to a screen edge or corner puts the box right on it (owner, November 15, 2026). Blizzard's `AnchorSelectionFrame` sets the clamp from the selection again; ModeUI puts its own back right after (post-hook). |
 | Tab width | Blizzard sizes a tab to its text in whatever font it had; General, Combat Log and other fixed or undocked tabs are sized again in the Mode face right after (post-hook on `PanelTemplates_TabResize`), so names aren't cut off. Dynamic docked tabs keep the dock's width; whisper tabs (whose names can be secret) are never measured. |
@@ -56,9 +56,15 @@ scroll bar's) and puts ModeUI's value back right after.
 
 ## Settings
 
-Tabs on the page, pinned above the scrolling cards: **Window** (Status, Text,
-Background, Edit Box, Buttons, Defaults), **Tabs** (Tab Style, Tab Fade) and
-**Fade** (Idle Fade). Changes show on the real chat right away. Turning the
+The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), pinned above
+the scrolling cards: **General** (Status; Buttons: Chat Buttons, Scroll Bar;
+Tabs: Tab Height, Tuck Depth; Edit Box: Position, Edit Box Height, Edit Box
+Spacing), **Fill** (Background: Background Color, Background Opacity; Tabs:
+Style), **Border** (Border, Border Metal), **Text** (Text Style: Font,
+Outline, Shadow; Tab Text: Size) and **Behavior** (Idle Fade: Idle Fade,
+Wake on Whispers, Idle Opacity, Idle Delay; Tab Fade: Other Tabs, Tabs When
+Idle). **Reset…** in the footer puts every Chat setting back
+(`M:ResetToDefaults`). Changes show on the real chat right away. Turning the
 module off stops the fades and asks for a reload to bring Blizzard's look
 back.
 
@@ -108,8 +114,8 @@ textures). Tests: `tests/chat.lua`.
 - **Action:** turn the module on with the switch in the page header. Look at
   the chat, click the Combat Log tab and back to General, scroll the chat up
   a little, then move the mouse away and wait about 10 seconds; then move it
-  back over the chat and press Enter. On the page, open the **Tabs** tab and
-  switch **Style** between Glass and Solid.
+  back over the chat and press Enter. On the page, open the **Fill** tab and
+  switch **Style** (Tabs card) between Glass and Solid.
 - **Required state:** out of combat, with General and Combat Log docked
   (Blizzard's default) and a few lines of chat.
 - **Confirmation:** the chat is a see-through Graphite window (the same

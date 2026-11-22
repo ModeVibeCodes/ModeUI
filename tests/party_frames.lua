@@ -446,6 +446,38 @@ world.run([==[
     local view = page.configPreview
     assert(page and page:IsShown() and view and page.elementSelect and page.auraGroupSelect and page.dispelToggles and page.borderStyleSelect and page.borderMetalSelect, 'page built')
     local function Shown() local n = 0; for _, face in ipairs(view.faces) do if face:IsShown() then n = n + 1 end end; return n end
+    -- The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"); Reset… and
+    -- Copy To… live in the footer, not on the page.
+    local tabs = {}
+    for _, section in ipairs(page.sectionTabs.sections) do tabs[#tabs + 1] = section.title end
+    assert(table.concat(tabs, ',') == 'General,Fill,Border,Glow,Text,Auras,Behavior', table.concat(tabs, ','))
+    assert(page.resetButton == nil and page.auraResetButton == nil and page.auraCopySelect == nil, 'no in-page reset or copy')
+    local jumps = page.jumpTargets
+    assert(jumps.power.section.title == 'General' and jumps.health.section.title == 'Fill' and jumps.shields.section.title == 'Fill'
+        and jumps.heals.section.title == 'Fill' and jumps.target.section.title == 'Border' and jumps.dispel.section.title == 'Border'
+        and jumps.element.section.title == 'Text' and jumps.auras.section.title == 'Auras', 'each part on its standard tab')
+    -- The aura group picker: above the tabs, shown on the ones that edit a group.
+    local pickerRow
+    for _, row in ipairs(page.rows) do if row.settingsTitle == 'Aura Group' then pickerRow = row end end
+    assert(pickerRow and pickerRow.section == nil, 'the group picker sits above the tabs')
+    local function TabNamed(title) for _, section in ipairs(page.sections) do if section.title == title then return section end end end
+    page:SelectSectionTab(TabNamed('General')); assert(not pickerRow.visibleWhen(), 'no group picker on General')
+    for _, title in ipairs({ 'Border', 'Glow', 'Auras' }) do page:SelectSectionTab(TabNamed(title)); assert(pickerRow.visibleWhen(), title) end
+    page:SelectSectionTab(1)
+    -- Reset… offers the edited aura group and the whole module; Copy To… gives
+    -- the edited group's look to each other group.
+    page.SetAuraGroup('curse')
+    local scopes = addon:ConfigActionItems('reset', M)
+    assert(#scopes == 2 and scopes[1].label == 'Curse Group' and scopes[2].label == 'All of Party Frames' and scopes[2].prompt)
+    local copies = addon:ConfigActionItems('copy', M)
+    assert(#copies == #M.auraGroups - 1, 'one copy per other group')
+    local toBleed
+    for _, item in ipairs(copies) do if item.label == 'Curse Look to Bleed' then toBleed = item end end
+    assert(toBleed and M:SetAuraOption('curse', 'x', 5))
+    toBleed.run(); assert(M.db.auras.bleed.x == 5 and M.db.auras.bleed.filter == M.auraDefaults.bleed.filter, 'the look copied, the filter kept')
+    scopes[1].run(); assert(M.db.auras.curse.x == M.auraDefaults.curse.x, 'the group reset')
+    assert(M:ResetSettings('bleed'))
+    page.SetAuraGroup('heals')
     assert(M.previewSample == 'one' and Shown() == 1, 'one member by default')
     assert(#page.previewHeaderButtons == 6 and page.previewStateSelect and M:SetPreviewSample('raid20') and Shown() == 20 and view.faces[1]:GetScale() == 0.5)
     local corner = Point(view.faces[6])
@@ -484,15 +516,15 @@ world.run([==[
     -- Each tab shows what it edits on the first sample, and stops when you leave it.
     assert(M:SetDispelEffect('Magic', 'border', true))
     page:SelectSectionTab(page.jumpTargets.dispel.section)
-    assert(M:PreviewSection() == 'Highlights and Overlay' and not view.quick:IsShown())
+    assert(M:PreviewSection() == 'Border' and not view.quick:IsShown())
     assert(view.faces[1].panel.edge.tint == M.db.auraMagicColor and view.faces[1].dispel.gradient:IsShown(), 'dispel overlay previewed')
     page.SetDispelType('Curse'); assert(view.faces[1].dispel.gradient.gradient[3].r == M.db.auraCurseColor[1] and view.faces[1].panel.edge.tint ~= M.db.auraCurseColor, 'the picked type (Curse: Gradient only)')
     page:SelectSectionTab(page.jumpTargets.health.section)
     assert(view.faces[1].panel.edge.tint ~= M.db.auraCurseColor and not view.faces[1].dispel.gradient:IsShown(), 'gone on another tab')
-    -- Shields have their own tab: a shield on the first sample; with the
+    -- Shields on the Fill tab: a shield on the first sample; with the
     -- Overshield state, the whole shield back from full health.
     page:SelectSectionTab(page.jumpTargets.shields.section)
-    assert(M:PreviewSection() == 'Shields' and view.faces[1].health.shield.attached.value == 14, 'shield previewed')
+    assert(M:PreviewSection() == 'Fill' and view.faces[1].health.shield.attached.value == 14, 'shield previewed')
     M.previewStates.overshield = true; page:SelectSectionTab(page.jumpTargets.shields.section)
     assert(view.faces[1].health.shield.full:GetAlpha() == 1 and view.faces[1].health.shield.full.value == 24, 'overshield previewed')
     assert(M:SetOption('showOvershields', false) and view.faces[1].health.shield.full:GetAlpha() == 0 and M:SetOption('showOvershields', true))

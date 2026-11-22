@@ -2,11 +2,13 @@ local _, addon = ...
 local M, W, T, L = addon.Windows, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 if not M then return end
 
--- Only defines the page; ModeUI builds it the first time it's opened. Three
--- tabs, pinned above the scrolling cards: Look (Window Style, frame, text,
--- controls), Windows (one row per window: its switch, and a chevron that
--- expands its own Scale and look; all collapsed at first) and Character
--- (SettingsCharacter.lua). Changes repaint every skinned window right away.
+-- Only defines the page; ModeUI builds it the first time it's opened, on the
+-- standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs") pinned above the
+-- scrolling cards: General (Window Style, the controls ModeUI restyles, one
+-- row per window: its switch, and a chevron that expands its own Scale and
+-- look, all collapsed at first; the Character window), Fill, Border, Text
+-- (with the Character window's texts, SettingsCharacter.lua). Changes repaint
+-- every skinned window right away. Reset… in the footer: M:ResetScopes.
 local CHEVRON_SIZE = 16
 
 -- Page helpers shared with SettingsCharacter.lua.
@@ -98,7 +100,7 @@ local function WindowLook(page, H, entry, expanded)
             local opacity = H.Columns({ "Background Opacity" })
             controls.opacity = H.SliderIn(opacity[1], M.lookRanges.backgroundOpacity, function() return Look().backgroundOpacity end,
                 SetLook("backgroundOpacity"), "%")
-            controls.toggles = H.Toggles({ { "Border", "border", get = function() return Look().border end, set = SetLook("border") },
+            controls.toggles = H.Toggles({ { "Show Border", "border", get = function() return Look().border end, set = SetLook("border") },
                 { "Title Bar", "titleBar", get = function() return Look().titleBar end, set = SetLook("titleBar") } }, 2)
         end)
     end)
@@ -110,37 +112,15 @@ function M:CreateConfigPage(parent)
     local owner = M:AppearanceOwner()
     local H = Helpers(page)
 
-    page:Section(L["Look"], nil, false)
+    page:Tab("General")
     local status = W.Label(page:Row(L["Status"], 48), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
     H.Refresh(function() status:SetText(M:Status()) end)
     page.statusLabel = status
     page:Group(L["Window Style"])
     page.stylePills = H.Pills("Style", M.choices.style, function() return M.db.style end, H.Set("style"), 120)
-    page:Group(L["Frame"])
-    local background = H.Columns({ "Background Color", "Background Opacity" })
-    H.Color(background[1], "backgroundColor")
-    page.backgroundSlider = H.Slider(background[2], "backgroundOpacity", "%")
-    page.frameToggles = H.Toggles({ { "Border", "border" }, { "Title Bar", "titleBar" } }, 2)
-    -- Every window's border (docs/DESIGN_LANGUAGE.md, "Choosing a border"),
-    -- shown with Border off too: a window's Own Look can turn it back on.
-    page.borderStyle, page.borderMetal = W.BorderPickers(page,
-        { get = function() return M.db.edgeStyle end, set = H.Set("edgeStyle") },
-        { get = function() return M.db.edgeMetal end, set = H.Set("edgeMetal") })
-    page:Group(L["Text"])
-    local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); H.Refresh(fontRefresh)
-    local sizes = H.Columns({ "Title Size", "Tab Text Size" })
-    page.titleSizeSlider = H.Slider(sizes[1], "titleSize")
-    page.tabSizeSlider = H.Slider(sizes[2], "tabSize")
-    page.textToggles = H.Toggles({ { "Window Text", "bodyFont" }, { "Outline", "outline" }, { "Text Shadow", "shadow" } })
     page:Group(L["Controls"])
-    page.controlToggles = H.Toggles({ { "Tabs", "tabs" }, { "Buttons", "buttons" }, { "Fields", "fields" },
+    page.controlToggles = H.Toggles({ { "Title Bar", "titleBar" }, { "Tabs", "tabs" }, { "Buttons", "buttons" }, { "Fields", "fields" },
         { "Dropdowns", "dropdowns" }, { "Scroll Bars", "scrollBars" }, { "Insets", "insets" } })
-    page:Group(L["Defaults"])
-    local tools = page:Row(L["Window Look"], 48)
-    page.resetButton = W.Button(tools, L["Reset to Defaults"], 150, 30, "secondary")
-    page.resetButton:SetPoint("LEFT"); page.resetButton:SetScript("OnClick", function() M:ResetToDefaults() end)
-
-    page:Section(L["Windows"], nil, false)
     page:Group(L["Windows"])
     local expanded = {}
     page.windowRows, page.windowLooks, page.expandedWindows = {}, {}, expanded
@@ -149,9 +129,38 @@ function M:CreateConfigPage(parent)
         page.windowLooks[entry.id] = WindowLook(page, H, entry, expanded)
     end
 
-    page:Section(L["Character"], nil, false)
+    page:Tab("Fill")
+    page:Group(L["Windows"])
+    local background = H.Columns({ "Background Color", "Background Opacity" })
+    H.Color(background[1], "backgroundColor")
+    page.backgroundSlider = H.Slider(background[2], "backgroundOpacity", "%")
+
+    page:Tab("Border")
+    page:Group(L["Border"])
+    page.frameToggles = H.Toggles({ { "Show Border", "border" } }, 2)
+    -- Every window's border (docs/DESIGN_LANGUAGE.md, "Choosing a border"),
+    -- shown with Show Border off too: a window's Own Look can turn it back on.
+    page.borderStyle, page.borderMetal = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = H.Set("edgeStyle") },
+        { get = function() return M.db.edgeMetal end, set = H.Set("edgeMetal") })
+
+    page:Tab("Text")
+    page:Group(L["Text Style"])
+    local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); H.Refresh(fontRefresh)
+    page.textToggles = H.Toggles({ { "Window Text", "bodyFont" }, { "Outline", "outline" }, { "Shadow", "shadow" } })
+    page:Group(L["Title Text"])
+    page.titleSizeSlider = H.Slider(H.Columns({ "Size" })[1], "titleSize")
+    page:Group(L["Tab Text"])
+    page.tabSizeSlider = H.Slider(H.Columns({ "Size" })[1], "tabSize")
+
     M:CreateCharacterSettings(page, H)
 
-    W.PinnedSectionTabs(page)
+    W.StandardTabs(page, true)
     page:Finish(); return page
+end
+
+-- Reset… in the footer: the shared window look (M:ResetToDefaults).
+function M:ResetScopes()
+    return { { label = L["Window Look"], run = function() M:ResetToDefaults() end,
+        prompt = L["Put the window look back to its defaults? Each window's switch, its own look and the Character window's settings stay."] } }
 end

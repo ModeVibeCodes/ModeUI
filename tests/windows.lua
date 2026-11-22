@@ -518,8 +518,24 @@ world.run([==[
     assert(page and page:IsShown() and window.moduleHeader.title:GetText() == 'Windows' and page.tabContentTop, 'tabs pinned above the cards')
     local count = 0; for _ in pairs(page.windowRows) do count = count + 1 end
     assert(count == #M.registry and next(page.expandedWindows) == nil, 'one row per window, all collapsed')
-    assert(page.borderStyle:IsVisible() and page.borderMetal:IsVisible(), 'Border Style and Border Metal on the Look tab')
-    page:SelectSectionTab(2)
+    -- The standard tabs; Reset… in the footer instead of an in-page button.
+    local tabs = {}
+    for i, section in ipairs(page.sectionTabs.sections) do tabs[i] = section.title end
+    assert(table.concat(tabs, ',') == 'General,Fill,Border,Text', table.concat(tabs, ','))
+    local function TabOf(title)
+        for _, row in ipairs(page.rows) do if row.settingsTitle == title then return row.section.title end end
+    end
+    assert(TabOf('Stats Anchor') == 'Text' and TabOf('Nudge') == 'Text', 'the stats display in Text')
+    assert(not page.resetButton and #addon:ConfigActionItems('copy', M) == 0, 'no in-page reset; nothing to copy')
+    local resets = addon:ConfigActionItems('reset', M)
+    assert(#resets == 1 and resets[1].label == 'Window Look' and resets[1].prompt:find('stay', 1, true), 'Reset… resets the window look')
+    M:SetOption('backgroundOpacity', 50); resets[1].run()
+    assert(M.db.backgroundOpacity == 100 and M.db.windows.merchant == false and M.db.looks.social.scale == 120, 'through Reset…: switches and looks stay')
+    assert(not page.borderStyle:IsVisible(), 'the border pickers wait on the Border tab')
+    page:SelectSectionTab(3)
+    assert(page.borderStyle:IsVisible() and page.borderMetal:IsVisible(), 'Border and Border Metal on the Border tab')
+    assert(page.charBorderSlider:IsVisible() == (M.db.charBorders == true), 'the rarity borders beside them')
+    page:SelectSectionTab(1)
     local socialRow = page.windowRows.social
     local scaleRow = page.windowLooks.social.scale
     assert(socialRow.toggle:IsVisible() and not scaleRow:IsVisible(), 'collapsed: no settings')
@@ -527,7 +543,7 @@ world.run([==[
     socialRow.expand.scripts.OnClick(socialRow.expand)
     assert(page.expandedWindows.social and scaleRow:IsVisible() and socialRow.chevron.rotation == 0, 'expanded: Scale and its look')
     assert(not page.windowLooks.merchant.scale:IsVisible(), 'others stay collapsed')
-    page:SelectSectionTab(3)
+    page:SelectSectionTab(4)
     assert(page.statsAnchorButtons and page.nudgeButtons.Up and page.characterStylePills)
     local y = M.db.charStatsY
     page.nudgeButtons.Up.scripts.OnClick(page.nudgeButtons.Up)

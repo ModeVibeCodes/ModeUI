@@ -5,6 +5,50 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Standard tabs (November 21, 2026)
+
+The owner's settings review: the page uses the standard tabs
+(DESIGN_LANGUAGE.md, "Standard tabs"), a card per part of the frame in each,
+instead of one tab per part. Saved keys, defaults and ranges are unchanged.
+
+- **General:** Frame (Show Frame, Hide Blizzard's Frame, Scale, Frame Width,
+  Frame Height), Match the Player (the Target), Power Bar (Show Power Bar,
+  Power Bar Height), Portrait (Show Portrait, Portrait Style, Portrait Side,
+  Portrait Size), Status Icons, Cast Bar (Show Cast Bar, Hide Blizzard Cast
+  Bar, Position, Bar Height, Spacing, Full Width, Bar Width, Spell Icon),
+  Class Resource, Placement (the frames that attach).
+- **Fill:** Health Bar (Show: Health or Mana on the Player, Fill Direction,
+  Fill End Line, Shields, Health Color, textures and opacity), Power Bar,
+  Cast Bar (textures, Cast Color, Uninterruptible Color), Class Resource
+  (point colors).
+- **Border:** Frame (Border, Border Metal, Shadow), Portrait (Ring Style,
+  Ring Finish, Portrait Ring Color), Auras (Buff Border, Debuff Border: each
+  group's own, so no group switch is needed there).
+- **Glow:** Frame (Prism Glow), Combat Ring (Combat Ring, its color, Pulse
+  When Pulled: the color serves the ring and the pulse, so they stay
+  together), Text Glows.
+- **Text:** Text Style (Font, Outline, Shadow, Text Color), Text Colors, one
+  card per text (Name, Level, Health Text, Power Text), Cast Bar Text (Spell
+  Name, Timer, Outline, Size).
+- **Auras:** the Buffs/Debuffs switch and Show, Which Auras, Icons (size,
+  spacing, shape, corner, grow, offsets), Timer and Stacks.
+- **Above every tab:** the Frame Off and Target Matches Player tips, once
+  (each tab used to repeat them).
+- **Class Resource** cards show while Editing is the Target, the frame its
+  points sit on, so the preview shows them (the old Class Resource tab
+  switched the preview to the Target).
+- **Copy To… and Reset…** (the settings footer) replace the Style Tools card:
+  Copy To… copies the Player's style to the Target (and back) or to a
+  smaller frame (`M:CopyActions`); Reset… resets the frame being edited or
+  all of Unit Frames (`M:ResetScopes`).
+- **Labels:** Turn On is Show Frame; Drop Shadow, Text Outline and Text
+  Shadow are Shadow, Outline and Shadow; the cast bar's Gap and Font Size are
+  Spacing and Size; Prism Glow's Off and the Spell Icon's and texts' Hidden
+  read None. Rested Corner shows only for the Player.
+- A preview click still opens the tab that holds the part's row (the mark
+  records the row's tab): the health bar opens Fill, the portrait, cast bar
+  and class resource General.
+
 ## Show: Health or Mana (a mana frame), Frame Height, Cast Bar Gap -1, Healer layout (November 19, 2026)
 
 - **Show** (Player, Health Bar tab, Bar group: two pills, Health or Mana;

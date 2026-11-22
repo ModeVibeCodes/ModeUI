@@ -531,10 +531,15 @@ world.run([==[
     local page = addon.configWindow.pages.damageMeters
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Window,Bars,Text,Header,Frame,Copy & Apply', 'six tabs')
-    assert(page.copyScopePills and page.applyAllButton and page.resetButton and page.copyScope() == 'all', 'Copy & Apply')
-    page.applyButton.scripts.OnClick(page.applyButton); assert(page.applyResult.text == 'Choose windows first.')
-    page.applyAllButton.scripts.OnClick(page.applyAllButton); assert(page.applyResult.text == 'Applied to 2 windows.')
+    assert(table.concat(sections, ',') == 'General,Fill,Border,Text,Behavior', 'the standard tabs')
+    assert(page.standardTabs and not page.copyScopePills and not page.applyAllButton and not page.resetButton, 'no in-page copy or reset')
+    -- Text: one card per text, each writing its own keys.
+    local cards = {}
+    for _, row in ipairs(page.rows) do
+        if row.cardTitle and row.section and row.section.title == 'Text' then cards[#cards + 1] = row.settingsGroupTitle end
+    end
+    assert(table.concat(cards, ',') == 'Text Style,Name Text,Value Text,Title Text,Timer Text', 'a card per text')
+    assert(page.valueSizeSlider and page.timerShadowPills and page.nameColorPills and not page.titleColorPills, 'each text its own controls')
     assert(page.groupSelect and page.decimalPills and page.mouseToggles and page.separatorPills, 'group, decimals, separator and lock settings')
     assert(page.windowSelect:GetParent():GetParent() == page.previewArea and page.previewReserveRight, 'Editing sits at the top right of the preview')
     assert(page.windowSelect.label.text == 'Window 1 - Damage Done', 'each window with its meter')
@@ -550,13 +555,13 @@ world.run([==[
     assert(page.windowEditing() == 'window2' and shell.header.title.text == 'Healing Done' and shell.rows[1].name.text == '1. Ysolde', 'follows the window being edited')
     page.SetEditing('window1')
     shell.header.scripts.OnMouseUp(shell.header, 'LeftButton')
-    assert(page.selectedSection.title == 'Header', 'header click opens Header')
+    assert(page.selectedSection.title == 'Fill', 'header click opens Fill (Header Bar)')
     shell.rows[2].scripts.OnMouseUp(shell.rows[2], 'LeftButton')
-    assert(page.selectedSection.title == 'Bars', 'bar click opens Bars')
+    assert(page.selectedSection.title == 'Fill', 'bar click opens Fill')
     shell.rows[2].textHit.scripts.OnMouseUp(shell.rows[2].textHit, 'LeftButton')
     assert(page.selectedSection.title == 'Text' and page.textPart() == 'name', 'name click opens Text on Name')
     shell.rows[2].valueHit.scripts.OnMouseUp(shell.rows[2].valueHit, 'LeftButton')
-    assert(page.textPart() == 'value' and page.selectedSection.title == 'Text', 'value click picks Value')
+    assert(page.textPart() == 'value' and page.selectedSection.title == 'Text' and page.jumpTargets['text:value'].row.settingsGroupTitle == 'Value Text', 'value click opens Value Text')
     view.titleHit.scripts.OnMouseUp(view.titleHit, 'LeftButton')
     assert(page.textPart() == 'title', 'title click picks Title')
     -- The font and color widgets write the chosen text's own keys.
@@ -565,9 +570,21 @@ world.run([==[
     assert(M.db.window1.titleColor[2] == 0.5 and owner.db.appearance.fontMedia == M.db.window1.titleFontMedia, 'Title color and font')
     page.SetTextPart('name')
     view.background.scripts.OnMouseUp(view.background, 'LeftButton')
-    assert(page.selectedSection.title == 'Frame', 'frame click opens Frame')
+    assert(page.selectedSection.title == 'Fill', 'frame click opens Fill (Background)')
+    page:SelectSectionTab(page.sections[1])
     shell.buttons.reset.scripts.OnClick(shell.buttons.reset)
-    assert(page.selectedSection.title == 'Header' and resets == 2, 'preview buttons open Header and reset nothing')
+    assert(page.selectedSection.title == 'Fill' and resets == 2, 'preview buttons open the header settings and reset nothing')
+    -- Copy To… and Reset… work on the window in Editing.
+    local copies = M:CopyActions()
+    assert(#copies == 12 and copies[1].label == 'Look to Window 2' and copies[3].label == 'Look to every window' and copies[12].label == 'Text to every window', 'a copy per part and target')
+    assert(copies[1].prompt:find("Copy Window 1's look to Window 2?", 1, true), 'copy prompt')
+    assert(M:SetOption('window1', 'barOpacity', 40))
+    copies[7].run(); assert(copies[7].label == 'Bars to Window 2' and M.db.window2.barOpacity == 40 and M.db.window3.barOpacity ~= 40, 'Bars to Window 2')
+    copies[9].run(); assert(M.db.window3.barOpacity == 40, 'Bars to every window')
+    local scopes = M:ResetScopes()
+    assert(#scopes == 1 and scopes[1].label == 'Window 1' and scopes[1].prompt:find('meter, fight, show settings and group stay', 1, true), 'Reset… the window in Editing')
+    scopes[1].run(); assert(M.db.window1.barOpacity == 100, 'reset the window')
+    assert(addon:ConfigActionItems('reset', M)[1].label == 'Window 1' and #addon:ConfigActionItems('copy', M) == 12, 'the footer offers them')
     assert(M:SetOption('window1', 'rowHeight', 22) and shell.rows[1].height == 22 and w1.rows[1].height == 22, 'preview and window follow the settings')
     assert(page.statusLabel.text:find('Edit Mode', 1, true), 'status line')
     assert(addon:SetEditMode(true))

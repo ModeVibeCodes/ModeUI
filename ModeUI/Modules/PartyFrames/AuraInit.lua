@@ -71,7 +71,7 @@ M.auraFilters = {
         { id = "all", label = "All Without a Type", filters = { "HARMFUL" } },
         { id = "mine", label = "Yours", filters = { "HARMFUL|PLAYER" } },
     },
-    -- The debuffs the dispel overlay reacts to (Highlights and Overlay tab).
+    -- The debuffs the dispel overlay reacts to (Border tab, Dispel Overlay).
     dispel = {
         { id = "mine", label = "Ones You Can Dispel", filters = { "HARMFUL|RAID" } },
         { id = "group", label = "Ones Your Group Can Dispel", filters = { "HARMFUL|RAID_PLAYER_DISPELLABLE" } },

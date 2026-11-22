@@ -2,11 +2,12 @@ local _, addon = ...
 local M, W, T, L = addon.Bags, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 if not M then return end
 
--- Only defines the page; ModeUI builds it the first time it's opened. Five
--- tabs pinned above the cards: Layout (grid, contents, view order), Window
--- (fill, border, header, parts), Slots (slot look, borders, marks), Text and
--- Position. Every change shows on the open window at once; Show Bags opens
--- it beside the settings.
+-- Only defines the page; ModeUI builds it the first time it's opened, on the
+-- standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs") pinned above the
+-- cards: General (parts, marks, grid, contents, position), Fill (window and
+-- slot colors), Border (the window's border, slot rims), Text. Every change
+-- shows on the open window at once; Show Bags opens it beside the settings.
+-- Reset… in the footer runs M:ResetToDefaults.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local owner = M:AppearanceOwner()
@@ -76,11 +77,18 @@ function M:CreateConfigPage(parent)
         return button
     end
 
-    page:Section(L["Layout"], nil, false)
+    page:Tab("General")
     local status = W.Label(page:Row(L["Status"], 48), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
     Refresh(function() status:SetText(M:Status()) end)
     page.statusLabel = status
     page.showButton = Action("Window", "Show Bags", 130, function() M:OpenBags(); page:Refresh() end)
+    page:Group(L["Parts"])
+    page.partToggles = Toggles({ { "Title", "showTitle" }, { "Search Box", "showSearch" }, { "Money", "showMoney" },
+        { "Free Slots", "showFreeSlots" }, { "Bag Bar", "showBagBar" } })
+    Note("Bag Bar shows your equipped bags in the footer with their free slots: drop a bag on one to equip it, drag a bag off to take it out, point at one to light its slots. The search box uses the game's bag search: names, types and tooltip text match, and other items fade.")
+    page:Group(L["Marks"])
+    page.markToggles = Toggles({ { "Quest Icon", "questIcon" }, { "Junk Coin", "junkCoin" }, { "Fade Junk", "fadeJunk" } })
+    Note("Fade Junk grays out gray-quality items you can sell; Junk Coin marks them with a coin.")
     page:Group(L["Grid"])
     local grid = Columns({ "Columns", "Slot Size" })
     page.columnsSlider = Slider(grid[1], "columns")
@@ -93,58 +101,51 @@ function M:CreateConfigPage(parent)
     page.contentToggles = Toggles({ { "Separate Bags", "splitBags" }, { "Reagent Section", "reagentSection" }, { "Keyring", "keyring" } })
     page.sortSelect = Dropdown("Sort", "sortMode", 200)
     Note("Sort only changes the order items show in (empty slots last); the header's Sort menu sets it too. Clean Up in the header is the game's own sort, which moves the items in your bags. Separate Bags gives each bag its own block; the reagent bag and the keyring get their own sections.")
-    page:Group(L["Defaults"])
-    page.resetButton = Action("Bags Look", "Reset to Defaults", 150, function() M:ResetToDefaults() end)
+    page:Group(L["Position"])
+    page.growPills = Pills("Grow From", "growFrom", 104)
+    page.editModeButton = Action("Move It", "Edit Mode", 130, function() addon:SetEditMode(true) end)
+    page.lockToggles = Toggles({ { "Lock Window", "locked" } })
+    Note("The window stays fixed at its Grow From corner and grows away from it as bags change. In Edit Mode, drag the Bags box or attach it to another element. Unlocked, drag the header to move the window (out of combat).")
 
-    page:Section(L["Window"], nil, false)
-    page:Group(L["Frame"])
+    page:Tab("Fill")
+    page:Group(L["Window"])
     local background = Columns({ "Background Color", "Background Opacity" })
     Color(background[1], "backgroundColor")
     page.backgroundSlider = Slider(background[2], "backgroundOpacity", "%")
     Color(Columns({ "Header Color" })[1], "headerColor")
     Note("The window is a Mode window: Graphite by default, the Mode window edge inside it and a Mode Title header. A see-through window has no drop shadow.")
+    page:Group(L["Slots"])
+    local slot = Columns({ "Slot Color", "Slot Opacity" })
+    Color(slot[1], "slotColor")
+    page.slotOpacitySlider = Slider(slot[2], "slotOpacity", "%")
+
+    page:Tab("Border")
     page:Group(L["Border"])
     page.borderStyle, page.borderMetal = W.BorderPickers(page,
         { get = function() return M.db.edgeStyle end, set = Set("edgeStyle") },
         { get = function() return M.db.edgeMetal end, set = Set("edgeMetal") })
     Note("The window's border, also on its Sort menu. Slots keep their thin Mode edge in the item's quality color.")
-    page:Group(L["Parts"])
-    page.partToggles = Toggles({ { "Title", "showTitle" }, { "Search Box", "showSearch" }, { "Money", "showMoney" },
-        { "Free Slots", "showFreeSlots" }, { "Bag Bar", "showBagBar" }, { "Lock Window", "locked" } })
-    Note("Bag Bar shows your equipped bags in the footer with their free slots: drop a bag on one to equip it, drag a bag off to take it out, point at one to light its slots. Unlocked, drag the header to move the window (out of combat). The search box uses the game's bag search: names, types and tooltip text match, and other items fade.")
-
-    page:Section(L["Slots"], nil, false)
-    page:Group(L["Slot"])
-    local slot = Columns({ "Slot Color", "Slot Opacity" })
-    Color(slot[1], "slotColor")
-    page.slotOpacitySlider = Slider(slot[2], "slotOpacity", "%")
-    page:Group(L["Borders"])
-    page.borderToggles = Toggles({ { "Quality Borders", "qualityBorders" }, { "Quest Borders", "questBorders" }, { "Quest Icon", "questIcon" },
-        { "New Items", "newItems" } })
+    page:Group(L["Slot Borders"])
+    page.borderToggles = Toggles({ { "Quality Borders", "qualityBorders" }, { "Quest Borders", "questBorders" }, { "New Items", "newItems" } })
     When(function() return M.db.qualityBorders end, function() page.qualityPills = Pills("Minimum Quality", "qualityMinimum", 84) end)
     When(function() return M.db.questBorders end, function() Color(Columns({ "Quest Color" })[1], "questColor") end)
     Note("A slot's border shows the item's quality color from Minimum Quality up, quest items in Quest Color, and new items in Ivory until you point at them. Each slot is a little wider than tall, in a thin Mode edge.")
-    page:Group(L["Marks"])
-    page.markToggles = Toggles({ { "Fade Junk", "fadeJunk" }, { "Junk Coin", "junkCoin" }, { "Item Level", "itemLevel" } })
-    When(function() return M.db.itemLevel end, function() page.levelColorPills = Pills("Item Level Color", "itemLevelColor") end)
-    Note("Fade Junk grays out gray-quality items you can sell; Junk Coin marks them with a coin. Item Level shows on weapons and armor.")
 
-    page:Section(L["Text"], nil, false)
-    page:Group(L["Font"])
+    page:Tab("Text")
+    page:Group(L["Text Style"])
     local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), owner); Refresh(fontRefresh)
-    page.titleSizeSlider = Slider(Columns({ "Title Size" })[1], "titleSize")
-    local sizes = Columns({ "Count Size", "Item Level Size" })
-    page.countSizeSlider = Slider(sizes[1], "countSize")
-    page.levelSizeSlider = Slider(sizes[2], "levelSize")
     page.textToggles = Toggles({ { "Outline", "outline" } })
-    Note("Title Size sets the header, search box and footer; Count Size the stack counts and Item Level Size the item levels.")
+    page:Group(L["Title Text"])
+    page.titleSizeSlider = Slider(Columns({ "Size" })[1], "titleSize")
+    Note("The header, search box and footer.")
+    page:Group(L["Stack Count"])
+    page.countSizeSlider = Slider(Columns({ "Size" })[1], "countSize")
+    page:Group(L["Item Level"])
+    page.levelToggles = Toggles({ { "Show Item Level", "itemLevel" } })
+    When(function() return M.db.itemLevel end, function() page.levelColorPills = Pills("Color", "itemLevelColor") end)
+    page.levelSizeSlider = Slider(Columns({ "Size" })[1], "levelSize")
+    Note("Item Level shows on weapons and armor.")
 
-    page:Section(L["Position"], nil, false)
-    page:Group(L["Position"])
-    page.growPills = Pills("Grow From", "growFrom", 104)
-    page.editModeButton = Action("Move It", "Edit Mode", 130, function() addon:SetEditMode(true) end)
-    Note("The window stays fixed at its Grow From corner and grows away from it as bags change. In Edit Mode, drag the Bags box or attach it to another element.")
-
-    W.PinnedSectionTabs(page)
+    W.StandardTabs(page, true)
     page:Finish(); return page
 end

@@ -3,17 +3,18 @@ local M, W, L = addon.Minimap, addon.ConfigWidgets, addon.L
 if not M then return end
 
 -- Only defines the page; ModeUI builds it the first time it's opened. The
--- layout is the owner's approved design (November 14, 2026): four tabs
--- pinned above the cards, two controls per line, no description text.
---   Shape     Minimap (Size, Wider Than Tall By); Border (Map Border,
---             Button Border: Thin or Mode; Border Color: the edges' rim;
---             Border Style and Border Metal)
---   Text      Zone and Clock (Text Layout, Zone Color, Clock, Coordinates,
---             Clock Format, Text Size)
---   Buttons   Blizzard Buttons (a switch and a corner each); Addon Buttons
---             (Show, Match Minimap Width, Button Size, Spacing)
+-- owner's approved design (November 14, 2026) on the standard tabs
+-- (docs/DESIGN_LANGUAGE.md, "Standard tabs"), pinned above the cards, two
+-- controls per line, no description text.
+--   General   Minimap (Size, Wider Than Tall By); Blizzard Buttons (a switch
+--             and a corner each); Addon Buttons (Show, Match Minimap Width,
+--             Button Size, Spacing)
+--   Border    Border (Border and Border Metal; Map Border, Button Border:
+--             Thin or Mode; Border Color: the edges' rim)
+--   Text      Text style (Text Layout, Size); Zone Text (Zone Color); Clock
+--             Text (Show Clock, Clock Format); Coordinates (Show Coordinates)
 --   Behavior  Zoom (Mouse Wheel Zoom, Zoom Out After); Visibility (Combat
---             Opacity, Opacity)
+--             Opacity, Minimap Opacity)
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local UI = self.SettingsUI
@@ -37,32 +38,11 @@ function M:CreateConfigPage(parent)
         return page:ToggleGrid(items, { maxColumns = 2, minimumCellWidth = 180 })
     end
 
-    page:Section(L["Shape"], nil, false)
+    page:Tab("General")
     page:Group(L["Minimap"])
     local shape = Columns({ "Size", "Wider Than Tall By" })
     page.sizeSlider = Slider(shape[1], "size", "px")
     page.differenceButtons = UI.Segments(page, shape[2], "difference", 60)
-    page:Group(L["Border"])
-    local border = Columns({ "Map Border", "Button Border" })
-    page.borderButtons = UI.Segments(page, border[1], "border", 80)
-    page.buttonBorderButtons = UI.Segments(page, border[2], "buttonBorder", 80)
-    page.swatches = UI.Swatches(page, Columns({ "Border Color" })[1])
-    -- Every edge's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
-    page.borderStyle, page.borderMetal = W.BorderPickers(page,
-        { get = function() return M.db.edgeStyle end, set = function(value) M:SetOption("edgeStyle", value) end },
-        { get = function() return M.db.edgeMetal end, set = function(value) M:SetOption("edgeMetal", value) end })
-
-    page:Section(L["Text"], nil, false)
-    page:Group(L["Zone and Clock"])
-    local layout = Columns({ "Text Layout", "Zone Color" })
-    page.textLayoutButtons = UI.Segments(page, layout[1], "textLayout", 64)
-    page.zoneColorButtons = UI.Segments(page, layout[2], "zoneColor", 90)
-    page.textToggles = Toggles({ { "Clock", "clock" }, { "Coordinates", "coords" } })
-    local clock = Columns({ "Clock Format", "Text Size" })
-    page.clockFormatButtons = UI.Segments(page, clock[1], "clockFormat", 80)
-    page.textSizeSlider = Slider(clock[2], "textSize")
-
-    page:Section(L["Buttons"], nil, false)
     page:Group(L["Blizzard Buttons"])
     page.buttonRows = {}
     for _, name in ipairs(self.BUTTONS) do page.buttonRows[name] = UI.ButtonRow(page, name) end
@@ -74,16 +54,40 @@ function M:CreateConfigPage(parent)
     page.buttonSizeSlider = Slider(cells[1], "buttonSize", "px")
     page.buttonSpacingSlider = Slider(cells[2], "buttonSpacing", "px")
 
-    page:Section(L["Behavior"], nil, false)
+    page:Tab("Border")
+    page:Group(L["Border"])
+    -- Every edge's style and metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
+    page.borderStyle, page.borderMetal = W.BorderPickers(page,
+        { get = function() return M.db.edgeStyle end, set = function(value) M:SetOption("edgeStyle", value) end },
+        { get = function() return M.db.edgeMetal end, set = function(value) M:SetOption("edgeMetal", value) end })
+    local border = Columns({ "Map Border", "Button Border" })
+    page.borderButtons = UI.Segments(page, border[1], "border", 80)
+    page.buttonBorderButtons = UI.Segments(page, border[2], "buttonBorder", 80)
+    page.swatches = UI.Swatches(page, Columns({ "Border Color" })[1])
+
+    page:Tab("Text")
+    page:Group(L["Text Style"])
+    local layout = Columns({ "Text Layout", "Size" })
+    page.textLayoutButtons = UI.Segments(page, layout[1], "textLayout", 64)
+    page.textSizeSlider = Slider(layout[2], "textSize")
+    page:Group(L["Zone Text"])
+    page.zoneColorButtons = UI.Segments(page, Columns({ "Zone Color" })[1], "zoneColor", 90)
+    page:Group(L["Clock Text"])
+    page.clockToggles = Toggles({ { "Show Clock", "clock" } })
+    page.clockFormatButtons = UI.Segments(page, Columns({ "Clock Format" })[1], "clockFormat", 80)
+    page:Group(L["Coordinates"])
+    page.coordsToggles = Toggles({ { "Show Coordinates", "coords" } })
+
+    page:Tab("Behavior")
     page:Group(L["Zoom"])
     local zoom = Columns({ "Mouse Wheel Zoom", "Zoom Out After" })
     page.wheelZoomToggle = UI.Switch(page, zoom[1], "wheelZoom")
     page.zoomResetButtons = UI.Segments(page, zoom[2], "zoomReset", 56)
     page:Group(L["Visibility"])
-    local visibility = Columns({ "Combat Opacity", "Opacity" })
+    local visibility = Columns({ "Combat Opacity", "Minimap Opacity" })
     page.combatOpacitySlider = Slider(visibility[1], "combatOpacity", "%")
     page.opacitySlider = Slider(visibility[2], "opacity", "%")
 
-    W.PinnedSectionTabs(page)
+    W.StandardTabs(page, true)
     page:Finish(); return page
 end

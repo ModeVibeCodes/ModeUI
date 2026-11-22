@@ -9,11 +9,7 @@ local H = dofile((debug.getinfo(1, "S").source:sub(2)):gsub("[^/\\]+$", "") .. "
 local ELEMENTS = { "actionBars", "bags", "buffsDebuffs", "chat", "damageMeters", "minimap", "nameplates",
     "partyFrames", "tooltip", "unitFrames", "windows" }
 
--- Modules moved onto the standard tabs so far; every element module by the
--- end of the standard-tabs work (then this list goes and ELEMENTS is checked).
-local CONVERTED = {}
-local checked = {}
-for _, id in ipairs(ELEMENTS) do if CONVERTED[id] then checked[#checked + 1] = id end end
+local checked = ELEMENTS
 
 local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 local world = H.Load({ before = STUBS, obsidian = true })

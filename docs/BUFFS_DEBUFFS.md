@@ -222,12 +222,13 @@ One aura group per kind picked, in this order (an aura shows once):
 Styled once in `initializeFrame` (`Bars.lua`, the look in `Icons.lua`): the
 button is the cell (the icon plus room for time text under or over it: its
 size and 2px); the Mode icon (`Kit.AuraIconParts`) on a child frame, Width x
-Height, in the bar's Border Style, Metal (or **Custom Border Color**) and
-Size, pushed out or in by **Border Shift** and moved by **Border Offset
-X/Y** (the band's frame moves; the art stays). The art is cropped by
+Height, in the bar's Border, Metal (or **Custom Border Color**) and
+Size, laid in over the icon by **Padding** below zero, pushed out by **Push
+Out** and moved by **Border Offset X/Y** (the band's frame moves; the art
+stays). The art is cropped by
 size, not texture coordinates (the game sets each aura's texture itself): a
 square **Icon Zoom**% wider than the visible part on each side, centered in a
-frame that clips it (`SetClipsChildren`), a **Border Padding** inside the band.
+frame that clips it (`SetClipsChildren`), **Padding** (above zero) inside the band.
 That frame sits one level above the icon frame, whose black back drew over
 the art at the same level (every icon black in game, fixed November 17).
 Time text below, above or on the icon and the stack count in any corner,
@@ -266,20 +267,28 @@ with sample auras in its look (`Samples.lua`); the mover shows over them.
 The page (split layout, Auras icon) previews the bar being edited with the
 same samples, at up to 125%, under its name and ON or OFF; in the preview
 pane the bar's **Which Auras** card (a button per kind) fills the room under
-it (on the Bars tab only when the window has no pane). The bar list marks
-every bar ON or OFF. Tabs: **Bars** (bar picker, + New Bar and Delete Bar on
-their own row, name, Show This Bar, Shows for custom bars that aren't
-presets; Spells You Add on buff bars: + Add or Remove Spells; Bar Behavior:
-Sort, Max Shown, Per Row, Grow, New Rows Go), **Look** (Icon Width, Icon
-Height, Spacing, Icon Zoom, Timer Swipe, Tooltips, Right-Click Cancels;
-Border Style, Border Metal, Border Size, Border Padding, Border Shift,
-Border Offset X/Y and Nudge, Custom Border Color and Border Color, Rim
-Colored by Debuff Type; Glow, Glow Color, Custom Color), **Texts** (the Icon
-Texts card with a sample aura at its in-game size in the top right: Time
-Text Below, Above, On Icon or None, Time Size, Time Color, Time Offset X/Y
-and Nudge; Show Stack Count, Stack Corner, Stack Size, Stack Color, Stack
-Offset X/Y and Nudge), **Blacklist** (+ Add or Remove Auras), **Module**
-(Text: Font, Outline, Shadow; Reset to Defaults). The blacklist picker also
+it (on the Auras tab only when the window has no pane). The bar picker
+(**Bar**, + New Bar and Delete Bar on their own row, **Name** for your own
+bars) sits once above the tabs, and every tab edits that bar; the bar list
+marks every bar ON or OFF. The standard tabs (docs/DESIGN_LANGUAGE.md,
+"Standard tabs"; November 21, 2026):
+
+| Tab | Cards |
+|---|---|
+| General | Show (Show This Bar; Shows for custom bars that aren't presets), Size (Icon Width, Icon Height), Arrange (Sort, Max Shown, Per Row, Grow, New Rows Go, Spacing) |
+| Border | Border (Border, Border Metal, Border Size, Padding, Fine-Tune Border, Custom Border Color and Border Color), Rims (Rim Colored by Debuff Type, debuff bars) |
+| Glow | Glow (Glow, Glow Color, Custom Color) |
+| Text | Text Style (Font, Outline, Shadow: every bar), Time Text (with a sample aura at its in-game size in the top right: Place Below, Above, On Icon or None, Size, Color, Offset X/Y and Nudge), Stack Count (Show Stack Count, Anchor, Size, Color, Offset X/Y and Nudge) |
+| Auras | Which Auras (no pane only), Spells You Add (buff bars: + Add or Remove Spells), Blacklist (+ Add or Remove Auras), Icons (Icon Zoom, Timer Swipe) |
+| Behavior | Tooltips and Clicks (Tooltips, Right-Click Cancels) |
+
+**Padding** is one slider from -4 to 4 over two saved keys: above zero it is
+`borderGap` (the art inside the band), below zero `borderShift` (the border
+in over the icon; `borderGap` goes to 0). **Fine-Tune Border** (the page's
+own switch, not saved) shows **Push Out** (a positive `borderShift`, 0 to
+4), **Border Offset X/Y** and the nudge; they also show while any of them
+is set. **Reset…** in the footer offers **All of Buffs & Debuffs** (every
+bar, the blacklist and the text; places stay). The blacklist picker also
 edits a bar's Spells You Add (buffs on you, or by spell ID).
 
 ### Saved settings
@@ -288,8 +297,8 @@ edits a bar's Spells You Add (buffs on you, or by spell ID).
 (show, kind, cats, otherCats, spells, sort, max, perRow, width, height,
 spacing, crop, grow, wrap, timer, timerSize, timerColor, timerX, timerY,
 swipe, count, countPoint, countSize, countColor, countX, countY, tooltip,
-cancel, edgeStyle, edgeMetal, borderSize, borderGap (Border Padding),
-borderShift, borderX, borderY, borderTint, borderColor, byType, glow,
+cancel, edgeStyle, edgeMetal, borderSize, borderGap and borderShift
+(Padding; a positive borderShift is Push Out), borderX, borderY, borderTint, borderColor, byType, glow,
 glowColor, glowCustomColor), `customBars` ({ id, name, preset }),
 `nextCustom`, `blacklist`, and the text keys
 (font, fontMedia, outline: none, outline or thick; shadow, liftedShadow,
@@ -372,9 +381,10 @@ November 19, 2026; new profiles only). Everything as Mode-DPS/TANK but:
 custom bars, blacklist), `Placement.lua` (sizes, movers, holders),
 `Icons.lua` (an icon's look: size, crop, border, texts), `Bars.lua`
 (containers, groups, buttons), `Blizzard.lua` (the stand-in), `Samples.lua`,
-`Preview.lua`, `Settings.lua`, `SettingsBar.lua` (Bars tab),
-`SettingsLook.lua` (Look tab, Module text), `SettingsText.lua` (Texts
-tab), `Blacklist.lua` (Blacklist tab, the picker). Shared:
+`Preview.lua`, `Settings.lua` (bar picker, Reset…), `SettingsBar.lua`
+(General, Which Auras, Spells You Add), `SettingsLook.lua` (Border, Glow,
+Behavior, Icons, Text Style), `SettingsText.lua` (Time Text, Stack Count),
+`Blacklist.lua` (the Blacklist card, the picker). Shared:
 `Style/Tone.lua` (`auraStack`), `Runtime/DB.lua` (Adopt), `Domain/Auras.lua`
 (`NeverSecret`, `Spells`), `Kit/AuraIcon.lua` (`DispelAuraRim` on a child),
 `Kit/AuraContainer.lua` (`AuraTimeFormatter(hours)`), the Auras icon
@@ -434,6 +444,10 @@ module doesn't change).
 - **Border Shift** was read as pushing the band out from the icon or in over
   it, and **Border Offset X/Y** as moving it (owner, November 18); Border
   Padding (formerly Border Gap) is the room between the art and the band.
+- **Padding** (owner-approved, November 21): Border Padding and Border Shift
+  became one slider from -4 to 4; a positive shift (Push Out) and the
+  offsets moved behind **Fine-Tune Border**. Keys, ranges and saved values
+  are unchanged.
 
 ## In-game gate
 
@@ -454,14 +468,14 @@ read, and text wasn't adjustable. All addressed above. Recheck, after
    icon cropped (no game icon frame inside the Mode border); Player Buffs'
    border visible.
 3. **Size and border.** Navigation: `/modeui`, **Interface** › **Buffs &
-   Debuffs**, **Look** tab. Action: pick a bar; change **Icon Width** (the
-   height follows), then **Icon Height**, **Icon Zoom**, **Border Size** and
-   **Border Gap**. Required state: out of combat. Confirmation: the preview
+   Debuffs**, **General** tab. Action: pick a bar in **Bar** above the tabs;
+   change **Icon Width** (the height follows), then **Icon Height**; on
+   **Auras**, **Icon Zoom**; on **Border**, **Border Size** and **Padding**. Required state: out of combat. Confirmation: the preview
    and the bar follow; the height stops following the width once set.
-4. **Text.** Same tab. Action: set **Time Text** to Below, Above and On Icon
-   with a size, color and offset (try the nudge arrows); move **Stack Count**
-   to another corner, size and color; under **Module** › **Text** pick a
-   font, **Outline** and **Shadow**. Required state: out of combat.
+4. **Text.** **Text** tab. Action: in **Time Text** set **Place** to Below,
+   Above and On Icon with a size, color and offset (try the nudge arrows); in
+   **Stack Count** move **Anchor** to another corner, size and color; in
+   **Text Style** pick a font, **Outline** and **Shadow**. Required state: out of combat.
    Confirmation: live auras and the preview take each change.
 
 Icons confirmed in game (owner, November 17: "Looks good"). Then (merged
@@ -469,12 +483,12 @@ into `main` before this recheck; still to confirm):
 
 5. **Boss & Important.** Navigation: the game world, then **Edit Mode** in
    the ModeUI window header. Action: look above Player Debuffs (All); pick
-   **Player Debuffs (Boss & Important)** in the **Bar** dropdown on the
-   **Bars** tab. Required state: a boss or an Important debuff on you if
+   **Player Debuffs (Boss & Important)** in the **Bar** dropdown above the
+   tabs. Required state: a boss or an Important debuff on you if
    possible (Edit Mode shows samples). Confirmation: the bar sits 6px above
    Player Debuffs (All), right edges lined up, its icons 48 x 42.
-6. **Bar picker.** Navigation: **Interface** › **Buffs & Debuffs**,
-   **Bars** tab. Action: look at the right end of the **Bar** dropdown;
+6. **Bar picker.** Navigation: **Interface** › **Buffs & Debuffs**, the
+   **Bar** dropdown above the tabs. Action: look at the right end of the **Bar** dropdown;
    click **+ New Bar**. Required state: out of combat. Confirmation: no
    clipped box beside the dropdown; **+ New Bar** and **Delete Bar** sit on
    the row under it (**Delete Bar** only for your own bars).
@@ -482,18 +496,18 @@ into `main` before this recheck; still to confirm):
 After the second look (owner, November 18; nothing below run in game yet):
 
 7. **Defensives.** Navigation: `/modeui`, **Interface** › **Buffs &
-   Debuffs**, **Bars** tab, **Bar**: Defensives. Action: use your personal
+   Debuffs**, **Bar** (above the tabs): Defensives, **Auras** tab. Action: use your personal
    defensive; if the bar stays empty, click **+ Add or Remove Spells** while
    it's up and click it under "Buffs on you now". Required state: out of
    combat to edit. Confirmation: the defensive shows on Defensives; the bar
    has no **Shows** choice and no **Right-Click Cancels**.
 8. **Settings layout.** Same page. Action: open the **Bar** list; look under
-   the preview; open **Look** and **Texts**. Required state: out of combat.
+   the preview; open **General** and **Text**. Required state: out of combat.
    Confirmation: each bar has ON or OFF; Which Auras under the preview;
-   **Bar Behavior** holds Sort, Max Shown, Per Row, Grow; the Texts tab's
-   **Icon Texts** card has a sample aura at the top right that follows the
+   **Arrange** holds Sort, Max Shown, Per Row, Grow; the Text tab's
+   **Time Text** card has a sample aura at the top right that follows the
    text settings.
-9. **Border options.** **Look** tab. Action: move **Border Size**, **Border
-   Padding**, **Border Shift**, the border offsets; turn on **Custom Border
-   Color**. Required state: out of combat. Confirmation: the preview and the
+9. **Border options.** **Border** tab. Action: move **Border Size** and
+   **Padding** (below zero too); turn on **Fine-Tune Border** and move **Push
+   Out** and the border offsets; turn on **Custom Border Color**. Required state: out of combat. Confirmation: the preview and the
    bar follow.

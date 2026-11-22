@@ -2,12 +2,12 @@ local _, addon = ...
 local M, W, L = addon.PartyFrames, addon.ConfigWidgets, addon.L
 if not M then return end
 
--- The Auras tab: the aura manager, with its own preview (one larger member
--- showing only the group being edited). Pick a group (Healing Buffs, Group
--- Buffs, Defensives, each debuff type, Other Debuffs, Crowd Control), then
--- what it shows, where it sits (with 1px nudges), and how its icons look:
--- width and height, border, glow, timers and stacks. Type colors are shared by
--- every group and the debuff effects.
+-- The aura manager: pick a group (Healing Buffs, Group Buffs, Defensives,
+-- each debuff type, Other Debuffs, Crowd Control) above the tabs, then edit
+-- it on Auras (what it shows, where it sits with 1px nudges, its icons, with
+-- its own preview: one larger member showing only that group), Border › Aura
+-- Borders and Glow › Aura Glows. Type Colors (Border tab) are shared by every
+-- group and the debuff effects.
 
 -- Owner for the color rows of the group being edited.
 local function GroupOwner(Group)
@@ -16,6 +16,19 @@ local function GroupOwner(Group)
     function owner.GetFonts() return addon.Media:GetFonts() end
     function owner.SetAppearance(_, key, value) return M:SetAuraOption(Group(), key, value) end
     return owner
+end
+
+-- Controls for the group being edited.
+local function GroupControls(page, c, Group)
+    local g = {}
+    function g.db() return M.db.auras[Group()] end
+    function g.Set(key) return function(value) M:SetAuraOption(Group(), key, value) end end
+    function g.Slider(host, key, suffix) return c.SliderIn(host, M.auraRanges[key], function() return g.db()[key] end, g.Set(key), suffix) end
+    function g.Pills(title, list, key, width) return c.Pills(title, list, function() return g.db()[key] end, g.Set(key), width) end
+    function g.Toggle(label, key) return { label, key, get = function() return g.db()[key] end, set = g.Set(key) } end
+    local owner = GroupOwner(Group)
+    function g.Color(host, key, enabled) W.ColorRow(page, owner, host.rowLabel:GetText(), key, enabled, host) end
+    return g
 end
 
 local TRACKED_NOTE = "Buffs you pick: click + (here or in the preview's list) and click a buff on you or your party, or add one by its spell ID. They show here with this group's settings, and the other buff groups leave them out."
@@ -30,28 +43,71 @@ M.auraNotes = { heals = "Heals over time and other buffs Blizzard's raid frames 
     otherDebuffs = "Debuffs without a Magic, Curse, Disease, Poison or Bleed type.",
     crowdControl = "Stuns, fears, polymorphs and other loss of control on your party." }
 
+-- Which group the Border, Glow and Auras tabs edit: above the tabs (rows
+-- without a tab), shown only on those three.
+local GROUP_TABS = { Border = true, Glow = true, Auras = true }
+function M:BuildAuraPicker(page, c, Group)
+    local function OnGroupTab() local section = page.selectedSection; return section ~= nil and GROUP_TABS[section.title] == true end
+    c.When(OnGroupTab, function()
+        -- Buffs and debuffs are separate lists; the preview's quick list matches.
+        page.auraKindPills = c.Pills("Aura Kind", { { id = "buffs", label = "Buffs" }, { id = "debuffs", label = "Debuffs" } },
+            page.partyAuraKind, page.SetAuraKind, 110)
+        page.auraGroupSelect = c.SelectIn(page:Row(L["Aura Group"], 48), 220, function()
+            local list = {}
+            for _, id in ipairs(M:AuraKindGroups(page.partyAuraKind())) do list[#list + 1] = { id = id, label = M.auraGroupLabels[id] } end
+            return list
+        end, Group, page.SetAuraGroup)
+    end)
+end
+
+function M:BuildAuraBorders(page, c, Group)
+    local g = GroupControls(page, c, Group)
+    page:Tab("Border")
+    c.When(function() return g.db().show end, function()
+        page:Group(L["Aura Borders"])
+        page.auraBorderPills = g.Pills("Border", M.choices.auraBorder, "border", 90)
+        c.When(function() return g.db().border ~= "none" end, function()
+            local border = c.Columns({ "Border Size", "Border Color" })
+            page.auraBorderSlider = g.Slider(border[1], "borderSize", "px")
+            g.Color(border[2], "borderColor", function() return g.db().border == "custom" end)
+        end)
+        c.Note("By Type colors the border with the aura's dispel type (Type Colors); auras without one take No Type. Border Size 1 matches the Thin border.", 32)
+    end)
+end
+
+-- One color per dispel type, shared by aura borders, aura glows and the
+-- dispel overlay.
+function M:BuildTypeColors(page, c)
+    page:Tab("Border")
+    page:Group(L["Type Colors"])
+    local first = c.Columns({ "Magic", "Curse", "Disease" })
+    c.Color(first[1], "auraMagicColor"); c.Color(first[2], "auraCurseColor"); c.Color(first[3], "auraDiseaseColor")
+    local second = c.Columns({ "Poison", "Bleed", "No Type" })
+    c.Color(second[1], "auraPoisonColor"); c.Color(second[2], "auraBleedColor"); c.Color(second[3], "auraNoTypeColor")
+    c.Note("Used by By Type borders and glows and by the dispel overlay. In combat the game colors them even while it hides the aura's details.", 32)
+end
+
+function M:BuildAuraGlows(page, c, Group)
+    local g = GroupControls(page, c, Group)
+    page:Tab("Glow")
+    c.When(function() return g.db().show end, function()
+        page:Group(L["Aura Glows"])
+        page.auraGlowPills = g.Pills("Glow", M.choices.auraGlow, "glow", 100)
+        c.When(function() return g.db().glow ~= "none" end, function()
+            page.auraGlowColorPills = g.Pills("Glow Color", M.choices.auraGlowColor, "glowColor", 100)
+            local glow = c.Columns({ "Custom Glow Color" })
+            g.Color(glow[1], "glowCustomColor", function() return g.db().glowColor == "custom" end)
+        end)
+    end)
+end
+
 function M:BuildAuraTab(page, c, Group)
-    local function db() return M.db.auras[Group()] end
-    local function Set(key) return function(value) M:SetAuraOption(Group(), key, value) end end
-    local function Slider(host, key, suffix) return c.SliderIn(host, M.auraRanges[key], function() return db()[key] end, Set(key), suffix) end
-    local function Pills(title, list, key, width) return c.Pills(title, list, function() return db()[key] end, Set(key), width) end
-    local function Toggle(label, key) return { label, key, get = function() return db()[key] end, set = Set(key) } end
-    local owner = GroupOwner(Group)
-    local function GroupColor(host, key, enabled) W.ColorRow(page, owner, host.rowLabel:GetText(), key, enabled, host) end
-    page:Section(L["Auras"], nil, false)
-    page:Group(L["Aura Groups"])
-    -- Buffs and debuffs are separate lists; the preview's quick list matches.
-    page.auraKindPills = c.Pills("Kind", { { id = "buffs", label = "Buffs" }, { id = "debuffs", label = "Debuffs" } },
-        page.partyAuraKind, page.SetAuraKind, 110)
-    local groups = {}
-    for _, id in ipairs(M.auraGroups) do groups[#groups + 1] = { id = id, label = M.auraGroupLabels[id] } end
-    page.auraGroupSelect = c.SelectIn(page:Row(L["Group"], 48), 220, function()
-        local list = {}
-        for _, id in ipairs(M:AuraKindGroups(page.partyAuraKind())) do list[#list + 1] = { id = id, label = M.auraGroupLabels[id] } end
-        return list
-    end, Group, page.SetAuraGroup)
-    c.Mark("auras")
+    local g = GroupControls(page, c, Group)
+    local db, Set, Slider, Pills, Toggle = g.db, g.Set, g.Slider, g.Pills, g.Toggle
+    page:Tab("Auras")
+    page:Group(L["Which Auras"])
     page.auraShowToggles = c.Toggles({ Toggle("Show This Group", "show") })
+    c.Mark("auras")
     -- Tracked Buffs: the + picker and how many buffs the group holds.
     c.When(function() return M.TRACKED[Group()] == true end, function()
         local row = page:Row(L["Tracked Buffs"], 48)
@@ -87,39 +143,8 @@ function M:BuildAuraTab(page, c, Group)
         page.auraWidthSlider = Slider(size[1], "width", "px"); page.auraHeightSlider = Slider(size[2], "height", "px")
         page.auraLookToggles = c.Toggles({ Toggle("Timer Swipe", "timer"), Toggle("Timer Text", "timerText"),
             Toggle("Stack Count", "count"), Toggle("Tooltips", "tooltip") })
-        page.auraBorderPills = Pills("Border", M.choices.auraBorder, "border", 90)
-        c.When(function() return db().border ~= "none" end, function()
-            local border = c.Columns({ "Border Size", "Border Color" })
-            page.auraBorderSlider = Slider(border[1], "borderSize", "px")
-            GroupColor(border[2], "borderColor", function() return db().border == "custom" end)
-        end)
-        page.auraGlowPills = Pills("Glow", M.choices.auraGlow, "glow", 100)
-        c.When(function() return db().glow ~= "none" end, function()
-            page.auraGlowColorPills = Pills("Glow Color", M.choices.auraGlowColor, "glowColor", 100)
-            local glow = c.Columns({ "Custom Glow Color" })
-            GroupColor(glow[1], "glowCustomColor", function() return db().glowColor == "custom" end)
-        end)
-        c.Note("By Type colors the border and glow with the aura's dispel type (Type Colors below); auras without one take No Type. Border Size 1 matches the Thin border.", 32)
-
-        page:Group(L["This Group"])
-        local tools = page:Row(L["Group"], 48)
-        page.auraResetButton = W.Button(tools, L["Reset Group"], 120, 30, "secondary")
-        page.auraResetButton:SetPoint("LEFT"); page.auraResetButton:SetScript("OnClick", function() M:ResetSettings(Group()) end)
-        local copy = c.Columns({ "Copy Look To" })
-        page.auraCopySelect = c.SelectIn(copy[1], 220, function()
-            local list = {}
-            for _, item in ipairs(groups) do if item.id ~= Group() then list[#list + 1] = item end end
-            return list
-        end, function() return nil end, function(to) M:CopyAuraGroup(Group(), to) end)
-        c.Note("Copy Look To gives another group this group's place and icon look; which auras it shows stays its own.", 32)
+        -- Every group's timer text, in one color.
+        local timer = c.Columns({ "Timer Text Color" })
+        c.Color(timer[1], "auraTimerColor")
     end)
-
-    page:Group(L["Type Colors"])
-    local first = c.Columns({ "Magic", "Curse", "Disease" })
-    c.Color(first[1], "auraMagicColor"); c.Color(first[2], "auraCurseColor"); c.Color(first[3], "auraDiseaseColor")
-    local second = c.Columns({ "Poison", "Bleed", "No Type" })
-    c.Color(second[1], "auraPoisonColor"); c.Color(second[2], "auraBleedColor"); c.Color(second[3], "auraNoTypeColor")
-    local timer = c.Columns({ "Timer Text Color" })
-    c.Color(timer[1], "auraTimerColor")
-    c.Note("Used by By Type borders and glows and by the debuff effects. In combat the game colors them even while it hides the aura's details.", 32)
 end

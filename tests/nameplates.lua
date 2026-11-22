@@ -680,7 +680,7 @@ world.run([==[
     local page = addon.configWindow.pages.nameplates
     local view = page.configPreview
     assert(view and page.previewArea:IsShown() and not page.testDisplayButton:IsShown(), 'preview without a screen test')
-    assert(page.borderStyleSelect and page.borderMetalSelect, 'Border Style and Border Metal on the Nameplates tab')
+    assert(page.borderStyleSelect and page.borderMetalSelect, 'Border and Border Metal on the Border tab')
     local sample, friend = view.plates.enemy, view.plates.friendly
     assert(sample:IsShown() and not friend:IsShown() and sample:GetParent() == view.frame, 'only the enemy sample while editing Enemy')
     local at = Point(sample)
@@ -794,21 +794,37 @@ world.run([==[
     -- Tabs, cards and the Editing switch.
     local sections = {}
     for _, section in ipairs(page.sections) do sections[#sections + 1] = section.title end
-    assert(table.concat(sections, ',') == 'Nameplates,Text,Cast Bar,Auras,Target,Focus,Indicators', table.concat(sections, ','))
-    assert(#page.cards > 5 and page.cards[1].frame:IsShown(), 'settings sit on cards')
-    -- On the Focus tab the sample shows itself as the focus, not the target.
+    assert(table.concat(sections, ',') == 'General,Fill,Border,Glow,Text,Auras,Behavior', table.concat(sections, ','))
+    assert(page.standardTabs and #page.cards > 5 and page.cards[1].frame:IsShown(), 'settings sit on cards in the standard tabs')
+    -- Each part's cards, named for it, in the tab for their aspect.
+    local cards = {}
+    for _, row in ipairs(page.rows) do
+        if row.settingsGroupTitle then cards[#cards + 1] = row.section.title .. ':' .. row.settingsGroupTitle end
+    end
+    assert(table.concat(cards, ',') == 'General:Show,General:Size,General:Cast Bar,General:Combo Points,General:Indicators,'
+        .. 'General:Raid Marker,General:Soft Target Icon,Fill:Health Bar,Fill:Cast Bar,Fill:Combo Points,Fill:Focus,'
+        .. 'Border:Border,Border:Aura Borders,Border:Target,Border:Aura Border Colors,Glow:Focus,Glow:Crowd Control,Glow:Health Text,'
+        .. 'Text:Text Style,Text:Name Text,Text:Health Text,Text:Cast Bar Text,Auras:Groups,Auras:Icons,Auras:Timer,Auras:Stacks,'
+        .. 'Behavior:Focus', table.concat(cards, ','))
+    -- On the Glow tab (the focus highlight) the sample shows itself as the focus, not the target.
     local selected = page.selectedSection
     -- The focus defaults to the Glow (Mode-Obsidian); the sample shows the Border style here.
     assert(M.styleDefaults.enemy.focusStyle == 'glow' and M:SetOption('enemy', 'focusStyle', 'border'))
-    page:SelectSectionTab(6)
-    assert(page.selectedSection.title == 'Focus' and sample.focused and not sample.targeted, 'focus sample')
+    page:SelectSectionTab(4)
+    assert(page.selectedSection.title == 'Glow' and sample.focused and not sample.targeted, 'focus sample')
     assert(sample.healthBox.edge.highlight == M.db.enemy.focusColor, 'focus border in the sample')
     page:SelectSectionTab(selected)
     assert(not sample.focused and sample.targeted, 'target sample again')
+    -- One Editing switch, above every tab.
     local switch = page.nameplateEditButtons[1]
+    assert(#page.nameplateEditButtons == 1, 'one Editing switch')
     switch[2].scripts.OnClick(switch[2])
-    assert(page.nameplateEditing() == 'friendly' and page.nameplateEditButtons[3][2].selected, 'one switch across tabs')
+    assert(page.nameplateEditing() == 'friendly' and switch[2].selected, 'the switch picks the kind')
     local editingRow = switch[1]:GetParent().row
+    assert(editingRow.section == nil and editingRow:IsShown(), 'the Editing switch sits above every tab')
+    page:SelectSectionTab(5)
+    assert(editingRow:IsShown(), 'and stays on another tab')
+    page:SelectSectionTab(selected)
     assert(Point(editingRow.settingsLabel)[1] == 'TOPLEFT' and editingRow.stacked and Point(switch[1]:GetParent())[1] == 'LEFT', 'the Editing label sits above its pills')
     -- Clicking a part of the sample jumps to its settings.
     local hits = view.targets.friendly
@@ -816,26 +832,29 @@ world.run([==[
     assert(hits.cast.jumpHighlight:IsShown(), 'parts light up under the mouse')
     hits.cast.scripts.OnLeave(hits.cast)
     hits.cast.scripts.OnMouseUp(hits.cast, 'LeftButton')
-    assert(page.nameplateEditing() == 'friendly' and page.selectedSection.title == 'Cast Bar', 'cast bar click opens Cast Bar')
+    assert(page.nameplateEditing() == 'friendly' and page.selectedSection.title == 'General'
+        and page.jumpTargets.cast.row.settingsGroup == 'Cast Bar', 'cast bar click opens its card on General')
     page.SetEditing('enemy')
     view.targets.enemy.name.scripts.OnMouseUp(view.targets.enemy.name, 'LeftButton')
-    assert(page.nameplateEditing() == 'enemy' and page.selectedSection.title == 'Text', 'name click opens Text')
+    assert(page.nameplateEditing() == 'enemy' and page.selectedSection.title == 'Text'
+        and page.jumpTargets.name.row.settingsGroup == 'Name Text', 'name click opens Name Text')
     -- Text inside the bar takes clicks only where it is written, so the bar
     -- beside it opens the health settings.
     local textHit = view.targets.enemy.healthText
     assert(textHit.width < sample.health:GetWidth() and Point(textHit)[1] == 'RIGHT', 'health text hit fits the text')
     view.targets.enemy.health.scripts.OnMouseUp(view.targets.enemy.health, 'LeftButton')
-    assert(page.selectedSection.title == 'Nameplates', 'health click opens Nameplates')
+    assert(page.selectedSection.title == 'Fill' and page.jumpTargets.health.row.settingsGroup == 'Health Bar', 'health click opens Fill')
     view.targets.enemy.markers.scripts.OnMouseUp(view.targets.enemy.markers, 'LeftButton')
-    assert(page.selectedSection.title == 'Indicators', 'marker click opens Indicators')
-    page:SelectSectionTab(1)
+    assert(page.selectedSection.title == 'General' and page.jumpTargets.markers.row.settingsGroup == 'Raid Marker', 'marker click opens General')
+    page:SelectSectionTab(5)
     view.targets.enemy.softTarget.scripts.OnMouseUp(view.targets.enemy.softTarget, 'LeftButton')
-    assert(page.selectedSection.title == 'Indicators', 'soft-target icon click opens Indicators')
-    -- Combo points: the enemy sample shows every socket with a few lit; a click opens Target.
+    assert(page.selectedSection.title == 'General' and page.jumpTargets.softTarget.row.settingsGroup == 'Soft Target Icon', 'soft-target icon click opens General')
+    -- Combo points: the enemy sample shows every socket with a few lit; a click opens its card on General.
     assert(sample.combo:IsShown() and sample.combo.count == 5 and sample.combo.sockets[5].bar.value == M.COMBO_SAMPLE, 'sample combo points')
     assert(page.comboNote:GetText():find('Combo Points', 1, true), 'names your class\'s combo points')
+    page:SelectSectionTab(5)
     view.targets.enemy.combo.scripts.OnMouseUp(view.targets.enemy.combo, 'LeftButton')
-    assert(page.selectedSection.title == 'Target', 'combo click opens Target')
+    assert(page.selectedSection.title == 'General' and page.jumpTargets.combo.row.settingsGroup == 'Combo Points', 'combo click opens General')
     assert(M:SetOption('enemy', 'showCombo', false) and not sample.combo:IsShown() and M:SetOption('enemy', 'showCombo', true))
     -- Indicators: quest, classification and level, each placed on its own;
     -- those sharing an anchor line up in one row.
@@ -862,8 +881,9 @@ world.run([==[
     end
     assert(M:SetOption('enemy', 'showIndicator', true) and M:SetOption('enemy', 'indicatorQuest', true))
     assert(M.db.friendly.showIndicator == false, 'friendly plates start without indicators')
+    page:SelectSectionTab(5)
     view.targets.enemy.classification.scripts.OnMouseUp(view.targets.enemy.classification, 'LeftButton')
-    assert(page.selectedSection.title == 'Indicators' and page.nameplateIndicatorPart() == 'classification', 'click opens that indicator')
+    assert(page.selectedSection.title == 'General' and page.nameplateIndicatorPart() == 'classification', 'click opens that indicator')
     view.targets.enemy.level.scripts.OnMouseUp(view.targets.enemy.level, 'LeftButton')
     assert(page.nameplateIndicatorPart() == 'level', 'level click selects Level')
     local buffIcon = sample.auraIcons.buffs[1]
@@ -874,7 +894,31 @@ world.run([==[
     assert(M.db.enemy.buffs.anchor == 'BOTTOMLEFT' and page.auraAnchorButtons.BOTTOMLEFT.selected, 'picking an anchor')
     assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'buffs'))
     assert(page.nameAnchorButtons.CENTER, 'text anchors include the middle')
-    addon.configWindow:Hide()
+    -- Copy To… and Reset… in the footer replace the page's own buttons.
+    local window = addon.configWindow
+    assert(page.copyButton == nil and page.resetButton == nil, 'no copy or reset buttons on the page')
+    assert(window.copyButton:IsShown() and window.resetButton:IsShown(), 'Copy To… and Reset… in the footer')
+    page.SetEditing('enemy')
+    local copy = addon:ConfigActionItems('copy', M)
+    assert(#copy == 1 and copy[1].label == 'Enemy style to Friendly plates' and copy[1].prompt, 'copy the kind being edited')
+    assert(M:SetOption('enemy', 'width', 150) and M:SetOption('friendly', 'show', false))
+    copy[1].run()
+    assert(M.db.friendly.width == 150 and M.db.friendly.show == false and M.db.friendly.healthColorMode == M.db.enemy.healthColorMode,
+        'the look copies; Use ModeUI Plates stays')
+    assert(M:SetOption('friendly', 'show', true))
+    page.SetEditing('friendly')
+    copy = addon:ConfigActionItems('copy', M)
+    assert(copy[1].label == 'Friendly style to Enemy plates', 'read when the menu opens')
+    page.SetEditing('enemy')
+    local reset = addon:ConfigActionItems('reset', M)
+    assert(#reset == 3 and reset[1].label == 'Enemy plates' and reset[2].label == 'Friendly plates' and reset[3].label == 'All of Nameplates')
+    reset[2].run()
+    assert(M.db.friendly.width == M.styleDefaults.friendly.width and M.db.enemy.width == 150 and M.db.friendly.show == true, 'one kind resets')
+    reset[3].run()
+    assert(M.db.enemy.width == M.styleDefaults.enemy.width and M.db.enemy.healthText == M.styleDefaults.enemy.healthText and M.db.friendly.show == true,
+        'both kinds reset')
+    assert(M:SetOption('enemy', 'width', 180) and M:SetOption('enemy', 'healthText', 'both'))
+    window:Hide()
 
     -- Switching off restores every Blizzard plate and releases the events.
     addon:SetModuleEnabled('nameplates', false)

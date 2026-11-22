@@ -975,30 +975,38 @@ restored.run([====[
     local page=addon:EnsureConfigPage('unitFrames')
     -- Unit Frames opens in split view: its live preview shows in the pane while the page is open.
     addon:SelectConfigPage('unitFrames')
-    local titles={};for _,section in ipairs(page.sections) do titles[#titles+1]=section.title end
-    assert(table.concat(titles,'|')=='Frame|Health Bar|Power Bar|Portrait|Cast Bar|Auras|Class Resource|Text','one tab per part of the frame; no Border tab')
-    assert(page.sectionTabs and #page.sectionTabs.buttons==8)
+    -- The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), a card per part in each.
+    local titles={};for _,section in ipairs(page.sectionTabs.sections) do titles[#titles+1]=section.title end
+    assert(table.concat(titles,'|')=='General|Fill|Border|Glow|Text|Auras','the standard tabs, in order')
+    assert(page.standardTabs and #page.sectionTabs.buttons==6)
+    local function Tab(title) for _,section in ipairs(page.sections) do if section.title==title then return section end end end
+    -- section nil: the rows above every tab.
+    local function In(row,section) if section==nil then return row.section==nil end return row.section and row.section.title==section end
     local function Find(section,title)
-        for _,row in ipairs(page.rows) do if row.section and row.section.title==section and row.settingsTitle==title then return row end end
+        for _,row in ipairs(page.rows) do if In(row,section) and row.settingsTitle==title then return row end end
     end
-    local function Row(section,title) return Find(section,title) or error('missing row '..section..' / '..title) end
+    local function Row(section,title) return Find(section,title) or error('missing row '..tostring(section)..' / '..title) end
     local function Visible(row) return not row.visibleWhen or row.visibleWhen() end
     local function Toggle(section,label)
         for _,row in ipairs(page.rows) do
-            if row.section and row.section.title==section and row.settingsToggles then
+            if In(row,section) and row.settingsToggles then
                 for _,cell in ipairs(row.settingsToggles) do if cell.label:GetText()==label then return row end end
             end
         end
-        error('missing toggle '..section..' / '..label)
+        error('missing toggle '..tostring(section)..' / '..label)
     end
-    for section,list in pairs({Frame={'Scale','Frame Tools','Status'},Portrait={'Portrait Style','Portrait Size'},
-        ['Health Bar']={'Frame Width','Frame Height','Fill Direction','Health Color'},['Power Bar']={'Power Bar Height','Power Color'},
-        Text={'Name Color','Health Text Color','Font','Text Color'}}) do
+    local function Count(title) local n=0;for _,row in ipairs(page.rows) do if row.settingsTitle==title then n=n+1 end end;return n end
+    for section,list in pairs({General={'Scale','Frame Width','Frame Height','Status','Power Bar Height','Portrait Style','Portrait Size'},
+        Fill={'Fill Direction','Health Color','Power Color'},Glow={'Prism Glow'},
+        Text={'Name Color','Health Text Color','Font','Text Color','Shadow'}}) do
         for _,title in ipairs(list) do assert(Visible(Row(section,title)),'Player editable: '..section..' / '..title) end
         assert(not Find(section,'Editing'),'Editing is in the preview header, not in each tab')
     end
-    assert(not Find('Health Bar','Scale') and not Find('Frame','Frame Height') and not Find('Frame','Frame Width'),'one place for each setting')
-    assert(page.unitFrameRingStyle and page.unitFrameRingFinish and not Find('Portrait','Portrait Ring'),'Ring Style and Ring Finish replace Portrait Ring')
+    for _,title in ipairs({'Scale','Frame Width','Frame Height','Fill Direction','Health Color'}) do assert(Count(title)==1,'one place for each setting: '..title) end
+    assert(Row('General','Frame Width').settingsGroup=='Frame' and Row('Fill','Fill Direction').settingsGroup=='Health Bar','cards named for the part')
+    assert(Visible(Toggle('Text','Outline')) and Visible(Toggle('Border','Shadow')) and Visible(Toggle('Glow','Health Text Glow')),'one term per idea')
+    assert(page.unitFrameBorder:GetParent().row.section.title=='Border' and page.unitFrameRingStyle:GetParent().row.section.title=='Border','every border in Border')
+    assert(page.unitFrameRingStyle and page.unitFrameRingFinish and Count('Portrait Ring')==0,'Ring Style and Ring Finish replace Portrait Ring')
     -- Editing at the preview's top right, with whether the frame is on.
     assert(page.unitFrameEditSelect and Point(page.unitFrameEditSelect:GetParent())[1]=='TOPRIGHT' and page.unitFrameEditSelect:GetParent():GetParent()==page.previewArea)
     -- Each frame in the Editing list says On or Off beside its name.
@@ -1006,9 +1014,11 @@ restored.run([====[
     -- Each bar's own textures and opacity, two to a row.
     assert(page.unitFrameForeground and page.unitFrameBackground and page.unitFrameForegroundOpacity and page.unitFrameBackgroundOpacity)
     assert(page.unitFramePowerForeground and page.unitFramePowerBackgroundOpacity and page.unitFrameCastForeground and page.unitFrameCastBackground)
-    assert(page.unitFrameForeground:GetParent().row.section.title=='Health Bar' and page.unitFramePowerForeground:GetParent().row.section.title=='Power Bar')
-    -- Width and height side by side: both stacked, pairable sliders in Size.
-    assert(Row('Health Bar','Frame Width').pairable and Row('Health Bar','Frame Height').pairable)
+    local fg,pfg,cfg=page.unitFrameForeground:GetParent().row,page.unitFramePowerForeground:GetParent().row,page.unitFrameCastForeground:GetParent().row
+    assert(fg.section.title=='Fill' and fg.settingsGroup=='Health Bar' and pfg.section.title=='Fill' and pfg.settingsGroup=='Power Bar')
+    assert(cfg.section.title=='Fill' and cfg.settingsGroup=='Cast Bar','each bar its own Fill card')
+    -- Width and height side by side: both stacked, pairable sliders in the Frame card.
+    assert(Row('General','Frame Width').pairable and Row('General','Frame Height').pairable)
     assert(page.unitFrameForeground:GetParent().rowLabel:GetText()=='Foreground' and page.unitFrameBackgroundOpacity:GetParent().rowLabel:GetText()=='Background Opacity')
     -- Slider drags apply the first step at once, then at most one value every
     -- W.LIVE_SECONDS; the last value always applies (no rebuild on every step).
@@ -1020,9 +1030,9 @@ restored.run([====[
     for _,title in ipairs({'Border Style','Palette','Background Color','Rim Color','Rim Thickness','Name Sheen Strength','Empty Bar Color'}) do
         for _,section in ipairs(page.sections) do assert(not Find(section.title,title),'locked to Onyx: '..title) end
     end
-    assert(not Visible(Row('Health Bar','Custom Health Color')) and M:SetFrameOption('player','healthColorMode','custom') and Visible(Row('Health Bar','Custom Health Color')))
+    assert(not Visible(Row('Fill','Custom Health Color')) and M:SetFrameOption('player','healthColorMode','custom') and Visible(Row('Fill','Custom Health Color')))
     assert(not Visible(Row('Text','Custom Name Color')) and M:SetFrameOption('player','nameColorMode','custom') and Visible(Row('Text','Custom Name Color')))
-    assert(not Visible(Row('Portrait','Portrait Ring Color')) and M:SetFrameOption('player','portraitRing','custom') and Visible(Row('Portrait','Portrait Ring Color')))
+    assert(not Visible(Row('Border','Portrait Ring Color')) and M:SetFrameOption('player','portraitRing','custom') and Visible(Row('Border','Portrait Ring Color')))
     assert(not Find('Text','Glow Strength') and not Find('Text','Name Glow'),'glow controls are gone')
     for _,title in ipairs({'Name Position','Health Text','Power Text Position','Level Position','Show Level'}) do
         for _,section in ipairs(page.sections) do assert(not Find(section.title,title),'replaced by text slots: '..title) end
@@ -1047,8 +1057,8 @@ restored.run([====[
     assert(moved and M.db.player.texts.center.content=='healthPercent' and M.db.player.texts.center.size==13 and M.db.player.texts.center.x==2,'moved with its settings')
     assert(M.db.player.texts.right.content=='none','the old spot cleared')
     assert(M:SetTextOptions('player','right',{content='healthPercent',size=11,x=0}) and M.db.player.texts.center.content=='none')
-    -- Hidden: only Show is left; turning it on again takes its home spot.
-    assert(M:SetTextOption('player','right','content','none') and not Visible(H.position:GetParent().row) and H.show.label:GetText()=='Hidden')
+    -- None: only Show is left; turning it on again takes its home spot.
+    assert(M:SetTextOption('player','right','content','none') and not Visible(H.position:GetParent().row) and H.show.label:GetText()=='None')
     assert(M:SetTextOption('player','right','content','healthPercent') and Visible(H.size:GetParent():GetParent()))
     -- Color: modes that suit the text; the custom swatch opens the picker.
     assert(M:SetTextOption('player','right','colorMode','custom') and Visible(H.custom:GetParent().row))
@@ -1060,46 +1070,59 @@ restored.run([====[
     assert(Visible(K.name.align:GetParent().row) and M:SetTextOption('player','border','content','none') and not Visible(K.name.align:GetParent().row))
     assert(M:SetTextOption('player','border','content','name'))
     assert(M:SetFrameOption('player','showPower',false) and not Visible(K.power.show:GetParent().row) and M:SetFrameOption('player','showPower',true))
-    -- Frame tab: the edited frame's switches and its tools.
-    assert(page.unitFrameReset and page.unitFrameCopy and page.unitFrameCopy.label:GetText()=='Copy Style to Target')
-    assert(not Visible(Toggle('Frame','Match Player Frame')),"matching is the Target's")
-    page.SetEditing('focus');assert(page.unitFrameCopy.label:GetText()=='Copy Player Style')
-    assert(M:SetFrameOption('player','barWidth',200));page.unitFrameCopy.scripts.OnClick()
+    -- No in-page tools: Copy To… and Reset… in the settings footer act on the frame Editing names.
+    assert(page.unitFrameReset==nil and page.unitFrameCopy==nil and Count('Frame Tools')==0,'no in-page tools')
+    local copy=M:CopyActions();assert(#copy==1 and copy[1].label=='Player Style to Target')
+    assert(not Visible(Toggle('General','Match Player Frame')),"matching is the Target's")
+    page.SetEditing('target');assert(M:CopyActions()[1].label=='Target Style to Player')
+    page.SetEditing('focus');copy=M:CopyActions();assert(copy[1].label=='Player Style to Focus')
+    assert(#addon:ConfigActionItems('copy',M)==1)
+    assert(M:SetFrameOption('player','barWidth',200));copy[1].run()
     assert(M.db.focus.barWidth==200 and M.db.focus.portraitSide=='right','copies the Player look, keeps its side')
-    page.unitFrameReset.scripts.OnClick();assert(M.db.focus.barWidth==160 and M:ResetFrame('player'))
-    -- A frame that is off: Off in red, Turn On beside it, and the tabs say so.
+    local reset=M:ResetScopes();assert(#reset==2 and reset[1].label=='Focus Frame' and reset[2].label=='All of Unit Frames' and reset[1].prompt)
+    assert(#addon:ConfigActionItems('reset',M)==2)
+    reset[1].run();assert(M.db.focus.barWidth==160 and M:ResetFrame('player'))
+    -- A frame that is off: Off in red, Show Frame beside it, and every tab says so.
     assert(M:SetFrameOption('focus','enabled',false) and page.unitFrameEditSelect.label:GetText():find('Focus  ',1,true) and page.unitFrameEditSelect.label:GetText():find('Off|r',1,true) and page.unitFrameTurnOn:IsShown())
-    assert(Visible(Row('Health Bar','Frame Off')) and not Visible(Row('Health Bar','Frame Width')))
+    assert(page.unitFrameTurnOn.label:GetText()=='Show Frame')
+    assert(Visible(Row(nil,'Frame Off')) and not Visible(Row('General','Frame Width')))
     page.unitFrameTurnOn.scripts.OnClick();assert(M.db.focus.enabled and page.unitFrameEditSelect.label:GetText():find('On|r',1,true))
-    -- Target Matches Player lives on the Target's Frame tab only.
+    -- Match Player Frame is on the Target's General tab only; above every tab, why its look is missing.
     page.SetEditing('target')
-    assert(Visible(Toggle('Frame','Mirror Player Text')) and Visible(Row('Frame','Target Matches Player')),'match and mirror on the Target\'s Frame tab')
-    assert(not Visible(Row('Frame','Scale')) and Visible(Row('Health Bar','Frame Width')) and Visible(Row('Health Bar','Fill Direction')) and not Visible(Row('Health Bar','Frame Height')),'a matched Target keeps its own width and fill')
-    assert(Visible(Row('Power Bar','Target Matches Player')) and not Visible(Toggle('Power Bar','Show Power Bar')))
-    page.SetEditing('player');assert(not Visible(Toggle('Frame','Mirror Player Text')),'only the Target matches')
+    assert(Visible(Toggle('General','Mirror Player Text')) and Visible(Row(nil,'Target Matches Player')),'match and mirror on the Target\'s General tab')
+    assert(not Visible(Row('General','Scale')) and Visible(Row('General','Frame Width')) and Visible(Row('Fill','Fill Direction')) and not Visible(Row('General','Frame Height')),'a matched Target keeps its own width and fill')
+    assert(not Visible(Toggle('General','Show Power Bar')) and not Visible(Row('Fill','Power Color')))
     -- Class Resource: the Target's own settings, editable even while it matches the Player.
-    assert(page.unitFrameComboArc and page.unitFrameComboSize and Visible(Row('Class Resource','Arc Position')))
+    assert(page.unitFrameComboArc and page.unitFrameComboSize and Visible(Row('General','Arc Position')) and Visible(Row('Fill','Lit Point Color')))
     assert(page.unitFrameResourceNote:GetText():find('Combo Points'),'names your class\'s resource')
-    assert(M:SetComboOption('enabled',false) and not Visible(Row('Class Resource','Arc Position')) and M:SetComboOption('enabled',true))
+    assert(M:SetComboOption('enabled',false) and not Visible(Row('General','Arc Position')) and not Visible(Row('Fill','Lit Point Color')) and M:SetComboOption('enabled',true))
+    page.SetEditing('player');assert(not Visible(Toggle('General','Mirror Player Text')),'only the Target matches')
+    assert(not Visible(Row('General','Arc Position')) and not Visible(Row('General','Your Class')),'the class resource sits on the Target')
     -- Cast Bar edits the frame's own cast bar, even on a matched Target.
-    assert(page.unitFrameCastPosition and page.unitFrameCastHeight and Visible(Row('Cast Bar','Position')))
+    assert(page.unitFrameCastPosition and page.unitFrameCastHeight and Visible(Row('General','Position')))
+    assert(Visible(Toggle('Text','Spell Name')) and Row('Fill','Cast Color'),'cast text in Text, its colors in Fill')
     -- Width: Full Width by default; off, Bar Width.
     local castWidthRow=page.unitFrameCastWidth:GetParent().row
     assert(page.unitFrameCastFullWidth and not Visible(castWidthRow))
     assert(M:SetCastOption(page.unitFrameEditing(),'fullWidth',false) and Visible(castWidthRow) and M:SetCastOption(page.unitFrameEditing(),'fullWidth',true))
-    -- Show Portrait opens the Portrait tab; the status toggle names what it keeps.
+    -- Show Portrait opens the Portrait card; the status toggle names what it keeps.
     local portraitRows={}
-    for _,row in ipairs(page.rows) do if row.section and row.section.title=='Portrait' and row.settingsTitle~=nil then portraitRows[#portraitRows+1]=row end end
-    assert(Visible(Toggle('Portrait','Show Portrait')) and Toggle('Portrait','Show Portrait')==portraitRows[1],'Show Portrait first')
-    assert(Toggle('Portrait','Keep Relative Text Positions') and not pcall(Toggle,'Portrait','Mirror on a Right-Side Portrait'),'renamed')
-    page.SetEditing('target');assert(M.db.target.matchPlayer and Visible(Row('Cast Bar','Spell Icon')) and not Visible(Row('Frame','Scale')))
-    page.SetEditing('targettarget');assert(not Visible(Row('Cast Bar','Position')),'off by default on the Target of Target')
+    for _,row in ipairs(page.rows) do if In(row,'General') and row.settingsGroup=='Portrait' and row.settingsTitle~=nil then portraitRows[#portraitRows+1]=row end end
+    assert(Visible(Toggle('General','Show Portrait')) and Toggle('General','Show Portrait')==portraitRows[1],'Show Portrait first')
+    assert(Toggle('General','Keep Relative Text Positions') and not pcall(Toggle,'General','Mirror on a Right-Side Portrait'),'renamed')
+    assert(Visible(Toggle('Glow','Combat Ring')) and Visible(Toggle('Glow','Pulse When Pulled')),'the combat ring and its pulse in Glow')
+    page.SetEditing('target');assert(M.db.target.matchPlayer and Visible(Row('General','Spell Icon')) and not Visible(Row('General','Scale')))
+    page.SetEditing('targettarget');assert(not Visible(Row('General','Position')),'off by default on the Target of Target')
     -- Auras: Buffs and Debuffs share the controls; the group switch picks one.
     page.SetEditing('target');assert(page.unitFrameAuraGroup()=='buffs' and page.unitFrameAuraAnchor and Visible(Row('Auras','Filter')))
     local function Shared() return Visible(page.unitFrameAuraAnchor:GetParent().row) end
     assert(Shared());page.unitFrameAuraButtons[2].scripts.OnClick();assert(page.unitFrameAuraGroup()=='debuffs' and not Shared(),'debuffs start off')
     assert(M:SetAuraOption('target','debuffs','enabled',true) and Shared() and M:SetAuraOption('target','debuffs','enabled',false))
     page.SetAuraGroup('buffs')
+    -- Each group's icon border in the Border tab, while that group shows.
+    local borders=page.unitFrameAuraBorders
+    assert(borders.buffs:GetParent().row.section.title=='Border' and Visible(borders.buffs:GetParent().row) and not Visible(borders.debuffs:GetParent().row))
+    assert(M:SetAuraOption('target','debuffs','enabled',true) and Visible(borders.debuffs:GetParent().row) and M:SetAuraOption('target','debuffs','enabled',false))
     -- Editing the Player: its Auras tab points to Buffs & Debuffs.
     page.SetEditing('player');assert(Visible(page.unitFramePlayerAurasButton:GetParent().row) and not Shared(),'Player auras live in Buffs & Debuffs')
     page.SetEditing('target');assert(not Visible(page.unitFramePlayerAurasButton:GetParent().row) and Shared())
@@ -1120,16 +1143,21 @@ restored.run([====[
     local w1,h1=M:GetPreviewSize(view);local moved=Point(face)
     assert(w0==w1 and h0==h1 and moved[4]==at[4] and moved[5]==at[5],'no jumping around')
     assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))
-    -- The Class Resource tab shows the Target whatever Editing says.
-    page.SetEditing('player');page:SelectSectionTab(page.sections[7]);assert(page.selectedSection.title=='Class Resource')
-    assert(M:PreviewUnit()=='target' and view.faces.target:IsShown() and not view.faces.player:IsShown(),'class resource: the Target')
-    page:SelectSectionTab(page.sections[2]);assert(M:PreviewUnit()=='player' and view.faces.player:IsShown())
-    page.SetEditing('target')
-    face.castBox.scripts.OnMouseUp(face.castBox,'LeftButton');assert(page.selectedSection.title=='Cast Bar')
-    face.auraIcons.buffs[1].scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Auras' and page.unitFrameAuraGroup()=='buffs')
-    face.health.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Health Bar')
-    face.combo.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Class Resource')
-    face.portrait.scripts.OnMouseUp(nil,'LeftButton');assert(page.selectedSection.title=='Portrait')
+    -- The sample is the frame Editing names, on every tab (the class resource's cards show for the Target).
+    page.SetEditing('player');page:SelectSectionTab(Tab('Fill'));assert(M:PreviewUnit()=='player' and view.faces.player:IsShown())
+    page.SetEditing('target');assert(M:PreviewUnit()=='target' and view.faces.target:IsShown() and not view.faces.player:IsShown(),'class resource: on the Target')
+    -- Clicking a part opens the tab that now holds its row, and that row.
+    local function Jump(region,target,tab,styled)
+        page:SelectSectionTab(Tab(tab=='Text' and 'Fill' or 'Text'))
+        region.scripts.OnMouseUp(region,'LeftButton')
+        assert(page.selectedSection.title==tab and page.jumpTargets[target].section==page.selectedSection,target..' opens '..tab)
+        assert(styled or page.jumpTargets[target].row:IsShown(),target..': its row shows')
+    end
+    Jump(face.castBox,'cast','General');assert(page.jumpTargets.cast.row==page.unitFrameCastToggles[1].frame:GetParent().row)
+    Jump(face.auraIcons.buffs[1],'auras','Auras');assert(page.unitFrameAuraGroup()=='buffs')
+    Jump(face.health,'health','Fill');assert(page.jumpTargets.health.row==Row('Fill','Fill Direction'))
+    Jump(face.combo,'combo','General');assert(page.jumpTargets.combo.row==Row('General','Your Class'))
+    Jump(face.portrait,'portrait','General',true);assert(page.jumpTargets.portrait.row==Toggle('General','Show Portrait'))
     -- A text opens the Text tab at its own spot.
     page.SetEditing('player');local pf=view.faces.player;local hit
     for _,child in ipairs(frames) do if child.jump and child.jump.target=='text:bottomLeft' and child:GetParent()==pf.textLayer then hit=child end end
@@ -1150,44 +1178,46 @@ restored.run([====[
     strip.viewport.width=nil;strip:Layout();assert(not strip.slider:IsShown() and strip:GetHeight()==top)
     page.SetEditing('player')
     page.SetEditing('focus');assert(page.unitFrameEditing()=='focus' and page.unitFrameEditSelect.label:GetText():find('^Focus  '))
-    assert(Visible(Row('Frame','Scale')) and not Visible(Toggle('Frame','Match Player Frame')),'only the Target matches the Player')
+    assert(Visible(Row('General','Scale')) and not Visible(Toggle('General','Match Player Frame')),'only the Target matches the Player')
     assert(M:SetFrameOption('focus','barBackgroundOpacity',50) and M.db.player.barBackgroundOpacity==85,'edits the Focus only')
     assert(M:ResetFrame('focus'))
     -- Placement shows only for frames that attach; its offsets only while attached.
-    assert(not Visible(Row('Frame','Attach Point')),'Focus has no parent frame')
-    page.SetEditing('targettarget');assert(Visible(Row('Frame','Attach Point')) and page.unitFrameAttachY)
-    assert(M:SetFrameOption('targettarget','attach',false) and not Visible(Row('Frame','Attach Point')) and M:SetFrameOption('targettarget','attach',true))
+    assert(not Visible(Row('General','Attach Point')),'Focus has no parent frame')
+    page.SetEditing('targettarget');assert(Visible(Row('General','Attach Point')) and page.unitFrameAttachY)
+    assert(M:SetFrameOption('targettarget','attach',false) and not Visible(Row('General','Attach Point')) and M:SetFrameOption('targettarget','attach',true))
     page.SetEditing('target');assert(page.unitFrameEditing()=='target' and page.unitFrameEditSelect.label:GetText():find('^Target  '),'switch to the Target')
-    assert(not Visible(Row('Frame','Scale')) and Visible(Row('Health Bar','Target Matches Player')),'matched Target explains itself')
-    assert(Visible(Row('Health Bar','Fill Direction')) and Visible(Row('Health Bar','Frame Width')),'a matched Target still picks its width and fill direction')
+    assert(not Visible(Row('General','Scale')) and Visible(Row(nil,'Target Matches Player')),'matched Target explains itself')
+    assert(Visible(Row('Fill','Fill Direction')) and Visible(Row('General','Frame Width')),'a matched Target still picks its width and fill direction')
     -- The settings look: labels above controls, and two dropdowns or sliders share a
-    -- line in a card; width and height of the health bar side by side.
-    page.SetEditing('player');page:SelectSectionTab(page.sections[2]);page:Layout()
-    local widthRow,heightRow,fillRow=Row('Health Bar','Frame Width'),Row('Health Bar','Frame Height'),Row('Health Bar','Fill Direction')
-    assert(widthRow.stacked and widthRow.pairable and heightRow.pairable and fillRow.pairable)
+    -- line in a card; the frame's scale, width and height side by side.
+    page.SetEditing('player');page:SelectSectionTab(Tab('General'));page:Layout()
+    local scaleRow,widthRow,heightRow=Row('General','Scale'),Row('General','Frame Width'),Row('General','Frame Height')
+    assert(widthRow.stacked and widthRow.pairable and heightRow.pairable and scaleRow.pairable)
     -- Tiles four across: too narrow to share a line, so each control takes the tile's width.
-    assert(heightRow.offset>widthRow.offset and fillRow.offset>heightRow.offset and math.abs(widthRow.width-heightRow.width)<1,'one per line in a narrow tile')
+    assert(widthRow.offset>scaleRow.offset and heightRow.offset>widthRow.offset and math.abs(widthRow.width-heightRow.width)<1,'one per line in a narrow tile')
     assert(Point(widthRow.settingsLabel)[1]=='TOPLEFT' and Point(widthRow.settingsHost)[5]==-22,'label above the control')
     local input=widthRow.settingsHost.numericInput;assert(Point(input)[2]==widthRow.settingsHost.valueAnchor and Point(widthRow.settingsHost.slider,2)[4]==0,'value on the label line, slider full width')
-    -- Status (Portrait tab): the frame's own, so a matched Target edits it; rested and pulse are the Player's.
+    -- Status Icons (General): the frame's own, so a matched Target edits it; rested and pulse are the Player's.
     page.SetEditing('target')
-    assert(page.unitFrameRestCorner and Visible(page.unitFrameRestCorner:GetParent().row),'status on a matched Target')
-    page.SetEditing('player');assert(Visible(page.unitFrameCombatCorner:GetParent().row))
+    assert(Visible(page.unitFrameCombatCorner:GetParent().row),'status on a matched Target')
+    assert(page.unitFrameRestCorner and not Visible(page.unitFrameRestCorner:GetParent().row) and not Visible(Toggle('Glow','Pulse When Pulled')),'only the Player rests and pulses')
+    page.SetEditing('player');assert(Visible(page.unitFrameCombatCorner:GetParent().row) and Visible(page.unitFrameRestCorner:GetParent().row))
     assert(M:SetFrameOption('player','showPortrait',false) and not Visible(page.unitFrameCombatCorner:GetParent().row),'no portrait, no status')
     assert(M:SetFrameOption('player','showPortrait',true));page.SetEditing('target')
     assert(M:SetFrameOption('target','barWidth',150) and M.db.player.barWidth==184 and M.frames.target.geometry.width<M.frames.player.geometry.width,'its own width')
     assert(M:SetFrameOption('target','barWidth',184))
-    assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('Frame','Scale')) and Visible(Row('Health Bar','Frame Height')))
+    assert(M:SetFrameOption('target','matchPlayer',false) and Visible(Row('General','Scale')) and Visible(Row('General','Frame Height')))
     assert(M:SetFrameOption('target','barWidth',220) and M.db.player.barWidth==184)
     assert(M:ResetFrame('target') and M:SetFrameOption('target','matchPlayer',true))
-    page.SetEditing('player');assert(page.unitFrameEditing()=='player' and Visible(Row('Frame','Scale')))
-    assert(M:SetFrameOption('player','enabled',false) and Visible(Row('Health Bar','Frame Off')) and not Visible(Row('Frame','Scale')))
-    assert(Visible(Toggle('Frame','Show Frame')),'the Frame tab can always turn it back on')
+    page.SetEditing('player');assert(page.unitFrameEditing()=='player' and Visible(Row('General','Scale')))
+    assert(M:SetFrameOption('player','enabled',false) and Visible(Row(nil,'Frame Off')) and not Visible(Row('General','Scale')))
+    assert(Visible(Toggle('General','Show Frame')),'the General tab can always turn it back on')
     assert(M:SetFrameOption('player','enabled',true))
     -- Class Resource for a class without one: said so, nothing to set, nothing shown.
-    units.player.class='MAGE';page:Refresh();page:Layout()
-    assert(page.unitFrameResourceNote:GetText():find('no class resource') and not Visible(Row('Class Resource','Arc Position')))
-    assert(not Visible(Toggle('Class Resource','Show Class Resource')))
+    units.player.class='MAGE';page.SetEditing('target')
+    assert(page.unitFrameResourceNote:GetText():find('no class resource') and Visible(Row('General','Your Class')) and not Visible(Row('General','Arc Position')))
+    assert(not Visible(Toggle('General','Show Class Resource')) and not Visible(Row('Fill','Lit Point Color')))
+    page.SetEditing('player')
     M:RenderGhosts();addon:SetEditMode(true);assert(not M.ghosts.target.combo:IsShown(),'no sample points for a class without them')
     addon:SetEditMode(false);units.player.class='ROGUE';page:Refresh()
 ]====]

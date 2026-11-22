@@ -192,8 +192,17 @@ world.run([==[
     local page = window.pages.tooltip
     assert(page and page:IsShown() and page.tabContentTop and page.positionPills and page.combatToggles and window.moduleHeader.title:GetText() == 'Tooltip')
     assert(page.playerNamePills and page.npcNamePills and page.levelPills and page.classTextPills and page.questToggles and page.minWidthSlider)
-    assert(page.borderStyle:IsVisible() and page.borderMetal:IsVisible(), 'Border Style and Border Metal with Border on')
-    M:SetOption('border', false); assert(not page.borderStyle:IsVisible(), 'hidden with Border off')
+    -- The standard tabs; Reset… in the footer instead of an in-page button.
+    local tabs = {}
+    for i, section in ipairs(page.sectionTabs.sections) do tabs[i] = section.title end
+    assert(table.concat(tabs, ',') == 'General,Fill,Border,Text,Behavior', table.concat(tabs, ','))
+    assert(not page.resetButton, 'no in-page reset')
+    local resets = addon:ConfigActionItems('reset', M)
+    assert(#resets == 1 and resets[1].label == 'All of Tooltip' and #addon:ConfigActionItems('copy', M) == 0, 'Reset… resets all of Tooltip')
+    assert(not page.borderStyle:IsVisible(), 'the border pickers wait on the Border tab')
+    page:SelectSectionTab(3)
+    assert(page.borderStyle:IsVisible() and page.borderMetal:IsVisible(), 'Border and Border Metal with Show Border on')
+    M:SetOption('border', false); assert(not page.borderStyle:IsVisible(), 'hidden with Show Border off')
     M:SetOption('border', true)
     window:Hide()
     M:SetOption('anchorPoint', 'TOP')

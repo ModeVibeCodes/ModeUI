@@ -249,7 +249,7 @@ world.run([==[
     addon:SetEditMode(false)
     assert(not M.mover:IsShown() and not M.queueTile:IsShown())
 
-    -- The page: four tabs, built when opened.
+    -- The page: the standard tabs, built when opened.
     SlashCmdList.MODEUI()
     local window = addon.configWindow
     assert(window.pages.minimap == nil)
@@ -258,11 +258,17 @@ world.run([==[
     assert(page and page:IsShown() and window.moduleHeader.title:GetText() == 'Minimap')
     local tabs = {}
     for _, section in ipairs(page.sections) do tabs[#tabs + 1] = section.title end
-    assert(table.concat(tabs, ',') == 'Shape,Text,Buttons,Behavior', 'four tabs')
+    assert(table.concat(tabs, ',') == 'General,Border,Text,Behavior' and page.standardTabs, 'the standard tabs')
+    local cards = {}
+    for _, row in ipairs(page.rows) do
+        if row.cardTitle then cards[#cards + 1] = row.section.title .. ':' .. row.settingsGroupTitle end
+    end
+    assert(table.concat(cards, ',') == 'General:Minimap,General:Blizzard Buttons,General:Addon Buttons,Border:Border,'
+        .. 'Text:Text Style,Text:Zone Text,Text:Clock Text,Text:Coordinates,Behavior:Zoom,Behavior:Visibility', 'cards by tab')
     assert(page.sizeSlider and #page.differenceButtons == 7 and page.cornerButtons == nil and #page.borderButtons == 2)
-    assert(#page.swatches == 5 and page.textToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
+    assert(#page.swatches == 5 and page.clockToggles and page.coordsToggles and page.buttonRows.mail and page.matchWidthToggle and page.zoomResetButtons)
     assert(page.borderStyle:IsShown() and page.borderStyle.label:GetText() == 'Mode-Border' and page.borderMetal.label:GetText() == 'Suite',
-        'Border Style and Border Metal in the Border group')
+        'Border and Border Metal on the Border tab')
     page.differenceButtons[2]:GetScript('OnClick')(); assert(M.db.difference == 8 and Minimap.mask:find('Mask%-200%-8%-0$'))
     local picker = page.buttonRows.mail.picker
     assert(picker[1].label:GetText() == 'Top Left' and picker[4].label:GetText() == 'Bottom Right', 'the corners by name (never blank in the dropdown)')

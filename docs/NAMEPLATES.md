@@ -12,7 +12,7 @@ frame and fades Blizzard's art. Each plate has:
 
 - **Health and cast boxes** (docs/DESIGN_LANGUAGE.md, settings version 9 from
   the approved Nameplates probe): the bar inside the `frameThin` edge, in each
-  kind's **Border Style** and **Border Metal** (Mode-Border by default: soft
+  kind's **Border** and **Border Metal** (Mode-Border by default: soft
   round corners, a 1px dark glass band with a lit top and a champagne bottom, a 1px shadow ring). The rim art sits outside the bar and
   covers its own corners, so nothing is masked. Each ring is drawn in pieces
   (DESIGN_LANGUAGE.md, "Pieces"; owner, November 18, 2026): a plate's bars
@@ -45,7 +45,7 @@ frame and fades Blizzard's art. Each plate has:
 - **Textures**: **Foreground** (Mode-FG by default, Flat, or any SharedMedia
   status bar) and **Background** (Flat or SharedMedia), for the health and cast bars.
 - **Cast bar**: amber when interruptible, gray when not; channels drain from right
-  to left. **Spell Icon** Left, Right, Outside Left, Outside Right or Hidden, with
+  to left. **Spell Icon** Left, Right, Outside Left, Outside Right or None, with
   **Icon Offset X/Y**; **Spell Name**; **Cast Target**
   (who the caster is targeting, in its class color, on a line past the bar; on by
   default for enemies); **Timer** (seconds left, from public cast times or the
@@ -104,8 +104,11 @@ else keeps its default.
 Every plate is an **enemy** plate (a unit you can attack) or a **friendly** one,
 and each kind has its own full settings. **Use ModeUI Plates** turns ModeUI off
 for one kind. A unit that changes sides switches kinds on `UNIT_FACTION`.
-**Copy Style to Friendly/Enemy** copies the whole look; **Reset to Defaults**
-resets the kind being edited.
+In the settings footer, **Copy To…** copies the whole look of the kind being
+edited to the other (**Enemy style to Friendly plates** or **Friendly style to
+Enemy plates**); **Reset…** offers **Enemy plates**, **Friendly plates** or
+**All of Nameplates** (`SettingsActions.lua`, `M:CopyActions` and
+`M:ResetScopes`). Both ask first, and **Use ModeUI Plates** stays as it is.
 
 ## Auras
 
@@ -114,7 +117,7 @@ aura filters decide what belongs to each, so secret aura data is never compared.
 
 - Every group: **Show Auras**, **Timer Swipe**, **Stack Count**, **Icon Shape**
   (Cropped: 6px wider than tall, the default, for example 32 x 26; or Square),
-  **Borders** (By Type: the rim tinted by dispel type; or Mode: the Gunmetal
+  **Rim Color** (By Type: the rim tinted by dispel type; or Mode: the Gunmetal
   metal) on the `frameThin` edge every icon wears, **Border Size** (1 or 2px,
   1 by default),
   **Spacing**, **Timer Text** in **Timer Text Color** (the action bar cooldown
@@ -139,7 +142,7 @@ aura filters decide what belongs to each, so secret aura data is never compared.
 ## Target indicator
 
 **Style**: Border (the edge's outer line in the target color, Ivory by default,
-on the health and cast boxes; **Border Thickness** 2 or 3 tints the rim too), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
+on the health and cast boxes; **Border Size** 2 or 3 tints the rim too), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
 **Arrow Gap**, up to 48 and 60), Border and Arrows, or None, in a **Color** of
 your choice (Ivory by default). Arrows always sit outside the raid marker, the
 indicator, any aura row and the combo points on their side. Name Only plates color the
@@ -148,7 +151,7 @@ name for Border and Glow. The target is found by comparing nameplate frames.
 ## Combo points
 
 November 13, 2026, per the owner: combo points you can track on the plate of
-your target (`Combo.lua`, the **Combo Points** card on the **Target** tab). On
+your target (`Combo.lua`; the **Combo Points** cards on **General** and **Fill**). On
 WoW Forever combo points live on the target (`GetComboPoints("player",
 "target")`), and only Rogues, and Druids in Cat Form, have them
 (`Domain.ClassResource`, shared with the Target frame). Forever's own
@@ -172,14 +175,16 @@ bar. A class without combo points sees a note saying so and nothing shows.
 
 ## Focus
 
-The **Focus** tab styles your focus target's plate: **Highlight** (Border, the
-edge's outer line in the focus color; Glow; Stripes, diagonal stripes over the health bar at
-**Stripe Opacity**; or None), a **Color** (Rosewood by default), **Focus Texture**
-(Same as Foreground, or any foreground texture) and **Other Plates Opacity**,
-which fades every other plate while you have a focus (100% leaves them alone).
-A plate that is both your target and your focus shows the target's border. The
-focus is found by comparing nameplate frames, on `PLAYER_FOCUS_CHANGED`. While
-the Focus tab is open, the preview sample shows itself as your focus.
+Your focus target's plate has a **Highlight** (Border, the edge's outer line in
+the focus color; Glow; Stripes, diagonal stripes over the health bar at
+**Stripe Opacity**; or None) in a **Color** (Rosewood by default), on the
+**Focus** card in **Glow**; a **Focus Texture** (Same as Foreground, or any
+foreground texture) on the **Focus** card in **Fill**; and **Other Plates
+Opacity**, on the **Focus** card in **Behavior**, which fades every other plate
+while you have a focus (100% leaves them alone). A plate that is both your
+target and your focus shows the target's border. The focus is found by
+comparing nameplate frames, on `PLAYER_FOCUS_CHANGED`. While the Glow tab is
+open, the preview sample shows itself as your focus.
 
 ## Preview
 
@@ -192,13 +197,33 @@ marker, the soft-target icon or the combo points) to jump to its settings; parts
 
 ## Settings page
 
-Tabs: **Nameplates** (style, size, textures, health), **Text** (name, health
-text, font), **Cast Bar** (layout, content, colors), **Auras**, **Target** (target
-indicator and combo points) and **Indicators** (the level, elite and quest indicator, the raid
-marker and the soft-target icon). Clicking text in the preview opens its settings only where the text is
-written; the rest of the bar opens the health settings. Each tab starts
-with the Editing switch; settings are grouped on cards with accent titles, with
-related sliders and choices side by side.
+The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), under the
+**Editing** switch, which sits above every tab (a kind left to Blizzard shows a
+tip there instead of its settings):
+
+- **General**: **Show** (Use ModeUI Plates, Style, Show Cast Bar, Show Auras,
+  Show Combo Points, Show Indicators, Show Raid Marker, Show Soft Target Icon),
+  **Size** (Width, Health Height), and where each part sits: **Cast Bar**
+  (Position, Height, offsets, Spell Icon), **Combo Points**, **Indicators**,
+  **Raid Marker**, **Soft Target Icon**.
+- **Fill**: **Health Bar** (textures, Health Color, opacities, Threat Colors),
+  **Cast Bar** (Texture, the three cast colors), **Combo Points** (point
+  colors), **Focus** (Focus Texture).
+- **Border**: **Border** (Border, Border Metal), **Aura Borders** (Rim Color,
+  Border Size), **Target** (the target indicator: Style, Color, Border Size,
+  arrows), **Aura Border Colors** (the dispel type colors).
+- **Glow**: **Focus** (the focus highlight), **Crowd Control** (Crowd Control
+  Glow, Glow Style), **Health Text** (Health Text Glow).
+- **Text**: **Text Style** (Font, Outline, Slug Text, Shadow, Text Color),
+  **Name Text**, **Health Text** (Value, Color, Anchor, offsets, Size) and
+  **Cast Bar Text** (the three texts share one Size; **Position Of** picks the
+  one to place).
+- **Auras**: **Groups**, **Icons**, **Timer**, **Stacks**.
+- **Behavior**: **Focus** (Other Plates Opacity).
+
+Clicking text in the preview opens its settings only where the text is
+written; the rest of the bar opens the health settings. Settings are grouped
+on cards with accent titles, with related sliders and choices side by side.
 
 ## What stays Blizzard's
 
@@ -246,6 +271,7 @@ to #FF5948. New settings (such as the combo points) take their defaults.
 | `AuraContainers.lua` | auras through Blizzard's secure custom aura containers while auras are secret |
 | `Preview.lua` | the sample plate on the settings page and its click targets |
 | `Settings.lua` | the settings page |
+| `SettingsActions.lua` | preview clicks (`JumpTo`) and the footer's Copy To… and Reset… scopes |
 
 Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`, `ClassResource`;
 `Kit/Palette`, `AuraIcon`, `Points`, `Kit.ModeGradient`, `Kit.FontPath`;
@@ -264,20 +290,22 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`, `Class
 - **Action:**
   - Turn the module on. Switch **Editing** between **Enemy** and **Friendly** and
     watch the preview change.
-  - On the **Nameplates** tab, in **Health**, move **Health Opacity** and
+  - On the **Fill** tab, in **Health Bar**, move **Health Opacity** and
     **Background Opacity**.
-  - Set Friendly **Style** to **Name Only**.
+  - On **General**, in **Show**, set Friendly **Style** to **Name Only**.
   - Move the name, health text, cast bar and raid marker with their anchors.
   - On **Auras**, pick each **Group** and set **Anchor** and **Grow**.
-  - On **Target**, try each **Style**.
-  - As a Rogue (or a Druid in Cat Form), on **Target** in **Combo Points**, keep
-    **Show Combo Points** on and try each **Anchor**.
+  - On **Border**, in **Target**, try each **Style**.
+  - As a Rogue (or a Druid in Cat Form), on **General**, keep **Show Combo Points**
+    on and in **Combo Points** try each **Anchor**.
   - Click parts of the preview.
+  - Click **Copy To…** in the footer and confirm, then **Reset…** and pick
+    **Friendly plates**.
   - In the world, look at enemies and friendly players, target one, mark one,
     and put a debuff on an enemy.
   - As a Rogue, target an enemy and use a combo point builder, then target
     another enemy.
-  - On **Indicators** in **Soft Target Icon**, keep **Show Soft Target Icon** on.
+  - On **General**, in **Show**, keep **Show Soft Target Icon** on.
     In the world, without targeting, face an enemy near enough to become your
     soft target, then kill one and face its corpse to loot it.
 - **Required state:** out of combat to change settings; enemy nameplates shown.
@@ -297,5 +325,9 @@ Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`, `Class
     above that ModeUI plate, clear of its name and aura rows, and goes away when
     you face something else. No icon floats off to the side of a ModeUI plate.
     (Seeing none at all means the game's interact icon setting has that kind off.)
+  - Only General, Fill, Border, Glow, Text, Auras and Behavior tabs show; the
+    Editing switch stays above every tab; Copy To… gives the edited kind's look
+    to the other kind and Reset… puts the chosen kind back to its defaults,
+    both keeping Use ModeUI Plates.
   - Settings sit on cards, the Editing pills line up with their label, and no
     Lua errors appear.

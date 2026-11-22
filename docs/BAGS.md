@@ -18,7 +18,7 @@ bag and the keyring show together on one grid of slots.
 | Window | A Mode window (docs/DESIGN_LANGUAGE.md, "Windows and panels"): Surface in Background Color (Graphite panel at 95%) with the `window` edge inside it; no soft drop while it is see-through. |
 | Header | A Mode-FG strip in Header Color (Graphite raised) over a one-pixel Graphite line: the **Bags** title on the left (SemiBold, Graphite white); **Sort** (a dropdown that names the view order, with the Mode chevron), **Clean Up** (a broom glyph, Mode "IconCleanUp") and the close cross on the right, in Graphite secondary and Ivory under the mouse. Unlocked, dragging the header moves the window (out of combat). |
 | Search | A Mode field under the header (a Graphite base in the `control` edge, Ivory while typing). It sets the game's own bag search (`C_Container.SetItemSearch`, the one Blizzard's bag search box uses), so names, types and tooltip text match; items that don't match fade to 25%. Escape clears it; closing the bags clears it. |
-| Slots | Columns wide (12), Slot Size wide (36 px) and a little shorter (30 px, `Style.IconHeight`, as every Mode icon), Spacing (3 px) apart, Padding (8 px) inside the edge. Each slot is a Mode slot (the approved probe): a face in Slot Color (Mono panel) at Slot Opacity (100%), the icon filling it, cropped to its shape, and the `group` edge (1px, Mode-Border) just outside it. The window and the Sort menu take **Border Style** and **Border Metal** (Window tab, Border group; Mode-Thin by default). Pushed and highlight states are flat Mode overlays. |
+| Slots | Columns wide (12), Slot Size wide (36 px) and a little shorter (30 px, `Style.IconHeight`, as every Mode icon), Spacing (3 px) apart, Padding (8 px) inside the edge. Each slot is a Mode slot (the approved probe): a face in Slot Color (Mono panel) at Slot Opacity (100%), the icon filling it, cropped to its shape, and the `group` edge (1px, Mode-Border) just outside it. The window and the Sort menu take **Border** and **Border Metal** (Border tab, Border card; Mode-Thin by default). Pushed and highlight states are flat Mode overlays. |
 | Rims | The slot edge's rim: a new item in Ivory, until you point at it. A quest item: Quest Color (#FFB12F, the quest tone). Otherwise the item's quality color from Minimum Quality (Uncommon) up, else the edge's own metal. |
 | Marks | Stack counts (bottom right) and item level on weapons and armor (bottom left, in the quality color or white) in the Mode typeface's Bold, a coin on gray items you can sell (Junk Coin) and those items grayed (Fade Junk), and a small quest mark top right on quest items (Quest Icon: the Mode "IconQuest" glyph in Quest Color on a dark disc). Cooldown numbers are the Mode typeface's Bold at Count Size, in the cooldown color, centered. Locked items (being moved) are gray. Cooldowns use the button's own swipe. |
 | Sections | The backpack and equipped bags first (each its own block with Separate Bags), then **Reagents** (the reagent bag, Reagent Section) and **Keyring** (Keyring, when the game shows a keyring), each under a small Graphite muted title and a Graphite line. |
@@ -32,7 +32,7 @@ bag and the keyring show together on one grid of slots.
   last; ties keep bag order, so the view never shuffles between redraws. The
   header's Sort button opens a menu under it (a Mode window, the chosen order
   in Ivory); picking one sets
-  it, and a click elsewhere or closing the bags closes the menu. The Layout
+  it, and a click elsewhere or closing the bags closes the menu. The General
   tab's **Sort** dropdown sets it too.
 - **Clean Up** is the game's own sort (`C_Container.SortBags`, Blizzard's
   "Clean Up Bags"), which moves items in the bags. Not in combat.
@@ -130,19 +130,26 @@ bottom-right, so more bags push it up and left, away from the meters.
 
 ## Settings
 
+The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), pinned above
+the cards. **Reset…** in the footer puts every Bags setting back
+(`M:ResetToDefaults`).
+
 | Tab | Card | Settings |
 |---|---|---|
-| Layout | (top) | Status, **Show Bags** |
+| General | (top) | Status, **Show Bags** |
+| | Parts | Title, Search Box, Money, Free Slots, Bag Bar |
+| | Marks | Quest Icon, Junk Coin, Fade Junk |
 | | Grid | Columns (4-24), Slot Size (24-64 px), Spacing (0-12 px), Padding (0-24 px), Scale (50-200%) |
 | | Contents | Separate Bags, Reagent Section, Keyring; Sort dropdown (Bag Order, Quality, Type, Name) |
-| | Defaults | Reset to Defaults |
-| Window | Frame | Background Color and Opacity, Header Color |
-| | Parts | Title, Search Box, Money, Free Slots, Bag Bar, Lock Window |
-| Slots | Slot | Slot Color and Opacity |
-| | Borders | Quality Borders (Minimum Quality: Poor to Epic), Quest Borders, Quest Icon (Quest Color), New Items |
-| | Marks | Fade Junk, Junk Coin, Item Level (Item Level Color: Quality or White) |
-| Text | Font | Font (the Mode typeface by default), Title Size (header, search, footer), Count Size, Item Level Size, Outline |
-| Position | Position | Grow From (four corners), **Edit Mode** |
+| | Position | Grow From (four corners), **Edit Mode**, Lock Window |
+| Fill | Window | Background Color, Background Opacity, Header Color |
+| | Slots | Slot Color, Slot Opacity |
+| Border | Border | Border, Border Metal (the window and its Sort menu) |
+| | Slot Borders | Quality Borders (Minimum Quality: Poor to Epic), Quest Borders (Quest Color), New Items |
+| Text | Text Style | Font (the Mode typeface by default), Outline |
+| | Title Text | Size (header, search, footer) |
+| | Stack Count | Size |
+| | Item Level | Show Item Level, Color (Quality or White), Size |
 
 Saved under `ModeUIDB` profile `modules.bags` (settings version 3) and
 `positions.modeBags`. Every change applies to the open window at once.
@@ -186,8 +193,11 @@ Graphite raised, slots #040404 at 75% → Mono panel at 100%, Slot Size 38 →
    header and pick **Quality** from its menu; click **Clean Up**.
    **Confirmation:** other items fade; the menu closes, the order changes and
    the button reads Quality; the game sorts the bags.
-6. **Navigation:** the Slots, Window and Position tabs. **Action:** change
-   Columns, Slot Size, Background Color, Quality Borders and Grow From with
-   the bags open. **Confirmation:** the window updates at once.
-7. **Action:** switch the module off with the bags open. **Confirmation:**
+6. **Navigation:** the General, Fill and Border tabs. **Action:** change
+   Columns, Slot Size and Grow From (General), Background Color (Fill) and
+   Quality Borders (Border) with the bags open. **Confirmation:** the window
+   updates at once.
+7. **Navigation:** the page footer. **Action:** click **Reset…** and confirm.
+   **Confirmation:** every Bags setting goes back to its default.
+8. **Action:** switch the module off with the bags open. **Confirmation:**
    Blizzard's bag frames show in Blizzard's look.

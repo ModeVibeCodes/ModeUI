@@ -193,8 +193,12 @@ function addon:CreateConfig()
     end
     local done = FooterButton("Done", 64, "primary"); done:SetPoint("RIGHT", -12, 0)
     done:SetScript("OnClick", function() window:Hide() end)
-    local reset = FooterButton("Reset", 64, "danger"); reset:SetPoint("RIGHT", done, "LEFT", -8, 0)
-    reset:SetScript("OnClick", function() self:ResetSelectedModule() end)
+    -- Reset… and Copy To…: the module's scopes (Actions.lua).
+    local reset = FooterButton("Reset…", 72, "danger"); reset:SetPoint("RIGHT", done, "LEFT", -8, 0)
+    reset:SetScript("OnClick", function(button) self:OpenConfigAction("reset", button) end)
+    local copy = FooterButton("Copy To…", 84); copy:SetPoint("RIGHT", reset, "LEFT", -8, 0); copy:Hide()
+    copy:SetScript("OnClick", function(button) self:OpenConfigAction("copy", button) end)
+    window.copyButton = copy
     local edit = FooterButton("Edit Mode", 84); edit:SetPoint("RIGHT", reset, "LEFT", -8, 0)
     edit:SetScript("OnClick", function() self:SetEditMode(not self.editMode) end)
     local reload = FooterButton("Reload", 64); reload:SetPoint("LEFT", 12, 0)

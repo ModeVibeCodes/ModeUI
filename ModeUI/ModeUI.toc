@@ -121,6 +121,7 @@ Shared\Settings\BorderPicker.lua
 Shared\Settings\ColorRow.lua
 Shared\Settings\TextInput.lua
 Shared\Settings\Confirm.lua
+Shared\Settings\Actions.lua
 Shared\Settings\Categories.lua
 Shared\Settings\ReloadPrompt.lua
 Shared\Settings\Sidebar.lua

@@ -17,4 +17,5 @@
     <Script file="AuraContainers.lua"/>
     <Script file="Preview.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsActions.lua"/>
 </Ui>

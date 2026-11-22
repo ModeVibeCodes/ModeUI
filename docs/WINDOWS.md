@@ -17,10 +17,10 @@ Blizzard's own look; each window can also be kept Blizzard's on its own.
 
 | Part | Look |
 |---|---|
-| Frame | NineSlice pieces (one by one, so the Settings panel's title survives), parchment (`Bg`), `TopTileStreaks`, portrait (`PortraitContainer`, and the Guild window's `PortraitOverlay`), glow and the older corner and edge textures are faded. The Mode window (since November 15, 2026; docs/DESIGN_LANGUAGE.md, "Windows and panels"): the Graphite panel (Background Color, `#121213`) in Mode Panel at Background Opacity (100%) to the window's edges, and the `window` edge outside them (Mode-Thin by default: a 2px Steel bevel, a 1px black line just inside, shadow and drop) on its own frame 520 levels up, above everything the window stacks (NineSlice at 500, buttons at 510). **Border** switches the edge; **Border Style** and **Border Metal** (Look tab, Frame group) choose its look for every window. Controls, cards and the Character window's slot lines keep their own. |
+| Frame | NineSlice pieces (one by one, so the Settings panel's title survives), parchment (`Bg`), `TopTileStreaks`, portrait (`PortraitContainer`, and the Guild window's `PortraitOverlay`), glow and the older corner and edge textures are faded. The Mode window (since November 15, 2026; docs/DESIGN_LANGUAGE.md, "Windows and panels"): the Graphite panel (Background Color, `#121213`) in Mode Panel at Background Opacity (100%) to the window's edges, and the `window` edge outside them (Mode-Thin by default: a 2px Steel bevel, a 1px black line just inside, shadow and drop) on its own frame 520 levels up, above everything the window stacks (NineSlice at 500, buttons at 510). **Show Border** switches the edge; **Border** and **Border Metal** (Border tab, Border card) choose its look for every window. Controls, cards and the Character window's slot lines keep their own. |
 | Title | A 22 px Mode-FG strip in Graphite raised over a 1px Graphite line, at the window's top. Portrait-window titles are centered on the strip, clear of the window buttons; the title is SemiBold 13 (Urbanist) in Graphite white. Header and dialog titles (Game Menu, Settings) keep their place. |
 | Window buttons | Close: an 18 px `control` box (Mode-FG face) with a thin cross, 2 px inside the window's top-right corner. Maximize/minimize (`MaximizeMinimizeButtonFrameTemplate`, the Guild window's): the same box with a corner arrow, just left of Close. Glyphs in Graphite secondary; hover lights the glyph and the outer line Ivory. |
-| Window text | With **Window Text** on, every font string in the window (and in list rows Blizzard fills later) gets the Mode face at the game's own size and outline. Titles and tabs use Title Size and Tab Text Size. With Window Text on or off, dark text Blizzard draws for its parchment (quest, gossip, book and letter text in dark brown or black) takes the Graphite text color, also each time Blizzard sets a dark color again. Its color is then fixed (`FontString:SetFixedColor`, as Blizzard's own dark Quest Text Contrast does), so dark inline codes give way too: quest titles in gossip and quest greetings come wrapped in black (`NORMAL_QUEST_DISPLAY`). Text with a light color but a dark inline code is treated the same; other colors with light in them stay. The Quest window's pages (greeting, detail, progress, reward) fill their title buttons and objectives as they show, so the text pass runs again after each page's `OnShow`. |
+| Window text | With **Window Text** on, every font string in the window (and in list rows Blizzard fills later) gets the Mode face at the game's own size and outline. Titles and tabs use the Size of Title Text and of Tab Text (Text tab). With Window Text on or off, dark text Blizzard draws for its parchment (quest, gossip, book and letter text in dark brown or black) takes the Graphite text color, also each time Blizzard sets a dark color again. Its color is then fixed (`FontString:SetFixedColor`, as Blizzard's own dark Quest Text Contrast does), so dark inline codes give way too: quest titles in gossip and quest greetings come wrapped in black (`NORMAL_QUEST_DISPLAY`). Text with a light color but a dark inline code is treated the same; other colors with light in them stay. The Quest window's pages (greeting, detail, progress, reward) fill their title buttons and objectives as they show, so the text pass runs again after each page's `OnShow`. |
 | Decoration | Found anywhere inside a window: gold filigree (`FilligreeOverlay`, `TopFiligree`, `BottomFiligree`), inset border pieces, tiled list backgrounds (`Bg`), column header backgrounds, a scroll bar's marble `Background`. |
 | Insets | A card: a Mode-FG face in Graphite raised (a step lighter than the window), drawn on the inset's **parent** under the content, inside the `card` edge on the inset. (The Guild roster's inset is raised over its rows at level 100; a fill on it tinted every name.) |
 | List rows | Rows in a ScrollBox get the Mode face when Blizzard fills them (`ScrollUtil.AddInitializedFrameCallback`); the Guild roster's row strips are faded so the window shows through. |
@@ -40,14 +40,14 @@ Character, Spellbook and Talents, Professions, Social, Guild and Communities,
 Group Finder, Collections, Achievements, World Map (border and strip only: the
 map draws under its border frame), Quests and Gossip, Merchant, Mail, Bank,
 Trade, Inspect, Trainer, Auction House, Dressing Room, Pet Stable, Raid,
-Macros, AddOn List, Game Menu and Game Settings. On the **Windows** tab each
-has a row: its switch (ModeUI look on or off) and a chevron that expands its
+Macros, AddOn List, Game Menu and Game Settings. In the **Windows** card of the
+**General** tab each has a row: its switch (ModeUI look on or off) and a chevron that expands its
 own settings, all collapsed at first:
 
 - **Scale** (50–150%, every window but the World Map), applied whichever look
   it has; protected windows are scaled outside combat.
-- **Own Look**: its own Background Opacity, Border and Title Bar instead of
-  the Look tab's.
+- **Own Look**: its own Background Opacity, Show Border and Title Bar
+  instead of the shared ones.
 
 Windows from load-on-demand Blizzard addons are skinned when the addon loads
 (`ADDON_LOADED`). Collections and Professions hold secure buttons; windows
@@ -56,10 +56,12 @@ through `Defer`; plain windows are skinned at once, in combat too.
 
 ## Character window
 
-On the **Character** tab, working with either look:
+Spread over the standard tabs (Character Window on General, the stats
+background on Fill, Rarity Borders on Border, Character Stats, Stat Colors
+and Enchant Text on Text), working with either look:
 
-- **Style**: ModeUI or Blizzard for the Character window (its switch on the
-  Windows tab).
+- **Style**: ModeUI or Blizzard for the Character window (its switch in the
+  Windows card).
 - **Stats pane** (with the ModeUI style): Blizzard's class art, stone,
   ornate category bars and gold dividers are faded; the pane is an Onyx field
   with a one-pixel divider, each category ("General", "Primary Attributes")
@@ -81,7 +83,7 @@ On the **Character** tab, working with either look:
   wrist and hands slots): **Stats Anchor** is one of nine points of that
   area, **Offset X/Y** and **Nudge** (one pixel at a time) are kept inside
   it, and the block is never wider than it, so it never reaches a slot.
-  **Stats Text Size**, **Stats Background**.
+  **Size** (Character Stats card), **Stats Background** (Fill tab).
   Every value comes from the functions Forever's own paper doll calls; a
   secret (stats restricted) or missing value shows a dash.
 - **Rarity Borders**: a crisp square border round each equipment slot,
@@ -103,13 +105,22 @@ On the **Character** tab, working with either look:
 
 ## Settings
 
-Tabs pinned above the scrolling cards: **Look** (Status, Window Style, Frame,
-Text, Controls, Defaults), **Windows** (a row per window) and **Character**
-(Character Window, Stats Display, Rarity Borders, Enchant Text). Changes
+The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), pinned above
+the scrolling cards: **General** (Status; Window Style; Controls: Title Bar,
+Tabs, Buttons, Fields, Dropdowns, Scroll Bars, Insets; Windows: a row per
+window; Character Window), **Fill** (Windows: Background Color, Background
+Opacity; Character Stats: Stats Background), **Border** (Border: Show
+Border, Border, Border Metal; Rarity Borders: Rarity Borders, Border Size)
+and **Text** (Text Style: Font, Window Text, Outline, Shadow; Title Text:
+Size; Tab Text: Size; Character Stats: Show Stats, the stats, Stats Anchor,
+Offset X and Y, Nudge, Size; Stat Colors; Enchant Text: Show Enchant Text,
+Size). Changes
 repaint every skinned window right away. Turning a window, a control kind,
 Window Text or the module off, or picking Blizzard, brings Blizzard's look
-back on the next reload; ModeUI asks for one. Reset to Defaults resets the
-Look tab only.
+back on the next reload; ModeUI asks for one. **Reset…** in the footer offers
+**Window Look** (`M:ResetScopes`): the shared look goes back to its
+defaults; the window switches, their own looks and the Character window's
+settings stay.
 
 Saved under `modules.windows` (version 3): `style` (`modeui` or `blizzard`),
 `windows` (window ID → on), `looks` (window ID → `custom`,
@@ -144,8 +155,8 @@ is filled in from the defaults.
 | `CharacterStats.lua` | the stats display |
 | `Character.lua` | rarity borders, enchant text, Character window events |
 | `CharacterPanel.lua` | the stats pane, top strip and pane button in Onyx |
-| `Settings.lua` | the page: Look and Windows tabs |
-| `SettingsCharacter.lua` | the page's Character tab |
+| `Settings.lua` | the page on the standard tabs; Reset… scopes |
+| `SettingsCharacter.lua` | the page's Character window settings |
 
 The skinning itself is shared: `Shared/Skin/Frame.lua` (windows),
 `Shared/Skin/Controls.lua` (controls) and `Shared/Skin/Extras.lua`
@@ -158,9 +169,9 @@ The skinning itself is shared: `Shared/Skin/Frame.lua` (windows),
 - **Action:** turn the module on with the switch in the page header. Open the
   Guild window (Guild & Communities), click the channel dropdown at its top,
   hover the minimize button, and switch between its right-side tabs. Open the
-  Character window. Back on the settings page, open the **Windows** tab and
-  click the chevron on the Social row, then open the **Character** tab and
-  click **Up** under Nudge.
+  Character window. Back on the settings page, on the **General** tab
+  click the chevron on the Social row (Windows card), then open the **Text**
+  tab and click **Up** under Nudge.
 - **Required state:** out of combat, in a guild, wearing some enchanted gear.
 - **Confirmation:** the Guild window is a Graphite panel with the thin lit
   Steel window edge and its soft shadow, a slightly lighter title strip with

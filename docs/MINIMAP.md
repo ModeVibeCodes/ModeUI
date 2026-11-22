@@ -14,7 +14,7 @@ The owner's November 14 design, rebuilt in the Mode design language on
 November 15 (owner: "Mode edge, keep what fits"):
 
 - A rectangle **16 px wider than tall** (200 × 184 by default) in the Mode
-  `frame` edge in **Border Style** and **Border Metal** (Mode-Border in its own metal
+  `frame` edge in **Border** and **Border Metal** (Mode-Border in its own metal
   by default: cut corners, the Specular band, a shadow ring and the soft
   drop; the tiles and the text bar take the same). **Map Border** sets its rim: **Mode** (2px, the
   default) or **Thin** (1px). **Border Color** tints the rim: Metal (no tint:
@@ -86,15 +86,21 @@ November 15 (owner: "Mode edge, keep what fits"):
 
 ## Settings
 
+The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), pinned above
+the cards:
+
 | Tab | Card | Settings |
 |---|---|---|
-| Shape | Minimap | Size (140-280), Wider Than Tall By (0 to 48 px in 8 px steps; 16 by default) |
-| Shape | Border | Map Border (Thin, Mode), Button Border (Thin, Mode), Border Color (Metal, Black, Slate, Ivory, Class Color), Border Style, Border Metal |
-| Text | Zone and Clock | Text Layout (On Map, Bar Below, On Hover), Zone Color (PvP Status, White), Clock, Coordinates, Clock Format (24 Hour, 12 Hour), Text Size |
-| Buttons | Blizzard Buttons | Tracking, Calendar, New Mail, Expansion Button: a switch and a corner each |
-| Buttons | Addon Buttons | Show (Always, Mouseover, Hidden), Match Minimap Width, Button Size, Spacing |
+| General | Minimap | Size (140-280), Wider Than Tall By (0 to 48 px in 8 px steps; 16 by default) |
+| General | Blizzard Buttons | Tracking, Calendar, New Mail, Expansion Button: a switch and a corner each |
+| General | Addon Buttons | Show (Always, Mouseover, Hidden), Match Minimap Width, Button Size, Spacing |
+| Border | Border | Border, Border Metal, Map Border (Thin, Mode), Button Border (Thin, Mode), Border Color (Metal, Black, Slate, Ivory, Class Color) |
+| Text | Text style | Text Layout (On Map, Bar Below, On Hover), Size |
+| Text | Zone Text | Zone Color (PvP Status, White) |
+| Text | Clock Text | Show Clock, Clock Format (24 Hour, 12 Hour) |
+| Text | Coordinates | Show Coordinates |
 | Behavior | Zoom | Mouse Wheel Zoom, Zoom Out After (Off, 10 s, 30 s) |
-| Behavior | Visibility | Combat Opacity, Opacity |
+| Behavior | Visibility | Combat Opacity, Minimap Opacity |
 
 Saved under `modules.minimap` (version 2). Version 2 (November 15, 2026,
 Phase 7): the Mode edge. `corners` is removed (the edge's corners are fixed;

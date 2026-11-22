@@ -16,7 +16,7 @@ third-party meters do (Recount-Revived, Skada's Midnight edition, ForeverMeter).
 
 ModeUI **hides Blizzard's meter window but never writes into it**. One meter
 author reported that writing into Blizzard's windows taints their refresh and
-makes them log errors in combat. **Hide Blizzard's Meter** (Window tab › Data,
+makes them log errors in combat. **Hide Blizzard's Meter** (General tab › Show,
 on by default) puts Blizzard's meter frame (`DamageMeter`, which holds its
 session windows and their breakdowns) under a hidden ModeUI frame while the
 module is on. Nothing in it is changed or called, and it keeps running, so it
@@ -97,7 +97,7 @@ any UI scale. Each shows its name on hover.
 
 ## Lock, moving and resizing
 
-**Lock Window** (Window tab, or the lock button) is off by default. Unlocked,
+**Lock Window** (Behavior tab, or the lock button) is off by default. Unlocked,
 outside combat and outside Edit Mode:
 
 - **Dragging a header** moves the window. A grouped window moves its whole
@@ -120,8 +120,8 @@ or resized by hand.
 
 ## Groups
 
-Window tab › **Group With**: None, or another window. A grouped window stacks
-**Above** (the default) or **Below** that window (Side), **Gap** apart (2px by
+General tab › Group › **Group With**: None, or another window. A grouped window stacks
+**Above** (the default) or **Below** that window (Side), **Spacing** apart (2px by
 default), and
 takes every shared setting from the window at the head of its group: width,
 bars, text, header, frame, Show, opacity and the lock. It keeps its own
@@ -150,19 +150,19 @@ the pixel grid. From the outside in:
 
 | Part | Default | Setting |
 |---|---|---|
-| Edge | the Mode `window` edge (Mode-Border by default: a 2px dark glass band with a lit top and a champagne bottom, a 1px black line just inside and a shadow ring, 3px in all) inside the window, above what it holds; no soft drop while the window is see-through (Background Opacity or Opacity under 100) | Border Style and Border Metal (Frame tab, Border group), per window |
-| Background | Surface in Graphite panel (#0B0B0C) at 75% | Frame › Background Color, Background Opacity |
-| Header | 20px Mode-FG strip in Graphite raised (#131314) | Header › Texture, Height, Header Color, Header Opacity |
-| Title | 11, the meter's own capitals ("Damage Done"), Graphite text, outlined, left | Text › Title; Header › Uppercase Title, Title Position, Title X, Title Y |
-| Header buttons | fight, Reset, lock; 16px glyphs | Header › Header Buttons |
-| Timer | 11, Graphite muted, outlined, at the right edge | Text › Timer; Header › Show Timer, Show Fight (adds the fight's name) |
+| Edge | the Mode `window` edge (Mode-Border by default: a 2px dark glass band with a lit top and a champagne bottom, a 1px black line just inside and a shadow ring, 3px in all) inside the window, above what it holds; no soft drop while the window is see-through (Background Opacity or Window Opacity under 100) | Border and Border Metal (Border tab), per window |
+| Background | Surface in Graphite panel (#0B0B0C) at 75% | Fill › Background: Background Color, Background Opacity |
+| Header | 20px Mode-FG strip in Graphite raised (#131314) | Fill › Header Bar: Texture, Header Color, Header Opacity; General › Size: Header Height |
+| Title | 11, the meter's own capitals ("Damage Done"), Graphite text, outlined, left | Text › Title Text: Uppercase Title, Title Position, Title X, Title Y, its font |
+| Header buttons | fight, Reset, lock; 16px glyphs | General › Show: Header Buttons |
+| Timer | 11, Graphite muted, outlined, at the right edge | Text › Timer Text: Show Timer, its font; Title Text: Show Fight (adds the fight's name) |
 | Line | 1px Graphite line under the header | shown with the header |
-| Padding | 1px | Window › Padding |
-| Rows | 8 rows, 18 high, 1 apart, 240 wide | Window › Width, Rows, Row Height, Spacing |
-| Icon | square class icon, 1px gap | Bars › Icon |
-| Bar | Mode-FG (its base times the color, plus its lift), class colored | Bars › Foreground, Bar Opacity, Bar Color (Class or Custom), Other Color |
-| Empty bar | Mode-BG tinted Slate, at 100% | Bars › Background, Background Opacity |
-| Name, Value | the Mode typeface 12 (Urbanist), pure white, outlined, crisp shadow, 4px in | Text › Name or Value: Font, Size, Outline, Slug Text, Text Shadow, Color (Color or Class), Text Color; Text Inset |
+| Padding | 1px | General › Size: Padding |
+| Rows | 8 rows, 18 high, 1 apart, 240 wide | General › Size: Width, Rows, Row Height, Spacing |
+| Icon | square class icon, 1px gap | General › Show: Icon |
+| Bar | Mode-FG (its base times the color, plus its lift), class colored | Fill › Bars: Foreground, Bar Opacity; Bar Color: Bar Color (Class Color or Custom), Other Color |
+| Empty bar | Mode-BG tinted Slate, at 100% | Fill › Bars: Background, Background Opacity |
+| Name, Value | the Mode typeface 12 (Urbanist), pure white, outlined, crisp shadow, 4px in | Text › Name Text or Value Text: Font, Size, Outline, Slug Text, Shadow, Color (Color or Class Color), Text Color; Text style: Text Inset |
 
 Each text (Name, Value, Title, Timer) has its own font, size, outline, shadow,
 slug and color (`nameFont`, `valueOutline`, `timerColor`...). Names and values
@@ -196,8 +196,8 @@ row (or the first, if you've scrolled past it).
 
 ## When a window shows
 
-**Show** on the Window tab: Always, In Combat, In a Group or Hidden, plus
-**Opacity**. **Click Through** lets clicks and the mouse wheel pass to the game
+**Show** on the Behavior tab: Always, In Combat, In a Group or Hidden, plus
+**Window Opacity**. **Click Through** lets clicks and the mouse wheel pass to the game
 world. Windows are plain frames (nothing is protected), so they show, hide,
 resize and update in combat. Settings also change in combat.
 
@@ -240,21 +240,21 @@ follows the window's anchor, as before. Clicking it again stops matching. A
 module offers them for its elements (`PositionManager:SetSizeMatch`); they're
 dimmed for elements that don't, and two windows can't follow each other. Damage meter windows have both. **Match Width** is on
 by default: the window takes its anchor's width whenever that changes (its
-grip, its Width setting, Copy & Apply, or a different frame changing size),
+grip, its Width setting, Copy To…, or a different frame changing size),
 and its Rows stay its own. Before, only the grip passed the width on, so the
 owner's Window 2 came apart from Window 1 when Window 1's size changed some
 other way. **Match Height** (off by default) gives the window as many rows as
 fit its anchor's height. On another meter window the match reads that
 window's settings, so it lands on the same refresh; on any other frame it
 reads its size on screen, watched by Position Manager's anchor size listener.
-The Window tab says when Width (or Rows) follow an anchor.
+The General tab says when Width (or Rows) follow an anchor.
 
 **Test on Screen** shows the sample fight on the real windows. The settings page
 preview is the window being edited, drawn by the same code, with the sample
 fight: at most five rows, at 80% size at most, so it stays small whatever
 Rows is set to. **Animated** plays it out over 20 seconds. Clicking the preview's header,
-bars or frame opens the Header, Bars or Frame tab. Clicking a name, a value or
-the title opens the Text tab on that text.
+bars or frame opens the Fill tab at Header Bar, Bars or Background. Clicking a
+name, a value or the title opens the Text tab at that text's card.
 
 The sample group is Forever's nine classes plus a creature. One row is marked as
 you, for Always Show Me. Healing meters rank the healers first.
@@ -262,43 +262,50 @@ you, for Always Show Me. Healing meters rank the healers first.
 ## Settings page
 
 **Editing** sits at the top right of the preview, as on the Action Bars page,
-and names each window with its meter ("Window 1 - DPS"). Six tabs:
+and names each window with its meter ("Window 1 - DPS"). The standard tabs
+(docs/DESIGN_LANGUAGE.md, "Standard tabs"); above every tab, a tip when the
+window is off and, on a grouped window, which window the group shares its
+settings with:
 
-- **Window:** Show Window, Status, Meter, Fight, Width, Rows, Row Height,
-  Spacing, Padding, Show, Opacity, Lock Window, Click Through, Group With,
-  Side, Gap, Reset All Data, Hide Blizzard's Meter.
-- **Bars:** Foreground, Background, Bar Opacity, Background Opacity, Bar
-  Color, Custom Color, Other Color, Icon, Always Show Me.
-- **Text:** Text (Name, Value, Title, Timer), then that text's Font, Size,
-  Outline, Slug Text, Text Shadow, Color (names and values: Color or Class) and
-  Text Color; Text Inset, Show Rank; Show (numbers), Decimals, Separator, Show
-  Percent.
-- **Header:** Show Header; Texture, Height, Header Color, Header Opacity;
-  Uppercase Title, Show Fight, Show Timer, Title Position, Title X, Title Y,
-  Header Buttons, and buttons that open the Title and Timer text settings.
-- **Frame:** Background Color, Background Opacity (the edge is locked).
-- **Copy & Apply:** Copy From (the window in Editing), **Copy** (All, Window,
-  Bars, Text), Apply To (tick windows), **Apply to Selected**, **Apply to All
-  Windows**, Reset to Defaults.
+- **General:** Show (Show Window, Show Header, Header Buttons, Icon, Hide
+  Blizzard's Meter), Meter (Meter, Fight), Group (Group With, Side, Spacing),
+  Size (Width, Rows, Row Height, Spacing, Padding, Header Height), Data (Reset
+  All Data).
+- **Fill:** Bars (Foreground, Background, Bar Opacity, Background Opacity), Bar
+  Color (Bar Color: Class Color or Custom, Custom Color, Other Color), Header
+  Bar (Texture, Header Color, Header Opacity), Background (Background Color,
+  Background Opacity).
+- **Border:** Border, Border Metal.
+- **Text:** Text style (Text Inset), then a card per text: Name Text, Value
+  Text, Title Text and Timer Text, each with its Font, Size, Outline, Slug
+  Text, Shadow and Text Color (names and values also Color: Color or Class
+  Color). Name Text adds Show Rank; Value Text adds Show (numbers), Decimals,
+  Separator and Show Percent; Title Text adds Show Fight, Uppercase Title,
+  Title Position, Title X and Title Y; Timer Text adds Show Timer. Title and
+  Timer show while the header is on.
+- **Behavior:** When to Show (Show, Window Opacity, Lock Window, Click
+  Through), Rows (Always Show Me).
 
-Copy & Apply copies by part (`M.copyScopes`):
-- **All:** everything except what each window shows and when, its group and
-  matching (Show Window, Meter, Fight, Show, Group With, Side, Gap, Match Width
-  and Match Height).
-- **Window:** the window with its header: Width, Padding, Opacity,
-  Background Color, Background Opacity, and
-  the header's Show Header, Texture, Height, Color, Opacity, Uppercase Title,
-  Title Position, Title X, Title Y, Show Fight, Show Timer and Header Buttons.
+**Copy To…** (the settings footer, `M:CopyActions`) copies the window in
+Editing (its group's look, when grouped) by part to each other window that
+doesn't already share its look, or to every window (`M.copyScopes`):
+- **Look:** everything except what each window shows and when, its group and
+  matching (Show Window, Meter, Fight, Show, Group With, Side, Spacing, Match
+  Width and Match Height).
+- **Window and header:** Width, Padding, Window Opacity, Background Color,
+  Background Opacity, and the header's Show Header, Texture, Height, Color,
+  Opacity, Uppercase Title, Title Position, Title X, Title Y, Show Fight,
+  Show Timer and Header Buttons.
 - **Bars:** Row Height, Spacing, Foreground, Background, both opacities, Bar
   Color, Custom Color, Other Color, Icon and Always Show Me.
 - **Text:** every text's Font, Size, Outline, Shadow, Slug and Color, Name and
   Value color modes, Text Inset, Show Rank, Show (numbers), Decimals,
   Separator and Show Percent.
 
-Every copy is checked before it's kept. A grouped window takes it on its
-group's head, so the whole group changes. Reset to Defaults keeps the same keys
-as All leaves alone. On a grouped window, every other tab says which window
-the group shares its settings with.
+Every copy asks first and is checked before it's kept. A grouped window takes
+it on its group's head, so the whole group changes. **Reset…**
+(`M:ResetScopes`) puts the window in Editing (its group, when grouped) back to
+the defaults, keeping the same keys Look leaves alone.
 
 ## Saved settings
 
@@ -410,8 +417,8 @@ concatenation or measurement, and the stub refuses secret arguments.
      Forever.
    - **Action:** turn it on.
    - **Required state:** out of combat.
-   - **Confirmation:** in ModeUI, **Interface** › **Damage Meters** › **Window**
-     tab, **Status** no longer says the option is off.
+   - **Confirmation:** in ModeUI, the window no longer says the game's Damage Meter
+     option is off.
 2. **Windows**
    - **Navigation:** `/modeui`, then **Interface** › **Damage Meters** in the
      sidebar.
@@ -422,7 +429,7 @@ concatenation or measurement, and the stub refuses secret arguments.
      - During the fight, **Window 1** fills with class-colored bars and
        "1. Name" and "12.3K (1.2K)" text, and the header timer counts up.
        There are no Lua errors.
-     - Within 3 seconds after the fight, **Show Percent** (Text tab) adds the
+     - Within 3 seconds after the fight, **Show Percent** (Text tab, Value Text) adds the
        share.
 3. **Breakdown**
    - **Navigation:** the window on screen.
@@ -442,7 +449,7 @@ concatenation or measurement, and the stub refuses secret arguments.
      - Reset empties the window: "No data yet."
 5. **Placement**
    - **Navigation:** **Edit Mode** in the settings window header.
-   - **Action:** turn on **Show Window** for Window 2 (Window tab, **Editing**:
+   - **Action:** turn on **Show Window** for Window 2 (General tab, **Editing**:
      Window 2), then drag Window 1 and nudge it with the arrows.
    - **Required state:** out of combat.
    - **Confirmation:**
@@ -470,7 +477,7 @@ concatenation or measurement, and the stub refuses secret arguments.
      - With Window 2 shown (anchored on Window 1), it moves along during the
        drag, not only after the drop.
 7. **Groups**
-   - **Navigation:** **Window** tab, **Editing**: Window 2.
+   - **Navigation:** **General** tab, **Editing**: Window 2.
    - **Action:**
      - Turn on **Show Window** and set **Group With** to Window 1 (**Side**
        is Above by default).
@@ -499,7 +506,7 @@ concatenation or measurement, and the stub refuses secret arguments.
 9. **Anchor To**
    - **Navigation:** **Edit Mode** in the settings window header.
    - **Action:**
-     - Turn on **Show Window** for Window 3 first (Window tab, **Editing**:
+     - Turn on **Show Window** for Window 3 first (General tab, **Editing**:
        Window 3).
      - Click Window 3's stand-in, then **Anchor To...** in the ModeUI Edit Mode
        window, then Window 1.
@@ -520,8 +527,8 @@ concatenation or measurement, and the stub refuses secret arguments.
      - Choosing Window 1 from the list also puts it on top at 0, 0, never off
        the screen.
 10. **Blizzard's meter hidden**
-    - **Navigation:** **Interface** › **Damage Meters** › **Window** tab, **Hide
-      Blizzard's Meter** under Data.
+    - **Navigation:** **Interface** › **Damage Meters** › **General** tab, **Hide
+      Blizzard's Meter** under Show.
     - **Action:** with the game's Damage Meter option on, turn the module on,
       fight, then switch **Hide Blizzard's Meter** off and on.
     - **Required state:** any; switching works in combat too.
@@ -539,27 +546,29 @@ concatenation or measurement, and the stub refuses secret arguments.
         Window 2's stand-in.
       - In Edit Mode's element panel, check that **Match Width** is lit
         (the line under it reads "Width: Window 1"), then leave Edit Mode.
-      - Change Window 1's **Width** on the Window tab, then drag its grip.
+      - Change Window 1's **Width** on the General tab, then drag its grip.
       - In Edit Mode, click **Match Height** for Window 2, then click
         Window 1's stand-in.
     - **Required state:** out of combat; Window 2 not grouped.
     - **Confirmation:**
       - Window 2 stays exactly as wide as Window 1 both ways, keeps its own
         rows, and never comes apart from it.
-      - The Window tab, with Editing on Window 2, says its Width follows
+      - The General tab, with Editing on Window 2, says its Width follows
         Window 1.
       - Match Height gives Window 2 Window 1's height in whole rows.
       - On Window 1 itself (anchored on the screen) both are dimmed.
-12. **Copy & Apply and the preview**
-    - **Navigation:** **Interface** › **Damage Meters** › **Copy & Apply** tab.
+12. **Copy To…, Reset… and the preview**
+    - **Navigation:** **Interface** › **Damage Meters**, **Editing**: Window 1.
     - **Action:**
-      - With Editing on Window 1, set **Copy** to Text, tick Window 2 and click
-        **Apply to Selected**.
-      - Then try Window and Bars.
-      - Set Window 1's **Rows** to 20 and look at the preview.
-    - **Required state:** any.
+      - Click **Copy To…** in the footer, pick **Text to Window 2** and confirm
+        with **Copy**.
+      - Then try **Window and header to Window 2** and **Bars to every window**.
+      - Click **Reset…** and confirm with **Reset**.
+      - Set Window 1's **Rows** to 20 (General tab) and look at the preview.
+    - **Required state:** out of combat; Window 2 not grouped with Window 1.
     - **Confirmation:**
-      - Text copies only fonts and numbers. Window brings the width, frame and
-        header. Bars brings the bar look.
-      - The line beside the buttons says how many windows changed.
+      - Text copies only fonts and numbers. Window and header brings the width,
+        frame and header. Bars brings the bar look to Windows 2 and 3.
+      - Reset puts Window 1's look back to the defaults; its meter, fight, show
+        settings and group stay.
       - The preview stays at five rows and a smaller size.

@@ -107,7 +107,7 @@ M.choices = {
     highlightStyle = { { id = "border", label = "Border" }, { id = "fill", label = "Tint" }, { id = "none", label = "None" } },
     auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" }, { id = "custom", label = "Custom" },
         { id = "none", label = "None" } },
-    auraGlow = { { id = "none", label = "Off" }, { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
+    auraGlow = { { id = "none", label = "None" }, { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     auraGlowColor = { { id = "type", label = "By Type" }, { id = "custom", label = "Custom" } },
     place = { { id = "inside", label = "Inside" }, { id = "outside", label = "Outside" } },
     dispelFrom = { { id = "top", label = "Top" }, { id = "bottom", label = "Bottom" } },
@@ -115,7 +115,7 @@ M.choices = {
     edgeMetal = addon.Style.EdgeMetalChoices(),
 }
 
--- What each debuff type does to a member that has it (Highlights tab).
+-- What each debuff type does to a member that has it (Border tab, Dispel Overlay).
 local function Effects() return { border = false, health = false, gradient = true } end
 M.defaults = {
     version = M.VERSION,
@@ -130,7 +130,7 @@ M.defaults = {
     -- (docs/DESIGN_LANGUAGE.md, "Choosing a border"): Mode-Border in its own
     -- metal (owner, November 17, 2026).
     edgeStyle = "obsidian", edgeMetal = "default",
-    -- Power Bars and Resources: who shows it, where, how it looks, its text.
+    -- The power bar: who shows it, where, how it looks, its text.
     powerShown = "all", powerStyle = "below", powerHeight = 3, powerWidth = 70, powerAlign = "CENTER", powerX = 0, powerY = 3,
     powerForegroundTexture = "media:Mode-FG", powerBackgroundTexture = "media:Mode-BG", powerOpacity = 100, powerBackgroundOpacity = EMPTY,
     powerFillDirection = "standard", powerColorMode = "type", powerColor = Copy(P.mana),

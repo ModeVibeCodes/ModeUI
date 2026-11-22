@@ -2,12 +2,13 @@ local _, addon = ...
 local M, W, T, L = addon.BuffsDebuffs, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 if not M then return end
 
--- The Bars tab: which bar and whether it shows, Spells You Add (a buff
--- bar's own list), and Bar Behavior (sort, how many, how it grows; owner,
--- November 18, 2026). Which Auras sits under the live preview in the
--- window's preview pane (Preview.lua), here only when the window is too
--- narrow for the pane. The Look and Texts tabs are in SettingsLook.lua and
--- SettingsText.lua; every tab edits the bar picked at its top.
+-- General (whether the bar shows and what kind, its icons' size, and how it
+-- arranges: sort, how many, how it grows, spacing; owner, November 18, 2026)
+-- and Auras › Which Auras and Spells You Add (a buff bar's own list). Which
+-- Auras sits under the live preview in the window's preview pane
+-- (Preview.lua), here only when the window is too narrow for the pane. The
+-- border, glow, icons and behavior are in SettingsLook.lua, the texts in
+-- SettingsText.lua; every tab edits the bar picked above the tabs.
 local function Bar() return M.db.bars[M:EditingBar()] end
 local function Set(key) return function(value) M:SetBarOption(M:EditingBar(), key, value) end end
 local function Toggle(label, key) return { label = label, get = function() return Bar()[key] end, set = Set(key) } end
@@ -47,21 +48,21 @@ local function Spells(page, c)
 end
 
 function M:BuildBarsTab(page, c)
-    page:Section(L["Bars"], nil, false)
-    page:Group(L["Bar"])
-    local select, add, delete = self:BuildBarPicker(page, c)
-    page.barSelect = select
-    function page.barSelectParts() return select, add, delete end
+    page:Tab("General")
+    page:Group(L["Show"])
     page.barNote = c.Note(function() return M:BarNote() end, 48)
     page.showToggles = c.Toggles({ Toggle("Show This Bar", "show") })
     c.When(function() return M:KindChangeable(M:EditingBar()) end, function()
         page.kindPills = c.Pills("Shows", M.choices.kind, function() return Bar().kind end, Set("kind"), 110)
     end)
 
-    c.When(function() return not page.previewSplit end, function() WhichAuras(page, c) end)
-    c.When(function() return Bar().kind == "buffs" end, function() Spells(page, c) end)
+    page:Group(L["Size"])
+    local size = c.Columns({ "Icon Width", "Icon Height" })
+    page.widthSlider = c.SliderIn(size[1], M.ranges.width, function() return Bar().width end, Set("width"), "px")
+    page.heightSlider = c.SliderIn(size[2], M.ranges.height, function() return Bar().height end, Set("height"), "px")
+    c.Note("Height starts 4px shorter than the width, 6px from 36 wide, and follows the width until you change it.", 32)
 
-    page:Group(L["Bar Behavior"])
+    page:Group(L["Arrange"])
     page.sortPills = c.Pills("Sort", M.choices.sort, function() return Bar().sort end, Set("sort"), 110)
     local count = c.Columns({ "Max Shown", "Per Row" })
     page.maxSlider = c.SliderIn(count[1], M.ranges.max, function() return Bar().max end, Set("max"))
@@ -74,4 +75,10 @@ function M:BuildBarsTab(page, c)
             page[across and "rowPills" or "columnPills"] = c.Pills("New Rows Go", choices, function() return Bar().wrap end, Set("wrap"), 80)
         end)
     end
+    page.spacingSlider = c.SliderIn(c.Columns({ "Spacing" })[1], M.ranges.spacing, function() return Bar().spacing end, Set("spacing"), "px")
+    c.Note("Move a bar in Edit Mode (in the window header): drag it, nudge it, or pick Anchor To. Changes wait until you leave combat.", 48)
+
+    page:Tab("Auras")
+    c.When(function() return not page.previewSplit end, function() WhichAuras(page, c) end)
+    c.When(function() return Bar().kind == "buffs" end, function() Spells(page, c) end)
 end

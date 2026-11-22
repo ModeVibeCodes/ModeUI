@@ -14,14 +14,14 @@ You and your party (not a raid), one member under the next by default. Each
 member is:
 
 - **Bars**: health, a 1px black line and a 3px power bar inside the `group`
-  edge (docs/DESIGN_LANGUAGE.md: **Border Style** and **Border Metal** on the
-  Layout tab, Mode-Border by default, a 1px dark glass band with a lit top and a champagne bottom; the rim art covers the
+  edge (docs/DESIGN_LANGUAGE.md: **Border** and **Border Metal** on the
+  Border tab, Mode-Border by default, a 1px dark glass band with a lit top and a champagne bottom; the rim art covers the
   bars' corners, so nothing is masked). 150 × 34 health by default, Mode-FG in
   Dark (`#161618`) on Mode-BG at 85%, **Spacing** 1: every size is whole pixels, so the rims
   sit exactly one pixel apart. **Arrange** Vertical or Horizontal, with its **Direction**. Foreground and background
   textures, Bar Opacity, Background Opacity, fill direction and the fill end
   line, as on the Unit Frames.
-- **Power Bars and Resources** (its own tab): **Power Bar For** Everyone,
+- **Power Bar** (General, Fill and Text tabs): **Power Bar For** Everyone,
   Healers, Mana Users, Healer Mana (healers with mana; every other resource is
   hidden) or No One; **Style** Below Health or Inset (on the health bar in a
   border of its own) with **Power Height**, **Power Width**, **Alignment**,
@@ -35,18 +35,19 @@ member is:
   (Background Opacity) with no black plate behind them; the plate returns
   only when both empty bars are at 100%. Power: by power
   type or Custom.
-- **Incoming Heals** (Bars tab): ride on the end of the health fill, with
-  Show, Texture, Color and Opacity, and **Spark End Line** (on by default): a
+- **Incoming Heals** (Fill tab): ride on the end of the health fill, with
+  Show, Texture, Color and Heal Opacity, and **Spark End Line** (on by default): a
   bright 1px line with a glow in the heal color where the heals stop
   (`Style.EndSpark`); none while the heals pass the bar's end.
-- **Shields** (their own tab): Combined (`Style.Shield`): below full health
+- **Shields** (Fill tab): Combined (`Style.Shield`): below full health
   the shield sits on the health's end and stops at the bar's end; at full
   health the whole shield fills back from max (**Show Overshields**). Its look
   (`Shield:SetLook`): **Texture** (any Mode bar texture; Mode Shield
-  hairlines by default), **Opacity** (10-200%; 100% is the standard look) and
+  hairlines by default), **Shield Opacity** (10-200%; 100% is the standard look) and
   **Color**: Follow Health (the shield tinted from the health bar) or Custom
   with its own color. The finish line stays bright.
-- **Texts and icons** (Text and Icons tab), each with **Show**, **Anchor**,
+- **Texts and icons** (Text tab: **Text Style** with Font, Outline, Slug Text,
+  **Shadow** and Text Color, then the **Texts and Icons** card), each with **Show**, **Anchor**,
   **Place** (Inside on the bars, Outside past their edge), **Offset X/Y**,
   **Nudge** arrows (1px) and **Size**: Name, Health Text (Percent, Percent No
   Sign, Current Health or Missing Health), Dead and Offline, Role, Leader, Raid
@@ -55,25 +56,29 @@ member is:
   SemiBold in the **Gradient** (class color toward white; Soft Class, Text
   Color and Custom are options); health text is Bold, colored **By
   Health** (Rosewood at 30% and under, through Ivory, to Celadon) or in the
-  Text Color, with a soft glow in its own color (**Health Text Glow**, on by
-  default).
-- **Highlights and Overlay**: your target (Border: the rim in Ivory; Tint;
-  or None), **Aggro Rim** (the rim in the hostile red while a mob is on the
-  member), a mouse highlight, and the **Dispel Overlay**: for each dispel type
+  Text Color, with a soft glow in its own color (**Health Text Glow**, Glow ›
+  Text Glows, on by default).
+- **Rims and highlights** (Border › Rims and Dispel Overlay, Glow ›
+  Highlights): **Your Target** (Border: the rim in Ivory; Tint; or None) with
+  **Target Color**, **Aggro Rim** (the rim in the hostile red while a mob is
+  on the member), **Mouse Highlight**, **Hover Glow** and **Focus Glow**, and
+  the **Dispel Overlay**: for each dispel type
   (Magic, Curse, Disease, Poison, Bleed) **Gradient** (the type color from the
   top edge, 56% fading out over 72% of the health; on by default), **Border**
   (the rim in the type color) and **Health Color** (the health fill in the
   type color), with **Which Debuffs** and **Gradient Opacity**. Rims are
   swapped, never added, so a member's size never changes; a dispel rim wins
-  over your target, which wins over aggro. Type colors are shared with the
-  aura rims and glows.
-- **Fading**: out-of-range members at Out of Range Opacity (55%), dead and
+  over your target, which wins over aggro. **Type Colors** (Border tab) are
+  shared with the aura rims and glows.
+- **Fade** (Behavior tab): out-of-range members at Out of Range Opacity (55%), dead and
   offline members at Dead and Offline Opacity (70%). You're always in range.
 
 ### The aura manager (Auras tab)
 
-Two kinds, each its own list (**Kind**: Buffs or Debuffs), every group with its
-own settings:
+Two kinds, each its own list (**Aura Kind**: Buffs or Debuffs), every group
+with its own settings. **Aura Kind** and **Aura Group** sit above the tabs
+that edit the group: **Auras**, **Border** (Aura Borders) and **Glow** (Aura
+Glows).
 
 | Group | Which Auras (default first) | Default |
 |---|---|---|
@@ -96,12 +101,16 @@ tracked buffs out. The game keeps each group to its spells, in combat too.
 Per group: **Show This Group**, **Which Auras**, **Anchor**, **Place**,
 **Grow**, **Offset X/Y** and **Nudge**, **Most Shown**, **Per Row**,
 **Spacing**, **Icon Width** and **Icon Height**, **Timer Swipe**, **Timer
-Text**, **Stack Count**, **Tooltips**, **Border** (By Type, Mode, Custom or
+Text**, **Stack Count**, **Tooltips**, **Timer Text Color** (every group),
+**Border** (Border › Aura Borders: By Type, Mode, Custom or
 None) on the `frameThin` edge every aura icon wears (By Type and Custom
 tint its rim, Mode keeps the Gunmetal metal, None hides it) with **Border
-Size** (1 or 2) and **Border Color**, and **Glow** (Off by
-default, GCD Flash or Soft Glow) with **Glow Color** (By Type or Custom).
-**Reset Group** (a tracked group keeps its buffs) and **Copy Look To**. Groups
+Size** (1 or 2) and **Border Color**, and **Glow** (Glow › Aura Glows: None
+by default, GCD Flash or Soft Glow) with **Glow Color** (By Type or Custom).
+**Reset…** in the footer offers the group being edited (**Curse Group**; a
+tracked group keeps its buffs) or **All of Party Frames**; **Copy To…** gives
+the edited group's place and icon look to another group (**Curse Look to
+Bleed**; which auras it shows stays its own). Groups
 on the same anchor and place continue in one row, in the table's order, placed
 and grown by the first one that is shown; move a group to another anchor to
 place it on its own.
@@ -109,6 +118,24 @@ place it on its own.
 While the Auras tab is open the preview shows one larger member with only the
 group being edited, beside a quick list of that kind's groups (click one to
 edit it; dimmed ones are off; + on Tracked Buffs).
+
+## Settings page
+
+The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"; November 21,
+2026), each card on the tab of its idea:
+
+| Tab | Cards |
+|---|---|
+| General | Show, Size, Arrange, Power Bar |
+| Fill | Health Bar, Power Bar, Incoming Heals, Shields |
+| Border | Border, Aura Borders, Rims, Dispel Overlay, Type Colors |
+| Glow | Highlights, Aura Glows, Text Glows |
+| Text | Text Style, Texts and Icons, Power Text |
+| Auras | Which Auras, Placement, Icons |
+| Behavior | Fade |
+
+**Aura Kind** and **Aura Group** sit above the tabs while Border, Glow or
+Auras is open. **Reset…** and **Copy To…** are in the window's footer.
 
 ## Settings preview
 
@@ -118,10 +145,11 @@ side by side. Each keeps its scale and the preview grows taller to hold it;
 only a layout too big for the window is scaled down, so nothing clips.
 
 Each tab shows what it edits on the first sample, and stops when you leave
-it: the picked heal, shield or overshield on **Bars**, a healer with mana on
-**Power Bars and Resources**, the picked element on **Text and Icons** (ready
-check, summon, dead, raid marker, leader), and the picked dispel type's
-overlay on **Highlights and Overlay** (with **Preview as Your Target**).
+it: a healer with mana on **General**, **Fill** and **Text** (so the power
+bar shows whichever Power Bar For is picked); the heal and a shield (the
+overshield with that state) on **Fill**; the picked element on **Text**
+(ready check, summon, dead, raid marker, leader); and the picked dispel
+type's overlay on **Border** (with **Preview as Your Target**).
 **Show States** in the header adds states to every sample: Dead, Offline, Out
 of Range, Your Target, Dispel Overlay, Ready Check, Summon, Raid Marker,
 Incoming Heals, Shields, Overshield.
@@ -172,7 +200,7 @@ still show only in a party.
 
 ## Role After Name, Healer layout (November 19, 2026)
 
-- **After Name** (Text and Icons tab, Role element; `roleAfterName`, off by
+- **After Name** (Text tab, Role element; `roleAfterName`, off by
   default): the role icon hangs from the name's end, its Offset X and Y
   counted from there. The name then takes no width (`SetWidth(0)`: the
   client sizes it to its text; a character name is at most 12 letters) and
@@ -285,10 +313,10 @@ Background Opacity still at 100 takes the see-through 60.
 - **Navigation:** type `/modeui`, then pick **Frames** › **Party Frames** in the
   sidebar.
 - **Action:** look at the edges of the frames. In the preview header, click
-  **Party**. Open **Highlights and Overlay** and pick **Curse** under **Type**.
-  Open **Shields**, pick **Glass** under **Texture**, **Custom** under
-  **Color**, and drag **Opacity** to 150%. Open **Power Bars and
-  Resources** and pick **Healer Mana** under **Power Bar For**. Open **Auras**,
+  **Party**. Open **Border** and pick **Curse** under **Type**. Open
+  **Fill**, and in **Shields** pick **FG** under **Texture**, **Custom** under
+  **Color**, and drag **Shield Opacity** to 150%. Open **General** and pick
+  **Healer Mana** under **Power Bar For**. Open **Auras**,
   click an aura in the preview, pick **Tracked Buffs 1** in the quick list,
   click **+**, and click a buff.
 - **Required state:** out of combat; a party (or **Show When Solo**) for live
@@ -298,8 +326,8 @@ Background Opacity still at 100 takes the see-through 60.
   Warrior sample's rim is red (aggro) and the Mage's is Ivory (your target).
   Names fade from the class color toward white; the health text is green at
   full and red under 30%. All five Party samples fit in the preview. The
-  first sample shows a purple Curse gradient from its top edge. On Shields,
-  the first sample's shield turns to Glass in the custom color and grows
-  stronger with Opacity. The health bars use Mode Glass. Only a healer
+  first sample shows a purple Curse gradient from its top edge. On Fill,
+  the first sample's shield turns to Mode-FG in the custom color and grows
+  stronger with Shield Opacity. The health bars use Mode Glass. Only a healer
   with mana shows a power bar. Clicking the aura opens the Auras tab. The
   picked buff shows in Tracked Buffs 1's place on the frames.

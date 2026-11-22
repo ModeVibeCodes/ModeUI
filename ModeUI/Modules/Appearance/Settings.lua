@@ -8,7 +8,7 @@ function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local Refresh = function(refresh) page.refreshers[#page.refreshers + 1] = refresh end
 
-    page:Group(L["Text style"])
+    page:Group(L["Text Style"])
     -- The suite font in the shared font picker: its "appearance" is the global
     -- font, and a pick sets the global font.
     local owner = { suite = true }
