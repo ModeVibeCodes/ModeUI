@@ -128,10 +128,19 @@ end
 -- those 2 units past the box; the clamp keeps the box itself on screen. Its
 -- AnchorSelectionFrame sets the clamp from the selection again, so ModeUI
 -- puts its own back right after (post-hook).
+-- In combat the clamp is a protected call once anything protected hangs from
+-- ChatFrame1 (owner's report, November 22: a whisper opening a tab mid-fight
+-- runs FCF_SetChatWindowFontSize, which lays every window out again), so the
+-- selection and the clamp wait for the end of combat; Edit Mode can't open in
+-- combat anyway.
 local SELECTION_PADDING = 2
 function M:PlaceSelection(frame)
     local selection, parts = frame.Selection, Skin.parts[frame]
     if not (self.active and selection and selection.SetPoint and frame.system ~= nil and parts and parts.boxOffsets) then return end
+    if addon.InCombat() then
+        addon.Defer:Queue("chat:selection:" .. tostring(frame:GetName()), function() self:PlaceSelection(frame) end)
+        return
+    end
     local px = Kit.PixelSize(frame)
     local o = parts.boxOffsets
     local tabs = Snap(self.db.tabHeight, px)

@@ -147,6 +147,18 @@ world.run([==[
     local function Clamp(l, r, t, b) local c = ChatFrame1.clampInsets; return c[1] == l and c[2] == r and c[3] == t and c[4] == b end
     assert(Clamp(-9, 19, 33, -39), 'clamped by the box')
     ChatFrame1:AnchorSelectionFrame(); assert(Clamp(-9, 19, 33, -39), 'Blizzard resetting the clamp is followed')
+    -- In combat (a whisper opening a tab re-lays every window) the clamp is
+    -- protected: it waits for the end of combat.
+    ChatFrame1:SetClampRectInsets(0, 0, 0, 0)
+    testCombat, testLockdown = true, true
+    local clampCalls, setClamp = 0, ChatFrame1.SetClampRectInsets
+    ChatFrame1.SetClampRectInsets = function(...) clampCalls = clampCalls + 1; return setClamp(...) end
+    FCF_SetChatWindowFontSize(nil, ChatFrame1, select(2, ChatFrame1:GetFont()))
+    assert(clampCalls == 0 and Clamp(0, 0, 0, 0), 'no clamp change in combat')
+    testCombat, testLockdown = false, false
+    FireEvent('PLAYER_REGEN_ENABLED')
+    assert(clampCalls == 1 and Clamp(-9, 19, 33, -39), 'clamped after combat')
+    ChatFrame1.SetClampRectInsets = nil
     assert(ChatFrame2.Selection == nil, 'only the Edit Mode window')
     -- Edit box: inside the window's edge, a Mode-Border field 3px in on a band
     -- shaded a little darker than the window.
