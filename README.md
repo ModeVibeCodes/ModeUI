@@ -44,13 +44,16 @@ ModeUI has.
   on **Global** › **Profiles**; the sidebar lists **Global**, **Interface**
   (Windows, Chat, Damage Meters, Action Bars, Tooltip, Bags) and **Frames** (Unit Frames,
   Nameplates, Party Frames). The Cooldown Manager has its own window: type `/mcdm`.
-- **Edit Mode** in the window header lets you drag every unit frame, the party frames and each
-  action bar and damage meter window. Cyan guides show when an element nears the center or an
-  offset of 0, and it snaps there. The arrows beside the selected element (or the
-  arrow keys) move it one pixel. Edit Mode shows a slim strip at the top of the screen
-  (**Highlights**, **Center Lines**, **Grid**, **Exit**) and, under it, a small panel for the
-  selected element: **Position** (X and Y), **Snap To** (what it hangs from, **Anchor To...**,
-  its side, **Reset Offset**), **Match Size** and a **Settings** button for its page. **Anchor
+- **Edit Mode** (the window's footer, or `/modeui edit`) lets you drag every unit frame, the
+  party frames and each action bar and damage meter window, and set them up in place. Guides
+  show when an element nears the center, an offset of 0, the screen's edges or another
+  element's center or edges, and it snaps there. The arrows beside the selected element (or the
+  arrow keys) move it one pixel; Tab picks the next element, Ctrl-Z / Ctrl-Y undo and redo, Esc
+  lets go and a second Esc closes. A slim bar sits at the top of the screen (**Elements**,
+  **Highlights**, **Center Lines**, **Grid**, **Undo**, **Redo**, **Done**), and a panel docks
+  beside the selected element: **Settings** (that module's own settings, for that element) and
+  **Place**: **Position** (X and Y), **Snap To** (what it hangs from, **Anchor To...**, its
+  side, **Reset Offset**) and **Match Size**; **Open Page** opens the full page. **Anchor
   To...** hangs the selected element from the next one you click, then offers its sides;
   anchoring always starts at X and Y 0. **Match Width** and **Match Height**: click one, then the
   element whose width (or height) to take; it keeps that size whenever the element changes,

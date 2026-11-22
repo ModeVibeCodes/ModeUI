@@ -298,3 +298,10 @@ function M:Status()
     if self.pending then return "Changes are waiting until you leave combat." end
     return "Active. Use Edit Mode to move the frames; left-click targets, right-click opens the unit menu."
 end
+
+-- Edit Mode's panel (and Open Page) shows the page on the selected frame.
+function M:OpenElementSettings(id)
+    for unit, elementId in pairs(self.elementIds) do
+        if elementId == id and self.page and self.page.SetEditing then self.page.SetEditing(unit); return end
+    end
+end

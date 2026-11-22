@@ -49,7 +49,7 @@ function PM:RenderGrid()
     local function Snap(value) return math.floor(value / px + 0.5) * px end
     local used = 0
     if grid then
-        local spacing, white = self.GRID_SPACING, addon.Theme.text
+        local spacing, white = self.GRID_SPACING, addon.Style.Tone.edit.grid
         local halfWidth, halfHeight = UIParent:GetWidth() / 2, UIParent:GetHeight() / 2
         local function Add(vertical, offset)
             used = used + 1
@@ -62,7 +62,7 @@ function PM:RenderGrid()
         if not lines then Add(true, 0); Add(false, 0) end
     end
     for i = used + 1, #g.lines do g.lines[i]:Hide() end
-    local primary = addon.Theme.primary
+    local primary = addon.Style.Tone.edit.select
     if lines then
         Place(g.centerX, true, 0, px, primary, CENTER_ALPHA)
         Place(g.centerY, false, 0, px, primary, CENTER_ALPHA)
@@ -77,4 +77,12 @@ end
 function E:SetGrid(show)
     self.grid = show == true
     addon.PositionManager:RenderGrid()
+end
+
+-- The grid's spacing (Edit Mode's top bar), in UI units; a session choice.
+function E:SetGridSpacing(size)
+    if type(size) ~= "number" or size < 8 or size > 300 then return false end
+    addon.PositionManager.GRID_SPACING = size
+    addon.PositionManager:RenderGrid()
+    return true
 end

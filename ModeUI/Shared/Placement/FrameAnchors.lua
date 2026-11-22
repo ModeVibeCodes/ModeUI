@@ -86,10 +86,10 @@ function F:Start(id,callback)
         frame:EnableKeyboard(true);frame:SetPropagateKeyboardInput(true)
         local text=frame:CreateFontString(nil,"OVERLAY","GameFontHighlight")
         text:SetPoint("TOP",UIParent,"TOP",0,-50);addon.Media:BindInterfaceFont(text,GameFontHighlight,16)
-        text:SetTextColor(unpack(addon.Theme.primary));self.instructions=text
+        text:SetTextColor(unpack(addon.Style.Tone.edit.select));self.instructions=text
         local outline=CreateFrame("Frame",nil,frame);outline:EnableMouse(false);self.outline=outline
         for i,points in ipairs({{"TOPLEFT","TOPRIGHT"},{"BOTTOMLEFT","BOTTOMRIGHT"},{"TOPLEFT","BOTTOMLEFT"},{"TOPRIGHT","BOTTOMRIGHT"}}) do
-            local edge=outline:CreateTexture(nil,"OVERLAY");edge:SetPoint(points[1]);edge:SetPoint(points[2]);edge:SetColorTexture(unpack(addon.Theme.primary))
+            local edge=outline:CreateTexture(nil,"OVERLAY");edge:SetPoint(points[1]);edge:SetPoint(points[2]);edge:SetColorTexture(unpack(addon.Style.Tone.edit.select))
             if i<=2 then edge:SetHeight(2) else edge:SetWidth(2) end
         end
         frame:SetScript("OnKeyDown",function(_,key)

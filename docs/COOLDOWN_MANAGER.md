@@ -522,7 +522,7 @@ Shared: `Domain.Power.ManaType`, `ReadType`, `HasAlternateMana` and
   on. On the **Look** tab set **Bar Color** to **Class Color**, on the
   **Text** tab set **Text** to **Current / Max**. Click **Combo Points** in
   the list (on a Rogue or a Druid). Click **Edit Mode** in the window's
-  header, drag the **Power** stand-in, then click **Exit** in the Edit Mode
+  header, drag the **Power** stand-in, then click **Done** in the Edit Mode
   window.
 - **Required state:** out of combat for the settings and Edit Mode; then
   spend and regain power, in and out of combat, with a target for combo
@@ -631,7 +631,7 @@ Shared: `Kit.PlayerCast`, `Kit.NativeFade` (`Shared/Kit/Native.lua`),
   move to interrupt it. Then set **Icon** to **Left** (Bar tab), **Bar Mode**
   to **Color** and pick a **Bar Color** (Look tab), set **Spell Name**
   **Anchor** to **Center** (Text tab). Click **Edit Mode** in the window's
-  header and look above Essential, then **Exit**. Turn **Show Bar** off and
+  header and look above Essential, then **Done**. Turn **Show Bar** off and
   cast again; turn it back on.
 - **Required state:** the Cooldown Manager and Unit Frames switched on, out
   of combat for the settings, then casting in and out of combat.
@@ -721,7 +721,7 @@ Buffs ride above it.
 - **Action:** pick **Mode-Default** in **Profile**, click **Switch to This
   Profile**, then **Reload** at the bottom left of the window. Type
   `/mcdm`; click **Edit Mode** in the window's header and look at the
-  bars, then **Exit**.
+  bars, then **Done**.
 - **Required state:** ModeCDM and ModeUI installed, logged in once after
   updating (the Mode-Default profile is made at login; one made before the
   owner's tuning of November 18, 2026 keeps the old values: delete it and

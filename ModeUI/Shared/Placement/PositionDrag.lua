@@ -26,6 +26,8 @@ function PM:StartDragging(id)
     self:SelectElement(id)
     element.subject.appliedAnchor = nil
     element.dragging, element.module.dragging = true, true
+    -- Guides snap only the axes this drag moves (PositionGuides.lua).
+    element.dragFrom = { x = element.position.x, y = element.position.y }
     element.frame:StartMoving()
     element.frame:SetScript("OnUpdate", element.dragUpdate)
     return true
@@ -89,13 +91,23 @@ function PM:SelectElement(id)
     local element = Lookup(self, id)
     if not element then return false, "unknown-element" end
     if Combat() or not addon.editMode or not element.editMode or not element.module.enabled then return false, "selection-not-allowed" end
-    self.selected = id
+    self.selected, self.selectionCleared = id, false
+    self:RefreshSelection()
+    return true
+end
+
+-- Esc in Edit Mode: nothing selected (the panel closes) until a click, Tab or
+-- the Elements list picks one again.
+function PM:ClearSelection()
+    if not addon.editMode then return false end
+    self.selected, self.selectionCleared = nil, true
     self:RefreshSelection()
     return true
 end
 
 function PM:RefreshSelection()
-    if addon.editMode and not self:GetSelectedElement() then
+    if not addon.editMode then self.selectionCleared = false end
+    if addon.editMode and not self:GetSelectedElement() and not self.selectionCleared then
         self.selected = nil
         for _, id in ipairs(self.order) do
             local element = self.elements[id]

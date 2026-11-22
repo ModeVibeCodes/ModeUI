@@ -521,10 +521,10 @@ A hybrid window, its palette rebuilt from the tokens (`Style.OnThemeApplied`):
   Ivory 22, search, profile, close) on a Mode-FG strip; 184px sidebar of
   categories (Interface, Panels, System) on Mode-FG's base, with module icons
   ("Mode Icon&lt;Name&gt;" art) and Celadon/Rosewood status dots; the General
-  page's global cards four across (186px); footer with Edit Mode, Reset
-  (Rosewood, shown for a module that can reset to defaults) and Done (Ivory)
-  on the right, and Reload and Preview on the left. The canvas and preview
-  pane are Surface.
+  page's global cards four across (186px); footer with Edit Mode, Copy To…
+  (a module's copies), Reset… (Rosewood: the module's reset scopes) and Done
+  (Ivory) on the right, and Reload and Preview on the left. The canvas and
+  preview pane are Surface.
 - **General** holds only global settings that already work; modules add their
   own cards (`module:BuildHomeCard`). **UI Scale** (Optimizations): the screen
   ModeUI detected ("1440p") and one button, "Use 53.33%", that sets the Pixel
@@ -635,6 +635,42 @@ own metal); a module follows with `fontMedia = ""` and `font = "game"`, and
 **Border** (Mode-Border, Mode-Empty or None) stays the element's own: which of
 the two rims it wears is part of its role. The Cooldown Manager keeps its own
 fonts.
+
+## Edit Mode
+
+ModeUI's own Edit Mode (Blizzard's is left alone: ModeUI never writes to
+`EditModeManagerFrame`). It is where elements are placed and, In Place, set
+up: click an element and its panel opens beside it.
+
+- **Top bar** (across the top, draggable): Edit Mode, **Elements** (every
+  element you can pick, including ones hidden behind others), Highlights,
+  Center Lines, Grid with its spacing (16-96 px), **Undo**, **Redo** and
+  **Done** (Cancel while Anchor To or Match waits for a click). Opened from a
+  module's page, that module's first element is selected. `/modeui edit`
+  opens and closes it.
+- **Selection:** element names in `Tone.edit.name`; the selected element's
+  outline and the guides in `Tone.edit.select`, others in `Tone.edit.idle`.
+- **Keys:** arrows nudge one pixel (Shift: ten), Tab and Shift-Tab step
+  through the elements, Ctrl-Z undoes, Ctrl-Y or Ctrl-Shift-Z redoes, Esc lets
+  go of the element and a second Esc closes Edit Mode.
+- **Panel** (432 px): docks beside the selected element on the side with
+  more room, top edges level, never over it; dragged, it stays put until you
+  pick another module's element; **Pin** keeps it at the screen's right edge.
+  It steps aside while Anchor To or Match waits for a click. Header: the
+  element's name, its module, Pin and close. **Settings** is the module's own
+  page (the same page object as the settings window, borrowed while Edit Mode
+  is open), scoped to the element (`module:OpenElementSettings`), one card
+  per row, without its preview: the element on screen is the preview.
+  **Place**: Position (X, Y), Snap To (what it hangs from, Anchor To…, side,
+  Reset Offset) and Match Size. **Open Page** leaves Edit Mode for the page in
+  the settings window. A module with its own window (the Cooldown Manager)
+  offers Place and Open Page.
+- **Guides:** while dragging, a line shows and the drop snaps (8 UI units)
+  to an offset of 0, the screen's center and edges, and other elements'
+  centers and edges (lining up, or meeting side by side), only on the axes
+  the drag moves.
+- **Undo** covers drags, nudges, typed offsets, Snap To, Anchor To and Match
+  Size for the session (`Shared/Placement/EditHistory.lua`).
 
 ## Texture library
 

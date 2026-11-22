@@ -154,18 +154,53 @@ world.run([[
     -- Edit Mode opens the ModeUI edit panel with the frames as movable elements.
     assert(addon:SetEditMode(true) and addon.editWindow:IsShown() and not window:IsShown())
     assert(addon.PositionManager.elements.unitFramesPlayer and addon.PositionManager.elements.unitFramesTarget)
-    -- A slim strip at the top (switches and Exit), the element's panel under it.
-    local strip,panel=addon.editWindow,addon.editPanel
-    assert(strip:GetHeight()==44 and strip:GetWidth()<600 and panel:IsShown() and select(2,panel:GetPoint(1))==strip,'strip on top, panel under it')
-    assert(panel:GetWidth()<=300 and panel:GetHeight()<=300,'a small panel')
+    -- Edit Mode (docs/DESIGN_LANGUAGE.md, "Edit Mode"): a slim top bar, and the
+    -- selected element's panel docked beside it, holding its module's own page.
+    local strip,panel,PM=addon.editWindow,addon.editPanel,addon.PositionManager
+    local element=addon.EditMode:Selected()
+    assert(element and element.module.id=='unitFrames','opened from Unit Frames: one of its frames is selected')
+    assert(strip:GetHeight()==44 and strip:GetWidth()<=900 and panel:IsShown() and select(2,panel:GetPoint(1))==UIParent,'top bar; the panel docked on screen')
+    local page=window.pages.unitFrames
+    assert(panel:GetWidth()==432 and strip.settingsTab.selected and page:GetParent()==strip.settingsHost and page:IsShown() and page.inEditPanel,'the Unit Frames page in the panel')
+    assert(page.previewArea and not page.previewArea:IsShown() and page.cardColumns==1,'no preview, one card per row')
+    -- Docked beside the element, never over it.
+    local ex,_,ew=addon.Positioning:Geometry(element.frame)
+    local left=select(4,panel:GetPoint(1))*panel:GetScale()
+    assert(left>=ex+ew/2 or left+panel:GetWidth()*panel:GetScale()<=ex-ew/2,'beside the element')
     -- Every button's text fits inside it (nothing clipped at any size).
-    for _,name in ipairs({'highlightButton','centerLinesButton','gridButton','exitButton','settingsButton','anchorToButton','resetOffset','matchWidthButton','matchHeightButton'}) do
+    for _,name in ipairs({'highlightButton','centerLinesButton','gridButton','exitButton','elementsButton','undoButton','redoButton',
+        'settingsButton','settingsTab','placeTab','pinButton','anchorToButton','resetOffset','matchWidthButton','matchHeightButton'}) do
         local button=strip[name];assert(button and button.label:GetStringWidth()<=button:GetWidth()-8,name..' text fits')
     end
-    local width=strip.matchWidthButton;assert(width.label:GetText()=='Match Width' and width:GetParent()==panel,'Match Size on the panel')
+    local width=strip.matchWidthButton;assert(width.label:GetText()=='Match Width' and width:GetParent():GetParent()==panel,'Match Size on the panel')
+    -- Place: position, Snap To and Match Size; the page steps aside.
+    strip.placeTab.scripts.OnClick(strip.placeTab)
+    assert(strip.placeTab.selected and width:GetParent():IsShown() and not page:IsShown(),'the Place tab')
+    strip.settingsTab.scripts.OnClick(strip.settingsTab)
+    assert(page:IsShown() and not width:GetParent():IsShown(),'back to Settings')
+    -- Tab steps to the next element; Esc lets go (the panel closes); the next Esc closes Edit Mode.
+    local first=element.id
+    strip.scripts.OnKeyDown(strip,'TAB');assert(addon.EditMode:Selected() and addon.EditMode:Selected().id~=first,'Tab: the next element')
+    strip.scripts.OnKeyDown(strip,'ESCAPE');assert(addon.EditMode:Selected()==nil and not panel:IsShown() and addon.editMode,'Esc lets go')
+    assert(addon.EditMode:Select(first) and panel:IsShown(),'picked again')
+    -- Undo and Redo: a nudge, undone and redone.
+    local before=PM:GetPosition(first)
+    assert(not strip.undoButton:IsEnabled() and PM:Nudge(first,1,0) and strip.undoButton:IsEnabled(),'Undo after a change')
+    strip.undoButton.scripts.OnClick(strip.undoButton)
+    assert(PM:GetPosition(first).x==before.x and strip.redoButton:IsEnabled(),'undone')
+    strip.redoButton.scripts.OnClick(strip.redoButton)
+    assert(PM:GetPosition(first).x~=before.x,'redone')
+    strip.undoButton.scripts.OnClick(strip.undoButton)
+    -- Elements lists everything you can pick; choosing one selects it.
+    strip.elementsButton.scripts.OnClick(strip.elementsButton)
+    local menu=strip.elementsButton.actionMenu
+    assert(menu:IsShown() and menu.rows[1]:IsShown(),'the Elements list')
+    menu.rows[2].scripts.OnClick(menu.rows[2])
+    assert(not menu:IsShown() and addon.EditMode:Selected()~=nil,'a pick from the list')
     -- Match picks are saved in the profile and checked like the rest of it.
     assert(addon.Database:ValidateProfile({sizeMatches={a={width='b'}}}) and not addon.Database:ValidateProfile({sizeMatches={a={depth='b'}}}) and not addon.Database:ValidateProfile({sizeMatches={a={width=5}}}),'size matches checked')
     assert(addon:SetEditMode(false) and window:IsShown())
+    assert(page:GetParent()==window.pageHost and page:IsShown() and not page.inEditPanel and page.cardColumns==4,'the page back in the window as it was')
     window:Hide()
     addon.root.window.x=123;addon.root.window.y=45
     addon:SetModuleEnabled('unitFrames',false)

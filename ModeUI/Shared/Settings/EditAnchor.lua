@@ -118,7 +118,7 @@ local function Outline(parent)
     outline:EnableMouse(false)
     for i, points in ipairs({ { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }) do
         local edge = outline:CreateTexture(nil, "OVERLAY")
-        edge:SetPoint(points[1]); edge:SetPoint(points[2]); edge:SetColorTexture(unpack(addon.Theme.primary))
+        edge:SetPoint(points[1]); edge:SetPoint(points[2]); edge:SetColorTexture(unpack(addon.Style.Tone.edit.select))
         if i <= 2 then edge:SetHeight(2) else edge:SetWidth(2) end
     end
     return outline
@@ -131,7 +131,7 @@ function A:BuildOverlay()
     local text = overlay:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     text:SetPoint("TOP", UIParent, "TOP", 0, -50)
     addon.Media:BindInterfaceFont(text, GameFontHighlight, 16)
-    text:SetTextColor(unpack(addon.Theme.primary))
+    text:SetTextColor(unpack(addon.Style.Tone.edit.select))
     overlay.text, overlay.outline = text, Outline(overlay)
     overlay:SetScript("OnKeyDown", function(_, key)
         overlay:SetPropagateKeyboardInput(key ~= "ESCAPE")

@@ -103,7 +103,10 @@ function W.Preview(page, module, options)
             self.previewExpandedHeight=headerHeight+bodyHeight+6
         end
         local h=collapsed and headerHeight or math.max(headerHeight+32,self.previewExpandedHeight)
-        if pane then h=0 else area:SetHeight(h) end
+        -- In Edit Mode's panel the real element is the preview (EditPage.lua).
+        local hidden=self.inEditPanel==true
+        if pane or hidden then h=0 else area:SetHeight(h) end
+        if not pane then area:SetShown(not hidden) end
         body:SetShown(not collapsed)
         collapse.label:SetText(collapsed and "Expand" or "Collapse")
         collapse:SetEnabled(not self.previewSectionCollapsed)
@@ -115,9 +118,9 @@ function W.Preview(page, module, options)
         local permitted=module.SetTestDisplay and module.active and not (InCombatLockdown() or UnitAffectingCombat("player") or addon.editMode or addon.previewMode)
         if module.CanTestDisplay then permitted=module:CanTestDisplay() end
         test:SetEnabled(module.testing==true or permitted==true)
-        local top=pane and 0 or h+12
+        local top=(pane or hidden) and 0 or h+12
         if self.sectionTabs then
-            local tabsTop=pane and 0 or h+6
+            local tabsTop=(pane or hidden) and 0 or h+6
             self.sectionTabs:ClearAllPoints(); self.sectionTabs:SetPoint("TOPLEFT",0,-tabsTop)
             self.sectionTabs:SetPoint("TOPRIGHT",-24,-tabsTop)
             top=tabsTop+self.sectionTabs:GetHeight()+12

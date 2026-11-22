@@ -45,9 +45,10 @@ function PM:UpdateEditDecoration(element, selected, show)
     end
     local d=element.decoration
     if not d then return end
-    local color=selected and addon.Theme.primary or addon.Theme.muted
+    local edit=addon.Style.Tone.edit
+    local color=selected and edit.select or edit.idle
     for _,edge in ipairs(d.edges) do edge:SetColorTexture(color[1],color[2],color[3],selected and 0.9 or 0.5) end
-    local volt=addon.Theme.volt
+    local volt=edit.name
     d.label:SetTextColor(volt[1],volt[2],volt[3])
     -- Anchor To: the handle still takes the click (it picks), but never drags.
     d.handle:EnableMouse(active and (self:CanDrag(element) or self:Pickable(element)) or false)
@@ -82,7 +83,7 @@ function PM:Coordinates(frame,handle,element)
     local background=box:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();PaintPanel(background)
     local text=box:CreateFontString(nil,"OVERLAY","GameFontHighlight")
     text:SetPoint("CENTER");addon.Media:BindInterfaceFont(text,GameFontHighlight,11)
-    text:SetTextColor(unpack(addon.Theme.text))
+    text:SetTextColor(unpack(addon.Style.Tone.edit.grid))
     box.text=text
     local elapsed=COORDS_TICK
     local function Update()
@@ -109,7 +110,7 @@ function PM:NudgeButtons(frame,handle,element)
         button:RegisterForClicks("LeftButtonUp")
         local background=button:CreateTexture(nil,"BACKGROUND");background:SetAllPoints();PaintPanel(background)
         local arrow=button:CreateTexture(nil,"ARTWORK");arrow:SetPoint("CENTER");arrow:SetSize(16,16)
-        addon.Media:ApplyTexture(arrow,"ModeChevron");arrow:SetVertexColor(unpack(addon.Theme.text))
+        addon.Media:ApplyTexture(arrow,"ModeChevron");arrow:SetVertexColor(unpack(addon.Style.Tone.edit.grid))
         if arrow.SetRotation then arrow:SetRotation(nudge[3]) end
         local hover=button:CreateTexture(nil,"HIGHLIGHT");hover:SetAllPoints();PaintHover(hover)
         button:SetScript("OnClick",function() self:Nudge(element.id,nudge[1],nudge[2]) end)

@@ -506,6 +506,31 @@ branch `t3/healer-layout`.
 - Checked against the mock client only; waiting on the owner's in-game look
   (UNIT_FRAMES.md, "Show: Health or Mana", has the manual check).
 
+### Revision: settings review and In Place Edit Mode (November 21, 2026)
+
+From the owner's three-round settings study (Ledger pages, In Place
+customizing in Edit Mode, the Cooldown Manager kept separate) and their
+answers: Border and Glow separate tabs; every border Mode-Border or
+Mode-Empty; Buffs & Debuffs' border knobs folded; Appearance under Global.
+Built in one pass, all on the mock client:
+- **Standard tabs** (`docs/DESIGN_LANGUAGE.md`, "Standard tabs"): all eleven
+  Interface and Panels pages use General, Fill, Border, Glow, Text, Auras,
+  Behavior with a card per part, the glossary's labels, scope pickers once
+  above the tabs; `tests/settings_taxonomy.lua` enforces it.
+- **Global › Appearance** ("Suite defaults"): the suite Font and Border
+  Metal, Customized list, Back to suite; suite step 1 moved module texts
+  still at the Mode typeface onto the suite (same look).
+- **Copy To… and Reset…** in the footer replace in-page Reset to Defaults
+  buttons and the Copy & Apply tabs (`Shared/Settings/Actions.lua`).
+- **Edit Mode** ("Edit Mode"): new top bar (Elements, Undo, Redo, grid
+  spacing, Done), Tab/Esc/Ctrl-Z keys, edge snapping, `/modeui edit`, and a
+  panel docked beside the element with the module's own page (Settings) and
+  Place.
+- **Not done (open):** a sample nameplate in Edit Mode, sample states for
+  usually empty elements (boss, arena), a Chat element, an Edit Mode key
+  binding, the Silver/Steel/Gunmetal question for the suite metal.
+- Waiting on the owner's in-game look.
+
 ## Decisions
 
 From the plan's "Decisions for you" (owner's answers):

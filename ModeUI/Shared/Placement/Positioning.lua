@@ -263,7 +263,7 @@ function P:UpdateHighlight()
             local edge = outline:CreateTexture(nil, "OVERLAY")
             edge:SetPoint(points[1]); edge:SetPoint(points[2])
             if index <= 2 then edge:SetHeight(1) else edge:SetWidth(1) end
-            local color = addon.Theme.secondary
+            local color = addon.Style.Tone.edit.idle
             edge:SetColorTexture(color[1], color[2], color[3], 0.5)
         end
         self.highlight = outline

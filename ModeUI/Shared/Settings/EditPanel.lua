@@ -1,13 +1,18 @@
 local _, addon = ...
 local W, T = addon.ConfigWidgets, addon.InterfaceTheme
--- Edit Mode's element panel: a small popup under the Edit Mode strip
--- (EditMode.lua) for the selected element. Its name and a small Settings
--- button (the module's page), then Position (X and Y), Snap To (what it hangs
--- from, Anchor To..., its side, Reset Offset) and Match Size (Match Width and
--- Match Height: click one, then the element whose width or height to take;
--- click it again to stop matching). Drag its title to move it.
-local WIDTH, HEIGHT, PAD = 296, 300, 14
+-- Edit Mode's element panel (docs/DESIGN_LANGUAGE.md, "Edit Mode"): it docks
+-- beside the selected element, on the side with more room and never over it
+-- (Pin keeps it at the screen's right edge instead; a panel you drag stays
+-- where you put it until you pick another module's element). Header: the
+-- element's name and module, Pin, and close (clears the selection). Two tabs:
+-- **Settings**, the module's own page scoped to the element (EditPage.lua),
+-- and **Place**: Position (X and Y), Snap To (what it hangs from, Anchor To…,
+-- its side, Reset Offset) and Match Size (Match Width and Match Height: click
+-- one, then the element whose width or height to take; again to stop).
+-- Open Page leaves Edit Mode for the module's page in the settings window.
+local WIDTH, HEIGHT, PAD, TOP = 432, 560, 14, 82
 addon.EDIT_PANEL_SIZE = { WIDTH, HEIGHT }
+local GAP = 16 -- between the element and the docked panel
 local Combat = addon.InCombat
 
 -- Small owned dropdown; options are rebuilt on open, never polled.
@@ -77,31 +82,11 @@ function addon:OpenEditedElementSettings()
     if module.OpenElementSettings then module:OpenElementSettings(elementId) end
 end
 
--- Builds the panel; `controls` (the strip) gets every control by name, so
--- callers find them on addon.editWindow as before.
-function addon:CreateEditPanel(strip, controls)
+-- The Place tab's controls in `view`; every control goes on `controls` by name.
+local function BuildPlace(self, view, controls)
     local E, PM, P, A = self.EditMode, self.PositionManager, self.Positioning, self.EditAnchor
-    local panel = CreateFrame("Frame", "ModeUIEditPanel", UIParent)
-    panel:Hide(); panel:SetSize(WIDTH, HEIGHT)
-    panel:SetPoint("TOP", strip, "BOTTOM", 0, -8)
-    panel:SetFrameStrata("DIALOG"); panel:SetFrameLevel(80)
-    panel:SetMovable(true); panel:SetClampedToScreen(true); panel:EnableMouse(true)
-    W.Texture(panel, "Window"); W.Texture(panel, "BorderSilver", "BORDER")
-    self.editPanel = panel
-    local drag = CreateFrame("Frame", nil, panel)
-    drag:SetPoint("TOPLEFT", 6, -6); drag:SetPoint("TOPRIGHT", -92, -6); drag:SetHeight(30)
-    drag:EnableMouse(true); drag:RegisterForDrag("LeftButton")
-    drag:SetScript("OnDragStart", function() if not Combat() then panel:StartMoving() end end)
-    drag:SetScript("OnDragStop", function() panel:StopMovingOrSizing() end)
-    local selected = W.Heading(panel, "", T.fontSize.section, PAD, -14, WIDTH - 2 * PAD - 84, T.text)
-    selected:SetWordWrap(false)
-    local settings = W.Button(panel, "Settings", 76, 22, "secondary")
-    settings:SetPoint("TOPRIGHT", -PAD + 2, -10)
-    settings:SetScript("OnClick", function() self:OpenEditedElementSettings() end)
-
-    -- Position: X and Y, each a slider with its number.
-    local refreshing
-    Caption(panel, "POSITION", -44)
+    local state = { refreshing = false }
+    Caption(view, "POSITION", -6)
     local function Coordinate(axis, top)
         local function Get()
             local element = E:Selected()
@@ -116,11 +101,11 @@ function addon:CreateEditPanel(strip, controls)
             if axis == "x" then return lx, hx end
             return ly, hy
         end
-        W.Label(panel, axis:upper(), nil, PAD, top - 8, 14, T.secondary)
-        local holder = CreateFrame("Frame", nil, panel)
+        W.Label(view, axis:upper(), nil, PAD, top - 8, 14, T.secondary)
+        local holder = CreateFrame("Frame", nil, view)
         holder:SetPoint("TOPLEFT", PAD + 18, top); holder:SetSize(WIDTH - 2 * PAD - 18, 30)
         local low, high = Limits()
-        local function Set(value) if not refreshing then E:SetCoordinate(axis, value) end end
+        local function Set(value) if not state.refreshing then E:SetCoordinate(axis, value) end end
         local refresh = W.Slider(holder, low, high, 5, Get, Set, "", {
             minimum = function() local l = Limits(); return l end,
             maximum = function() local _, h = Limits(); return h end,
@@ -134,16 +119,16 @@ function addon:CreateEditPanel(strip, controls)
             refresh()
         end
     end
-    local xInput, xSlider, refreshX = Coordinate("x", -58)
-    local yInput, ySlider, refreshY = Coordinate("y", -92)
+    local xInput, xSlider, refreshX = Coordinate("x", -22)
+    local yInput, ySlider, refreshY = Coordinate("y", -56)
 
-    -- Snap To: what it hangs from and on which side.
-    Caption(panel, "SNAP TO", -132)
+    Caption(view, "SNAP TO", -100)
     local function Position()
         local element = E:Selected()
         return element and PM:GetPosition(element.id)
     end
-    local targets = Dropdown(panel, 156, function()
+    local half = math.floor((WIDTH - 2 * PAD - 8) / 2)
+    local targets = Dropdown(view, half, function()
         local element = E:Selected()
         return PM:GetAllowedTargets(element and element.id)
     end, function()
@@ -155,30 +140,28 @@ function addon:CreateEditPanel(strip, controls)
         end
         return id, "Saved target unavailable"
     end, function(id) E:SetTarget(id) end)
-    targets:SetPoint("TOPLEFT", PAD, -148)
-    local anchorTo = W.Button(panel, "Anchor To...", WIDTH - 2 * PAD - 162, 24, "secondary")
-    anchorTo:SetPoint("TOPLEFT", PAD + 162, -148)
+    targets:SetPoint("TOPLEFT", PAD, -118)
+    local anchorTo = W.Button(view, "Anchor To...", half, 24, "secondary")
+    anchorTo:SetPoint("TOPLEFT", PAD + half + 8, -118)
     anchorTo:SetScript("OnClick", function()
         local element = E:Selected()
         if A:Active() and not A:Matching() then A:Stop() elseif element then A:Start(element.id) end
         self:RefreshEditWindow()
     end)
-    local placements = Dropdown(panel, 156, function() return P.placements end, function()
+    local placements = Dropdown(view, half, function() return P.placements end, function()
         local p = Position()
         local placement = P:Placement(p and p.placement)
         return placement.id, placement.label
     end, function(id) E:SetPlacement(id) end)
-    placements:SetPoint("TOPLEFT", PAD, -178)
-    local reset = W.Button(panel, "Reset Offset", WIDTH - 2 * PAD - 162, 24, "secondary")
-    reset:SetPoint("TOPLEFT", PAD + 162, -178)
+    placements:SetPoint("TOPLEFT", PAD, -150)
+    local reset = W.Button(view, "Reset Offset", half, 24, "secondary")
+    reset:SetPoint("TOPLEFT", PAD + half + 8, -150)
     reset:SetScript("OnClick", function() E:ResetOffset() end)
 
-    -- Match Size: each axis follows an element picked for it.
-    Caption(panel, "MATCH SIZE", -216)
-    local half = math.floor((WIDTH - 2 * PAD - 6) / 2)
+    Caption(view, "MATCH SIZE", -194)
     local function Match(axis, x)
-        local button = W.Button(panel, "", half, 24, "secondary")
-        button:SetPoint("TOPLEFT", x, -232)
+        local button = W.Button(view, "", half, 24, "secondary")
+        button:SetPoint("TOPLEFT", x, -212)
         button:SetScript("OnClick", function()
             local element = E:Selected()
             if not element then return end
@@ -189,21 +172,17 @@ function addon:CreateEditPanel(strip, controls)
         end)
         return button
     end
-    local matchWidth, matchHeight = Match("width", PAD), Match("height", PAD + half + 6)
-    local matched = W.Label(panel, "", nil, PAD, -264, WIDTH - 2 * PAD, T.muted)
+    local matchWidth, matchHeight = Match("width", PAD), Match("height", PAD + half + 8)
+    local matched = W.Label(view, "", nil, PAD, -246, WIDTH - 2 * PAD, T.muted)
     matched:SetWordWrap(true)
-
     local function MatchText(element, axis)
         if not element or not PM:GetSizeMatch(element.id, axis) then return "off" end
         local target = PM:GetSizeMatchTarget(element.id, axis)
         return target and A:TargetLabel(target) or "nothing yet"
     end
-    function panel:Refresh()
-        if refreshing then return end
-        refreshing = true
+    function state.Refresh()
+        state.refreshing = true
         local element = E:Selected()
-        selected:SetText(element and (element.label or element.module.title) or "No enabled movable element")
-        settings:SetEnabled(element ~= nil and addon.modules[element.module.id] ~= nil)
         local anchoring = element ~= nil and element.supportsAnchoring == true
         local available = element ~= nil and (not anchoring or P:Resolve(element.position.target or "screen") ~= nil)
         xInput:SetEnabled(available); yInput:SetEnabled(available)
@@ -223,13 +202,113 @@ function addon:CreateEditPanel(strip, controls)
         end
         matched:SetText(element and ("Width: " .. MatchText(element, "width") .. "\nHeight: " .. MatchText(element, "height")) or "")
         targets:Refresh(); placements:Refresh()
-        refreshing = false
+        state.refreshing = false
     end
-    panel:SetScript("OnHide", function() targets.menu:Hide(); placements.menu:Hide(); panel:StopMovingOrSizing() end)
-
+    function state.Hide() targets.menu:Hide(); placements.menu:Hide() end
     controls.xInput, controls.yInput, controls.xSlider, controls.ySlider = xInput, yInput, xSlider, ySlider
     controls.targetDropdown, controls.placementDropdown, controls.resetOffset = targets, placements, reset
     controls.anchorToButton, controls.matchWidthButton, controls.matchHeightButton = anchorTo, matchWidth, matchHeight
-    controls.matchedLabel, controls.settingsButton, controls.selectedLabel, controls.panel = matched, settings, selected, panel
+    controls.matchedLabel = matched
+    return state
+end
+
+-- Builds the panel; `controls` (the top bar) gets every control by name, so
+-- callers find them on addon.editWindow as before.
+function addon:CreateEditPanel(strip, controls)
+    local E, P = self.EditMode, self.Positioning
+    local panel = CreateFrame("Frame", "ModeUIEditPanel", UIParent)
+    panel:Hide(); panel:SetSize(WIDTH, HEIGHT)
+    panel:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -16, -72)
+    panel:SetFrameStrata("DIALOG"); panel:SetFrameLevel(80)
+    panel:SetMovable(true); panel:SetClampedToScreen(true); panel:EnableMouse(true)
+    W.Texture(panel, "Window"); W.Texture(panel, "BorderSilver", "BORDER")
+    self.editPanel = panel
+    local drag = CreateFrame("Frame", nil, panel)
+    drag:SetPoint("TOPLEFT", 6, -6); drag:SetPoint("TOPRIGHT", -110, -6); drag:SetHeight(34)
+    drag:EnableMouse(true); drag:RegisterForDrag("LeftButton")
+    drag:SetScript("OnDragStart", function() if not Combat() then panel:StartMoving() end end)
+    drag:SetScript("OnDragStop", function() panel:StopMovingOrSizing(); panel.userMoved = panel.dockedModule end)
+    local selected = W.Heading(panel, "", T.fontSize.section, PAD, -12, WIDTH - 2 * PAD - 110, T.text)
+    selected:SetWordWrap(false)
+    local owner = W.Label(panel, "", nil, PAD, -32, WIDTH - 2 * PAD - 110, T.muted)
+    owner:SetWordWrap(false)
+    local close = W.Button(panel, "×", 26, 24, "secondary"); close:SetPoint("TOPRIGHT", -PAD + 4, -10)
+    close:SetScript("OnClick", function() self.PositionManager:ClearSelection() end)
+    local pin = W.Button(panel, "Pin", 52, 24, "secondary"); pin:SetPoint("RIGHT", close, "LEFT", -6, 0)
+    pin:SetScript("OnClick", function() panel.pinned = not panel.pinned; panel.dockedFor = nil; self:RefreshEditWindow() end)
+
+    -- Settings and Place, and Open Page at the right.
+    local function Tab(text, x)
+        local button = W.Button(panel, text, 92, 26, "choice"); button:SetPoint("TOPLEFT", x, -50)
+        return button
+    end
+    local settingsTab, placeTab = Tab("Settings", PAD), Tab("Place", PAD + 96)
+    local settings = W.Button(panel, "Open Page", 92, 26, "secondary")
+    settings:SetPoint("TOPRIGHT", -PAD + 2, -50)
+    settings:SetScript("OnClick", function() self:OpenEditedElementSettings() end)
+    local divider = W.Fill(panel, T.line, "BORDER")
+    divider:ClearAllPoints(); divider:SetPoint("TOPLEFT", 8, -TOP + 2); divider:SetPoint("TOPRIGHT", -8, -TOP + 2); divider:SetHeight(1)
+    local host = CreateFrame("Frame", nil, panel)
+    host:SetPoint("TOPLEFT", 6, -TOP - 6); host:SetPoint("BOTTOMRIGHT", -2, 8)
+    local place = CreateFrame("Frame", nil, panel)
+    place:SetPoint("TOPLEFT", 0, -TOP - 4); place:SetPoint("BOTTOMRIGHT", 0, 8)
+    local none = W.Label(host, "", nil, 8, -8, WIDTH - 2 * PAD, T.muted); none:SetWordWrap(true)
+    local placeState = BuildPlace(self, place, controls)
+    panel.view = "settings"
+    settingsTab:SetScript("OnClick", function() panel.view = "settings"; self:RefreshEditWindow() end)
+    placeTab:SetScript("OnClick", function() panel.view = "place"; self:RefreshEditWindow() end)
+
+    -- Docks the panel beside the element: the side with more room, top edges
+    -- level (kept on screen); pinned, at the screen's right edge.
+    function panel:Dock(element)
+        if self.pinned then
+            self:ClearAllPoints(); self:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -16, -72); return
+        end
+        if self.userMoved and self.userMoved == element.module.id then return end
+        self.userMoved = nil
+        local x, y, w, h = P:Geometry(element.frame)
+        local scale = self:GetScale() > 0 and self:GetScale() or 1
+        if not x then self:ClearAllPoints(); self:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -16, -72); return end
+        local width, height = WIDTH * scale, HEIGHT * scale
+        local screenW, screenH = UIParent:GetWidth(), UIParent:GetHeight()
+        local rightRoom, leftRoom = screenW - (x + w / 2), x - w / 2
+        local left
+        if rightRoom >= width + GAP or rightRoom >= leftRoom then left = x + w / 2 + GAP else left = x - w / 2 - GAP - width end
+        left = math.max(8, math.min(screenW - width - 8, left))
+        local top = math.max(height + 8, math.min(screenH - 64, y + h / 2))
+        self:ClearAllPoints()
+        self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left / scale, top / scale)
+    end
+
+    function panel:Refresh()
+        if placeState.refreshing then return end
+        local element = E:Selected()
+        selected:SetText(element and (element.label or element.module.title) or "No enabled movable element")
+        owner:SetText(element and element.module.title or "")
+        settings:SetEnabled(element ~= nil and addon.modules[element.module.id] ~= nil)
+        pin:SetSelected(self.pinned == true)
+        local page
+        if element and self:IsShown() then
+            page = addon.EditPage:Borrow(element.module, host, element.id)
+            if self.dockedFor ~= element.id then self.dockedModule = element.module.id; self:Dock(element); self.dockedFor = element.id end
+        end
+        local view = page and self.view or "place"
+        settingsTab:SetEnabled(page ~= nil)
+        settingsTab:SetSelected(view == "settings"); placeTab:SetSelected(view == "place")
+        host:SetShown(view == "settings"); place:SetShown(view == "place")
+        none:SetShown(page == nil)
+        none:SetText(element and element.module.standalone and "Open Page opens this module's own settings window." or "")
+        if page and view == "settings" and not page:IsShown() then page:Show(); page:Layout()
+        elseif page and view ~= "settings" then page:Hide() end
+        placeState.Refresh()
+    end
+    panel:SetScript("OnHide", function()
+        placeState.Hide(); panel:StopMovingOrSizing()
+        addon.EditPage:Return()
+        panel.dockedFor = nil
+    end)
+    controls.settingsButton, controls.selectedLabel, controls.panel = settings, selected, panel
+    controls.settingsTab, controls.placeTab, controls.pinButton, controls.closeButton = settingsTab, placeTab, pin, close
+    controls.settingsHost, controls.ownerLabel = host, owner
     return panel
 end

@@ -114,6 +114,10 @@ local Tone = {
         spellHaste = Hex("7FDBFF"), expertise = Hex("E8B04B"), dodge = Hex("9AD0EC"), parry = Hex("9AD0EC"),
         block = Hex("9AD0EC"), manaRegen = Hex("4096FF") },
     power = Hex("3A6FB8"),
+    -- Edit Mode (docs/DESIGN_LANGUAGE.md, "Edit Mode"): the selected element's
+    -- outline and the guides (select), an idle outline, element names (name,
+    -- readable on any scene), the grid's lines and the hover outline.
+    edit = { select = Hex("80EF80"), idle = Hex("85858B"), name = Hex("CCFF00"), grid = Hex("DADADA"), hover = Hex("EFE6D2") },
     -- Text.
     text = Hex("DADADA"),
     textBright = Hex("F2F2F2"),

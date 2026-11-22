@@ -1630,7 +1630,7 @@ P. Pastel colors, mirrored Target text and element tabs (layout version 8).
    right-click opens the unit menu, hover shows the unit tooltip, and no
    "Interface action failed" or BugSack error appears.
 4. **Navigation:** `/ptg` → window header → Edit Mode. **Action:** drag the
-   Player Frame and Target Frame stand-ins, then click Exit.
+   Player Frame and Target Frame stand-ins, then click Done.
    **Required state:** OOC. **Confirmation:** Mode-styled stand-ins appear.
    After each drag ends, the real frame jumps to the new spot at the same size.
    Positions survive `/reload`.

@@ -125,3 +125,10 @@ function M:RenderMovers()
         self:RenderSamples(id)
     end
 end
+
+-- Edit Mode's panel (and Open Page) shows the page on the selected bar.
+function M:OpenElementSettings(eid)
+    for id in pairs(self.db.bars) do
+        if self.ElementId(id) == eid and self.page and self.page.SetEditing then self.page.SetEditing(id); return end
+    end
+end

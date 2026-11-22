@@ -88,6 +88,30 @@ local problems = world.run([[
     end
     for id in pairs(window.sidebarModuleButtons) do if id ~= "home" then Audit(id) end end
     Audit("home")
+    -- Edit Mode's panel (EditPage.lua): every Interface and Panels page at the
+    -- panel's width, one card per row, without its preview.
+    local host = CreateFrame("Frame", nil, UIParent); host:SetSize(424, 470)
+    for _, category in ipairs({ "frames", "interface" }) do
+        for _, id in ipairs(addon.categories[category].modules) do
+            local module = addon.modules[id]
+            if module.CreateConfigPage and not module.standalone then
+                local page = addon.EditPage:Borrow(module, host)
+                page.scroll.width = 424 - 24
+                local sections = page.sectionTabs and page.sections or { false }
+                for _, section in ipairs(sections) do
+                    if section then page:SelectSectionTab(section) end
+                    page:Layout()
+                    for _, row in ipairs(page.rows) do
+                        if row:IsShown() and row.width then
+                            Check("panel " .. id .. (section and (" / " .. section.title) or "") .. " / "
+                                .. tostring(row.settingsTitle or row.settingsGroupTitle or "?"), row, row.width, 0)
+                        end
+                    end
+                end
+                addon.EditPage:Return()
+            end
+        end
+    end
     table.sort(problems)
     return problems
 ]], "settings_fit")
