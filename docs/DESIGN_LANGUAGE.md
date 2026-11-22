@@ -654,7 +654,8 @@ up: click an element and its panel opens beside it.
   chip take the mouse. The selected element has one chip: its name and size
   ("Target Frame 200×52"), X and Y from the screen's center while it is
   dragged or nudged; above it, else below, else inside, clear of the top bar
-  and the panel.
+  and the panel. It glows: the Prism glow (`Style.Glow`) in
+  `Tone.edit.select`, lifted with it above the focus dim.
 - **Names** (saved for the account, `ModeUIDB.editMode.names`; default
   Inside): **Inside** puts each name in its element's top-left corner, cut
   short to fit (none on elements under 40 × 16); **Fit** gives each name the
@@ -666,7 +667,8 @@ up: click an element and its panel opens beside it.
   element under the mouse is always named, except with Off.
 - **Focus** (saved for the account, `ModeUIDB.editMode.focus`; default
   Strong): with an element selected, the screen around it darkens with
-  `Tone.edit.scrim` at 0.40 (**Dim**) or 0.65 (**Strong**): four plain
+  `Tone.edit.scrim` at 0.40 (**Dim**) or 0.55 (**Strong**; 0.65 until the
+  owner's in-game look, November 22): four plain
   textures around the element in the DIALOG strata at level 20, taking no
   clicks (`Shared/Placement/EditFocus.lua`). Other outlines and names sink
   under it (Strong hides the other outlines); the selected element's and the

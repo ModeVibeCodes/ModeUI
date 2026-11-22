@@ -97,6 +97,10 @@ world.run([[
     local td, pd = target.decoration, player.decoration
     assert(td.frame:IsShown() and td.frame.strata == 'DIALOG' and td.frame:GetFrameLevel() == Focus.LIFT, 'the Target lifts above it')
     assert(td.chip:IsShown() and td.label:GetText() == 'Target Frame' and td.sub:GetText():find('×', 1, true), 'its chip: name and size')
+    assert(Focus.STRENGTH.strong == 0.55, 'Strong, 10% lighter than first built')
+    local select = addon.Style.Tone.edit.select
+    assert(td.glow and td.glow.holder:IsShown() and td.glow.color == select and td.glow.holder:GetParent() == td.frame, 'the Target glows')
+    assert(td.glow.holder:GetFrameLevel() == Focus.LIFT - 1, 'its glow lifts with it, above the dim')
     assert(not pd.frame:IsShown(), 'Strong hides the other outlines')
     assert(pd.tag:IsShown() and pd.tag.text:GetText() == 'Player Frame' and not pd.chip:IsShown(), 'Inside: the name in its corner')
     -- The mouse over the Player: its outline and name come up through the dim.
@@ -154,6 +158,7 @@ world.run([[
     strip.scripts.OnKeyDown(strip, 'ESCAPE')
     assert(not addon.editMode and not strip:IsShown() and page:GetParent() == addon.configWindow.pageHost, 'second Esc closes')
     assert(not addon.EditFocus.frame:IsShown() and not addon.EditLabels.watcher:IsShown(), 'no dim or watcher after Edit Mode')
+    assert(not (PM:Element('unitFramesTarget').decoration and PM:Element('unitFramesTarget').decoration.frame:IsShown()), 'nor glow')
     SlashCmdList.MODEUI('edit'); assert(addon.editMode)
     SlashCmdList.MODEUI('edit'); assert(not addon.editMode, '/modeui edit closes it again')
 ]], 'edit mode')

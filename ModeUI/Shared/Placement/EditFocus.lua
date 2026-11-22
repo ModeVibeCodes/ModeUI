@@ -11,7 +11,8 @@ local P = addon.Positioning
 -- hides the other outlines until the mouse is over one. It halves while you
 -- drag, so what you snap to stays in sight, and steps away while Anchor To or
 -- Match waits for a click.
-local F = { STRENGTH = { dim = 0.40, strong = 0.65 }, PAD = 2, LEVEL = 20, LIFT = 40, FADE = 0.12 }
+-- Strong was 0.65 until the owner's in-game look (November 22): 10% lighter.
+local F = { STRENGTH = { dim = 0.40, strong = 0.55 }, PAD = 2, LEVEL = 20, LIFT = 40, FADE = 0.12 }
 addon.EditFocus = F
 
 -- The focus in effect now ("dim" or "strong"), or nil.

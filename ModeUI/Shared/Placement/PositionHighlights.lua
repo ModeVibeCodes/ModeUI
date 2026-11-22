@@ -20,6 +20,8 @@ local function Name(element) return element.label or element.module.title end
 -- Fit, every name that found a spot, EditLabels.lua) and an inside tag (Names
 -- on Inside: its top-left corner, cut short to fit). Under the focus dim
 -- (EditFocus.lua) the selected and hovered elements' decoration lifts above it.
+-- The selected element also glows: the Prism glow (Style.Glow) in
+-- Tone.edit.select, made the first time it's selected.
 local function Chip(self, frame, element)
     local chip = CreateFrame("Button", nil, frame)
     chip:SetHeight(addon.EditLabels.HEIGHT); chip:Hide()
@@ -79,6 +81,10 @@ function PM:UpdateEditDecoration(element, selected, show)
     else
         d.frame:SetFrameStrata(element.frame:GetFrameStrata()); d.frame:SetFrameLevel(element.frame:GetFrameLevel() + 15)
     end
+    if active and selected then
+        d.glow = d.glow or addon.Style.Glow(d.frame)
+        d.glow:Layout(); d.glow:SetColor(edit.select); d.glow:SetShown(true)
+    elseif d.glow then d.glow:SetShown(false) end
     d.active, d.selected, d.hovered = active and true or false, selected and true or false, hovered
     -- Strong focus: the other outlines stay hidden until the mouse is over one.
     d.frame:SetShown(d.active and not (focus == "strong" and not lifted))
