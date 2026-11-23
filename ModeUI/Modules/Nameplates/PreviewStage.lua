@@ -11,12 +11,12 @@ if not M then return end
 --     across: changing an anchor never slides the plate sideways; up and down,
 --     the plate's full reach is centered, from the layout, so states never
 --     move it;
---   * a 1:1 strip of three more plates in other states (friendly: a player
---     and an NPC, names only by default).
+--   * a strip of three more plates in other states, smaller and each named
+--     (friendly: a player and an NPC, names only by default).
 -- Clicking a part of the stage plate jumps to its settings. Shown through the
 -- shared settings preview (W.Preview); samples are painted in Preview.lua.
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
-local CHIPS_HEIGHT, STRIP_HEIGHT, CAPTION_HEIGHT, PREVIEW_HEIGHT = 26, 70, 18, 300
+local CHIPS_HEIGHT, STRIP_HEIGHT, CAPTION_HEIGHT, PREVIEW_HEIGHT = 26, 60, 18, 320
 M.PREVIEW_ZOOM = 2
 
 M.previewState = { cast = "cast", targeted = true, auras = "some" }
@@ -25,14 +25,16 @@ M.previewChips = {
     { key = "targeted", choices = { { true, "Target" }, { false, "Not Target" } } },
     { key = "auras", choices = { { "none", "No Auras" }, { "some", "Some" }, { "full", "Full" } } },
 }
--- The strip's plates: { sample key or nil for the kind's own, state }.
+-- The strip's plates: { sample key or nil for the kind's own, state, label }.
+-- Smaller than the stage (owner, November 23, 2026), each named under it.
 local STRIP = {
-    enemy = { { nil, { cast = "none", targeted = false, focus = true, auras = "some", soft = false } },
-        { nil, { cast = "locked", targeted = false, auras = "some", soft = false } },
-        { nil, { cast = "none", targeted = false, auras = "none", soft = false } } },
-    friendly = { { nil, { cast = "none", targeted = false, auras = "some", soft = false } },
-        { "friendlyNPC", { cast = "none", targeted = false, auras = "none", soft = false } } },
+    enemy = { { nil, { cast = "none", targeted = false, focus = true, auras = "some", soft = false }, "Your Focus" },
+        { nil, { cast = "locked", targeted = false, auras = "some", soft = false }, "Can't Interrupt" },
+        { nil, { cast = "none", targeted = false, auras = "none", soft = false }, "No Cast, No Auras" } },
+    friendly = { { nil, { cast = "none", targeted = false, auras = "some", soft = false }, "Friendly Player" },
+        { "friendlyNPC", { cast = "none", targeted = false, auras = "none", soft = false }, "Friendly NPC" } },
 }
+local STRIP_SCALE, LABEL_HEIGHT = 0.75, 12
 
 -- A text's click area covers the written text, not the whole line.
 local function FitText(hit, text)
@@ -73,7 +75,9 @@ local function Stage(self, view, plate, style, progress)
     local zoom = M.PREVIEW_ZOOM
     if addon.IsNumber(width, 1) and addon.IsNumber(room, 1) then
         zoom = math.min(zoom, (width - 16) / (2 * halfWidth), (room - 8) / height)
-        zoom = math.max(1, math.floor(zoom * 2) / 2)
+        -- Quarter steps: the plate is laid out again at its zoom, so every
+        -- step stays on whole physical pixels.
+        zoom = math.max(1, math.floor(zoom * 4) / 4)
     end
     plate:SetScale(zoom)
     -- The scale changes the plate's pixel size: lay it out again at the zoom.
@@ -86,20 +90,37 @@ local function Stage(self, view, plate, style, progress)
     view.zoom = zoom
 end
 
+-- The strip: each plate at 3/4 size (less if its full reach can't fit), in
+-- its own slot, its reach centered above a label naming what it shows.
 local function Strip(self, view, kind, style, progress)
     local list = STRIP[kind] or {}
-    local count = #list
+    local count = math.max(1, #list)
+    local width = view.stripFrame:GetWidth()
+    local slot = (addon.IsNumber(width, 1) and width or 600) / count
     for i, plate in ipairs(view.strip[kind]) do
-        local entry = list[i]
-        if not entry or not style.show then plate:Hide()
+        local entry, label = list[i], view.stripLabels[kind][i]
+        if not entry or not style.show then plate:Hide(); label:Hide()
         else
             plate:SetScale(1)
             self:LayoutPlate(plate)
-            self:PaintSample(plate, style, self.previewSamples[entry[1] or kind], progress, entry[2])
-            local x = (i - (count + 1) / 2) * math.max(plate:GetWidth() + 90, view.stripFrame:GetWidth() / math.max(1, count))
+            local sample = self.previewSamples[entry[1] or kind]
+            self:PaintSample(plate, style, sample, progress, entry[2])
+            local left, right, up, down = self:PreviewReach(plate)
+            local scale = math.min(STRIP_SCALE, (STRIP_HEIGHT - LABEL_HEIGHT - 6) / (up + plate:GetHeight() + down),
+                (slot - 8) / (plate:GetWidth() + 2 * math.max(left, right)))
+            plate:SetScale(math.max(0.4, scale))
+            self:LayoutPlate(plate)
+            self:PaintSample(plate, style, sample, progress, entry[2])
             local px = plate.px or 1
-            plate:ClearAllPoints(); plate:SetPoint("CENTER", view.stripFrame, "CENTER", math.floor(x / px + 0.5) * px, 0)
+            local x = (i - 0.5) * slot - (addon.IsNumber(width, 1) and width or 600) / 2
+            -- Offsets are in the plate's own (scaled) units.
+            local y = LABEL_HEIGHT / 2 / plate:GetScale() + (down - up) / 2
+            plate:ClearAllPoints()
+            plate:SetPoint("CENTER", view.stripFrame, "CENTER", math.floor(x / plate:GetScale() / px + 0.5) * px, math.floor(y / px + 0.5) * px)
             plate:Show()
+            label:SetText(L[entry[3]])
+            label:ClearAllPoints(); label:SetPoint("BOTTOM", view.stripFrame, "BOTTOM", math.floor(x + 0.5), 1)
+            label:Show()
         end
     end
 end
@@ -115,6 +136,7 @@ function M:RenderPreview(view)
         if not on then
             plate:Hide()
             for _, other in ipairs(view.strip[kind]) do other:Hide() end
+            for _, label in ipairs(view.stripLabels[kind]) do label:Hide() end
         else
             Stage(self, view, plate, style, progress)
             Strip(self, view, kind, style, progress)
@@ -140,7 +162,7 @@ end
 function M:CreateConfigPreview(parent)
     local frame = CreateFrame("Frame", nil, parent)
     frame:SetAllPoints()
-    local view = { frame = frame, plates = {}, strip = {}, targets = {}, chips = {} }
+    local view = { frame = frame, plates = {}, strip = {}, stripLabels = {}, targets = {}, chips = {} }
     -- Chips along the top.
     local chips = CreateFrame("Frame", nil, frame)
     chips:SetPoint("TOPLEFT"); chips:SetPoint("TOPRIGHT"); chips:SetHeight(CHIPS_HEIGHT)
@@ -179,8 +201,13 @@ function M:CreateConfigPreview(parent)
             classification = M.Clickable(plate.indicatorParts.classification, kind, "indicator", "classification", plate.textLayer),
             level = M.Clickable(plate.indicatorParts.level, kind, "indicator", "level", plate.textLayer),
         }
-        view.strip[kind] = {}
-        for i = 1, 3 do view.strip[kind][i] = SamplePlate(self, view.stripFrame, kind, false) end
+        view.strip[kind], view.stripLabels[kind] = {}, {}
+        for i = 1, 3 do
+            view.strip[kind][i] = SamplePlate(self, view.stripFrame, kind, false)
+            local label = W.Label(view.stripFrame, "", nil, 0, 0, 160, T.muted)
+            label:SetJustifyH("CENTER"); label:Hide()
+            view.stripLabels[kind][i] = label
+        end
     end
     view.caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")

@@ -211,15 +211,16 @@ The magnified previewer (owner, November 23, 2026; `PreviewStage.lua`):
   - Target or Not Target;
   - auras: None, Some, Full (every group at Most Shown, its full reach).
 - **The stage:** the kind being edited, magnified (2x, less when its full
-  reach can't fit) and pixel snapped.
+  reach can't fit, in quarter steps) and pixel snapped.
   - **The health bar stays in the middle across**, so an anchor change never
     slides the plate sideways.
   - Up and down, the plate's full reach is centered, from the layout and every
     row at Most Shown, so changing states never moves it.
   - The preview has a fixed height.
-- **A 1:1 strip** of more plates in other states:
-  - enemy: your focus, a cast you can't interrupt, a plain one;
-  - friendly: a player and an NPC.
+- **A strip** of more plates in other states, at 3/4 size, each named
+  underneath:
+  - enemy: Your Focus, Can't Interrupt, No Cast, No Auras;
+  - friendly: Friendly Player, Friendly NPC.
 - **Click any part** of the stage plate to jump to its settings.
 
 The old preview estimated the plate's size with its own copy of the layout,
@@ -347,7 +348,7 @@ Earlier versions:
   shown (friendly ones too for the names).
 - **Confirmation:**
   - The preview's health bar stays in place while anchors and states change,
-    and the 1:1 strip matches the world.
+    and each strip plate is named.
   - The name sits on the border at the top left and shortens with "…" only as
     debuffs fill in from the right.
   - With no buffs, the right arrow sits right beside the bar and moves out as
