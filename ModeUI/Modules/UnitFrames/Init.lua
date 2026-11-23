@@ -86,7 +86,7 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 23: semi-transparent empty bars (Slate at 60%, no black plate behind).
 -- Version 24: the portrait ring in the class or reaction color (owner).
 -- Version 25: the Target's health in the class or reaction color, its own even when matched (owner).
-M.LAYOUT_VERSION = 25
+M.LAYOUT_VERSION = 26
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 
 local Tone = addon.Style.Tone
@@ -261,7 +261,11 @@ M.choices.totemAttach = { { id = "below", label = "Below, Right" }, { id = "abov
 M.castDefaults = { enabled = true, hideBlizzard = true, position = "below", height = 14, gap = 2, icon = "near",
     fullWidth = true, width = 160,
     foregroundTexture = "media:Mode-FG", backgroundTexture = "media:Mode-BG",
-    showText = true, showTimer = true, fontSize = 11, outline = true, color = Copy(M.palette.neutral), lockedColor = Copy(M.palette.tapped) }
+    showText = true, showTimer = true, fontSize = 11, outline = true,
+    -- Every Mode cast bar (owner, November 23, 2026): light blue, orange-red
+    -- when it can't be interrupted, channels green (layout version 26).
+    color = Copy(addon.Style.Tone.cast.casting), lockedColor = Copy(addon.Style.Tone.cast.shielded),
+    channelColor = Copy(addon.Style.Tone.cast.channeling) }
 -- Gap -1: the bar 1px from the frame, the two shadows sharing one pixel, as
 -- Mode's icons and frames do (owner, November 19, 2026).
 M.castRanges = { height = { 6, 40, 1 }, gap = { -1, 40, 1 }, fontSize = { 6, 20, 1 }, width = { 40, 400, 1 } }

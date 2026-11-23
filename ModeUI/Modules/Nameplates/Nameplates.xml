@@ -3,6 +3,7 @@
     <Script file="Theme.lua"/>
     <Script file="Layouts.lua"/>
     <Script file="Migrations.lua"/>
+    <Script file="MigrationsV12.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Plate.lua"/>
     <Script file="Layout.lua"/>

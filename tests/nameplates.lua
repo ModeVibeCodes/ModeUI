@@ -118,7 +118,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'frames' and not M.enabled, 'registered under Frames, off by default')
-    assert(M.db.version == 11 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 12 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
     -- The Mode-Obsidian look (the theme part runs on every profile): Mode-FG
     -- on Mode-BG at 85%, Mode-FG casts, the focus in the Glow, Gradient names,
     -- health text by health, Urbanist.
@@ -946,7 +946,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 11 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 12 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -967,7 +967,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 11 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 12 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -982,7 +982,7 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 11 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 12 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
         assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
@@ -1003,7 +1003,7 @@ end
 np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 11 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.version == 12 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
     assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
     assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
 ]==], "nameplates_v4")
@@ -1017,7 +1017,7 @@ np.enemy.healthOpacity, np.enemy.backgroundOpacity = nil, nil
 np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 11 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
+    assert(db.version == 12 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
     assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 85 and db.friendly.backgroundOpacity == 85, 'opacity defaults (Mode-Obsidian: 85)')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v5")
@@ -1032,7 +1032,7 @@ end
 np.enemy.indicatorAnchor, np.enemy.indicatorX, np.enemy.indicatorY, np.enemy.indicatorSize, np.enemy.indicatorFontSize = 'TOPLEFT', 3, -2, 18, 11
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local e = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 11 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 12 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
     assert(e.questAnchor == 'TOPLEFT' and e.levelAnchor == 'TOPLEFT' and e.classificationX == 3 and e.levelY == -2, 'place carried over')
     assert(e.questSize == 18 and e.classificationSize == 18 and e.levelSize == 11, 'sizes carried over')
 ]==], "nameplates_v6")
@@ -1153,7 +1153,7 @@ np.enemy.auraCCNoTypeColor = { 1, 140 / 255, 40 / 255 }
 np.friendly.auraCCNoTypeColor = { 0.2, 0.4, 0.9 }
 H.Load({ before = STUBS, saved = v7 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 11 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
+    assert(db.version == 12 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
     assert(db.friendly.auraCCNoTypeColor[3] == 0.9, 'a picked color stays')
 ]==], "nameplates_v7")
 
@@ -1172,7 +1172,7 @@ np.friendly.backgroundOpacity, np.friendly.nameColorMode = 40, 'class'
 H.Load({ before = STUBS, saved = v8 }).run([==[
     local db, Tone, P = addon.Nameplates.db, addon.Style.Tone, addon.Kit.palette
     local e, f = db.enemy, db.friendly
-    assert(db.version == 11 and e.foregroundTexture == 'media:Mode-FG' and e.backgroundTexture == 'media:Mode-BG' and e.backgroundOpacity == 85)
+    assert(db.version == 12 and e.foregroundTexture == 'media:Mode-FG' and e.backgroundTexture == 'media:Mode-BG' and e.backgroundOpacity == 85)
     assert(e.nameColorMode == 'class' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode-FG')
     assert(e.healthTextColor == 'health' and e.focusColor[1] == Tone.rosewood[1], 'old focus amber takes Rosewood')
     assert(f.backgroundOpacity == 40 and f.nameColorMode == 'class', 'picked values stay')
@@ -1187,7 +1187,7 @@ np.enemy.auraBorderSize, np.enemy.auraCorners, np.enemy.auraNoTypeColor = 2, 'ro
 np.friendly.auraBorderSize, np.friendly.auraCorners, np.friendly.auraNoTypeColor = 3, 'sharp', { 0.5, 0.1, 0.1 }
 H.Load({ before = STUBS, saved = v9 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 11 and db.enemy.auraBorderSize == 1 and db.friendly.auraBorderSize == 2, 'sizes move')
+    assert(db.version == 12 and db.enemy.auraBorderSize == 1 and db.friendly.auraBorderSize == 2, 'sizes move')
     assert(db.enemy.auraCorners == nil and db.friendly.auraCorners == nil, 'Corners retired')
     assert(addon.Style.SameColor(db.enemy.auraNoTypeColor, addon.Style.Tone.gunmetal.mid) and db.friendly.auraNoTypeColor[1] == 0.5, 'old rim moves, picked stays')
 ]==], "nameplates_v9")
@@ -1199,7 +1199,7 @@ np.version, np.enemy.backgroundOpacity, np.friendly.backgroundOpacity = 10, 100,
 np.enemy.edgeStyle, np.enemy.edgeMetal, np.friendly.edgeStyle, np.friendly.edgeMetal = nil, nil, nil, nil
 H.Load({ before = STUBS, saved = v10 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 11 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 45, '100 becomes 60')
+    assert(db.version == 12 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 45, '100 becomes 60')
     assert(db.enemy.edgeStyle == 'obsidian' and db.friendly.edgeMetal == 'default', 'the border keys arrive with their defaults')
 ]==], "nameplates_v10")
 

@@ -64,7 +64,9 @@ addon:RegisterModule("cooldownManager", M)
 -- bars. A new profile starts with them.
 -- Version 10 (owner, November 20, 2026): the Cast Bar in your class color;
 -- a Bar Mode still at Dark (the old default) takes Color.
-M.VERSION = 10
+-- Version 11 (owner, November 23, 2026): every Mode cast bar in light blue,
+-- orange-red when it can't be interrupted; old default colors follow.
+M.VERSION = 11
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone

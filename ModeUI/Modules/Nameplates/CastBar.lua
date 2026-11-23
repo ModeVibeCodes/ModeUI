@@ -143,12 +143,12 @@ end
 
 -- Colors, text and icon for a cast; shared with the preview.
 function M:PaintCast(plate, style, channel, notInterruptible, text, texture)
-    Kit.PaintCastBar(plate.cast, channel, notInterruptible, style.castColor, style.castLockedColor)
+    Kit.PaintCastBar(plate.cast, channel, notInterruptible, style.castColor, style.castLockedColor, style.castChannelColor)
     pcall(Kit.Write, plate.castText, style.castShowText and text or "")
     if not pcall(plate.castIcon.SetTexture, plate.castIcon, texture) then plate.castIcon:SetTexture(nil) end
     plate.casting = channel and "channel" or "cast"
     plate.comet:Layout(channel, plate.px)
-    plate.comet:SetColor(style.castColor)
+    plate.comet:SetColor(channel and style.castChannelColor or style.castColor)
     plate.comet:SetShown(true)
     plate.castBox:Show()
 end

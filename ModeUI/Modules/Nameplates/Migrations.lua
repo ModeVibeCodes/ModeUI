@@ -210,6 +210,7 @@ function M.Initialize(db)
     if db.version == 8 then MigrateV8(db); db.version = 9 end
     if db.version == 9 then MigrateV9(db); db.version = 10 end
     if db.version == 10 then MigrateV10(db); db.version = 11 end
+    if db.version == 11 then M.MigrateV11(db); db.version = 12 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do

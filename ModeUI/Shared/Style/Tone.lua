@@ -63,7 +63,9 @@ local Tone = {
     emptyAlpha = 0.6,
     -- Gameplay meanings, never softened.
     reaction = { hostile = Hex("E5484D"), neutral = Hex("F2C744"), friendly = Hex("46C46B"), tapped = Hex("8C8C8C") },
-    cast = { casting = Hex("F2B13C"), channeling = Hex("3FBF7F"), shielded = Hex("7D838C"), interrupted = Hex("E5484D") },
+    -- Every Mode cast bar (owner, November 23, 2026): light blue while you can
+    -- interrupt, orange-red while you can't; channels keep their green.
+    cast = { casting = Hex("6CB8FF"), channeling = Hex("3FBF7F"), shielded = Hex("FF6B3D"), interrupted = Hex("E5484D") },
     dispel = { Magic = Hex("3399FF"), Curse = Hex("9900FF"), Disease = Hex("996600"), Poison = Hex("009900") },
     quality = { [0] = Hex("9D9D9D"), [1] = Hex("FFFFFF"), [2] = Hex("1EFF00"), [3] = Hex("0070DD"), [4] = Hex("A335EE"), [5] = Hex("FF8000") },
     cooldown = Hex("FFB12F"),
@@ -194,7 +196,9 @@ Style.LEGACY = { nameplateFocus = Hex("FFB547"),
         neutral = Hex("E8B04B"), tapped = Hex("8C8C8C"), mana = Hex("4096FF"), muted = Hex("B9B9B9"), cooldown = Hex("FFB12F") },
     onyx = { health = Hex("131212"), track = Hex("0A0B0C"), border = Hex("25282C"),
         slate = Hex("44464A"), slateHatch = Hex("55585D"), frameRim = Hex("40454C") },
-    oldOnyxHealth = Hex("1C1E21") }
+    oldOnyxHealth = Hex("1C1E21"),
+    -- Cast colors before November 23, 2026 (Tone.cast's amber and gray).
+    castCasting = Hex("F2B13C"), castShielded = Hex("7D838C") }
 
 -- "|cffRRGGBB<text>|r": text in a token's color, for strings (menus, labels).
 function Style.ColorText(text, color)

@@ -142,7 +142,7 @@ function M:UpdateCast(unit)
     local box, bar = f.castBox, f.castBox.bar
     box.info, box.unit, box.timerOn, box.timerNext = info, unit, cdb.showTimer, 0
     pcall(bar.SetMinMaxValues, bar, info.startMs, info.endMs)
-    Kit.PaintCastBar(bar, info.channel, info.notInterruptible, cdb.color, cdb.lockedColor)
+    Kit.PaintCastBar(bar, info.channel, info.notInterruptible, cdb.color, cdb.lockedColor, cdb.channelColor)
     pcall(Kit.Write, box.text, cdb.showText and info.text or "")
     if not pcall(box.icon.SetTexture, box.icon, info.texture) then box.icon:SetTexture(nil) end
     if not cdb.showTimer then Kit.Write(box.timer, "") end

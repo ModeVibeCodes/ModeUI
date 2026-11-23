@@ -4,6 +4,7 @@
     <Script file="Theme.lua"/>
     <Script file="TextSlots.lua"/>
     <Script file="Migrations.lua"/>
+    <Script file="MigrationsLate.lua"/>
     <Script file="Driver.lua"/>
     <Script file="Native.lua"/>
     <Script file="Layout.lua"/>

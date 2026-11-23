@@ -116,7 +116,7 @@ function M:BuildCastTab(ui)
                 function() return C().foregroundTexture end, function(v) M:SetCastOption(ui.Editing(), "foregroundTexture", v) end)
             page.unitFrameCastBackground = ui.SelectIn(textures[2], 200, function() return addon.Kit.BarTextureChoices(false) end,
                 function() return C().backgroundTexture end, function(v) M:SetCastOption(ui.Editing(), "backgroundTexture", v) end)
-            n.Color("Cast Color", "color"); n.Color("Uninterruptible Color", "lockedColor")
+            n.Color("Cast Color", "color"); n.Color("Uninterruptible Color", "lockedColor"); n.Color("Channel Color", "channelColor")
         end)
     end, true)
     ui.Card("Text", "Cast Bar Text", function()

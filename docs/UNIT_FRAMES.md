@@ -19,7 +19,7 @@ instead of one tab per part. Saved keys, defaults and ranges are unchanged.
   Class Resource, Placement (the frames that attach).
 - **Fill:** Health Bar (Show: Health or Mana on the Player, Fill Direction,
   Fill End Line, Shields, Health Color, textures and opacity), Power Bar,
-  Cast Bar (textures, Cast Color, Uninterruptible Color), Class Resource
+  Cast Bar (textures, Cast Color, Uninterruptible Color, Channel Color; light blue, orange-red and green since layout 26, November 23, 2026), Class Resource
   (point colors).
 - **Border:** Frame (Border, Border Metal, Shadow), Portrait (Ring Style,
   Ring Finish, Portrait Ring Color), Auras (Buff Border, Debuff Border: each

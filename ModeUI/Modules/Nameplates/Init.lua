@@ -38,7 +38,8 @@ addon:RegisterModule("nameplates", M)
 -- Version 10: auras wear the frameThin edge (Border Size 1 or 2, 1 by
 -- default; Corners retire), and auras without a type keep the Gunmetal metal.
 -- Version 11: semi-transparent empty bars (Slate at 60%).
-M.VERSION = 11
+-- Version 12: the nameplates pass (owner, November 23, 2026; MigrationsV12.lua).
+M.VERSION = 12
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
@@ -87,8 +88,10 @@ local function Style(kind)
         healthText = enemy and "percent" or "none", healthFontSize = 9, healthTextColor = "health", healthTextGlow = true,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
         showName = true, nameFontSize = 10, nameColorMode = "class", nameAnchor = "TOP", nameX = 0, nameY = 0,
-        showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(P.neutral), castLockedColor = Copy(P.tapped),
-        castInterruptedColor = Copy(P.hostile),
+        -- Every Mode cast bar (owner, November 23, 2026): light blue, orange-red
+        -- when it can't be interrupted, channels keep their green.
+        showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(Tone.cast.casting), castLockedColor = Copy(Tone.cast.shielded),
+        castChannelColor = Copy(Tone.cast.channeling), castInterruptedColor = Copy(P.hostile),
         castAnchor = "BOTTOM", castX = 0, castY = enemy and -2 or 0,
         castIcon = "LEFT", castShowText = true, castShowTarget = enemy, castShowTimer = true,
         -- Cast texts by anchor around the cast bar: Left, Center and Right sit inside it.
@@ -131,7 +134,8 @@ M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
 M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly) }
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
-M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true, castInterruptedColor = true, textColor = true, targetColor = true,
+M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true,
+    castChannelColor = true, castInterruptedColor = true, textColor = true, targetColor = true,
     auraMagicColor = true, auraCurseColor = true, auraDiseaseColor = true, auraPoisonColor = true, auraEnrageColor = true,
     auraBleedColor = true, auraNoTypeColor = true, auraCCNoTypeColor = true, auraTimerColor = true,
     comboActiveColor = true, comboEmptyColor = true }

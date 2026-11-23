@@ -127,7 +127,7 @@ Gameplay colors keep their meaning everywhere and are never softened:
 | Group | Values |
 |---|---|
 | Reaction | hostile `#E5484D`, neutral `#F2C744`, friendly `#46C46B`, tapped `#8C8C8C` |
-| Cast | casting `#F2B13C`, channeling `#3FBF7F`, not interruptible `#7D838C`, interrupted `#E5484D` |
+| Cast | casting `#6CB8FF` (light blue), channeling `#3FBF7F`, not interruptible `#FF6B3D` (orange-red), interrupted `#E5484D`: every Mode cast bar (owner, November 23, 2026; amber `#F2B13C` and gray `#7D838C` before, kept in `Style.LEGACY` for migrations) |
 | Dispel (Blizzard) | Magic `#3399FF`, Curse `#9900FF`, Disease `#996600`, Poison `#009900` |
 | Item quality | common `#9D9D9D`, uncommon `#1EFF00`, rare `#0070DD`, epic `#A335EE`, legendary `#FF8000` |
 | Debuff type (`debuffType`) | aura rims and glows on nameplates and group frames: Magic `#3399FF`, Curse `#AA55FF`, Disease `#CC8833`, Poison `#55BB55`, Enrage `#FF5555`, Bleed `#C82D2D`; crowd control without a type `#FF5948` |

@@ -9,11 +9,13 @@ local Kit = addon.Kit
 -- Colors a cast bar (from Kit.Bar). A channel drains instead of filling: the
 -- bar fills from the right in the track color over the cast color behind it.
 -- Interruptibility may be secret and only picks a color through
--- SetVertexColorFromBoolean (Kit.ColorFromBoolean).
-function Kit.PaintCastBar(bar, channel, notInterruptible, color, lockedColor)
+-- SetVertexColorFromBoolean (Kit.ColorFromBoolean). `channelColor`, when
+-- given, colors a channel you can interrupt (channels keep their green).
+function Kit.PaintCastBar(bar, channel, notInterruptible, color, lockedColor, channelColor)
     if bar.SetReverseFill then bar:SetReverseFill(channel) end
     local fill, track = bar:GetStatusBarTexture(), Kit.onyx.track
     if channel then
+        color = channelColor or color
         Kit.Tint(fill, track, 1)
         Kit.ColorFromBoolean(bar.bg, notInterruptible, lockedColor, color)
     else

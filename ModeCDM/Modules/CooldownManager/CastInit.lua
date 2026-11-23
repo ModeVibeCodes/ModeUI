@@ -84,6 +84,16 @@ function M:SetCastRim(choice)
     return self:SetCastOption("edgeMetal", choice) and self:SetCastOption("rimColor", "metal")
 end
 
+-- Version 10 -> 11 (Migrations.lua): every Mode cast bar's colors (owner,
+-- November 23, 2026). A Bar Color or Not Interruptible color still at the old
+-- default takes the light blue or orange-red; a picked color stays.
+function M.MigrateCastColors(db)
+    local cast, Same, Legacy = db.castBar, addon.Style.SameColor, addon.Style.LEGACY
+    if type(cast) ~= "table" or not Public(cast) then return end
+    if Same(cast.barColor, Legacy.castCasting) then cast.barColor = Copy(Tone.cast.casting) end
+    if Same(cast.lockedColor, Legacy.castShielded) then cast.lockedColor = Copy(Tone.cast.shielded) end
+end
+
 -- Validation ------------------------------------------------------------------
 
 local function Whole(value, range) return Number(value, range[1], range[2]) and value == math.floor(value) end

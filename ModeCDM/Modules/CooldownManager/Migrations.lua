@@ -372,6 +372,7 @@ function M.Initialize(db)
         if type(db.castBar) == "table" and db.castBar.barMode == "dark" then db.castBar.barMode = "color" end
         db.version = 10
     end
+    if db.version == 10 then M.MigrateCastColors(db); db.version = 11 end -- every Mode cast bar (CastInit.lua)
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end
