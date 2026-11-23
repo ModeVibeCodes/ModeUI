@@ -25,25 +25,8 @@ function M:LayoutTarget(plate)
     self:PlaceArrows(plate)
 end
 
--- Arrows always sit outside everything beside the bar on their side: the raid
--- marker, the indicator, any aura row anchored Left or Right and the combo
--- points, which are placed here first. Called again whenever the aura rows or
--- the combo points change.
-function M:PlaceArrows(plate)
-    self:PlaceCombo(plate)
-    local db, px = self:Style(plate), plate.px or 1
-    local host = plate.nameOnly and plate.name or plate.healthBox
-    local size = math.max(px, math.floor(db.targetArrowSize / px + 0.5) * px)
-    local gapPixels = db.targetArrowGap * px
-    local extent = plate.auraExtent or {}
-    local function Clear(side) return math.max(self:SideRoom(plate, side), extent[side] or 0, self:ComboRoom(plate, side)) end
-    for side, arrow in pairs(plate.arrows) do
-        arrow:SetSize(size, size)
-        arrow:ClearAllPoints()
-        if side == "left" then arrow:SetPoint("RIGHT", host, "LEFT", -(gapPixels + Clear("LEFT")), 0)
-        else arrow:SetPoint("LEFT", host, "RIGHT", gapPixels + Clear("RIGHT"), 0) end
-    end
-end
+-- The arrows are always the outermost part on each side: Stacks.lua places
+-- them (PlaceArrows), anchored to whatever comes last there.
 
 -- The name's color when it isn't the target: the class or reaction color for
 -- Name Only, Gradient and Class or Reaction names, the text color otherwise.

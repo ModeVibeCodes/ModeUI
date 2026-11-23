@@ -63,18 +63,21 @@ M.defaultGrow = { TOPLEFT = "right", TOP = "center", TOPRIGHT = "left", LEFT = "
 -- One aura group: shown or not, which auras (debuffs and buffs only), and
 -- where: an anchor around the plate, the grow direction, an offset, the icon
 -- size and how many.
-local function Group(show, filter, anchor, size, max)
+local function Group(show, filter, anchor, size, max, attach)
     return { show = show, filter = filter, anchor = anchor, grow = M.defaultGrow[anchor], x = 0, y = 0, size = size, max = max,
-        attach = false }
+        attach = attach == true }
 end
 
 -- One kind's settings. `show` off leaves that kind's plates to Blizzard;
--- display "name" draws only the class- or reaction-colored name.
+-- display "name" draws only the class- or reaction-colored name. The values
+-- are the owner's baseline (November 23, 2026; docs/NAMEPLATES.md): a
+-- 156 x 16 enemy plate with the name on its top border beside your debuffs,
+-- and friendly plates as names only. Version 11's are in MigrationsV12.lua.
 local function Style(kind)
     local enemy = kind == "enemy"
     return {
-        show = true, display = "plate",
-        width = enemy and 140 or 120, healthHeight = enemy and 12 or 8, castHeight = enemy and 12 or 8,
+        show = true, display = enemy and "plate" or "name",
+        width = enemy and 156 or 120, healthHeight = enemy and 16 or 8, castHeight = enemy and 12 or 8,
         healthColorMode = "reaction", healthColor = Copy(P.green), threatColors = enemy,
         -- Colors are used as they are; the bar and its background each fade.
         healthOpacity = 100, backgroundOpacity = EMPTY,
@@ -85,38 +88,52 @@ local function Style(kind)
         edgeStyle = "obsidian", edgeMetal = "default",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
         threatPullingColor = Copy(M.threatPalette.warning),
-        healthText = enemy and "percent" or "none", healthFontSize = 9, healthTextColor = "health", healthTextGlow = true,
+        healthText = enemy and "percent" or "none", healthFontSize = enemy and 11 or 9, healthTextColor = "health", healthTextGlow = true,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
-        showName = true, nameFontSize = 10, nameColorMode = "class", nameAnchor = "TOP", nameX = 0, nameY = 0,
+        -- On Border: a Top or Bottom name rests on the bar's edge, sharing the
+        -- line with aura groups set to Sit on Border, and stops where they start.
+        showName = true, nameFontSize = enemy and 13 or 12, nameColorMode = "class", nameAnchor = enemy and "TOPLEFT" or "TOP",
+        nameX = 0, nameY = enemy and -3 or 0, nameOnBorder = enemy,
         -- Every Mode cast bar (owner, November 23, 2026): light blue, orange-red
         -- when it can't be interrupted, channels keep their green.
-        showCastBar = true, castFontSize = enemy and 9 or 8, castColor = Copy(Tone.cast.casting), castLockedColor = Copy(Tone.cast.shielded),
+        showCastBar = true, castFontSize = enemy and 10 or 8, castColor = Copy(Tone.cast.casting), castLockedColor = Copy(Tone.cast.shielded),
         castChannelColor = Copy(Tone.cast.channeling), castInterruptedColor = Copy(P.hostile),
-        castAnchor = "BOTTOM", castX = 0, castY = enemy and -2 or 0,
+        -- 1px below the health box: the two shadows share one pixel.
+        castAnchor = "BOTTOM", castX = 0, castY = -1,
         castIcon = "LEFT", castShowText = true, castShowTarget = enemy, castShowTimer = true,
         -- Cast texts by anchor around the cast bar: Left, Center and Right sit inside it.
         castTextAnchor = "LEFT", castTextX = 0, castTextY = 0, castTimerAnchor = "RIGHT", castTimerX = 0, castTimerY = 0,
-        castTargetAnchor = "BOTTOM", castTargetX = 0, castTargetY = 0, castIconX = 0, castIconY = 0,
-        showRaidIcon = true, raidAnchor = "LEFT", raidX = 0, raidY = 0, raidSize = 16,
+        -- Cast Target inside on the right sits left of the timer; the spell name
+        -- stops where they start.
+        castTargetAnchor = enemy and "RIGHT" or "BOTTOM", castTargetX = 0, castTargetY = 0, castIconX = 0, castIconY = 0,
+        -- Parts on Left or Right sit beside the bar, or inside it with <part>Inside.
+        showRaidIcon = true, raidAnchor = enemy and "CENTER" or "LEFT", raidX = 0, raidY = 0, raidSize = enemy and 14 or 16, raidInside = false,
         -- The soft-target icon (the cursor art the game shows over the unit), above the plate.
         -- Loot and interact targets only by default (owner, November 23, 2026: no
         -- combat icon); Show Combat Icons adds the sword on enemies and friends.
-        showSoftTarget = true, softTargetCombat = false, softTargetSize = 20, softTargetX = 0, softTargetY = 0,
+        showSoftTarget = true, softTargetCombat = false, softTargetSize = 18, softTargetX = 0, softTargetY = 0,
         -- Indicator: quest icon, classification icon and level, by anchor.
         showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
-        questAnchor = "LEFT", questX = 0, questY = 0, questSize = 14,
-        classificationAnchor = "LEFT", classificationX = 0, classificationY = 0, classificationSize = 14,
-        levelAnchor = "LEFT", levelX = 0, levelY = 0, levelSize = 9,
+        questAnchor = "LEFT", questX = 0, questY = 0, questSize = enemy and 18 or 14, questInside = false,
+        classificationAnchor = "LEFT", classificationX = 0, classificationY = 0, classificationSize = 14, classificationInside = enemy,
+        levelAnchor = "LEFT", levelX = 0, levelY = 0, levelSize = enemy and 10 or 9, levelInside = enemy,
         -- Target indicator: border, glow, arrows, border and arrows, or none.
-        targetStyle = "border", targetColor = Copy(addon.Style.Tone.ivory), targetThickness = 1, targetArrowSize = 12, targetArrowGap = 4,
+        -- Arrows are always the outermost part on each side, following what shows there.
+        targetStyle = enemy and "arrows" or "border", targetColor = Copy(addon.Style.Tone.ivory), targetThickness = 1,
+        targetArrowSize = enemy and 10 or 12, targetArrowGap = enemy and 3 or 4,
         -- Focus: a highlight, its own health bar texture, and fading other plates.
         focusStyle = "glow", focusColor = Copy(addon.Style.Tone.rosewood), focusStripeOpacity = 40, focusTexture = "default",
         focusFadeOthers = 100,
         -- Combo points on your target's plate (a Rogue's, or a Cat Form Druid's).
-        showCombo = enemy, comboAnchor = "BOTTOM", comboX = 0, comboY = 0, comboSize = 8, comboSpacing = 2,
+        -- Move Up While Not Casting: below the health bar until a cast shows.
+        showCombo = enemy, comboAnchor = "BOTTOM", comboX = 0, comboY = 0, comboSize = 8, comboSpacing = 2, comboFollowCast = true,
         comboActiveColor = Copy(Tone.comboPoint), comboEmptyColor = Copy(Kit.onyx.track),
         -- Auras: settings for every group, then each group on its own.
-        showAuras = true, auraSpacing = 2, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "cropped", auraBorder = "type",
+        -- Spacing 1: neighbours share one shadow pixel, as on the Cooldown Manager.
+        -- On One Anchor: Auras First puts an aura row nearest the bar, with the
+        -- markers and indicators on that anchor following its last icon.
+        showAuras = enemy, auraSpacing = 1, auraTimer = true, auraTimerText = true, auraCount = true, auraShape = "mode", auraBorder = "type",
+        auraOrder = "auras",
         auraBorderSize = 1, auraCCGlow = true, auraGlowStyle = "gcd",
         auraTimerColor = Copy(P.cooldown),
         auraMagicColor = Copy(Tone.debuffType.Magic), auraCurseColor = Copy(Tone.debuffType.Curse),
@@ -125,9 +142,12 @@ local function Style(kind)
         -- Auras without a dispel type (Cheap Shot, most crowd control): #FF5948 for
         -- crowd control, the Gunmetal rim for the rest.
         auraNoTypeColor = Copy(addon.Style.Tone.gunmetal.mid), auraCCNoTypeColor = Copy(Tone.debuffType.crowdControl),
-        crowdControl = Group(enemy, nil, "LEFT", enemy and 24 or 18, 2),
-        debuffs = Group(true, enemy and "mine" or "dispellable", "TOP", enemy and 20 or 16, enemy and 6 or 4),
-        buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 18 or 14, 3),
+        -- Icon sizes include the 1px band (the picture is 2px smaller): your
+        -- debuffs 24 x 20 on the border line, buffs 22 x 18 (as tall as the
+        -- health box), crowd control 1.5x: 35 x 31, above.
+        crowdControl = Group(enemy, nil, enemy and "TOP" or "LEFT", enemy and 35 or 18, 2),
+        debuffs = Group(true, enemy and "mine" or "dispellable", enemy and "TOPRIGHT" or "TOP", enemy and 24 or 16, 4, enemy),
+        buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 22 or 14, 3),
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = true,
         textColor = Copy(P.text),
     }
@@ -192,7 +212,10 @@ M.choices = {
     castTextAnchor = M.elementAnchors, castTimerAnchor = M.elementAnchors, castTargetAnchor = M.elementAnchors,
     targetStyle = { { id = "border", label = "Border" }, { id = "glow", label = "Glow" }, { id = "arrows", label = "Arrows" },
         { id = "borderArrows", label = "Border and Arrows" }, { id = "none", label = "None" } },
-    auraShape = { { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
+    -- Mode: the design language's icon rule (4px shorter than wide up to 35,
+    -- 6px from 36); Cropped: 6px shorter at every size (version 11).
+    auraShape = { { id = "mode", label = "Mode" }, { id = "cropped", label = "Cropped" }, { id = "square", label = "Square" } },
+    auraOrder = { { id = "auras", label = "Auras First" }, { id = "indicators", label = "Indicators First" } },
     auraBorder = { { id = "type", label = "By Type" }, { id = "mode", label = "Mode" } },
     auraGlowStyle = { { id = "gcd", label = "GCD Flash" }, { id = "soft", label = "Soft Glow" } },
     nameAnchor = M.elementAnchors, healthTextAnchor = M.elementAnchors, raidAnchor = M.elementAnchors,

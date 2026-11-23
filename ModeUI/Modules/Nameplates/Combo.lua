@@ -10,10 +10,11 @@ if not M then return end
 -- points shows nothing.
 --
 -- One round socket per point (Shared/Kit/Points.lua: secret-safe, one
--- StatusBar per point) in a row, placed by anchor like the raid marker: Top
--- and Bottom anchors sit past the name and cast bar, Left and Right beside the
--- bar past the marker, indicators and aura rows (the target arrows sit past
--- them), Center on the bar. Settings: each kind's showCombo and combo* keys.
+-- StatusBar per point) in a row, a part of the stack on its anchor
+-- (Stacks.lua) with the raid marker and the indicators. Bottom by default,
+-- centered: below the cast bar, or right under the health bar while nothing is
+-- cast (Move Up While Not Casting). Settings: each kind's showCombo and combo*
+-- keys.
 local Kit, Resource, NP = addon.Kit, addon.Domain.ClassResource, addon.Domain.Nameplate
 M.COMBO_SAMPLE = 3 -- points lit on the settings preview
 -- The player's power changes the count; Cat Form changes whether there is one.
@@ -24,12 +25,12 @@ function M:BuildCombo(plate)
     combo.sockets, combo.count, combo.width, combo.size = {}, 0, 0, 0
     for i = 1, Resource.MAX do combo.sockets[i] = Kit.ResourcePoint(combo, i) end
     combo:Hide()
-    plate.combo, plate.comboRoom = combo, { LEFT = 0, RIGHT = 0 }
+    plate.combo = combo
 end
 
 -- Sizes `count` sockets (default: the count already shown) from the kind's
 -- settings, in a row from the left. Called from LayoutPlate and whenever the
--- count changes; PlaceCombo then places the row.
+-- count changes; the stacks then place the row.
 function M:SizeCombo(plate, count)
     local combo, db, px = plate.combo, self:Style(plate), plate.px or 1
     count = count or combo.count
@@ -49,27 +50,11 @@ function M:SizeCombo(plate, count)
     combo:SetShown(count > 0)
 end
 
--- Places the row; called from PlaceArrows, so it moves whenever the aura rows
--- beside the bar do. Records the room it takes on its side for the arrows.
-function M:PlaceCombo(plate)
-    local combo, db, px = plate.combo, self:Style(plate), plate.px or 1
-    plate.comboRoom = { LEFT = 0, RIGHT = 0 }
-    if not combo or combo.count == 0 then return end
-    local anchor = db.comboAnchor
-    local side = (anchor == "LEFT" or anchor == "RIGHT") and anchor or nil
-    local sign = anchor == "LEFT" and -1 or 1
-    local clear = side and math.max(self:SideRoom(plate, side), (plate.auraExtent or {})[side] or 0) or 0
-    self:PlaceIcon(plate, combo, anchor, combo.width, combo.size, db.comboX + sign * clear, db.comboY)
-    if side then plate.comboRoom[side] = clear + 3 * px + combo.width + math.max(0, sign * db.comboX) end
-end
-
-function M:ComboRoom(plate, side) return plate.comboRoom and plate.comboRoom[side] or 0 end
-
--- Shows `count` sockets, re-placing the row (and the arrows) when it changes.
+-- Shows `count` sockets, placing the stacks again when it changes.
 local function Show(self, plate, count)
     if count == plate.combo.count then return end
     self:SizeCombo(plate, count)
-    self:PlaceArrows(plate)
+    self:PlaceStacks(plate)
 end
 
 -- How many sockets the target's plate shows: the player's maximum while they
@@ -134,8 +119,8 @@ end
 -- The preview's sample shows every socket with a few lit, for a class with
 -- combo points (a Druid sees them in any form).
 function M:SampleComboCount(style) return style.showCombo and Resource.Max() or 0 end
-function M:PaintSampleCombo(plate, style)
-    local count = self:SampleComboCount(style)
+function M:PaintSampleCombo(plate, style, targeted)
+    local count = targeted ~= false and self:SampleComboCount(style) or 0
     Show(self, plate, count)
     for i = 1, count do plate.combo.sockets[i].bar:SetValue(self.COMBO_SAMPLE) end
 end

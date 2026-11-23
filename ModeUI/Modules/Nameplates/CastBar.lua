@@ -25,8 +25,6 @@ local RIM = Style.EDGE_PRESETS.frameThin.rim
 local Cast, UnitColor = Domain.Cast, Domain.UnitColor
 local TIMER_STEP = 0.1
 M.CAST_HOLD, M.CAST_HOLD_FADE = Kit.CAST_HOLD, Kit.CAST_HOLD_FADE
--- The timer's room on a line it shares with the spell name, in font sizes.
-M.CAST_TIMER_EMS = 2.5
 
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
 
@@ -120,15 +118,36 @@ function M:LayoutCast(plate)
         text:SetHeight(line)
         Place(text, h == "" and "CENTER" or h, db[entry.show])
     end
-    -- A spell name on the left and a timer on the right, both inside, share the
-    -- line: the name stops short of the room the timer takes. The timer text
-    -- spans the bar and may be secret (so it can't be measured); its room comes
-    -- from the font size, wide enough for "00.0".
-    if db.castShowTimer and db.castTextAnchor == "LEFT" and db.castTimerAnchor == "RIGHT" then
-        local room = Snap(size * M.CAST_TIMER_EMS, px)
-        local right = -2 * px + Round(db.castTimerX) - room - 2 * px
-        plate.castText:SetPoint("RIGHT", plate.cast, "RIGHT", right, Round(db.castTextY))
+    -- Inside on the right, texts line up from the bar's right edge inward: the
+    -- timer, then the cast target just left of it (owner, November 23, 2026). A
+    -- spell name on the left stops 4px short of where they start. Each is
+    -- anchored to the next and sizes itself to its text, so a secret timer or
+    -- target name is never measured.
+    local timerRight = db.castShowTimer and db.castTimerAnchor == "RIGHT"
+    local targetRight = db.castShowTarget and db.castTargetAnchor == "RIGHT"
+    if timerRight then plate.castTimer:SetWidth(0) end
+    if targetRight then
+        plate.castTarget:ClearAllPoints()
+        if timerRight then
+            plate.castTarget:SetPoint("RIGHT", plate.castTimer, "LEFT", -4 * px + Round(db.castTargetX), Round(db.castTargetY))
+        else
+            plate.castTarget:SetPoint("RIGHT", plate.cast, "RIGHT", -2 * px + Round(db.castTargetX), Round(db.castTargetY))
+        end
+        plate.castTarget:SetWidth(0)
     end
+    local stop = (targetRight and plate.castTarget) or (timerRight and plate.castTimer) or nil
+    if stop and db.castTextAnchor == "LEFT" then
+        plate.castText:SetWidth(0)
+        plate.castText:SetPoint("RIGHT", stop, "LEFT", -4 * px, Round(db.castTextY))
+    end
+end
+
+-- Shows or hides the cast box; combo points set to Move Up While Not Casting
+-- follow it (the stacks are placed again when it comes or goes).
+function M:SetCastShown(plate, shown)
+    local was = plate.castBox:IsShown()
+    plate.castBox:SetShown(shown)
+    if was ~= shown and self:Style(plate).comboFollowCast and plate.combo and plate.combo.count > 0 then self:PlaceStacks(plate) end
 end
 
 local function Tick(bar)
@@ -150,7 +169,7 @@ function M:PaintCast(plate, style, channel, notInterruptible, text, texture)
     plate.comet:Layout(channel, plate.px)
     plate.comet:SetColor(channel and style.castChannelColor or style.castColor)
     plate.comet:SetShown(true)
-    plate.castBox:Show()
+    self:SetCastShown(plate, true)
 end
 
 -- The target line: a name (may be secret) and its color, or nothing.
@@ -162,10 +181,23 @@ function M:PaintCastTarget(plate, name, color)
     plate.castTarget:SetTextColor(c[1], c[2], c[3], 1)
 end
 
+-- The spell's own target (UnitSpellTargetName, where the client has it: a
+-- spell cast at someone other than the caster's target names them), else the
+-- caster's target. A secret name always means a target; a public one is a
+-- name or nil.
 function M:UpdateCastTarget(plate)
     local unit = plate.unit
     if not unit or not plate.castInfo then return end
-    -- A secret name always means a target; a public one is a name or nil.
+    local Query = addon.Domain.Query
+    if UnitSpellTargetName then
+        local ok, name = Query.Call(UnitSpellTargetName, unit)
+        if ok and not (addon.IsPublic(name) and (name == nil or name == "")) then
+            local okClass, token = Query.Call(UnitSpellTargetClass, unit)
+            local class = okClass and UnitColor.Class(token)
+            self:PaintCastTarget(plate, name, class and { class.r, class.g, class.b })
+            return
+        end
+    end
     local token = unit .. "target"
     local ok, name = addon.Domain.Query.Call(UnitName, token)
     if not ok or (addon.IsPublic(name) and (name == nil or name == "")) then self:PaintCastTarget(plate, nil); return end
@@ -237,5 +269,5 @@ function M:StopCast(plate)
     -- hiding the box leaves them drawn: clear them, or the last spell name
     -- stays under the plate (and follows it to the next unit it shows).
     Kit.Write(plate.castText, ""); Kit.Write(plate.castTarget, ""); Kit.Write(plate.castTimer, "")
-    plate.castBox:Hide()
+    self:SetCastShown(plate, false)
 end

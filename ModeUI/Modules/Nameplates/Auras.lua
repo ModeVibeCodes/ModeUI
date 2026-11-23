@@ -8,42 +8,102 @@ if not M then return end
 -- so the game decides what matches and no secret aura data is compared
 -- (Domain/Auras.lua).
 --
--- Anchors read like a compass. Top anchors sit above everything over the bar
--- (name, cast bar), Bottom anchors below everything under it, lined up with the
--- bar's left edge, middle or right edge; Left and Right sit beside the bar (past
--- a raid marker on that side). Icons then grow Right, Left, Up, Down or from the
--- Center. Groups sharing an anchor continue one after another in group order,
--- in the first group's direction.
+-- Groups on the same anchor are one row (one aura container in the world:
+-- AuraContainers.lua), continuing in group order in the first group's
+-- direction. A row starts at its anchor past the spine (Layout.lua): Top and
+-- Bottom rows past the name and cast bar, or right on the bar's edge with Sit
+-- on Border; Left and Right rows beside the bar. It grows away from the bar;
+-- Center is truly centered (the container is anchored by its own middle). Each
+-- row keeps an edge mark for whatever follows it (Stacks.lua). Here the
+-- settings preview, and clients without containers, place the icons
+-- themselves with the same geometry (RowOrigin).
 local Kit, Auras = addon.Kit, addon.Domain.Auras
 local GROUPS = M.auraGroups
+local Horizontal = M.Horizontal
 
 local function Snap(value, px) return math.max(px, math.floor(value / px + 0.5) * px) end
 local function Round(value, px) return math.floor(value / px + 0.5) * px end
 
--- Icon width and height for a group: cropped icons are 6px wider than tall.
+-- Icon width and height for a group, its 1px band included. Mode (the design
+-- language's rule): 4px shorter than wide up to 35px wide, 6px from 36;
+-- Cropped: 6px shorter at every size; Square.
 M.CROP_PIXELS = 6
 function M:AuraSize(plate, group)
     local style, px = self:Style(plate), plate.px or 1
-    local width = Snap(style[group].size, px)
-    local height = style.auraShape == "cropped" and math.max(px, width - M.CROP_PIXELS * px) or width
-    return width, height
+    local size = style[group].size
+    local width = Snap(size, px)
+    local shape, short = style.auraShape, 0
+    if shape == "mode" then short = size >= 36 and 6 or 4 elseif shape == "cropped" then short = M.CROP_PIXELS end
+    return width, math.max(px, width - short * px)
 end
 
--- The band that groups set to Sit on Health Bar take above ("TOP") or below
--- ("BOTTOM") the bar: their tallest icon plus a gap, or 0. Only Top and Bottom
--- anchors can sit on the bar.
-function M:AttachedRoom(plate, side)
-    local style, px = self:Style(plate), plate.px or 1
-    if not style.showAuras or plate.nameOnly then return 0 end
-    local tallest = 0
+-- The groups on each row key, in group order: { { key, groups }, ... }.
+function M:AuraRows(plate)
+    local style, rows, index = self:Style(plate), {}, {}
     for _, group in ipairs(GROUPS) do
-        local settings = style[group]
-        if settings.show and settings.attach and settings.anchor:find("^" .. side) then
-            local _, height = self:AuraSize(plate, group)
-            tallest = math.max(tallest, height)
+        if self:GroupShown(plate, group) then
+            local key = self:GroupKey(style, group)
+            if not index[key] then index[key] = { key = key, groups = {} }; rows[#rows + 1] = index[key] end
+            table.insert(index[key].groups, group)
         end
     end
-    return tallest > 0 and tallest + 2 * px or 0
+    return rows
+end
+
+-- A centered Top or Bottom row is anchored by its own middle, and its length
+-- is secret. With icon + spacing even, every count has the same parity, so
+-- one fixed half-pixel nudge puts its edges on whole pixels.
+function M:CenterNudge(plate, group, span)
+    local px = plate.px or 1
+    local width = self:AuraSize(plate, group)
+    local w, s = math.floor(width / px + 0.5), math.floor(self:Style(plate).auraSpacing + 0.5)
+    if (w + s) % 2 ~= 0 then return 0 end
+    local spanOdd = math.floor(span / px + 0.5) % 2 ~= 0
+    return ((s % 2 ~= 0) ~= spanOdd) and 0.5 * px or 0
+end
+
+-- Where a row starts: the container's anchor point (o.point) on the health
+-- box's o.rel, offset (o.x, o.y), its flow anchor and growth (o.h, o.v: 1 or
+-- -1), shared by the containers and the reader.
+function M:RowOrigin(plate, key, first)
+    local style, px = self:Style(plate), plate.px or 1
+    local gap, settings = 2 * px, style[first]
+    local anchor, grow = settings.anchor, settings.grow
+    local top, bottom = anchor:find("^TOP") ~= nil, anchor:find("^BOTTOM") ~= nil
+    local side = Horizontal(anchor)
+    local center = grow == "center"
+    local vertical = grow == "up" or grow == "down" or (center and not (top or bottom))
+    local o = { vertical = vertical, center = center, h = grow == "left" and -1 or 1,
+        v = (grow == "down" or (center and vertical) or bottom) and -1 or 1 }
+    local room = (plate.rowRoom or {})[key] or 0
+    local dx, dy = Round(settings.x, px), Round(settings.y, px)
+    if top or bottom then
+        o.rel = (top and "TOP" or "BOTTOM") .. side
+        local past = key:find(":border") and 0 or ((top and plate.above or plate.below) + room)
+        dy = dy + (top and (past + gap) or -(past + gap))
+        if center and not vertical then
+            o.point = top and "BOTTOM" or "TOP"
+            o.flow = o.point .. "LEFT"
+            if side == "" then dx = dx + self:CenterNudge(plate, first, plate.healthBox:GetWidth()) end
+        else
+            o.point = (top and "BOTTOM" or "TOP") .. (vertical and side or (o.h == -1 and "RIGHT" or "LEFT"))
+            o.flow = o.point
+        end
+    else
+        o.rel = anchor
+        local inner = anchor == "LEFT" and "RIGHT" or "LEFT"
+        dx = dx + (anchor == "LEFT" and -1 or 1) * (gap + room)
+        if vertical then
+            o.h = anchor == "LEFT" and -1 or 1
+            o.point = center and inner or ((o.v == 1 and "BOTTOM" or "TOP") .. inner)
+            o.flow = center and ("TOP" .. inner) or o.point
+        else
+            o.point = o.h == -1 and "RIGHT" or "LEFT"
+            o.flow = o.point
+        end
+    end
+    o.x, o.y = dx, dy
+    return o
 end
 
 function M:LayoutAuraIcon(plate, icon, group)
@@ -105,7 +165,7 @@ function M:UpdateAuras(plate)
     local style, unit = self:Style(plate), plate.unit
     for _, group in ipairs(GROUPS) do
         local settings, count = style[group], 0
-        if unit and style.showAuras and settings.show then
+        if unit and self:GroupShown(plate, group) then
             local filter = Auras.GroupFilter(group, settings.filter, style.crowdControl.show)
             if filter then
                 for index, aura in ipairs(Auras.Collect(unit, { filter }, settings.max)) do
@@ -124,77 +184,88 @@ function M:UpdateAuras(plate)
     self:LayoutAuras(plate)
 end
 
-local STEP = { right = { 1, 0 }, left = { -1, 0 }, up = { 0, 1 }, down = { 0, -1 } }
-
--- Places every shown icon. Positions are worked out as centers relative to the
--- health bar's center, then snapped to whole pixels at each icon's corner.
+-- Places every shown icon (the settings preview, and clients without aura
+-- containers): the same rows the containers draw, from RowOrigin, each icon
+-- by its corner on whole pixels from the health box's bottom left. Then the
+-- rows' edge marks go to their last icons.
 function M:LayoutAuras(plate)
     if not plate.sample and self:UsesAuraContainers() then
         if plate.containerUnit then self:AttachAuraContainers(plate) end
         return
     end
     local style, px = self:Style(plate), plate.px or 1
-    local spacing, gap = style.auraSpacing * px, 2 * px
+    local spacing = style.auraSpacing * px
     local boxWidth, boxHeight = plate.healthBox:GetWidth(), plate.healthBox:GetHeight()
-    local function Clear(side) return self:SideRoom(plate, side) end
-    -- How far each side's aura row reaches past the bar, for the arrows.
-    local extent = { LEFT = 0, RIGHT = 0 }
-    -- Gather each anchor's icons in group order.
-    local byAnchor, order = {}, {}
-    for _, group in ipairs(GROUPS) do
-        local settings, count = style[group], plate.auraShown[group] or 0
-        if count > 0 then
-            local list = byAnchor[settings.anchor]
-            if not list then
-                list = { grow = settings.grow, attach = settings.attach }
-                byAnchor[settings.anchor] = list; order[#order + 1] = settings.anchor
-            end
+    for _, row in ipairs(self:AuraRows(plate)) do
+        local o = self:RowOrigin(plate, row.key, row.groups[1])
+        local cx = (o.rel:find("LEFT") and 0 or o.rel:find("RIGHT") and boxWidth or boxWidth / 2) + o.x
+        local cy = (o.rel:find("^TOP") and boxHeight or o.rel:find("^BOTTOM") and 0 or boxHeight / 2) + o.y
+        local items, total = {}, -spacing
+        for _, group in ipairs(row.groups) do
             local width, height = self:AuraSize(plate, group)
-            for index = 1, count do
-                list[#list + 1] = { icon = plate.auraIcons[group][index], w = width, h = height, dx = Round(settings.x, px), dy = Round(settings.y, px) }
+            for index = 1, plate.auraShown[group] or 0 do
+                items[#items + 1] = { icon = plate.auraIcons[group][index], w = width, h = height }
+                total = total + (o.vertical and height or width) + spacing
             end
         end
-    end
-    for _, anchor in ipairs(order) do
-        local list = byAnchor[anchor]
-        local grow = list.grow
-        local vertical = grow == "up" or grow == "down" or (grow == "center" and (anchor == "LEFT" or anchor == "RIGHT"))
-        -- Length of the run along its axis, for centering.
-        local length = -spacing
-        for _, item in ipairs(list) do length = length + (vertical and item.h or item.w) + spacing end
-        local along = 0
-        for _, item in ipairs(list) do
-            local w, h = item.w, item.h
-            -- The first icon's center for this anchor, its inner edge on the plate.
-            local cx, cy
-            if anchor:find("^TOP") or anchor:find("^BOTTOM") then
-                local top = anchor:find("^TOP") ~= nil
-                -- On the bar's edge, or past everything above or below it.
-                local past = list.attach and 0 or (top and plate.above or plate.below)
-                cy = top and (boxHeight / 2 + past + gap + h / 2) or -(boxHeight / 2 + past + gap + h / 2)
-                cx = anchor:find("LEFT") and (-boxWidth / 2 + w / 2) or anchor:find("RIGHT") and (boxWidth / 2 - w / 2) or 0
-            elseif anchor == "LEFT" then
-                cx, cy = -(boxWidth / 2 + gap + Clear("LEFT") + w / 2), 0
+        local box, along = nil, 0
+        for _, it in ipairs(items) do
+            local left, bottom
+            if o.center and not o.vertical then
+                left = cx - total / 2 + along
+                bottom = o.point == "BOTTOM" and cy or cy - it.h
+            elseif o.center then
+                left = o.point == "RIGHT" and cx - it.w or cx
+                bottom = cy + total / 2 - along - it.h
+            elseif not o.vertical then
+                left = o.h == 1 and cx + along or cx - along - it.w
+                bottom = o.point:find("^BOTTOM") and cy or o.point:find("^TOP") and cy - it.h or cy - it.h / 2
             else
-                cx, cy = boxWidth / 2 + gap + Clear("RIGHT") + w / 2, 0
+                bottom = o.v == 1 and cy + along or cy - along - it.h
+                left = o.point:find("LEFT") and cx or o.point:find("RIGHT") and cx - it.w or cx - it.w / 2
             end
-            local size = vertical and h or w
-            if grow == "center" then
-                local offset = -length / 2 + along + size / 2
-                if vertical then cy = cy + offset else cx = cx + offset end
-            else
-                local step = STEP[grow]
-                cx, cy = cx + step[1] * along, cy + step[2] * along
-            end
-            along = along + size + spacing
-            local left = Round(cx - w / 2 + boxWidth / 2, px) + item.dx
-            local bottom = Round(cy - h / 2 + boxHeight / 2, px) + item.dy
-            item.icon:ClearAllPoints()
-            item.icon:SetPoint("BOTTOMLEFT", plate.healthBox, "BOTTOMLEFT", left, bottom)
-            if anchor == "LEFT" then extent.LEFT = math.max(extent.LEFT, -left + gap)
-            elseif anchor == "RIGHT" then extent.RIGHT = math.max(extent.RIGHT, left + w - boxWidth + gap) end
+            along = along + (o.vertical and it.h or it.w) + spacing
+            left, bottom = Round(left, px), Round(bottom, px)
+            it.icon:ClearAllPoints()
+            it.icon:SetPoint("BOTTOMLEFT", plate.healthBox, "BOTTOMLEFT", left, bottom)
+            box = box or { left, left + it.w, bottom, bottom + it.h }
+            box[1], box[2] = math.min(box[1], left), math.max(box[2], left + it.w)
+            box[3], box[4] = math.min(box[3], bottom), math.max(box[4], bottom + it.h)
         end
+        self:PlaceReaderMarks(plate, row.key, box, cx, cy)
     end
-    plate.auraExtent = extent
     self:PlaceArrows(plate)
+end
+
+-- The reader's edge marks: at the last icon's outer edge (an empty row keeps
+-- its mark at the row's start, as an empty container shrinks to its anchor),
+-- and a name stop at the row's inner edge.
+function M:PlaceReaderMarks(plate, key, box, cx, cy)
+    local anchor = key:gsub(":border", "")
+    local h, top = Horizontal(anchor), anchor:find("^TOP") ~= nil
+    local function Put(mark, point, x, y)
+        mark:ClearAllPoints()
+        mark:SetPoint(point, plate.healthBox, "BOTTOMLEFT", x, y)
+    end
+    if key:find(":border") then
+        for _, side in ipairs({ "LEFT", "RIGHT" }) do
+            local stop = plate.nameStops and plate.nameStops[key .. "|" .. side]
+            if stop then
+                local x = box and (side == "LEFT" and box[1] or box[2]) or cx
+                local y = box and (top and box[3] or box[4]) or cy
+                Put(stop, (M.StopPoints(key, side)), x, y)
+            end
+        end
+        return
+    end
+    local mark, point = self:Mark(plate, "auraEnds", key), M.EdgePoint(key)
+    local x, y
+    if anchor == "LEFT" or anchor == "RIGHT" then
+        x = box and (anchor == "LEFT" and box[1] or box[2]) or cx
+        y = box and (box[3] + box[4]) / 2 or cy
+    else
+        x = box and (h == "LEFT" and box[1] or h == "RIGHT" and box[2] or (box[1] + box[2]) / 2) or cx
+        y = box and (top and box[4] or box[3]) or cy
+    end
+    Put(mark, point, x, y)
 end

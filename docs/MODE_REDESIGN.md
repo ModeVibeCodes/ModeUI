@@ -542,6 +542,29 @@ picking (smallest element first, Elements here) waits until the owner has
 seen whether the dim is enough. Mock client only; waiting on the owner's
 in-game look.
 
+### Revision: nameplates pass (November 23, 2026)
+
+From the owner's baseline and answers on the Nameplate Designer artifact
+(https://claude.ai/artifact/Y6qEMQnZHXYkGaQKu5ca9F, source
+`design/nameplates/`):
+- **Every Mode cast bar:** light blue when it can be interrupted, orange-red
+  when it can't, channels green (`Style.Tone.cast`; Unit Frames layout 26,
+  ModeCDM 11).
+- **No combat icons:** Unit Frames' combat badge is off by default (layout 27);
+  nameplates show loot and interact soft-target icons only, with an opt-in
+  Hide Blizzard's Combat Icon.
+- **Nameplates settings 12:**
+  - The baseline is every plate's default: 156 × 16, the name On Border at the
+    top left beside your debuffs (Sit on Border, top right), crowd control
+    above, buffs right, quest left, the marker, level and elite inside, arrows
+    outermost, a 12px cast bar 1px below with the target left of the timer.
+  - Friendly plates are names only.
+- **The anchoring rework:** stacks per anchor (`Stacks.lua`), Auras First,
+  edge marks on self-sizing aura containers, real centering, the layering fix.
+- **The magnified previewer** (option B).
+
+docs/NAMEPLATES.md has it all. Mock client only; nothing is verified in game.
+
 ## Decisions
 
 From the plan's "Decisions for you" (owner's answers):

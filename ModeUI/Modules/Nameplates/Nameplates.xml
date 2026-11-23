@@ -7,6 +7,7 @@
     <Script file="Driver.lua"/>
     <Script file="Plate.lua"/>
     <Script file="Layout.lua"/>
+    <Script file="Stacks.lua"/>
     <Script file="Target.lua"/>
     <Script file="Indicator.lua"/>
     <Script file="Focus.lua"/>
@@ -18,6 +19,8 @@
     <Script file="Auras.lua"/>
     <Script file="AuraContainers.lua"/>
     <Script file="Preview.lua"/>
+    <Script file="PreviewStage.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsParts.lua"/>
     <Script file="SettingsActions.lua"/>
 </Ui>

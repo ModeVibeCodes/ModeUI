@@ -1617,3 +1617,55 @@ the stand-in, the containers on the player and the clip-frame crop work.
 - **Picker.** `C_UnitAuras.GetUnitAuras("player", "HELPFUL"/"HARMFUL")` out of
   combat with public `spellId`s (`Domain.Auras.Spells`), names and icons from
   `C_Spell` (`Domain.Cooldowns`).
+
+## Nameplates pass — November 23, 2026
+
+Source: Blizzard's interface code on the `forever` branch of
+Gethe/wow-ui-source (commit 734f065, "1.60.1 (71037)"). Nothing below is
+verified in game yet.
+
+- **Aura containers size themselves.** After each layout a
+  `CustomAuraContainerTemplate` calls `SetSize(secretwrap(w, h))`
+  (`Blizzard_CustomAuraContainer.lua:799-801`). ModeUI never reads that size.
+  Instead each row keeps an **edge mark**: a 1x1 frame anchored to the
+  container's far edge. Whatever follows the row is anchored to the mark,
+  so the game moves it as the row fills and empties. That covers the part
+  row, the target arrows, and the name's stop on the border line.
+  Blizzard's comment asks that frames anchored to a container be made from
+  `DisableUntrustedLayoutScriptsTemplate` (`ForbiddenAspectTemplates.xml:18-22`);
+  adding a group gives the container the forbidden aspect
+  `UntrustedLayoutScriptExecution`. Marks are made from that template when
+  `C_XMLUtil.GetTemplateInfo` finds it (`Stacks.lua`).
+- **Centered rows.** A centered row's container is anchored by its own
+  middle (`BOTTOM` to the bar's `TOP`), with flow anchor `BOTTOMLEFT` and
+  growth right, so it stays centered as it resizes. This is inferred from
+  `AnchorUtil.lua:587-595`: buttons are anchored to the container's flow
+  point. With icon width + spacing even, every count's length has the same
+  parity, so a fixed half-pixel nudge keeps the edges on whole pixels.
+- **Group order.** Groups in one container flow in `layoutIndex` order, then
+  the order they were added. Empty groups add no spacing and no line, checked
+  in secure code (`AnchorUtil.lua:615, 693`).
+- **Cast target.** `UnitSpellTargetName` and `UnitSpellTargetClass` (always
+  secret) name a spell's own target. ModeUI uses them when the client has
+  them, passing the name only to `SetText` and the class only to
+  `UnitColor.Class` (which refuses a secret). Otherwise it falls back to
+  `UnitName(unit .. "target")`.
+- **Cast texts inside the bar.** The timer and the target size themselves to
+  their text (`SetWidth(0)`). Each is anchored to the next, so secret text is
+  never measured.
+- **Soft-target icons.** ModeUI shows the loot and interact icon
+  (`softinteract`); the enemy and friend icons only with Show Combat Icons.
+  Hide Blizzard's Combat Icon writes `SoftTargetIconEnemy` and
+  `SoftTargetIconFriend` with `C_CVar.SetCVar` (else `SetCVar`), outside combat
+  only. It remembers the old values in the saved settings and restores them
+  when turned off or when the module is.
+- **Frame levels.** Blizzard's own plate pins its cast bar at `frameLevel="100"`
+  (`Blizzard_NamePlates.xml:176`). ModeUI sets its layers from the plate's
+  level on every layout, clear of every rim. Forever documents
+  `SetFixedFrameLevel`; ModeUI doesn't need it.
+- **Unverified:**
+  - anchoring to a self-sized container and through a mark;
+  - the CENTER-anchored container's growth;
+  - whether `SetWidth(0)` FontStrings chained to each other lay out as expected
+    with secret text;
+  - whether a container may be created in combat.

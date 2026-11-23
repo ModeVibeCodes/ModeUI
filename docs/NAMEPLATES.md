@@ -1,333 +1,354 @@
 # Frames: Nameplates
 
 November 12, 2026. Second module ModeUI built; in the **Frames** category since November 13. Off by default
-(turn it on with the switch in the page header). Static/mock validated only;
+(turn it on with the switch in the page header; the Mode-Default layout turns it on). Static/mock validated only;
 **native acceptance is pending** for the latest changes. APIs and their
-secret-value rules are in [API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-nameplates--november-12-2026).
+secret-value rules are in [API_COMPATIBILITY.md](API_COMPATIBILITY.md#interface-nameplates--november-12-2026)
+and its "Nameplates pass" section.
+
+The **nameplates pass** (November 23, 2026) is the owner's baseline and the
+anchoring rework. It came from the Nameplate Designer artifact
+(https://claude.ai/artifact/Y6qEMQnZHXYkGaQKu5ca9F; source `design/nameplates/`).
+
+## The baseline (defaults)
+
+Enemy plates:
+- **Plate:** a 156 × 16 health bar.
+- **Name:** **On Border** at the top left, 13px, 3px into the rim.
+- **Your debuffs:** on the same border line at the top right, growing left,
+  up to 4, 24 × 20. The name stops where they start and flexes with them.
+- **Crowd control:** above that line, centered, up to 2, 35 × 31 (1.5×),
+  with the crowd control rim and glow.
+- **Buffs:** beside the bar on the right, growing right, up to 3, 22 × 18
+  (as tall as the health box).
+- **Quest icon:** beside the bar on the left, 18px.
+- **Inside the bar:** the raid marker in the middle; the level, then the
+  elite icon, on the left; health % on the right.
+- **Cast bar:** 12px, 1px below the bar. It is light blue when you can
+  interrupt and orange-red when you can't; channels are green. The icon is on
+  the left and the spell name on the left; the timer is on the right, with the
+  cast target just left of it.
+- **Combo points:** below, centered. They sit under the cast bar while a cast
+  shows and under the health bar otherwise (**Move Up While Not Casting**).
+- **Target:** arrows on both sides, always the outermost part.
+- **Soft-target icon:** the loot and interact icon (a bag or gear) above
+  everything; no combat icon.
+
+Friendly plates are **Name Only**: players in their class color, friendly NPCs
+in the friendly color, no auras.
 
 ## What it draws
 
 On every nameplate the game gives to addons, ModeUI parents its own plain
 frame and fades Blizzard's art. Each plate has:
 
-- **Health and cast boxes** (docs/DESIGN_LANGUAGE.md, settings version 9 from
-  the approved Nameplates probe): the bar inside the `frameThin` edge, in each
-  kind's **Border** and **Border Metal** (Mode-Border by default: soft
-  round corners, a 1px dark glass band with a lit top and a champagne bottom, a 1px shadow ring). The rim art sits outside the bar and
-  covers its own corners, so nothing is masked. Each ring is drawn in pieces
-  (DESIGN_LANGUAGE.md, "Pieces"; owner, November 18, 2026): a plate's bars
-  are shorter than the ring art, whose sliced corners shrank and looked
-  square. Aura icons are drawn in pieces too, each piece taking the dispel
-  color (`Kit.DispelAuraRim`). Health fills in **Mode-FG**
-  on Mode-BG (Slate) at 85%; the cast bar has its own **Cast Bar** texture (**Mode
-  Cast**) and the **Comet** spark on the fill's leading edge (a channel's on
-  its left), hidden while an interrupted cast is held.
-- **Name** in SemiBold, in the **Gradient** (the class or reaction color
-  toward white) by default; Class or Reaction and Text Color are options.
-  **Health text** (Percent, Current Health, Current and Percent, None) in
-  Bold, colored **By Health** (Rosewood at 30% and under, through Ivory, to
-  Celadon) or in the Text Color, with a soft glow in its own color (**Health
-  Text Glow**, on by default). Cast texts are Bold. One shadow, no
-  lifted copy.
-- **Health color**: Reaction and Class, Reaction, Onyx or Custom, used exactly
-  as they are (true colors). **Threat Colors** (enemies, on by default) gives
-  each threat status its own color: **Has Aggro** (the enemy is attacking you;
-  red), **Losing Aggro** (it's attacking you, but someone else is about to take
-  it; orange) and **Close to Pulling** (it's attacking someone else and you're
-  about to take it; orange). With no threat, or while the game hides threat, the
-  plate keeps its health color.
-- **Health Opacity** (100% by default) fades the health fill without changing
-  its color. **Background Opacity** (60% by default) fades only the empty part
-  of the health bar, so the world shows through it; the rim, the fill and the
-  text stay solid (the edge draws outside the bar, so nothing sits behind it), and the
-  target glow texture is hollow. The cast bar keeps a solid background: a
-  channel drains by covering the cast color with the track color.
-- **Textures**: **Foreground** (Mode-FG by default, Flat, or any SharedMedia
-  status bar) and **Background** (Flat or SharedMedia), for the health and cast bars.
-- **Cast bar**: amber when interruptible, gray when not; channels drain from right
-  to left. **Spell Icon** Left, Right, Outside Left, Outside Right or None, with
-  **Icon Offset X/Y**; **Spell Name**; **Cast Target**
-  (who the caster is targeting, in its class color, on a line past the bar; on by
-  default for enemies); **Timer** (seconds left, from public cast times or the
-  cast's duration object; empty while the game hides both). Pick a text with
-  **Position Of** to set its **Anchor** (Left, Center, Right inside the bar; Top
-  and Bottom anchors outside it) and **Offset X/Y**. Texts outside the bar take
-  a line on their side, and the cast bar and name move past it. An interrupted
-  cast stays a second, full, in the **Interrupted** color with "Interrupted" as
-  its spell name, then fades, as Blizzard's cast bars do.
-- **Indicators**: a quest icon (quest bosses and creatures tied to your active
-  quests), Blizzard's elite, rare elite, rare and boss icons, and the level in
-  its difficulty color. Pick one with **Indicator** (Quest, Elite and Rare,
-  Level); each has **Show This Indicator**, an **Anchor**, **Offset X/Y** and a
-  size (icon size, or the level's text size). Indicators on the same anchor line
-  up in one row; beside the bar the row sits past the raid marker, and aura rows
-  and target arrows sit past it. Clicking one in the preview selects it.
-- **Soft Target Icon** (on by default): the cursor the game shows over your soft
-  target (a sword on your soft enemy, a bag or gear on what your interact key
-  would use), centered above everything on the plate's top edge, with a
-  **Size** and **Offset X/Y**. It replaces the icon Blizzard draws on its own
-  plate, which ModeUI fades with the rest. Which soft targets get one stays the
-  game's interact icon setting in its Accessibility options.
-- **Slug Text** (on by default): text drawn from glyph outlines, sharp at any
-  size. See [API_COMPATIBILITY.md](API_COMPATIBILITY.md) for how it is applied.
-- **Auras** in three groups, the **raid marker**, and a **target indicator**.
+- **Health and cast boxes:** the bar inside the `frameThin` edge, in each
+  kind's **Border** and **Border Metal** (Mode-Border by default). The rim art
+  sits outside the bar and covers its own corners, so nothing is masked. Each
+  ring is drawn in pieces (DESIGN_LANGUAGE.md, "Pieces"). Health fills in
+  **Mode-FG** on Mode-BG at 85%; the cast bar has its own **Cast Bar** texture
+  and the **Comet** spark on the fill's leading edge (a channel's on its left),
+  hidden while an interrupted cast is held.
+- **Name** in SemiBold, in the class or reaction color by default (Gradient
+  and Text Color are options). **Health text** (Percent, Current Health,
+  Current and Percent, None) in Bold, colored **By Health** or in the Text
+  Color, with a soft glow (**Health Text Glow**).
+- **Health color:** Reaction and Class, Reaction, Onyx or Custom, used exactly
+  as they are. **Threat Colors** (enemies) gives each threat status its own
+  color: **Has Aggro**, **Losing Aggro**, **Close to Pulling**.
+- **Health Opacity** fades the fill; **Background Opacity** fades only the
+  empty part of the bar.
+- **Cast bar** (every Mode cast bar, owner, November 23, 2026): **Interruptible**
+  light blue (`Style.Tone.cast.casting`), **Not Interruptible** orange-red,
+  **Channel** green, **Interrupted** red. Channels drain from right to left. An
+  interrupted cast stays a second, full, then fades.
+  - **Spell Icon:** Left, Right, Outside Left, Outside Right or None.
+  - Texts: **Spell Name**, **Cast Target** (the spell's own target where the
+    client gives it, else who the caster is targeting, in its class color) and
+    **Timer**.
+  - Inside on the right, the timer and the target line up from the bar's edge
+    inward, and the spell name stops 4px short of them. Each is anchored to the
+    next, so secret text is never measured.
+- **Indicators:** a quest icon, Blizzard's elite, rare elite, rare and boss
+  icons, and the level in its difficulty color.
+- **Soft Target Icon:** the cursor the game shows over your soft target, above
+  everything on the plate. By default only the loot and interact icon (a bag,
+  gear). **Show Combat Icons** adds the sword on soft enemies and friends.
+  **Hide Blizzard's Combat Icon** (opt-in, for every kind) turns the game's own
+  enemy and friend icons off (`SoftTargetIconEnemy`, `SoftTargetIconFriend`),
+  remembers what they were and restores them when turned off or when the
+  module is (`BlizzardIcons.lua`).
+- **Auras** in three groups, the **raid marker**, the **target indicator**,
+  **combo points** and the **focus** highlight.
 
 **Name Only** (the Style choice) draws just the name, centered, in the class
-color for players or the reaction color otherwise, with auras and the raid
-marker. It has no bars and no cast bar.
+color for players or the reaction color otherwise. It has no bars, no cast bar
+and no auras.
 
 ## Placement
 
-Every element has an anchor, read like a compass around the health bar, and an
-Offset X and Y (up to 50 each way):
+Every part has an **anchor**, read like a compass around the health bar, and
+an Offset X and Y. The plate is built outward from the bar (`Layout.lua`,
+`Stacks.lua`):
 
-| Anchor | Text (name, health text) | Raid marker and auras |
-|---|---|---|
-| Top Left / Top / Top Right | above the bar (above the cast bar when it's on top) | above everything over the bar |
-| Left / Center / Right | inside the bar | beside the bar (Center: in its middle) |
-| Bottom Left / Bottom / Bottom Right | below the bar (below the cast bar when it's below) | below everything under it |
+1. **The spine:**
+   - **The border line:** aura groups set to **Sit on Border** and a name
+     placed **On Border** share one line right on the bar's edge. An On Border
+     name stops at the inner edge of a border row on the same line (Top Right
+     or Top for a name on the left), so the game shortens it with "…" only
+     while auras need the room.
+   - The cast bar, **Below** or **Above**, with its outside texts.
+   - One text line for a name or health text placed outside on Top or Bottom.
+2. **Stacks:** past the spine, each anchor point holds an **aura row** and a
+   **part row** (the raid marker, the indicators, the combo points).
+   - Part row order, from the bar outward: marker, quest, elite and rare,
+     level, combo points. Inside the bar, from its edge inward, the order is
+     level, elite and rare, quest, marker.
+   - A part that shows nothing takes no room, so the rest close up toward the
+     bar.
+   - **On One Anchor:** with **Auras First** (the default) the aura row sits
+     nearest the bar and the part row follows its last icon; **Indicators
+     First** puts the part row first and the aura row past it.
+3. **Target arrows** are always the outermost part on each side, anchored to
+   whatever comes last there.
 
-The cast bar sits **Below** or **Above** the health bar, with its own offsets.
-The raid marker has a **Size**. Anchors are picked with the anchor compass
-(`W.AnchorPicker`).
+| Anchor | Text (name, health text) | Markers, indicators, combo points | Aura groups |
+|---|---|---|---|
+| Top Left / Top / Top Right | on the border line (On Border) or above the spine | past the spine (or after the aura row) | past the spine, or on the border line (Sit on Border) |
+| Left / Right | inside the bar | beside the bar, or inside it (**Inside the Bar**) | beside the bar |
+| Center | inside the bar | inside the bar | — |
+| Bottom Left / Bottom / Bottom Right | below the spine | below the spine | below the spine |
 
-## Mode-DPS/TANK layout
+**Secret auras.** In the world, Blizzard's aura containers draw the rows and
+size themselves to what they show. ModeUI may not read that size, so each row
+keeps an **edge mark**: a 1x1 frame anchored to the container's far edge,
+made from Blizzard's `DisableUntrustedLayoutScriptsTemplate`. Whatever follows
+the row is anchored to the mark, and the game moves it as auras come and go.
+The soft-target icon clears the tallest Top stack from known heights (a row's
+height is known, only its length is secret), so it stays still.
 
-`Layouts.lua` adds the nameplates' part of the built-in Mode-DPS/TANK layout
-(DPS / Tank, `Shared/Runtime/Layouts.lua`; owner, November 18, 2026): the
-module on, and aura icons at **Aura Spacing** 1 for Enemy and Friendly, so
-neighbours share one shadow pixel like every icon in the layout. Everything
-else keeps its default.
+**Centered rows** are anchored by their own middle, so they stay centered as
+they resize. With icon width + spacing even, a fixed half-pixel nudge keeps
+every count on whole pixels.
+
+**Layers.** Both boxes sit one frame level above the plate, each box's bar,
+spark clip and rim the next three. Text, markers, indicators and combo points
+are on the text layer (+10) and auras on the aura layer (+12), clear of every
+rim. They are set again on every layout. This fixes parts inside the bar
+sometimes drawing behind it.
+
+## Mode-Default layout
+
+`Layouts.lua` adds the nameplates' part of the built-in Mode-Default (DPS /
+Tank) and Healer layouts: the module on. The baseline is every plate's
+default, including Aura Spacing 1 (neighbours share one shadow pixel).
 
 ## Enemy and friendly plates
 
 Every plate is an **enemy** plate (a unit you can attack) or a **friendly** one,
 and each kind has its own full settings. **Use ModeUI Plates** turns ModeUI off
 for one kind. A unit that changes sides switches kinds on `UNIT_FACTION`.
-In the settings footer, **Copy To…** copies the whole look of the kind being
-edited to the other (**Enemy style to Friendly plates** or **Friendly style to
-Enemy plates**); **Reset…** offers **Enemy plates**, **Friendly plates** or
-**All of Nameplates** (`SettingsActions.lua`, `M:CopyActions` and
-`M:ResetScopes`). Both ask first, and **Use ModeUI Plates** stays as it is.
+**Copy To…** and **Reset…** are in the settings footer (`SettingsActions.lua`).
+Both ask first, and **Use ModeUI Plates** stays as it is.
 
 ## Auras
 
 Three groups, in order: **Crowd Control**, **Debuffs**, **Buffs**. The game's own
 aura filters decide what belongs to each, so secret aura data is never compared.
 
-- Every group: **Show Auras**, **Timer Swipe**, **Stack Count**, **Icon Shape**
-  (Cropped: 6px wider than tall, the default, for example 32 x 26; or Square),
-  **Rim Color** (By Type: the rim tinted by dispel type; or Mode: the Gunmetal
-  metal) on the `frameThin` edge every icon wears, **Border Size** (1 or 2px,
-  1 by default),
-  **Spacing**, **Timer Text** in **Timer Text Color** (the action bar cooldown
-  color, #FFB12F, by default) and **Crowd Control Glow** in the rim color, with
-  **Glow Style**: GCD Flash (Blizzard's action button GCD flipbook,
-  `UI-HUD-ActionBar-GCD-Flipbook`, looping; the default) or Soft Glow.
-- Each group (pick it with **Group**): **Show This Group**, **Which** (Debuffs:
-  Yours, Ones You Can Dispel, All; Buffs: Dispellable or Stealable, Important,
-  Yours, All), **Anchor**, **Grow** (Right, Left, Up, Down, Center), **Offset X/Y**,
-  **Icon Size** and **Most Shown**. Groups on the same anchor continue as one
-  row in the first group's direction. **Sit on Health Bar** puts a Top or Bottom
-  group right against the bar; the name and cast bar on that side move past it.
-- Icons are built like plate boxes: rounded rim, black gap, the icon inset 2px
-  and cropped so it is never stretched. With **By Type** borders the rim takes the
-  aura's dispel type color (Magic, Curse, Disease, Poison, Enrage, each
-  customizable); auras without a type, or whose type the game hides, keep the
-  Mode rim.
-- Defaults: enemies show crowd control on the Left (24px, up to 2), your debuffs
-  on Top (20px, up to 6), dispellable buffs on the Right (18px, up to 3).
-  Friendly plates show debuffs you can dispel on Top (16px, up to 4).
+- **Every group:** **Show Auras**, **Timer Swipe**, **Stack Count**.
+  - **Icon Shape:** **Mode** (the design language's rule: 4px shorter than
+    wide up to 35, 6px from 36; the default), Cropped (6px shorter) or Square.
+    Sizes include the 1px band.
+  - **Rim Color** (By Type or Mode) and **Border Size**.
+  - **Spacing:** 1 by default, the Cooldown Manager's look.
+  - **Timer Text**, and **Crowd Control Glow** with **Glow Style**.
+  - **On One Anchor:** Auras First or Indicators First.
+- **Each group** (pick it with **Group**): **Show This Group**, **Sit on
+  Border**, **Which**, **Anchor**, **Grow** (Right, Left, Up, Down, Center),
+  **Offset X/Y**, **Icon Size** and **Most Shown**. Groups on the same anchor
+  are one row, continuing in group order.
 
 ## Target indicator
 
-**Style**: Border (the edge's outer line in the target color, Ivory by default,
-on the health and cast boxes; **Border Size** 2 or 3 tints the rim too), Glow (a soft halo), Arrows (pointing in from both sides; **Arrow Size** and
-**Arrow Gap**, up to 48 and 60), Border and Arrows, or None, in a **Color** of
-your choice (Ivory by default). Arrows always sit outside the raid marker, the
-indicator, any aura row and the combo points on their side. Name Only plates color the
-name for Border and Glow. The target is found by comparing nameplate frames.
+**Style:** Border, Glow, Arrows (the enemy default), Border and Arrows, or
+None, in a **Color** (Ivory). Arrows are always the outermost part on each
+side and move in and out with what shows there (**Arrow Size**, **Arrow
+Gap**).
 
 ## Combo points
 
-November 13, 2026, per the owner: combo points you can track on the plate of
-your target (`Combo.lua`; the **Combo Points** cards on **General** and **Fill**). On
-WoW Forever combo points live on the target (`GetComboPoints("player",
-"target")`), and only Rogues, and Druids in Cat Form, have them
-(`Domain.ClassResource`, shared with the Target frame). Forever's own
-nameplates draw none: `Blizzard_NamePlates.toc` loads the Rogue and Druid class
-nameplate bars only outside `camelot`. So the points follow your target from
-plate to plate (`PLAYER_TARGET_CHANGED`, `COMBO_TARGET_CHANGED`) and refill on
-the player's power events (`UNIT_POWER_FREQUENT`, `UNIT_MAXPOWER`,
-`UNIT_DISPLAYPOWER`, unit-filtered to the player on the module's own frame).
-
-One round socket per point (the player's maximum, else five) in a row: a rim
-in the ModeUI border color, a dark socket and a fill (`Shared/Kit/Points.lua`,
-also used by the Target frame). The count may be secret, so each socket is its
-own StatusBar spanning `(i - 1, i)` and gets the count through `SetValue` only.
-Settings, per kind: **Show Combo Points** (on for enemies, off for friendly
-plates), **Anchor** (Bottom by default: below the cast bar; Top and Bottom sit
-past the name and cast bar, Left and Right beside the bar past the raid marker,
-indicators and aura rows, Center on the bar), **Point Size** (8px, snapped to
-even pixels), **Spacing** (2px), **Offset X/Y**, **Lit Point Color** (red) and
-**Empty Point Color** (Onyx track). Target arrows sit past points beside the
-bar. A class without combo points sees a note saying so and nothing shows.
+Combo points you can track, on the plate of your target (`Combo.lua`), for
+Rogues and Druids in Cat Form (`Domain.ClassResource`). One round socket per
+point in a row that joins the stack on its anchor: **Bottom**, centered, by
+default. With **Move Up While Not Casting** they sit under the health bar while
+nothing is cast and under the cast bar while a cast shows. They are placed
+again when the cast box shows or hides. The count may be secret, so each
+socket is its own StatusBar that gets it through `SetValue`.
 
 ## Focus
 
-Your focus target's plate has a **Highlight** (Border, the edge's outer line in
-the focus color; Glow; Stripes, diagonal stripes over the health bar at
-**Stripe Opacity**; or None) in a **Color** (Rosewood by default), on the
-**Focus** card in **Glow**; a **Focus Texture** (Same as Foreground, or any
-foreground texture) on the **Focus** card in **Fill**; and **Other Plates
-Opacity**, on the **Focus** card in **Behavior**, which fades every other plate
-while you have a focus (100% leaves them alone). A plate that is both your
-target and your focus shows the target's border. The focus is found by
-comparing nameplate frames, on `PLAYER_FOCUS_CHANGED`. While the Glow tab is
-open, the preview sample shows itself as your focus.
+Your focus target's plate has a **Highlight** (Border, Glow, Stripes or None)
+in a **Color** (Rosewood), a **Focus Texture**, and **Other Plates Opacity**.
 
 ## Preview
 
-The top of the page shows one sample plate: the kind chosen with **Editing**,
-centered. It's built by the same code as the plates in the world, so it matches
-every setting, including Name Only, the target style and auras with their type
-colors. **Static** shows the cast 60% done; **Animated** loops it. **Click any
-part of the sample** (health bar, name, health text, cast bar, an aura, the raid
-marker, the soft-target icon or the combo points) to jump to its settings; parts light up under the mouse.
+The magnified previewer (owner, November 23, 2026; `PreviewStage.lua`):
+
+- **State chips:**
+  - the cast: No Cast, Casting, Can't Interrupt, Interrupted;
+  - Target or Not Target;
+  - auras: None, Some, Full (every group at Most Shown, its full reach).
+- **The stage:** the kind being edited, magnified (2x, less when its full
+  reach can't fit) and pixel snapped.
+  - **The health bar stays in the middle across**, so an anchor change never
+    slides the plate sideways.
+  - Up and down, the plate's full reach is centered, from the layout and every
+    row at Most Shown, so changing states never moves it.
+  - The preview has a fixed height.
+- **A 1:1 strip** of more plates in other states:
+  - enemy: your focus, a cast you can't interrupt, a plain one;
+  - friendly: a player and an NPC.
+- **Click any part** of the stage plate to jump to its settings.
+
+The old preview estimated the plate's size with its own copy of the layout,
+measured before painting, and re-centered the whole footprint. That is why it
+used to drift off center.
 
 ## Settings page
 
-The standard tabs (docs/DESIGN_LANGUAGE.md, "Standard tabs"), under the
-**Editing** switch, which sits above every tab (a kind left to Blizzard shows a
-tip there instead of its settings):
+The standard tabs under the **Editing** switch:
 
-- **General**: **Show** (Use ModeUI Plates, Style, Show Cast Bar, Show Auras,
-  Show Combo Points, Show Indicators, Show Raid Marker, Show Soft Target Icon),
-  **Size** (Width, Health Height), and where each part sits: **Cast Bar**
-  (Position, Height, offsets, Spell Icon), **Combo Points**, **Indicators**,
-  **Raid Marker**, **Soft Target Icon**.
-- **Fill**: **Health Bar** (textures, Health Color, opacities, Threat Colors),
-  **Cast Bar** (Texture, the three cast colors), **Combo Points** (point
-  colors), **Focus** (Focus Texture).
-- **Border**: **Border** (Border, Border Metal), **Aura Borders** (Rim Color,
-  Border Size), **Target** (the target indicator: Style, Color, Border Size,
-  arrows), **Aura Border Colors** (the dispel type colors).
-- **Glow**: **Focus** (the focus highlight), **Crowd Control** (Crowd Control
-  Glow, Glow Style), **Health Text** (Health Text Glow).
-- **Text**: **Text Style** (Font, Outline, Slug Text, Shadow, Text Color),
-  **Name Text**, **Health Text** (Value, Color, Anchor, offsets, Size) and
-  **Cast Bar Text** (the three texts share one Size; **Position Of** picks the
-  one to place).
-- **Auras**: **Groups**, **Icons**, **Timer**, **Stacks**.
-- **Behavior**: **Focus** (Other Plates Opacity).
-
-Clicking text in the preview opens its settings only where the text is
-written; the rest of the bar opens the health settings. Settings are grouped
-on cards with accent titles, with related sliders and choices side by side.
+- **General:**
+  - **Show**.
+  - **Size**.
+  - **Cast Bar**.
+  - **Combo Points:** Anchor, **Move Up While Not Casting**, sizes, offsets.
+  - **Indicators:** per indicator, Show, **Inside the Bar**, Anchor, size,
+    offsets.
+  - **Raid Marker:** Anchor, **Inside the Bar**, size, offsets
+    (`SettingsParts.lua`).
+  - **Soft Target Icon:** size, offsets, **Show Combat Icons**, **Hide
+    Blizzard's Combat Icon**.
+- **Fill:** Health Bar, Cast Bar (Interruptible, Not Interruptible,
+  Interrupted, **Channel**), Combo Points, Focus.
+- **Border:** Border, Aura Borders, Target, Aura Border Colors.
+- **Glow:** Focus, Crowd Control, Health Text.
+- **Text:**
+  - Text Style.
+  - **Name Text**, with **On Border**.
+  - Health Text.
+  - Cast Bar Text.
+- **Auras:** Groups (with **Sit on Border**), Icons (Shape, **On One Anchor**,
+  Spacing), Timer, Stacks.
+- **Behavior:** Focus.
 
 ## What stays Blizzard's
 
-- Where plates appear, their stacking, scale, clicks and hit areas.
+- Where plates appear, their stacking, scale, clicks and hit areas. The
+  156-wide plate fits inside Blizzard's Forever click area, which is 166 wide
+  at Medium.
 - Friendly plates inside instances (forbidden to addons).
-- Your personal resource display, and widget-only plates.
-  Their soft-target icons, and the ones the game draws for objects itself, are
-  Blizzard's.
+- Your personal resource display, and widget-only plates. Their soft-target
+  icons, and the ones the game draws for objects itself, are Blizzard's.
 
 Switching the module off gives every plate back to Blizzard. Plates are plain
 frames, never secure, so they also work in combat. Settings change outside combat.
 
 ## Settings versions
 
-Version 11. Version 10 settings with Background Opacity still at 100 take
-the see-through 60. Version 9 settings move to the aura edge: Border Size 2 (the
-old default) takes 1 and 3 takes 2, Corners retire, and the old no-type rim
-takes the Gunmetal one. Version 8 settings still at their defaults take the Mode ones
-per kind (Mode BG on Mode BG at 100%, the Gradient name, Geist with one
-shadow, the Ivory target and the Rosewood focus); picked values stay, and the
-Cast Bar texture and Health Text Color arrive with their defaults. Version 1 (one shared set) copies into both kinds; version 2 drops the
-retired texture choice; version 3's single aura row becomes the three groups;
-version 4's target highlight switch becomes a target style, and each aura group
-grows the way its anchor did; version 5's Color Softness is removed; version 6's single indicator place and
-sizes go to each indicator; version 7's old orange no-type crowd control rim moves
-to #FF5948. New settings (such as the combo points) take their defaults.
+**Version 12** (the nameplates pass, `MigrationsV12.lua`). A value still equal
+to its version 11 default takes the baseline; anything picked stays. The new
+switches keep a customized plate looking as it did:
+- **On Border** is on only where the name was still at Top with no offset.
+- **Inside the Bar** is on for the level and elite only where they were still
+  at their default Left place.
+- **Auras First** applies only where crowd control and debuffs were still at
+  their default places.
+- **Move Up While Not Casting** applies only where the combo points were
+  still below.
+- Cast colors still at the old amber and gray take light blue and orange-red.
+
+Earlier versions:
+- 11: semi-transparent empty bars.
+- 10: the aura edge.
+- 9: the Mode design language.
+- 8: the no-type crowd control rim.
+- 7: one place per indicator.
+- 6: Color Softness retired.
+- 5: placement, Name Only, target styles.
+- 4: three aura groups.
+- 3: auras.
+- 2: one set of settings per kind.
 
 ## Files
 
 | File | Job |
 |---|---|
-| `Init.lua` | declaration, per-kind defaults, ranges and choices |
+| `Init.lua` | declaration, per-kind defaults (the baseline), ranges and choices |
 | `Migrations.lua` | `Initialize(db)`: validation and the settings-version migrations |
+| `MigrationsV12.lua` | version 11 → 12 and version 11's defaults (`M.V11`) |
 | `Driver.lua` | lifecycle, events, enemy or friendly kind, fading Blizzard's unit frame, per-kind settings |
 | `Plate.lua` | building a plate and laying out its boxes |
-| `Layout.lua` | placing every element by anchor and offset; Name Only |
-| `Target.lua` | target indicator styles, arrow placement and name colors |
+| `Layout.lua` | layers, the spine (border line, cast bar, text lines), text placement, the On Border name |
+| `Stacks.lua` | stacks per anchor, edge marks, the arrows, the Top stacks' room, name stops |
+| `Target.lua` | target indicator styles and name colors |
 | `Indicator.lua` | the level, classification and quest indicators |
 | `Focus.lua` | the focus highlight, focus texture and fading other plates |
 | `Combo.lua` | combo points on the target's plate, following the target |
-| `SoftTarget.lua` | the soft-target icon: the game's cursor art for your soft target, above the plate |
+| `SoftTarget.lua` | the soft-target icon |
+| `BlizzardIcons.lua` | Hide Blizzard's Combat Icon |
 | `Update.lua` | health, name, colors, threat, raid marker |
-| `CastBar.lua` | cast and channel bars, icon side, target line and timer |
-| `Auras.lua` | aura groups, rim colors, grow directions, pixel-snapped placement |
-| `AuraContainers.lua` | auras through Blizzard's secure custom aura containers while auras are secret |
-| `Preview.lua` | the sample plate on the settings page and its click targets |
-| `Settings.lua` | the settings page |
+| `CastBar.lua` | cast and channel bars, icon side, the inside text chain, target and timer |
+| `Auras.lua` | aura groups, sizes, row origins, the reader's placement and edge marks |
+| `AuraContainers.lua` | auras through Blizzard's secure custom aura containers, one per row, with their marks |
+| `Preview.lua` | sample units, auras, casts and states; the preview's reach |
+| `PreviewStage.lua` | the magnified previewer: chips, stage, strip |
+| `Settings.lua`, `SettingsParts.lua` | the settings page |
 | `SettingsActions.lua` | preview clicks (`JumpTo`) and the footer's Copy To… and Reset… scopes |
-
-Shared pieces: `Domain/Cast`, `RaidIcon`, `Threat`, `Nameplate`, `Auras`, `ClassResource`;
-`Kit/Palette`, `AuraIcon`, `Points`, `Kit.ModeGradient`, `Kit.FontPath`;
-`W.AnchorPicker`, `page:Columns` and the settings cards. Textures come from
-`tools/build_shape_textures.lua`.
 
 ## Not in this version
 
-- Class resources other than combo points (Forever has none for other classes).
-- Aura rim colors while the game hides aura details (it would need the
-  dispel color curve on secret data).
+- Class resources other than combo points.
+- Fitting Blizzard's click and stacking areas to ModeUI's plate.
 
 ## Manual check
 
 - **Navigation:** `/modeui`, then **Frames** › **Nameplates**.
 - **Action:**
-  - Turn the module on. Switch **Editing** between **Enemy** and **Friendly** and
-    watch the preview change.
-  - On the **Fill** tab, in **Health Bar**, move **Health Opacity** and
-    **Background Opacity**.
-  - On **General**, in **Show**, set Friendly **Style** to **Name Only**.
-  - Move the name, health text, cast bar and raid marker with their anchors.
-  - On **Auras**, pick each **Group** and set **Anchor** and **Grow**.
-  - On **Border**, in **Target**, try each **Style**.
-  - As a Rogue (or a Druid in Cat Form), on **General**, keep **Show Combo Points**
-    on and in **Combo Points** try each **Anchor**.
-  - Click parts of the preview.
-  - Click **Copy To…** in the footer and confirm, then **Reset…** and pick
-    **Friendly plates**.
-  - In the world, look at enemies and friendly players, target one, mark one,
-    and put a debuff on an enemy.
-  - As a Rogue, target an enemy and use a combo point builder, then target
-    another enemy.
-  - On **General**, in **Show**, keep **Show Soft Target Icon** on.
-    In the world, without targeting, face an enemy near enough to become your
-    soft target, then kill one and face its corpse to loot it.
-- **Required state:** out of combat to change settings; enemy nameplates shown.
+  - In the preview, click each chip: **Casting**, **Can't Interrupt**,
+    **Interrupted**, **No Cast**, **Target**/**Not Target**, **No Auras**,
+    **Some**, **Full**.
+  - On **Auras**, pick **Debuffs** and move **Anchor** between Top Right and
+    Top; switch **On One Anchor** on **Icons**.
+  - On **General**, in **Indicators**, turn **Inside the Bar** off and on for
+    Level.
+  - In the world, target a quest enemy with a long name, and apply your
+    debuffs one at a time, in and out of combat.
+  - Watch an enemy cast something you can interrupt and something you can't,
+    and interrupt one.
+  - As a Rogue, build combo points on an enemy, with and without a cast going.
+  - Face a lootable corpse, then an enemy without targeting.
+  - Look at a friendly player and a friendly NPC.
+  - On **General**, in **Soft Target Icon**, turn **Hide Blizzard's Combat
+    Icon** on, then off.
+- **Required state:** out of combat to change settings; enemy nameplates
+  shown (friendly ones too for the names).
 - **Confirmation:**
-  - The preview matches the plates in the world.
-  - Hostile plates are the plain hostile red, not pink. With Background Opacity
-    low, the world shows through the empty part of the bar while the rim, the
-    health color and the text stay solid; the target border and glow don't tint
-    the empty part.
-  - Friendly Name Only shows class-colored names.
-  - Every element sits where its anchor says.
-  - Auras are cropped with rims colored by type.
-  - The target style shows on your target.
-  - Combo points show only on your target's plate, light up as you build them,
-    and move to the new target's plate when you change targets.
-  - The sword (on a soft enemy) or the bag (on a lootable unit) sits centered
-    above that ModeUI plate, clear of its name and aura rows, and goes away when
-    you face something else. No icon floats off to the side of a ModeUI plate.
-    (Seeing none at all means the game's interact icon setting has that kind off.)
-  - Only General, Fill, Border, Glow, Text, Auras and Behavior tabs show; the
-    Editing switch stays above every tab; Copy To… gives the edited kind's look
-    to the other kind and Reset… puts the chosen kind back to its defaults,
-    both keeping Use ModeUI Plates.
-  - Settings sit on cards, the Editing pills line up with their label, and no
-    Lua errors appear.
+  - The preview's health bar stays in place while anchors and states change,
+    and the 1:1 strip matches the world.
+  - The name sits on the border at the top left and shortens with "…" only as
+    debuffs fill in from the right.
+  - With no buffs, the right arrow sits right beside the bar and moves out as
+    buffs appear.
+  - The raid marker, level, elite and health % always draw above the bar.
+  - Casts: light blue (can interrupt), orange-red (can't), the target left of
+    the timer.
+  - Combo points sit centered: under the cast bar while one shows, under the
+    health bar otherwise.
+  - Soft-target icons: a bag on the corpse, no sword on the enemy.
+  - Friendly plates show only names: the player in class color, the NPC in
+    green.
+  - The game's own enemy soft-target icon is gone while Hide Blizzard's
+    Combat Icon is on and back when it's off.
+  - No Lua errors.

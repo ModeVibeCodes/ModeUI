@@ -431,6 +431,7 @@ The Cooldown Manager's icons, tracked bars and resource bars:
 | Target of target, focus, pet | 22 health + 3 power, 12px text; no portrait by default |
 | Boss | 24 health + 3 power; no portrait by default |
 | Cast bar under a frame | 14px with icon, 1–2px below (default 2), edges on the frame's edges; with a portrait it starts where the ring ends |
+| Nameplate, enemy | 156 × 16 health box inside the rim; cast bar 12, 1px below (the shadows share a pixel); aura icons with their band: your debuffs 24 × 20, buffs 22 × 18 (as tall as the health box), crowd control 35 × 31; quest 18, raid marker and elite 14 (owner, November 23, 2026) |
 | Party, standard | 150 × 34 + 3 power |
 | Party, healer | 104 × 54 + 3 |
 | Raid, standard / healer | 74 × 34 / 92 × 48 + 3 |

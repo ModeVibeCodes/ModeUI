@@ -627,8 +627,10 @@ red while the unit is in combat. **Pulse When Pulled** (Player) pulses a red
 halo behind the ring while you are in combat and have no enemy targeted that is
 itself in combat (`Domain.Status.PulledUnawares`); targeting the attacker
 stops the pulse, and the ring holds red until combat ends. Settings are in
-`db[unit].status` (own keys). Defaults: the Player has everything on; the
-Target shows the combat badge; the small frames start off. Icons are
+`db[unit].status` (own keys). Defaults: the Player has everything on but
+the combat badge, which is off on every frame since layout 27 (owner,
+November 23, 2026: no combat icons; a badge still at the old default turned
+off); the small frames start off. Icons are
 `UnitFrames/Rested.tga` and `UnitFrames/Combat.tga` from
 `tools/build_shape_textures.lua`, tinted in game.
 

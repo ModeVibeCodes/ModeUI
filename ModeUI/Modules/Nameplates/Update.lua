@@ -90,7 +90,10 @@ function M:UpdateHealthColor(plate)
     self:PaintHealthColor(plate, self:HealthColor(plate))
 end
 
+-- A marker that comes or goes moves the parts after it in its stack.
 function M:UpdateRaidIcon(plate)
-    if not self:Style(plate).showRaidIcon or not plate.unit then plate.raidIcon:Hide(); return end
-    Domain.RaidIcon.Apply(plate.raidIcon, plate.unit)
+    local was = plate.raidIcon:IsShown()
+    if not self:Style(plate).showRaidIcon or not plate.unit then plate.raidIcon:Hide()
+    else Domain.RaidIcon.Apply(plate.raidIcon, plate.unit) end
+    if plate.raidIcon:IsShown() ~= was then self:PlaceStacks(plate) end
 end

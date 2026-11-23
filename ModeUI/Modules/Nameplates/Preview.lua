@@ -2,16 +2,12 @@ local _, addon = ...
 local M = addon.Nameplates
 if not M then return end
 
--- The settings preview: one sample plate, the kind chosen with Editing,
--- centered and built by the same code as the plates in the world, so it always
--- matches the current settings (layout, auras, target style, Name Only).
--- Static shows a cast part-way through; Animated loops it. Clicking a part of
--- the sample (health, name, health text, cast bar, an aura, the raid marker,
--- the soft-target icon, the combo points)
--- jumps to its settings. Shown through the shared settings preview (W.Preview).
-local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
+-- The settings preview's samples (the stage itself is PreviewStage.lua): sample
+-- units, their auras, casts and states, painted on plates built by the same
+-- code as the plates in the world, so a sample always matches the settings.
+local Kit, L = addon.Kit, addon.L
 local RaidIcon, UnitColor, Level = addon.Domain.RaidIcon, addon.Domain.UnitColor, addon.Domain.Level
-local CAST_SECONDS, STATIC_PROGRESS, HINT_HEIGHT = 2.5, 0.6, 18
+M.PREVIEW_CAST_SECONDS, M.PREVIEW_STATIC_PROGRESS = 2.5, 0.6
 local ICONS = "Interface\\Icons\\"
 -- The game's cursor art (the glue screens load Interface\Cursor\Attack and Interact).
 local CURSORS = "Interface\\Cursor\\"
@@ -19,22 +15,25 @@ local CURSORS = "Interface\\Cursor\\"
 -- Each sample aura belongs to a group; its tags say which Which choices it
 -- matches, and dispel names a dispel type, as the game would report them.
 M.previewSamples = {
-    enemy = { name = "Enemy Nameplate", caption = "Enemy, shown as your target", health = 72, reaction = "hostile", raid = 8, targeted = true,
-        level = 62, classification = "elite", quest = true, softTarget = CURSORS .. "Attack",
-        cast = { text = "Shadow Bolt", icon = ICONS .. "Spell_Shadow_ShadowBolt", target = "Mode", targetClass = "PALADIN" },
+    enemy = { name = "Scarlet Crusader", caption = "Enemy", health = 72, reaction = "hostile", raid = 8, targeted = true,
+        level = 62, classification = "elite", quest = true, softTarget = CURSORS .. "Interact",
+        cast = { text = "Holy Smite", icon = ICONS .. "Spell_Holy_HolySmite", target = "Mode", targetClass = "PALADIN" },
         auras = {
             { icon = ICONS .. "Spell_Nature_Polymorph", group = "crowdControl", dispel = "Magic", duration = 8, elapsed = 3 },
             { icon = ICONS .. "Spell_Shadow_ShadowWordPain", group = "debuffs", tags = { mine = true }, dispel = "Magic", duration = 18, elapsed = 6 },
-            { icon = ICONS .. "Spell_Shadow_CurseOfTounges", group = "debuffs", tags = { dispellable = true }, dispel = "Curse", count = 3, duration = 30, elapsed = 10 },
+            { icon = ICONS .. "Spell_Shadow_CurseOfTounges", group = "debuffs", tags = { mine = true, dispellable = true }, dispel = "Curse", count = 3, duration = 30, elapsed = 10 },
             { icon = ICONS .. "Spell_Holy_PowerWordShield", group = "buffs", tags = { dispellable = true, important = true }, dispel = "Magic", duration = 15, elapsed = 5 },
         } },
-    friendly = { name = "Friendly Nameplate", caption = "Friendly player (Mage)", health = 90, reaction = "friendly", class = "MAGE", level = 60, softTarget = CURSORS .. "Interact",
+    friendly = { name = "Wildleaf", caption = "Friendly player (Mage)", health = 90, reaction = "friendly", class = "MAGE", level = 60, softTarget = CURSORS .. "Interact",
         cast = { text = "Flash Heal", icon = ICONS .. "Spell_Holy_FlashHeal", target = "Tank", targetClass = "WARRIOR" },
         auras = {
             { icon = ICONS .. "Spell_Frost_ChainsOfIce", group = "crowdControl", dispel = "Magic", duration = 6, elapsed = 2 },
             { icon = ICONS .. "Spell_Shadow_AbominationExplosion", group = "debuffs", tags = { dispellable = true }, dispel = "Disease", duration = 12, elapsed = 4 },
             { icon = ICONS .. "Spell_Nature_Rejuvenation", group = "buffs", tags = { mine = true }, count = 2, duration = 12, elapsed = 4 },
         } },
+    -- A friendly NPC, for the friendly strip (players and NPCs both show names).
+    friendlyNPC = { name = "Innkeeper Farley", caption = "Friendly NPC", health = 100, reaction = "friendly", level = 30, auras = {},
+        cast = { text = "Hearthstone", icon = ICONS .. "INV_Misc_Rune_01" } },
 }
 
 addon.PreviewStates:Register(M.id, {
@@ -61,57 +60,32 @@ local function HealthText(mode, percent)
     return percent .. "%"
 end
 
--- A sample part that jumps to its settings when clicked and lights up under
--- the mouse. Frames take the click themselves; text and textures get a frame
--- laid over them.
-local function Clickable(region, kind, target, group, host)
-    local hit = region
-    if host then
-        hit = CreateFrame("Frame", nil, host)
-        hit:SetAllPoints(region)
-        hit:SetFrameLevel(host:GetFrameLevel() + 2)
-    end
-    hit:EnableMouse(true)
-    hit.jumpHighlight = W.Fill(hit, T.primary, "OVERLAY", 0, 0.16)
-    hit.jumpHighlight:Hide()
-    hit:SetScript("OnEnter", function() hit.jumpHighlight:Show() end)
-    hit:SetScript("OnLeave", function() hit.jumpHighlight:Hide() end)
-    hit:SetScript("OnMouseUp", function(_, button)
-        if button == nil or button == "LeftButton" then M:JumpTo(hit.jumpKind or kind, target, group) end
-    end)
-    hit.jump = { kind = kind, target = target, group = group }
-    return hit
-end
-
--- Text click areas cover the written text, not the whole line: text inside
--- the bar is laid out as wide as the bar, and a click on the bar beside the
--- text should reach the bar.
-local function FitText(hit, text)
-    local width = math.max(8, math.min(text:GetWidth(), text:GetStringWidth() + 4))
-    local justify = text:GetJustifyH()
-    local point = justify == "LEFT" and "LEFT" or justify == "RIGHT" and "RIGHT" or "CENTER"
-    hit:ClearAllPoints()
-    hit:SetPoint(point, text, point, 0, 0)
-    hit:SetSize(width, math.max(8, text:GetStringHeight() + 2))
-end
-
--- The sample auras one group would show, as the game's filters would pick them.
-function M:SampleAuras(style, sample, group)
+-- The sample auras one group shows: "some" as the game's filters would pick
+-- them from the sample; "full" fills the group to Most Shown (so its full
+-- reach shows); "none" none.
+function M:SampleAuras(style, sample, group, mode)
     local shown, settings = {}, style[group]
-    if not style.showAuras or not settings.show then return shown end
+    if mode == "none" or not style.showAuras or not settings.show then return shown end
+    local pool = {}
     for _, aura in ipairs(sample.auras) do
         local match = aura.group == group and (group == "crowdControl" or settings.filter == "all" or (aura.tags and aura.tags[settings.filter]))
-        if match and #shown < settings.max then shown[#shown + 1] = aura end
+        if match then pool[#pool + 1] = aura end
     end
+    if mode == "full" then
+        for _, aura in ipairs(sample.auras) do if aura.group == group then pool[#pool + 1] = aura end end
+        for i = 1, (#pool > 0 and settings.max or 0) do shown[i] = pool[(i - 1) % #pool + 1] end
+        return shown
+    end
+    for _, aura in ipairs(pool) do if #shown < settings.max then shown[#shown + 1] = aura end end
     return shown
 end
 
-function M:PaintSampleAuras(plate, style, sample)
+function M:PaintSampleAuras(plate, style, sample, mode)
     for _, group in ipairs(self.auraGroups) do
-        local auras = self:SampleAuras(style, sample, group)
+        local auras = self:GroupShown(plate, group) and self:SampleAuras(style, sample, group, mode) or {}
         for index, aura in ipairs(auras) do
             local icon = self:AuraIcon(plate, group, index)
-            if not icon.jump then Clickable(icon, plate.kind, "auras", group) end
+            if plate.clickable and not icon.jump then self.Clickable(icon, plate.kind, "auras", group) end
             icon.jumpKind = plate.kind
             icon.icon:SetTexture(aura.icon)
             Kit.Write(icon.count, (style.auraCount and aura.count) and tostring(aura.count) or "")
@@ -128,7 +102,23 @@ function M:PaintSampleAuras(plate, style, sample)
     self:LayoutAuras(plate)
 end
 
-function M:PaintSample(plate, style, sample, progress)
+-- An interrupted cast as the hold shows it (CastBar.lua HoldCast), without
+-- the timer that ends it.
+local function PaintInterrupted(self, plate, style)
+    local bar = plate.cast
+    if bar.SetReverseFill then bar:SetReverseFill(false) end
+    bar:SetMinMaxValues(0, 1); bar:SetValue(1)
+    Kit.Tint(bar:GetStatusBarTexture(), style.castInterruptedColor, 1)
+    plate.comet:SetShown(false)
+    Kit.Write(plate.castText, style.castShowText and (INTERRUPTED or "Interrupted") or "")
+    Kit.Write(plate.castTimer, ""); Kit.Write(plate.castTarget, "")
+    self:SetCastShown(plate, true)
+end
+
+-- Paints a sample in a state: { cast = "none" | "cast" | "locked" |
+-- "interrupted", targeted, focus, auras = "none" | "some" | "full" }.
+function M:PaintSample(plate, style, sample, progress, state)
+    state = state or {}
     plate.health:SetMinMaxValues(0, 100); plate.health:SetValue(sample.health)
     local class = sample.class and UnitColor.Class(sample.class)
     self:PaintHealthColor(plate, self:ColorFor(style, class, sample.reaction, nil))
@@ -137,146 +127,85 @@ function M:PaintSample(plate, style, sample, progress)
     Kit.Write(plate.healthText, HealthText(style.healthText, sample.health))
     self:PaintHealthText(plate, sample.health / 100)
     if style.showRaidIcon and sample.raid then RaidIcon.ApplyIndex(plate.raidIcon, sample.raid) else plate.raidIcon:Hide() end
-    if style.showSoftTarget and sample.softTarget then plate.softTarget:SetTexture(sample.softTarget); plate.softTarget:Show() else plate.softTarget:Hide() end
-    self:PaintIndicator(plate, sample.quest, sample.classification, tostring(sample.level), Level.DifficultyColor(sample.level))
-    -- While the page shows the focus highlight (the Glow tab) the sample is your
-    -- focus instead of your target.
-    local page = self.page
-    local focus = page and page.nameplateFocusSample and page.nameplateFocusSample() or false
-    self:PaintTarget(plate, style.targetStyle ~= "none" and sample.targeted == true and not focus)
-    self:PaintFocus(plate, focus, focus)
-    self:PaintSampleCombo(plate, style)
-    self:PaintSampleAuras(plate, style, sample)
-    if not style.showCastBar or plate.nameOnly then self:StopCast(plate); return end
-    plate.cast:SetMinMaxValues(0, 1); plate.cast:SetValue(progress)
-    self:PaintCast(plate, style, false, false, L[sample.cast.text], sample.cast.icon)
-    local targetClass = UnitColor.Class(sample.cast.targetClass)
-    self:PaintCastTarget(plate, sample.cast.target, targetClass and { targetClass.r, targetClass.g, targetClass.b })
-    Kit.Formatted(plate.castTimer, "%.1f", CAST_SECONDS * (1 - progress))
+    if style.showSoftTarget and sample.softTarget and state.soft ~= false then plate.softTarget:SetTexture(sample.softTarget); plate.softTarget:Show()
+    else plate.softTarget:Hide() end
+    self:PaintIndicator(plate, sample.quest, sample.classification, tostring(sample.level), Level.DifficultyColor(sample.level), true)
+    -- The Target chip applies to samples that can be your target (the enemy's).
+    local targeted = state.targeted
+    if targeted == nil or sample.targeted == nil then targeted = sample.targeted == true end
+    self:PaintTarget(plate, style.targetStyle ~= "none" and targeted and not state.focus)
+    self:PaintFocus(plate, state.focus == true, state.focus == true)
+    self:PaintSampleCombo(plate, style, targeted)
+    local cast = state.cast or "cast"
+    if not style.showCastBar or plate.nameOnly or cast == "none" or not sample.cast then self:StopCast(plate)
+    elseif cast == "interrupted" then PaintInterrupted(self, plate, style)
+    else
+        plate.cast:SetMinMaxValues(0, 1); plate.cast:SetValue(progress)
+        self:PaintCast(plate, style, false, cast == "locked", L[sample.cast.text], sample.cast.icon)
+        local targetClass = sample.cast.targetClass and UnitColor.Class(sample.cast.targetClass)
+        self:PaintCastTarget(plate, sample.cast.target, targetClass and { targetClass.r, targetClass.g, targetClass.b })
+        Kit.Formatted(plate.castTimer, "%.1f", M.PREVIEW_CAST_SECONDS * (1 - progress))
+    end
+    self:PlaceStacks(plate)
+    self:PaintSampleAuras(plate, style, sample, state.auras or "some")
 end
 
--- How far the sample reaches past its health bar on each side, measured from
--- the laid-out plate: rows above and below share one band (the tallest item
--- counts), and each side counts only what sits on it, so the whole sample can
--- be centered and the preview kept as short as it can be.
-function M:PreviewBounds(plate, style, sample)
-    local px, gap = plate.px or 1, 2 * plate.px
-    local up, down = 0, 0
-    local side = { LEFT = self:SideRoom(plate, "LEFT"), RIGHT = self:SideRoom(plate, "RIGHT") }
-    local function Band(anchor, height)
-        if anchor:find("^TOP") then up = math.max(up, height) elseif anchor:find("^BOTTOM") then down = math.max(down, height) end
-    end
-    if style.showRaidIcon then Band(style.raidAnchor, plate.markSize or style.raidSize) end
-    if style.showIndicator then
-        for _, part in ipairs(M.indicatorParts) do
-            if style[M.indicatorShowKeys[part]] then Band(style[part .. "Anchor"], part == "level" and style.levelSize + 2 or style[part .. "Size"]) end
-        end
-    end
-    if style.showAuras and not plate.nameOnly then
-        for _, group in ipairs(M.auraGroups) do
-            local settings, count = style[group], #self:SampleAuras(style, sample, group)
-            if count > 0 then
-                local width, height = self:AuraSize(plate, group)
-                local anchor = settings.anchor
-                if side[anchor] then
-                    side[anchor] = side[anchor] + count * (width + style.auraSpacing * px) + math.abs(settings.x)
-                elseif not settings.attach then
-                    Band(anchor, height + math.abs(settings.y))
-                end
+-- How far the sample can reach past its health box on each side, from the
+-- layout and every aura row at Most Shown, so the stage keeps its place while
+-- states change: left, right, up, down.
+function M:PreviewReach(plate)
+    local style, px = self:Style(plate), plate.px or 1
+    local gap = 2 * px
+    local reach = { LEFT = 0, RIGHT = 0 }
+    for side in pairs(reach) do
+        local size = plate.rowSize and plate.rowSize[side]
+        if size then reach[side] = reach[side] + size[1] + 3 * px end
+        for _, group in ipairs(self.auraGroups) do
+            if self:GroupShown(plate, group) and self:GroupKey(style, group) == side then
+                local width = self:AuraSize(plate, group)
+                reach[side] = reach[side] + gap + style[group].max * (width + style.auraSpacing * px)
             end
         end
-    end
-    -- Combo points: past everything else on a side, else in a band.
-    local combo = self:SampleComboCount(style)
-    if combo > 0 then
-        local size = Kit.ResourcePointSize(style.comboSize, px)
-        local width = combo * size + (combo - 1) * math.floor(style.comboSpacing / px + 0.5) * px
-        if side[style.comboAnchor] then side[style.comboAnchor] = side[style.comboAnchor] + 3 * px + width + math.abs(style.comboX)
-        else Band(style.comboAnchor, size + math.abs(style.comboY)) end
-    end
-    if style.targetStyle == "arrows" or style.targetStyle == "borderArrows" then
-        for key in pairs(side) do side[key] = side[key] + style.targetArrowGap * px + style.targetArrowSize end
-    end
-    local top = plate.above + (up > 0 and up + gap or 0)
-    if style.showSoftTarget and sample.softTarget then top = math.max(top, plate.softTargetTop or 0) end
-    local bottom = plate.below + (down > 0 and down + gap or 0)
-    return top, bottom, side.LEFT, side.RIGHT
-end
-
-function M:GetPreviewSize(view)
-    local kind = self:PreviewKind()
-    local style, plate = self.db[kind], view and view.plates and view.plates[kind]
-    if not plate or not style.show then return 320, 60 end
-    -- Measures the sample as it was last drawn; laying it out again here would
-    -- undo its painted colors.
-    if not plate.px then self:LayoutPlate(plate) end
-    local top, bottom, left, right = self:PreviewBounds(plate, style, self.previewSamples[kind])
-    return math.max(320, plate:GetWidth() + left + right + 16), 4 + top + plate:GetHeight() + bottom + 6 + HINT_HEIGHT
-end
-
-function M:RenderPreview(view)
-    local phase = addon.PreviewStates:Sample(self.id)
-    local progress = phase and (phase % CAST_SECONDS) / CAST_SECONDS or STATIC_PROGRESS
-    local shownKind = self:PreviewKind()
-    for _, kind in ipairs(self.kinds) do
-        local style, plate, caption = self.db[kind], view.plates[kind], view.captions[kind]
-        caption:ClearAllPoints()
-        if kind ~= shownKind then
-            plate:Hide(); caption:Hide()
-        else
-            caption:Show()
-            if style.show then
-                self:LayoutPlate(plate)
-                local px = plate.px or 1
-                -- Center everything the sample shows, not just its health bar.
-                local top, _, left, right = self:PreviewBounds(plate, style, self.previewSamples[kind])
-                local x = math.floor((-plate:GetWidth() / 2 + (left - right) / 2) / px + 0.5) * px
-                plate:ClearAllPoints(); plate:SetPoint("TOPLEFT", view.frame, "TOP", x, -math.floor((top + 4) / px + 0.5) * px)
-                plate:Show()
-                self:PaintSample(plate, style, self.previewSamples[kind], progress)
-                FitText(view.targets[kind].name, plate.name)
-                FitText(view.targets[kind].healthText, plate.healthText)
-                -- What the sample shows, bottom left; the click hint sits bottom right.
-                caption:SetPoint("BOTTOMLEFT", view.frame, "BOTTOMLEFT", 0, 2)
-                caption:SetJustifyH("LEFT")
-                caption:SetText(L[self.previewSamples[kind].caption])
-            else
-                plate:Hide()
-                caption:SetPoint("CENTER", view.frame, "CENTER", 0, 0)
-                caption:SetJustifyH("CENTER")
-                caption:SetText(L[self.kindLabels[kind] .. " plates use Blizzard's look"])
-            end
+        if style.targetStyle == "arrows" or style.targetStyle == "borderArrows" then
+            reach[side] = reach[side] + style.targetArrowGap * px + style.targetArrowSize
         end
     end
+    local up = (plate.above or 0) + self:TopStackRoom(plate)
+    if style.showSoftTarget then up = math.max(up, plate.softTargetTop or 0) end
+    local down = (plate.below or 0)
+    for _, key in ipairs({ "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }) do
+        local size, extra = plate.rowSize and plate.rowSize[key], 0
+        if size then extra = size[2] + gap end
+        for _, group in ipairs(self.auraGroups) do
+            if self:GroupShown(plate, group) and self:GroupKey(style, group) == key then
+                local _, height = self:AuraSize(plate, group)
+                extra = extra + height + gap
+            end
+        end
+        down = math.max(down, (plate.below or 0) + extra)
+    end
+    return reach.LEFT, reach.RIGHT, up + gap, down + gap
 end
 
-function M:CreateConfigPreview(parent)
-    local frame = CreateFrame("Frame", nil, parent)
-    frame:SetAllPoints()
-    local view = { frame = frame, plates = {}, captions = {}, targets = {} }
-    for _, kind in ipairs(self.kinds) do
-        local plate = self:BuildPlate(frame)
-        plate.kind, plate.sample = kind, true
-        view.plates[kind] = plate
-        view.targets[kind] = {
-            health = Clickable(plate.healthBox, kind, "health"),
-            cast = Clickable(plate.castBox, kind, "cast"),
-            name = Clickable(plate.name, kind, "name", nil, plate.textLayer),
-            healthText = Clickable(plate.healthText, kind, "healthText", nil, plate.textLayer),
-            markers = Clickable(plate.raidIcon, kind, "markers", nil, plate.textLayer),
-            softTarget = Clickable(plate.softTarget, kind, "softTarget", nil, plate.textLayer),
-            combo = Clickable(plate.combo, kind, "combo"),
-            quest = Clickable(plate.indicatorParts.quest, kind, "indicator", "quest", plate.textLayer),
-            classification = Clickable(plate.indicatorParts.classification, kind, "indicator", "classification", plate.textLayer),
-            level = Clickable(plate.indicatorParts.level, kind, "indicator", "level", plate.textLayer),
-        }
-        local caption = W.Label(frame, "", nil, 0, 0, 260, T.muted)
-        caption:SetJustifyH("CENTER")
-        view.captions[kind] = caption
+-- A sample part that jumps to its settings when clicked and lights up under
+-- the mouse. Frames take the click themselves; text and textures get a frame
+-- laid over them.
+function M.Clickable(region, kind, target, group, host)
+    local W, T = addon.ConfigWidgets, addon.InterfaceTheme
+    local hit = region
+    if host then
+        hit = CreateFrame("Frame", nil, host)
+        hit:SetAllPoints(region)
+        hit:SetFrameLevel(host:GetFrameLevel() + 2)
     end
-    view.hint = W.Label(frame, L["Click a part to open its settings"], nil, 0, 0, 200, T.faint or T.muted)
-    view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2); view.hint:SetJustifyH("RIGHT")
-    function view.Refresh() M:RenderPreview(view) end
-    view.RenderSimulation = view.Refresh
-    return view
+    hit:EnableMouse(true)
+    hit.jumpHighlight = W.Fill(hit, T.primary, "OVERLAY", 0, 0.16)
+    hit.jumpHighlight:Hide()
+    hit:SetScript("OnEnter", function() hit.jumpHighlight:Show() end)
+    hit:SetScript("OnLeave", function() hit.jumpHighlight:Hide() end)
+    hit:SetScript("OnMouseUp", function(_, button)
+        if button == nil or button == "LeftButton" then M:JumpTo(hit.jumpKind or kind, target, group) end
+    end)
+    hit.jump = { kind = kind, target = target, group = group }
+    return hit
 end

@@ -38,37 +38,8 @@ function M:BuildSoftTarget(plate)
     plate.softTarget:Hide()
 end
 
--- Room taken above the bar's top band (name, a cast bar on top) by the rows
--- that sit past it on a top anchor: the raid marker, the indicators and aura
--- rows. The icon sits past the tallest, so it never covers them.
-local function TopRoom(self, plate)
-    local style, px = self:Style(plate), plate.px or 1
-    local room = 0
-    local function Take(anchor, height, dy)
-        if anchor:find("^TOP") then room = math.max(room, height + math.max(0, dy)) end
-    end
-    if style.showRaidIcon then Take(style.raidAnchor, plate.markSize or style.raidSize, style.raidY) end
-    if style.showIndicator then
-        for _, part in ipairs(M.indicatorParts) do
-            if style[M.indicatorShowKeys[part]] then
-                Take(style[part .. "Anchor"], part == "level" and style.levelSize + 2 or style[part .. "Size"], style[part .. "Y"])
-            end
-        end
-    end
-    if style.showAuras and not plate.nameOnly then
-        -- Secret aura rows can't be measured, so a row that can show counts.
-        for _, group in ipairs(M.auraGroups) do
-            local settings = style[group]
-            if settings.show and not settings.attach then
-                local _, height = self:AuraSize(plate, group)
-                Take(settings.anchor, height, settings.y)
-            end
-        end
-    end
-    return room > 0 and room + 2 * px or 0
-end
-
--- Centered above everything on the plate's top edge, then its offset.
+-- Centered above everything on the plate's top edge (the tallest Top stack:
+-- Stacks.lua TopStackRoom), then its offset.
 function M:LayoutSoftTarget(plate)
     local style, px = self:Style(plate), plate.px or 1
     local function Round(v) return math.floor(v / px + 0.5) * px end
@@ -76,7 +47,7 @@ function M:LayoutSoftTarget(plate)
     local icon = plate.softTarget
     icon:SetSize(size, size)
     icon:ClearAllPoints()
-    local bottom = 2 * px + (plate.above or 0) + Round(TopRoom(self, plate)) + Round(style.softTargetY)
+    local bottom = 2 * px + (plate.above or 0) + Round(self:TopStackRoom(plate)) + Round(style.softTargetY)
     icon:SetPoint("BOTTOM", plate.healthBox, "TOP", Round(style.softTargetX), bottom)
     -- How far the icon reaches above the bar, for the settings preview.
     plate.softTargetTop = bottom + size

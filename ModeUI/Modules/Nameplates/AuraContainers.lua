@@ -11,8 +11,10 @@ if not M then return end
 -- (SetIcon), the swipe (SetDurationCooldown) and the stack count
 -- (SetApplicationCount). The container follows UNIT_AURA by itself.
 --
--- One container per plate and anchor holds every group on that anchor, in
--- group order, so they continue as one row. Group filters, counts, sizes and
+-- One container per plate and row (an anchor; Sit on Border groups have
+-- their own) holds every group there, in group order, so they continue as
+-- one row; it sizes itself, and edge marks anchored to it carry whatever
+-- follows the row (Stacks.lua). Group filters, counts, sizes and
 -- placement change through the container's setters; a change to how buttons
 -- look (shape, borders, colors, timer, count, font) builds a new container,
 -- because buttons are styled only when made. Clients without the template use
@@ -101,15 +103,17 @@ local function Initializer(style, group, width, height, px, path)
     end
 end
 
--- The groups on each anchor, in group order: { anchor = { group, ... } }.
-local function GroupsByAnchor(style)
-    local byAnchor, order = {}, {}
+-- The groups on each row key (the anchor, ":border" for Sit on Border), in
+-- group order: { key = { group, ... } }, every group (a hidden group is a
+-- disabled one, so switching it on needs no new container).
+local function GroupsByKey(self, style)
+    local byKey, order = {}, {}
     for _, group in ipairs(M.auraGroups) do
-        local anchor = style[group].anchor
-        if not byAnchor[anchor] then byAnchor[anchor] = {}; order[#order + 1] = anchor end
-        table.insert(byAnchor[anchor], group)
+        local key = self:GroupKey(style, group)
+        if not byKey[key] then byKey[key] = {}; order[#order + 1] = key end
+        table.insert(byKey[key], group)
     end
-    return byAnchor, order
+    return byKey, order
 end
 
 local function Layout(self, plate, group, style, px)
@@ -118,11 +122,11 @@ local function Layout(self, plate, group, style, px)
     return { elementSpacing = spacing, lineSpacing = spacing, groupSpacing = spacing, elementWidth = width, elementHeight = height }
 end
 
--- Makes (or keeps) the container for one anchor and its groups.
-local function Container(self, plate, anchor, groups, style, px, path)
+-- Makes (or keeps) the container for one row key and its groups.
+local function Container(self, plate, rowKey, groups, style, px, path)
     local key = table.concat(groups, ",") .. "|" .. LookKey(style, path, px)
     local containers = plate.auraContainers
-    local current = containers[anchor]
+    local current = containers[rowKey]
     if current and current.lookKey == key then return current end
     if current then current:SetEnabled(false); current:Hide() end
     local container = CreateFrame("AuraContainer", nil, plate.auraLayer, TEMPLATE)
@@ -135,46 +139,43 @@ local function Container(self, plate, anchor, groups, style, px, path)
     end
     container.lookKey = key
     container:SetEnabled(false)
-    containers[anchor] = container
+    containers[rowKey] = container
     return container
 end
 
 local FLOW = AnchorUtil and AnchorUtil.FlowDirection or { Left = -1, Right = 1, Up = 1, Down = -1 }
 local AXIS = AnchorUtil and AnchorUtil.FlowLayoutAxis or { Horizontal = 0, Vertical = 1 }
 
--- Places one container: its starting corner on the bar's edge (past the name
--- and cast bar, or right on the bar for Sit on Health Bar), growing away.
--- Center grows to the right from a first icon centered on the anchor.
-local function Place(self, plate, container, anchor, first, style, px)
-    local settings, gap = style[first], 2 * px
-    local width, height = self:AuraSize(plate, first)
-    local grow = settings.grow
-    local top, bottom = anchor:find("^TOP") ~= nil, anchor:find("^BOTTOM") ~= nil
-    local side = anchor:find("LEFT") and "LEFT" or anchor:find("RIGHT") and "RIGHT" or ""
-    local vertical = grow == "up" or grow == "down" or (grow == "center" and not (top or bottom))
-    local h = grow == "left" and FLOW.Left or FLOW.Right
-    local v = (grow == "down" or (grow == "center" and vertical) or bottom) and FLOW.Down or FLOW.Up
-    local cornerH = vertical and (anchor == "LEFT" and "RIGHT" or anchor == "RIGHT" and "LEFT" or side) or (h == FLOW.Left and "RIGHT" or "LEFT")
-    local cornerV = top and "BOTTOM" or bottom and "TOP" or (vertical and (v == FLOW.Up and "BOTTOM" or "TOP") or "")
-    local corner = (cornerV .. cornerH) ~= "" and (cornerV .. cornerH) or "CENTER"
-    local dx, dy = math.floor(settings.x / px + 0.5) * px, math.floor(settings.y / px + 0.5) * px
-    local past = settings.attach and 0 or (top and plate.above or bottom and plate.below or 0)
-    local barPoint
-    if top or bottom then
-        barPoint = (top and "TOP" or "BOTTOM") .. side
-        dy = dy + (top and (past + gap) or -(past + gap))
-        if side == "" and grow == "center" then dx = dx - math.floor(width / 2 / px + 0.5) * px end
-    else
-        barPoint = anchor
-        local room = gap + self:SideRoom(plate, anchor)
-        dx = dx + (anchor == "LEFT" and -room or room)
-        if grow == "center" then dy = dy + math.floor(height / 2 / px + 0.5) * px end
-    end
+-- The container's point on its far edge, where its edge mark sits.
+local function OuterPoint(key)
+    if key == "LEFT" or key == "RIGHT" then return key end
+    return (key:find("^TOP") and "TOP" or "BOTTOM") .. M.Horizontal(key)
+end
+
+-- Places one container from its row's origin (Auras.lua RowOrigin): anchored
+-- by that point (a centered row by its own middle, so it stays centered as it
+-- resizes), growing away from the bar. Then its marks: the edge mark on its
+-- far edge, and the name stops on its inner edges. The container's size is
+-- secret; the marks are anchored to it, so whatever follows them moves with it.
+local function Place(self, plate, container, rowKey, first)
+    local o = self:RowOrigin(plate, rowKey, first)
     container:ClearAllPoints()
-    container:SetPoint(corner, plate.healthBox, barPoint, dx, dy)
-    container:SetFlowLayoutAnchorPoint(corner)
-    container:SetFlowLayoutAxis(vertical and AXIS.Vertical or AXIS.Horizontal)
-    container:SetFlowLayoutGrowthDirection(h, v)
+    container:SetPoint(o.point, plate.healthBox, o.rel, o.x, o.y)
+    container:SetFlowLayoutAnchorPoint(o.flow)
+    container:SetFlowLayoutAxis(o.vertical and AXIS.Vertical or AXIS.Horizontal)
+    container:SetFlowLayoutGrowthDirection(o.h == -1 and FLOW.Left or FLOW.Right, o.v == -1 and FLOW.Down or FLOW.Up)
+    if rowKey:find(":border") then
+        for _, side in ipairs({ "LEFT", "RIGHT" }) do
+            local stop = plate.nameStops and plate.nameStops[rowKey .. "|" .. side]
+            if stop then
+                local point, onRow = M.StopPoints(rowKey, side)
+                stop:ClearAllPoints(); stop:SetPoint(point, container, onRow)
+            end
+        end
+    else
+        local mark = self:Mark(plate, "auraEnds", rowKey)
+        mark:ClearAllPoints(); mark:SetPoint(M.EdgePoint(rowKey), container, OuterPoint(rowKey))
+    end
 end
 
 -- Builds, configures and places the containers and points them at the unit;
@@ -182,44 +183,36 @@ end
 function M:AttachAuraContainers(plate)
     local style, px, unit = self:Style(plate), plate.px or 1, plate.unit
     plate.auraContainers = plate.auraContainers or {}
-    local byAnchor, order = GroupsByAnchor(style)
-    local used, extent = {}, { LEFT = 0, RIGHT = 0 }
-    for _, anchor in ipairs(order) do
-        local groups = byAnchor[anchor]
-        local container = Container(self, plate, anchor, groups, style, px, plate.fontPath or Kit.FontPath(style, self.id))
-        used[anchor] = true
-        local any = false
+    local byKey, order = GroupsByKey(self, style)
+    local used = {}
+    for _, rowKey in ipairs(order) do
+        local groups = byKey[rowKey]
+        local container = Container(self, plate, rowKey, groups, style, px, plate.fontPath or Kit.FontPath(style, self.id))
+        used[rowKey] = true
+        local any, first = false, nil
         for _, group in ipairs(groups) do
             local settings = style[group]
-            local on = unit ~= nil and style.showAuras and settings.show and not plate.nameOnly
+            local on = unit ~= nil and self:GroupShown(plate, group)
             local filter = Auras.GroupFilter(group, settings.filter, style.crowdControl.show)
             if on and filter then
                 container:SetAuraGroupFilterString(group, filter)
                 container:SetAuraGroupMaxFrameCount(group, settings.max)
                 container:SetAuraGroupLayout(group, Layout(self, plate, group, style, px))
-                -- The arrows can't measure secret rows; they clear the most a row can hold.
-                if extent[anchor] then
-                    local width = self:AuraSize(plate, group)
-                    extent[anchor] = extent[anchor] + settings.max * (width + style.auraSpacing * px)
-                end
+                first = first or group
             end
             container:SetAuraGroupEnabled(group, on and filter ~= nil)
             any = any or (on and filter ~= nil)
         end
-        Place(self, plate, container, anchor, groups[1], style, px)
+        Place(self, plate, container, rowKey, first or groups[1])
         if any then
             container:SetEnabled(true); container:SetUnit(unit); container:Show(); container:UpdateAllAuras()
         else
             container:SetEnabled(false); container:Hide()
         end
     end
-    for anchor, container in pairs(plate.auraContainers) do
-        if not used[anchor] then container:SetEnabled(false); container:Hide() end
+    for rowKey, container in pairs(plate.auraContainers) do
+        if not used[rowKey] then container:SetEnabled(false); container:Hide() end
     end
-    for side, width in pairs(extent) do
-        if width > 0 then extent[side] = width + self:SideRoom(plate, side) + 2 * px end
-    end
-    plate.auraExtent = extent
     self:PlaceArrows(plate)
 end
 

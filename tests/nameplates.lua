@@ -111,6 +111,23 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
         for k, v in pairs(extra or {}) do unit[k] = v end
         return unit
     end
+    -- Puts both kinds back on version 11's layout (Indicators First, the name
+    -- above the bar, the marker and indicators beside it, crowd control left,
+    -- debuffs centered on top), so the checks written for it keep guarding it.
+    function UseV11(M, only)
+        for _, kind in ipairs(M.kinds) do if not only or only == kind then
+            local style = M.db[kind]
+            for key, value in pairs(M.V11[kind]) do style[key] = value end
+            style.castColor, style.castLockedColor = addon.ProfileCodec.Copy(addon.Kit.palette.neutral), addon.ProfileCodec.Copy(addon.Kit.palette.tapped)
+            style.nameOnBorder, style.auraOrder, style.comboFollowCast = false, 'indicators', false
+            style.levelInside, style.classificationInside, style.raidAnchor, style.nameAnchor, style.nameY = false, false, 'LEFT', 'TOP', 0
+            if kind == 'enemy' then
+                style.crowdControl.anchor, style.crowdControl.grow, style.crowdControl.size = 'LEFT', 'left', 24
+                style.debuffs.anchor, style.debuffs.grow, style.debuffs.size, style.debuffs.max, style.debuffs.attach = 'TOP', 'center', 20, 6, false
+                style.buffs.size = 18
+            end
+        end end
+    end
 ]==]
 
 local world = H.Load({ before = STUBS })
@@ -118,7 +135,19 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'frames' and not M.enabled, 'registered under Frames, off by default')
-    assert(M.db.version == 12 and M.db.enemy.width == 140 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 12 and M.db.enemy.width == 156 and M.db.enemy.healthHeight == 16 and M.db.friendly.width == 120, 'separate defaults per kind')
+    -- The owner's baseline (November 23, 2026): the name on the top border at
+    -- the top left, your debuffs on the same line top right, crowd control above,
+    -- buffs right, quest left, the marker, level and elite inside, arrows.
+    local E, F = M.db.enemy, M.db.friendly
+    assert(E.nameOnBorder and E.nameAnchor == 'TOPLEFT' and E.nameY == -3 and E.nameFontSize == 13, 'name on the border')
+    assert(E.debuffs.anchor == 'TOPRIGHT' and E.debuffs.grow == 'left' and E.debuffs.attach and E.debuffs.max == 4 and E.debuffs.size == 24, 'your debuffs on the border line')
+    assert(E.crowdControl.anchor == 'TOP' and E.crowdControl.grow == 'center' and E.crowdControl.size == 35 and E.buffs.anchor == 'RIGHT' and E.buffs.size == 22)
+    assert(E.questAnchor == 'LEFT' and E.questSize == 18 and E.raidAnchor == 'CENTER' and E.levelInside and E.classificationInside, 'indicators')
+    assert(E.targetStyle == 'arrows' and E.auraOrder == 'auras' and E.auraShape == 'mode' and E.auraSpacing == 1 and E.comboFollowCast, 'arrows, auras first')
+    assert(E.castHeight == 12 and E.castY == -1 and E.castTargetAnchor == 'RIGHT', 'cast bar')
+    assert(F.display == 'name' and not F.showAuras and F.nameFontSize == 12, 'friendly plates: names only')
+    UseV11(M)
     -- The Mode-Obsidian look (the theme part runs on every profile): Mode-FG
     -- on Mode-BG at 85%, Mode-FG casts, the focus in the Glow, Gradient names,
     -- health text by health, Urbanist.
@@ -257,6 +286,7 @@ world.run([==[
     assert(M:SetOption('friendly', 'show', false) and M:CopyStyle('enemy', 'friendly'))
     assert(M.db.friendly.width == 180 and M.db.friendly.show == false and M.db.friendly.healthColorMode == 'reaction')
     assert(M:ResetSettings('friendly') and M.db.friendly.width == 120 and M.db.friendly.show == false, 'reset keeps show')
+    assert(M.db.friendly.display == 'name', 'reset: the baseline (names only)'); UseV11(M, 'friendly')
     assert(M:SetOption('friendly', 'show', true))
     p2 = M.byUnit.nameplate2
 
@@ -283,17 +313,28 @@ world.run([==[
     assert(issecretvalue(cp.sockets[1].bar.value) and issecretvalue(cp.sockets[5].bar.value), 'secret count straight to SetValue')
     comboPoints = 3; FireEvent('COMBO_TARGET_CHANGED')
     -- Below the plate by default, past the cast bar.
-    local at = Point(cp)
-    assert(at[1] == 'TOP' and at[2] == plate.healthBox and at[3] == 'BOTTOM' and at[5] == -2 - plate.below, 'below, past the cast bar')
+    -- Combo points join the Bottom stack: its row sits past the cast bar.
+    local row = plate.stackRows.BOTTOM
+    local at = Point(row)
+    assert(Point(cp)[2] == row and at[1] == 'TOP' and at[2] == plate.healthBox and at[3] == 'BOTTOM' and at[5] == -2 - plate.below, 'below, past the cast bar')
     assert(math.abs(cp.width - (5 * 8 + 4 * 2)) < 1 and math.abs(cp.sockets[1].width - 8) < 1, 'row of 8px sockets, 2px apart')
-    -- Beside the bar: past the marker, indicators and aura rows; the arrows sit past the points.
+    -- Beside the bar (Indicators First here): the Right row starts 3px from the
+    -- bar, the buffs row past it, and the arrows past the buffs row's edge mark.
     assert(M:SetOption('enemy', 'comboAnchor', 'RIGHT') and M.byUnit.nameplate1 == plate and cp:IsShown())
-    at = Point(cp)
-    local clear = math.max(M:SideRoom(plate, 'RIGHT'), (plate.auraExtent or {}).RIGHT or 0)
-    assert(at[1] == 'LEFT' and at[3] == 'RIGHT' and at[4] == 3 + clear, 'beside the bar, past what sits there')
-    assert(M:SetOption('enemy', 'targetStyle', 'arrows') and M:ComboRoom(plate, 'RIGHT') == clear + 3 + cp.width)
-    assert(Point(plate.arrows.right)[4] >= M:ComboRoom(plate, 'RIGHT') + M.db.enemy.targetArrowGap, 'arrows outside the points')
-    assert(M:SetOption('enemy', 'targetStyle', 'border') and M:SetOption('enemy', 'comboAnchor', 'BOTTOM') and M:ComboRoom(plate, 'RIGHT') == 0)
+    row = plate.stackRows.RIGHT; at = Point(row)
+    assert(Point(cp)[2] == row and at[1] == 'LEFT' and at[2] == plate.healthBox and at[3] == 'RIGHT' and at[4] == 3, 'beside the bar')
+    assert(M:SideRoom(plate, 'RIGHT') == cp.width + 3 and plate.rowRoom.RIGHT == cp.width + 3, 'the buffs row starts past it')
+    assert(M:SetOption('enemy', 'targetStyle', 'arrows'))
+    local arrow = Point(plate.arrows.right)
+    assert(arrow[1] == 'LEFT' and arrow[2] == plate.auraEnds.RIGHT and arrow[3] == 'LEFT' and arrow[4] == M.db.enemy.targetArrowGap, 'arrows past the outermost row')
+    -- Auras First: the buffs row hugs the bar and the points follow its last icon; the arrows follow the points.
+    assert(M:SetOption('enemy', 'auraOrder', 'auras'))
+    row = plate.stackRows.RIGHT; at = Point(row)
+    assert(at[1] == 'LEFT' and at[2] == plate.auraEnds.RIGHT and at[3] == 'LEFT' and at[4] == 2, 'points follow the buffs row')
+    arrow = Point(plate.arrows.right)
+    assert(arrow[2] == row and arrow[3] == 'RIGHT', 'arrows follow the points')
+    assert(M:SetOption('enemy', 'auraOrder', 'indicators'))
+    assert(M:SetOption('enemy', 'targetStyle', 'border') and M:SetOption('enemy', 'comboAnchor', 'BOTTOM') and plate.rowSize.RIGHT == nil)
     -- Sizes snap to whole even pixels; settings are validated.
     assert(M:SetOption('enemy', 'comboSize', 7) and math.abs(cp.sockets[1].width - 8) < 1, 'even sizes')
     assert(M:SetOption('enemy', 'comboSize', 12) and math.abs(cp.sockets[1].width - 12) < 1 and M:SetOption('enemy', 'comboSize', 8))
@@ -565,15 +606,18 @@ world.run([==[
     assert(M:SetOption('enemy', 'auraBorderSize', 2) and cc1.edge.rim == 2 and Point(cc1.inner)[4] == 2, '2px rim')
     assert(not M:SetOption('enemy', 'auraBorderSize', 3), 'border size 1 or 2')
     assert(M:SetOption('enemy', 'auraCCGlow', true) and M:SetOption('enemy', 'auraBorderSize', 1) and cc1.flash:IsShown())
-    local x, y = Corner(A.crowdControl[1]); assert(x == -45 and y == -2, 'crowd control left of the marker: ' .. x .. ',' .. y)
+    -- No raid mark is set, so nothing sits between the bar and the crowd control row.
+    local x, y = Corner(A.crowdControl[1]); assert(x == -26 and y == -2, 'crowd control beside the bar: ' .. x .. ',' .. y)
     x, y = Corner(A.debuffs[1]); assert(x == 80 and y == 30, 'debuffs centered above the name: ' .. x .. ',' .. y)
     x, y = Corner(A.buffs[1]); assert(x == 182 and y == 1, 'buffs right of the bar: ' .. x .. ',' .. y)
-    -- Target arrows sit outside the side aura rows (and the marker).
-    assert(plate.auraExtent.LEFT == 47 and plate.auraExtent.RIGHT == 22, 'aura rows reach past the bar')
+    -- Each side row's edge mark sits on its last icon's outer edge (what follows the row anchors to it).
+    local endL, endR = Point(plate.auraEnds.LEFT), Point(plate.auraEnds.RIGHT)
+    assert(endL[1] == 'RIGHT' and endL[2] == plate.healthBox and endL[4] == -26 and endR[1] == 'LEFT' and endR[4] == 182 + A.buffs[1].width, 'edge marks on the rows')
     -- Moving one group: anchor, offsets, size and count, all validated.
     assert(M:SetOption('enemy', 'anchor', 'BOTTOMRIGHT', 'debuffs'))
-    x, y = Corner(A.debuffs[1]); assert(x == 160 and y == -39, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
-    assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 165, 'offset X')
+    -- Still growing from the center: centered on the bar's bottom right corner.
+    x, y = Corner(A.debuffs[1]); assert(x == 170 and y == -39, 'bottom right, under the cast bar (and its target line): ' .. x .. ',' .. y)
+    assert(M:SetOption('enemy', 'x', 5, 'debuffs') and select(1, Corner(A.debuffs[1])) == 175, 'offset X')
     assert(M:SetOption('enemy', 'y', -3, 'debuffs') and select(2, Corner(A.debuffs[1])) == -42, 'offset Y')
     assert(not M:SetOption('enemy', 'anchor', 'MIDDLE', 'debuffs') and not M:SetOption('enemy', 'x', 99, 'debuffs'), 'refused')
     assert(not M:SetOption('enemy', 'grow', 'sideways', 'debuffs'), 'unknown grow refused')
@@ -600,7 +644,8 @@ world.run([==[
     assert(x1 == 0 and x2 == 22 and y1 == y2, 'grow right from the left edge')
     assert(M:SetOption('enemy', 'grow', 'left', 'debuffs'))
     x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
-    assert(x1 == 0 and x2 == -22 and y1 == y2, 'grow left')
+    -- Growing left from Top Left: the row's right end sits on the bar's left edge (as the container draws it).
+    assert(x1 == -20 and x2 == -42 and y1 == y2, 'grow left: ' .. x1 .. ',' .. x2)
     assert(M:SetOption('enemy', 'grow', 'up', 'debuffs'))
     x1, y1 = Corner(A.debuffs[1]); x2, y2 = Corner(A.debuffs[2])
     assert(x1 == x2 and y2 == y1 + 16, 'grow up')
@@ -704,27 +749,43 @@ world.run([==[
     assert(view and page.previewArea:IsShown() and not page.testDisplayButton:IsShown(), 'preview without a screen test')
     assert(page.borderStyleSelect and page.borderMetalSelect, 'Border and Border Metal on the Border tab')
     local sample, friend = view.plates.enemy, view.plates.friendly
-    assert(sample:IsShown() and not friend:IsShown() and sample:GetParent() == view.frame, 'only the enemy sample while editing Enemy')
+    assert(sample:IsShown() and not friend:IsShown() and sample:GetParent() == view.stage, 'only the enemy sample while editing Enemy')
+    -- The magnified previewer (owner, November 23, 2026): the bar stays in the
+    -- middle across (an anchor change never slides it sideways), its full reach
+    -- centered up and down; a fixed height; a 1:1 strip of other states.
     local at = Point(sample)
-    -- The whole sample is centered: the bar shifts away from the side carrying more.
-    local top, bottom, left, right = M:PreviewBounds(sample, M.db.enemy, M.previewSamples.enemy)
-    assert(left ~= right and left > 0 and right > 0, 'both sides measured: ' .. left .. ' ' .. right)
-    assert(at[1] == 'TOPLEFT' and at[2] == view.frame and at[3] == 'TOP' and at[4] == math.floor(-90 + (left - right) / 2 + 0.5), 'whole sample centered on whole pixels')
-    assert(at[5] == -math.floor(top + 4 + 0.5), 'top padding only as tall as the top band')
+    assert(at[1] == 'CENTER' and at[2] == view.stage and at[3] == 'CENTER' and at[4] == 0, 'the bar pinned across')
     local _, height = M:GetPreviewSize(view)
-    assert(height == 4 + top + sample:GetHeight() + bottom + 6 + 18, 'preview only as tall as the sample')
+    assert(height == 300 and view.zoom and view.zoom >= 1 and view.zoom <= M.PREVIEW_ZOOM, 'a fixed height; zoomed')
+    local before = Point(sample)[4]
+    assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'crowdControl') and Point(sample)[4] == before, 'moving a group does not slide the plate')
+    assert(M:SetOption('enemy', 'anchor', 'LEFT', 'crowdControl') and M:SetOption('enemy', 'grow', 'left', 'crowdControl'))
+    assert(view.strip.enemy[1]:IsShown() and view.strip.enemy[3]:IsShown() and view.strip.enemy[1].focused, 'the 1:1 strip, one sample your focus')
     assert(math.abs(sample.width - 180) < 1, 'sample size follows the kind')
-    assert(sample.name.text:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '') == 'Enemy Nameplate' and sample.healthText.text == '72%' and sample.health.value == 72)
+    assert(sample.name.text:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '') == 'Scarlet Crusader' and sample.healthText.text == '72%' and sample.health.value == 72)
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
-    assert(sample.softTarget:IsShown() and sample.softTarget.texture == 'Interface\\Cursor\\Attack' and top >= sample.softTargetTop, 'sword icon sample, inside the preview')
+    assert(sample.softTarget:IsShown() and sample.softTarget.texture:find('Interact', 1, true), 'loot icon sample')
     assert(sample.targeted and sample.healthBox.edge.highlight == M.db.enemy.targetColor, 'sample target line')
-    assert(sample.castBox:IsShown() and sample.cast.value == 0.6 and sample.castText.text == 'Shadow Bolt')
+    assert(sample.castBox:IsShown() and sample.cast.value == 0.6 and sample.castText.text == 'Holy Smite')
+    -- State chips: the cast, the target and the auras.
+    local function Chip(key, value) for _, chip in ipairs(view.chips) do if chip.stateKey == key and chip.stateValue == value then return chip end end end
+    Chip('cast', 'locked'):GetScript('OnClick')()
+    assert(sample.cast:GetStatusBarTexture().vertexColor[1] == M.db.enemy.castLockedColor[1], "Can't Interrupt: the not-interruptible color")
+    Chip('cast', 'none'):GetScript('OnClick')(); assert(not sample.castBox:IsShown(), 'No Cast')
+    Chip('cast', 'interrupted'):GetScript('OnClick')(); assert(sample.castBox:IsShown() and sample.cast.value == 1, 'Interrupted')
+    Chip('cast', 'cast'):GetScript('OnClick')()
+    Chip('targeted', false):GetScript('OnClick')(); assert(not sample.targeted, 'Not Target')
+    Chip('targeted', true):GetScript('OnClick')(); assert(sample.targeted, 'Target')
     local function Shown(p, group)
         local n = 0
         for _, icon in ipairs(p.auraIcons[group]) do if icon:IsShown() then n = n + 1 end end
         return n
     end
-    assert(Shown(sample, 'crowdControl') == 1 and Shown(sample, 'debuffs') == 1 and Shown(sample, 'buffs') == 1, 'enemy sample auras')
+    assert(Shown(sample, 'crowdControl') == 1 and Shown(sample, 'debuffs') == 2 and Shown(sample, 'buffs') == 1, 'enemy sample auras')
+    Chip('auras', 'full'):GetScript('OnClick')()
+    assert(Shown(sample, 'debuffs') == M.db.enemy.debuffs.max and Shown(sample, 'buffs') == M.db.enemy.buffs.max, 'Full: every group at Most Shown')
+    Chip('auras', 'none'):GetScript('OnClick')(); assert(Shown(sample, 'debuffs') == 0, 'No Auras')
+    Chip('auras', 'some'):GetScript('OnClick')()
     assert(sample.auraIcons.debuffs[1].rim.vertexColor[1] == M.db.enemy.auraMagicColor[1], 'Magic rim by type')
     assert(M:SetOption('enemy', 'auraBorder', 'mode') and sample.auraIcons.debuffs[1].edge.tint == nil, 'Mode: the Gunmetal metal')
     assert(M:SetOption('enemy', 'auraBorder', 'type'))
@@ -740,7 +801,7 @@ world.run([==[
     local mage = addon.Domain.UnitColor.Class('MAGE')
     assert(friend.name.color[1] == mage.r and friend.name.color[3] == mage.b, 'true class-colored name')
     assert(M:SetOption('friendly', 'display', 'plate') and friend.healthBox:IsShown())
-    assert(M:SetOption('friendly', 'show', false) and not friend:IsShown() and view.captions.friendly.text:find("Blizzard", 1, true))
+    assert(M:SetOption('friendly', 'show', false) and not friend:IsShown() and view.caption.text:find("Blizzard", 1, true))
     assert(M:SetOption('friendly', 'show', true) and friend:IsShown())
     page.SetEditing('enemy')
     -- Settings follow into the sample.
@@ -749,9 +810,10 @@ world.run([==[
     assert(M:SetOption('enemy', 'targetStyle', 'glow') and sample.targetGlow:IsShown() and sample.healthBox.edge.highlight == nil, 'glow')
     assert(M:SetOption('enemy', 'targetStyle', 'arrows') and sample.arrows.left:IsShown() and sample.arrows.right:IsShown() and not sample.targetGlow:IsShown(), 'arrows')
     assert(sample.arrows.right.texCoord[1] == 1, 'right arrow mirrored')
+    -- The arrows are the outermost parts: past the crowd control and buffs rows' edge marks.
     local leftArrow, rightArrow = Point(sample.arrows.left), Point(sample.arrows.right)
-    assert(-leftArrow[4] >= sample.auraExtent.LEFT + M.db.enemy.targetArrowGap and sample.auraExtent.LEFT > 0, 'left arrow outside the crowd control row')
-    assert(rightArrow[4] >= sample.auraExtent.RIGHT + M.db.enemy.targetArrowGap and sample.auraExtent.RIGHT > 0, 'right arrow outside the buffs row')
+    assert(leftArrow[2] == sample.auraEnds.LEFT and leftArrow[4] == -M.db.enemy.targetArrowGap, 'left arrow outside the crowd control row')
+    assert(rightArrow[2] == sample.auraEnds.RIGHT and rightArrow[4] == M.db.enemy.targetArrowGap, 'right arrow outside the buffs row')
     assert(M:SetOption('enemy', 'targetArrowGap', 60) and M:SetOption('enemy', 'targetArrowSize', 48) and M:SetOption('enemy', 'targetArrowGap', 4)
         and M:SetOption('enemy', 'targetArrowSize', 12), 'wider arrow ranges')
     assert(M:SetOption('enemy', 'targetStyle', 'borderArrows') and sample.arrows.left:IsShown() and sample.healthBox.edge.highlight == M.db.enemy.targetColor)
@@ -764,7 +826,9 @@ world.run([==[
     assert(M:SetOption('enemy', 'nameAnchor', 'TOP') and M:SetOption('enemy', 'nameX', 4) and Point(sample.name)[4] == 4, 'name offset')
     assert(M:SetOption('enemy', 'nameX', 0))
     assert(M:SetOption('enemy', 'healthTextAnchor', 'LEFT') and Point(sample.healthText)[1] == 'LEFT' and Point(sample.healthText)[4] == 2)
-    assert(M:SetOption('enemy', 'raidAnchor', 'TOPRIGHT') and Point(sample.raidIcon)[1] == 'BOTTOMRIGHT' and Point(sample.raidIcon)[3] == 'TOPRIGHT')
+    -- The marker joins the Top Right stack: its row sits past the top band, from the right edge.
+    assert(M:SetOption('enemy', 'raidAnchor', 'TOPRIGHT') and Point(sample.raidIcon)[2] == sample.stackRows.TOPRIGHT and Point(sample.raidIcon)[1] == 'RIGHT')
+    assert(Point(sample.stackRows.TOPRIGHT)[1] == 'BOTTOMRIGHT' and Point(sample.stackRows.TOPRIGHT)[3] == 'TOPRIGHT')
     assert(M:SetOption('enemy', 'raidSize', 24) and math.abs(sample.raidIcon.width - 24) < 1)
     assert(M:SetOption('enemy', 'raidAnchor', 'LEFT') and M:SetOption('enemy', 'raidSize', 16) and M:SetOption('enemy', 'healthTextAnchor', 'RIGHT'))
     assert(M:SetOption('enemy', 'castAnchor', 'TOP') and Point(sample.castBox)[1] == 'BOTTOMLEFT' and Point(sample.castBox)[3] == 'TOPLEFT', 'cast bar above')
@@ -781,11 +845,19 @@ world.run([==[
     assert(sample.castTarget.color[1] == paladin.r, 'target in its class color')
     assert(sample.castTimer:IsShown() and sample.castTimer.text == '1.0', 'timer shows seconds left: ' .. tostring(sample.castTimer.text))
     assert(Point(sample.castText)[1] == 'LEFT' and Point(sample.castIcon)[1] == 'TOPLEFT', 'icon on the left')
-    -- Spell name left, timer right: the name ends before the timer's room, on
-    -- the bar (the timer text spans the bar, so its left edge would hide the name).
+    -- Spell name left, timer right: the timer sizes itself to its text and the
+    -- name stops 4px short of it (each anchored to the next, nothing measured).
     local shared = Point(sample.castText, 2)
-    assert(shared[1] == 'RIGHT' and shared[2] == sample.cast and shared[3] == 'RIGHT', 'spell name stops on the bar, not on the timer')
-    assert(shared[4] < -sample.castText:GetHeight(), 'room kept for the timer: ' .. tostring(shared[4]))
+    assert(shared[1] == 'RIGHT' and shared[2] == sample.castTimer and shared[3] == 'LEFT' and shared[4] == -4, 'spell name stops at the timer')
+    assert(sample.castTimer.width == 0, 'the timer sizes itself')
+    -- Cast Target inside on the right (owner, November 23, 2026): just left of
+    -- the timer, and the spell name stops at the target.
+    assert(M:SetOption('enemy', 'castTargetAnchor', 'RIGHT'))
+    local target = Point(sample.castTarget)
+    assert(target[1] == 'RIGHT' and target[2] == sample.castTimer and target[3] == 'LEFT' and target[4] == -4, 'target left of the timer')
+    shared = Point(sample.castText, 2)
+    assert(shared[2] == sample.castTarget and shared[3] == 'LEFT', 'spell name stops at the target')
+    assert(M:SetOption('enemy', 'castTargetAnchor', 'BOTTOM'))
     assert(M:SetOption('enemy', 'castIcon', 'RIGHT') and Point(sample.castIcon)[1] == 'TOPRIGHT' and sample.castIcon:IsShown(), 'icon on the right')
     assert(M:SetOption('enemy', 'castIcon', 'none') and not sample.castIcon:IsShown() and Point(sample.cast)[2] == sample.castBox, 'icon hidden')
     assert(M:SetOption('enemy', 'castShowTimer', false) and not sample.castTimer:IsShown(), 'timer off')
@@ -883,21 +955,35 @@ world.run([==[
     local parts = sample.indicatorParts
     assert(parts.quest:IsShown() and parts.quest.atlas == M.QUEST_ATLAS, 'quest icon')
     assert(parts.classification.atlas == 'nameplates-icon-elite-gold' and parts.level.text == '62', 'elite icon and level')
-    local row = sample.indicatorRows.LEFT
-    assert(Point(parts.quest)[2] == row and Point(parts.classification)[4] == parts.quest.width + 2, 'one row on the left')
-    -- On the left the row sits past the raid marker, and crowd control past both.
-    assert(Point(row)[1] == 'RIGHT' and Point(row)[4] == -3 - (sample.markSize + 3), 'row past the marker')
-    assert(M:SideRoom(sample, 'LEFT') == sample.markSize + 3 + sample.indicatorRoom.LEFT, 'side room counts the indicators')
-    assert(M:SetOption('enemy', 'indicatorQuest', false) and not parts.quest:IsShown() and Point(parts.classification)[4] == 0, 'quest off')
+    -- The marker and the indicators on the left share one row, from the bar
+    -- outward: the marker, quest, elite and rare, level, each 2px apart.
+    local row = sample.stackRows.LEFT
+    assert(Point(parts.quest)[2] == row and Point(sample.raidIcon)[2] == row, 'one row on the left')
+    assert(Point(sample.raidIcon)[4] == 0 and Point(parts.quest)[4] == -(sample.markSize + 2), 'the marker nearest the bar')
+    assert(Point(parts.classification)[4] == -(sample.markSize + 2 + parts.quest.width + 2), 'then quest, then elite')
+    assert(Point(row)[1] == 'RIGHT' and Point(row)[2] == sample.healthBox and Point(row)[4] == -3, 'the row 3px from the bar')
+    assert(M:SideRoom(sample, 'LEFT') == sample.rowSize.LEFT[1] + 3, 'crowd control starts past the row (Indicators First)')
+    assert(M:SetOption('enemy', 'indicatorQuest', false) and not parts.quest:IsShown() and Point(parts.classification)[4] == -(sample.markSize + 2), 'quest off: the rest close up')
     -- Each indicator has its own anchor, size and offsets.
-    assert(M:SetOption('enemy', 'levelAnchor', 'TOPRIGHT') and Point(parts.level)[2] == sample.indicatorRows.TOPRIGHT, 'level on its own anchor')
-    assert(Point(sample.indicatorRows.TOPRIGHT)[1] == 'BOTTOMRIGHT' and Point(parts.classification)[2] == row, 'classification stays left')
+    assert(M:SetOption('enemy', 'levelAnchor', 'TOPRIGHT') and Point(parts.level)[2] == sample.stackRows.TOPRIGHT, 'level on its own anchor')
+    assert(Point(sample.stackRows.TOPRIGHT)[1] == 'BOTTOMRIGHT' and Point(parts.classification)[2] == row, 'classification stays left')
     assert(M:SetOption('enemy', 'classificationSize', 20) and math.abs(parts.classification.width - 20) < 1, 'classification size')
     assert(M:SetOption('enemy', 'levelX', 4) and Point(parts.level)[4] == 4, 'level offset')
     assert(M:SetOption('enemy', 'levelSize', 12), 'level text size')
     assert(not M:SetOption('enemy', 'questSize', 99) and not M:SetOption('enemy', 'levelAnchor', 'MIDDLE'), 'refused')
     assert(M:SetOption('enemy', 'showIndicator', false) and not parts.level:IsShown() and not parts.classification:IsShown(), 'all off')
-    assert(M:IndicatorRoom(sample, 'LEFT') == 0, 'no room when off')
+    assert(M:IndicatorRoom(sample, 'LEFT') == sample.markSize + 3, 'only the marker left beside the bar')
+    assert(M:SetOption('enemy', 'showIndicator', true))
+    -- Inside the Bar: Left indicators go inside the bar, the level leftmost, and
+    -- text inside on that side starts past them.
+    assert(M:SetOption('enemy', 'levelAnchor', 'LEFT') and M:SetOption('enemy', 'levelX', 0))
+    assert(M:SetOption('enemy', 'levelInside', true) and M:SetOption('enemy', 'classificationInside', true))
+    local inside = sample.stackRows['IN-LEFT']
+    assert(Point(parts.level)[2] == inside and Point(parts.level)[4] == 0 and Point(parts.classification)[4] == sample.indicatorSizes.level[1] + 2, 'level, then elite, inside on the left')
+    assert(Point(inside)[1] == 'LEFT' and Point(inside)[2] == sample.health and Point(inside)[4] == 2, 'inside the bar')
+    assert(M:SetOption('enemy', 'healthTextAnchor', 'LEFT') and Point(sample.healthText)[4] == 2 + sample.insideRoom.LEFT and sample.insideRoom.LEFT > 0, 'text past them')
+    assert(M:SetOption('enemy', 'healthTextAnchor', 'RIGHT') and M:SetOption('enemy', 'levelInside', false) and M:SetOption('enemy', 'classificationInside', false))
+    assert(M:SetOption('enemy', 'showIndicator', false))
     for _, key in ipairs({ 'levelAnchor', 'classificationSize', 'levelX', 'levelSize' }) do
         assert(M:SetOption('enemy', key, M.styleDefaults.enemy[key]))
     end
@@ -1026,8 +1112,11 @@ np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
     assert(db.version == 12 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
-    assert(db.enemy.debuffs.grow == 'left' and db.enemy.crowdControl.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
-    assert(db.enemy.display == 'plate' and db.enemy.nameAnchor == 'TOP' and db.enemy.raidSize == 16, 'new settings take defaults')
+    assert(db.enemy.debuffs.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
+    -- Then version 12: crowd control, still at version 11's Left (growing left),
+    -- moves above; the name and the marker at version 11's defaults take the baseline.
+    assert(db.enemy.crowdControl.anchor == 'TOP' and db.enemy.crowdControl.grow == 'center', 'crowd control at the old default moves')
+    assert(db.enemy.display == 'plate' and db.enemy.raidSize == 14, 'version 12 baseline')
 ]==], "nameplates_v4")
 
 -- Version 5: Color Softness is retired and the opacities take defaults.
@@ -1062,7 +1151,7 @@ H.Load({ before = STUBS, saved = v6 }).run([==[
 -- 12.1 aura containers: when the client has CustomAuraContainerTemplate, the
 -- game reads auras in secure code and fills buttons ModeUI styled once.
 local CONTAINERS = STUBS .. [==[
-    C_XMLUtil = { GetTemplateInfo = function(name) if name == 'CustomAuraContainerTemplate' then return {} end end }
+    C_XMLUtil = { GetTemplateInfo = function(name) if name == 'CustomAuraContainerTemplate' or name == 'DisableUntrustedLayoutScriptsTemplate' then return {} end end }
     Enum = Enum or {}
     Enum.CustomAuraButtonDispelTypeTextureStyle = { PreserveAsset = 3 }
     Enum.LuaCurveType = { Linear = 0, Step = 1 }
@@ -1080,7 +1169,7 @@ local CONTAINERS = STUBS .. [==[
     containers = {}
     local createFrame = CreateFrame
     function CreateFrame(kind, name, parent, template)
-        if kind ~= 'AuraContainer' then return createFrame(kind, name, parent, template) end
+        if kind ~= 'AuraContainer' then local f = createFrame(kind, name, parent, template); f.template = template; return f end
         local c = createFrame('Frame', name, parent)
         c.template, c.groups, c.order, c.calls = template, {}, {}, {}
         function c:AddAuraGroup(key, filter, options)
@@ -1123,14 +1212,16 @@ withContainers.run([==[
     local plate = M.byUnit.nameplate1
     assert(M:UsesAuraContainers(), 'the template is found')
     local C = plate.auraContainers
-    -- Default enemy anchors: crowd control Left, debuffs Top, buffs Right; one container each.
-    assert(C.LEFT and C.TOP and C.RIGHT and C.LEFT.template == 'CustomAuraContainerTemplate', 'one container per anchor')
-    assert(C.LEFT.enabled and C.LEFT.unit == 'nameplate1' and C.LEFT:IsShown() and C.LEFT.updates >= 1, 'pointed at the unit')
-    assert(C.LEFT.groups.crowdControl.filter == 'HARMFUL|CROWD_CONTROL|INCLUDE_NAME_PLATE_ONLY', 'crowd control filter')
-    assert(C.TOP.groups.debuffs.filter == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL', 'your debuffs')
+    -- The baseline's rows: crowd control on Top, your debuffs on the border line
+    -- top right (their own container), buffs Right; one container each.
+    local D = C['TOPRIGHT:border']
+    assert(C.TOP and D and C.RIGHT and D.template == 'CustomAuraContainerTemplate', 'one container per row')
+    assert(C.TOP.enabled and C.TOP.unit == 'nameplate1' and C.TOP:IsShown() and C.TOP.updates >= 1, 'pointed at the unit')
+    assert(C.TOP.groups.crowdControl.filter == 'HARMFUL|CROWD_CONTROL|INCLUDE_NAME_PLATE_ONLY', 'crowd control filter')
+    assert(D.groups.debuffs.filter == 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL' and D.groups.debuffs.max == 4, 'your debuffs')
     assert(C.RIGHT.groups.buffs.filter == 'HELPFUL|DISPELLABLE' and C.RIGHT.groups.buffs.max == 3, 'dispellable buffs')
     -- Buttons are styled in the Mode look and registered for the game to fill.
-    local button = C.TOP.groups.debuffs.button
+    local button = D.groups.debuffs.button
     assert(button.iconRegion == button.icon and button.cooldownRegion == button.cooldown and button.countRegion == button.count, 'regions registered')
     -- Rims by type through a step curve on the dispel type IDs, which also colors secret types.
     local curve = button.dispelOptions.customDispelColorCurve
@@ -1140,28 +1231,45 @@ withContainers.run([==[
     assert(curve.points[11].r == e.auraBleedColor[1] and curve.points[0].r == e.auraNoTypeColor[1], 'bleed and no type')
     assert(button.dispelOptions.showWithoutDispelType and button.dispelOptions.showWhenHelpful, 'every aura gets a rim')
     -- Crowd control without a type is #FF5948 by default.
-    local cc = C.LEFT.groups.crowdControl.button.dispelOptions.customDispelColorCurve
+    local cc = C.TOP.groups.crowdControl.button.dispelOptions.customDispelColorCurve
     assert(cc.points[0].r == e.auraCCNoTypeColor[1] and e.auraCCNoTypeColor[1] == 1 and math.abs(e.auraCCNoTypeColor[2] - 89 / 255) < 1e-9 and math.abs(e.auraCCNoTypeColor[3] - 72 / 255) < 1e-9, '#FF5948 crowd control without a type')
     -- Swipe and time text are registered for the game to drive.
     assert(button.timerRegion == button.timer and button.timerOptions.textFormatter.breakpoints[1].format == '%d', 'time text')
     assert(not button.timer.lift:IsShown(), 'no lifted copy on game-driven text')
-    assert(math.abs(button.width - 20) < 1 and math.abs(button.height - 14) < 1, 'cropped 20 x 14')
-    local ccButton = C.LEFT.groups.crowdControl.button
+    assert(math.abs(button.width - 24) < 1 and math.abs(button.height - 20) < 1, 'Mode shape: 24 x 20')
+    local ccButton = C.TOP.groups.crowdControl.button
     assert(ccButton.flash:IsShown() and ccButton.flashAnim:IsPlaying() and not button.flash:IsShown(), 'containers: crowd control GCD flash')
     assert(button.timer.color[1] == M.db.enemy.auraTimerColor[1], 'containers: cooldown text color')
-    -- Placement: debuffs grow from the center above the name; crowd control grows left past the marker.
-    assert(C.TOP.flowAnchor == 'BOTTOMLEFT' and Point(C.TOP)[3] == 'TOP', 'top row starts at the bar top')
-    assert(C.LEFT.flowAnchor == 'RIGHT' and Point(C.LEFT)[3] == 'LEFT' and Point(C.LEFT)[4] < -2, 'left row past the marker')
+    -- Placement. Your debuffs: by the container's bottom right on the bar's top
+    -- right, 2px up, growing left. Crowd control: by its own middle (so it stays
+    -- centered as it resizes), past the border line. Buffs: beside the bar.
+    local d = Point(D)
+    assert(d[1] == 'BOTTOMRIGHT' and d[2] == plate.healthBox and d[3] == 'TOPRIGHT' and d[5] == 2 and D.flowAnchor == 'BOTTOMRIGHT', 'debuffs on the border line')
+    local t = Point(C.TOP)
+    assert(t[1] == 'BOTTOM' and t[3] == 'TOP' and C.TOP.flowAnchor == 'BOTTOMLEFT' and t[5] == 2 + plate.above, 'crowd control centered above')
+    assert(t[4] == 0.5, 'a half-pixel nudge keeps the centered row on whole pixels: ' .. tostring(t[4]))
+    assert(Point(C.RIGHT)[1] == 'LEFT' and Point(C.RIGHT)[3] == 'RIGHT' and Point(C.RIGHT)[4] == 2, 'buffs beside the bar')
+    -- Edge marks follow each container (made from Blizzard's template for frames
+    -- anchored to one); whatever follows a row anchors to its mark.
+    local mark = plate.auraEnds.RIGHT
+    assert(mark.template == 'DisableUntrustedLayoutScriptsTemplate' and Point(mark)[1] == 'LEFT' and Point(mark)[2] == C.RIGHT and Point(mark)[3] == 'RIGHT', 'buffs edge mark')
+    assert(Point(plate.auraEnds.TOP)[2] == C.TOP and Point(plate.auraEnds.TOP)[3] == 'TOP', 'crowd control edge mark')
+    assert(Point(plate.arrows.right)[2] == mark, 'the right arrow follows the buffs')
+    -- The name on the border stops at the debuffs' left edge: the game shortens it as they come.
+    local stop = plate.nameStops['TOPRIGHT:border|LEFT']
+    assert(Point(stop)[1] == 'BOTTOMRIGHT' and Point(stop)[2] == D and Point(stop)[3] == 'BOTTOMLEFT', 'name stop on the debuffs')
+    local name2 = Point(plate.name, 2)
+    assert(name2[1] == 'BOTTOMRIGHT' and name2[2] == stop and name2[4] == -3, 'the name stops 3px short of the debuffs')
     -- Settings change through setters; look changes make a new container.
-    local top = C.TOP
-    assert(M:SetOption('enemy', 'max', 4, 'debuffs') and plate.auraContainers.TOP == top and top.groups.debuffs.max == 4, 'max through setters')
+    local top = D
+    assert(M:SetOption('enemy', 'max', 3, 'debuffs') and plate.auraContainers['TOPRIGHT:border'] == top and top.groups.debuffs.max == 3, 'max through setters')
     assert(M:SetOption('enemy', 'show', false, 'debuffs') and not top.enabled and not top:IsShown(), 'a hidden group stops its container')
     assert(M:SetOption('enemy', 'show', true, 'debuffs') and top.enabled)
-    assert(M:SetOption('enemy', 'auraTimer', false) and plate.auraContainers.TOP ~= top and not top.enabled, 'look change: new container, old one stopped')
-    assert(M:SetOption('enemy', 'auraTimerText', false) and plate.auraContainers.TOP.groups.debuffs.button.timerRegion == nil, 'time text off')
-    local before = plate.auraContainers.LEFT
-    assert(M:SetOption('enemy', 'auraCCNoTypeColor', { 0.2, 0.4, 0.9 }) and plate.auraContainers.LEFT ~= before, 'color change rebuilds')
-    assert(plate.auraContainers.LEFT.groups.crowdControl.button.dispelOptions.customDispelColorCurve.points[0].b == 0.9, 'custom no-type color')
+    assert(M:SetOption('enemy', 'auraTimer', false) and plate.auraContainers['TOPRIGHT:border'] ~= top and not top.enabled, 'look change: new container, old one stopped')
+    assert(M:SetOption('enemy', 'auraTimerText', false) and plate.auraContainers['TOPRIGHT:border'].groups.debuffs.button.timerRegion == nil, 'time text off')
+    local before = plate.auraContainers.TOP
+    assert(M:SetOption('enemy', 'auraCCNoTypeColor', { 0.2, 0.4, 0.9 }) and plate.auraContainers.TOP ~= before, 'color change rebuilds')
+    assert(plate.auraContainers.TOP.groups.crowdControl.button.dispelOptions.customDispelColorCurve.points[0].b == 0.9, 'custom no-type color')
     -- Removing the unit stops every container.
     RemovePlate('nameplate1')
     for _, container in pairs(plate.auraContainers) do assert(not container.enabled, 'stopped on removal') end
@@ -1224,6 +1332,73 @@ H.Load({ before = STUBS, saved = v10 }).run([==[
     assert(db.version == 12 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 45, '100 becomes 60')
     assert(db.enemy.edgeStyle == 'obsidian' and db.friendly.edgeMetal == 'default', 'the border keys arrive with their defaults')
 ]==], "nameplates_v10")
+
+-- Version 11 -> 12, the nameplates pass (owner, November 23, 2026): values
+-- still at version 11's defaults take the baseline; picked values stay, and a
+-- customized plate keeps its look (Indicators First, its name off the border).
+local function V11Profile(edit)
+    local saved = world.saved()
+    local np = saved.profiles.Default.modules.nameplates
+    np.version = 11
+    local e, f = np.enemy, np.friendly
+    e.width, e.healthHeight, e.castY, e.healthFontSize, e.nameFontSize, e.castFontSize = 140, 12, -2, 9, 10, 9
+    e.nameAnchor, e.nameX, e.nameY, e.raidAnchor, e.raidX, e.raidY, e.raidSize = 'TOP', 0, 0, 'LEFT', 0, 0, 16
+    e.castTargetAnchor, e.questSize, e.levelSize, e.targetStyle, e.targetArrowSize, e.targetArrowGap = 'BOTTOM', 14, 9, 'border', 12, 4
+    e.levelAnchor, e.levelX, e.levelY, e.classificationAnchor, e.classificationX, e.classificationY = 'LEFT', 0, 0, 'LEFT', 0, 0
+    e.softTargetSize, e.auraSpacing, e.auraShape, e.comboAnchor = 20, 2, 'cropped', 'BOTTOM'
+    e.castColor, e.castLockedColor = { 0xE8 / 255, 0xB0 / 255, 0x4B / 255 }, { 0x8C / 255, 0x8C / 255, 0x8C / 255 }
+    e.crowdControl = { show = true, anchor = 'LEFT', grow = 'left', x = 0, y = 0, size = 24, max = 2, attach = false }
+    e.debuffs = { show = true, filter = 'mine', anchor = 'TOP', grow = 'center', x = 0, y = 0, size = 20, max = 6, attach = false }
+    e.buffs = { show = true, filter = 'dispellable', anchor = 'RIGHT', grow = 'right', x = 0, y = 0, size = 18, max = 3, attach = false }
+    f.display, f.showAuras, f.nameFontSize, f.auraSpacing, f.auraShape = 'plate', true, 10, 2, 'cropped'
+    for _, s in ipairs({ e, f }) do
+        s.nameOnBorder, s.auraOrder, s.comboFollowCast, s.levelInside, s.classificationInside = nil, nil, nil, nil, nil
+        s.questInside, s.raidInside, s.castChannelColor, s.softTargetCombat = nil, nil, nil, nil
+    end
+    if edit then edit(e, f) end
+    return saved
+end
+H.Load({ before = STUBS, saved = V11Profile() }).run([==[
+    local db, M = addon.Nameplates.db, addon.Nameplates
+    local e, f = db.enemy, db.friendly
+    assert(db.version == 12 and e.width == 156 and e.healthHeight == 16 and e.castY == -1, 'version 11 defaults take the baseline')
+    assert(e.nameAnchor == 'TOPLEFT' and e.nameY == -3 and e.nameOnBorder and e.raidAnchor == 'CENTER' and e.levelInside and e.classificationInside, 'name, marker, indicators')
+    assert(e.crowdControl.anchor == 'TOP' and e.crowdControl.grow == 'center' and e.crowdControl.size == 35, 'crowd control above')
+    assert(e.debuffs.anchor == 'TOPRIGHT' and e.debuffs.attach and e.debuffs.max == 4 and e.buffs.size == 22, 'your debuffs on the border line')
+    assert(e.auraOrder == 'auras' and e.comboFollowCast and e.auraShape == 'mode' and e.auraSpacing == 1 and e.targetStyle == 'arrows', 'auras first, arrows')
+    assert(addon.Style.SameColor(e.castColor, addon.Style.Tone.cast.casting) and addon.Style.SameColor(e.castLockedColor, addon.Style.Tone.cast.shielded), 'cast colors')
+    assert(f.display == 'name' and not f.showAuras and f.nameFontSize == 12, 'friendly plates: names only')
+]==], "nameplates_v11")
+H.Load({ before = STUBS, saved = V11Profile(function(e)
+    e.nameAnchor, e.width, e.crowdControl.anchor, e.comboAnchor = 'BOTTOM', 170, 'RIGHT', 'TOP'
+    e.castColor = { 0.1, 0.2, 0.3 }
+end) }).run([==[
+    local e = addon.Nameplates.db.enemy
+    assert(e.width == 170 and e.nameAnchor == 'BOTTOM' and not e.nameOnBorder, 'a picked name place stays off the border')
+    assert(e.crowdControl.anchor == 'RIGHT' and e.auraOrder == 'indicators' and not e.comboFollowCast, 'a customized plate keeps its order')
+    assert(addon.Style.SameColor(e.castColor, { 0.1, 0.2, 0.3 }), 'a picked cast color stays')
+]==], "nameplates_v11_custom")
+
+-- Combo points set to Move Up While Not Casting sit under the health bar
+-- until a cast shows, then under the cast bar.
+H.Load({ before = STUBS }).run([==[
+    local M = addon.Nameplates
+    addon:SetModuleEnabled('nameplates', true)
+    comboPoints = 2
+    local first = AddPlate('nameplate1', Hostile())
+    nameplates.target = first; FireEvent('PLAYER_TARGET_CHANGED')
+    local plate = M.byUnit.nameplate1
+    local row = plate.stackRows.BOTTOM
+    assert(M.db.enemy.comboFollowCast and plate.combo:IsShown() and Point(plate.combo)[2] == row, 'points in the Bottom stack')
+    assert(Point(row)[5] == -2 - plate.belowNoCast and plate.belowNoCast < plate.below, 'under the health bar while nothing is cast')
+    units.nameplate1.cast = { name = 'Fireball', text = 'Fireball', icon = 1, start = 100000, stop = 102000, locked = false }
+    FireEvent('UNIT_SPELLCAST_START', 'nameplate1')
+    assert(plate.castBox:IsShown() and Point(row)[5] == -2 - plate.below, 'under the cast bar while casting')
+    units.nameplate1.cast = nil; FireEvent('UNIT_SPELLCAST_STOP', 'nameplate1')
+    assert(not plate.castBox:IsShown() and Point(row)[5] == -2 - plate.belowNoCast, 'back up when the cast ends')
+    -- Centered on the plate.
+    assert(Point(row)[1] == 'TOP' and Point(row)[3] == 'BOTTOM' and Point(row)[4] == 0, 'centered')
+]==], "nameplates_combo_follow")
 
 -- Invalid saved settings stop validation instead of being reset.
 local broken = world.saved()
