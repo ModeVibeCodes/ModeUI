@@ -163,6 +163,11 @@ world.run([==[
     assert(box.edge.preset == 'frameThin' and box.edge.host == box.inner and box.rims == nil and box.bands == nil, 'the frameThin edge')
     assert(box.edge.pieces and #box.edge.parts[1] == 8 and plate.castBox.edge.pieces, 'health and cast edges in pieces (owner, November 18, 2026)')
     assert(box.edge.holder:GetFrameLevel() > box.bar:GetFrameLevel(), 'edge over the bar')
+    -- Layers (owner, November 23, 2026): text, markers and indicators sit well
+    -- above both rims, never tied with one; auras above them.
+    local rims = math.max(box.edge.holder:GetFrameLevel(), plate.castBox.edge.holder:GetFrameLevel())
+    assert(plate.textLayer:GetFrameLevel() > rims and plate.auraLayer:GetFrameLevel() > plate.textLayer:GetFrameLevel(), 'text and auras above every rim')
+    assert(plate.healthBox:GetFrameLevel() == plate.castBox:GetFrameLevel(), 'both boxes on one level')
     assert(math.abs(box:GetHeight() - (M.db.enemy.healthHeight + 2)) < 1e-9 and Point(box.inner)[4] == 1, 'the bar one rim inside the box')
     assert(plate.castBox.edge.preset == 'frameThin' and plate.cast.bg.vertexColor[4] == 1, 'cast box keeps a solid background')
     assert(plate.comet and plate.comet.head and plate.comet.trail, 'the Comet spark on the cast bar')

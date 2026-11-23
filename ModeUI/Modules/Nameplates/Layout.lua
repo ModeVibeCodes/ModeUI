@@ -18,14 +18,14 @@ function M:LayoutPlate(plate)
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local nameOnly = db.display == "name"
     local width, gap = Snap(db.width), 2 * px
+    -- Frame levels first (the boxes' bars and rims are placed relative to them).
+    M.SetLayers(plate)
     local healthHeight = M.LayoutBox(plate.healthBox, width, Snap(db.healthHeight), px, db.backgroundOpacity / 100, db)
     local castHeight = M.LayoutBox(plate.castBox, width, Snap(db.castHeight), px, nil, db, db.castTexture)
     plate.castBarHeight, plate.px, plate.nameOnly = castHeight, px, nameOnly
     plate:SetSize(width, healthHeight)
     plate.healthBox:ClearAllPoints(); plate.healthBox:SetPoint("TOPLEFT", plate, "TOPLEFT", 0, 0)
     plate.healthBox:SetShown(not nameOnly)
-    plate.textLayer:SetFrameLevel(plate.healthBox:GetFrameLevel() + 3)
-    plate.auraLayer:SetFrameLevel(plate.healthBox:GetFrameLevel() + 4)
 
     -- Aura groups set to Sit on Health Bar take a band right against the bar;
     -- the cast bar and outside text move past it (Auras.lua).
@@ -112,6 +112,24 @@ function M:LayoutPlate(plate)
     for group, pool in pairs(plate.auraIcons) do
         for _, auraIcon in ipairs(pool) do self:LayoutAuraIcon(plate, auraIcon, group) end
     end
+end
+
+-- Frame levels, from the plate's own (docs/NAMEPLATES.md, "Layers"). Both
+-- boxes sit one level up; each box's bar, Comet clip and rim take the next
+-- three (Plate.lua LayoutBox). Text, markers, indicators and combo points go
+-- on the text layer and auras on the aura layer, well above every rim, so a
+-- part inside the bar never ties with a rim and drops behind it (owner,
+-- November 23, 2026: parts inside the bar sometimes drew behind it). Set
+-- again on every layout, so a plate the game re-levels comes back in order.
+M.LAYER_TEXT, M.LAYER_AURA = 10, 12
+function M.SetLayers(plate)
+    local base = plate:GetFrameLevel()
+    if not addon.IsNumber(base) then return end
+    plate.healthBox:SetFrameLevel(base + 1)
+    plate.castBox:SetFrameLevel(base + 1)
+    plate.textLayer:SetFrameLevel(base + M.LAYER_TEXT)
+    plate.auraLayer:SetFrameLevel(base + M.LAYER_AURA)
+    for _, row in pairs(plate.indicatorRows or {}) do row:SetFrameLevel(base + M.LAYER_TEXT + 1) end
 end
 
 -- Room taken beside the bar on one side ("LEFT" or "RIGHT") by the raid
