@@ -99,7 +99,9 @@ local function Style(kind)
         castTargetAnchor = "BOTTOM", castTargetX = 0, castTargetY = 0, castIconX = 0, castIconY = 0,
         showRaidIcon = true, raidAnchor = "LEFT", raidX = 0, raidY = 0, raidSize = 16,
         -- The soft-target icon (the cursor art the game shows over the unit), above the plate.
-        showSoftTarget = true, softTargetSize = 20, softTargetX = 0, softTargetY = 0,
+        -- Loot and interact targets only by default (owner, November 23, 2026: no
+        -- combat icon); Show Combat Icons adds the sword on enemies and friends.
+        showSoftTarget = true, softTargetCombat = false, softTargetSize = 20, softTargetX = 0, softTargetY = 0,
         -- Indicator: quest icon, classification icon and level, by anchor.
         showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
         questAnchor = "LEFT", questX = 0, questY = 0, questSize = 14,
@@ -131,7 +133,10 @@ local function Style(kind)
     }
 end
 M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
-M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly) }
+-- hideBlizzardCombatIcon (every kind): turns the game's own enemy and friend
+-- soft-target icons off (BlizzardIcons.lua); off by default.
+M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly),
+    hideBlizzardCombatIcon = false }
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
 M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true,

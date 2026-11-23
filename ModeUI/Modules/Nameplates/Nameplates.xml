@@ -12,6 +12,7 @@
     <Script file="Focus.lua"/>
     <Script file="Combo.lua"/>
     <Script file="SoftTarget.lua"/>
+    <Script file="BlizzardIcons.lua"/>
     <Script file="Update.lua"/>
     <Script file="CastBar.lua"/>
     <Script file="Auras.lua"/>

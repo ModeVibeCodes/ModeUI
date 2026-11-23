@@ -15,8 +15,11 @@ local Kit, NP = addon.Kit, addon.Domain.Nameplate
 local Call, Public = addon.Domain.Query.Call, addon.IsPublic
 
 -- Each soft-target unit token and the CVar that turns its icon on.
-M.softTargets = { { unit = "softenemy", cvar = "SoftTargetIconEnemy" },
-    { unit = "softfriend", cvar = "SoftTargetIconFriend" }, { unit = "softinteract", cvar = "SoftTargetIconInteract" } }
+-- The sword on your soft enemy and the mark on your soft friend are combat
+-- icons, shown only with Show Combat Icons (owner, November 23, 2026); loot
+-- and interact icons always follow the game's setting.
+M.softTargets = { { unit = "softenemy", cvar = "SoftTargetIconEnemy", combat = true },
+    { unit = "softfriend", cvar = "SoftTargetIconFriend", combat = true }, { unit = "softinteract", cvar = "SoftTargetIconInteract" } }
 M.SOFT_TARGET_SIZE_CVAR = "SoftTargetNameplateSize" -- 0 turns every nameplate icon off
 local WATCHED = { [M.SOFT_TARGET_SIZE_CVAR:lower()] = true }
 for _, soft in ipairs(M.softTargets) do WATCHED[soft.cvar:lower()] = true end
@@ -79,7 +82,8 @@ function M:LayoutSoftTarget(plate)
     plate.softTargetTop = bottom + size
 end
 
--- The nameplate frames of the soft targets that get an icon now.
+-- The nameplate frames of the soft targets that get an icon now: each frame
+-- maps to "interact" or "combat" (interact wins when a unit is both).
 function M:SoftTargetPlates()
     local found = {}
     local size = tonumber(CVar(M.SOFT_TARGET_SIZE_CVAR) or "")
@@ -87,7 +91,7 @@ function M:SoftTargetPlates()
     for _, soft in ipairs(M.softTargets) do
         if On(soft.cvar) then
             local nameplate = NP.ForUnit(soft.unit)
-            if nameplate then found[nameplate] = true end
+            if nameplate and found[nameplate] ~= "interact" then found[nameplate] = soft.combat and "combat" or "interact" end
         end
     end
     return found
@@ -100,7 +104,8 @@ function M:UpdateSoftTarget(plate, found)
     if not icon then return end
     found = found or self:SoftTargetPlates()
     local shown = false
-    if plate.unit and self:Style(plate).showSoftTarget and found[plate.nameplate] then
+    local style, kind = self:Style(plate), found[plate.nameplate]
+    if plate.unit and style.showSoftTarget and (kind == "interact" or (kind == "combat" and style.softTargetCombat)) then
         local ok, has = Call(SetUnitCursorTexture, icon, plate.unit, nil, nil, true)
         shown = ok and Public(has) and has == true
     end

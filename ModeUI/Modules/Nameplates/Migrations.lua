@@ -217,4 +217,7 @@ function M.Initialize(db)
         if db[kind] == nil then db[kind] = Copy(M.styleDefaults[kind]) end
         Validate(db[kind], kind)
     end
+    if db.hideBlizzardCombatIcon == nil then db.hideBlizzardCombatIcon = false end
+    assert(type(db.hideBlizzardCombatIcon) == "boolean", "Invalid nameplate setting: hideBlizzardCombatIcon")
+    M.ValidateSavedCVars(db)
 end

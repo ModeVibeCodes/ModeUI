@@ -47,6 +47,7 @@ function M:OnEnable()
     end
     self:SetComboEvents(true)
     self:SetSoftTargetEvents(true)
+    self:ApplyBlizzardIcons()
     for _, unit in ipairs(NP.ActiveUnits()) do self:OnUnitAdded(unit) end
 end
 
@@ -55,6 +56,7 @@ function M:OnDisable()
     Events:OffAll(self)
     self:SetComboEvents(false)
     self:SetSoftTargetEvents(false)
+    self:ApplyBlizzardIcons()
     for unit in pairs(self.byUnit) do self:OnUnitRemoved(unit) end
 end
 

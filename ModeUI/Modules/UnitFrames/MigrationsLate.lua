@@ -29,4 +29,15 @@ function M.MigrateLate(db)
         end
         db.layoutVersion = 26
     end
+    -- 26 -> 27: no combat icons (owner, November 23, 2026). The Player's and
+    -- Target's combat badge, on by default until now, turns off; the red ring
+    -- in combat stays.
+    if db.layoutVersion == 26 then
+        for _, unit in ipairs({ "player", "target" }) do
+            local frame = db[unit]
+            local status = type(frame) == "table" and Public(frame) and frame.status
+            if type(status) == "table" and Public(status) and status.combatIcon == true then status.combatIcon = false end
+        end
+        db.layoutVersion = 27
+    end
 end

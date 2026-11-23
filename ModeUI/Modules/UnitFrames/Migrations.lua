@@ -358,7 +358,7 @@ function M.Initialize(db)
     if db.layoutVersion == 21 then MigrateV21(db); db.layoutVersion = 22 end
     if db.layoutVersion == 22 then MigrateV22(db); db.layoutVersion = 23 end
     if db.layoutVersion == 23 then MigrateV23(db); db.layoutVersion = 24 end
-    M.MigrateLate(db) -- 24 -> 26 (MigrationsLate.lua)
+    M.MigrateLate(db) -- 24 -> 27 (MigrationsLate.lua)
     db.layoutVersion = db.layoutVersion or M.LAYOUT_VERSION
     assert(db.layoutVersion == M.LAYOUT_VERSION, "Invalid unit frame layout version")
     for _, unit in ipairs(M.units) do

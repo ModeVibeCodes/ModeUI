@@ -405,12 +405,15 @@ world.run([==[
     -- Soft-target icon: the game's cursor art for the soft target's plate, on
     -- the CVars Blizzard reads, found by nameplate frame; drawn above the plate.
     local cvars = { SoftTargetNameplateSize = '19', SoftTargetIconEnemy = '1', SoftTargetIconFriend = '0', SoftTargetIconInteract = '1' }
-    C_CVar = { GetCVar = function(name) return cvars[name] end }
+    C_CVar = { GetCVar = function(name) return cvars[name] end, SetCVar = function(name, value) cvars[name] = value end }
     local cursor = { nameplate1 = true }
     function SetUnitCursorTexture(texture, unit, ...) texture.cursorUnit, texture.cursorArgs = unit, { ... }; return cursor[unit] end
     local icon = plate.softTarget
     assert(icon and not icon:IsShown(), 'no icon without a soft target')
     nameplates.softenemy = nameplates.nameplate1; FireEvent('PLAYER_SOFT_ENEMY_CHANGED')
+    -- No combat icon by default (owner, November 23, 2026); Show Combat Icons adds the sword.
+    assert(not M.db.enemy.softTargetCombat and not icon:IsShown(), 'no sword on the soft enemy by default')
+    assert(M:SetOption('enemy', 'softTargetCombat', true)); icon = M.byUnit.nameplate1.softTarget
     assert(icon:IsShown() and icon.cursorUnit == 'nameplate1' and icon.cursorArgs[3] == true, 'icon on the soft enemy, art from the game')
     local at = Point(icon)
     assert(at[1] == 'BOTTOM' and at[2] == plate.healthBox and at[3] == 'TOP' and at[5] > plate.above, 'above the plate and its top rows')
@@ -435,6 +438,20 @@ world.run([==[
     nameplates.softinteract = nil; FireEvent('PLAYER_SOFT_INTERACT_CHANGED')
     assert(not icon:IsShown(), 'gone when the soft target moves on')
     cvars.SoftTargetIconEnemy = '1'
+    assert(M:SetOption('enemy', 'softTargetCombat', false))
+    -- Hide Blizzard's Combat Icon: the game's enemy and friend icon CVars go to 0
+    -- and come back as they were; the loot icon CVar is left alone.
+    cvars.SoftTargetIconFriend = '1'
+    assert(M.db.hideBlizzardCombatIcon == false and M:SetHideBlizzardCombatIcon(true))
+    assert(cvars.SoftTargetIconEnemy == '0' and cvars.SoftTargetIconFriend == '0' and cvars.SoftTargetIconInteract == '1', 'combat icons off')
+    assert(M.db.savedIconCVars.SoftTargetIconEnemy == '1', 'old values remembered')
+    addon:SetModuleEnabled('nameplates', false)
+    assert(cvars.SoftTargetIconEnemy == '1' and cvars.SoftTargetIconFriend == '1' and M.db.savedIconCVars == nil, 'restored while the module is off')
+    addon:SetModuleEnabled('nameplates', true); plate = M.byUnit.nameplate1
+    assert(cvars.SoftTargetIconEnemy == '0', 'applied again')
+    assert(M:SetHideBlizzardCombatIcon(false) and cvars.SoftTargetIconEnemy == '1' and M.db.savedIconCVars == nil, 'turned off: restored')
+    assert(not M:SetHideBlizzardCombatIcon('yes'), 'validated')
+    cvars.SoftTargetIconFriend = '0'
 
     -- Health and cast boxes share the frameThin edge.
     assert(plate.healthBox.edge.preset == plate.castBox.edge.preset and plate.healthBox.edge.rim == 1, 'one edge for both boxes')

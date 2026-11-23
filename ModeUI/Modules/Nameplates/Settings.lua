@@ -177,7 +177,9 @@ function M:CreateConfigPage(parent)
     Card("General", "Soft Target Icon", nil, function()
         local soft = Columns({ "Size", "Offset X", "Offset Y" }); Mark("softTarget")
         Slider(soft[1], "softTargetSize", "px"); Slider(soft[2], "softTargetX", "px"); Slider(soft[3], "softTargetY", "px")
-        Note("The cursor the game shows over your soft target (a sword on an enemy, a bag on something to loot), above the plate. Which soft targets get one is the game's interact icon setting in its Accessibility options.", 48)
+        page.softTargetToggles = Toggles({ { "Show Combat Icons", "softTargetCombat" }, { "Hide Blizzard's Combat Icon", "hideBlizzard",
+            get = function() return M.db.hideBlizzardCombatIcon end, set = function(value) M:SetHideBlizzardCombatIcon(value) end } })
+        Note("The cursor the game shows over your soft target, above the plate: a bag or gear on what you can loot or use. Show Combat Icons adds the sword on your soft enemy. Hide Blizzard's Combat Icon turns the game's enemy and friend icons off (its Accessibility setting) and puts them back when turned off.", 64)
     end)
 
     -- Fill: each bar's textures and colors.

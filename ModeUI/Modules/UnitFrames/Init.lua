@@ -86,7 +86,7 @@ M.attachPoints = { bottomright = { point = "TOPRIGHT", relative = "BOTTOMRIGHT" 
 -- Version 23: semi-transparent empty bars (Slate at 60%, no black plate behind).
 -- Version 24: the portrait ring in the class or reaction color (owner).
 -- Version 25: the Target's health in the class or reaction color, its own even when matched (owner).
-M.LAYOUT_VERSION = 26
+M.LAYOUT_VERSION = 27
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 
 local Tone = addon.Style.Tone
@@ -319,7 +319,9 @@ end
 -- rested badge (Player only) and a combat badge on the ring's corners, a red
 -- ring in combat, and on the Player a pulse while something you haven't
 -- targeted has pulled you. Corners swap sides on a right-hand portrait.
-M.statusDefaults = { restIcon = true, restCorner = "topLeft", combatIcon = true, combatCorner = "bottomLeft", badgeSize = 20,
+-- The combat badge is off by default since layout 27 (owner, November 23,
+-- 2026: no combat icons on frames or plates); the red ring still shows combat.
+M.statusDefaults = { restIcon = true, restCorner = "topLeft", combatIcon = false, combatCorner = "bottomLeft", badgeSize = 20,
     mirror = true, combatRing = true, ringColor = Copy(Tone.combatRing), pulse = true }
 M.statusRanges = { badgeSize = { 12, 32, 1 } }
 M.choices.statusCorner = { { id = "topLeft", label = "Top Left" }, { id = "topRight", label = "Top Right" },
@@ -329,7 +331,6 @@ function M.StatusDefaults(unit)
     local defaults = Copy(M.statusDefaults)
     local player = unit == "player"
     defaults.restIcon, defaults.combatRing, defaults.pulse = player, player, player
-    defaults.combatIcon = player or unit == "target"
     return defaults
 end
 -- Frame Width (barWidth) too, so a matched Target can be wider or narrower;
