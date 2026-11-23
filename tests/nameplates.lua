@@ -756,12 +756,11 @@ world.run([==[
     local at = Point(sample)
     assert(at[1] == 'CENTER' and at[2] == view.stage and at[3] == 'CENTER' and at[4] == 0, 'the bar pinned across')
     local _, height = M:GetPreviewSize(view)
-    assert(height == 320 and view.zoom and view.zoom >= 1 and view.zoom <= M.PREVIEW_ZOOM, 'a fixed height; zoomed')
+    assert(height == 230 and view.zoom and view.zoom >= 1 and view.zoom <= M.PREVIEW_ZOOM, 'a fixed height; zoomed')
     local before = Point(sample)[4]
     assert(M:SetOption('enemy', 'anchor', 'RIGHT', 'crowdControl') and Point(sample)[4] == before, 'moving a group does not slide the plate')
     assert(M:SetOption('enemy', 'anchor', 'LEFT', 'crowdControl') and M:SetOption('enemy', 'grow', 'left', 'crowdControl'))
-    assert(view.strip.enemy[1]:IsShown() and view.strip.enemy[3]:IsShown() and view.strip.enemy[1].focused, 'the strip, one sample your focus')
-    assert(view.strip.enemy[1]:GetScale() <= 0.75 and view.stripLabels.enemy[1].text == 'Your Focus' and view.stripLabels.enemy[2].text == "Can't Interrupt", 'smaller, each named')
+    assert(view.strip == nil, 'one plate (owner, November 23, 2026): other states come from the chips')
     assert(math.abs(sample.width - 180) < 1, 'sample size follows the kind')
     assert(sample.name.text:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '') == 'Scarlet Crusader' and sample.healthText.text == '72%' and sample.health.value == 72)
     assert(sample.raidIcon:IsShown() and sample.raidIcon.spriteCell[1] == 8, 'skull marker sample')
@@ -775,8 +774,10 @@ world.run([==[
     Chip('cast', 'none'):GetScript('OnClick')(); assert(not sample.castBox:IsShown(), 'No Cast')
     Chip('cast', 'interrupted'):GetScript('OnClick')(); assert(sample.castBox:IsShown() and sample.cast.value == 1, 'Interrupted')
     Chip('cast', 'cast'):GetScript('OnClick')()
-    Chip('targeted', false):GetScript('OnClick')(); assert(not sample.targeted, 'Not Target')
-    Chip('targeted', true):GetScript('OnClick')(); assert(sample.targeted, 'Target')
+    Chip('highlight', 'none'):GetScript('OnClick')(); assert(not sample.targeted and not sample.focused, 'Neither')
+    Chip('highlight', 'focus'):GetScript('OnClick')(); assert(sample.focused and not sample.targeted, 'Focus')
+    Chip('highlight', 'target'):GetScript('OnClick')(); assert(sample.targeted and not sample.focused, 'Target')
+    assert(not Chip('sample', 'npc'):IsShown(), 'the Player and NPC chips show for friendly plates only')
     local function Shown(p, group)
         local n = 0
         for _, icon in ipairs(p.auraIcons[group]) do if icon:IsShown() then n = n + 1 end end
@@ -793,6 +794,9 @@ world.run([==[
     -- Switching Editing switches the sample.
     page.SetEditing('friendly')
     assert(friend:IsShown() and not sample:IsShown() and math.abs(friend.width - 120) < 1, 'friendly sample while editing Friendly')
+    local npc = Chip('sample', 'npc'); assert(npc:IsShown(), 'Player and NPC chips for friendly plates')
+    npc:GetScript('OnClick')(); assert(view.caption.text:find('Friendly NPC', 1, true), 'the NPC sample')
+    Chip('sample', 'player'):GetScript('OnClick')()
     assert(Shown(friend, 'debuffs') == 1 and Shown(friend, 'buffs') == 0 and Shown(friend, 'crowdControl') == 0, 'friendly sample auras')
     assert(friend.auraIcons.debuffs[1].rim.vertexColor[1] == M.db.friendly.auraDiseaseColor[1], 'Disease rim')
     assert(M:SetOption('friendly', 'show', true, 'buffs') and Shown(friend, 'buffs') == 1, 'preview follows each group')

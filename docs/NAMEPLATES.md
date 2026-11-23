@@ -208,8 +208,9 @@ The magnified previewer (owner, November 23, 2026; `PreviewStage.lua`):
 
 - **State chips:**
   - the cast: No Cast, Casting, Can't Interrupt, Interrupted;
-  - Target or Not Target;
-  - auras: None, Some, Full (every group at Most Shown, its full reach).
+  - the highlight: Target, Focus, Neither;
+  - auras: None, Some, Full (every group at Most Shown, its full reach);
+  - friendly plates only: Player or NPC.
 - **The stage:** the kind being edited, magnified (2x, less when its full
   reach can't fit, in quarter steps) and pixel snapped.
   - **The health bar stays in the middle across**, so an anchor change never
@@ -217,10 +218,9 @@ The magnified previewer (owner, November 23, 2026; `PreviewStage.lua`):
   - Up and down, the plate's full reach is centered, from the layout and every
     row at Most Shown, so changing states never moves it.
   - The preview has a fixed height.
-- **A strip** of more plates in other states, at 3/4 size, each named
-  underneath:
-  - enemy: Your Focus, Can't Interrupt, No Cast, No Auras;
-  - friendly: Friendly Player, Friendly NPC.
+- **One plate** (owner, November 23, 2026: the strip of smaller plates was
+  removed). Other states come from the chips, and the preview stays 230px
+  tall.
 - **Click any part** of the stage plate to jump to its settings.
 
 The old preview estimated the plate's size with its own copy of the layout,
@@ -329,8 +329,9 @@ Earlier versions:
 - **Navigation:** `/modeui`, then **Frames** › **Nameplates**.
 - **Action:**
   - In the preview, click each chip: **Casting**, **Can't Interrupt**,
-    **Interrupted**, **No Cast**, **Target**/**Not Target**, **No Auras**,
-    **Some**, **Full**.
+    **Interrupted**, **No Cast**, **Target**, **Focus**, **Neither**, **No
+    Auras**, **Some**, **Full**. Switch **Editing** to Friendly and click
+    **Player** and **NPC**.
   - On **Auras**, pick **Debuffs** and move **Anchor** between Top Right and
     Top; switch **On One Anchor** on **Icons**.
   - On **General**, in **Indicators**, turn **Inside the Bar** off and on for
@@ -347,8 +348,9 @@ Earlier versions:
 - **Required state:** out of combat to change settings; enemy nameplates
   shown (friendly ones too for the names).
 - **Confirmation:**
-  - The preview's health bar stays in place while anchors and states change,
-    and each strip plate is named.
+  - The preview's health bar stays in place while anchors and states change.
+  - The chips switch the one plate between states; Player and NPC show only
+    while editing Friendly.
   - The name sits on the border at the top left and shortens with "…" only as
     debuffs fill in from the right.
   - With no buffs, the right arrow sits right beside the bar and moves out as
