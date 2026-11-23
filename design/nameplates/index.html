@@ -1,0 +1,1950 @@
+<title>Nameplate Designer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Saira+Semi+Condensed:wght@500;600;700&family=Urbanist:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a tabbed working page. Designer = a magnified plate on a world backdrop, a 1:1 strip,
+   then the element list and inspector side by side. Rules, Research, Inventory and Plan are reading tabs.
+   Deliberately single-theme (dark): it previews an in-game UI, so its colors follow ModeUI's Style.Tone values. */
+:root {
+  color-scheme: dark;
+  --void: #0c0d0f;
+  --panel: #15171a;
+  --raised: #1d2024;
+  --line: #2b2e33;
+  --text: #dadada;
+  --muted: #8d9198;
+  --ivory: #efe6d2;
+  --brand: #e2b866;
+  --celadon: #b4cdb6;
+  --rosewood: #cf6a6f;
+  --warn: #ffa040;
+  --hostile: #e5484d; --neutral: #f2c744; --friendly: #46c46b; --tapped: #8c8c8c;
+  --cast: #f2b13c; --channel: #3fbf7f; --locked: #7d838c; --cast-int: #6cb8ff; --cast-hot: #ff6b3d;
+  --magic: #3399ff; --curse: #aa55ff; --poison: #55bb55; --disease: #cc8833; --cc: #ff5948; --notype: #46494d;
+  --slate: rgba(70,70,75,.6);
+  --m-hi: #6e6e74; --m-light: #8c806a; --m-mid: #2a2a2d; --m-dark: #18181a;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Saira Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-game: "Urbanist", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--void); color: var(--text); font: 14px/1.55 var(--font-ui); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 56px; }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+h1 { font: 700 30px/1.1 var(--font-display); letter-spacing: .01em; margin: 0; color: var(--ivory); text-wrap: balance; }
+h1 small { display: block; font: 500 13px/1.4 var(--font-ui); color: var(--muted); letter-spacing: 0; margin-top: 6px; }
+h2 { font: 600 21px/1.2 var(--font-display); color: var(--ivory); margin: 28px 0 8px; text-wrap: balance; }
+h3 { font: 600 16px/1.3 var(--font-display); color: var(--text); margin: 20px 0 6px; letter-spacing: .02em; }
+p, li { max-width: 80ch; }
+p { margin: 6px 0 10px; }
+.lede { color: var(--muted); }
+code { font: 12.5px var(--font-mono); background: var(--raised); padding: 1px 5px; border-radius: 3px; color: #e6e1d6; overflow-wrap: anywhere; }
+a { color: #9cc7ff; }
+nav.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+nav.tabs a { font: 600 13px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: none; padding: 7px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+nav.tabs a[aria-current="page"] { color: var(--void); background: var(--ivory); border-color: var(--ivory); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, .stage:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.tab { padding-top: 6px; }
+
+/* Controls */
+.bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 14px 0 10px; }
+.ctl { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { font: 600 12.5px var(--font-ui); color: var(--text); background: var(--panel); border: 0; padding: 5px 10px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ivory); color: var(--void); }
+.seg.engine button[aria-pressed="true"][data-v="v11"] { background: var(--rosewood); color: #fff; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font: 500 13px var(--font-ui); color: var(--text); cursor: pointer; text-transform: none; letter-spacing: 0; }
+.chk input { accent-color: var(--brand); }
+button.btn { font: 600 12.5px var(--font-ui); color: var(--text); background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+button.btn.primary { background: var(--ivory); color: var(--void); border-color: var(--ivory); }
+button.btn:disabled { opacity: .45; cursor: default; }
+select, input[type="text"] { font: 500 13px var(--font-ui); color: var(--text); background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; }
+
+/* Stage */
+.stage { position: relative; width: 100%; height: 360px; overflow: hidden; border: 1px solid var(--line); border-radius: 4px; cursor: default;
+  background: radial-gradient(ellipse at 50% 30%, rgba(120,140,110,.22), transparent 60%), linear-gradient(180deg, #3a4448 0%, #2d3634 46%, #26302a 47%, #1f2722 100%); }
+.stage .zoom { position: absolute; left: 50%; top: 50%; transform-origin: 0 0; }
+.stage .grid { position: absolute; inset: 0; pointer-events: none; opacity: 0; background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px); }
+.show-grid .stage .grid { opacity: 1; }
+.cap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; font-size: 12.5px; color: var(--muted); margin: 6px 2px 0; }
+.cap b { color: var(--text); font-weight: 600; }
+.strip { position: relative; height: 150px; margin-top: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: 4px;
+  background: linear-gradient(180deg, #34403f 0%, #283330 55%, #1d2520 100%); }
+
+/* Plate parts (plate pixels, scaled by .zoom) */
+.p { position: absolute; }
+.box { border-radius: 3px; background: var(--m-dark); box-shadow: 0 0 0 1px rgba(0,0,0,.65); }
+.box::after { content: ""; position: absolute; inset: 0; border-radius: 3px; border: 1px solid var(--m-mid); border-top-color: var(--m-hi); border-bottom-color: var(--m-light); pointer-events: none; }
+.box .track { position: absolute; inset: 1px; background: var(--slate); border-radius: 2px; overflow: hidden; }
+.box .fill { position: absolute; left: 0; top: 0; bottom: 0; }
+.box .fill::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 1px; background: rgba(214,235,255,.85); }
+.box.target::after { box-shadow: 0 0 0 1px var(--ivory); }
+.box.focus-glow { box-shadow: 0 0 0 1px rgba(0,0,0,.65), 0 0 7px 3px rgba(207,106,111,.6); }
+.box.target-glow { box-shadow: 0 0 0 1px rgba(0,0,0,.65), 0 0 7px 3px rgba(239,230,210,.55); }
+.txt { font-family: var(--font-game); white-space: nowrap; line-height: 1; color: #e8e3d9; text-shadow: 1px 1px 0 rgba(0,0,0,.9); display: flex; align-items: center; }
+.txt > .clipline { min-width: 0; }
+.clipline { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; padding-bottom: 1px; }
+.aslot { background: rgba(0,0,0,.65); border-radius: 3px; }
+.aslot .aband { position: absolute; inset: 1px; border: 1px solid var(--notype); border-radius: 2px; background: #000; }
+.aslot .art { position: absolute; border-radius: 1px; }
+.aslot .t, .aslot .n { z-index: 1; }
+.ghost.slotted { inset: auto; }
+.warns li.pix { color: var(--warn); }
+.pv { margin: 18px 0 26px; }
+.pvhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pvhead h3 { margin: 0; }
+.mock { position: relative; margin-top: 8px; }
+.mwin { position: absolute; inset: 0; display: flex; flex-direction: column; background: #101113; border: 1px solid #2a2c30; border-radius: 6px; box-shadow: 0 0 0 1px #000; overflow: hidden; }
+.mtitle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 10px; font: 600 12px var(--font-ui); color: var(--ivory); border-bottom: 1px solid #222428; background: #0b0c0d; }
+.mtitle .seg button { padding: 3px 8px; font-size: 11.5px; }
+.mtitle input { width: 3em; padding: 1px 4px; font: 12px var(--font-mono); }
+.mnum { margin-left: auto; color: var(--muted); font-weight: 500; }
+.mnum b { color: var(--brand); font-weight: 600; }
+.mbody, .mstage { position: relative; flex: 1; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, rgba(120,140,110,.18), transparent 65%), linear-gradient(180deg, #333d40, #232b27); }
+.mstrip { position: relative; height: 92px; overflow: hidden; border-top: 1px solid #222428; background: linear-gradient(180deg, #2c3533, #1d2420); }
+.mcap { display: flex; justify-content: space-between; gap: 10px; padding: 5px 10px; font-size: 11.5px; color: var(--muted); border-top: 1px solid #222428; }
+.mworld { position: absolute; inset: 0; overflow: hidden; border-radius: 6px; border: 1px solid var(--line); background: radial-gradient(ellipse at 50% 20%, rgba(150,160,120,.2), transparent 60%), linear-gradient(180deg, #3d4a4c 0%, #2e3935 50%, #222a24 100%); }
+.mworld .far { opacity: .92; }
+.mbadge { position: absolute; right: 10px; top: 8px; font: 600 11px var(--font-ui); color: var(--void); background: var(--celadon); padding: 2px 8px; border-radius: 10px; }
+.cdot { width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(226,184,102,.45); pointer-events: none; }
+.cdot.on { background: var(--brand); box-shadow: 0 0 0 2px rgba(226,184,102,.35); }
+.cdrag { outline: 1px dashed var(--brand); background: rgba(226,184,102,.08); pointer-events: none; }
+.icon { border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.65); }
+.icon::before { content: ""; position: absolute; inset: 0; border: 1px solid var(--rim, var(--notype)); border-radius: 2px; }
+.icon .art { position: absolute; inset: 2px; border-radius: 1px; }
+.icon .t { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font: 700 7px/1 var(--font-game); color: #ffb12f; text-shadow: 1px 1px 0 #000; }
+.icon .n { position: absolute; right: 1px; bottom: 0; font: 700 6px/1 var(--font-game); color: #fff; text-shadow: 1px 1px 0 #000; }
+.ghost { border: 1px dashed rgba(239,230,210,.35); border-radius: 2px; background: rgba(239,230,210,.04); }
+.cap-zone { outline: 1px dashed rgba(255,160,64,.7); background: rgba(255,160,64,.06); pointer-events: none; }
+.hit { cursor: pointer; }
+.hover { outline: 1px solid rgba(226,184,102,.7); outline-offset: 1px; }
+.sel { outline: 1px solid var(--brand); outline-offset: 1px; }
+.clash { outline: 1px solid var(--hostile) !important; outline-offset: 0; background-color: rgba(229,72,77,.18); }
+.anchor-dot { width: 3px; height: 3px; margin: -1px 0 0 -1px; border-radius: 50%; background: rgba(226,184,102,.9); pointer-events: none; display: none; }
+.show-anchors .anchor-dot { display: block; }
+.band { pointer-events: none; display: none; }
+.show-anchors .band { display: block; background: rgba(156,199,255,.06); outline: 1px dashed rgba(156,199,255,.25); }
+
+/* Lower panels */
+.grid2 { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; min-width: 0; }
+.panel h3 { margin-top: 0; }
+.elist { list-style: none; margin: 0; padding: 0; }
+.elist li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 13px; max-width: none; }
+.elist li:hover { background: var(--raised); }
+.elist li[aria-selected="true"] { background: var(--ivory); color: var(--void); }
+.elist li .where { font: 11px var(--font-mono); color: var(--muted); }
+.elist li[aria-selected="true"] .where { color: #3b3933; }
+.elist li.off { opacity: .45; }
+.elist .grp { font: 600 11px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 10px 8px 2px; cursor: default; }
+.elist .grp:hover { background: none; }
+.insp { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px 18px; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field > label, .field > .lab { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.field .row { display: flex; align-items: center; gap: 8px; }
+.field input[type="range"] { flex: 1; accent-color: var(--brand); min-width: 0; }
+.field output { font: 12px var(--font-mono); min-width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; }
+.compass { display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 22px); gap: 3px; position: relative; }
+.compass button { font: 600 10px var(--font-ui); background: var(--raised); color: var(--muted); border: 1px solid var(--line); border-radius: 3px; cursor: pointer; padding: 0; }
+.compass button[aria-pressed="true"] { background: var(--brand); color: var(--void); border-color: var(--brand); }
+.compass button:disabled { opacity: .25; cursor: default; }
+.stack-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.stack-view .pt { background: var(--raised); border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; font-size: 12px; }
+.stack-view .pt b { font: 600 11px var(--font-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--brand); display: block; margin-bottom: 2px; }
+.stack-view .pt ol { margin: 0; padding-left: 18px; }
+.stack-view .pt li.row { color: var(--celadon); }
+.warns { margin: 8px 0 0; padding: 0; list-style: none; font-size: 12.5px; }
+.warns li { color: var(--hostile); }
+.warns li.ok { color: var(--celadon); }
+.toast { font-size: 12.5px; color: var(--celadon); min-height: 1.4em; }
+pre.json { background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 10px; font: 11.5px/1.45 var(--font-mono); max-height: 260px; overflow: auto; white-space: pre; }
+
+/* Reading tabs */
+.tw { overflow-x: auto; margin: 10px 0 16px; border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th { font: 600 11.5px var(--font-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--panel); position: sticky; top: 0; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; font: 600 10.5px var(--font-ui); text-transform: uppercase; letter-spacing: .06em; padding: 1px 7px; border-radius: 10px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.new { color: var(--celadon); } .pill.rewrite { color: var(--brand); } .pill.edit { color: #9cc7ff; } .pill.risk { color: var(--rosewood); } .pill.keep { color: var(--muted); }
+.callout { border-left: 3px solid var(--brand); background: var(--panel); padding: 10px 14px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+.callout.bug { border-left-color: var(--hostile); }
+.callout.ok { border-left-color: var(--celadon); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+ol.steps > li { margin-bottom: 10px; }
+.dec { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; margin: 10px 0; }
+.dec h3 { margin: 0 0 4px; }
+.dec .opts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Nameplate Designer<small>Nameplates pass · your baseline, findings, rules and a working model of the proposed anchoring · November 23, 2026 · built on main the same day (cc1959d…27f289c), not yet checked in game</small></h1>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#designer" data-tab="designer">Designer</a>
+      <a href="#findings" data-tab="findings">Findings</a>
+      <a href="#previewer" data-tab="previewer">Previewer</a>
+      <a href="#rules" data-tab="rules">Rules</a>
+      <a href="#research" data-tab="research">Research</a>
+      <a href="#inventory" data-tab="inventory">Inventory</a>
+      <a href="#plan" data-tab="plan">Plan</a>
+    </nav>
+  </header>
+
+  <!-- ============================== DESIGNER ============================== -->
+  <section class="tab" id="tab-designer">
+    <div class="bar">
+      <span class="ctl">Editing <span class="seg" id="seg-kind"><button data-v="enemy">Enemy</button><button data-v="friendly">Friendly</button></span></span>
+      <span class="ctl">Rules <span class="seg engine" id="seg-engine"><button data-v="proposed">Proposed stacks</button><button data-v="v11">Current (v11)</button></span></span>
+      <span class="ctl">Zoom <span class="seg" id="seg-zoom"><button data-v="2">2×</button><button data-v="3">3×</button><button data-v="4">4×</button></span></span>
+      <span class="ctl">Preset <select id="preset" aria-label="Preset"></select></span>
+    </div>
+    <div class="bar">
+      <span class="ctl">Cast <span class="seg" id="seg-cast"><button data-v="none">None</button><button data-v="cast">Casting</button><button data-v="channel">Channel</button><button data-v="locked">Can't Interrupt</button><button data-v="interrupted">Interrupted</button></span></span>
+      <label class="chk"><input type="checkbox" id="st-target" checked> Your target</label>
+      <label class="chk"><input type="checkbox" id="st-focus"> Your focus</label>
+      <label class="chk"><input type="checkbox" id="st-soft" checked> Soft target</label>
+      <label class="chk" title="While auras are secret, ModeUI can't count them. Show the room each aura row can take."><input type="checkbox" id="st-capacity" checked> Show aura capacity</label>
+      <label class="chk"><input type="checkbox" id="st-anchors"> Anchor guides</label>
+      <label class="chk"><input type="checkbox" id="st-grid"> Pixel grid</label>
+    </div>
+    <div class="stage" id="stage" tabindex="0" aria-label="Magnified nameplate preview. Click a part to edit it; arrow keys nudge the selected part.">
+      <div class="grid" id="pixgrid"></div>
+      <div class="zoom" id="zoom"></div>
+    </div>
+    <div class="cap"><span id="cap-left"></span><span>Click a part to edit it · arrow keys nudge its offset (Shift: 5px)</span></div>
+    <div class="strip" id="strip" aria-label="The same design at 1:1 scale, as a pull of four plates"></div>
+    <div class="cap"><span id="strip-note">1:1 at the pixel-perfect scale (1 UI unit = 1 physical pixel), the size you'd see at 1080p</span><span id="cap-size"></span></div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Parts</h3>
+        <ul class="elist" id="elist" role="listbox" aria-label="Plate parts"></ul>
+      </div>
+      <div class="panel" style="min-width:0">
+        <h3 id="insp-title">Inspector</h3>
+        <div class="insp" id="insp"></div>
+        <h3 style="margin-top:18px">Stacks on this plate</h3>
+        <div class="lede" style="font-size:12.5px">Each anchor point holds an ordered stack, read from the bar outward. Fixed-size parts (badges) come first, aura rows (whose length can be secret) last.</div>
+        <div class="stack-view" id="stacks"></div>
+        <ul class="warns" id="warns"></ul>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Sample auras</h3>
+        <div id="counts"></div>
+      </div>
+      <div class="panel">
+        <h3>Save this design</h3>
+        <p class="lede" style="font-size:12.5px;margin-top:0">Saved designs are kept with this page, so Claude can read the one you pick and use its numbers when building the pass. Your current edits are also kept in this browser as a draft.</p>
+        <div class="bar" style="margin-top:4px">
+          <input type="text" id="save-name" aria-label="Design name" placeholder="Design name, e.g. Mode-Default v12" style="flex:1;min-width:180px">
+          <button class="btn primary" id="btn-save" disabled>Save</button>
+          <select id="load" aria-label="Saved designs"><option value="">Saved designs…</option></select>
+          <button class="btn" id="btn-load" disabled>Load</button>
+          <button class="btn" id="btn-copy">Copy settings</button>
+          <button class="btn" id="btn-reset">Reset to preset</button>
+        </div>
+        <div class="toast" id="toast" role="status"></div>
+        <pre class="json" id="json" aria-label="Settings in the proposed version 12 shape"></pre>
+      </div>
+    </div>
+  </section>
+
+    <!-- ============================== PREVIEWER ============================== -->
+  <section class="tab" id="tab-previewer" hidden>
+    <h2>Previewer samples</h2>
+    <p class="lede">Four ways the settings page could preview the plate. Each sample below is drawn live from the design currently in the Designer (enemy plate), by the same engine, so change the design there and come back. In every option the health bar stays pinned: changing an anchor never slides the plate.</p>
+
+    <div class="pv">
+      <div class="pvhead"><h3>A. Fix the current preview</h3><span class="pill keep">small</span></div>
+      <p>Today's strip above the settings tabs, fixed: real bounds from the layout, the bar pinned in the middle, a fixed height, zooming out only if the plate can't fit. Still 1:1.</p>
+      <div class="mock" id="pv-a" style="height:150px"></div>
+    </div>
+
+    <div class="pv">
+      <div class="pvhead"><h3>B. New magnified previewer</h3><span class="pill new">recommended</span></div>
+      <p>A 2.5× pixel-snapped stage with state chips, aura counts and the capacity view, and a 1:1 strip of four plates under it. Click a part to open its settings, as today. The chips work here.</p>
+      <div class="mock" id="pv-b" style="height:330px"></div>
+    </div>
+
+    <div class="pv">
+      <div class="pvhead"><h3>C. B plus drag to place</h3><span class="pill edit">larger</span></div>
+      <p>Drag a part on the stage. The nine anchor points light up and the nearest one is chosen when you let go, with a guide line to it; arrow keys nudge 1px and the X and Y boxes take exact numbers. Shown with Debuffs being dragged.</p>
+      <div class="mock" id="pv-c" style="height:300px"></div>
+    </div>
+
+    <div class="pv">
+      <div class="pvhead"><h3>D. Test plates in the world</h3><span class="pill edit">companion to B</span></div>
+      <p>Changes show on real plates as you make them, and a Test Plates switch puts a sample cast on your target's plate. Real auras come only from the game's secure containers, so this can't fake auras; it pairs with B rather than replacing it.</p>
+      <div class="mock" id="pv-d" style="height:240px"></div>
+    </div>
+  </section>
+
+
+<!-- ============================== RULES ============================== -->
+  <section class="tab" id="tab-rules" hidden>
+    <h2>The proposed anchoring rules</h2>
+    <p class="lede">One model for every part of a plate. Today's code has seven separate placement paths (text, icons, indicator rows, two aura layouts, combo points, the soft-target icon, target arrows) and nine room values passed between them. This model replaces all of them. Everything here runs in the Designer: switch <b>Rules</b> to <b>Current (v11)</b> to see today's behavior on the same settings.</p>
+
+    <h3>1. An anchor is a point and a place</h3>
+    <p>Every part has an <b>Anchor</b> (the compass: Top Left, Top, Top Right, Left, Center, Right, Bottom Left, Bottom, Bottom Right) and a <b>Place</b>: <b>Outside</b> (around the health bar) or <b>Inside</b> (on it). Today, Left means "inside the bar" for text and "beside the bar" for icons. A Place setting makes the choice explicit, so an icon can sit inside the bar and text can sit beside it. Party Frames already use this model (<code>place = "inside" | "outside"</code>).</p>
+
+    <h3>2. The plate's spine is fixed</h3>
+    <p>From the health bar outward, the order is fixed:</p>
+    <ol>
+      <li>The border line: aura rows set to <b>Sit on Border</b> and text placed <b>On Border</b> share one line right on the bar (your name top left, your debuffs top right). A name stops at the row's live edge.</li>
+      <li>The cast bar, Below or Above, 1px apart so the two boxes share one shadow pixel.</li>
+      <li>Cast texts placed outside the cast bar.</li>
+      <li>One text line for a name or health text placed Outside Top or Bottom.</li>
+      <li>An outside cast icon that spans both bars, which reserves its side.</li>
+    </ol>
+    <p>All of these sizes are known in advance, so nothing in the spine moves on its own.</p>
+
+    <h3>3. Each anchor point holds an ordered stack</h3>
+    <p>Past the spine, every part anchored to the same point joins that point's stack, in an order you can change (<b>Order in Stack</b>: Closer to Bar, Farther). There are two kinds of member:</p>
+    <ul>
+      <li><b>Badges</b> are fixed-size parts: the raid marker, Elite and Rare, Quest, Level, combo points and target arrows. Badges at one point line up in one row, 2px apart. Each row starts at its point's edge:
+        <ul>
+          <li>Top Left: at the bar's left edge, running right.</li>
+          <li>Top Right: at the bar's right edge, running left.</li>
+          <li>Top: centered.</li>
+          <li>Left and Right: at the bar's side, running outward.</li>
+        </ul>
+      </li>
+      <li><b>Aura rows</b> are the aura groups. All groups on one point share <b>one</b> Blizzard aura container, so they can never overlap each other.</li>
+    </ul>
+    <p><b>Auras First</b> (your baseline): on one anchor, the aura row sits closest to the bar and indicators come after it, anchored to the row's live end, so they slide in when the row is empty. <b>Indicators First</b> stays a choice. Target arrows are always last, anchored to the last part on their side.</p>
+
+    <h3>4. Grow away, chain by edges</h3>
+    <div class="callout ok"><b>The rule that keeps secret auras from breaking the layout:</b> an aura container sizes itself to the auras it shows. The game hides that size from ModeUI, but other frames can still be anchored to the container's edges, and the game resolves where they land. So a part placed past an aura row along its growth (target arrows set to Outside Everything) is anchored to the row's far edge. It moves as the row fills and empties, and ModeUI never measures anything. Rows grow away from the bar, so they never push a badge.</div>
+    <p>Across its growth, a row's size is known: one line is one icon tall. So the <b>soft-target icon</b> clears the tallest Top stack using known heights, and stays still while auras come and go. (A row that wraps to more lines is counted at its full number of lines.)</p>
+    <p>Frames anchored to a container must be created from Blizzard's <code>DisableUntrustedLayoutScriptsTemplate</code>. Otherwise they inherit a restriction that blocks their own layout scripts (see Research). An empty container is 1×1, so a part chained past it keeps a 1px gap plus spacing.</p>
+
+    <h3>5. Groups on one point: continue or stack</h3>
+    <p>Aura groups on the same point either <b>Continue the Row</b>, flowing one after another in one line (today's behavior), or each take a <b>New Row</b> (the container's <code>forceNewLine</code>, stacked across). Either way they are one container, ordered by <code>layoutIndex</code>, and a group with no auras adds no space. <b>Per Row</b> sets the container's maximum line size in pixels: Per Row × (icon width + spacing).</p>
+
+    <h3>6. Centered rows are really centered</h3>
+    <p>Today a Center row in the world puts its first icon in the middle and grows right, while the settings preview centers the whole row, so the two disagree. In the proposed model the container is anchored by its own center point and resizes itself, so it stays centered on whatever it shows. Lines that wrap stay left-aligned inside the centered block.</p>
+
+    <h3>7. Collisions are shown, not silently allowed</h3>
+    <p>Parts at different points (Top Left and Top, for example) don't push each other. The Designer outlines any overlap in red, counting each aura row at its full capacity, because that's how far it can reach in combat. The settings page preview would do the same.</p>
+
+    <h3>What changes against v11</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Situation</th><th>Current (v11)</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td>Raid marker, an indicator and an aura group all on Top</td><td>All three start at the same height and overlap. <code>PlaceIcon</code>, the indicator row and the aura row each start at <code>plate.above</code>. Load the stress-test preset to see it.</td><td>Badges in one row, the aura row above them</td></tr>
+        <tr><td>Raid marker and an indicator both on Top Left</td><td>Both start at the bar's left edge and cover each other. Only indicators line up with each other.</td><td>One badge row in your order</td></tr>
+        <tr><td>Aura group with Grow: Center, in the world</td><td>First icon centered, the rest grow right. The preview centers the whole row, so the preview and the world differ.</td><td>Truly centered (container anchored by its center)</td></tr>
+        <tr><td>Target arrows beside a Left aura row, in combat</td><td>Clear the row's full capacity even with one aura showing, so they sit far from the plate</td><td>Beside the bar by default, or anchored to the row's live edge</td></tr>
+        <tr><td>Combo points on Left or Right</td><td>Sit past the side's full aura capacity</td><td>A badge, before the aura row</td></tr>
+        <tr><td>Text on Left</td><td>Inside the bar</td><td>Inside or Outside, by Place</td></tr>
+        <tr><td>Icon on Left</td><td>Beside the bar only</td><td>Beside the bar, or inside it by Place</td></tr>
+        <tr><td>Settings shape</td><td>Flat keys: <code>questAnchor</code>, <code>questX</code>, <code>raidSize</code>, <code>comboAnchor</code>…</td><td>One table per part: <code>badges.quest = { show, anchor, place, order, size, x, y }</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+    <!-- ============================== FINDINGS ============================== -->
+  <section class="tab" id="tab-findings" hidden>
+    <h2>Your baseline and what I found</h2>
+    <p class="lede">November 23, 2026, second round. The Designer opens on your baseline (preset "Your baseline (156 × 16)"). The four investigations you asked for are below. Nothing in the addon has changed yet.</p>
+
+    <h3>Your baseline, part by part</h3>
+    <div class="tw"><table>
+      <thead><tr><th>You asked for</th><th>How it's built</th><th>Needs the game to confirm</th></tr></thead>
+      <tbody>
+        <tr><td>156 × 16 plate</td><td>Width 156, Health Height 16. Blizzard's own Forever health bar is 166 wide at Medium, so its click area still covers the plate.</td><td>—</td></tr>
+        <tr><td>Name top left, sitting on the border, 12–14px</td><td>A new Place, <b>On Border</b>: the name shares a line with aura rows set to <b>Sit on Border</b>. 13px, Offset Y −3 (your nudge). Switch between 12, 13 and 14 in the Designer.</td><td>—</td></tr>
+        <tr><td>Name never runs into the debuffs, and flexes with them (your answer: no character cap)</td><td>The name's right edge is anchored to the debuff row's live left edge, so the game shortens it with "…" only as debuffs fill in and gives the room back as they fall off. No character cap. (A secret NPC name can't be cut in Lua anyway; the FontString shortens itself to its width.)</td><td>That a FontString anchored to an aura container's edge shortens correctly</td></tr>
+        <tr><td>Your debuffs top right on the border, growing left, up to 4</td><td>One aura container anchored by its bottom right to the bar's top right, growing left, Sit on Border. 22 × 18 icons.</td><td>—</td></tr>
+        <tr><td>Crowd control above that line, up to 2, 1.5× size, colored border</td><td>Top, centered, 33 × 29 (1.5 × the debuffs' 22), the crowd control rim color and glow</td><td>—</td></tr>
+        <tr><td>Quest icon outside left, about the plate's height</td><td>Left, 18px (the health box's height)</td><td>—</td></tr>
+        <tr><td>Buffs outside right, growing right, up to 3, as tall as the bar</td><td>Right, 20 × 16: with the edge outside the icon, the band is exactly as tall as the health box (18)</td><td>—</td></tr>
+        <tr><td>Target arrow outside the auras with 1 buff and with 3</td><td>The arrow is anchored to the last buff <i>showing</i>, so it sits just past 1, 2 or 3 buffs and comes back in when they fall off. In the Designer the dashed capacity box shows where buffs <i>could</i> go; the arrow is inside that box only while fewer than 3 show. Set Buffs showing to 3 in Sample auras to see it move out.</td><td>Same as the debuffs edge</td></tr>
+        <tr><td>Raid marker in the middle; level then elite inside left; health % inside right</td><td>Inside Center; Inside Left in that order; Inside Right</td><td>—</td></tr>
+        <tr><td>Auras and indicators close up when one is missing; auras first</td><td><b>Auras First</b>: an aura row sits nearest the bar and an indicator on the same anchor is anchored to the row's live end. An empty row shrinks to 1px, so the indicator slides in.</td><td>Anchoring to a container's edge, with <code>DisableUntrustedLayoutScriptsTemplate</code></td></tr>
+        <tr><td>Arrows outermost, moving in and out with what's showing</td><td>Each arrow is anchored to the last part on its side: the buff row's live end on the right, the quest icon (or the bar) on the left</td><td>Same as above</td></tr>
+        <tr><td>Cast bar 12px, icon on</td><td>Cast Height 12, Spell Icon Left</td><td>—</td></tr>
+        <tr><td>Light blue when you can interrupt, orange-red when you can't, on every Mode cast bar (your answer)</td><td>The cast tokens change in <code>Style.Tone</code> (design doc first): casting becomes light blue, "shielded" becomes orange-red. That reaches Nameplates, the Unit Frames cast bars and ModeCDM's Cast Bar through <code>Kit.PaintCastBar</code>. ModeCDM's own cast bar is filled in your class color by default; its Not Interruptible color takes the new orange-red.</td><td>—</td></tr>
+        <tr><td>Spell name left, timer right, cast target left of the timer</td><td>A chain inside the bar: timer at the right, the target's right edge anchored to the timer's left, and the spell name's right edge anchored to the target's left, shortening with "…". The target (<code>UnitSpellTargetName</code>) can be secret, so its width is never measured.</td><td>That a FontString anchored to a FontString holding secret text places correctly</td></tr>
+        <tr><td>Combo points under the cast bar, centered, moving up when nothing is cast</td><td>Bottom, centered, <b>Move Up While Not Casting</b>: re-anchored on cast start and stop (whether a cast is running is known from the events)</td><td>—</td></tr>
+        <tr><td>No combat icon; keep the loot icon</td><td>The soft-target icon shows only for loot and interact targets (bag, gear), never the sword. See the Blizzard icons finding below.</td><td>—</td></tr>
+        <tr><td>Friendly plates: names only, in class color (both names: friendly only)</td><td>Friendly Style Name Only, for friendly players (class color) and friendly NPCs (friendly green). The Friendly 1:1 strip shows both. Enemy plates keep their full plate.</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Icon sizes: readable, not massive</h3>
+    <p>Sizes are the picture; the edge adds 2px all round (1px band, 1px shadow), as on the Cooldown Manager. Numbers come from the icon's height, like the CDM's small rows (10 on 28px).</p>
+    <div class="tw"><table>
+      <thead><tr><th>Part</th><th class="num">Picture</th><th class="num">With edge</th><th class="num">Timer / stacks</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Your debuffs (border line)</td><td class="num">22 × 18</td><td class="num">26 × 22</td><td class="num">10 / 8</td><td>The smallest size that keeps a two-digit timer clear; 4 fill 101px, leaving the name 50px or more</td></tr>
+        <tr><td>Buffs (right)</td><td class="num">20 × 16</td><td class="num">24 × 20</td><td class="num">9 / 7</td><td>The band is exactly the health box's 18px, so the row reads as part of the plate</td></tr>
+        <tr><td>Crowd control (top)</td><td class="num">33 × 29</td><td class="num">37 × 33</td><td class="num">16 / 13</td><td>1.5× the debuffs; 33 also keeps a centered row on whole pixels with spacing −1</td></tr>
+        <tr><td>Quest (left, outside)</td><td class="num">18</td><td class="num">—</td><td class="num">—</td><td>The health box's height</td></tr>
+        <tr><td>Raid marker, elite (inside)</td><td class="num">14</td><td class="num">—</td><td class="num">—</td><td>1px clear of the 16px bar's edges</td></tr>
+        <tr><td>Level, health %</td><td class="num">10, 11</td><td class="num">—</td><td class="num">—</td><td>Inside the 16px bar with room for the outline</td></tr>
+        <tr><td>Target arrows, soft-target (loot)</td><td class="num">10, 18</td><td class="num">—</td><td class="num">—</td><td>Arrows quiet beside the rows; the loot bag as tall as the box</td></tr>
+      </tbody>
+    </table></div>
+    <p>A Mode-wide rule this follows: icons are wider than tall, 4px shorter up to 35px wide and 6px from 36 (DESIGN_LANGUAGE.md, "Sizes"). Nameplate auras today are 6px shorter at every size; the Designer's Icon Shape <b>Mode</b> uses the shared rule.</p>
+
+    <h3>Pixel-perfect auras: the Cooldown Manager's model</h3>
+    <ul>
+      <li><b>Edge outside the icon.</b> ModeCDM puts the <code>frameThin</code> edge outside each icon: a slot is the icon plus the edge's reach on every side, and Spacing counts between the shadows (<code>ModeCDM/.../Layout.lua</code> <code>M.Geometry</code>, <code>M.IconReach</code>). Nameplate auras today draw the rim <i>inside</i> the icon's size (<code>Kit.LayoutAuraIcon</code>), so a 22-wide icon shows a 20-wide picture and rows don't line up with CDM rows. The pass adopts the CDM model for nameplate auras through a shared helper, so both use one geometry. Party Frames and Buffs &amp; Debuffs keep theirs.</li>
+      <li><b>Spacing −1.</b> Neighbours share one shadow pixel (the Mode-Default rule), so the bands sit 1px apart.</li>
+      <li><b>Whole pixels.</b> Every size and offset is snapped to physical pixels (<code>Kit.PixelSize</code>). Rows growing left or right are anchored by a corner, so they always land on whole pixels.</li>
+      <li><b>Centered rows</b> are anchored by their own center, and their length is secret. A row of n icons is n × (slot + spacing) − spacing wide. When slot + spacing is even, that length is always odd (or always even), so one fixed half-pixel nudge puts every count on whole pixels. When it's odd, some counts land between pixels. The Designer checks this and suggests a width; 33 for crowd control passes.</li>
+      <li><b>The container's own spacing</b> takes the slot size (<code>elementWidth</code>/<code>elementHeight</code> = slot) and the spacing, so the game's layout and the CDM geometry agree.</li>
+    </ul>
+
+    <h3>Finding 1: why the preview jumps and drifts off center</h3>
+    <p>In <code>Modules/Nameplates/Preview.lua</code> there are three causes:</p>
+    <ol>
+      <li><b>A third copy of the layout.</b> <code>PreviewBounds</code> (lines 152-193) re-estimates how far the plate reaches instead of asking the layout. Its estimates are rough:
+        <ul>
+          <li>it adds the arrows on both sides whether or not they show;</li>
+          <li>side aura rows count as icon count × width plus the absolute offset;</li>
+          <li>Top and Bottom take only the tallest item.</li>
+        </ul>
+        When the estimate is wrong, the plate is placed off center.</li>
+      <li><b>Measured one step late.</b> <code>RenderPreview</code> (lines 211-216) lays the plate out, measures it, and only then paints the sample. Painting sets the indicators, which changes the room beside the bar and moves the aura rows. So each anchor change is centered with the previous change's numbers.</li>
+      <li><b>It centers the whole footprint on purpose.</b> Moving buffs from the right to the left slides the health bar sideways. <code>GetPreviewSize</code> also changes the preview's height, so the page below jumps.</li>
+    </ol>
+    <div class="callout ok"><b>Fix:</b> the stack engine returns every part's exact box. The preview measures after painting, from that one source. The health bar stays pinned in the middle, the preview zooms out if the footprint doesn't fit, and its height stays fixed for each kind.</div>
+
+    <h3>Previewer options</h3>
+    <div class="cols">
+      <div class="dec"><h3>A. Fix the current preview</h3><p>The fix above: exact bounds, bar pinned, fixed height, zoom to fit. Small; it stays at 1:1 and keeps today's click-to-jump.</p></div>
+      <div class="dec"><h3>B. New magnified previewer (recommended)</h3><p>What this Designer does, in game:</p>
+        <ul>
+          <li>a 2× or 3× pixel-snapped stage with the bar pinned in the middle;</li>
+          <li><b>Show Aura Capacity</b> slots and a red outline on overlaps;</li>
+          <li>state chips (Casting, Can't Interrupt, Interrupted, Target, Focus) and sample aura counts;</li>
+          <li>a 1:1 strip of four plates underneath;</li>
+          <li>click a part to edit it, as today.</li>
+        </ul>
+        <p>Medium.</p></div>
+      <div class="dec"><h3>C. B plus drag to place</h3><p>Drag a part on the stage; the nearest anchor is chosen for you. Platynator picks it by quadrant, with a 2px snap to the axes. Arrow keys nudge 1px, and there's an optional grid snap and number entry, as Hardcore Nameplate Designer does. Largest; B first, then C.</p></div>
+      <div class="dec"><h3>D. Test plates in the world</h3><p>A toggle that keeps the settings changes live on real plates, the way Plater and ElvUI users tune theirs, with sample casts on your target's plate. Real auras come only from Blizzard's secure containers, so fake auras can't be added in the world. Good next to B, not instead of it.</p></div>
+    </div>
+    <p class="lede" style="font-size:12.5px">Seen in: <a href="https://www.curseforge.com/wow/addons/platynator">Platynator</a> (drag on a live preview, zoom and expand the preview, widgets for the click and stacking regions); <a href="https://www.curseforge.com/wow/addons/platesmith">PlateSmith</a> (previews rules on a sample low-health, elite or casting mob); <a href="https://www.curseforge.com/wow/addons/hardcorenameplatedesigner">Hardcore Nameplate Designer</a> (grid snapping, number entry).</p>
+
+    <h3>Finding 2: parts inside the bar drawn behind it</h3>
+    <p>Frame levels today, in <code>Plate.lua</code> and <code>Layout.lua</code>. For each box at level B:</p>
+    <ul>
+      <li>the bar is B+1;</li>
+      <li>the Comet spark's clip frame is B+2;</li>
+      <li>the rim holder is B+3.</li>
+    </ul>
+    <p>The text layer, which holds inside text, the raid marker, the level and the elite icon, is set to the health box + 3: <b>the same level as the health rim</b>. The cast box is a sibling at the same B, so its rim also sits at the text layer's level, which is where the cast texts live. Two frames at the same strata and level have no guaranteed order, so which one draws on top can change. In the world it is worse: the text layer's level is set once per layout, while the game reorders plates as they overlap.</p>
+    <div class="callout ok"><b>Fix:</b>
+      <ul>
+        <li><b>Order by parent, not by number.</b> The inside layer becomes a child of the health box's rim holder, and the cast texts a child of the cast rim holder. A child frame always draws above its parent.</li>
+        <li>Outside parts and auras go on their own layers with clear gaps.</li>
+        <li>Levels are set again whenever a plate gets a unit.</li>
+        <li>A test checks the order.</li>
+      </ul>
+      If you see it again before then, <code>/fstack</code> over the hidden part would confirm it.</div>
+
+    <h3>Finding 3: the "combat" and "loot" icons</h3>
+    <ul>
+      <li><b>The sword, bag and gear over plates are soft-target icons</b>, from the game's Accessibility interact-icon setting. Blizzard draws them in its own plate's <code>SoftTargetFrame</code>, which fades with Blizzard's art on a ModeUI plate. ModeUI then draws <b>the same cursor art itself</b> (<code>SoftTarget.lua</code>, <code>SetUnitCursorTexture</code>). So the sword you see on a ModeUI plate is ModeUI's own icon.</li>
+      <li>Plates ModeUI leaves to Blizzard (widget-only plates, your personal resource display, friendly plates inside instances) still get Blizzard's icon. Objects such as chests, herbs and mailboxes get icons the game draws in the world itself, with no frame; the CVar <code>SoftTargetIconGameObject</code> controls those.</li>
+      <li><b>Unit frames:</b> Blizzard's Player combat icon (<code>AttackIcon</code>, <code>UI-HUD-UnitFrame-Player-CombatIcon</code>), rest icon and corner icon are all inside <code>PlayerFrameContent</code>, which Unit Frames already fades. In Forever's unit frame code, nothing that would show a combat or loot icon ignores its parent's fade. The only nameplate part that does is <code>selectionHighlight</code>, a faint tint on the target's bar, not an icon.</li>
+    </ul>
+    <div class="callout"><b>Plan:</b>
+      <ol>
+        <li>ModeUI's soft-target icon gets a choice, Loot and Interact (default), All or None, so the sword never shows.</li>
+        <li>An opt-in <b>Hide Blizzard's Combat Icon</b> sets <code>SoftTargetIconEnemy</code> (and <code>SoftTargetIconFriend</code>) to 0, remembers the old values and puts them back when turned off. It changes a game setting, so it is off until you turn it on. Loot icons stay.</li>
+        <li>If an icon still shows on a unit frame, hover it with <code>/fstack</code> and send a screenshot; its frame name tells me what to add to the fade list.</li>
+      </ol>
+    </div>
+
+    <h3>Finding 4: what can't be exact</h3>
+    <ul>
+      <li><b>The name's length</b> is a width set by the debuff row's edge, not a character count, because a secret name can't be cut in Lua.</li>
+      <li><b>A centered row that wraps</b> keeps its lines left-aligned inside the centered block (the container's own behavior).</li>
+      <li><b>Debuffs on the border line</b> sit with their bottom edge on the bar's top. Your −3 nudge works for the name; a matching nudge for the row is its Offset Y.</li>
+    </ul>
+  </section>
+
+
+<!-- ============================== RESEARCH ============================== -->
+  <section class="tab" id="tab-research" hidden>
+    <h2>Research</h2>
+    <p class="lede">Sources: Blizzard's interface code on the <code>forever</code> branch of Gethe/wow-ui-source (commit 734f065, "1.60.1 (71037)", November 20, 2026), compared with <code>live</code> (12.1.5); the source of Platynator (v550, interface 16001), Plater, ElvUI with oUF, ThreatPlates, BetterBlizzPlates (which has a <code>forever</code> folder) and Kui; and warcraft.wiki.gg. Nothing here has been tested in game.</p>
+
+    <div class="cols">
+      <div class="callout ok"><b>Aura containers size themselves.</b> After each layout the container calls <code>SetSize(secretwrap(w, h))</code> (<code>Blizzard_CustomAuraContainer.lua:799-801</code>). ModeUI can't read the size, but it can anchor frames to the container's edges. ThreatPlates and BetterBlizzPlates already chain buffs to the debuff container this way on 12.x.</div>
+      <div class="callout"><b>Anchored frames need a template.</b> Adding a group gives the container the forbidden aspect <code>UntrustedLayoutScriptExecution</code>, which spreads to anything anchored to it and blocks <code>OnSizeChanged</code>. Blizzard's own comment says such frames should be created with <code>DisableUntrustedLayoutScriptsTemplate</code> (<code>ForbiddenAspectTemplates.xml:18-22</code>).</div>
+      <div class="callout bug"><b>ModeUI's Center growth is wrong in the world.</b> <code>AuraContainers.lua</code> anchors a corner, centers the first icon and grows right. Anchoring the container by a single CENTER point centers the whole row; Platynator and oUF both do this.</div>
+    </div>
+
+    <h3>Blizzard's Forever nameplates</h3>
+    <p>Camelot counts as part of mainline, so mainline-only files load on Forever unless excluded. Forever overrides three things: <code>Camelot/Blizzard_NamePlateConstants.lua</code>, <code>…FrameOptionsOverrides.lua</code> and <code>…LevelFrame.lua/.xml</code>.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Part</th><th>Forever (Camelot)</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Plate width</td><td class="num">190 (live 230), 12px inset each side, so the health bar is 166 wide at Medium</td><td><code>Camelot/Blizzard_NamePlateConstants.lua:47</code></td></tr>
+        <tr><td>Size setting</td><td><code>nameplateSize</code>: Small 0.75–0.8×, Medium 1×, Large 1.25×, Extra Large 1.4×, Huge 1.6×</td><td>constants:61-66; Settings Nameplates.lua:561-570</td></tr>
+        <tr><td>Style setting</td><td><code>nameplateStyle</code>: Thin ("Default"), Modern ("Large"), Block, CastFocus</td><td><code>Camelot/NameplatesOverrides.lua:7-14</code></td></tr>
+        <tr><td>Health bar</td><td class="num">13 (Thin, CastFocus) or 20 (Modern, Block)</td><td>constants:35-50</td></tr>
+        <tr><td>Cast bar</td><td class="num">6, or 16 for CastFocus and Block; 2px below health; icon 10; shield 10×12 in the icon's place</td><td><code>Blizzard_NamePlateCastingBar.lua:70-118</code></td></tr>
+        <tr><td>Name</td><td>Centered and outlined above the bar (font 14); health text inside the bar</td><td><code>Camelot/…FrameOptionsOverrides.lua:1-3</code></td></tr>
+        <tr><td>Raid mark</td><td class="num">22×22, right edge on the bar's left edge</td><td><code>Blizzard_NamePlateUnitFrame.lua:858</code></td></tr>
+        <tr><td>Elite and rare</td><td class="num">20×20, left of the raid mark; <b>hidden while a raid mark is set</b></td><td><code>Blizzard_NamePlateClassificationFrame.lua:95-98</code></td></tr>
+        <tr><td>Level (Forever only)</td><td class="num">28px box 5px right of the bar, for almost every unit; white border for target, orange for focus</td><td><code>Camelot/Blizzard_NamePlateLevelFrame.lua</code></td></tr>
+        <tr><td>Debuffs</td><td class="num">25px, up to 12, 8 per row, left-aligned on the bar, above the name; extra rows go up</td><td><code>Blizzard_NamePlates.xml:217-257</code></td></tr>
+        <tr><td>Buffs and crowd control</td><td class="num">Buffs: 2, growing left from the elite icon. Crowd control: 2, right of the level box</td><td>UnitFrame.lua:892-908</td></tr>
+        <tr><td>Soft-target icon</td><td class="num">24×24, bottom 8px below the plate's top</td><td>xml:261-271</td></tr>
+        <tr><td>Quest icon</td><td>None. ModeUI's is its own</td><td>—</td></tr>
+        <tr><td>Click area</td><td>Health bar plus 10px left and right and half the bar height above and below (plus the name when it sits above)</td><td>UnitFrame.lua:589-612</td></tr>
+        <tr><td>Blizzard's own auras</td><td><code>GridLayoutFrame</code>, not aura containers</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Click area and plate size.</b> The game sizes the plate with <code>C_NamePlate.SetNamePlateSize</code> (restricted). <code>C_NamePlateManager.SetNamePlateHitTestInsets</code> is restricted and refuses secrets. The plate's own <code>SetAllHitTestPoints</code> works for addon code only on the tick a unit is assigned, while in combat. <code>SetStackingBoundsFrame</code> is documented. Platynator uses these behind existence checks to fit clicks and stacking to its own art. ModeUI leaves them to Blizzard, so a ModeUI plate narrower than 166 sits inside a wider click area. Keeping that is the safe default; fitting it is a later, separate pass. <code>C_NamePlate.GetNamePlateSize()</code> reads the size safely.</p>
+    <p><b>Legacy CVars.</b> <code>nameplateWidth</code>, <code>nameplateOverlapH/V</code>, <code>nameplateLargerScale</code>, <code>nameplateHorizontalScale</code> and <code>nameplateMotion</code> appear nowhere in Forever's interface code. Each needs a <code>C_CVar.GetCVar</code> check in game before any setting relies on it.</p>
+
+    <h3>The aura container (exists on Forever, identical to live)</h3>
+    <ul>
+      <li><b>Layout, for the whole container:</b> <code>SetFlowLayoutAxis</code>, <code>SetFlowLayoutAnchorPoint</code>, <code>SetFlowLayoutGrowthDirection(h, v)</code>, <code>SetFlowLayoutPadding</code>, <code>SetFlowLayoutMaximumLineSize(px)</code>. Lines wrap at a size in pixels; there is no count per row.</li>
+      <li><b>Per group</b> (<code>SetAuraGroupLayout</code>): <code>elementSpacing</code>, <code>lineSpacing</code>, <code>groupSpacing</code>, <code>groupLineSpacing</code>, <code>forceNewLine</code>, <code>elementWidth</code>/<code>elementHeight</code> (they reserve space only; they don't resize the button), <code>layoutIndex</code>.</li>
+      <li><b>Order:</b> groups are sorted by <code>layoutIndex</code>, then by the order they were added, and laid out in one flow. Empty groups add no spacing and force no new line, decided in secure code (<code>AnchorUtil.lua:615, 693</code>).</li>
+      <li><b>Sorting:</b> Default, BigDefensive, UnitFrameDebuff, ImportantOnly, Expiration, Name and more.</li>
+      <li><b>Candidate filters:</b> <code>isStealable</code>, <code>nameplateShowPersonal</code>, <code>nameplateShowAll</code>, <code>isBossAura</code>, <code>includeSpellIDs</code>, <code>maxDuration</code> and more. Blizzard's enemy debuffs require yours plus <code>nameplateShowPersonal</code>.</li>
+      <li><b>Buttons</b> get <code>DenyTaintedAccessWhenAurasAreSecret</code> after login. ModeUI already styles them in <code>initializeFrame</code>, which is right. The button methods include <code>SetSpellName</code>, <code>SetCasterName</code> and <code>SetDurationBar</code>.</li>
+      <li><b>Creating containers in combat:</b> ElvUI, ThreatPlates and Plater each keep a pool of about 40, suggesting creation is blocked or unsafe in combat. ModeUI creates a plate's containers when the plate first gets a unit, which can happen in combat. This needs a check in game.</li>
+    </ul>
+
+    <h3>Secret values that matter here</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Value</th><th>Secret when</th><th>What ModeUI may do with it</th></tr></thead>
+      <tbody>
+        <tr><td><code>UnitHealth</code>, <code>GetRaidTargetIndex</code>, <code>UnitSpellTargetName/Class</code>, <code>UnitCastingDuration</code></td><td>Always</td><td>Pass to <code>SetValue</code>, <code>SetSpriteSheetCell</code>, <code>SetText</code></td></tr>
+        <tr><td><code>UnitName</code></td><td>Under unit-identity rules (not player-controlled or in your group)</td><td><code>SetText</code>. Its width may not be measurable: <code>GetStringWidth</code> is flagged only <code>SecretWhenAnchoringSecret</code>. Test it.</td></tr>
+        <tr><td><code>UnitCastingInfo</code>/<code>UnitChannelInfo</code></td><td>Unless you or your pet; <code>castBarID</code> is never secret</td><td>As today</td></tr>
+        <tr><td>Aura data</td><td>Combat, encounters, Mythic+, PvP</td><td>Only through containers</td></tr>
+        <tr><td><code>UnitClassification</code>, <code>UnitLevel</code>, <code>UnitReaction</code></td><td>No secret flags</td><td>Badges can be sized from them</td></tr>
+        <tr><td>Container and anything anchored to it</td><td>Always (<code>GetWidth</code>, <code>GetRect</code>)</td><td>Anchor to it; never read it</td></tr>
+      </tbody>
+    </table></div>
+    <p>From tainted code, <code>SetShown</code>, <code>SetPoint</code>, <code>SetSize</code> and <code>SetScale</code> refuse secrets, so only Blizzard's secure layout can place anything by a secret. <code>SetAlphaFromBoolean</code> and <code>SetVertexColorFromBoolean</code> accept them. Plater and Platynator show the not-interruptible shield with <code>SetAlphaFromBoolean(notInterruptible)</code>. ModeUI avoided it because its alpha range is undocumented; their use is precedent, but it still needs a check in game.</p>
+
+    <h3>Cast bar facts</h3>
+    <ul>
+      <li><code>UNIT_SPELLCAST_INTERRUPTED</code> and <code>CHANNEL_STOP</code> carry an <code>interruptedBy</code> GUID. Blizzard writes "Interrupted by [name]" through <code>UnitNameFromGUID</code> (<code>CastingBarFrame.lua:618-635</code>), and Plater and Platynator show the interrupter's name class-colored.</li>
+      <li><code>UnitSpellTargetName</code>/<code>Class</code> give the spell's own target. ModeUI's Cast Target uses <code>UnitName(unit .. "target")</code>, the caster's current target, which differs for spells cast at someone else.</li>
+      <li>Blizzard highlights important casts (<code>C_Spell.IsSpellImportant</code>; <code>ImportantCastIndicator</code>). Whether its answer is secret is not documented.</li>
+      <li>Every addon draws a shield on the cast bar's left edge for casts you can't interrupt; Blizzard puts it in the icon's place.</li>
+    </ul>
+
+    <h3>Native collapse</h3>
+    <p>Blizzard chains raid mark → elite icon → buffs with the XML attribute <code>collapsesLayout="true"</code>: when one is hidden, the next takes its place inside the engine. The Lua setter is protected. Whether an addon's own XML can use the attribute, and whether it collapses on a secret Shown state, is unverified. If it works, badge rows could close gaps without Lua.</p>
+
+    <h3>How the addons place things</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Addon</th><th>Anchor model</th><th>Plate (health × height, cast)</th><th>Auras</th><th>When parts share a point</th></tr></thead>
+      <tbody>
+        <tr><td>Platynator (12.x native)</td><td>Each widget's point at plate center + x, y; the designer picks the point from the quadrant you drag into (2px axis snap)</td><td class="num">125 × 15.6</td><td>3 containers (debuffs, buffs, crowd control), each a stack of filter groups; icons 20 wide, cropped; CENTER-anchored for centered growth</td><td>Zones: each group grows away from the plate; markers placed by hand</td></tr>
+        <tr><td>Plater</td><td><code>{side = 1..17, x, y}</code>: 1–8 outside, 9 center, 10–17 inside</td><td class="num">112×12 out of combat, 120×16 in; cast 10/14</td><td>Two frames, 26×16, padding 1, grow Left/Center/Right, per row from width; vertical growth always away from the bar</td><td>Indicators in one ordered chain, 1px apart; raid mark separate; frames can overlap</td></tr>
+        <tr><td>ElvUI (oUF)</td><td><code>anchorPoint</code>, <code>attachTo</code> (frame, health, buffs, debuffs…), x, y; side anchors force the growth axis; loops reset with a warning</td><td class="num">150 × 10, cast 8</td><td>oUF auras are now a thin wrapper on the container; 27px, 5 per row, spacing 1</td><td>Attach one group to another; "Smart Aura Position" collapses an empty one (a pre-12 idea)</td></tr>
+        <tr><td>ThreatPlates</td><td><code>{Anchor, InsideAnchor, x, y}</code>, separately for bar and name-only views</td><td class="num">120 × 10, cast 10 at −15</td><td>Debuffs 5×3 grid; buffs <code>AnchorTo = "Debuffs"</code>; crowd control right</td><td>Chained containers (works on 12.x because they size themselves); cycle check</td></tr>
+        <tr><td>BetterBlizzPlates</td><td>Blizzard's plate, re-anchored</td><td>Blizzard's</td><td>Own containers; buffs anchored to the debuff container's top</td><td>Chained containers on each side</td></tr>
+        <tr><td>Kui</td><td>Hard-coded</td><td class="num">100 × 14 (target 128 × 16), cast 8, icon spans both bars</td><td>Off in its Midnight build</td><td>Fixed slots</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Where the defaults converge</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Value</th><th>Converged</th><th>Range seen</th><th>ModeUI v11</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td>Health width</td><td class="num">~120</td><td class="num">100–150 (Blizzard Forever 166)</td><td class="num">140 / 120</td><td class="num">136 / 112</td></tr>
+        <tr><td>Health height</td><td class="num">10–12</td><td class="num">10–16</td><td class="num">12 / 8</td><td class="num">12 / 8</td></tr>
+        <tr><td>Cast height</td><td class="num">8–10</td><td class="num">6–14</td><td class="num">12 / 8</td><td class="num">10 / 8</td></tr>
+        <tr><td>Cast gap</td><td class="num">0–2</td><td class="num">Blizzard 2</td><td class="num">4 / 2</td><td class="num">1 (shared shadow pixel)</td></tr>
+        <tr><td>Aura icon</td><td class="num">20–27 wide, cropped</td><td class="num">Blizzard 25 square</td><td class="num">24/20/18, cropped 6</td><td class="num">26 (crowd control) / 20 / 20, cropped 6</td></tr>
+        <tr><td>Aura spacing</td><td class="num">1–2</td><td class="num"></td><td class="num">2 (layout: 1)</td><td class="num">1</td></tr>
+        <tr><td>Raid mark</td><td class="num">20–26</td><td class="num">Blizzard 22</td><td class="num">16</td><td class="num">14</td></tr>
+        <tr><td>Quest / elite icon</td><td class="num">18–20</td><td class="num">Plater 10–12</td><td class="num">14</td><td class="num">12</td></tr>
+        <tr><td>Fonts: name, health, cast</td><td class="num">10–12, 9–11, 8–12</td><td class="num"></td><td class="num">10, 9, 9</td><td class="num">10, 9, 9</td></tr>
+      </tbody>
+    </table></div>
+    <p>ModeUI runs smaller than most addons on purpose: the Mode look is small, dark and precise, and the Mode-Default layout holds every icon to the 1px shared-shadow rule.</p>
+
+    <h3>Configurators worth learning from</h3>
+    <ul>
+      <li><b>Platynator:</b> drag on a big preview, the anchor point picked by quadrant, 1px arrow-key nudges, preview auras drawn at the configured limit so users see how far a row can reach.</li>
+      <li><b>Plater:</b> a 9-dot anchor picker that rebases the offsets, so a part doesn't jump when its anchor changes.</li>
+      <li><b>ElvUI and ThreatPlates:</b> an "attach to" choice with loop detection.</li>
+    </ul>
+    <p>The Designer here takes the compass, the nudge, the capacity preview and an ordered stack. Rebasing offsets when the anchor changes is a cheap addition for the settings page.</p>
+
+    <h3>Still uncertain (needs the game)</h3>
+    <ul>
+      <li>Frames anchored to a container's edges land correctly, with the template.</li>
+      <li>A CENTER-anchored container grows evenly both ways.</li>
+      <li>Whether an aura container can be created in combat.</li>
+      <li><code>GetStringWidth</code> after <code>SetText</code> with a secret name.</li>
+      <li><code>SetAlphaFromBoolean</code>'s alpha range, for the shield.</li>
+      <li>Whether <code>C_Spell.IsSpellImportant</code> is secret.</li>
+      <li>Which legacy nameplate CVars exist.</li>
+      <li><code>collapsesLayout</code> from addon XML.</li>
+    </ul>
+  </section>
+
+  <!-- ============================== INVENTORY ============================== -->
+  <section class="tab" id="tab-inventory" hidden>
+    <h2>Inventory</h2>
+    <p class="lede">ModeUI <code>main</code> at <code>800b827</code>. Nameplates is 20 files, 3,020 lines, at settings version 11. It is off by default, and Mode-Default turns it on.</p>
+
+    <h3>How placement works today</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Path</th><th>Where</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>PlaceText</code></td><td><code>Layout.lua:69-94</code></td><td>Name and health text: Top/Bottom outside, past the cast bar; Left/Center/Right inside the bar</td></tr>
+        <tr><td><code>PlaceIcon</code></td><td><code>Layout.lua:130-146</code></td><td>Raid marker and rows: Top/Bottom at <code>plate.above/below</code>, sides 3px out</td></tr>
+        <tr><td>Indicator rows</td><td><code>Indicator.lua:39-111</code></td><td>One row frame per anchor for quest, elite and level; sides start past the raid marker. A change in width calls <code>LayoutAuras</code>, which reconfigures containers.</td></tr>
+        <tr><td>Aura rows (preview)</td><td><code>Auras.lua:142-200</code></td><td>Centers worked out in Lua, groups on one anchor continuing in one row; true centering</td></tr>
+        <tr><td>Aura rows (world)</td><td><code>AuraContainers.lua:147-215</code></td><td>One container per anchor, corner-anchored at 1×1; Center means the first icon centered</td></tr>
+        <tr><td>Combo points</td><td><code>Combo.lua:57-68</code></td><td>Like an icon; on a side, past the aura extent</td></tr>
+        <tr><td>Soft-target icon</td><td><code>SoftTarget.lua:43-80</code></td><td>Above the tallest Top part (it assumes they all share one row)</td></tr>
+        <tr><td>Target arrows</td><td><code>Target.lua:32-46</code></td><td>Past the side room, the aura extent and the combo points</td></tr>
+      </tbody>
+    </table></div>
+    <p>Nine room values connect them: <code>plate.above</code>, <code>plate.below</code>, <code>AttachedRoom</code>, <code>CastTextRoom</code>, <code>SideRoom</code>, <code>IndicatorRoom</code>/<code>indicatorRoom</code>, <code>auraExtent</code>, <code>comboRoom</code> and <code>TopRoom</code>.</p>
+
+    <h3>Problems found</h3>
+    <ol>
+      <li class="bug"><b>Top and Bottom overlap.</b> The raid marker, an indicator row, an aura row and combo points anchored to any Top point all start at <code>gap + plate.above</code>. Only side anchors chain.</li>
+      <li><b>The preview and the world disagree on Center growth</b> (reader vs container).</li>
+      <li><b>Combat pushes arrows and side combo points far out.</b> They clear a side row's full capacity because the container can't be measured (<code>AuraContainers.lua:186-189</code>).</li>
+      <li><b>Containers may be created in combat.</b> <code>AttachAuraContainers</code> runs when a plate first gets a unit; other addons pool containers instead. Needs a check.</li>
+      <li><b>Cast Target is the caster's target</b>, not the spell's target.</li>
+      <li><b>Anchors mean different things for text and icons</b> (Left is inside for one and beside for the other).</li>
+      <li><b>Settings use flat keys per part</b> (<code>questAnchor</code>, <code>questX</code>…). Party Frames use one table per part, so the two modules differ.</li>
+      <li><b><code>Settings.lua</code> is at 378 of 400 lines</b>, so new controls need a split first.</li>
+    </ol>
+
+    <h3>Files the pass touches</h3>
+    <div class="tw"><table>
+      <thead><tr><th>File</th><th class="num">Lines</th><th>Change</th><th>What</th></tr></thead>
+      <tbody>
+        <tr><td><code>Modules/Nameplates/Init.lua</code></td><td class="num">204</td><td><span class="pill rewrite">rewrite</span></td><td>Version 12 defaults in part tables (<code>text</code>, <code>badges</code>, <code>cast</code>, groups gain <code>place</code>, <code>order</code>, <code>perRow</code>); new choices (Place, Arrows Sit, Groups on One Anchor, cast icon spanning both bars)</td></tr>
+        <tr><td><code>Modules/Nameplates/Migrations.lua</code></td><td class="num">219</td><td><span class="pill edit">edit</span> <span class="pill risk">size</span></td><td>Version 11 → 12 and validation of the new shape; may need its own <code>MigrationsV12.lua</code> to stay under 400</td></tr>
+        <tr><td><code>Modules/Nameplates/Layout.lua</code></td><td class="num">146</td><td><span class="pill rewrite">rewrite</span></td><td>The spine; asks the stack engine where each point's members go</td></tr>
+        <tr><td><code>Shared/Kit/Stacks.lua</code></td><td class="num">new</td><td><span class="pill new">new</span></td><td>Pure placement math (members in, offsets and edges out), testable in plain Lua and reusable by Party Frames. Its offsets match the Designer's.</td></tr>
+        <tr><td><code>Modules/Nameplates/Plate.lua</code></td><td class="num">102</td><td><span class="pill edit">edit</span></td><td>One badge row frame per point; followers created from <code>DisableUntrustedLayoutScriptsTemplate</code></td></tr>
+        <tr><td><code>Modules/Nameplates/Indicator.lua</code></td><td class="num">127</td><td><span class="pill edit">edit</span></td><td>Drops its own rows; quest, elite and level become badges (fill and size only)</td></tr>
+        <tr><td><code>Modules/Nameplates/Combo.lua</code></td><td class="num">141</td><td><span class="pill edit">edit</span></td><td>Becomes a badge; <code>PlaceCombo</code> and <code>comboRoom</code> go</td></tr>
+        <tr><td><code>Modules/Nameplates/Target.lua</code></td><td class="num">131</td><td><span class="pill edit">edit</span></td><td>Arrows: Beside the Bar (a badge) or Outside Everything (anchored to the container's edge)</td></tr>
+        <tr><td><code>Modules/Nameplates/SoftTarget.lua</code></td><td class="num">127</td><td><span class="pill edit">edit</span></td><td>Clears the tallest Top stack from the engine's known heights; <code>TopRoom</code> goes</td></tr>
+        <tr><td><code>Modules/Nameplates/Auras.lua</code></td><td class="num">200</td><td><span class="pill edit">edit</span></td><td>The preview reader places icons with the same engine (container-equivalent flow, max line size, forced new lines)</td></tr>
+        <tr><td><code>Modules/Nameplates/AuraContainers.lua</code></td><td class="num">231</td><td><span class="pill rewrite">rewrite</span></td><td>One container per point; <code>layoutIndex</code>, <code>forceNewLine</code>, <code>SetFlowLayoutMaximumLineSize</code>; single-point anchors (CENTER for centered rows); maybe a pool built out of combat</td></tr>
+        <tr><td><code>Modules/Nameplates/CastBar.lua</code></td><td class="num">241</td><td><span class="pill edit">edit</span></td><td>Gap, icon spanning both bars, shield, "Interrupted by" name, spell target</td></tr>
+        <tr><td><code>Modules/Nameplates/Preview.lua</code></td><td class="num">282</td><td><span class="pill edit">edit</span></td><td>Capacity view, overlap outline, new click targets</td></tr>
+        <tr><td><code>Modules/Nameplates/Settings.lua</code></td><td class="num">378</td><td><span class="pill rewrite">split</span> <span class="pill risk">size</span></td><td>Split placement into <code>SettingsParts.lua</code> (part picker, Anchor, Place, Order in Stack, offsets), like Party Frames' <code>SettingsElements.lua</code></td></tr>
+        <tr><td><code>Modules/Nameplates/SettingsActions.lua</code></td><td class="num">42</td><td><span class="pill edit">edit</span></td><td>Jump targets for the new parts; Copy To… and Reset… keep working on part tables</td></tr>
+        <tr><td><code>Modules/Nameplates/Layouts.lua</code></td><td class="num">16</td><td><span class="pill edit">edit</span></td><td>Mode-Default's nameplate part from the saved design; Healer keeps it</td></tr>
+        <tr><td><code>Modules/Nameplates/Theme.lua</code></td><td class="num">18</td><td><span class="pill keep">check</span></td><td>Keys it writes are unchanged</td></tr>
+        <tr><td><code>Modules/Nameplates/Update.lua</code>, <code>Focus.lua</code>, <code>Driver.lua</code></td><td class="num">96, 78, 220</td><td><span class="pill keep">small</span></td><td><code>SetOption</code> learns part paths (today it takes a key or a group)</td></tr>
+        <tr><td><code>Modules/Nameplates/Nameplates.xml</code>, <code>ModeUI.toc</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td>New files in load order</td></tr>
+        <tr><td><code>Shared/Kit/AuraContainer.lua</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td>Shared helpers: line size, single-point placement, follower frames (Party Frames benefit too)</td></tr>
+        <tr><td><code>Shared/Domain/Cast.lua</code>, <code>Shared/Kit/Cast.lua</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td><code>interruptedBy</code> from the event, <code>UnitSpellTargetName</code>; ModeCDM's cast bar shares <code>Kit.CastInterrupted</code>, so check it still loads</td></tr>
+        <tr><td><code>Shared/Style/Tone.lua</code>, <code>Shared/Style/Sheet.lua</code>, <code>docs/DESIGN_LANGUAGE.md</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td>The cast tokens (light blue, orange-red) for every Mode cast bar; the design doc's cast row first. Saved cast colors still equal to the old defaults follow them (a migration in each module).</td></tr>
+        <tr><td><code>Modules/UnitFrames/CastBar.lua</code>, <code>ModeCDM/Modules/CooldownManager/CastBar.lua</code>, <code>CastInit.lua</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td>The new cast colors and their migrations; ModeCDM keeps its class-color fill by default</td></tr>
+        <tr><td><code>Shared/Kit/AuraIcon.lua</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td>An edge-outside geometry option, shared with the Cooldown Manager's model; Party Frames, Unit Frames and Buffs &amp; Debuffs keep today's look</td></tr>
+        <tr><td><code>Modules/UnitFrames/Native.lua</code></td><td class="num">89</td><td><span class="pill keep">if needed</span></td><td>Add any Blizzard icon the <code>/fstack</code> check finds to the fade list</td></tr>
+        <tr><td><code>Shared/Settings/</code> widgets</td><td class="num"></td><td><span class="pill edit">edit</span></td><td>An "Order in Stack" control; <code>W.AnchorPicker</code> keeps its look</td></tr>
+        <tr><td><code>tests/nameplates.lua</code></td><td class="num">1219</td><td><span class="pill edit">edit</span></td><td>New keys; the version 11 → 12 migration; no overlap on Top; container calls</td></tr>
+        <tr><td><code>tests/stacks.lua</code></td><td class="num">new</td><td><span class="pill new">new</span></td><td>The engine's offsets, checked against the Designer's numbers</td></tr>
+        <tr><td><code>tests/layouts.lua</code>, <code>layouts_healer.lua</code>, <code>obsidian.lua</code>, <code>smoke.lua</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td>Nameplate keys they read</td></tr>
+        <tr><td><code>docs/NAMEPLATES.md</code>, <code>API_COMPATIBILITY.md</code>, <code>ARCHITECTURE.md</code>, <code>DESIGN_LANGUAGE.md</code>, <code>MODE_REDESIGN.md</code></td><td class="num"></td><td><span class="pill edit">edit</span></td><td>The rules, a dated API section, <code>Kit/Stacks</code>, the nameplate size row, status</td></tr>
+        <tr><td><code>probes/</code></td><td class="num"></td><td><span class="pill new">new</span></td><td>An in-game probe for the uncertain points before the container work</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ============================== PLAN ============================== -->
+  <section class="tab" id="tab-plan" hidden>
+    <h2>Plan of implementation</h2>
+    <p class="lede"><b>Built, November 23, 2026, on main (not pushed).</b> Four commits: every Mode cast bar's colors (cc1959d); no combat icons (9951775); the layering fix (5114f2c); the stacks, your baseline as the default and the magnified previewer, option B (27f289c). Every test passes on the mock client; nothing is confirmed in game yet. Settings stayed flat keys plus new ones, which keeps saved-variable keys. The in-game probe (step 1) is folded into the manual check in docs/NAMEPLATES.md. The steps below are the plan as written.</p>
+
+    <h3>Steps (revised for your baseline)</h3>
+    <ol class="steps">
+      <li><b>Probe in game.</b> A small probe addon in <code>probes/</code> checks each of these; each answer picks a branch in the later steps:
+        <ul>
+          <li>a frame from <code>DisableUntrustedLayoutScriptsTemplate</code>, and a FontString, anchored to an aura container's edge move with it;</li>
+          <li>a FontString anchored to a FontString with secret text;</li>
+          <li>a CENTER-anchored container stays centered;</li>
+          <li>creating a container in combat;</li>
+          <li><code>SetAlphaFromBoolean</code> for the shield;</li>
+          <li><code>C_Spell.IsSpellImportant</code>.</li>
+        </ul>
+      </li>
+      <li><b>Layering fix</b> (small, can ship first): order the inside and cast-text layers by parent, set levels again whenever a plate gets a unit, add a test.</li>
+      <li><b>Soft-target icon:</b> Loot and Interact only by default, plus the opt-in Hide Blizzard's Combat Icon. Small, can ship first.</li>
+      <li><b>Settings version 12, same look:</b> part tables and the migration; a v11 profile draws the same boxes.</li>
+      <li><b>The stack engine</b> (<code>Shared/Kit/Stacks.lua</code>) and <code>tests/stacks.lua</code>, with the Designer's cases as fixtures. It covers the border line, Auras First chains, the outermost arrows and the inside stacks.</li>
+      <li><b>Layout on the engine:</b> the On Border place and Sit on Border rows sharing the line; the name capped and anchored to the row's edge; indicators chained to rows; arrows chained to the last part on each side.</li>
+      <li><b>Containers per point:</b> <code>layoutIndex</code>, <code>forceNewLine</code>, maximum line size, single-point anchors (CENTER for centered rows, with the half-pixel nudge), follower frames created from the template. Aura icons take the Cooldown Manager's geometry (edge outside, Spacing −1) and the new sizes.</li>
+      <li><b>Cast bar:</b>
+        <ul>
+          <li>12px;</li>
+          <li>the blue and orange-red tokens on every Mode cast bar (design doc first; saved colors still at the old defaults follow);</li>
+          <li>the inside chain: spell name, then target, then timer;</li>
+          <li>the shield;</li>
+          <li>"Interrupted by [name]";</li>
+          <li>the spell's own target.</li>
+        </ul>
+      </li>
+      <li><b>Combo points:</b> centered under the cast bar, moving up while nothing is cast.</li>
+      <li><b>Previewer</b> (the option you pick) and the settings page split, with a Parts card: part picker, Anchor, Place, Order in Stack, offsets.</li>
+      <li><b>Defaults become your baseline</b> (a saved value changes only if it still equals the old default). Mode-Default's part writes the baseline with a new seed, so the old profile is kept as "(old)". Friendly plates default to Name Only.</li>
+      <li><b>Docs and the manual check.</b></li>
+    </ol>
+
+
+<h3>Version 11 → 12</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Version 11</th><th>Version 12</th></tr></thead>
+      <tbody>
+        <tr><td><code>showName</code>, <code>nameAnchor</code>, <code>nameX/Y</code>, <code>nameFontSize</code></td><td><code>text.name = { show, anchor, place, x, y, size }</code>: place Inside for Left, Center and Right, else Outside</td></tr>
+        <tr><td><code>healthText…</code></td><td><code>text.healthText</code>, the same way; <code>healthText</code> (the value) stays</td></tr>
+        <tr><td><code>showRaidIcon</code>, <code>raidAnchor</code>, <code>raidX/Y</code>, <code>raidSize</code></td><td><code>badges.raid</code>: Center becomes Inside Center, the rest Outside; order 1</td></tr>
+        <tr><td><code>showIndicator</code>, <code>indicatorQuest/Classification/Level</code>, <code>quest…</code>, <code>classification…</code>, <code>level…</code></td><td><code>badges.quest</code> (order 2), <code>badges.classification</code> (3), <code>badges.level</code> (4); <code>showIndicator</code> stays as the group switch</td></tr>
+        <tr><td><code>showCombo</code>, <code>combo…</code></td><td><code>badges.combo</code>, with <code>comboSpacing</code> and the colors kept</td></tr>
+        <tr><td><code>castAnchor</code>, <code>castX</code>, <code>castY</code>, <code>castHeight</code></td><td><code>castSide</code>, <code>castGap</code> = 2 − castY (below) or 2 + castY (above), <code>castX</code> kept, <code>castHeight</code></td></tr>
+        <tr><td><code>castIcon</code> LEFT / RIGHT / OUTLEFT / OUTRIGHT / none</td><td><code>cast.icon</code> in-left / in-right / out-left / out-right / none (+ span-left / span-right)</td></tr>
+        <tr><td><code>castText…</code>, <code>castTimer…</code>, <code>castTarget…</code></td><td><code>cast.spell</code>, <code>cast.timer</code>, <code>cast.target</code></td></tr>
+        <tr><td>Each aura group</td><td>Gains <code>place = "outside"</code>, <code>order</code> (group order), <code>perRow</code> = <code>max</code></td></tr>
+        <tr><td><code>targetArrowSize</code>, <code>targetArrowGap</code></td><td><code>target.arrowSize</code>, <code>target.arrowGap</code>, <code>target.arrowPlace = "outside"</code></td></tr>
+        <tr><td>Everything else</td><td>Unchanged keys</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Your answers (November 23, 2026)</h3>
+    <ul>
+      <li><b>Cast colors:</b> light blue and orange-red on every Mode cast bar.</li>
+      <li><b>Both names:</b> friendly plates only: friendly players and friendly NPCs show names.</li>
+      <li><b>Name limit:</b> stop only at the debuffs, flexing with them; no character cap.</li>
+      <li><b>Blizzard's combat icon:</b> yes, the opt-in setting.</li>
+      <li><b>Icon sizes and aura alignment:</b> sizes above; auras take the Cooldown Manager's edge and spacing.</li>
+    </ul>
+
+    <h3>Still open</h3>
+    <div class="dec"><h3>1. Previewer</h3><p>A, B (recommended), C or D. Each is drawn on the Previewer tab from the current design.</p></div>
+    <div class="dec"><h3>2. Channel color</h3><p>Channels you can interrupt: the same light blue, or keep their green?</p></div>
+    <div class="dec"><h3>6. Settings shape</h3><p>Reshape into one table per part (recommended), or keep today's flat keys and add the new ones beside them.</p></div>
+    <div class="dec"><h3>7. Elite icon while marked</h3><p>Blizzard hides the elite icon whenever a raid mark is set. With your marker inside the bar's center and the elite icon inside left they don't collide, so the default is to show both.</p></div>
+    <div class="dec"><h3>8. Click area</h3><p>Keep Blizzard's click and stacking areas for this pass (recommended). Your 156 × 16 plate fits inside them.</p></div>
+
+
+<h3>Manual check (for the build, once done)</h3>
+    <ul>
+      <li><b>Navigation:</b> <code>/modeui</code>, then <b>Frames</b> › <b>Nameplates</b>.</li>
+      <li><b>Action:</b>
+        <ul>
+          <li>Check that the preview shows your baseline.</li>
+          <li>On the Parts card, move Debuffs between Top Right and Top, and switch On One Anchor between Auras First and Indicators First.</li>
+          <li>In the world, target a quest enemy with a long name, then apply your debuffs one at a time, in combat and out.</li>
+          <li>Watch an enemy cast something you can interrupt, then something you can't, then interrupt a cast.</li>
+          <li>As a Rogue, build combo points on an enemy that isn't casting, then on one that is.</li>
+          <li>Face a lootable corpse, then an enemy without targeting.</li>
+          <li>Look at a friendly player and a friendly NPC.</li>
+        </ul>
+      </li>
+      <li><b>Required state:</b> out of combat to change settings; enemy nameplates shown; a v11 profile copied before the update.</li>
+      <li><b>Confirmation:</b>
+        <ul>
+          <li>The v11 profile looks the same after the update.</li>
+          <li>The preview's health bar stays in place while anchors change.</li>
+          <li>The name sits on the border at the top left and shortens with "…" as debuffs fill in from the right, never running under them.</li>
+          <li>With no buffs showing, the right arrow sits right beside the bar; it moves out as buffs appear.</li>
+          <li>The raid marker, level, elite icon and health % always draw above the bar.</li>
+          <li>The cast bar is light blue when you can interrupt and orange-red when you can't, and the target name sits left of the timer.</li>
+          <li>Combo points sit centered, under the cast bar while one shows and under the health bar otherwise.</li>
+          <li>The bag shows on the corpse; no sword shows on the enemy.</li>
+          <li>Friendly plates show only names: the player in class color, the NPC in green.</li>
+          <li>No Lua errors.</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+</div>
+
+
+<script>
+(function () {
+"use strict";
+
+/* ---------------------------------------------------------------- data */
+const ANCHORS = ["TOPLEFT","TOP","TOPRIGHT","LEFT","CENTER","RIGHT","BOTTOMLEFT","BOTTOM","BOTTOMRIGHT"];
+const ANCHOR_SHORT = { TOPLEFT:"TL", TOP:"T", TOPRIGHT:"TR", LEFT:"L", CENTER:"C", RIGHT:"R", BOTTOMLEFT:"BL", BOTTOM:"B", BOTTOMRIGHT:"BR" };
+const ANCHOR_LABEL = { TOPLEFT:"Top Left", TOP:"Top", TOPRIGHT:"Top Right", LEFT:"Left", CENTER:"Center", RIGHT:"Right", BOTTOMLEFT:"Bottom Left", BOTTOM:"Bottom", BOTTOMRIGHT:"Bottom Right" };
+const GROUPS = ["crowdControl","debuffs","buffs"];
+const GROUP_LABEL = { crowdControl:"Crowd Control", debuffs:"Debuffs", buffs:"Buffs" };
+const BADGES = ["arrows","raid","classification","quest","level","combo"];
+const BADGE_LABEL = { arrows:"Target Arrows", raid:"Raid Marker", classification:"Elite and Rare", quest:"Quest", level:"Level", combo:"Combo Points" };
+const TEXTS = ["name","healthText"];
+const TEXT_LABEL = { name:"Name", healthText:"Health Text" };
+const CAST_TEXTS = ["spell","timer","target"];
+const CAST_TEXT_LABEL = { spell:"Spell Name", timer:"Timer", target:"Cast Target" };
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+function el(show, anchor, place, order, size, x, y) { return { show, anchor, place, order, size, x: x || 0, y: y || 0 }; }
+function grp(show, filter, anchor, grow, size, max, perRow, order) { return { show, filter, anchor, place: "outside", grow, size, max, perRow: perRow || max, order, x: 0, y: 0, attach: false }; }
+
+/* Current v11 defaults (Init.lua), in the proposed shape. */
+function v11(kind) {
+  const e = kind === "enemy";
+  return {
+    kind, version: 12,
+    plate: { width: e ? 140 : 120, healthHeight: e ? 12 : 8, castHeight: e ? 12 : 8, castSide: "below", castGap: e ? 4 : 2, display: "plate" },
+    text: { name: el(true, "TOP", "outside", 1, 10), healthText: el(e, "RIGHT", "inside", 1, 9) },
+    cast: { show: true, icon: "in-left", fontSize: e ? 9 : 8, shield: false,
+      spell: { show: true, anchor: "LEFT", place: "inside", x: 0, y: 0 }, timer: { show: true, anchor: "RIGHT", place: "inside", x: 0, y: 0 },
+      target: { show: e, anchor: "BOTTOM", place: "outside", x: 0, y: 0 } },
+    badges: { arrows: el(false, "LEFT", "outside", 9, 12), raid: el(true, "LEFT", "outside", 1, 16), classification: el(e, "LEFT", "outside", 3, 14),
+      quest: el(e, "LEFT", "outside", 2, 14), level: el(e, "LEFT", "outside", 4, 9), combo: el(e, "BOTTOM", "outside", 1, 8) },
+    comboSpacing: 2,
+    auras: { spacing: 2, shape: "cropped", stacking: "continue",
+      crowdControl: grp(e, null, "LEFT", "left", e ? 24 : 18, 2, 2, 1),
+      debuffs: grp(true, e ? "mine" : "dispellable", "TOP", "center", e ? 20 : 16, e ? 6 : 4, e ? 6 : 4, 1),
+      buffs: grp(e, e ? "dispellable" : "mine", "RIGHT", "right", e ? 18 : 14, 3, 3, 1) },
+    target: { style: "border", arrowPlace: "outside", arrowGap: 4 }, stackOrder: "badges",
+    softTarget: { show: true, size: 20, x: 0, y: 0 },
+  };
+}
+
+/* The proposed Mode-Default (tuned after the research; see the Plan tab). */
+function proposed(kind) {
+  const e = kind === "enemy";
+  const c = v11(kind);
+  c.plate = { width: e ? 136 : 112, healthHeight: e ? 12 : 8, castHeight: e ? 10 : 8, castSide: "below", castGap: 1, display: "plate" };
+  c.text.name = el(true, e ? "TOPLEFT" : "TOP", "outside", 1, e ? 10 : 9);
+  c.text.healthText = el(e, "RIGHT", "inside", 1, 9);
+  c.cast = { show: true, icon: "in-left", fontSize: e ? 9 : 8, shield: true,
+    spell: { show: true, anchor: "LEFT", place: "inside", x: 0, y: 0 }, timer: { show: true, anchor: "RIGHT", place: "inside", x: 0, y: 0 },
+    target: { show: e, anchor: "BOTTOMRIGHT", place: "outside", x: 0, y: 0 } };
+  c.badges = { arrows: el(true, "LEFT", "outside", 0, 10), raid: el(true, "LEFT", "outside", 1, 14),
+    classification: el(e, "LEFT", "outside", 2, 12), quest: el(e, "RIGHT", "outside", 2, 12), level: el(e, "RIGHT", "outside", 1, 9),
+    combo: el(e, "BOTTOM", "outside", 1, 8) };
+  c.auras = { spacing: 1, shape: "cropped", stacking: "continue",
+    crowdControl: grp(e, null, "LEFT", "left", 26, 2, 2, 1),
+    debuffs: grp(true, e ? "mine" : "dispellable", e ? "TOPLEFT" : "TOP", e ? "right" : "center", e ? 20 : 16, e ? 6 : 4, e ? 6 : 4, 1),
+    buffs: grp(e, e ? "dispellable" : "mine", "RIGHT", "right", 20, 3, 3, 1) };
+  c.target = { style: "border", arrowPlace: "hug", arrowGap: 3 };
+  c.stackOrder = "badges";
+  c.softTarget = { show: true, size: 18, x: 0, y: 0 };
+  return c;
+}
+
+function compact(kind) {
+  const c = proposed(kind);
+  c.plate.width = kind === "enemy" ? 120 : 100; c.plate.healthHeight = kind === "enemy" ? 10 : 6; c.plate.castHeight = 8;
+  c.cast.icon = "in-left"; c.cast.target.show = false; c.cast.fontSize = 8;
+  c.text.name.size = 9; c.text.healthText.size = 8;
+  c.badges.classification.size = 10; c.badges.quest.size = 10; c.badges.raid.size = 12; c.badges.level.size = 8;
+  c.auras.debuffs.size = 18; c.auras.crowdControl.size = 20; c.auras.buffs.size = 16;
+  return c;
+}
+
+function clusterTop(kind) {
+  const c = proposed(kind);
+  c.text.name = el(true, "TOP", "outside", 1, 10);
+  c.badges.raid = el(true, "LEFT", "outside", 2, 14);
+  c.badges.arrows.show = true;
+  c.badges.classification = el(kind === "enemy", "TOP", "outside", 1, 12);
+  c.badges.level = el(kind === "enemy", "TOP", "outside", 2, 9);
+  c.badges.quest = el(kind === "enemy", "TOP", "outside", 3, 12);
+  c.auras.debuffs.anchor = "TOP"; c.auras.debuffs.grow = "center";
+  c.auras.buffs.anchor = "TOP"; c.auras.buffs.grow = "center";
+  c.auras.stacking = "newRow";
+  c.target.style = "borderArrows";
+  return c;
+}
+
+/* The owner's baseline (November 23, 2026): 156 x 16, name and your debuffs sharing the border line,
+   auras before indicators, everything closing up when something is missing, arrows outermost. */
+function baseline(kind) {
+  const e = kind === "enemy";
+  const c = proposed(kind);
+  c.plate = { width: 156, healthHeight: 16, castHeight: 12, castSide: "below", castGap: 1, display: e ? "plate" : "name" };
+  c.text.name = Object.assign(el(true, "TOPLEFT", "border", 1, 13, 0, -3), { maxChars: 0 });
+  if (!e) c.text.name = Object.assign(el(true, "CENTER", "inside", 1, 12), { maxChars: 0 });
+  c.text.healthText = el(e, "RIGHT", "inside", 1, 11);
+  c.cast = { show: true, icon: "in-left", fontSize: 10, shield: true, colors: "blueOrange",
+    spell: { show: true, anchor: "LEFT", place: "inside", x: 0, y: 0 }, timer: { show: true, anchor: "RIGHT", place: "inside", x: 0, y: 0 },
+    target: { show: e, anchor: "RIGHT", place: "inside", x: 0, y: 0 } };
+  c.badges = { arrows: el(true, "LEFT", "outside", 9, 12), raid: el(true, "CENTER", "inside", 1, 14),
+    level: el(e, "LEFT", "inside", 1, 10), classification: el(e, "LEFT", "inside", 2, 14),
+    quest: el(e, "LEFT", "outside", 1, 18), combo: Object.assign(el(e, "BOTTOM", "outside", 1, 8), { follow: true }) };
+  // Sizes are the picture (art) sizes; the edge adds 2px all round. Debuffs 22 x 18 (timer 10),
+  // buffs 20 x 16 (their band as tall as the health box), crowd control 1.5x the debuffs: 33 x 29.
+  c.auras = { spacing: -1, shape: "mode", edge: "outside", stacking: "continue",
+    crowdControl: grp(e, null, "TOP", "center", 33, 2, 2, 1),
+    debuffs: Object.assign(grp(e, "mine", "TOPRIGHT", "left", 22, 4, 4, 1), { attach: true }),
+    buffs: grp(e, "dispellable", "RIGHT", "right", 20, 3, 3, 1) };
+  c.badges.arrows.size = 10;
+  c.target = { style: e ? "arrows" : "none", arrowPlace: "outside", arrowGap: 3 };
+  c.softTarget = { show: true, size: 18, x: 0, y: 0, kinds: "loot" };
+  c.stackOrder = "auras";
+  return c;
+}
+
+const PRESETS = [
+  { id: "baseline", label: "Your baseline (156 × 16)", make: baseline },
+  { id: "proposed", label: "First proposal (136 × 12)", make: proposed },
+  { id: "v11", label: "Current defaults (v11)", make: v11 },
+  { id: "compact", label: "Compact", make: compact },
+  { id: "cluster", label: "Everything on Top (stress test)", make: clusterTop },
+];
+
+/* Sample unit data per kind. */
+const SAMPLE = {
+  enemy: { name: "Scarlet Crusader", health: 0.72, color: "var(--hostile)", level: "62", levelColor: "#ff8040", spell: "Holy Smite", target: "Mode", targetColor: "#f58cba",
+    auras: { crowdControl: ["#5f8fd6"], debuffs: ["#6a3c8a", "#3b6b2e", "#7a5a2a", "#4d2b2b", "#2f4f6f", "#6f6f2f"], buffs: ["#c9b26a", "#5d7fb3", "#7a4b8f"] },
+    rims: { crowdControl: ["var(--magic)"], debuffs: ["var(--notype)", "var(--curse)", "var(--notype)", "var(--poison)", "var(--magic)", "var(--notype)"], buffs: ["var(--magic)", "var(--magic)", "var(--magic)"] } },
+  npc: { name: "Innkeeper Farley", health: 1, color: "var(--friendly)", level: "30", levelColor: "#e8e3d9", spell: "", target: "", targetColor: "#e8e3d9",
+    auras: { crowdControl: [], debuffs: [], buffs: [] }, rims: { crowdControl: [], debuffs: [], buffs: [] } },
+  friendly: { name: "Wildleaf", health: 0.9, color: "#3fc7eb", level: "60", levelColor: "#e8e3d9", spell: "Flash Heal", target: "Tank", targetColor: "#c69b6d",
+    auras: { crowdControl: ["#7fb0e0"], debuffs: ["#5a3a2a", "#3a5a2a", "#2a2a5a", "#5a2a5a"], buffs: ["#3f8f3f", "#8fbf5f", "#bf9f3f"] },
+    rims: { crowdControl: ["var(--magic)"], debuffs: ["var(--disease)", "var(--poison)", "var(--magic)", "var(--curse)"], buffs: ["var(--notype)", "var(--notype)", "var(--notype)"] } },
+};
+
+/* ---------------------------------------------------------------- state */
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const S = {
+  kind: "enemy", engine: "proposed", zoom: 3, preset: "baseline",
+  cfg: { enemy: baseline("enemy"), friendly: baseline("friendly") },
+  cast: "cast", targeted: true, focused: false, soft: true, capacity: true, anchors: false, grid: false,
+  counts: { crowdControl: 1, debuffs: 3, buffs: 1 }, combo: 3,
+  sel: "debuffs", hover: null,
+};
+try {
+  const d = JSON.parse(store.get("np-designer-draft-3") || "null");
+  if (d && d.cfg && d.cfg.enemy && d.cfg.friendly && d.cfg.enemy.version === 12) { S.cfg = d.cfg; S.preset = d.preset || S.preset; }
+} catch (e) {}
+const C = () => S.cfg[S.kind];
+function saveDraft() { store.set("np-designer-draft-3", JSON.stringify({ cfg: S.cfg, preset: S.preset })); }
+
+/* ---------------------------------------------------------------- layout engine
+   Coordinates: plate pixels, origin at the health box's top-left, y down.
+   Returns { boxes: [...], stacks: {point: [members]}, bounds }. */
+const GAP = 2;
+function textWidth(str, size, weight) { return Math.ceil(str.length * size * (weight === 700 ? 0.58 : 0.55)); }
+/* Aura geometry. Picture: the icon art. Shape "mode" is the design language's rule (4px shorter up to
+   35 wide, 6px from 36); "cropped" is v11's (6px shorter); "square". Edge "outside" is the Cooldown
+   Manager's model: the frameThin edge sits outside the picture, so each slot is the picture plus the
+   edge's reach (1px band + 1px shadow) on every side, and Spacing counts between the shadows
+   (-1: neighbours share one shadow pixel). Edge "inside" is v11's (the rim inside the icon's size). */
+function auraPic(c, g) {
+  const w = c.auras[g].size, s = c.auras.shape;
+  return { w, h: s === "square" ? w : s === "mode" ? w - (w >= 36 ? 6 : 4) : Math.max(1, w - 6) };
+}
+function auraReach(c) { return c.auras.edge === "outside" ? 2 : 0; }
+function auraDims(c, g) { const p = auraPic(c, g), r = auraReach(c); return { w: p.w + 2 * r, h: p.h + 2 * r, pw: p.w, ph: p.h, r }; }
+function badgeDims(c, id, st) {
+  const b = c.badges[id];
+  if (id === "level") { const s = SAMPLE[c.kind].level; return { w: textWidth(s, b.size, 700) + 1, h: b.size + 2 }; }
+  if (id === "combo") { const n = st.comboCount; return n > 0 ? { w: n * b.size + (n - 1) * c.comboSpacing, h: b.size } : null; }
+  return { w: b.size, h: b.size };
+}
+function badgeShown(c, id, st) {
+  const b = c.badges[id];
+  if (!b.show) return false;
+  if (id === "arrows") return st.targeted && (c.target.style === "arrows" || c.target.style === "borderArrows");
+  if (id === "combo") return st.targeted && st.comboCount > 0;
+  if (id === "quest") return c.kind === "enemy";
+  if (id === "classification") return c.kind === "enemy";
+  return true;
+}
+const isTop = (a) => a.startsWith("TOP"), isBottom = (a) => a.startsWith("BOTTOM");
+const hSide = (a) => a.includes("LEFT") ? "LEFT" : a.includes("RIGHT") ? "RIGHT" : "";
+
+function layout(c, st, engine) {
+  const P = engine === "proposed";
+  const boxes = [], stacks = {};
+  const W = c.plate.width, nameOnly = c.plate.display === "name";
+  const HB = c.plate.healthHeight + 2, CB = c.plate.castHeight + 2;
+  const add = (b) => { boxes.push(b); return b; };
+  add({ id: "health", part: "health", type: "health", x: 0, y: 0, w: W, h: HB });
+  const sp = c.auras.spacing;
+  const aurasFirst = P && c.stackOrder !== "badges";
+  const textPlace = (t) => (!P && t.place === "border") ? "outside" : t.place;
+
+  /* ---- one aura container per point: groups flow on one line (Continue the Row) or each group
+     starts a line (New Row: forceNewLine). Lines wrap at the first group's Per Row worth of pixels
+     (the container's maximum line size). Empty groups add no spacing and no line. */
+  function container(groups) {
+    const first = c.auras[groups[0]], grow = first.grow;
+    const vertical = grow === "up" || grow === "down";
+    const newRow = P && c.auras.stacking === "newRow";
+    const fd = auraDims(c, groups[0]);
+    const maxLine = Math.max(1, first.perRow) * ((vertical ? fd.h : fd.w) + sp) - sp;
+    function flow(liveOnly) {
+      let along = 0, across = 0, lineThick = 0, lineLen = 0, cur = [];
+      const lines = [];
+      const flush = () => { if (cur.length) { lines.push({ items: cur, thick: lineThick, len: lineLen, across }); across += lineThick + sp; } cur = []; lineThick = 0; lineLen = 0; along = 0; };
+      for (const g of groups) {
+        const a = c.auras[g], d = auraDims(c, g);
+        const n = liveOnly ? Math.min(st.counts[g] || 0, a.max) : a.max;
+        if (n === 0) continue;
+        if (newRow && cur.length) flush();
+        for (let i = 0; i < n; i++) {
+          const len = vertical ? d.h : d.w, th = vertical ? d.w : d.h;
+          if (cur.length && along + len > maxLine + 0.01) flush();
+          cur.push({ g, i, w: d.w, h: d.h, along });
+          along += len + sp; lineLen = along - sp; lineThick = Math.max(lineThick, th);
+        }
+      }
+      flush();
+      const last = lines[lines.length - 1];
+      return { lines, thick: last ? last.across + last.thick : 0, len: lines.reduce((m, l) => Math.max(m, l.len), 0) };
+    }
+    return { grow, vertical, cap: flow(false), live: flow(true) };
+  }
+  // A point's container as boxes. Top/Bottom: base = distance from the bar edge to the row's near edge.
+  // Left/Right: sideStart = distance from the bar side. Returns the boxes and the live/capacity extents.
+  function emit(groups, pt, base, sideStart) {
+    const k = container(groups);
+    const label = groups.map((g) => GROUP_LABEL[g]).join(" + ");
+    const out = [];
+    let liveMinX = Infinity, liveMaxX = -Infinity;
+    const put = (fl, liveLayer) => {
+      for (const ln of fl.lines) for (const it of ln.items) {
+        let x, y;
+        const acrossOff = ln.across + ((k.vertical ? ln.thick - it.w : ln.thick - it.h) / 2);
+        if (isTop(pt) || isBottom(pt)) {
+          const hs = hSide(pt);
+          if (k.vertical) {
+            x = hs === "LEFT" ? acrossOff : hs === "RIGHT" ? W - acrossOff - it.w : W / 2 - fl.thick / 2 + acrossOff;
+            y = isTop(pt) ? -(base + it.along + it.h) : HB + base + it.along;
+          } else {
+            let x0;
+            if (k.grow === "left") x0 = (hs === "LEFT" ? 0 : hs === "RIGHT" ? W : W / 2) - it.along - it.w;
+            else if (k.grow === "right" || !P) x0 = (hs === "LEFT" ? 0 : hs === "RIGHT" ? W - it.w : W / 2 - it.w / 2) + it.along; // v11 Center: first icon centered, the rest grow right
+            else { const L = ln.len; x0 = (hs === "LEFT" ? 0 : hs === "RIGHT" ? W - L : W / 2 - L / 2) + it.along; } // container anchored by its own CENTER
+            x = x0;
+            y = isTop(pt) ? -(base + acrossOff + it.h) : HB + base + acrossOff;
+          }
+        } else {
+          const left = pt === "LEFT";
+          if (k.vertical) {
+            x = left ? -(sideStart + acrossOff + it.w) : W + sideStart + acrossOff;
+            y = k.grow === "up" ? HB / 2 - it.h / 2 - it.along : HB / 2 - it.h / 2 + it.along;
+          } else {
+            x = left ? -(sideStart + it.along + it.w) : W + sideStart + it.along;
+            y = HB / 2 - fl.thick / 2 + acrossOff;
+          }
+        }
+        const a = c.auras[it.g];
+        const b = { id: it.g + ":" + it.i + (liveLayer ? "" : ":cap"), part: it.g, type: "aura", g: it.g, i: it.i, x: x + a.x, y: y - a.y, w: it.w, h: it.h, live: liveLayer, ghost: !liveLayer, point: pt, label };
+        b.x = Math.round(b.x); b.y = Math.round(b.y); // whole pixels (a centered container nudges its half pixel)
+        out.push(b);
+        if (liveLayer) { liveMinX = Math.min(liveMinX, b.x); liveMaxX = Math.max(liveMaxX, b.x + b.w); }
+      }
+    };
+    put(k.cap, false);
+    put(k.live, true);
+    return { boxes: out, k, liveMinX, liveMaxX };
+  }
+
+  /* ---- spine: the border line, the cast bar, its outside texts, the outside text line */
+  // The border line: aura rows set to Sit on Border and text placed On Border share one band right on the bar.
+  const borderRows = { TOP: [], BOTTOM: [] }, borderTexts = { TOP: [], BOTTOM: [] };
+  if (!nameOnly) {
+    for (const g of GROUPS) { const a = c.auras[g]; if (a.show && a.attach && (isTop(a.anchor) || isBottom(a.anchor))) borderRows[isTop(a.anchor) ? "TOP" : "BOTTOM"].push(g); }
+    for (const k of TEXTS) { const t = c.text[k]; if (t.show && textPlace(t) === "border" && (isTop(t.anchor) || isBottom(t.anchor))) borderTexts[isTop(t.anchor) ? "TOP" : "BOTTOM"].push(k); }
+  }
+  const bandOf = (side) => {
+    let h = 0;
+    for (const g of borderRows[side]) h = Math.max(h, auraDims(c, g).h);
+    for (const k of borderTexts[side]) h = Math.max(h, c.text[k].size + 2);
+    return h ? h + GAP : 0;
+  };
+  let top = bandOf("TOP"), bottom = bandOf("BOTTOM");
+  const castLine = c.cast.fontSize + 2, castAbove = c.plate.castSide === "above";
+  let castNear = 0, castFar = 0;
+  for (const k of CAST_TEXTS) {
+    const t = c.cast[k]; if (!t.show || t.place !== "outside") continue;
+    if (castAbove ? isTop(t.anchor) : isBottom(t.anchor)) castFar = castLine; else castNear = castLine;
+  }
+  let castBox = null, castRoom = 0;
+  if (c.cast.show && !nameOnly) {
+    const g = c.plate.castGap;
+    const y = castAbove ? -(top + g + castNear + CB) : HB + bottom + g + castNear;
+    castBox = { id: "cast", part: "cast", type: "cast", x: 0, y, w: W, h: CB, live: st.cast !== "none" };
+    castRoom = g + castNear + CB + castFar;
+    if (castAbove) top += castRoom; else bottom += castRoom;
+  }
+  // Outside cast icon: beside the cast box, or spanning both boxes. A spanning icon reserves its side.
+  const reserve = { LEFT: 0, RIGHT: 0 };
+  let castIcon = null;
+  if (castBox && /^(out|span)-/.test(c.cast.icon)) {
+    const span = c.cast.icon.startsWith("span");
+    const y0 = span ? Math.min(0, castBox.y) : castBox.y, y1 = span ? Math.max(HB, castBox.y + CB) : castBox.y + CB;
+    const s = y1 - y0, left = c.cast.icon.endsWith("left");
+    castIcon = { id: "castIcon", part: "cast", type: "castIcon", x: left ? -(s + 1) : W + 1, y: y0, w: s, h: s, live: castBox.live };
+    if (span && P) reserve[left ? "LEFT" : "RIGHT"] = s + 1;
+  }
+  const textBoxes = [];
+  if (!nameOnly) {
+    for (const side of ["TOP", "BOTTOM"]) {
+      const on = (t) => t.show && textPlace(t) === "outside" && (side === "TOP" ? isTop(t.anchor) : isBottom(t.anchor));
+      let line = 0;
+      for (const k of TEXTS) if (on(c.text[k])) line = Math.max(line, c.text[k].size + 2);
+      if (!line) continue;
+      for (const k of TEXTS) {
+        const t = c.text[k]; if (!on(t)) continue;
+        textBoxes.push({ id: k, part: k, type: "text", x: 0, y: side === "TOP" ? -(top + GAP + line) : HB + bottom + GAP, w: W, h: line, align: hSide(t.anchor) || "CENTER", dx: t.x, dy: t.y, size: t.size });
+      }
+      if (side === "TOP") top += GAP + line; else bottom += GAP + line;
+    }
+  }
+  // Combo points that follow the cast bar sit right under the health bar while nothing is cast.
+  const bottomNoCast = (castBox && !castAbove && !castBox.live && P && c.badges.combo.follow) ? bottom - castRoom : bottom;
+
+  /* ---- border line: rows on the bar's edge, texts beside them (a name stops where the row starts) */
+  for (const side of ["TOP", "BOTTOM"]) {
+    const rowsAt = {};
+    for (const g of borderRows[side]) (rowsAt[c.auras[g].anchor] = rowsAt[c.auras[g].anchor] || []).push(g);
+    const edges = {}; // live inner edge of each border row, by horizontal side
+    for (const pt in rowsAt) {
+      const groups = rowsAt[pt].sort((a, b) => (c.auras[a].order - c.auras[b].order) || (GROUPS.indexOf(a) - GROUPS.indexOf(b)));
+      const r = emit(groups, pt, P ? 0 : GAP);
+      r.boxes.forEach(add);
+      const hs = hSide(pt) || "CENTER";
+      edges[hs] = r.liveMaxX === -Infinity ? null : { min: r.liveMinX, max: r.liveMaxX };
+      stacks["BORDER-" + pt] = groups.map((g) => ({ kind: "row", id: g }));
+    }
+    for (const k of borderTexts[side]) {
+      const t = c.text[k], hs = hSide(t.anchor) || "CENTER", line = t.size + 2, band = bandOf(side) - GAP;
+      let x0 = 0, x1 = W;
+      // Stop at the other row's live edge (anchored to the container's edge), and at the character cap.
+      if (hs === "LEFT" && edges.RIGHT) x1 = Math.min(x1, edges.RIGHT.min - 3);
+      if (hs === "LEFT" && edges.CENTER) x1 = Math.min(x1, edges.CENTER.min - 3);
+      if (hs === "RIGHT" && edges.LEFT) x0 = Math.max(x0, edges.LEFT.max + 3);
+      if (hs === "RIGHT" && edges.CENTER) x0 = Math.max(x0, edges.CENTER.max + 3);
+      const cap = t.maxChars ? Math.round(t.maxChars * t.size * 0.56) : W;
+      const w = Math.max(10, Math.min(x1 - x0 - 2, cap));
+      const x = hs === "LEFT" ? x0 + 2 : hs === "RIGHT" ? x1 - 2 - w : W / 2 - w / 2;
+      // On the border: the text's line rests on the bar's edge (Offset Y nudges it into the rim).
+      add({ id: k, part: k, type: "text", x, y: side === "TOP" ? -line : HB, w, h: line, align: hs, dx: t.x, dy: t.y, size: t.size, clip: true, chained: true });
+      (stacks["BORDER-" + (side === "TOP" ? "TOP" : "BOTTOM") + "-TEXT"] = stacks["BORDER-" + (side === "TOP" ? "TOP" : "BOTTOM") + "-TEXT"] || []).push({ kind: "text", id: k });
+    }
+  }
+
+  /* ---- members of each point */
+  const badgesAt = {}, rowsAt = {};
+  const arrowsOn = st.targeted && (c.target.style === "arrows" || c.target.style === "borderArrows");
+  const arrowsHug = P && c.target.arrowPlace === "hug";
+  if (!nameOnly) {
+    for (const id of BADGES) {
+      if (id === "arrows" || !badgeShown(c, id, st)) continue;
+      const b = c.badges[id], d = badgeDims(c, id, st); if (!d) continue;
+      const pt = b.place === "inside" ? "IN-" + (hSide(b.anchor) || "CENTER") : b.anchor;
+      (badgesAt[pt] = badgesAt[pt] || []).push({ id, order: b.order, dims: d, fam: P ? "all" : (id === "classification" || id === "quest" || id === "level") ? "ind" : id });
+    }
+    for (const g of GROUPS) { const a = c.auras[g]; if (a.show && !a.attach) (rowsAt[a.anchor] = rowsAt[a.anchor] || []).push(g); }
+  }
+  const byOrder = (a, b) => a.order - b.order;
+  const rowOrder = (a, b) => (c.auras[a].order - c.auras[b].order) || (GROUPS.indexOf(a) - GROUPS.indexOf(b));
+
+  const extentLive = {}, extentCap = {};
+  const sideLive = { LEFT: 0, RIGHT: 0 }, sideCap = { LEFT: 0, RIGHT: 0 };
+  if (!nameOnly) {
+    /* ---- Top and Bottom points */
+    for (const pt of ["TOPLEFT", "TOP", "TOPRIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT"]) {
+      const tb = isTop(pt), band = tb ? top : (pt === "BOTTOM" || pt === "BOTTOMLEFT" || pt === "BOTTOMRIGHT") && (badgesAt[pt] || []).some((b) => b.id === "combo") && !(rowsAt[pt] || []).length ? bottomNoCast : bottom;
+      const hs = hSide(pt);
+      const bm = (badgesAt[pt] || []).slice().sort(byOrder), groups = (rowsAt[pt] || []).slice().sort(rowOrder);
+      const rowsFirst = aurasFirst && groups.length > 0;
+      stacks[pt] = rowsFirst ? groups.map((g) => ({ kind: "row", id: g })).concat(bm.map((m) => ({ kind: "badge", id: m.id, chained: true })))
+        : bm.map((m) => ({ kind: "badge", id: m.id })).concat(groups.map((g) => ({ kind: "row", id: g })));
+      let cursor = band + GAP;
+      const placeBadges = (list, startX, dir, laneTop, lh) => {
+        let x = startX;
+        for (const b of list) {
+          const bb = c.badges[b.id], bx = dir < 0 ? x - b.dims.w : x;
+          const by = tb ? -(laneTop + lh / 2 + b.dims.h / 2) : HB + laneTop + lh / 2 - b.dims.h / 2;
+          add({ id: b.id, part: b.id, type: "badge", x: bx + bb.x, y: by - bb.y, w: b.dims.w, h: b.dims.h, point: pt, chained: rowsFirst });
+          x += dir * (b.dims.w + GAP);
+        }
+      };
+      if (rowsFirst) {
+        // The row hugs the bar; badges continue along the row's line, anchored to its live end.
+        const r = emit(groups, pt, cursor);
+        r.boxes.forEach(add);
+        const lh = Math.max(r.k.cap.lines.length ? r.k.cap.lines[0].thick : 0, bm.reduce((m, b) => Math.max(m, b.dims.h), 0));
+        const growLeft = r.k.grow === "left";
+        const empty = r.liveMaxX === -Infinity;
+        const anchorX = empty ? (hs === "LEFT" ? 0 : hs === "RIGHT" ? W : W / 2) : (growLeft ? r.liveMinX - GAP : r.liveMaxX + GAP);
+        placeBadges(bm, anchorX, growLeft || (hs === "RIGHT" && empty) ? -1 : 1, cursor, lh);
+        extentLive[pt] = cursor - band + Math.max(r.k.live.thick, bm.length ? lh : 0) + GAP;
+        extentCap[pt] = cursor - band + Math.max(r.k.cap.thick, bm.length ? lh : 0) + GAP;
+      } else {
+        if (bm.length) {
+          const fams = {};
+          for (const b of bm) (fams[b.fam] = fams[b.fam] || []).push(b);
+          let laneH = 0;
+          for (const f in fams) {
+            const list = fams[f];
+            const total = list.reduce((s, b) => s + b.dims.w, 0) + GAP * (list.length - 1);
+            const lh = list.reduce((m, b) => Math.max(m, b.dims.h), 0); laneH = Math.max(laneH, lh);
+            placeBadges(list, hs === "LEFT" ? 0 : hs === "RIGHT" ? W : W / 2 - total / 2, hs === "RIGHT" ? -1 : 1, cursor, lh);
+          }
+          extentLive[pt] = extentCap[pt] = cursor + laneH + GAP - band;
+          if (P) cursor += laneH + GAP;
+        }
+        if (groups.length) {
+          const at = P ? cursor : band + GAP;
+          const r = emit(groups, pt, at);
+          r.boxes.forEach(add);
+          const start = at - band;
+          extentLive[pt] = Math.max(extentLive[pt] || 0, start + (r.k.live.thick || 1) + GAP);
+          extentCap[pt] = Math.max(extentCap[pt] || 0, start + r.k.cap.thick + GAP);
+        }
+      }
+    }
+
+    /* ---- Left and Right: auras first (closest to the bar), then indicators chained to the row's live end */
+    for (const pt of ["LEFT", "RIGHT"]) {
+      const left = pt === "LEFT", sign = left ? -1 : 1;
+      let bm = (badgesAt[pt] || []).slice().sort(byOrder);
+      const groups = (rowsAt[pt] || []).slice().sort(rowOrder);
+      let deferred = [];
+      if (!P) { deferred = bm.filter((b) => b.id === "combo"); bm = bm.filter((b) => b.id !== "combo"); }
+      const hugArrow = arrowsOn && arrowsHug ? [{ id: "arrows", dims: { w: c.badges.arrows.size, h: c.badges.arrows.size } }] : [];
+      const step = P ? GAP : 3;
+      const putBadge = (b, out, chained) => {
+        const isArrow = b.id === "arrows", bb = isArrow ? { x: 0, y: 0 } : c.badges[b.id];
+        const x = left ? -(out + b.dims.w) : W + out;
+        add({ id: isArrow ? "arrows-" + pt.toLowerCase() : b.id, part: b.id, type: "badge", x: x + bb.x, y: HB / 2 - b.dims.h / 2 - bb.y, w: b.dims.w, h: b.dims.h, point: pt, arrowSide: isArrow ? pt : null, chained });
+        return out + b.dims.w + step;
+      };
+      let liveOut = reserve[pt] + step, capOut = liveOut;
+      if (aurasFirst) {
+        stacks[pt] = hugArrow.map(() => ({ kind: "badge", id: "arrows" })).concat(groups.map((g) => ({ kind: "row", id: g }))).concat(bm.map((m) => ({ kind: "badge", id: m.id, chained: groups.length > 0 })));
+        for (const b of hugArrow) { liveOut = putBadge(b, liveOut, false); capOut = liveOut; }
+        if (groups.length) {
+          const start = liveOut - step + GAP;
+          const r = emit(groups, pt, 0, start);
+          r.boxes.forEach(add);
+          const lenOf = (fl) => r.k.vertical ? fl.thick : fl.len;
+          const liveLen = lenOf(r.k.live), capLen = lenOf(r.k.cap);
+          liveOut = liveLen ? start + liveLen + GAP : start - GAP + step; // an empty container collapses
+          capOut = start + capLen + GAP;
+        }
+        for (const b of bm) { liveOut = putBadge(b, liveOut, groups.length > 0); capOut += b.dims.w + step; }
+      } else {
+        const list = hugArrow.concat(bm);
+        stacks[pt] = list.map((m) => ({ kind: "badge", id: m.id })).concat(groups.map((g) => ({ kind: "row", id: g }))).concat(deferred.map((m) => ({ kind: "badge", id: m.id })));
+        for (const b of list) liveOut = putBadge(b, liveOut, false);
+        capOut = liveOut;
+        if (groups.length) {
+          const start = liveOut - step + GAP;
+          const r = emit(groups, pt, 0, start);
+          r.boxes.forEach(add);
+          const lenOf = (fl) => r.k.vertical ? fl.thick : fl.len;
+          liveOut = start + (lenOf(r.k.live) || 1) + GAP;
+          capOut = start + lenOf(r.k.cap) + GAP;
+        }
+        for (const b of deferred) { // v11: combo points sit past the side's full capacity
+          capOut = putBadge(b, capOut + 1, false) + 1; liveOut = capOut;
+        }
+      }
+      sideLive[pt] = liveOut; sideCap[pt] = capOut;
+    }
+    // Arrows Outside Everything: v11 clears the side's capacity; proposed anchors them to the last member's live edge.
+    if (arrowsOn && !arrowsHug) {
+      const s = c.badges.arrows.size;
+      for (const pt of ["LEFT", "RIGHT"]) {
+        const reach = (P ? sideLive[pt] : sideCap[pt]) + c.target.arrowGap;
+        add({ id: "arrows-" + pt.toLowerCase(), part: "arrows", type: "badge", x: pt === "LEFT" ? -(reach + s) : W + reach, y: HB / 2 - s / 2, w: s, h: s, point: pt, arrowSide: pt, chained: P });
+        (stacks[pt] = stacks[pt] || []).push({ kind: "badge", id: "arrows", chained: P });
+      }
+    }
+
+    /* ---- Inside: badges first, then text, from each side */
+    for (const side of ["LEFT", "CENTER", "RIGHT"]) {
+      const list = (badgesAt["IN-" + side] || []).slice().sort(byOrder);
+      const total = list.reduce((s, b) => s + b.dims.w, 0) + GAP * Math.max(0, list.length - 1);
+      let x = side === "LEFT" ? 3 : side === "RIGHT" ? W - 3 : W / 2 - total / 2;
+      for (const b of list) {
+        const bb = c.badges[b.id], bx = side === "RIGHT" ? x - b.dims.w : x;
+        add({ id: b.id, part: b.id, type: "badge", x: bx + bb.x, y: HB / 2 - b.dims.h / 2 - bb.y, w: b.dims.w, h: b.dims.h, point: "IN-" + side, inside: true });
+        x += (side === "RIGHT" ? -1 : 1) * (b.dims.w + GAP);
+      }
+      const texts = TEXTS.filter((k) => c.text[k].show && textPlace(c.text[k]) === "inside" && (hSide(c.text[k].anchor) || "CENTER") === side);
+      for (const k of texts) {
+        const t = c.text[k], off = side === "CENTER" || !list.length ? 0 : total + GAP;
+        add({ id: k, part: k, type: "text", x: 3 + (side === "LEFT" ? off : 0), y: 1, w: W - 6 - off, h: HB - 2, align: side, dx: t.x, dy: t.y, size: t.size, inside: true });
+      }
+      stacks["IN-" + side] = list.map((m) => ({ kind: "badge", id: m.id })).concat(texts.map((k) => ({ kind: "text", id: k })));
+    }
+  } else {
+    const t = c.text.name;
+    add({ id: "name", part: "name", type: "text", x: 0, y: HB / 2 - (t.size + 2) / 2, w: W, h: t.size + 2, align: "CENTER", dx: t.x, dy: t.y, size: t.size });
+  }
+
+  for (const t of textBoxes) add(t);
+  if (castBox) add(castBox);
+  if (castIcon) add(castIcon);
+
+  /* ---- soft-target (loot) icon, centered above the Top band */
+  if (c.softTarget.show && st.soft) {
+    const s = c.softTarget.size;
+    let room;
+    if (nameOnly) room = GAP;
+    else if (P) room = Math.max(GAP, extentCap.TOPLEFT || 0, extentCap.TOP || 0, extentCap.TOPRIGHT || 0); // clears the tallest Top stack (heights are known; only lengths are secret)
+    else {
+      let tall = 0;
+      for (const b of boxes) if ((b.type === "badge" || (b.type === "aura" && b.ghost)) && b.point && isTop(b.point)) tall = Math.max(tall, b.h);
+      room = tall ? GAP + tall + GAP : GAP;
+    }
+    add({ id: "soft", part: "soft", type: "soft", x: W / 2 - s / 2 + c.softTarget.x, y: -(top + room + s) - c.softTarget.y, w: s, h: s });
+  }
+
+  let minX = 0, minY = 0, maxX = W, maxY = HB;
+  for (const b of boxes) {
+    if (b.ghost && !st.capacity) continue;
+    if ((b.type === "cast" || b.type === "castIcon") && !b.live) continue;
+    minX = Math.min(minX, b.x); minY = Math.min(minY, b.y); maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h);
+  }
+  return { boxes, stacks, bounds: { minX, minY, maxX, maxY }, HB, CB, top, bottom };
+}
+
+/* Overlaps between parts (aura rows at full capacity). */
+function clashes(L) {
+  const parts = L.boxes.filter((b) => b.type === "badge" || b.type === "aura" || b.type === "soft" || b.type === "cast" || b.type === "castIcon" || (b.type === "text" && !b.inside));
+  const res = [];
+  const ov = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  for (let i = 0; i < parts.length; i++) for (let j = i + 1; j < parts.length; j++) {
+    const a = parts[i], b = parts[j];
+    if (a.part === b.part) continue;
+    // A part chained to a row's live end moves as the row fills, so it never meets the row's empty slots.
+    if ((a.chained && b.ghost && a.point === b.point) || (b.chained && a.ghost && a.point === b.point)) continue;
+    if ((a.chained || b.chained) && (a.ghost || b.ghost)) continue;
+    if (a.type === "text" && b.type === "text") continue;
+    if (a.type === "text" || b.type === "text") {
+      // texts span the plate width; only flag a badge/aura sitting on the text line
+      const t = a.type === "text" ? a : b, o = a.type === "text" ? b : a;
+      if (o.type === "cast") continue;
+      if (!ov(t, o)) continue;
+    } else if (!ov(a, b)) continue;
+    res.push([a, b]);
+  }
+  return res;
+}
+function partLabel(id) {
+  if (GROUP_LABEL[id]) return GROUP_LABEL[id];
+  if (BADGE_LABEL[id]) return BADGE_LABEL[id];
+  if (TEXT_LABEL[id]) return TEXT_LABEL[id];
+  return { health: "Health Bar", cast: "Cast Bar", soft: "Soft Target Icon" }[id] || id;
+}
+
+/* ---------------------------------------------------------------- render */
+const $ = (s) => document.querySelector(s);
+const zoomEl = $("#zoom"), stage = $("#stage"), strip = $("#strip");
+
+function raidSvg(size) {
+  return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" aria-hidden="true"><path d="M8 1.5c-3.3 0-5.5 2.2-5.5 5 0 1.8.9 3 2 3.7V12h1.4v1.5h1.2V12h1.8v1.5h1.2V12h1.4v-1.8c1.1-.7 2-1.9 2-3.7 0-2.8-2.2-5-5.5-5z" fill="#f2f2f2" stroke="#222" stroke-width=".6"/><circle cx="5.8" cy="6.8" r="1.5" fill="#222"/><circle cx="10.2" cy="6.8" r="1.5" fill="#222"/><path d="M7.4 9.2h1.2L8 10.4z" fill="#222"/></svg>';
+}
+function eliteSvg(size) {
+  return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" aria-hidden="true"><path d="M8 1.5l1.8 3.4 3.7.5-2.7 2.6.7 3.7L8 10l-3.5 1.7.7-3.7L2.5 5.4l3.7-.5z" fill="#e7b84a" stroke="#5a3d0a" stroke-width=".7"/><path d="M1 7c1.5.3 2.5 1.5 3 3M15 7c-1.5.3-2.5 1.5-3 3" stroke="#e7b84a" stroke-width="1.2" fill="none"/></svg>';
+}
+function questSvg(size) {
+  return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" aria-hidden="true"><circle cx="8" cy="8" r="6.8" fill="#2b1d05" stroke="#f2c744" stroke-width="1.2"/><path d="M7 3.8h2l-.4 5.4H7.4z" fill="#f2c744"/><circle cx="8" cy="11.4" r="1.1" fill="#f2c744"/></svg>';
+}
+function softSvg(size) {
+  return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" aria-hidden="true"><path d="M2 2l2.5 1 7 7-1.5 1.5-7-7z" fill="#d8dde3" stroke="#333" stroke-width=".6"/><path d="M9.5 11.5l2-2 1.5 1.5-.8.8 1.8 1.8-1 1-1.8-1.8-.8.8z" fill="#9a6b2c" stroke="#333" stroke-width=".5"/></svg>';
+}
+function lootSvg(size) {
+  return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" aria-hidden="true"><path d="M5 5.5c0-1.2.6-2.6 3-2.6s3 1.4 3 2.6" fill="none" stroke="#c9a24a" stroke-width="1.2"/><path d="M3.2 6h9.6l-1 7.6H4.2z" fill="#8a5a24" stroke="#2a1a08" stroke-width=".7"/><path d="M6 8.6h4" stroke="#e8c46a" stroke-width="1.1"/></svg>';
+}
+function arrowSvg(size, dir) {
+  const p = dir === "LEFT" ? "M3 2l10 6-10 6z" : "M13 2L3 8l10 6z";
+  return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" aria-hidden="true"><path d="' + p + '" fill="#efe6d2" stroke="#000" stroke-opacity=".7" stroke-width="1"/></svg>';
+}
+
+function renderPlate(host, c, st, L, opts) {
+  const k = opts.k || 1, interactive = opts.interactive;
+  const smp = st.sample ? SAMPLE[st.sample] : SAMPLE[c.kind];
+  const frag = [];
+  const W = c.plate.width, HB = L.HB;
+  const mk = (b, cls, inner, style) => {
+    const s = "left:" + b.x + "px;top:" + b.y + "px;width:" + b.w + "px;height:" + b.h + "px;" + (style || "");
+    const sel = interactive && S.sel === b.part ? " sel" : "";
+    const hv = interactive && S.hover === b.part ? " hover" : "";
+    const cl = opts.clash && opts.clash.has(b) ? " clash" : "";
+    frag.push('<div class="p ' + cls + (interactive ? " hit" : "") + sel + hv + cl + '" data-part="' + b.part + '" style="' + s + '">' + (inner || "") + "</div>");
+  };
+  // capacity zones
+  if (interactive && st.capacity && opts.zones) for (const z of opts.zones) frag.push('<div class="p cap-zone" style="left:' + z.x + "px;top:" + z.y + "px;width:" + z.w + "px;height:" + z.h + 'px"></div>');
+  for (const b of L.boxes) {
+    if (b.type === "health") {
+      if (c.plate.display === "name") continue;
+      const t = st.targeted && (c.target.style === "border" || c.target.style === "borderArrows") ? " target" : "";
+      const g = st.targeted && c.target.style === "glow" ? " target-glow" : st.focused ? " focus-glow" : "";
+      const fillColor = smp.color;
+      mk(b, "box" + t + g, '<div class="track"><div class="fill" style="width:' + Math.round(smp.health * (W - 2)) + "px;background:" + fillColor + '"></div>' + (st.focused && !g ? "" : "") + "</div>");
+    } else if (b.type === "cast") {
+      if (!b.live) continue;
+      const blue = c.cast.colors === "blueOrange";
+      const col = st.cast === "interrupted" ? "var(--hostile)" : st.cast === "locked" ? (blue ? "var(--cast-hot)" : "var(--locked)") : blue ? "var(--cast-int)" : st.cast === "channel" ? "var(--channel)" : "var(--cast)";
+      const frac = st.cast === "interrupted" ? 1 : st.cast === "channel" ? 0.55 : 0.6;
+      const inner = c.plate.castHeight;
+      const icon = c.cast.icon;
+      const t = st.targeted && (c.target.style === "border" || c.target.style === "borderArrows") ? " target" : "";
+      let barL = 1, barR = 1, iconHtml = "";
+      const iconArt = '<div style="position:absolute;inset:0;background:linear-gradient(135deg,#f6e7a3,#b8862b 55%,#5a3d0a);border-radius:1px"></div>';
+      if (icon === "in-left") { barL = 1 + inner + 1; iconHtml = '<div style="position:absolute;left:1px;top:1px;width:' + inner + "px;height:" + inner + 'px">' + iconArt + "</div>"; }
+      if (icon === "in-right") { barR = 1 + inner + 1; iconHtml = '<div style="position:absolute;right:1px;top:1px;width:' + inner + "px;height:" + inner + 'px">' + iconArt + "</div>"; }
+      let html = '<div class="track" style="left:' + barL + "px;right:" + barR + 'px"><div class="fill" style="width:' + Math.round(frac * 100) + "%;background:" + col + '"></div></div>' + iconHtml;
+      const shield = c.cast.shield && st.cast === "locked";
+      const fs = c.cast.fontSize;
+      const spellText = st.cast === "interrupted" ? "Interrupted" : smp.spell;
+      // Inside texts on one side line up from that side inward, in order: timer, then target (left of
+      // the timer); the spell name runs from the left and stops where they start (each anchored to the next).
+      const innerW = W - barL - barR - 4;
+      const inside = { LEFT: [], CENTER: [], RIGHT: [] };
+      for (const kk of CAST_TEXTS) {
+        const ct = c.cast[kk]; if (!ct.show || ct.place !== "inside") continue;
+        if (kk !== "spell" && st.cast === "interrupted") continue;
+        inside[hSide(ct.anchor) || "CENTER"].push(kk);
+      }
+      const strOf = (kk) => kk === "spell" ? spellText : kk === "timer" ? (st.cast === "channel" ? "1.3" : "1.0") : smp.target;
+      const used = { LEFT: 0, RIGHT: 0 };
+      for (const side of ["RIGHT", "LEFT"]) {
+        const list = side === "RIGHT" ? inside.RIGHT.slice().sort((a, b) => (a === "timer" ? -1 : b === "timer" ? 1 : 0)) : inside.LEFT;
+        for (const kk of list) {
+          const ct = c.cast[kk], str = strOf(kk), wTxt = textWidth(str, fs, 700) + 1;
+          const room = side === "LEFT" ? Math.max(8, innerW - used.RIGHT - used.LEFT - (used.RIGHT ? 3 : 0)) : wTxt;
+          const w = Math.min(wTxt, room);
+          const pos = side === "LEFT" ? "left:" + (barL + 2 + used.LEFT) + "px;" : "right:" + (barR + 2 + used.RIGHT) + "px;";
+          const color = kk === "target" ? smp.targetColor : "#e8e3d9";
+          html += '<div class="txt" style="position:absolute;top:0;bottom:0;' + pos + "width:" + w + "px;font-size:" + fs + "px;font-weight:700;color:" + color + ";transform:translate(" + ct.x + "px," + (-ct.y) + 'px)"><span class="clipline">' + esc(str) + "</span></div>";
+          used[side] += w + 4;
+        }
+      }
+      for (const kk of inside.CENTER) {
+        const ct = c.cast[kk];
+        html += '<div class="txt" style="position:absolute;top:0;bottom:0;left:' + (barL + 2) + "px;right:" + (barR + 2) + "px;justify-content:center;font-size:" + fs + "px;font-weight:700;color:" + (kk === "target" ? smp.targetColor : "#e8e3d9") + ";transform:translate(" + ct.x + "px," + (-ct.y) + 'px)">' + esc(strOf(kk)) + "</div>";
+      }
+      for (const kk of CAST_TEXTS) {
+        const ct = c.cast[kk]; if (!ct.show) continue;
+        if (kk !== "spell" && st.cast === "interrupted") continue;
+        const str = strOf(kk);
+        const color = kk === "target" ? smp.targetColor : "#e8e3d9";
+        const side = hSide(ct.anchor) || "CENTER";
+        if (ct.place === "inside") {
+          continue;
+        } else {
+          const above = isTop(ct.anchor);
+          const style = "position:absolute;left:0;right:0;height:" + (fs + 2) + "px;" + (above ? "bottom:100%;margin-bottom:1px;" : "top:100%;margin-top:1px;") + "justify-content:" + (side === "LEFT" ? "flex-start" : side === "RIGHT" ? "flex-end" : "center") + ";font-size:" + fs + "px;font-weight:700;color:" + color + ";transform:translate(" + ct.x + "px," + (-ct.y) + "px)";
+          html += '<div class="txt" style="' + style + '">' + esc(str) + "</div>";
+        }
+      }
+      if (shield) html += '<div style="position:absolute;left:' + (icon === "in-left" ? 1 : -2) + 'px;top:50%;width:8px;height:9px;margin-top:-4.5px;background:#9aa0a8;clip-path:polygon(50% 0,100% 18%,92% 62%,50% 100%,8% 62%,0 18%);box-shadow:0 0 0 1px #000"></div>';
+      mk(b, "box" + t, html);
+    } else if (b.type === "castIcon") {
+      if (!b.live) continue;
+      const locked = c.cast.shield && st.cast === "locked";
+      mk(b, "icon", '<div class="art" style="inset:1px;background:linear-gradient(135deg,#f6e7a3,#b8862b 55%,#5a3d0a)' + (locked ? ";filter:grayscale(1) brightness(.7)" : "") + '"></div>', "--rim:var(--m-mid)");
+    } else if (b.type === "text") {
+      const t = c.text[b.id];
+      let str = b.id === "name" ? smp.name : (c.kind === "enemy" ? Math.round(smp.health * 100) + "%" : "");
+      if (b.id === "healthText" && !str) str = Math.round(smp.health * 100) + "%";
+      const weight = b.id === "name" ? 600 : 700;
+      const col = b.id === "name" ? (c.plate.display === "name" ? smp.color : "linear") : "#cfe0cf";
+      const justify = b.align === "LEFT" ? "flex-start" : b.align === "RIGHT" ? "flex-end" : "center";
+      const colorStyle = col === "linear" ? "background:linear-gradient(90deg," + smp.color + ",#fff 160%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.9))" : "color:" + col;
+      const inner = '<span class="' + (b.clip ? "clipline" : "") + '" style="' + colorStyle + '">' + esc(str) + "</span>";
+      mk(b, "txt", inner, "justify-content:" + justify + ";font-size:" + b.size + "px;font-weight:" + weight + ";transform:translate(" + (b.dx || 0) + "px," + (-(b.dy || 0)) + "px)" + (b.inside ? ";padding:0" : ""));
+    } else if (b.type === "badge") {
+      let inner = "";
+      if (b.part === "raid") inner = raidSvg(b.w);
+      else if (b.part === "classification") inner = eliteSvg(b.w);
+      else if (b.part === "quest") inner = questSvg(b.w);
+      else if (b.part === "level") inner = '<div class="txt" style="font-size:' + c.badges.level.size + "px;font-weight:700;color:" + smp.levelColor + ';height:100%">' + smp.level + "</div>";
+      else if (b.part === "arrows") inner = arrowSvg(b.w, b.arrowSide);
+      else if (b.part === "combo") {
+        const n = st.comboCount, s = c.badges.combo.size;
+        for (let i = 0; i < n; i++) inner += '<div style="position:absolute;left:' + (i * (s + c.comboSpacing)) + "px;top:0;width:" + s + "px;height:" + s + "px;border-radius:50%;background:" + (i < st.comboLit ? "#f05454" : "#19191b") + ';box-shadow:0 0 0 1px #333336, 0 0 0 2px rgba(0,0,0,.6)"></div>';
+      }
+      mk(b, "", inner);
+    } else if (b.type === "aura") {
+      const smpAura = smp.auras[b.g] || [];
+      if (!b.live) { if (st.capacity) mk(b, "ghost", ""); continue; }
+      const art = smpAura[b.i % smpAura.length] || "#555";
+      const rim = (smp.rims[b.g] || [])[b.i % ((smp.rims[b.g] || [1]).length)] || "var(--notype)";
+      const timer = b.h >= 12 ? '<span class="t">' + (b.g === "crowdControl" ? "6" : b.g === "buffs" ? "12" : String(4 + b.i * 3)) + "</span>" : "";
+      const stack = b.g === "debuffs" && b.i === 1 ? '<span class="n">3</span>' : "";
+      const glow = b.g === "crowdControl" ? ";box-shadow:0 0 0 1px rgba(0,0,0,.65),0 0 4px 1px rgba(255,89,72,.55)" : "";
+      if (c.auras.edge === "outside") {
+        // Cooldown Manager model: shadow ring, band, then the picture filling the rest.
+        const d = auraDims(c, b.g), fsT = Math.max(8, Math.round(d.ph * 0.56)), fsN = Math.max(7, Math.round(d.ph * 0.45));
+        const t2 = '<span class="t" style="font-size:' + fsT + 'px">' + (b.g === "crowdControl" ? "6" : b.g === "buffs" ? "12" : String(4 + b.i * 3)) + "</span>";
+        const n2 = b.g === "debuffs" && b.i === 1 ? '<span class="n" style="font-size:' + fsN + 'px;right:3px;bottom:2px">3</span>' : "";
+        mk(b, "aslot", '<div class="aband" style="border-color:' + rim + (b.g === "crowdControl" ? ";box-shadow:0 0 5px 1px rgba(255,89,72,.5)" : "") + '"></div><div class="art" style="inset:2px;background:radial-gradient(circle at 35% 35%,' + art + ' 0%, #111 120%)"></div>' + t2 + n2);
+      } else mk(b, "icon", '<div class="art" style="background:radial-gradient(circle at 35% 35%,' + art + ' 0%, #111 120%)"></div>' + timer + stack, "--rim:" + rim + glow);
+    } else if (b.type === "soft") {
+      mk(b, "", c.softTarget.kinds === "loot" ? lootSvg(b.w) : softSvg(b.w));
+    }
+  }
+  // anchor guides
+  if (interactive) {
+    const pts = { TOPLEFT: [0, 0], TOP: [W / 2, 0], TOPRIGHT: [W, 0], LEFT: [0, HB / 2], CENTER: [W / 2, HB / 2], RIGHT: [W, HB / 2], BOTTOMLEFT: [0, HB], BOTTOM: [W / 2, HB], BOTTOMRIGHT: [W, HB] };
+    for (const p in pts) frag.push('<div class="p anchor-dot" style="left:' + pts[p][0] + "px;top:" + pts[p][1] + 'px"></div>');
+    frag.push('<div class="p band" style="left:0;top:' + (-L.top) + "px;width:" + W + "px;height:" + L.top + 'px"></div>');
+    frag.push('<div class="p band" style="left:0;top:' + HB + "px;width:" + W + "px;height:" + L.bottom + 'px"></div>');
+  }
+  host.innerHTML = frag.join("");
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])); }
+
+function stateFor(c) {
+  return { cast: S.cast, targeted: S.targeted, focused: S.focused, soft: S.soft, capacity: S.capacity, counts: S.counts, comboCount: 5, comboLit: S.combo };
+}
+
+function capacityZones(L) {
+  // one dashed zone per aura row, covering every slot
+  const byRow = {};
+  for (const b of L.boxes) if (b.type === "aura") { const k = b.label + "@" + b.point; const z = byRow[k] || (byRow[k] = { x: b.x, y: b.y, x2: b.x + b.w, y2: b.y + b.h }); z.x = Math.min(z.x, b.x); z.y = Math.min(z.y, b.y); z.x2 = Math.max(z.x2, b.x + b.w); z.y2 = Math.max(z.y2, b.y + b.h); }
+  return Object.values(byRow).map((z) => ({ x: z.x - 1, y: z.y - 1, w: z.x2 - z.x + 2, h: z.y2 - z.y + 2 }));
+}
+
+function render(keep) {
+  const c = C(), st = stateFor(c);
+  const L = layout(c, st, S.engine);
+  const cl = clashes(L);
+  const clashSet = new Set(); for (const [a, b] of cl) { clashSet.add(a); clashSet.add(b); }
+  const k = S.zoom;
+  renderPlate(zoomEl, c, st, L, { k, interactive: true, clash: clashSet, zones: capacityZones(L) });
+  const bw = L.bounds.maxX - L.bounds.minX, bh = L.bounds.maxY - L.bounds.minY;
+  const cx = (L.bounds.minX + L.bounds.maxX) / 2, cy = (L.bounds.minY + L.bounds.maxY) / 2;
+  const fit = Math.min(k, (stage.clientWidth - 24) / bw, (stage.clientHeight - 24) / bh);
+  const kk = Math.max(1, Math.floor(fit * 2) / 2);
+  zoomEl.style.transform = "scale(" + kk + ") translate(" + (-cx) + "px," + (-cy) + "px)";
+  $("#pixgrid").style.backgroundSize = kk + "px " + kk + "px";
+  $("#cap-left").innerHTML = "<b>" + (S.engine === "v11" ? "Current v11 rules" : "Proposed rules") + "</b> · " + (S.kind === "enemy" ? "Enemy" : "Friendly") + " · shown at " + kk + "×" + (kk < k ? " (fitted)" : "");
+  $("#cap-size").textContent = "Plate " + c.plate.width + " × " + (c.plate.healthHeight + 2) + " health box, " + (c.plate.castHeight + 2) + " cast box · whole footprint " + Math.round(bw) + " × " + Math.round(bh) + " px";
+  document.body.classList.toggle("show-anchors", S.anchors);
+  document.body.classList.toggle("show-grid", S.grid);
+
+  // 1:1 strip: four plates of the same kind
+  const states = [
+    { cast: "cast", targeted: true, focused: false, soft: false, capacity: false, counts: S.counts, comboCount: 5, comboLit: S.combo },
+    { cast: "none", targeted: false, focused: true, soft: false, capacity: false, counts: { crowdControl: 0, debuffs: 2, buffs: 0 }, comboCount: 0, comboLit: 0, sample: c.kind === "friendly" ? "npc" : null },
+    { cast: "locked", targeted: false, focused: false, soft: S.soft, capacity: false, counts: { crowdControl: 1, debuffs: 0, buffs: 2 }, comboCount: 0, comboLit: 0 },
+    { cast: "none", targeted: false, focused: false, soft: false, capacity: false, counts: { crowdControl: 0, debuffs: 1, buffs: 0 }, comboCount: 0, comboLit: 0, sample: c.kind === "friendly" ? "npc" : null },
+  ];
+  // Four plates side by side need about 4 × (width + 70) px; narrower screens scale the strip down.
+  const need = 4 * (c.plate.width + 70), sw = strip.clientWidth;
+  const sc = Math.min(1, sw / need), vw = sw / sc;
+  let html = '<div class="p" style="left:0;top:0;width:' + vw + 'px;height:150px;transform-origin:0 0;transform:scale(' + sc + ')">';
+  states.forEach((s2, i) => {
+    const x = Math.round(vw * (0.125 + i * 0.25) - c.plate.width / 2), y = Math.round(54 + (i % 2) * 30);
+    html += '<div class="p" id="strip-' + i + '" style="left:' + x + "px;top:" + y + 'px"></div>';
+  });
+  strip.innerHTML = html + "</div>";
+  states.forEach((s2, i) => renderPlate(document.getElementById("strip-" + i), c, s2, layout(c, s2, S.engine), { k: 1 }));
+  $("#strip-note").textContent = sc < 1 ? "Scaled to " + Math.round(sc * 100) + "% to fit this screen" : "1:1 at the pixel-perfect scale (1 UI unit = 1 physical pixel), the size you'd see at 1080p";
+
+  renderList(); if (keep !== "insp") renderInspector(); renderStacks(L, cl); if (keep !== "counts") renderCounts(); renderJson();
+  syncSegs();
+  saveDraft();
+}
+
+/* ---------------------------------------------------------------- parts list & inspector */
+function partsAll() {
+  return [
+    { grp: "Plate" }, { id: "health" }, { id: "cast" },
+    { grp: "Text" }, { id: "name" }, { id: "healthText" },
+    { grp: "Badges" }, { id: "raid" }, { id: "classification" }, { id: "quest" }, { id: "level" }, { id: "combo" }, { id: "arrows" }, { id: "soft" },
+    { grp: "Auras" }, { id: "crowdControl" }, { id: "debuffs" }, { id: "buffs" },
+  ];
+}
+function partWhere(c, id) {
+  const fmt = (o) => (o.place === "inside" ? "in " : o.place === "border" ? "border " : "") + ANCHOR_SHORT[o.anchor];
+  if (id === "health") return c.plate.width + "×" + c.plate.healthHeight;
+  if (id === "cast") return c.cast.show ? (c.plate.castSide === "above" ? "above" : "below") + " " + c.plate.castHeight : "off";
+  if (TEXT_LABEL[id]) return c.text[id].show ? fmt(c.text[id]) : "off";
+  if (id === "arrows") return c.target.arrowPlace === "hug" ? "hug bar" : "outside";
+  if (BADGE_LABEL[id]) return c.badges[id].show ? fmt(c.badges[id]) : "off";
+  if (id === "soft") return c.softTarget.show ? "above" : "off";
+  if (GROUP_LABEL[id]) return c.auras[id].show ? ANCHOR_SHORT[c.auras[id].anchor] + " ×" + c.auras[id].max : "off";
+  return "";
+}
+function partOn(c, id) {
+  if (id === "health") return true; if (id === "cast") return c.cast.show;
+  if (TEXT_LABEL[id]) return c.text[id].show; if (BADGE_LABEL[id]) return c.badges[id].show;
+  if (id === "soft") return c.softTarget.show; if (GROUP_LABEL[id]) return c.auras[id].show; return true;
+}
+function renderList() {
+  const c = C(), ul = $("#elist");
+  ul.innerHTML = partsAll().map((p) => p.grp ? '<li class="grp" role="presentation">' + p.grp + "</li>" :
+    '<li role="option" tabindex="0" data-part="' + p.id + '" aria-selected="' + (S.sel === p.id) + '" class="' + (partOn(c, p.id) ? "" : "off") + '"><span>' + partLabel(p.id) + '</span><span class="where">' + partWhere(c, p.id) + "</span></li>").join("");
+}
+
+function field(label, inner) { return '<div class="field"><span class="lab">' + label + "</span>" + inner + "</div>"; }
+function slider(id, label, val, min, max, step, suffix) {
+  return '<div class="field"><label for="f-' + id + '">' + label + '</label><div class="row"><input type="range" id="f-' + id + '" data-k="' + id + '" min="' + min + '" max="' + max + '" step="' + (step || 1) + '" value="' + val + '"><output>' + val + (suffix || "") + "</output></div></div>";
+}
+function pills(id, label, val, list) {
+  return field(label, '<span class="seg" data-k="' + id + '">' + list.map((o) => '<button data-v="' + o[0] + '" aria-pressed="' + (String(val) === String(o[0])) + '">' + o[1] + "</button>").join("") + "</span>");
+}
+function toggle(id, label, val) { return '<div class="field"><span class="lab">&nbsp;</span><label class="chk"><input type="checkbox" data-k="' + id + '" ' + (val ? "checked" : "") + "> " + label + "</label></div>"; }
+function compass(id, val, allowCenter) {
+  return field("Anchor", '<div class="compass" data-k="' + id + '">' + ANCHORS.map((a) => '<button data-v="' + a + '" aria-pressed="' + (val === a) + '" title="' + ANCHOR_LABEL[a] + '"' + (a === "CENTER" && !allowCenter ? " disabled" : "") + ">" + ANCHOR_SHORT[a] + "</button>").join("") + "</div>");
+}
+
+function renderInspector() {
+  const c = C(), id = S.sel, box = $("#insp");
+  $("#insp-title").textContent = partLabel(id);
+  let h = "";
+  if (id === "health") {
+    h += slider("plate.width", "Width", c.plate.width, 80, 250, 1, "px");
+    h += slider("plate.healthHeight", "Health Height", c.plate.healthHeight, 4, 30, 1, "px");
+    h += pills("plate.display", "Style", c.plate.display, [["plate", "Plate"], ["name", "Name Only"]]);
+    h += pills("target.style", "Target Indicator", c.target.style, [["border", "Border"], ["glow", "Glow"], ["arrows", "Arrows"], ["borderArrows", "Border and Arrows"], ["none", "None"]]);
+  } else if (id === "cast") {
+    h += toggle("cast.show", "Show Cast Bar", c.cast.show);
+    h += pills("plate.castSide", "Position", c.plate.castSide, [["below", "Below"], ["above", "Above"]]);
+    h += slider("plate.castHeight", "Cast Height", c.plate.castHeight, 4, 20, 1, "px");
+    h += slider("plate.castGap", "Gap", c.plate.castGap, 0, 8, 1, "px");
+    h += pills("cast.icon", "Spell Icon", c.cast.icon, [["in-left", "Left"], ["in-right", "Right"], ["out-left", "Outside Left"], ["out-right", "Outside Right"], ["span-left", "Both Bars, Left"], ["span-right", "Both Bars, Right"], ["none", "None"]]);
+    h += toggle("cast.shield", "Shield When Not Interruptible", c.cast.shield);
+    h += slider("cast.fontSize", "Text Size", c.cast.fontSize, 6, 16, 1, "px");
+    for (const kk of CAST_TEXTS) {
+      const t = c.cast[kk];
+      h += toggle("cast." + kk + ".show", "Show " + CAST_TEXT_LABEL[kk], t.show);
+      h += pills("cast." + kk + ".anchor", CAST_TEXT_LABEL[kk], t.place === "inside" ? hSide(t.anchor) || "CENTER" : t.anchor,
+        [["LEFT", "Left"], ["CENTER", "Center"], ["RIGHT", "Right"], ["TOPLEFT", "Above L"], ["TOPRIGHT", "Above R"], ["BOTTOMLEFT", "Below L"], ["BOTTOM", "Below"], ["BOTTOMRIGHT", "Below R"]]);
+    }
+  } else if (TEXT_LABEL[id]) {
+    const t = c.text[id];
+    h += toggle("text." + id + ".show", "Show " + TEXT_LABEL[id], t.show);
+    h += compass("text." + id + ".anchor", t.anchor, true);
+    h += pills("text." + id + ".place", "Place", t.place, [["border", "On Border"], ["outside", "Outside"], ["inside", "Inside"]]);
+    if (id === "name") h += slider("text.name.maxChars", "Most Characters (0: no limit)", t.maxChars || 0, 0, 24, 1, "");
+    h += slider("text." + id + ".size", "Size", t.size, 6, 20, 1, "px");
+    h += slider("text." + id + ".x", "Offset X", t.x, -50, 50, 1, "px");
+    h += slider("text." + id + ".y", "Offset Y", t.y, -50, 50, 1, "px");
+  } else if (id === "arrows") {
+    const b = c.badges.arrows;
+    h += pills("target.arrowPlace", "Arrows Sit", c.target.arrowPlace, [["hug", "Beside the Bar"], ["outside", "Outside Everything"]]);
+    h += slider("badges.arrows.size", "Arrow Size", b.size, 8, 48, 1, "px");
+    h += slider("target.arrowGap", "Arrow Gap (outside)", c.target.arrowGap, 0, 60, 1, "px");
+    h += '<div class="field" style="grid-column:1/-1"><span class="lab">Note</span><span class="lede" style="font-size:12.5px">Arrows show with Target Indicator Arrows or Border and Arrows (Health Bar). Beside the Bar puts them first in the Left and Right stacks, so a secret aura row never pushes them.</span></div>';
+  } else if (BADGE_LABEL[id]) {
+    const b = c.badges[id];
+    h += toggle("badges." + id + ".show", "Show " + BADGE_LABEL[id], b.show);
+    h += compass("badges." + id + ".anchor", b.anchor, true);
+    h += pills("badges." + id + ".place", "Place", b.place, [["outside", "Outside"], ["inside", "Inside"]]);
+    h += orderField("badge", id);
+    h += slider("badges." + id + ".size", id === "level" ? "Text Size" : id === "combo" ? "Point Size" : "Size", b.size, id === "level" ? 6 : 4, id === "level" ? 20 : 40, 1, "px");
+    if (id === "combo") { h += slider("comboSpacing", "Spacing", c.comboSpacing, 0, 12, 1, "px"); h += toggle("badges.combo.follow", "Move Up While Not Casting", b.follow); }
+    h += pills("stackOrder", "On One Anchor (all parts)", c.stackOrder || "auras", [["auras", "Auras First"], ["badges", "Indicators First"]]);
+    h += slider("badges." + id + ".x", "Offset X", b.x, -50, 50, 1, "px");
+    h += slider("badges." + id + ".y", "Offset Y", b.y, -50, 50, 1, "px");
+  } else if (id === "soft") {
+    h += toggle("softTarget.show", "Show Soft Target Icon", c.softTarget.show);
+    h += slider("softTarget.size", "Size", c.softTarget.size, 12, 40, 1, "px");
+    h += slider("softTarget.x", "Offset X", c.softTarget.x, -50, 50, 1, "px");
+    h += slider("softTarget.y", "Offset Y", c.softTarget.y, -50, 50, 1, "px");
+  } else if (GROUP_LABEL[id]) {
+    const a = c.auras[id];
+    h += toggle("auras." + id + ".show", "Show This Group", a.show);
+    h += compass("auras." + id + ".anchor", a.anchor, false);
+    h += pills("auras." + id + ".grow", "Grow", a.grow, [["right", "Right"], ["left", "Left"], ["up", "Up"], ["down", "Down"], ["center", "Center"]]);
+    h += orderField("row", id);
+    h += slider("auras." + id + ".size", "Icon Width (picture)", a.size, 10, 44, 1, "px");
+    h += slider("auras." + id + ".max", "Most Shown", a.max, 1, 12, 1, "");
+    h += slider("auras." + id + ".perRow", "Per Row", a.perRow, 1, 12, 1, "");
+    h += slider("auras." + id + ".x", "Offset X", a.x, -50, 50, 1, "px");
+    h += slider("auras." + id + ".y", "Offset Y", a.y, -50, 50, 1, "px");
+    h += toggle("auras." + id + ".attach", "Sit on Border", a.attach);
+    h += pills("stackOrder", "On One Anchor (all parts)", c.stackOrder || "auras", [["auras", "Auras First"], ["badges", "Indicators First"]]);
+    h += pills("auras.stacking", "Groups on One Anchor", c.auras.stacking, [["continue", "Continue the Row"], ["newRow", "New Row"]]);
+    h += slider("auras.spacing", "Spacing (all groups; -1 shares a shadow pixel)", c.auras.spacing, -2, 8, 1, "px");
+    h += pills("auras.shape", "Icon Shape (all groups)", c.auras.shape, [["mode", "Mode (4px shorter)"], ["cropped", "Cropped (6px)"], ["square", "Square"]]);
+    h += pills("auras.edge", "Edge (all groups)", c.auras.edge || "inside", [["outside", "Outside the Icon (Cooldown Manager)"], ["inside", "Inside the Icon (v11)"]]);
+  }
+  box.innerHTML = h;
+}
+function orderField(kind, id) {
+  return field("Order in Stack", '<span class="seg"><button data-order="-1" data-ok="' + kind + '" data-oid="' + id + '">Closer to Bar</button><button data-order="1" data-ok="' + kind + '" data-oid="' + id + '">Farther</button></span>');
+}
+
+function getPath(obj, path) { return path.split(".").reduce((o, k) => o && o[k], obj); }
+function setPath(obj, path, val) { const ks = path.split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length - 1]] = val; }
+
+function setValue(k, v, keep) {
+  const c = C();
+  if (/^cast\.(spell|timer|target)\.anchor$/.test(k)) {
+    const t = getPath(c, k.replace(/\.anchor$/, ""));
+    t.anchor = v; t.place = (v === "LEFT" || v === "CENTER" || v === "RIGHT") ? "inside" : "outside";
+  } else if (/\.anchor$/.test(k) && k.startsWith("auras.")) {
+    const g = getPath(c, k.replace(/\.anchor$/, "")); g.anchor = v;
+    const defGrow = { TOPLEFT: "right", TOP: "center", TOPRIGHT: "left", LEFT: "left", RIGHT: "right", BOTTOMLEFT: "right", BOTTOM: "center", BOTTOMRIGHT: "left" };
+    g.grow = defGrow[v];
+  } else setPath(c, k, v);
+  render(keep);
+}
+
+function moveOrder(kind, id, dir) {
+  const c = C();
+  const list = kind === "row" ? GROUPS.filter((g) => c.auras[g].anchor === c.auras[id].anchor).map((g) => c.auras[g])
+    : BADGES.filter((b) => b !== "arrows" && c.badges[b].anchor === c.badges[id].anchor && c.badges[b].place === c.badges[id].place).map((b) => c.badges[b]);
+  const me = kind === "row" ? c.auras[id] : c.badges[id];
+  list.sort((a, b) => a.order - b.order);
+  list.forEach((o, i) => { o.order = i + 1; });
+  const i = list.indexOf(me), j = i + dir;
+  if (j < 0 || j >= list.length) return;
+  const t = list[j].order; list[j].order = me.order; me.order = t;
+  render();
+}
+
+function renderStacks(L, cl) {
+  const c = C();
+  const order = ["BORDER-TOP-TEXT", "BORDER-TOPLEFT", "BORDER-TOP", "BORDER-TOPRIGHT", "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "RIGHT", "BORDER-BOTTOM-TEXT", "BORDER-BOTTOMLEFT", "BORDER-BOTTOM", "BORDER-BOTTOMRIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT", "IN-LEFT", "IN-CENTER", "IN-RIGHT"];
+  const label = (p) => p.startsWith("IN-") ? "Inside " + ANCHOR_LABEL[p.slice(3)]
+    : p.endsWith("-TEXT") ? "Border line text (" + (p.includes("TOP") ? "top" : "bottom") + ")"
+    : p.startsWith("BORDER-") ? "On border, " + ANCHOR_LABEL[p.slice(7)] : ANCHOR_LABEL[p];
+  let h = "";
+  for (const p of order) {
+    const st = L.stacks[p]; if (!st || !st.length) continue;
+    h += '<div class="pt"><b>' + label(p) + "</b><ol>" + st.map((m) => '<li class="' + (m.kind === "row" ? "row" : "") + '">' + partLabel(m.id) + (m.kind === "row" ? " (row)" : "") + (m.chained ? " · follows the row" : "") + "</li>").join("") + "</ol></div>";
+  }
+  $("#stacks").innerHTML = h || '<div class="lede">Nothing anchored outside the bar.</div>';
+  const seen = new Set(); const items = [];
+  for (const [a, b] of cl) { const key = [a.part, b.part].sort().join("|"); if (seen.has(key)) continue; seen.add(key); items.push("<li>" + partLabel(a.part) + " overlaps " + partLabel(b.part) + (a.type === "aura" && !a.live || b.type === "aura" && !b.live ? " when its row fills up" : "") + "</li>"); }
+  // Pixel check: a centered row is anchored by its own center, so its left edge lands on a whole
+  // pixel for every count only if slot + spacing is even (then a fixed half-pixel nudge evens it out).
+  const pix = [];
+  for (const g of GROUPS) {
+    const a = c.auras[g]; if (!a.show || a.grow !== "center") continue;
+    const d = auraDims(c, g), pitch = d.w + c.auras.spacing;
+    if (pitch % 2 !== 0) pix.push('<li class="pix">' + GROUP_LABEL[g] + ": centered, but icon slot " + d.w + " + spacing " + c.auras.spacing + " is odd, so some counts land between pixels. Use a width " + (a.size + 1) + " or " + (a.size - 1) + ".</li>");
+  }
+  const ok = items.length ? "" : '<li class="ok">No overlaps, even with every aura row full.</li>';
+  $("#warns").innerHTML = items.join("") + ok + (pix.length ? pix.join("") : '<li class="ok">Every aura row lands on whole pixels.</li>');
+}
+
+function renderCounts() {
+  const c = C();
+  let h = '<div class="insp" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">';
+  for (const g of GROUPS) h += '<div class="field"><label for="cnt-' + g + '">' + GROUP_LABEL[g] + ' showing</label><div class="row"><input type="range" id="cnt-' + g + '" data-cnt="' + g + '" min="0" max="' + c.auras[g].max + '" value="' + Math.min(S.counts[g], c.auras[g].max) + '"><output>' + Math.min(S.counts[g], c.auras[g].max) + "</output></div></div>";
+  h += '<div class="field"><label for="cnt-combo">Combo points lit</label><div class="row"><input type="range" id="cnt-combo" data-cnt="combo" min="0" max="5" value="' + S.combo + '"><output>' + S.combo + "</output></div></div>";
+  h += "</div><p class=\"lede\" style=\"font-size:12.5px\">In combat the game keeps these counts secret. Dashed slots show the room each row can take; red outlines mark anything it would cover.</p>";
+  $("#counts").innerHTML = h;
+}
+function renderJson() { $("#json").textContent = JSON.stringify(S.cfg, null, 1); }
+
+function syncSegs() {
+  const set = (sel, v) => document.querySelectorAll(sel + " button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === String(v))));
+  set("#seg-kind", S.kind); set("#seg-engine", S.engine); set("#seg-zoom", S.zoom); set("#seg-cast", S.cast);
+  $("#preset").value = S.preset;
+}
+
+/* ---------------------------------------------------------------- events */
+function bindSeg(sel, fn) { document.querySelector(sel).addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) fn(b.dataset.v); }); }
+bindSeg("#seg-kind", (v) => { S.kind = v; render(); });
+bindSeg("#seg-engine", (v) => { S.engine = v; render(); });
+bindSeg("#seg-zoom", (v) => { S.zoom = Number(v); render(); });
+bindSeg("#seg-cast", (v) => { S.cast = v; render(); });
+$("#preset").innerHTML = PRESETS.map((p) => '<option value="' + p.id + '">' + p.label + "</option>").join("");
+$("#preset").addEventListener("change", (e) => { const p = PRESETS.find((x) => x.id === e.target.value); S.preset = p.id; S.cfg = { enemy: p.make("enemy"), friendly: p.make("friendly") }; render(); });
+$("#btn-reset").addEventListener("click", () => { const p = PRESETS.find((x) => x.id === S.preset) || PRESETS[0]; S.cfg[S.kind] = p.make(S.kind); render(); toast("Reset " + (S.kind === "enemy" ? "Enemy" : "Friendly") + " to " + p.label + "."); });
+const chk = (id, key) => $(id).addEventListener("change", (e) => { S[key] = e.target.checked; render(); });
+chk("#st-target", "targeted"); chk("#st-focus", "focused"); chk("#st-soft", "soft"); chk("#st-capacity", "capacity"); chk("#st-anchors", "anchors"); chk("#st-grid", "grid");
+
+zoomEl.addEventListener("click", (e) => { const p = e.target.closest("[data-part]"); if (p) { S.sel = p.dataset.part; render(); } });
+zoomEl.addEventListener("mouseover", (e) => { const p = e.target.closest("[data-part]"); const v = p ? p.dataset.part : null; if (v !== S.hover) { S.hover = v; zoomEl.querySelectorAll("[data-part]").forEach((n) => n.classList.toggle("hover", n.dataset.part === v)); } });
+zoomEl.addEventListener("mouseleave", () => { S.hover = null; zoomEl.querySelectorAll(".hover").forEach((n) => n.classList.remove("hover")); });
+$("#elist").addEventListener("click", (e) => { const li = e.target.closest("li[data-part]"); if (li) { S.sel = li.dataset.part; render(); } });
+$("#elist").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { const li = e.target.closest("li[data-part]"); if (li) { e.preventDefault(); S.sel = li.dataset.part; render(); document.querySelector('#elist li[data-part="' + S.sel + '"]').focus(); } } });
+
+const insp = $("#insp");
+insp.addEventListener("input", (e) => {
+  const t = e.target; if (!t.dataset.k) return;
+  if (t.type === "range") { const v = Number(t.value); t.nextElementSibling.textContent = v + (t.nextElementSibling.textContent.endsWith("px") ? "px" : ""); setValue(t.dataset.k, v, "insp"); }
+});
+insp.addEventListener("change", (e) => { const t = e.target; if (t.type === "checkbox" && t.dataset.k) setValue(t.dataset.k, t.checked); });
+insp.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.order) { moveOrder(b.dataset.ok, b.dataset.oid, Number(b.dataset.order)); return; }
+  const host = b.closest("[data-k]"); if (!host) return;
+  let v = b.dataset.v; if (v === "true") v = true; else if (v === "false") v = false;
+  setValue(host.dataset.k, v);
+});
+$("#counts").addEventListener("input", (e) => { const t = e.target; if (!t.dataset.cnt) return; const v = Number(t.value); t.nextElementSibling.textContent = v; if (t.dataset.cnt === "combo") S.combo = v; else S.counts[t.dataset.cnt] = v; render("counts"); });
+// Slider changes skip rebuilding their own panel while dragging; rebuild it once the drag ends.
+insp.addEventListener("change", (e) => { if (e.target.type === "range") renderInspector(); });
+
+stage.addEventListener("keydown", (e) => {
+  const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key]; if (!d) return;
+  const c = C(), id = S.sel, step = e.shiftKey ? 5 : 1;
+  const t = TEXT_LABEL[id] ? c.text[id] : BADGE_LABEL[id] && id !== "arrows" ? c.badges[id] : GROUP_LABEL[id] ? c.auras[id] : id === "soft" ? c.softTarget : null;
+  if (!t) return; e.preventDefault();
+  t.x = Math.max(-50, Math.min(50, t.x + d[0] * step)); t.y = Math.max(-50, Math.min(50, t.y + d[1] * step)); render();
+});
+window.addEventListener("resize", () => { if (!$("#tab-designer").hidden) render(); if (!$("#tab-previewer").hidden) renderPreviewers(); });
+
+function toast(msg) { $("#toast").textContent = msg; }
+$("#btn-copy").addEventListener("click", () => {
+  const text = JSON.stringify(S.cfg, null, 1);
+  const done = () => toast("Copied both kinds' settings.");
+  try { navigator.clipboard.writeText(text).then(done, () => { selectJson(); toast("Copy was refused; the settings are selected, press Ctrl+C."); }); } catch (e) { selectJson(); }
+});
+function selectJson() { const r = document.createRange(); r.selectNodeContents($("#json")); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+
+/* ---------------------------------------------------------------- saved designs (db) */
+let db = null, designs = {};
+const slug = (s) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "design";
+$("#save-name").addEventListener("input", () => { $("#btn-save").disabled = !db || !$("#save-name").value.trim(); });
+$("#load").addEventListener("change", () => { $("#btn-load").disabled = !$("#load").value; });
+(async () => {
+  try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) { toast("Saving isn't available in this view. Copy settings still works."); return; }
+  $("#btn-save").disabled = !$("#save-name").value.trim();
+  const timer = setTimeout(() => toast("Saved designs can't be reached yet."), 10000);
+  db.collection("designs").onSnapshot((snap) => {
+    if (!snap.metadata.fromCache) clearTimeout(timer);
+    designs = {};
+    snap.docs.forEach((d) => { designs[d.id] = d.data(); });
+    const sel = $("#load"), cur = sel.value;
+    sel.innerHTML = '<option value="">Saved designs…</option>' + snap.docs.map((d) => { const v = d.data(); return '<option value="' + esc(d.id) + '">' + esc(v.name || d.id) + "</option>"; }).join("");
+    sel.value = designs[cur] ? cur : "";
+    $("#btn-load").disabled = !sel.value;
+  }, () => { clearTimeout(timer); toast("Saved designs couldn't be loaded."); });
+})();
+$("#btn-save").addEventListener("click", async () => {
+  const name = $("#save-name").value.trim(); if (!db || !name) return;
+  $("#btn-save").disabled = true;
+  try { await db.collection("designs").doc(slug(name)).set({ name, savedAt: new Date().toISOString(), preset: S.preset, rules: S.engine, cfg: clone(S.cfg) }); toast("Saved “" + name + "”."); }
+  catch (e) { toast(e && e.code === "invalid_argument" ? "You can view this page but not save to it." : "Couldn't save. Try again in a moment."); }
+  $("#btn-save").disabled = false;
+});
+$("#btn-load").addEventListener("click", () => {
+  const d = designs[$("#load").value]; if (!d || !d.cfg) return;
+  S.cfg = clone(d.cfg); toast("Loaded “" + (d.name || $("#load").value) + "”."); render();
+});
+
+/* ---------------------------------------------------------------- previewer samples */
+const PV = { cast: "cast", targeted: true, focused: false, auras: "some", capacity: true };
+function pvState(over) {
+  const c = S.cfg.enemy;
+  const full = { crowdControl: c.auras.crowdControl.max, debuffs: c.auras.debuffs.max, buffs: c.auras.buffs.max };
+  const some = { crowdControl: 1, debuffs: 2, buffs: 1 }, none = { crowdControl: 0, debuffs: 0, buffs: 0 };
+  return Object.assign({ cast: PV.cast, targeted: PV.targeted, focused: PV.focused, soft: false, capacity: PV.capacity,
+    counts: PV.auras === "full" ? full : PV.auras === "none" ? none : some, comboCount: 5, comboLit: 3 }, over || {});
+}
+// Mounts a plate with its health bar's center at (cx, cy) inside host, scaled by k.
+function pvPlate(host, cx, cy, k, st, extraClass) {
+  const c = S.cfg.enemy, L = layout(c, st, "proposed");
+  const el = document.createElement("div");
+  el.className = "p" + (extraClass ? " " + extraClass : "");
+  el.style.left = Math.round(cx - (c.plate.width / 2) * k) + "px";
+  el.style.top = Math.round(cy - (L.HB / 2) * k) + "px";
+  el.style.transformOrigin = "0 0";
+  el.style.transform = "scale(" + k + ")";
+  host.appendChild(el);
+  renderPlate(el, c, st, L, { k: 1 });
+  return { el, L };
+}
+function pvFit(host, L, k, pad) {
+  const bw = L.bounds.maxX - L.bounds.minX, bh = L.bounds.maxY - L.bounds.minY;
+  const W = host.clientWidth - pad, H = host.clientHeight - pad;
+  return Math.max(0.5, Math.min(k, W / bw, H / bh));
+}
+function chips(list, cur, key) {
+  return '<span class="seg pvchips" data-pv="' + key + '">' + list.map((o) => '<button data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + "</button>").join("") + "</span>";
+}
+function renderPreviewers() {
+  const c = S.cfg.enemy;
+  // A: today's strip, fixed.
+  const a = $("#pv-a"); a.innerHTML = '<div class="mwin"><div class="mtitle">Preview <span class="seg"><button aria-pressed="true">Static</button><button aria-pressed="false">Animated</button></span></div><div class="mbody" id="pv-a-body"></div><div class="mcap"><span>Enemy, shown as your target</span><span>Click a part to open its settings</span></div></div>';
+  const ab = $("#pv-a-body");
+  { const st = pvState({ capacity: false }), L = layout(c, st, "proposed"); const k = Math.min(1, pvFit(ab, L, 1, 8)); pvPlate(ab, ab.clientWidth / 2, ab.clientHeight / 2 + (-(L.bounds.minY + L.bounds.maxY) / 2 + L.HB / 2) * k * 0 + 6, k, st); }
+  // B: magnified stage + chips + strip.
+  const b = $("#pv-b");
+  b.innerHTML = '<div class="mwin"><div class="mtitle">Preview ' +
+    chips([["none", "No Cast"], ["cast", "Casting"], ["locked", "Can't Interrupt"], ["interrupted", "Interrupted"]], PV.cast, "cast") + " " +
+    chips([["true", "Target"], ["false", "Not Target"]], String(PV.targeted), "targeted") + " " +
+    chips([["none", "No Auras"], ["some", "Some"], ["full", "Full"]], PV.auras, "auras") + " " +
+    chips([["true", "Capacity"], ["false", "Hide"]], String(PV.capacity), "capacity") +
+    '</div><div class="mstage" id="pv-b-stage"></div><div class="mstrip" id="pv-b-strip"></div><div class="mcap"><span>2.5× · bar pinned · click a part to edit it</span><span>1:1 below</span></div></div>';
+  const bs = $("#pv-b-stage");
+  { const st = pvState(), L = layout(c, st, "proposed"); const k = Math.floor(pvFit(bs, L, 2.5, 24) * 2) / 2; pvPlate(bs, bs.clientWidth / 2, bs.clientHeight / 2 + 8, k, st); }
+  const strip = $("#pv-b-strip");
+  const sts = [pvState({ capacity: false }), pvState({ cast: "none", targeted: false, focused: true, capacity: false, counts: { crowdControl: 0, debuffs: 1, buffs: 0 } }),
+    pvState({ cast: "locked", targeted: false, capacity: false, counts: { crowdControl: 1, debuffs: 0, buffs: 2 } }), pvState({ cast: "none", targeted: false, capacity: false, counts: { crowdControl: 0, debuffs: 3, buffs: 0 } })];
+  const sw = strip.clientWidth, need = 4 * (c.plate.width + 90), sc = Math.min(1, sw / need);
+  sts.forEach((st, i) => pvPlate(strip, sw * (0.125 + i * 0.25), strip.clientHeight / 2 + 6, sc, st));
+  // C: drag to place.
+  const cc = $("#pv-c");
+  cc.innerHTML = '<div class="mwin"><div class="mtitle">Preview · drag a part to move it <span class="mnum">Debuffs · Anchor <b>Top Right</b> · X <input type="text" value="0" aria-label="Offset X" size="3"> Y <input type="text" value="0" aria-label="Offset Y" size="3"></span></div><div class="mstage" id="pv-c-stage"></div><div class="mcap"><span>Nearest anchor: Top Right · Shift+arrows: 5px</span><span>Snap to anchors on</span></div></div>';
+  const cs = $("#pv-c-stage");
+  { const st = pvState({ capacity: false }), L = layout(c, st, "proposed"); const k = Math.floor(pvFit(cs, L, 2.5, 30) * 2) / 2;
+    const m = pvPlate(cs, cs.clientWidth / 2, cs.clientHeight / 2 + 10, k, st);
+    const W = c.plate.width, HB = L.HB;
+    const pts = { TOPLEFT: [0, 0], TOP: [W / 2, 0], TOPRIGHT: [W, 0], LEFT: [0, HB / 2], CENTER: [W / 2, HB / 2], RIGHT: [W, HB / 2], BOTTOMLEFT: [0, HB], BOTTOM: [W / 2, HB], BOTTOMRIGHT: [W, HB] };
+    let html = "";
+    for (const p in pts) html += '<div class="p cdot' + (p === "TOPRIGHT" ? " on" : "") + '" style="left:' + pts[p][0] + "px;top:" + pts[p][1] + 'px"></div>';
+    // the dragged row, lifted a little up and left, with a guide back to its anchor
+    const deb = L.boxes.filter((x) => x.part === "debuffs" && x.live);
+    if (deb.length) {
+      const minX = Math.min(...deb.map((x) => x.x)), minY = Math.min(...deb.map((x) => x.y)), maxX = Math.max(...deb.map((x) => x.x + x.w)), maxY = Math.max(...deb.map((x) => x.y + x.h));
+      html += '<div class="p cdrag" style="left:' + (minX - 9) + "px;top:" + (minY - 7) + "px;width:" + (maxX - minX + 2) + "px;height:" + (maxY - minY + 2) + 'px"></div>';
+      html += '<svg class="p" style="left:0;top:0;overflow:visible" width="1" height="1" aria-hidden="true"><line x1="' + (maxX - 8) + '" y1="' + (maxY - 6) + '" x2="' + W + '" y2="0" stroke="#e2b866" stroke-width=".6" stroke-dasharray="2 1.5"/></svg>';
+    }
+    m.el.insertAdjacentHTML("beforeend", html);
+  }
+  // D: a pull in the world.
+  const d = $("#pv-d");
+  d.innerHTML = '<div class="mworld" id="pv-d-world"><div class="mbadge">Test Plates: On</div></div>';
+  const w = $("#pv-d-world"), ww = w.clientWidth, wh = w.clientHeight;
+  const pull = [
+    [0.5, 0.45, 1, pvState({ capacity: false })],
+    [0.22, 0.62, 0.85, pvState({ cast: "none", targeted: false, capacity: false, counts: { crowdControl: 0, debuffs: 1, buffs: 0 } })],
+    [0.78, 0.66, 0.85, pvState({ cast: "locked", targeted: false, capacity: false, counts: { crowdControl: 1, debuffs: 0, buffs: 1 } })],
+    [0.34, 0.28, 0.7, pvState({ cast: "none", targeted: false, capacity: false, counts: { crowdControl: 0, debuffs: 0, buffs: 0 } })],
+    [0.68, 0.24, 0.7, pvState({ cast: "none", targeted: false, focused: true, capacity: false, counts: { crowdControl: 0, debuffs: 2, buffs: 0 } })],
+  ];
+  const sd = Math.min(1, ww / (3 * (c.plate.width + 80)));
+  pull.forEach(([x, y, k, st]) => pvPlate(w, ww * x, wh * y, k * sd, st, k < 0.9 ? "far" : ""));
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".pvchips button"); if (!b) return;
+  const key = b.closest(".pvchips").dataset.pv; let v = b.dataset.v;
+  if (v === "true") v = true; else if (v === "false") v = false;
+  PV[key] = v; renderPreviewers();
+});
+
+/* ---------------------------------------------------------------- tabs */
+function showTab() {
+  const t = (location.hash || "#designer").slice(1);
+  const name = ["designer", "findings", "previewer", "rules", "research", "inventory", "plan"].includes(t) ? t : "designer";
+  document.querySelectorAll("section.tab").forEach((s) => { s.hidden = s.id !== "tab-" + name; });
+  document.querySelectorAll("nav.tabs a").forEach((a) => a.setAttribute("aria-current", a.dataset.tab === name ? "page" : "false"));
+  if (name === "designer") render();
+  if (name === "previewer") renderPreviewers();
+}
+window.addEventListener("hashchange", showTab);
+showTab();
+})();
+</script>
