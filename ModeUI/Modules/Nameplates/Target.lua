@@ -12,8 +12,9 @@ local Kit, Domain, Style = addon.Kit, addon.Domain, addon.Style
 local GLOW_OUTSET = 12 -- the glow texture's hollow core starts 12 texels in
 
 function M:LayoutTarget(plate)
-    local db, px = self:Style(plate), plate.px or 1
-    local host = plate.nameOnly and plate.name or plate.healthBox
+    -- The glow shows only with bars (Name Only colors the name instead), so it
+    -- always hangs on the health box.
+    local host = plate.healthBox
     plate.targetGlow:ClearAllPoints()
     plate.targetGlow:SetPoint("TOPLEFT", host, "TOPLEFT", -GLOW_OUTSET, GLOW_OUTSET)
     plate.targetGlow:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", GLOW_OUTSET, -GLOW_OUTSET)

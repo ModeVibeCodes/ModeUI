@@ -30,8 +30,15 @@ local function LiftedText(layer)
     return text
 end
 
--- A plate's frames, on any parent: a game nameplate, or the settings preview.
-function M:BuildPlate(parent)
+-- A plate's frames, on any parent: a game nameplate, or the settings preview
+-- (`sample`). In the world, an aura container carries the forbidden aspect
+-- UntrustedLayoutScriptExecution, and the game refuses to anchor anything to
+-- it, or to a mark anchored to it, that doesn't carry the aspect itself (it is
+-- never inherited through SetPoint: ForbiddenAspectTemplates.xml). So the
+-- parts that follow an aura row are made inside frames from Blizzard's
+-- DisableUntrustedLayoutScriptsTemplate: the name's holder (the name stops at
+-- the border row) and the arrows' frames.
+function M:BuildPlate(parent, sample)
     local plate = CreateFrame("Frame", nil, parent)
     plate.healthBox = Box(plate)
     plate.health = plate.healthBox.bar
@@ -45,9 +52,20 @@ function M:BuildPlate(parent)
     plate.targetGlow = plate:CreateTexture(nil, "BACKGROUND", nil, -8)
     plate.textLayer = CreateFrame("Frame", nil, plate)
     plate.textLayer:SetAllPoints()
-    plate.name, plate.healthText, plate.castText = LiftedText(plate.textLayer), LiftedText(plate.textLayer), LiftedText(plate.textLayer)
+    local follower = (not sample and self:UsesAuraContainers() and M.HasFollowerTemplate()) and M.FOLLOWER_TEMPLATE or nil
+    plate.followers = follower ~= nil
+    plate.nameHolder = CreateFrame("Frame", nil, plate.textLayer, follower)
+    plate.nameHolder:SetAllPoints()
+    plate.name = LiftedText(plate.nameHolder)
+    plate.healthText, plate.castText = LiftedText(plate.textLayer), LiftedText(plate.textLayer)
     plate.raidIcon = plate.textLayer:CreateTexture(nil, "OVERLAY")
-    plate.arrows = { left = plate.textLayer:CreateTexture(nil, "OVERLAY"), right = plate.textLayer:CreateTexture(nil, "OVERLAY") }
+    plate.arrowFrames, plate.arrows = {}, {}
+    for _, side in ipairs({ "left", "right" }) do
+        local frame = CreateFrame("Frame", nil, plate.textLayer, follower)
+        plate.arrowFrames[side] = frame
+        plate.arrows[side] = frame:CreateTexture(nil, "OVERLAY")
+        plate.arrows[side]:SetAllPoints()
+    end
     plate.auraLayer = CreateFrame("Frame", nil, plate)
     plate.auraLayer:SetAllPoints()
     plate.auraIcons, plate.auraShown, plate.auraCount = { crowdControl = {}, debuffs = {}, buffs = {} }, {}, 0

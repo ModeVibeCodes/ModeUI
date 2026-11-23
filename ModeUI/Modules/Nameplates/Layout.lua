@@ -197,13 +197,19 @@ function M:PlaceBorderText(plate, text, anchor, dx, dy, width)
     local v = top and "BOTTOM" or "TOP"
     local side = top and "TOP" or "BOTTOM"
     text:SetPoint(v .. h, plate.healthBox, side .. h, dx, dy)
-    local stop = self:NameStop(plate, side, h)
+    local stop, key = self:NameStop(plate, side, h)
     if stop then
         -- The stop marks the row's inner edge at its own bottom (top), which sits
         -- 2px past the bar's edge: the name lines up on the bar's edge again.
+        -- The name lives in a holder that may follow an aura container
+        -- (Plate.lua BuildPlate); if the game refuses, it keeps clear of the
+        -- row's full reach instead.
         local edge = h == "RIGHT" and "LEFT" or "RIGHT"
         text:SetWidth(0)
-        text:SetPoint(v .. edge, stop, v .. edge, edge == "RIGHT" and -3 * px or 3 * px, top and (dy - 2 * px) or (dy + 2 * px))
+        self:FollowMark(text, v .. edge, stop, v .. edge, edge == "RIGHT" and -3 * px or 3 * px, top and (dy - 2 * px) or (dy + 2 * px), function()
+            text:SetPoint(v .. h, plate.healthBox, side .. h, dx, dy)
+            text:SetWidth(math.max(px, width - self:RowReach(plate, key) - 3 * px))
+        end)
     else
         text:SetWidth(width)
     end

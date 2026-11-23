@@ -1669,3 +1669,14 @@ verified in game yet.
   - whether `SetWidth(0)` FontStrings chained to each other lay out as expected
     with secret text;
   - whether a container may be created in combat.
+- **Forbidden aspects (in game, November 23, 2026).** Anchoring the name
+  FontString to a mark that was anchored to an aura container failed with
+  "Anchoring disallowed as dependent object would inherit forbidden aspects:
+  UntrustedLayoutScriptExecution". `ForbiddenAspectTemplates.xml` says the
+  aspect is never inherited through `SetParent` or `SetPoint`, and tainted
+  code may not call `AddForbiddenAspects`. So every object anchored to a
+  container, or to anything that carries the aspect, must carry it from
+  creation. ModeUI creates the name and the arrows inside frames made from
+  `DisableUntrustedLayoutScriptsTemplate` (their regions are created inside,
+  so they carry it). Part rows don't follow marks in the world. Every anchor
+  to a mark is `pcall`-guarded with a full-reach fallback.

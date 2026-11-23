@@ -122,8 +122,19 @@ an Offset X and Y. The plate is built outward from the bar (`Layout.lua`,
 **Secret auras.** In the world, Blizzard's aura containers draw the rows and
 size themselves to what they show. ModeUI may not read that size, so each row
 keeps an **edge mark**: a 1x1 frame anchored to the container's far edge,
-made from Blizzard's `DisableUntrustedLayoutScriptsTemplate`. Whatever follows
-the row is anchored to the mark, and the game moves it as auras come and go.
+made from Blizzard's `DisableUntrustedLayoutScriptsTemplate`. A container
+carries the forbidden aspect `UntrustedLayoutScriptExecution`, and the game
+refuses to anchor anything to it or to its mark unless that thing carries the
+aspect already: it is never inherited through `SetPoint` (owner's in-game error,
+November 23, 2026).
+- **Parts that follow a row's mark live in frames made from the template:**
+  the name's holder (the name stops at the border row) and the arrows' frames.
+  The game moves them as auras come and go.
+- **A part row after an aura row** (Auras First) holds regions that can't
+  carry the aspect, so in the world it sits past the aura row's full reach;
+  the preview follows the mark.
+- **Every anchor to a mark is guarded:** if the game refuses it, the part
+  keeps clear of the row's full reach instead.
 The soft-target icon clears the tallest Top stack from known heights (a row's
 height is known, only its length is secret), so it stays still.
 

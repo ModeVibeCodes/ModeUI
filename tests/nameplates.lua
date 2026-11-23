@@ -325,13 +325,13 @@ world.run([==[
     assert(Point(cp)[2] == row and at[1] == 'LEFT' and at[2] == plate.healthBox and at[3] == 'RIGHT' and at[4] == 3, 'beside the bar')
     assert(M:SideRoom(plate, 'RIGHT') == cp.width + 3 and plate.rowRoom.RIGHT == cp.width + 3, 'the buffs row starts past it')
     assert(M:SetOption('enemy', 'targetStyle', 'arrows'))
-    local arrow = Point(plate.arrows.right)
+    local arrow = Point(plate.arrowFrames.right)
     assert(arrow[1] == 'LEFT' and arrow[2] == plate.auraEnds.RIGHT and arrow[3] == 'LEFT' and arrow[4] == M.db.enemy.targetArrowGap, 'arrows past the outermost row')
     -- Auras First: the buffs row hugs the bar and the points follow its last icon; the arrows follow the points.
     assert(M:SetOption('enemy', 'auraOrder', 'auras'))
     row = plate.stackRows.RIGHT; at = Point(row)
     assert(at[1] == 'LEFT' and at[2] == plate.auraEnds.RIGHT and at[3] == 'LEFT' and at[4] == 2, 'points follow the buffs row')
-    arrow = Point(plate.arrows.right)
+    arrow = Point(plate.arrowFrames.right)
     assert(arrow[2] == row and arrow[3] == 'RIGHT', 'arrows follow the points')
     assert(M:SetOption('enemy', 'auraOrder', 'indicators'))
     assert(M:SetOption('enemy', 'targetStyle', 'border') and M:SetOption('enemy', 'comboAnchor', 'BOTTOM') and plate.rowSize.RIGHT == nil)
@@ -811,7 +811,7 @@ world.run([==[
     assert(M:SetOption('enemy', 'targetStyle', 'arrows') and sample.arrows.left:IsShown() and sample.arrows.right:IsShown() and not sample.targetGlow:IsShown(), 'arrows')
     assert(sample.arrows.right.texCoord[1] == 1, 'right arrow mirrored')
     -- The arrows are the outermost parts: past the crowd control and buffs rows' edge marks.
-    local leftArrow, rightArrow = Point(sample.arrows.left), Point(sample.arrows.right)
+    local leftArrow, rightArrow = Point(sample.arrowFrames.left), Point(sample.arrowFrames.right)
     assert(leftArrow[2] == sample.auraEnds.LEFT and leftArrow[4] == -M.db.enemy.targetArrowGap, 'left arrow outside the crowd control row')
     assert(rightArrow[2] == sample.auraEnds.RIGHT and rightArrow[4] == M.db.enemy.targetArrowGap, 'right arrow outside the buffs row')
     assert(M:SetOption('enemy', 'targetArrowGap', 60) and M:SetOption('enemy', 'targetArrowSize', 48) and M:SetOption('enemy', 'targetArrowGap', 4)
@@ -1167,11 +1167,32 @@ local CONTAINERS = STUBS .. [==[
         return f
     end }
     containers = {}
+    -- The forbidden aspect UntrustedLayoutScriptExecution, as the game applies
+    -- it: an aura container carries it, and anything anchored to a frame that
+    -- carries it must carry it already (made from the template, or created
+    -- inside a frame that was); it is never inherited through SetPoint.
+    local methods = getmetatable(UIParent).__index
+    local setPoint = methods.SetPoint
+    local function Carries(region)
+        for _ = 1, 4 do
+            if not region then return false end
+            if region.forbidden or region.template == 'DisableUntrustedLayoutScriptsTemplate' then return true end
+            region = region.parent
+        end
+        return false
+    end
+    function methods:SetPoint(point, relative, ...)
+        if type(relative) == 'table' and Carries(relative) and relative ~= self.parent and not Carries(self) then
+            error('Anchoring disallowed as dependent object would inherit forbidden aspects: UntrustedLayoutScriptExecution')
+        end
+        return setPoint(self, point, relative, ...)
+    end
     local createFrame = CreateFrame
     function CreateFrame(kind, name, parent, template)
         if kind ~= 'AuraContainer' then local f = createFrame(kind, name, parent, template); f.template = template; return f end
         local c = createFrame('Frame', name, parent)
         c.template, c.groups, c.order, c.calls = template, {}, {}, {}
+        c.forbidden = true
         function c:AddAuraGroup(key, filter, options)
             assert(not self.groups[key], 'groups are added once')
             self.groups[key] = { filter = filter, options = options, enabled = true, max = options.maxFrameCount }
@@ -1254,7 +1275,7 @@ withContainers.run([==[
     local mark = plate.auraEnds.RIGHT
     assert(mark.template == 'DisableUntrustedLayoutScriptsTemplate' and Point(mark)[1] == 'LEFT' and Point(mark)[2] == C.RIGHT and Point(mark)[3] == 'RIGHT', 'buffs edge mark')
     assert(Point(plate.auraEnds.TOP)[2] == C.TOP and Point(plate.auraEnds.TOP)[3] == 'TOP', 'crowd control edge mark')
-    assert(Point(plate.arrows.right)[2] == mark, 'the right arrow follows the buffs')
+    assert(Point(plate.arrowFrames.right)[2] == mark, 'the right arrow follows the buffs')
     -- The name on the border stops at the debuffs' left edge: the game shortens it as they come.
     local stop = plate.nameStops['TOPRIGHT:border|LEFT']
     assert(Point(stop)[1] == 'BOTTOMRIGHT' and Point(stop)[2] == D and Point(stop)[3] == 'BOTTOMLEFT', 'name stop on the debuffs')

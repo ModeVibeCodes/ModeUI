@@ -149,21 +149,56 @@ function M:PlaceRow(plate, key, row, width, height, list)
     elseif key == "IN-CENTER" then row:SetPoint("CENTER", plate.health, "CENTER", 0, 0)
     else
         local follow = self:AurasFirst(plate) and self:HasGroups(plate, key)
+        -- In the world a row can't anchor to an aura row's mark (its parts
+        -- can't carry the forbidden aspect: Plate.lua BuildPlate), so it sits
+        -- past the aura row's full reach instead; the preview follows the mark.
+        local fixed = follow and self:InWorld(plate)
         local edge = M.EdgePoint(key)
         if key == "LEFT" or key == "RIGHT" then
             local sign = key == "LEFT" and -1 or 1
-            if follow then row:SetPoint(edge, self:Mark(plate, "auraEnds", key), edge, sign * gap, 0)
+            if fixed then row:SetPoint(edge, box, key, sign * (gap + self:RowReach(plate, key) + gap), 0)
+            elseif follow then row:SetPoint(edge, self:Mark(plate, "auraEnds", key), edge, sign * gap, 0)
             else row:SetPoint(edge, box, key, sign * 3 * px, 0) end
         else
             local top, h = key:find("^TOP") ~= nil, Horizontal(key)
             local sign = top and 1 or -1
-            if follow then row:SetPoint(edge, self:Mark(plate, "auraEnds", key), edge, 0, sign * gap)
-            else
-                local past = top and plate.above or self:StackBelow(plate, key, list)
-                row:SetPoint(edge, box, (top and "TOP" or "BOTTOM") .. h, 0, sign * (gap + past))
-            end
+            local past = top and plate.above or self:StackBelow(plate, key, list)
+            if fixed then row:SetPoint(edge, box, (top and "TOP" or "BOTTOM") .. h, 0, sign * (gap + past + self:RowReach(plate, key) + gap))
+            elseif follow then row:SetPoint(edge, self:Mark(plate, "auraEnds", key), edge, 0, sign * gap)
+            else row:SetPoint(edge, box, (top and "TOP" or "BOTTOM") .. h, 0, sign * (gap + past)) end
         end
     end
+end
+
+-- Plates in the world, whose aura rows are Blizzard's containers.
+function M:InWorld(plate) return not plate.sample and self:UsesAuraContainers() end
+
+-- How far the aura row on `key` can reach away from the bar with every group
+-- at Most Shown: along its growth beside the bar, across it on Top and Bottom
+-- (one line's height: known, only a row's length is secret).
+function M:RowReach(plate, key)
+    local style, px = self:Style(plate), plate.px or 1
+    local spacing, along, across, vertical = style.auraSpacing * px, 0, 0, false
+    for _, group in ipairs(M.auraGroups) do
+        if self:GroupShown(plate, group) and self:GroupKey(style, group) == key then
+            local settings, width, height = style[group], self:AuraSize(plate, group)
+            vertical = settings.grow == "up" or settings.grow == "down" or (settings.grow == "center" and (key == "LEFT" or key == "RIGHT"))
+            along = along + settings.max * ((vertical and height or width) + spacing)
+            across = math.max(across, vertical and width or height)
+        end
+    end
+    along = math.max(0, along - spacing)
+    if key == "LEFT" or key == "RIGHT" then return vertical and across or along end
+    return vertical and along or across
+end
+
+-- Anchors `region` to a mark that may sit on an aura container: in the world
+-- the game can refuse it (forbidden aspects); then `fallback` places it.
+function M:FollowMark(region, point, mark, markPoint, x, y, fallback)
+    if pcall(region.SetPoint, region, point, mark, markPoint, x, y) then return true end
+    region:ClearAllPoints()
+    fallback()
+    return false
 end
 
 -- Lays out every stack row and what depends on it: the room inside the bar
@@ -257,16 +292,24 @@ function M:PlaceArrows(plate)
     local host = plate.nameOnly and plate.name or plate.healthBox
     local size = math.max(px, math.floor(db.targetArrowSize / px + 0.5) * px)
     local gapPixels = db.targetArrowGap * px
-    for side, arrow in pairs(plate.arrows) do
+    -- Each arrow sits in its own frame (Plate.lua): in the world that frame
+    -- carries the forbidden aspect, so it may follow an aura row's mark.
+    for side, frame in pairs(plate.arrowFrames) do
         local key = side == "left" and "LEFT" or "RIGHT"
         local sign = key == "LEFT" and -1 or 1
-        arrow:SetSize(size, size)
-        arrow:ClearAllPoints()
+        frame:SetSize(size, size)
+        frame:ClearAllPoints()
         local edge, point = nil, nil
         if not plate.nameOnly then edge, point = self:SideEdge(plate, key) end
         local inner = key == "LEFT" and "RIGHT" or "LEFT"
-        if edge then arrow:SetPoint(inner, edge, point, sign * gapPixels, 0)
-        else arrow:SetPoint(inner, host, key, sign * gapPixels, 0) end
+        if edge then
+            self:FollowMark(frame, inner, edge, point, sign * gapPixels, 0, function()
+                -- Refused: past everything on that side at its full reach.
+                local reach = 2 * px + ((plate.rowRoom or {})[key] or 0) + self:RowReach(plate, key)
+                if self:AurasFirst(plate) and plate.rowSize and plate.rowSize[key] then reach = reach + 2 * px + plate.rowSize[key][1] end
+                frame:SetPoint(inner, host, key, sign * (reach + gapPixels), 0)
+            end)
+        else frame:SetPoint(inner, host, key, sign * gapPixels, 0) end
     end
 end
 

@@ -48,7 +48,7 @@ function M:GetPreviewSize() return 2000, PREVIEW_HEIGHT end
 
 -- Builds one plate on the stage or the strip; `clickable` plates jump.
 local function SamplePlate(self, parent, kind, clickable)
-    local plate = self:BuildPlate(parent)
+    local plate = self:BuildPlate(parent, true)
     plate.kind, plate.sample, plate.clickable = kind, true, clickable
     return plate
 end
