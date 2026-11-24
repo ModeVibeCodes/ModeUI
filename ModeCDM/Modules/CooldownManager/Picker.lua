@@ -70,12 +70,12 @@ function M:Picker()
     picker.close:SetScript("OnClick", function() picker:Hide() end)
     picker.hover = W.Label(picker, "", nil, PAD, -36, INNER, T.text)
     picker.headings = {}
-    for i, text in ipairs({ "Tracked in Blizzard CDM", "Not in Blizzard CDM", "Items in Your Bags" }) do
+    for i, text in ipairs({ "Tracked", "Not Tracked Yet", "Items in Your Bags" }) do
         picker.headings[i] = W.Label(picker, L[text], nil, PAD, 0, INNER, T.muted)
     end
-    picker.empty = W.Label(picker, L["Nothing tracked here yet: add spells in Blizzard's Cooldown Manager (Open CDM)."], nil, PAD, 0, INNER, T.muted)
+    picker.empty = W.Label(picker, L["Nothing tracked here yet: add spells in Blizzard's Cooldown Manager (Tracked Spells)."], nil, PAD, 0, INNER, T.muted)
     picker.empty:SetWordWrap(true)
-    picker.cdm = W.Button(picker, L["Open CDM"], 120, 26, "secondary")
+    picker.cdm = W.Button(picker, L["Tracked Spells"], 120, 26, "secondary")
     picker.cdm:SetPoint("BOTTOMLEFT", PAD, 12)
     picker.cdm:SetScript("OnClick", function() picker:Hide(); M:OpenCooldownSettings() end)
     picker.spellRow = IdRow(picker, L["Spell ID"], function(text)
@@ -233,8 +233,8 @@ function M:RefreshPicker(keepResult)
     used = used + #tracked
     picker.empty:SetShown(#tracked == 0)
     -- Everything tracked may be on this bar already (Essential's own spells).
-    picker.empty:SetText(#candidates > 0 and L["Everything tracked for this bar is on it: add more in Blizzard's Cooldown Manager (Open CDM)."]
-        or L["Nothing tracked here yet: add spells in Blizzard's Cooldown Manager (Open CDM)."])
+    picker.empty:SetText(#candidates > 0 and L["Everything tracked for this bar is on it: add more in Blizzard's Cooldown Manager (Tracked Spells)."]
+        or L["Nothing tracked here yet: add spells in Blizzard's Cooldown Manager (Tracked Spells)."])
     if #tracked == 0 then
         picker.empty:ClearAllPoints(); picker.empty:SetPoint("TOPLEFT", PAD, y)
         y = y - 34
@@ -247,7 +247,7 @@ function M:RefreshPicker(keepResult)
         local name = Cooldowns.SpellName(entry.spell) or string.format(L["Spell %s"], entry.spell)
         -- Your racials need no Blizzard CDM (ModeUI tracks them itself).
         button.name, button.untracked = name, not entry.racial
-        local state = entry.known and L["Not in Blizzard CDM"] or L["Not in Blizzard CDM · not learned"]
+        local state = entry.known and L["Not Tracked Yet"] or L["Not Tracked Yet · not learned"]
         if cooldownBar then
             button.where = string.format(L["%s · %s · adds as a custom spell"], name, state)
             button.add = function() return M:AddCustomSpell(id, entry.spell, true) end

@@ -129,7 +129,7 @@ M.iconParts, M.barParts = { "cooldown", "count" }, { "name", "duration", "count"
 -- when it's ready, or a glow for as long as it is) and Buff (a tracked buff
 -- is up). Cooldown icons have the first three, buff icons the last.
 M.glowKinds = { "proc", "active", "ready", "buff" }
-M.glowLabels = { proc = "Proc Glow", active = "Active Glow", ready = "Off Cooldown Glow", buff = "Buff Glow" }
+M.glowLabels = { proc = "Proc Glow", active = "Active Glow", ready = "Ready Glow", buff = "Buff Glow" }
 M.cooldownGlows, M.buffGlows = { "proc", "active", "ready" }, { "buff" }
 
 -- Colors (docs/DESIGN_LANGUAGE.md): a Mode Button face in Mono panel, the

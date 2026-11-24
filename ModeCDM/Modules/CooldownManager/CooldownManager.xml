@@ -3,7 +3,10 @@
     <Script file="ResourceInit.lua"/>
     <Script file="CastInit.lua"/>
     <Script file="Presets.lua"/>
+    <Script file="Caps.lua"/>
+    <Script file="SwingInit.lua"/>
     <Script file="BarStyle.lua"/>
+    <Script file="Parts.lua"/>
     <Script file="Migrations.lua"/>
     <Script file="Theme.lua"/>
     <Script file="Driver.lua"/>
@@ -26,6 +29,7 @@
     <Script file="ResourceMarks.lua"/>
     <Script file="ResourceUpdate.lua"/>
     <Script file="CastBar.lua"/>
+    <Script file="SwingTimer.lua"/>
     <Script file="SpellMenu.lua"/>
     <Script file="GlowPopout.lua"/>
     <Script file="TextPopout.lua"/>
@@ -43,6 +47,7 @@
     <Script file="ResourceSettings.lua"/>
     <Script file="ResourceSettingsLook.lua"/>
     <Script file="CastSettings.lua"/>
+    <Script file="SwingSettings.lua"/>
     <Script file="TestDisplay.lua"/>
     <Script file="HomePage.lua"/>
     <Script file="StylePage.lua"/>

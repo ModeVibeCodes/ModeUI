@@ -387,12 +387,6 @@ function M.Initialize(db)
     ValidExtras(db)
     ValidOrder(db)
     ValidRacials(db)
-    -- Resource Bars (ResourceInit.lua): added without a version step; a
-    -- profile saved before them takes their defaults.
-    M.ValidateResources(db)
-    -- The Cast Bar (CastInit.lua): the same.
-    M.ValidateCast(db)
-    if barStyleStep then M.MigrateV12(db, fresh) end
-    M.ValidateBarStyle(db)
-    M.ApplyBarStyleAll(db)
+    -- The player bars, the Bar Style and what follows it (Parts.lua).
+    M.InitializeParts(db, barStyleStep, fresh)
 end

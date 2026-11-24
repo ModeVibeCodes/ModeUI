@@ -86,6 +86,7 @@ function M:SetTestDisplay(on)
     elseif self.castFrame then
         self:RefreshCast()
     end
+    if self.swingFrame then self:RenderSwingMover() end
     if self.window then self:RefreshWindow() end
     return on
 end

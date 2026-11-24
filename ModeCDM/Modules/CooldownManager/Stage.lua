@@ -35,6 +35,7 @@ function M:StageItems()
         end
     end
     if self.db.castBar.show and self.castMover then list[#list + 1] = { id = "cast", kind = "cast", frame = self.castMover } end
+    if self.swingMover and self.db.swing.show then list[#list + 1] = { id = "swing", kind = "swing", frame = self.swingMover } end
     return list
 end
 
@@ -67,10 +68,10 @@ local function DrawBar(self, stage, item, holder, count)
     if item.kind ~= "bar" then
         local tile = Pooled(stage, "box", count, holder)
         tile:ClearAllPoints(); tile:SetAllPoints(holder)
-        local style = item.kind == "cast" and self.db.castBar or self.db.resources[item.id]
+        local style = (item.kind == "cast" and self.db.castBar) or (item.kind == "swing" and self.db.swing) or self.db.resources[item.id]
         local rim = RimColor(style)
         tile.rim:SetShown(rim ~= nil); if rim then Style.Paint(tile.rim, rim) end
-        tile.face:SetTexture(nil); Style.Paint(tile.face, item.kind == "cast" and Tone.cast.casting or FILLS[item.id] or Tone.ivory)
+        tile.face:SetTexture(nil); Style.Paint(tile.face, (item.kind == "cast" and Tone.cast.casting) or (item.kind == "swing" and Tone.ivory) or FILLS[item.id] or Tone.ivory)
         tile:Show()
         return count
     end
@@ -148,6 +149,7 @@ function M:RenderStage(view, selected)
             hit:SetScript("OnClick", function(button)
                 local target = button.item
                 if target.kind == "cast" then M:SelectCast()
+                elseif target.kind == "swing" then M:SelectSwing()
                 elseif target.kind == "resource" then M:SelectResource(target.id) else M:SelectBar(target.id) end
             end)
             hit:SetScript("OnEnter", function(button)
@@ -161,7 +163,7 @@ function M:RenderStage(view, selected)
         end
         local item = rect.item
         hit.item = item
-        hit.label = (item.kind == "cast" and L[self.CAST_LABEL]) or (item.kind == "resource" and self:ResourceLabel(item.id)) or self:Label(item.id)
+        hit.label = (item.kind == "cast" and L[self.CAST_LABEL]) or (item.kind == "swing" and L[self.SWING_LABEL]) or (item.kind == "resource" and self:ResourceLabel(item.id)) or self:Label(item.id)
         hit:ClearAllPoints(); hit:SetAllPoints(holder); hit:SetScale(scale); hit:Show()
         if item.id == selected then current = holder end
     end

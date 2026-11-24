@@ -106,6 +106,7 @@ function M:UseBarStyleEverywhere()
         for _, id in ipairs(self:BarIds()) do db[id].follow = self.NewFollow(db, id) end
         for _, id in ipairs(self.resources) do db.resources[id].follow = { border = true, text = true } end
         db.castBar.follow = { border = true, text = true }
+        if db.swing then db.swing.follow = { border = true, text = true } end
     end)
 end
 -- How many groups of a bar are its own beyond what Use Bar Style would
@@ -117,13 +118,17 @@ function M:CustomGroups(id)
 end
 
 -- The resource bars and the Cast Bar: `id` is a resource ID or "cast".
-local function PlayerStyle(db, id) if id == "cast" then return db.castBar end return db.resources[id] end
+local function PlayerStyle(db, id)
+    if id == "cast" then return db.castBar end
+    if id == "swing" then return db.swing end
+    return db.resources[id]
+end
 function M:PlayerFollows(id, group)
     local style = PlayerStyle(self.db, id)
     return type(style) == "table" and type(style.follow) == "table" and style.follow[group] == true
 end
 function M:FollowPlayerGroup(id, group, on)
-    if id ~= "cast" and not self.resourceSpecs[id] then return false end
+    if id ~= "cast" and id ~= "swing" and not self.resourceSpecs[id] then return false end
     if group ~= "border" and group ~= "text" then return false end
     return Try(self, function(db)
         local style = PlayerStyle(db, id)

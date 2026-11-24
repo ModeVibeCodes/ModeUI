@@ -38,7 +38,7 @@ end
 -- A row's status: Off, Custom, or how many spells show on it.
 function M:ListStatus(kind, id)
     if kind == "home" or kind == "style" then return "" end
-    local style = (kind == "cast" and self.db.castBar) or (kind == "resource" and self.db.resources[id]) or self.db[id]
+    local style = (kind == "cast" and self.db.castBar) or (kind == "swing" and self.db.swing) or (kind == "resource" and self.db.resources[id]) or self.db[id]
     if not style.show then return L["Off"] end
     if kind == "bar" then
         if self:CustomGroups(id) > 0 then return L["Custom"] end
@@ -47,7 +47,7 @@ function M:ListStatus(kind, id)
         return ""
     end
     for _, group in ipairs(self.playerStyleGroups) do
-        if not self:PlayerFollows(kind == "cast" and "cast" or id, group) then return L["Custom"] end
+        if not self:PlayerFollows((kind == "cast" or kind == "swing") and kind or id, group) then return L["Custom"] end
     end
     return ""
 end
@@ -74,6 +74,7 @@ function M:RefreshList()
                 if row.kind == "home" then M:SelectHome()
                 elseif row.kind == "style" then M:SelectStyle()
                 elseif row.kind == "cast" then M:SelectCast()
+                elseif row.kind == "swing" then M:SelectSwing()
                 elseif row.kind == "resource" then M:SelectResource(row.barId) else M:SelectBar(row.barId) end
             end)
             -- - deletes a custom bar, after asking.
@@ -86,7 +87,7 @@ function M:RefreshList()
         -- Kept for older callers: true for a resource bar, "cast" for the Cast Bar.
         row.resource = (kind == "cast" and "cast") or (kind == "resource" and true) or nil
         local custom = kind == "bar" and self:IsCustom(id)
-        local label = (kind == "home" and L["Home"]) or (kind == "style" and L["Bar Style"]) or (kind == "cast" and L[self.CAST_LABEL])
+        local label = (kind == "home" and L["Home"]) or (kind == "style" and L["Bar Style"]) or (kind == "cast" and L[self.CAST_LABEL]) or (kind == "swing" and L[self.SWING_LABEL])
             or (kind == "resource" and self:ResourceLabel(id)) or self:Label(id)
         row.label:SetText(label)
         row.status:SetText(self:ListStatus(kind, id))
@@ -118,6 +119,7 @@ function M:RefreshList()
     Place(window.resourceCaption, 24)
     for _, id in ipairs(self.resources) do index = index + 1; Row(index, "resource", id) end
     index = index + 1; Row(index, "cast", "cast")
+    if self.caps.swingTimer then index = index + 1; Row(index, "swing", "swing") end
     for i = index + 1, #rows do rows[i]:Hide() end
     local add = room and self:CanConfigure()
     window.addCooldown:SetEnabled(add); window.addBuff:SetEnabled(add)

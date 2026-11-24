@@ -160,6 +160,7 @@ local function PlayerStyles(db)
     local list = {}
     for _, id in ipairs(M.resources or {}) do if type(db.resources) == "table" then list[#list + 1] = db.resources[id] end end
     list[#list + 1] = db.castBar
+    if db.swing ~= nil then list[#list + 1] = db.swing end
     return list
 end
 local function BarIds(db)

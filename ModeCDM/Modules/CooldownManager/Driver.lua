@@ -14,6 +14,8 @@ local function Copy(value) return addon.ProfileCodec.Copy(value) end
 -- Its own start: the settings are checked and the custom bars sorted out
 -- with ModeUI's other modules, but its window waits for /mcdm.
 function M:OnInitialize()
+    self.DetectCaps()
+    self:AddSwingTarget()
     self.Initialize(self.db)
     -- Set by the version 4 migration, which can only see this module's table.
     if self.db.movePlaces then self:MovePlaces(); self.db.movePlaces = nil end
@@ -40,6 +42,7 @@ function M:OnEnable()
     self:Build()
     self:SetResourceEvents(true)
     self:SetCastEvents(true)
+    self:SetSwingEvents(true)
     self:HookProcs()
     -- Blizzard's Cooldown Manager loads with the game, normally before
     -- ModeUI; if not yet, its viewers are hooked when it does.
@@ -78,6 +81,7 @@ function M:OnDisable()
     Events:OffAll(self)
     self:SetResourceEvents(false)
     self:SetCastEvents(false)
+    self:SetSwingEvents(false)
     if self.built then
         for _, id in ipairs(self:BarIds()) do self:UpdateAlpha(id) end
         self:RefreshGlows()
@@ -85,6 +89,7 @@ function M:OnDisable()
         self:HideSpellIcons()
         self:RefreshResources()
         self:RefreshCast()
+        self:RefreshSwing()
         addon.ReloadManager:Request("cooldownManager", L["Cooldown Manager: reload to give Blizzard's cooldowns back their own look and place."])
     end
     if self.fader then self.fader:Hide() end
@@ -103,7 +108,7 @@ function M:SetEditMode(enabled)
     local editing = enabled and self.active or false
     if editing == (self.editing or false) then return end
     self.editing = editing
-    if self.built then self:RenderMovers(); self:RenderResourceMovers(); self:RenderCastMover(); self:UpdateFade() end
+    if self.built then self:RenderMovers(); self:RenderResourceMovers(); self:RenderCastMover(); self:RenderSwingMover(); self:UpdateFade() end
 end
 
 -- Lays every viewer out and skins it again. The revision tells a later
@@ -124,10 +129,12 @@ function M:Refresh()
     end
     self:RefreshResources()
     self:RefreshCast()
+    self:RefreshSwing()
     if addon.EditMode then addon.EditMode:RefreshElements() end
     if self.page then self.page:Refresh() end
     if self.resourcePage then self.resourcePage:Refresh() end
     if self.castPage then self.castPage:Refresh() end
+    if self.swingPage then self.swingPage:Refresh() end
 end
 
 function M:CanConfigure() return not addon.InCombat() end
@@ -328,5 +335,5 @@ function M:Status()
         end
         return L["Turn on the game's Cooldown Manager in its Options to see it."]
     end
-    return L["On. Move bars with Edit Mode; choose spells in Blizzard's Cooldown Manager (Open CDM)."]
+    return L["On. Move bars with Edit Mode; choose spells in Blizzard's Cooldown Manager (Tracked Spells)."]
 end

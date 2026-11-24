@@ -33,12 +33,13 @@ end
 -- What the window shows: "home", "style", "cast", a resource or a bar.
 function M:SelectedPage()
     if self.selectedView then return self.selectedView end
+    if self.selectedSwing then return "swing" end
     if self.selectedCast then return "cast" end
     if self:IsResource(self.selectedResource) then return "resource" end
     return "bar"
 end
-local function Pick(self, view, bar, resource, cast)
-    self.selectedView, self.selectedResource, self.selectedCast = view, resource, cast
+local function Pick(self, view, bar, resource, cast, swing)
+    self.selectedView, self.selectedResource, self.selectedCast, self.selectedSwing = view, resource, cast, swing
     if bar then self.selectedBar = bar end
     if self.window then self:ShowSelectedPage(); self:RefreshList() end
     return true
@@ -56,11 +57,13 @@ function M:SelectResource(id)
     return Pick(self, nil, nil, id)
 end
 function M:SelectCast() return Pick(self, nil, nil, nil, true) end
+function M:SelectSwing() if self.caps.swingTimer then return Pick(self, nil, nil, nil, nil, true) end return false end
 -- Any page by its list value: "home", "style", "cast", "resource:<id>" or a bar.
 function M:SelectEditing(value)
     if value == "home" then return self:SelectHome() end
     if value == "style" then return self:SelectStyle() end
     if value == "cast" then return self:SelectCast() end
+    if value == "swing" then return self:SelectSwing() end
     local resource = type(value) == "string" and value:match("^resource:(.+)$")
     if resource then return self:SelectResource(resource) end
     return self:SelectBar(value)
@@ -72,14 +75,15 @@ function M:EditingValue()
     if which == "home" then return "home", L["Home"] end
     if which == "style" then return "style", L["Bar Style"] end
     if which == "cast" then return "cast", L[self.CAST_LABEL] end
+    if which == "swing" then return "swing", L[self.SWING_LABEL] end
     if which == "resource" then return "resource:" .. self.selectedResource, self:ResourceLabel(self.selectedResource) end
     local id = self.selectedBar or "essential"
     return id, self:Label(id)
 end
 
 -- One page shows at a time; each is built the first time it's chosen.
-local BUILDERS = { home = "CreateHomePage", style = "CreateStylePage", resource = "CreateResourcePage", cast = "CreateCastPage" }
-local FIELDS = { home = "homePage", style = "stylePage", bar = "page", resource = "resourcePage", cast = "castPage" }
+local BUILDERS = { home = "CreateHomePage", style = "CreateStylePage", resource = "CreateResourcePage", cast = "CreateCastPage", swing = "CreateSwingPage" }
+local FIELDS = { home = "homePage", style = "stylePage", bar = "page", resource = "resourcePage", cast = "castPage", swing = "swingPage" }
 function M:ShowSelectedPage()
     local window = self.window
     if not window then return end
@@ -184,8 +188,7 @@ function M:CreateWindow()
             page:Hide()
         end
         if not M:HasBar(M.selectedBar or "") then M.selectedBar = "essential" end
-        if M.openOnPage then M.selectedView, M.openOnPage = nil, nil
-        elseif not M.selectedView and not M.selectedCast and not M:IsResource(M.selectedResource) and not M.keepPage then M.selectedView = "home" end
+        if not M.selectedView and not M.selectedCast and not M.selectedSwing and not M:IsResource(M.selectedResource) then M.selectedView = "home" end
         M:ShowSelectedPage(); M:RefreshWindow()
         addon.Media:ScheduleTextRedraw()
     end)
@@ -200,7 +203,7 @@ function M:CreateWindow()
         if addon.PreviewStates then addon.PreviewStates:Stop(M.id) end
         addon.ReloadManager:OnWindowClosed()
         -- Next time it opens on Home again.
-        M.selectedView, M.selectedCast, M.selectedResource = nil, nil, nil
+        M.selectedView, M.selectedCast, M.selectedResource, M.selectedSwing = nil, nil, nil, nil
     end)
     window:RegisterEvent("UI_SCALE_CHANGED"); window:RegisterEvent("DISPLAY_SIZE_CHANGED")
     window:SetScript("OnEvent", function() Scale(window); W.RefreshPixelInsets() end)

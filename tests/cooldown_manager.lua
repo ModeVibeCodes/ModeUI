@@ -425,7 +425,7 @@ world.run([==[
     local picker = M.picker
     assert(picker:IsShown() and picker.buttons[1]:IsShown() and picker.buttons[1].key == '302', 'tracked buffs not on it yet')
     assert(picker.headings[2]:IsShown() and picker.buttons[2].key == '303' and picker.buttons[2].icon.desaturated, 'a class buff not in Blizzard CDM: grayed')
-    assert(picker.buttons[2].where:find('Not in Blizzard CDM', 1, true) and not picker.buttons[3], 'says so; nothing else')
+    assert(picker.buttons[2].where:find('Not Tracked Yet', 1, true) and not picker.buttons[3], 'says so; nothing else')
     assert(not picker.headings[3]:IsShown() and not picker.spellRow:IsShown() and not picker.itemRow:IsShown(), 'no items or IDs on a Buff Bar')
     picker.buttons[2].scripts.OnClick(picker.buttons[2])
     assert(#M:Custom(c2).entries == 1, 'an untracked buff cannot be added')
@@ -459,7 +459,7 @@ world.run([==[
     assert(picker.buttons[7]:IsShown() and picker.buttons[7].key == '202', 'all seven tracked cooldowns from Essential and Utility')
     local unknown = picker.buttons[8]
     assert(unknown.key == 's5006' and unknown.icon.desaturated and unknown.where:find('not learned', 1, true), 'an unlearned class spell, grayed')
-    assert(picker.buttons[9].key == 's26297' and picker.buttons[9].where:find('Not in Blizzard CDM', 1, true) and picker.buttons[9].add ~= nil, 'your racial, for a bar that does not show it')
+    assert(picker.buttons[9].key == 's26297' and picker.buttons[9].where:find('Not Tracked Yet', 1, true) and picker.buttons[9].add ~= nil, 'your racial, for a bar that does not show it')
     assert(picker.buttons[10].key == 'i5512' and picker.buttons[11].key == 'i191380' and not (picker.buttons[12] and picker.buttons[12]:IsShown()), 'usable items in your bags (no cloth)')
     assert(picker.headings[3]:IsShown() and picker.spellRow:IsShown() and picker.itemRow:IsShown(), 'Spell ID and Item ID on a Cooldown Bar')
     unknown.scripts.OnClick(unknown)

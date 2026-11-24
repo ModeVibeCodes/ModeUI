@@ -106,6 +106,7 @@ function M:Build()
     self:SyncBarFrames()
     self:BuildResources()
     self:BuildCast()
+    self:BuildSwing()
 end
 
 function M:EnsureBarFrames(id)

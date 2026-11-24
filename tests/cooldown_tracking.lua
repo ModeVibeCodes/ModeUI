@@ -12,7 +12,7 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. H.Read(H.root ..
 
 local world = H.Load({ before = STUBS .. "\nMakeViewers()" })
 world.run([==[
-    local WARNING = 'NOT TRACKED IN BLIZZARD CDM - ADD IT IN /CDM'
+    local WARNING = "Not tracked by Blizzard's Cooldown Manager. Track it there to show it."
     local CD, M = addon.Domain.Cooldowns, addon.CooldownManager
     local function Has(lines, text)
         for _, line in ipairs(lines) do if line:find(text, 1, true) then return true end end

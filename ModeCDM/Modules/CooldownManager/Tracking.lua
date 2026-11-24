@@ -17,7 +17,7 @@ if not M then return end
 -- On screen, the icons are still Blizzard's own frames: a viewer that's
 -- hidden in Blizzard's Edit Mode shows nothing until it's on.
 local L, Cooldowns, Style = addon.L, addon.Domain.Cooldowns, addon.Style
-M.NOT_TRACKED = "NOT TRACKED IN BLIZZARD CDM - ADD IT IN /CDM"
+M.NOT_TRACKED = "Not tracked by Blizzard's Cooldown Manager. Track it there to show it."
 
 -- Your setup (layout[category] = learned IDs in order; layout.category[id]),
 -- or nil when the game can't say.
