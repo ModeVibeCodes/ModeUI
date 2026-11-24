@@ -62,6 +62,8 @@ function M:OnEnable()
     Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE", function(_, spellID) self:SpellProc(spellID, false) end)
     Events:On(self, "SPELLS_CHANGED", function() self:Refresh() end)
     Events:On(self, "PLAYER_TARGET_CHANGED", function() self:UpdateFade() end)
+    -- The show rules (Visibility.lua): mounting, vehicles, groups, zones.
+    for _, event in ipairs(self.SHOW_RULE_EVENTS) do pcall(Events.On, Events, self, event, function() self:UpdateFade() end) end
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED" }) do
         Events:On(self, event, function() self:Refresh() end)
     end
@@ -90,6 +92,8 @@ function M:OnDisable()
 end
 
 function M:OnCombatStateChanged()
+    -- Test on Screen stops when combat starts.
+    if self.testDisplay and addon.InCombat() then self:SetTestDisplay(false) end
     if self.active then self:UpdateFade() end
     -- The Cast Bar's hold on Blizzard's cast bar waits for combat to end.
     if self.castNativeWaiting and not addon.InCombat() then self:SyncCastNative() end

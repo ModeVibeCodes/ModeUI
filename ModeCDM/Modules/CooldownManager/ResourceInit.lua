@@ -90,6 +90,7 @@ local function Style(show, height, colorMode, color, text, size, extra)
         textShow = true, text = text, textSize = size, textX = 0, textY = 0, textColor = Copy(Tone.textBright),
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, slug = true,
         visibility = "always", opacity = 100, fadeOpacity = 0,
+        hideMounted = false, hideVehicle = false, onlyInGroup = false, onlyInInstance = false, dim = false,
     }
     for key, value in pairs(extra or {}) do style[key] = value end
     return style
@@ -141,8 +142,8 @@ M.resourceChoices = {
     rimColor = { { id = "metal", label = "Metal" }, { id = "bar", label = "Bar Color" }, { id = "custom", label = "Custom" } },
     barMode = { { id = "color", label = "Color" }, { id = "dark", label = "Dark" } },
     darkText = { { id = "power", label = "Power Type" }, { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },
-    layout = { { id = "grouped", label = "Grouped" }, { id = "separated", label = "Separated" } },
-    resourceLayout = { { id = "separate", label = "Separate Resources" }, { id = "grouped", label = "Group Resources" } },
+    layout = { { id = "grouped", label = "Joined" }, { id = "separated", label = "Separate" } },
+    resourceLayout = { { id = "separate", label = "Apart" }, { id = "grouped", label = "Together" } },
     markPower = { { id = "any", label = "Any Power" }, { id = "ENERGY", label = "Energy" }, { id = "RAGE", label = "Rage" },
         { id = "MANA", label = "Mana" }, { id = "FOCUS", label = "Focus" } },
     reverse = { { id = false, label = "Left to Right" }, { id = true, label = "Right to Left" } },

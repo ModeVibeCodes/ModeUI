@@ -147,8 +147,8 @@ world.run([==[
     -- The window: Cast Bar under Resource Bars, its page and preview.
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
-    -- After the viewers, the custom bars (the five default bars) and the resource bars.
-    local base = #M.viewers + #M.db.customBars
+    -- After Home, Bar Style, the viewers, the custom bars (the five default bars) and the resource bars.
+    local base = 2 + #M.viewers + #M.db.customBars
     local row = window.rows[base + 5]
     assert(row and row.label.text == 'Cast Bar' and row.resource == 'cast', 'Cast Bar in the list')
     assert(M.castPage == nil, 'built on first use')
@@ -162,7 +162,7 @@ world.run([==[
     window.rows[base + 1].scripts.OnClick(window.rows[base + 1])
     assert(M.resourcePage:IsShown() and not page:IsShown() and not M.selectedCast, 'a resource bar instead')
     M:SelectEditing('cast'); assert(page:IsShown() and not M.resourcePage:IsShown(), 'Editing picks it too')
-    window.rows[1].scripts.OnClick(window.rows[1])
+    window.rows[3].scripts.OnClick(window.rows[3])
     assert(M.page:IsShown() and not page:IsShown(), 'back to the cooldown page')
     M:OpenSettings(M.CAST_ELEMENT)
     assert(page:IsShown(), "Edit Mode's Open Module Settings opens it")

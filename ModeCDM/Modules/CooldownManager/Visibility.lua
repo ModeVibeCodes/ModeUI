@@ -9,9 +9,27 @@ if not M then return end
 -- ModeUI fades the icons in them. Show picks when: Always, In Combat, Out
 -- of Combat, In Combat or With a Target, Mouseover (Faded Opacity until the
 -- mouse is over the viewer) or Hidden. Edit Mode shows every viewer that's
--- on. Show Viewer off hides it.
+-- on. Show Bar off hides it. The show rules (owner, November 24, 2026) hide
+-- a bar while mounted or in a vehicle, or outside a group or an instance;
+-- Dim Instead of Hide fades it to Faded Opacity instead (alpha only).
 local Public = addon.IsPublic
 local TICK = 0.1
+M.SHOW_RULE_EVENTS = { "PLAYER_MOUNT_DISPLAY_CHANGED", "UNIT_ENTERED_VEHICLE", "UNIT_EXITED_VEHICLE", "GROUP_ROSTER_UPDATE",
+    "ZONE_CHANGED_NEW_AREA" }
+
+-- A game answer that is a public true (nil, false or secret count as no).
+local function Yes(fn, ...)
+    if type(fn) ~= "function" then return false end
+    local ok, value = pcall(fn, ...)
+    return ok and Public(value) and value == true
+end
+local function RuleHides(style)
+    if style.hideMounted and Yes(_G.IsMounted) then return true end
+    if style.hideVehicle and Yes(_G.UnitInVehicle, "player") then return true end
+    if style.onlyInGroup and not Yes(_G.IsInGroup) then return true end
+    if style.onlyInInstance and not Yes(_G.IsInInstance) then return true end
+    return false
+end
 
 local function Over(frame)
     if not frame or not frame.IsMouseOver then return false end
@@ -31,10 +49,13 @@ function M:StyleAlpha(style, hover)
     if self.editing then return full end
     local mode = style.visibility
     if mode == "hidden" then return 0 end
+    -- What "not now" means: none, or Faded Opacity with Dim Instead of Hide.
+    local off = style.dim and math.min(style.fadeOpacity, style.opacity) / 100 or 0
+    if RuleHides(style) then return off end
     local combat = addon.InCombat()
-    if mode == "combat" then return combat and full or 0 end
-    if mode == "noCombat" then return combat and 0 or full end
-    if mode == "target" then return (combat or addon.Domain.Status.Exists("target")) and full or 0 end
+    if mode == "combat" then return combat and full or off end
+    if mode == "noCombat" then return combat and off or full end
+    if mode == "target" then return (combat or addon.Domain.Status.Exists("target")) and full or off end
     if mode == "mouseover" then
         if Over(hover) then return full end
         return math.min(style.fadeOpacity, style.opacity) / 100

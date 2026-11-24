@@ -238,8 +238,8 @@ world.run([==[
     -- The window: Resource Bars in the list, their own page and preview.
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
-    -- After the viewers and the custom bars (the five default bars).
-    local base = #M.viewers + #M.db.customBars
+    -- After Home, Bar Style, the viewers and the custom bars (the five default bars).
+    local base = 2 + #M.viewers + #M.db.customBars
     assert(window.resourceCaption:IsShown() and window.rows[base + 1].label.text == 'Power' and window.rows[base + 4].label.text == 'Health')
     assert(window.rows[base + 2].label.text == 'Combo Points' and window.rows[base + 3].label.text == 'Alternate Mana')
     assert(M.resourcePage == nil, 'resource page built on first use')
@@ -275,7 +275,7 @@ world.run([==[
     assert(M:SetResourceOption('power', 'edgeStyle', 'obsidian') and view.bar.boxes[1].edge.styleId == 'obsidian' and M:SetResourceOption('power', 'edgeStyle', 'obsidianEmpty'), 'the preview follows the style')
     assert(M:SetResourceOption('power', 'text', 'percent') and view.bar.text.text == '65%', 'the preview follows the settings')
     assert(page.resourceStatus.text == 'Shows now. Move it in Edit Mode.')
-    window.rows[1].scripts.OnClick(window.rows[1])
+    window.rows[3].scripts.OnClick(window.rows[3])
     assert(M.page:IsShown() and not page:IsShown() and M.selectedResource == nil, 'back to the cooldown page')
     M:OpenSettings('cooldownManagerResourceMana')
     assert(page:IsShown() and M.selectedResource == 'mana', "Edit Mode's Open Module Settings opens the bar")

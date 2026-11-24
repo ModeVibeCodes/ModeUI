@@ -184,6 +184,9 @@ end
 
 function M:RenderPreview(view)
     local id = self:PreviewViewer()
+    -- The Layout view (Stage.lua) draws instead while it's chosen.
+    if self:RenderStage(view, id) then self:RefreshSpellMenu(); return end
+    view.area:Show(); if view.hint then view.hint:Show() end
     local style, bar = self.db[id], self:IsBar(id)
     local entries, real = self:PreviewEntries(id)
     local plus = self:HasPlus(id)

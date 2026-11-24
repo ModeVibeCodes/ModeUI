@@ -66,59 +66,81 @@ function M:CreateCastPage(parent)
     local When, Columns = ui.When, ui.Columns
     local function Dark() return db().barMode == "dark" end
 
+    -- One scrolling page with a section index; the border and the font
+    -- follow the Bar Style unless the bar has its own (BarStyle.lua).
+    M:PageScaffold(page, ui, { follows = function(group) return M:PlayerFollows("cast", group) end,
+        setFollow = function(group, on) M:FollowPlayerGroup("cast", group, on) end })
+    function ui.Tab(title, build)
+        ui.Section(title)
+        if title ~= "Layout" then
+            ui.When(function() return not ui.db().show end, function() W.Tip(ui.Note("This bar is off. Turn on Show Bar under Layout to use it.")) end)
+        end
+        build()
+    end
     W.Preview(page, self:CastPreviewOwner(), { contentHeight = 90 })
-    self:AddEditingCorner(page)
+    self:AddPreviewCorner(page, {
+        custom = function()
+            local n = 0
+            for _, group in ipairs(M.playerStyleGroups) do if not M:PlayerFollows("cast", group) then n = n + 1 end end
+            return n
+        end,
+        useStyle = function() for _, group in ipairs(M.playerStyleGroups) do M:FollowPlayerGroup("cast", group, true) end end })
 
-    ui.Tab("Bar", function()
+    ui.Tab("Layout", function()
         page.castShowToggles = ui.Toggles({ { "Show Bar", "show" } })
         page.castStatus = ui.Status(function() return M:CastStatus() end)
         page:Group(L["Size"])
-        local size = Columns({ "Width", "Height" })
-        page.castWidthSlider = ui.Slider(size[1], "width", "px")
-        page.castHeightSlider = ui.Slider(size[2], "height", "px")
+        local size = Columns({ "Height" })
+        page.castHeightSlider = ui.Slider(size[1], "height", "px")
+        ui.More("castSize", function()
+            local width = Columns({ "Width" })
+            page.castWidthSlider = ui.Slider(width[1], "width", "px")
+        end)
         -- The spell icon in its own border, at either end.
         page:Group(L["Icon"])
         page.castIconPills = ui.Pills("Icon", M.castChoices.icon, "icon", 96)
         When(function() return db().icon ~= "none" end, function()
-            local gap = Columns({ "Icon Gap" })
-            page.castIconGapSlider = ui.Slider(gap[1], "iconGap", "px")
+            ui.More("castIcon", function()
+                local gap = Columns({ "Icon Gap" })
+                page.castIconGapSlider = ui.Slider(gap[1], "iconGap", "px")
+            end)
         end)
         page:Group(L["Interrupts"])
         page.castInterruptToggles = ui.Toggles({ { "Show Interrupted", "showInterrupted" } })
         W.Tip(ui.Note("An interrupted cast stays on the bar for 1 second in the Interrupted color, then fades."))
-        page:Group(L["Placement"])
-        page.castEditModeButton = ui.EditModeButton()
-        page:Group(L["Reset"])
-        page.castResetButton = ui.Button("Reset to Defaults", 150, function() M:ResetCast() end)
     end)
 
     ui.Tab("Look", function()
-        page:Group(L["Border"])
+        page:Group(L["Border"]); ui.Chip("border")
+        ui.Styled("border", function()
         page.castBorderPills = ui.Pills("Border", M.castChoices.border, "border", 96)
-        -- Border Style and Rim Color, as on the resource bars.
+        -- Border Style and Border Color, as on the resource bars.
         When(function() return db().border ~= "none" end, function()
-            local cells = Columns({ "Border Style", "Rim Color" })
+            local cells = Columns({ "Border Style", "Border Color" })
             page.castBorderStylePicker = ui.Select(cells[1], 180, function() return M.castChoices.edgeStyle end, "edgeStyle")
             page.castRimPicker = ui.Select(cells[2], 180, M.ResourceRimChoices, nil,
                 function() return M:CastRim() end, function(value) M:SetCastRim(value) end)
             local size = Columns({ "Border Size" })
             page.castBorderSizeSelect = ui.Select(size[1], 180, function() return M.choices.edgeSize end, "edgeSize")
             When(function() return db().rimColor == "custom" end, function()
-                local custom = Columns({ "Custom Rim Color" })
+                local custom = Columns({ "Custom Border Color" })
                 ui.Color(custom[1], "rimCustom")
             end)
+        end)
         end)
         page:Group(L["Bar"])
         -- Bar Mode: Color (the fill in Bar Color) or Dark (the fill dark, the
         -- Comet head alone, the text in color).
         page.castBarModePills = ui.Pills("Bar Mode", M.castChoices.barMode, "barMode", 96)
-        local texture = Columns({ "Bar Texture", "Bar Color" })
-        page.castTextureSelect = ui.Select(texture[1], 200, function() return addon.Kit.BarTextureChoices(true) end, "barTexture")
-        page.castBarColorSelect = ui.Select(texture[2], 180, function() return M.castChoices.barColorMode end, "barColorMode")
+        local color = Columns({ "Bar Color" })
+        page.castBarColorSelect = ui.Select(color[1], 180, function() return M.castChoices.barColorMode end, "barColorMode")
+        ui.More("castBar", function()
         When(function() return db().barColorMode == "custom" end, function()
-            local custom = Columns({ "Custom Bar Color" })
+            local custom = Columns({ "Custom Color" })
             ui.Color(custom[1], "barColor")
         end)
+        local texture = Columns({ "Bar Texture" })
+        page.castTextureSelect = ui.Select(texture[1], 200, function() return addon.Kit.BarTextureChoices(true) end, "barTexture")
         local states = Columns({ "Not Interruptible", "Interrupted" })
         ui.Color(states[1], "lockedColor"); ui.Color(states[2], "interruptedColor")
         When(Dark, function()
@@ -133,6 +155,7 @@ function M:CreateCastPage(parent)
         page.castBackgroundSelect = ui.Select(back[1], 200, function() return addon.Kit.BarTextureChoices(false) end, "barBackground")
         ui.Slider(back[2], "barBackgroundOpacity", "%")
         page.castSparkToggles = ui.Toggles({ { "Spark", "spark" } })
+        end)
     end)
 
     ui.Tab("Text", function()
@@ -140,33 +163,41 @@ function M:CreateCastPage(parent)
         for _, part in ipairs({ { "Spell Name", "name" }, { "Timer", "timer" } }) do
             local title, key = part[1], part[2]
             page:Group(L[title])
-            ui.Toggles({ { "Show " .. title, key .. "Show" } })
+            ui.Toggles({ { "Show", key .. "Show" } })
             When(function() return db()[key .. "Show"] end, function()
-                ui.Pills("Anchor", M.castChoices[key .. "Anchor"], key .. "Anchor", 90)
-                local place = Columns({ "Offset X", "Offset Y" })
-                ui.Slider(place[1], key .. "X", "px"); ui.Slider(place[2], key .. "Y", "px")
+                ui.More("cast" .. key, function()
+                    ui.Pills("Anchor", M.castChoices[key .. "Anchor"], key .. "Anchor", 90)
+                    local place = Columns({ "Offset X", "Offset Y" })
+                    ui.Slider(place[1], key .. "X", "px"); ui.Slider(place[2], key .. "Y", "px")
+                end)
             end)
         end
         page:Group(L["Text"])
         local size = Columns({ "Size" })
         page.castTextSizeSlider = ui.Slider(size[1], "textSize")
-        -- In Dark mode the text takes Dark Text Color (Look tab).
+        -- In Dark mode the text takes Dark Text Color (Look).
         When(function() return not Dark() end, function()
-            local color = Columns({ "Text Color" })
-            ui.Color(color[1], "textColor")
+            ui.More("castText", function()
+                local color = Columns({ "Text Color" })
+                ui.Color(color[1], "textColor")
+            end)
         end)
-        page:Group(L["Font"])
-        local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), ui.owner); ui.Refresh(fontRefresh)
-        page.castFontToggles = ui.Toggles({ { "Outline", "outline" }, { "Text Shadow", "shadow" }, { "Slug Text", "slug" } })
+        page:Group(L["Font"]); ui.Chip("text")
+        ui.Styled("text", function()
+            local _, fontRefresh = W.FontDropdown(page:Row(L["Font"], 48), ui.owner); ui.Refresh(fontRefresh)
+            page.castFontToggles = ui.Toggles({ { "Outline", "outline" }, { "Text Shadow", "shadow" }, { "Sharp Text", "slug" } })
+        end)
     end)
 
-    ui.Tab("Visibility", function()
-        page:Group(L["Visibility"])
+    ui.Tab("Show", function()
+        page:Group(L["When to Show"])
         local opacity = Columns({ "Opacity" })
         page.castOpacitySlider = ui.Slider(opacity[1], "opacity", "%")
         W.Tip(ui.Note("The cast bar shows while you cast, and with a sample in Edit Mode."))
+        ui.More("castShow", function()
+            page.castResetButton = ui.Button("Reset to Defaults", 150, function() M:ResetCast() end)
+        end)
     end)
 
-    W.SectionTabs(page)
     page:Finish(); return page
 end

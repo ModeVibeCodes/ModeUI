@@ -58,6 +58,8 @@ world.run([==[
     -- shows every buff your setup tracks, in full color.
     addon:SetModuleEnabled('cooldownManager', true)
     SlashCmdList.MODEUICDM()
+    -- The Bar view: this bar alone, its spells to point at.
+    M.previewMode = "bar"
     BuffIconCooldownViewer.itemFramePool:ReleaseAll()
     M:SelectBar('buffIcon')
     local view = M.previewView

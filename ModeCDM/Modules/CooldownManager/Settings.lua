@@ -4,11 +4,14 @@ local M, W, T, L = addon.CooldownManager, addon.ConfigWidgets, addon.InterfaceTh
 if not M then return end
 
 -- Only defines the page; the module's window (Window.lua) builds it the
--- first time it opens. A live preview of the bar chosen in the window's list
--- sits above the tabs (Bar, Look, Text, Glows, Spells, Visibility, Copy &
--- Apply); clicking a spell in it opens that spell's switches, and on a
--- custom bar the + slot adds a spell. This file builds the page, its helpers
--- and the Bar and Look tabs; SettingsTabs.lua the rest.
+-- first time it opens. One scrolling page with a section index on its left
+-- (owner, November 24, 2026): Layout, Look, Text, Spells & Glows and Show.
+-- Above it the preview: the Layout view (Stage.lua: every bar in place, this
+-- one outlined) or the Bar view (Preview.lua: this bar, to click and drag
+-- its spells). Groups that can follow the Bar Style carry its chip; the
+-- controls the Bar Style sets show while the group is the bar's own; rarely
+-- changed ones sit under More options. This file builds the page, its
+-- helpers and Layout; SettingsLook.lua Look and Text; SettingsTabs.lua the rest.
 function M:CreateConfigPage(parent)
     local page = W.Page(parent, 480); self.page = page
     local editing, textPart = "essential", "cooldown"
@@ -92,7 +95,14 @@ function M:CreateConfigPage(parent)
         local host = page:Row("", height or 40)
         host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
         local label = W.Label(host, L[text], nil, 0, -6, 440, T.muted); label:SetWordWrap(true)
-        return W.Note(label)
+        return W.Note(label), label
+    end
+    function ui.Button(label, width, onClick)
+        local host = page:Row("", 40)
+        host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
+        local button = W.Button(host, L[label], width, 30, "secondary")
+        button:SetPoint("LEFT"); button:SetScript("OnClick", onClick)
+        return button
     end
     function ui.Columns(titles, height)
         local localized = {}
@@ -103,50 +113,53 @@ function M:CreateConfigPage(parent)
         local label = M:Label(id)
         return M.db[id].show and label or (label .. "  " .. addon.Style.ColorText(L["Off"], addon.Style.Tone.graphite.muted))
     end
-    function ui.ViewerChoices()
-        local list = {}
-        for _, id in ipairs(M:BarIds()) do list[#list + 1] = { id = id, label = ui.ViewerLabel(id) } end
-        return list
+    -- What a group shows while it follows the Bar Style: one line saying so.
+    function ui.Summary(group, text)
+        ui.When(function() return M:Follows(editing, group) end, function()
+            local _, label = ui.Note("", 28)
+            W.Tip(label)
+            ui.Refresh(function() label:SetText(text()) end)
+        end)
     end
-    -- Each tab but Bar and Copy & Apply says so when the bar is off.
+    M:PageScaffold(page, ui, {
+        follows = function(group) return M:Follows(editing, group) end,
+        setFollow = function(group, on) M:FollowGroup(editing, group, on) end,
+    })
+    -- Each section but Layout says so while the bar is off.
     function ui.Tab(title, build)
-        page:Section(L[title], nil, false)
-        if title ~= "Bar" and title ~= "Copy & Apply" then
-            ui.When(function() return not db().show end, function() W.Tip(ui.Note("This bar is off. Turn on Show Bar on the Bar tab to use it.")) end)
+        ui.Section(title)
+        if title ~= "Layout" then
+            ui.When(function() return not db().show end, function() W.Tip(ui.Note("This bar is off. Turn on Show Bar under Layout to use it.")) end)
         end
         build()
     end
 
-    page.configPreview = W.Preview(page, M, { contentHeight = 120 })
-    -- Editing: which bar this page shows, at the top right of the preview.
-    M:AddEditingCorner(page)
-    self:BuildBarTab(ui)
-    self:BuildLookTab(ui)
-    self:BuildTextTab(ui)
-    self:BuildGlowTab(ui)
-    self:BuildSpellsTab(ui)
-    self:BuildVisibilityTab(ui)
-    self:BuildCopyTab(ui)
+    page.configPreview = W.Preview(page, M, { contentHeight = 150 })
+    M:AddPreviewCorner(page, { views = true, custom = function() return M:CustomGroups(editing) end,
+        useStyle = function() M:UseBarStyle(editing) end })
+    self:BuildLayoutSection(ui)
+    self:BuildLookSection(ui)
+    self:BuildTextSection(ui)
+    self:BuildSpellsSection(ui)
+    self:BuildShowSection(ui)
 
     page:HookScript("OnHide", function()
         if M.spellMenu then M.spellMenu:Hide() end
         if M.picker then M.picker:Hide() end
     end)
-    W.SectionTabs(page)
     page:Finish(); return page
 end
 
--- Bar: on or off, the game's state, a custom bar's name, the layout and
--- size, and where Blizzard's own settings still apply.
-function M:BuildBarTab(ui)
+-- Layout: on or off, a custom bar's name, growth and lines, and the size.
+function M:BuildLayoutSection(ui)
     local page, db = ui.page, ui.db
-    ui.Tab("Bar", function()
+    ui.Tab("Layout", function()
+        page:Group(L["Bar"])
         page.showToggles = ui.Toggles({ { "Show Bar", "show" } })
         local status = W.Label(page:Row(L["Status"], 48), "", nil, 0, -4, 420, T.muted); status:SetWordWrap(true)
         ui.Refresh(function() status:SetText(M:Status()) end)
         page.statusLabel = status
         ui.When(ui.Custom, function()
-            page:Group(L["Custom Bar"])
             local host = page:Row(L["Name"], 48)
             local box = W.TextInput(host, 260, L["Bar name"], M.MAX_NAME)
             -- Enter keeps the name; Escape leaves it as it was.
@@ -156,7 +169,7 @@ function M:BuildBarTab(ui)
                 if bar and not box:HasFocus() then box:SetText(bar.name) end
             end)
             page.nameInput = box
-            local kind = W.Label(page:Row(L["Holds"], 48), "", nil, 0, -4, 420, T.muted); kind:SetWordWrap(true)
+            local kind = W.Label(page:Row(L["Spells"], 48), "", nil, 0, -4, 420, T.muted); kind:SetWordWrap(true)
             ui.Refresh(function()
                 local bar = M:Custom(ui.Viewer())
                 if not bar then return end
@@ -164,24 +177,13 @@ function M:BuildBarTab(ui)
                     or L["%d cooldowns (from Essential and Utility Cooldowns)."], #bar.entries))
             end)
             page.holdsLabel = kind
-            W.Tip(ui.Note("Click + in the preview to add a spell you track in Blizzard's Cooldown Manager (it moves here from its viewer) or, on a Cooldown Bar, any spell by its Spell ID (on an icon of ModeUI's own, shown while you know the spell). Click a spell for its switches, its order, or to send it back.", 64))
-            local delete = page:Row("", 40)
-            delete.rowLabel:Hide(); delete:ClearAllPoints(); delete:SetAllPoints(delete.row)
-            page.deleteButton = W.Button(delete, L["Delete Bar"], 140, 30, "secondary")
-            page.deleteButton:SetPoint("LEFT")
-            page.deleteButton:SetScript("OnClick", function()
-                if M:DeleteCustomBar(ui.Viewer()) then M:SelectBar("essential") end
+            ui.More("bar", function()
+                -- Delete Bar asks first, like the list's -.
+                page.deleteButton = ui.Button("Delete Bar", 140, function() M:ConfirmDelete(ui.Viewer()) end)
             end)
         end)
-        -- Racials (Racials.lua): one choice for the module, shown on the bars that can take them.
-        ui.When(function() return M:TakesOwn(ui.Viewer()) end, function()
-            page:Group(L["Racial Abilities"])
-            local racials = ui.Columns({ "Show On" })
-            page.racialsSelect = ui.SelectIn(racials[1], 240, function() return M:RacialChoices() end,
-                function() return M.db.racials end, function(value) M:SetRacials(value) end)
-        end)
-        page:Group(L["Layout"])
-        local grow = ui.Columns({ "Growth" })
+        page:Group(L["Growth"])
+        local grow = ui.Columns({ "Grow" })
         page.growSelect = ui.SelectIn(grow[1], 240, function() return M.choices.grow end, function() return db().grow end, ui.Set("grow")); ui.Mark("layout")
         local function Horizontal() return M.horizontalGrowth[db().grow] == true end
         local function Lines(list)
@@ -195,11 +197,16 @@ function M:BuildBarTab(ui)
         ui.When(function() return not Horizontal() end, function()
             page.columnLinePills = ui.Pills("New Lines", Lines(M.lineChoices.vertical), function() return db().lineGrowth end, ui.Set("lineGrowth"), 90)
         end)
-        local shape = ui.Columns({ "Icons per Line", "Spacing" })
-        page.perLineSlider = ui.Slider(shape[1], "perLine")
-        page.spacingSlider = ui.Slider(shape[2], "spacing", "px")
-        page:Group(L["Size"])
-        local size = ui.Columns({ "Width", "Height" })
+        local perLine = ui.Columns({ "Icons per Line" })
+        page.perLineSlider = ui.Slider(perLine[1], "perLine")
+        -- Size: the Bar Style's Large or Small size, or the bar's own.
+        page:Group(L["Size"]); ui.Chip("size")
+        ui.Summary("size", function()
+            local style = db()
+            if ui.Bars() then return string.format(L["Bar Style: spacing %d."], style.spacing) end
+            return string.format(L["Bar Style %s: %d x %d, spacing %d."], M:SizeRole(ui.Viewer()) == "small" and L["Small"] or L["Large"],
+                style.width, style.height, style.spacing)
+        end)
         local function SizeSlider(host, key)
             -- Icons and bars have their own ranges; the range changes before
             -- the slider shows the new bar's value.
@@ -211,79 +218,30 @@ function M:BuildBarTab(ui)
             return ui.SliderIn(host, M:SizeRange("essential", key), function() return db()[key] end, ui.Set(key), "px",
                 { minimum = Low, maximum = High })
         end
-        page.widthSlider = SizeSlider(size[1], "width")
-        page.heightSlider = SizeSlider(size[2], "height")
-        page:Group(L["Placement"])
-        local edit = page:Row(L["Edit Mode"], 48)
-        page.editModeButton = W.Button(edit, L["Open Edit Mode"], 160, 30, "secondary")
-        page.editModeButton:SetPoint("LEFT"); page.editModeButton:SetScript("OnClick", function() addon:SetEditMode(true) end)
-        ui.When(function() return not ui.Custom() end, function()
-            page:Group(L["Blizzard's Settings"])
-            local settings = page:Row(L["Tracked Spells"], 48)
-            page.cooldownSettingsButton = W.Button(settings, L["Open CDM"], 160, 30, "secondary")
-            page.cooldownSettingsButton:SetPoint("LEFT")
-            page.cooldownSettingsButton:SetScript("OnClick", function() M:OpenCooldownSettings() end)
-            ui.Refresh(function() page.cooldownSettingsButton:SetEnabled(M:CanOpenCooldownSettings()) end)
-            W.Tip(ui.Note("Which spells each viewer tracks, and their order, are set in Blizzard's Cooldown Manager. Blizzard's Edit Mode options for a viewer still decide Visibility, Hide When Inactive, Show Timer, Show Tooltips and, for bars, Bar Content; its size, padding and icon limit are ModeUI's. On Essential and Utility the + slot in the preview also takes spells from the other viewer or a custom bar, spells by ID and items.", 80))
-        end)
-    end)
-end
-
--- Look: border and background, then the cooldown on icons or the bar on bars.
-function M:BuildLookTab(ui)
-    local page, db = ui.page, ui.db
-    ui.Tab("Look", function()
-        page:Group(L["Border"])
-        page.borderPills = ui.Pills("Border", M.choices.border, function() return db().border end, ui.Set("border")); ui.Mark("look")
-        -- Border Style and Border Metal (docs/DESIGN_LANGUAGE.md, "Choosing a border").
-        ui.When(function() return db().border ~= "none" end, function()
-            page.borderStylePicker, page.borderMetalPicker = W.BorderPickers(page,
-                { get = function() return db().edgeStyle end, set = ui.Set("edgeStyle") },
-                { get = function() return db().edgeMetal end, set = ui.Set("edgeMetal") })
-            -- Border Size (the band's width) and, for Mode-Empty, Border Color.
-            local size = ui.Columns({ "Border Size" })
-            page.borderSizeSelect = ui.SelectIn(size[1], 180, function() return M.choices.edgeSize end,
-                function() return db().edgeSize end, ui.Set("edgeSize"))
-            ui.When(function() return addon.Style.IsFlatStyle(db().edgeStyle) end, function()
-                local color = ui.Columns({ "Border Color" })
-                ui.Color(color[1], "edgeColor")
-            end)
-        end)
-        page:Group(L["Background"])
-        local background = ui.Columns({ "Background Color", "Background Opacity" })
-        ui.Color(background[1], "backgroundColor")
-        page.backgroundSlider = ui.Slider(background[2], "backgroundOpacity", "%")
+        -- Icons: one Icon Size (the height; the width keeps the icon's shape).
         ui.When(ui.Icons, function()
-            page:Group(L["Cooldown"])
-            ui.When(ui.Cooldowns, function()
-                page.desaturateToggles = ui.Toggles({ { "Desaturate on Cooldown", "desaturate" }, { "Show Aura Time", "auraSwipe" } })
-            end)
-            local swipe = ui.Columns({ "Swipe Color", "Swipe Opacity" })
-            ui.Color(swipe[1], "swipeColor")
-            page.swipeSlider = ui.Slider(swipe[2], "swipeOpacity", "%")
-            page.cooldownToggles = ui.Toggles({ { "Edge", "showEdge" }, { "Bling", "showBling" }, { "Ready Flash", "showFlash" } })
-            ui.When(ui.Cooldowns, function() page.rangeToggles = ui.Toggles({ { "Out of Range Tint", "rangeTint" } }) end)
+            local size = ui.Columns({ "Icon Size" })
+            page.iconSizeSlider = ui.SliderIn(size[1], M.sizeRanges.icon.height, function() return db().height end, function(value)
+                local style = db()
+                local width = math.max(M.sizeRanges.icon.width[1], math.min(M.sizeRanges.icon.width[2], value + style.width - style.height))
+                M:SetOption(ui.Viewer(), "height", value); M:SetOption(ui.Viewer(), "width", width)
+            end, "px")
         end)
         ui.When(ui.Bars, function()
-            page:Group(L["Bar"])
-            local textures = ui.Columns({ "Bar Texture", "Bar Color" })
-            page.barTextureSelect = ui.SelectIn(textures[1], 200, function() return addon.Kit.BarTextureChoices(true) end,
-                function() return db().barTexture end, ui.Set("barTexture"))
-            page.barColorSelect = ui.SelectIn(textures[2], 200, function() return M.choices.barColorMode end,
-                function() return db().barColorMode end, ui.Set("barColorMode"))
-            ui.When(function() return db().barColorMode == "custom" end, function()
-                local custom = ui.Columns({ "Custom Color" })
-                ui.Color(custom[1], "barColor")
-            end)
-            local back = ui.Columns({ "Bar Background", "Background Opacity" })
-            page.barBackgroundSelect = ui.SelectIn(back[1], 200, function() return addon.Kit.BarTextureChoices(false) end,
-                function() return db().barBackground end, ui.Set("barBackground"))
-            page.barBackgroundSlider = ui.Slider(back[2], "barBackgroundOpacity", "%")
-            page.iconSidePills = ui.Pills("Icon Side", M.choices.iconSide, function() return db().iconSide end, ui.Set("iconSide"))
-            page.barToggles = ui.Toggles({ { "Spark", "showSpark" } })
+            local size = ui.Columns({ "Width", "Height" })
+            page.widthSlider = SizeSlider(size[1], "width")
+            page.heightSlider = SizeSlider(size[2], "height")
         end)
-        ui.When(function() return M:IsBuff(ui.Viewer()) end, function()
-            page.debuffToggles = ui.Toggles({ { "Debuff Border", "debuffBorder" } })
+        ui.Styled("size", function()
+            local spacing = ui.Columns({ "Spacing" })
+            page.spacingSlider = ui.Slider(spacing[1], "spacing", "px")
+        end)
+        ui.When(ui.Icons, function()
+            ui.More("size", function()
+                local size = ui.Columns({ "Width", "Height" })
+                page.widthSlider = SizeSlider(size[1], "width")
+                page.heightSlider = SizeSlider(size[2], "height")
+            end)
         end)
     end)
 end

@@ -28,39 +28,63 @@ function M:CreateResourcePage(parent)
     function ui.Segmented() return M.resourceSpecs[Id()].segmented == true end
     function ui.InBlock() return M:ResourceInBlock(Id()) end
 
+    -- One scrolling page with a section index; the border and the font
+    -- follow the Bar Style unless the bar has its own (BarStyle.lua).
+    M:PageScaffold(page, ui, { follows = function(group) return M:PlayerFollows(Id(), group) end,
+        setFollow = function(group, on) M:FollowPlayerGroup(Id(), group, on) end })
+    function ui.Tab(title, build)
+        ui.Section(title)
+        if title ~= "Layout" then
+            ui.When(function() return not ui.db().show end, function() W.Tip(ui.Note("This bar is off. Turn on Show Bar under Layout to use it.")) end)
+        end
+        build()
+    end
     W.Preview(page, self:ResourcePreviewOwner(), { contentHeight = 90 })
     -- Editing: which bar this page shows, at the top right of the preview.
-    self:AddEditingCorner(page)
+    self:AddPreviewCorner(page, {
+        custom = function()
+            local n = 0
+            for _, group in ipairs(M.playerStyleGroups) do if not M:PlayerFollows(page.resourceEditing(), group) then n = n + 1 end end
+            return n
+        end,
+        useStyle = function()
+            for _, group in ipairs(M.playerStyleGroups) do M:FollowPlayerGroup(page.resourceEditing(), group, true) end
+        end })
 
-    ui.Tab("Bar", function()
+    ui.Tab("Layout", function()
         page.resourceShowToggles = ui.Toggles({ { "Show Bar", "show" } })
         page.resourceStatus = ui.Status(function() return M:ResourceStatus(Id()) end)
         -- Group Resources: one border for Power, Combo Points and Alternate Mana.
         ui.When(function() return M.resourceSpecs[Id()].group == true end, function()
             page:Group(L["Resources"])
-            page.resourceLayoutPills = ui.Pills("Layout", M.resourceChoices.resourceLayout, nil, 170,
+            page.resourceLayoutPills = ui.Pills("Stack Resources", M.resourceChoices.resourceLayout, nil, 120,
                 function() return M.db.resourceLayout end, function(value) M:SetResourceLayout(value) end)
         end)
         page:Group(L["Size"])
-        ui.When(function() return not ui.InBlock() end, function()
-            local size = ui.Columns({ "Width" })
-            page.resourceWidthSlider = ui.Slider(size[1], "width", "px")
-        end)
         local tall = ui.Columns({ "Height" })
         page.resourceHeightSlider = ui.Slider(tall[1], "height", "px")
+        -- Most bars Match Width in Edit Mode; the width itself waits under More options.
+        ui.When(function() return not ui.InBlock() end, function()
+            ui.More("resourceSize", function()
+                local size = ui.Columns({ "Width" })
+                page.resourceWidthSlider = ui.Slider(size[1], "width", "px")
+            end)
+        end)
         ui.When(ui.InBlock, function() W.Tip(ui.Note("Grouped: the block takes Power's width, border and place.")) end)
         -- Combo Points: Grouped (one border, a line between points) or Separated.
         ui.When(ui.Segmented, function()
             page:Group(L["Combo Points"])
-            page.resourceComboLayoutPills = ui.Pills("Layout", M.resourceChoices.layout, "layout", 120)
-            ui.When(function() return db().layout == "separated" and not ui.InBlock() end, function()
-                local points = ui.Columns({ "Spacing" })
-                page.resourceSpacingSlider = ui.Slider(points[1], "spacing", "px")
-            end)
-            ui.When(function() return db().layout == "grouped" or ui.InBlock() end, function()
-                local lines = ui.Columns({ "Divider Width", "Divider Color" })
-                page.resourceDividerSlider = ui.Slider(lines[1], "dividerWidth", "px")
-                ui.Color(lines[2], "dividerColor")
+            page.resourceComboLayoutPills = ui.Pills("Point Style", M.resourceChoices.layout, "layout", 120)
+            ui.More("points", function()
+                ui.When(function() return db().layout == "separated" and not ui.InBlock() end, function()
+                    local points = ui.Columns({ "Point Spacing" })
+                    page.resourceSpacingSlider = ui.Slider(points[1], "spacing", "px")
+                end)
+                ui.When(function() return db().layout == "grouped" or ui.InBlock() end, function()
+                    local lines = ui.Columns({ "Divider Width", "Divider Color" })
+                    page.resourceDividerSlider = ui.Slider(lines[1], "dividerWidth", "px")
+                    ui.Color(lines[2], "dividerColor")
+                end)
             end)
         end)
         -- Tick Marks: this bar's own lines at power values, each for one
@@ -70,6 +94,7 @@ function M:CreateResourcePage(parent)
             page.resourceMarkToggles = ui.Toggles({ { "Show Tick Marks", "marksShow" } })
             ui.When(function() return db().marksShow == true end, function()
                 page.resourceMarkInputs, page.resourceMarkRemove = {}, {}
+                ui.More("ticks", function()
                 local function Mark(i) local marks = db().marks; return marks and marks[i] end
                 for i = 1, M.MARK_MAX do
                     ui.When(function() return Mark(i) ~= nil end, function()
@@ -95,17 +120,13 @@ function M:CreateResourcePage(parent)
                 local look = ui.Columns({ "Tick Width", "Tick Color" })
                 ui.Slider(look[1], "markWidth", "px")
                 ui.Color(look[2], "markColor")
+                end)
                 W.Tip(ui.Note("These ticks are this bar's own. Type a power value (0 hides the tick); a tick shows only while its power type is shown."))
             end)
         end)
-        page:Group(L["Placement"])
-        page.resourceEditModeButton = ui.EditModeButton()
-        page:Group(L["Reset"])
-        page.resourceResetButton = ui.Button("Reset to Defaults", 150, function() M:ResetResource(Id()) end)
     end)
 
     self:BuildResourceLookTabs(page, ui)
-    W.SectionTabs(page)
     page:Finish(); return page
 end
 

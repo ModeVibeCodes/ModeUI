@@ -185,6 +185,8 @@ local function Style(size, perLine, lineGrowth, small)
         -- icon keeps showing its cooldown, gray.
         auraSwipe = false,
         visibility = "always", opacity = 100, fadeOpacity = 0,
+        -- Show rules (owner, November 24, 2026; Visibility.lua).
+        hideMounted = false, hideVehicle = false, onlyInGroup = false, onlyInInstance = false, dim = false,
         -- Tracked Bars: the bar's texture and color (your class color, or
         -- Bar Color when Custom), its background, the icon's side and the
         -- Comet spark.
@@ -223,7 +225,8 @@ for _, viewer in ipairs(M.viewers) do M.defaults[viewer] = Copy(M.styleDefaults[
 -- and its spells' switches.
 M.identityKeys = { show = true, perLine = true, grow = true, lineGrowth = true, width = true, height = true,
     matchWidth = true, matchHeight = true,
-    visibility = true, spells = true }
+    visibility = true, spells = true,
+    hideMounted = true, hideVehicle = true, onlyInGroup = true, onlyInInstance = true, dim = true }
 M.colorKeys = { backgroundColor = true, swipeColor = true, barColor = true, edgeColor = true }
 for _, kind in ipairs(M.glowKinds) do M.colorKeys[kind .. "Color"] = true end
 for _, part in ipairs(M.textParts) do M.colorKeys[part .. "Color"] = true end

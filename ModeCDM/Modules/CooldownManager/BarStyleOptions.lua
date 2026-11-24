@@ -108,10 +108,11 @@ function M:UseBarStyleEverywhere()
         db.castBar.follow = { border = true, text = true }
     end)
 end
--- How many groups of a bar are its own (the page header says so).
+-- How many groups of a bar are its own beyond what Use Bar Style would
+-- leave (a default bar keeps its own size).
 function M:CustomGroups(id)
     local count = 0
-    for _, group in ipairs(self:StyleGroups(id)) do if not self:Follows(id, group) then count = count + 1 end end
+    for group, on in pairs(self.NewFollow(self.db, id)) do if on and not self:Follows(id, group) then count = count + 1 end end
     return count
 end
 

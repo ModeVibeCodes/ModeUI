@@ -379,15 +379,18 @@ world.run([==[
     SlashCmdList.MODEUICDM()
     local window = ModeUICooldownManagerWindow
     assert(window:IsShown() and window.title.text == 'Cooldown Manager' and window.moduleHeader.toggle:IsShown(), 'own window, own switch')
-    -- The list: Spells and Abilities, Cooldown Bars, Buff Bars, then Resource Bars.
-    assert(window.blizzardCaption.text == 'SPELLS AND ABILITIES' and window.cooldownCaption.text == 'COOLDOWN BARS' and window.buffCaption.text == 'BUFF BARS')
-    assert(window.rows[5]:IsShown() and window.rows[5].label.text == 'Cooldown Bar 1' and window.rows[6].label.text == 'Buff Bar 1', 'custom bars under their headings')
-    assert(window.rows[7].resource and Point(window.resourceCaption)[5] < Point(window.rows[6])[5], 'Resource Bars after the custom bars')
-    assert(window.rows[5].delete:IsShown() and not window.rows[1].delete:IsShown(), '- on custom bars only')
+    -- The list (owner, November 24, 2026): Home and Bar Style, then Cooldowns, Buffs and Player Bars.
+    assert(M.selectedView == 'home' and M.homePage and M.homePage:IsShown() and window.rows[1].label.text == 'Home' and window.rows[2].label.text == 'Bar Style', 'opens on Home')
+    assert(window.cooldownCaption.text == 'COOLDOWNS' and window.buffCaption.text == 'BUFFS' and window.resourceCaption.text == 'PLAYER BARS')
+    assert(window.rows[3].barId == 'essential' and window.rows[5].label.text == 'Cooldown Bar 1' and window.rows[6].barId == 'buffIcon'
+        and window.rows[8].label.text == 'Buff Bar 1', 'your bars beside Blizzard viewers of their kind')
+    assert(window.rows[9].kind == 'resource' and Point(window.resourceCaption)[5] < Point(window.rows[8])[5], 'Player Bars after the buffs')
+    assert(window.rows[5].delete:IsShown() and not window.rows[3].delete:IsShown(), '- on custom bars only')
+    assert(window.rows[5].status.text == 'Custom' and window.rows[3].status.text == 'Custom', 'status in the list: these bars have looks of their own')
     -- + adds a bar under its heading; - asks first.
     window.addCooldown.scripts.OnClick(window.addCooldown)
     local added = M.selectedBar
-    assert(M:Custom(added) and M:Custom(added).kind == 'cooldown' and window.rows[6].barId == added, 'a new Cooldown Bar, listed with the others')
+    assert(M:Custom(added) and M:Custom(added).kind == 'cooldown' and window.rows[6].barId == added and M.page:IsShown(), 'a new Cooldown Bar, listed with the others')
     window.rows[6].delete.scripts.OnClick(window.rows[6].delete)
     local confirm = addon.ConfigWidgets.confirmFrame
     assert(confirm:IsShown() and M:Custom(added), 'asks before deleting')
@@ -395,24 +398,26 @@ world.run([==[
     assert(not confirm:IsShown() and M:Custom(added), 'Cancel keeps it')
     window.rows[6].delete.scripts.OnClick(window.rows[6].delete); confirm.accept.scripts.OnClick(confirm.accept)
     assert(not M:Custom(added) and M.selectedBar == 'essential', 'deleted after Delete Bar')
-    -- Editing at the top right of the preview.
-    assert(M.page.editingSelect and M.page.editingLabel.text == 'Editing')
-    M:SelectEditing('utility'); assert(M.page.viewerEditing() == 'utility', 'Editing picks the bar')
-    window.rows[6].scripts.OnClick(window.rows[6])
+    -- The preview: the Layout view (every bar in place), then the Bar view.
+    M:SelectEditing('utility'); assert(M.page.viewerEditing() == 'utility' and M.page:IsShown(), 'a bar by its list value')
+    assert(M.page.layoutViewButton.selected and M.previewView.stage and M.previewView.stage:IsShown() and M.previewView.stage.bars >= 4, 'the Layout view: every bar in place')
+    M.page.barViewButton.scripts.OnClick(M.page.barViewButton)
+    assert(M.previewMode == 'bar' and not M.previewView.stage:IsShown() and M.previewView.area:IsShown(), 'the Bar view')
+    window.rows[8].scripts.OnClick(window.rows[8])
     local page, view = M.page, M.previewView
     assert(page.viewerEditing() == c2 and view.icons[1].key == '301' and view.plus:IsShown(), 'a custom bar: its spells, then +')
     -- Border Style and Border Metal: in Border on the Look tab, while the border shows.
     local borderGroup, pickerRow
     for _, row in ipairs(page.rows) do
         if row.settingsGroupTitle == 'Border' and row.section.title == 'Look' then borderGroup = row
-        elseif borderGroup and not pickerRow and row.card == borderGroup.card and row.visibleWhen then pickerRow = row end
+        elseif borderGroup and not pickerRow and row.card == borderGroup.card and row.settingsTitles and row.settingsTitles[1] == 'Border Style' then pickerRow = row end
     end
     assert(page.borderStylePicker and page.borderMetalPicker and pickerRow and pickerRow.visibleWhen(), 'Border Style and Border Metal in Border')
     assert(M:SetOption(c2, 'border', 'none') and not pickerRow.visibleWhen() and M:SetOption(c2, 'border', 'mode') and pickerRow.visibleWhen(), 'hidden with Border None')
     -- Border Size under them; Border Color only while the bar is Mode-Empty (the default).
     local colorRow
     for _, row in ipairs(page.rows) do
-        if row.card == borderGroup.card and row.settingsTitles and row.settingsTitles[1] == 'Border Color' then colorRow = row end
+        if row.card == borderGroup.card and row.settingsTitles and row.settingsTitles[1] == 'Band Color' then colorRow = row end
     end
     assert(page.borderSizeSelect and colorRow and colorRow.visibleWhen(), 'Border Size shown; Border Color for Mode-Empty')
     assert(M:SetOption(c2, 'edgeStyle', 'obsidian') and not colorRow.visibleWhen() and M:SetOption(c2, 'edgeStyle', 'obsidianEmpty') and colorRow.visibleWhen())
@@ -574,7 +579,7 @@ world.run([==[
     assert(M:Entries('utility')[#M:Entries('utility')] == 's26297' and #M.db.extras.utility == 0, 'listed, not saved')
     assert(not M.spellIcons.utility.s20594 and not M.spellIcons.utility.s28730, "other races' racials stay off")
     M:SelectBar('utility')
-    assert(page.racialsSelect and view.icons[#M:SpellOrder('utility')].key == 's26297', 'Racial Abilities on the Bar tab; in the preview')
+    assert(M.homePage.racialsSelect and view.icons[#M:SpellOrder('utility')].key == 's26297', 'Racial Abilities on Home; in the preview')
     assert(M:RemoveEntry('utility', 's26297') and M:SpellSwitch('utility', 's26297', 'hide') and berserk.alpha == 0, 'Remove from Bar hides it')
     assert(M:SetSpellSwitch('utility', 's26297', 'hide', false))
     assert(M:SetRacials('essential') and M.spellIcons.essential.s26297:IsShown() and not M.spellIcons.utility.s26297, 'moved to Essential')

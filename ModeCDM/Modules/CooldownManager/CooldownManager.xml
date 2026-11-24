@@ -31,15 +31,22 @@
     <Script file="TextPopout.lua"/>
     <Script file="Picker.lua"/>
     <Script file="Preview.lua"/>
+    <Script file="Stage.lua"/>
     <Script file="PreviewDrag.lua"/>
     <Script file="ResourcePreview.lua"/>
     <Script file="CastPreview.lua"/>
     <Script file="SettingsHelpers.lua"/>
     <Script file="Settings.lua"/>
+    <Script file="SettingsLook.lua"/>
     <Script file="SettingsTabs.lua"/>
+    <Script file="SpellList.lua"/>
     <Script file="ResourceSettings.lua"/>
     <Script file="ResourceSettingsLook.lua"/>
     <Script file="CastSettings.lua"/>
+    <Script file="TestDisplay.lua"/>
+    <Script file="HomePage.lua"/>
+    <Script file="StylePage.lua"/>
+    <Script file="WindowList.lua"/>
     <Script file="Window.lua"/>
     <Script file="Layouts.lua"/>
 </Ui>
