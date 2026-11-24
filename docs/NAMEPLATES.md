@@ -35,8 +35,8 @@ Enemy plates:
   everything; no combat icon.
 - **Text** (owner, November 24, 2026): every text is **outlined** slug text
   over the crisp shadow, a size larger than before: name 14, health 12, cast
-  11, level 11. The name is in the light text color, since the bar already
-  shows the reaction.
+  11, level 11, every one in **Bold**. The name is in the light text color,
+  since the bar already shows the reaction.
 
 Friendly plates are **Name Only**: players in their class color, friendly NPCs
 in the friendly color, 13px and outlined, no auras.
@@ -53,14 +53,17 @@ frame and fades Blizzard's art. Each plate has:
   **Mode-FG** on Mode-BG at 85%; the cast bar has its own **Cast Bar** texture
   and the **Comet** spark on the fill's leading edge (a channel's on its left),
   hidden while an interrupted cast is held.
-- **Name** in SemiBold: on enemy plates in the Text Color by default, on
+- **Name** in Bold (SemiBold with Bold Text off): on enemy plates in the Text Color by default, on
   friendly ones in the class or reaction color (Gradient is the third
   option). **Health text** (Percent, Current Health, Current and Percent,
   None) in Bold, colored **By Health** or in the Text Color.
 - **Text style:** **Outline** (on) and **Slug Text** (on): the game draws
   slug letters and their outline from the glyph outlines (the
   `ModeUISlugFontOutline` template, `Kit.SlugFont`), so both stay sharp at
-  any size and at the game's distance scaling.
+  any size and at the game's distance scaling. **Bold Text** (on, key
+  `boldText`, added November 24, 2026 and filled in by validation, so no
+  settings version) sets every text in Bold (`M.TextWeight`); off, names are
+  SemiBold and the level Regular, as before.
 - **Text halos** (`Style.TextHalo`, off by default): **Name Text Glow** and
   **Health Text Glow** draw eight copies of the text 1px out in every
   direction, in Ink (Deep and Match Text are options) at 60% each. A glowing
@@ -375,7 +378,7 @@ Earlier versions:
   - Look at an enemy over a busy background (grass, spell effects), near and
     far, then target it.
   - On **Text**, in **Text Style**, turn **Outline** off and on, then **Slug
-    Text** off and on.
+    Text** off and on, then **Bold Text** off and on.
 - **Required state:** out of combat to change settings; enemy nameplates
   shown (friendly ones too for the names).
 - **Confirmation:**
@@ -400,4 +403,6 @@ Earlier versions:
     read clearly over the red bar and the ground, near and far.
   - Plates shrink with distance and grow on your target as Blizzard's do.
   - Turning Slug Text off makes the outlined text visibly softer.
+  - With Bold Text on, the name and level are as heavy as the health %; off,
+    the name is lighter and the level thin.
   - No Lua errors.

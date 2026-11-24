@@ -161,11 +161,17 @@ local function Style(kind)
         -- Readable text (owner, November 24, 2026): every text outlined and drawn
         -- as slug text (letters and outline from the glyph outlines, sharp at
         -- any size), a size larger, over the one crisp shadow.
+        -- Bold Text (owner, November 24, 2026): every text in the Bold weight.
         font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = true, shadow = true, liftedShadow = false, slug = true,
-        textColor = Copy(P.text),
+        boldText = true, textColor = Copy(P.text),
     }
 end
 M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
+
+-- A text's weight (Style.Weighted): Bold with Bold Text on; off, names drop
+-- to SemiBold and the level to Regular, health and cast text stay Bold.
+local LIGHT = { name = "semibold", level = "regular" }
+function M.TextWeight(db, part) return (not db.boldText and LIGHT[part]) or "bold" end
 -- hideBlizzardCombatIcon (every kind): turns the game's own enemy and friend
 -- soft-target icons off (BlizzardIcons.lua); off by default.
 M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly),

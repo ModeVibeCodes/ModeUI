@@ -190,6 +190,13 @@ world.run([==[
     -- Outlined text: the slug outline font, and no halo by default.
     assert(plate.name.font[3] == 'OUTLINE' and plate.healthText.font[3] == 'OUTLINE' and plate.healthText.shadowColor[4] == 1, 'outlined, with its shadow')
     assert(plate.name.halo == nil and plate.healthText.halo == nil, 'no halo copies until a glow is switched on')
+    -- Bold Text: name and level in Bold; off, SemiBold and Regular (health stays Bold).
+    local function Face(text) return text.font[1]:match('Urbanist%-(%a+)%.ttf') end
+    local levelText = plate.indicatorParts.level
+    assert(M.db.enemy.boldText == true and Face(plate.name) == 'Bold' and Face(levelText) == 'Bold' and Face(plate.healthText) == 'Bold', 'bold text')
+    assert(M:SetOption('enemy', 'boldText', false))
+    assert(Face(plate.name) == 'SemiBold' and Face(levelText) == 'Regular' and Face(plate.healthText) == 'Bold', 'lighter names and level')
+    assert(M:SetOption('enemy', 'boldText', true) and Face(plate.name) == 'Bold')
     -- The halo: eight copies 1px round the text in Ink, in place of its shadows.
     assert(M:SetOption('enemy', 'healthTextGlow', true) and M:SetOption('enemy', 'nameTextGlow', true))
     local hg, ng = plate.healthText.halo, plate.name.halo

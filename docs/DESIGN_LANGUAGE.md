@@ -417,7 +417,8 @@ The Cooldown Manager's icons, tracked bars and resource bars:
   colored bar and the moving world is **outlined slug text** (the slug
   outline is drawn from the glyph outlines, so it stays sharp at small sizes)
   over the one shadow, a size larger than elsewhere: names 14, health 12,
-  cast and level 11. Halos are off there by default. Enemy nameplate names
+  cast and level 11, all in Bold (thin weights lose their shape inside an
+  outline). Halos are off there by default. Enemy nameplate names
   are in the text color: the bar carries the reaction, and colored text on a
   bar of the same hue loses its lower half.
 - **Health text glow on Party Frames** (a module toggle): a soft

@@ -138,8 +138,8 @@ function M:LayoutPlate(plate)
         else
             self:PlaceInsideText(plate, text, anchor, dx, dy)
         end
-        -- Names in SemiBold, health text in Bold (Urbanist weights).
-        local weighted = Style.Weighted(path, text == plate.name and "semibold" or "bold")
+        -- Urbanist weights (M.TextWeight): Bold, or SemiBold names without Bold Text.
+        local weighted = Style.Weighted(path, M.TextWeight(db, text == plate.name and "name" or "health"))
         Kit.Font(text, db, size, weighted, px)
         text:SetJustifyH(justify)
         Kit.LayoutLift(text, db, size, weighted, px, shown and not db[glowKey], justify)
@@ -150,10 +150,10 @@ function M:LayoutPlate(plate)
         plate.name:ClearAllPoints()
         plate.name:SetPoint("CENTER", plate.healthBox, "CENTER", Round(db.nameX), Round(db.nameY))
         plate.name:SetWidth(width)
-        local semibold = Style.Weighted(path, "semibold")
-        Kit.Font(plate.name, db, db.nameFontSize, semibold, px)
+        local weighted = Style.Weighted(path, M.TextWeight(db, "name"))
+        Kit.Font(plate.name, db, db.nameFontSize, weighted, px)
         plate.name:SetJustifyH("CENTER")
-        Kit.LayoutLift(plate.name, db, db.nameFontSize, semibold, px, not db.nameTextGlow, "CENTER")
+        Kit.LayoutLift(plate.name, db, db.nameFontSize, weighted, px, not db.nameTextGlow, "CENTER")
         plate.name:SetShown(true)
         Halo(plate.name, "nameTextGlow", true)
     else

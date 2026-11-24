@@ -38,7 +38,8 @@ end
 
 -- Fonts follow the plate's text settings; called from LayoutPlate.
 function M:LayoutIndicator(plate)
-    local db, px, path = self:Style(plate), plate.px or 1, plate.fontPath
+    local db, px = self:Style(plate), plate.px or 1
+    local path = addon.Style.Weighted(plate.fontPath, M.TextWeight(db, "level"))
     local level = plate.indicatorParts.level
     Kit.Font(level, db, db.levelSize, path, px)
     level:SetJustifyH("LEFT")
