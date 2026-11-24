@@ -22,24 +22,97 @@ are tracked and keeps every icon's cooldown, charges, auras, range and procs
 up to date. ModeUI places, lays out, skins and lights them, and lets you
 move tracked spells onto **custom bars**.
 
-### The window
+### The window (rework, November 24, 2026)
 
-`/mcdm` opens and closes it; it's built the first time. ModeUI's Mode look,
-on the shared settings widgets:
+`/mcdm` opens and closes it; it's built the first time and opens on
+**Home**. The owner chose this layout in the ModeCDM Workbench
+(`design/cdm-workbench/`). Forever comes first: everything below was checked
+against Blizzard's Forever source, and the Forever-only parts check that
+their API exists (`Caps.lua`), so a client without one simply doesn't show
+them. The rest of this document lists every setting; where a label changed,
+the new one is used on the pages (Border Style, Border Color, Gray on
+Cooldown, Show Effect Time, Swipe Edge, Finish Sparkle, Sharp Text, Ready
+Glow, Starting Glow Look, Copy Look To…, Show, Text Color, Custom Color,
+Stack Resources: Together / Apart, Point Style: Joined / Separate, Color
+When Full, Tracked Spells, Tracked / Not Tracked Yet).
 
-- **Header:** the title, **Open CDM** (Blizzard's Cooldown Manager window,
-  where you choose the tracked spells; outside combat), **Edit Mode** and
-  the close button. Edit Mode hides the window and brings it back when it
-  ends.
-- **List** on the left: **Spells and Abilities** (the four viewers), then
-  **Cooldown Bars** and **Buff Bars** (your custom bars, up to fifteen), each
-  heading with a **+** on its right that makes a new bar of that kind, and
-  each custom bar with a **-** that deletes it after asking (**Delete Bar**
-  in the confirmation). **Resource Bars** come last. A bar that's off says so.
-- **Page** on the right: the module's title and on/off switch, **Editing**
-  (the bar being edited, with a dropdown of every bar, at the top right), a
-  live preview of that bar, and its tabs: Bar, Look, Text, Glows, Spells,
-  Visibility, Copy & Apply.
+- **Header:** the title, **Tracked Spells** (Blizzard's Cooldown Settings,
+  where you choose the tracked spells and their alerts; outside combat),
+  **Test on Screen**, **Edit Mode** and the close button. Edit Mode hides
+  the window and brings it back when it ends.
+- **List** on the left, by kind: **Home** and **Bar Style**; **Cooldowns**
+  (Essential, Utility and your Cooldown Bars) and **Buffs** (Tracked Buffs,
+  Tracked Bars and your Buff Bars), each heading with a **+** that makes a
+  bar of its kind and each of your bars with a **-** that deletes it after
+  asking; **Player Bars** (Power, Combo Points, Alternate Mana, Health, Cast
+  Bar and, on Forever, Swing Timer). Each row says **Off**, **Custom** (a look
+  of its own) or how many spells show.
+- **Home:** whether the Cooldown Manager shows and why not; the Bar Style
+  with its presets (**Mode Default**, **Compact**, **Large & Clear**), **Edit
+  Bar Style** and **Use Bar Style on Every Bar**; how many bars show, are off
+  or have a look of their own; **Racial Abilities** (the bar they show on;
+  it was on each bar's Bar tab); **Tracked Spells**.
+- **Bar Style** (`BarStyle.lua`, `BarStyleOptions.lua`, `StylePage.lua`): the
+  default look for bars. New bars and new profiles start with it; existing
+  bars use it if you choose. Groups: **Size** (Large icons 38 x 30 for
+  Essential, Utility and Cooldown Bars; Small 32 x 26 for Tracked Buffs and
+  Buff Bars; Spacing -1, one shared shadow pixel), **Border** (Mode-Border in
+  Gunmetal, 1px), **Background**, **Cooldown**, **Text** (amber cooldown
+  numbers 14 on Large icons and 12 on Small, count 10, outlined; a taller or
+  shorter icon scales them, so Ultra Emphasized Buffs keep 22 and 18),
+  **Starting Glow Look** (gold Mode Glow procs) and **Bar Fill** (Tracked
+  Bars). The resource bars, the Cast Bar and the Swing Timer take its border
+  and font. Its preview is the Layout view of every bar.
+- **A bar's page:** one scrolling page with a section index on its left:
+  **Layout**, **Look**, **Text**, **Spells & Glows** and **Show** (the player
+  bars: Layout, Look, Text, Show). Each group that can follow the Bar Style
+  has a chip: **● Bar Style** (it follows; one line says what it gives) or
+  **◆ Custom · Use Bar Style**. The controls the Bar Style sets show while
+  the group is Custom; changing a value of a group that follows makes it
+  Custom. Rarely changed controls sit under **More options (n)**. **Use Bar
+  Style (n)** in the preview's corner puts every group back. **Copy Look To…**
+  is under Look's More options; **Reset to Defaults** under Show's (back to
+  the Bar Style, the size kept); **Delete Bar** under Layout's (it asks
+  first). Blizzard's Edit Mode and Tracked Spells moved to the header.
+- **The preview:** **Layout** (`Stage.lua`: every bar that shows, where it
+  sits and to scale, read from the Edit Mode stand-ins, the bar being edited
+  outlined; a click edits another bar) or **Bar** (this bar alone, to click
+  and drag its spells and use its **+** slot). The Layout view needs the
+  module on; otherwise the Bar view shows.
+- **Spell list** (`SpellList.lua`, Spells & Glows): every spell on the bar as
+  a row with its icon, name (a click opens its menu), **Show** and a switch
+  per glow the bar has.
+- **A spell's menu** also has **Own Bar** (a one-icon bar of its own, named
+  after it, ready to place; not for racials) and its alerts: **Alerts in
+  Tracked Spells** opens Blizzard's alert editor for a spell Blizzard tracks
+  (Forever has it); a spell ModeUI tracks itself (by ID, items, trinkets,
+  racials) picks a **Ready Sound** (No Sound, Blizzard Warning or your
+  SharedMedia sounds) played when its cooldown ends (`Alerts.lua`).
+- **Test on Screen** (`TestDisplay.lua`): sample icons on every bar in its
+  real place (some cooling, one lit) and the Cast Bar's sample, on ModeUI's
+  own frames; out of combat, until combat starts, the window closes or it's
+  pressed again.
+- **Show rules** (`Visibility.lua`): besides Show When, **Hide While
+  Mounted**, **Hide in a Vehicle**, **Only in a Group**, **Only in an
+  Instance** and **Dim Instead of Hide** (Faded Opacity instead of hidden),
+  on every bar, the resource bars and the Cast Bar (which also has Show When
+  now). Alpha only. Copy Look To leaves them alone.
+- **Trinkets** (`Items.lua`): **Trinket 1** and **Trinket 2** in the **+**
+  list (`t13`, `t14`) follow whatever trinket is in the slot; an empty slot
+  stays, gray.
+- **Racials** step aside when Blizzard's Cooldown Manager shows the same
+  spell itself (Forever's spec-independent category, where its data has it),
+  so nothing shows twice.
+- **Swing Timer** (Forever only; `SwingInit.lua`, `SwingTimer.lua`,
+  `SwingSettings.lua`): your auto-attack swings from Forever's `C_SwingTimer`
+  and `PLAYER_SWING`. A lane for the main hand (or ranged), one for the off
+  hand while it swings; the fill runs over each swing's duration; Rosewood
+  while the target is out of auto-attack range (`PLAYER_SWING_RANGE_UPDATE`).
+  Under the resource bars by default; Edit Mode and Test on Screen show a
+  sample. A duration the client doesn't give as a plain number leaves the
+  lane full.
+- **`/mcdm check`** prints what this client offers (Caps.lua) for the
+  Forever checks still to make in game.
 
 ### Every bar's settings
 
@@ -253,7 +326,7 @@ custom bar (`custom1`, ...), `customBars` (each bar's ID, name, kind and
 spells in order) and `nextCustom`. Version 2 replaced Lines, First Icon and
 Center Lines with Growth and New Lines, and the ready glow's switch and style
 with the Off Cooldown glow's style (a flash, as before); the migration keeps
-your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), `order = { essential = { "102", "101", ... } }`, a viewer's spell order once you move one, `racials` (the bar racials show on: `"utility"` by default, `"essential"`, a custom Cooldown Bar's ID or `"none"`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Version 5 (the Mode design language) moves values still at a version 4 default to the new ones and keeps anything you chose: Rounded and Square borders become the Mode edge (Border Size and Border Color retire), the old sizes (42 by 34, 36 by 28, bars 220 by 22) become the new ones, the #040404 background at 75% Mono panel at 100%, Expressway Geist with no outline, gold procs Celadon (Blizzard becomes Border), green glows Celadon or Ivory, the cyan ready glow Ivory (Pixel becomes Mode Glow), text sizes and colors, Mode Gradient on Mode BG with the spark for bars, and the cyan bar color Class Color (a color you picked stays, as Custom). A spell's own glow keeps its style and takes the new color if it still had the old default. Resource bars: Mode Gradient on Mode BG at 60%, Geist, the hostile red for combo points, and Border Color retires. Versions 6 and 7 are under Resource Bars, version 8 under Cast Bar. Version 10 (owner, November 20, 2026): the Cast Bar filled in your class color by default (Bar Mode Color, Bar Color Class Color); a Bar Mode still at Dark, the old default, takes Color. Version 9 (owner, November 18, 2026) adds the five default bars a profile doesn't hold, after its own bars, with new IDs from `nextCustom`, while there's room (up to 15 custom bars); its own bars are never touched. A new profile starts at version 9 with them as `custom1` to `custom5` (`nextCustom` 6). Bad data stops startup; nothing is reset.
+your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), `order = { essential = { "102", "101", ... } }`, a viewer's spell order once you move one, `racials` (the bar racials show on: `"utility"` by default, `"essential"`, a custom Cooldown Bar's ID or `"none"`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Version 5 (the Mode design language) moves values still at a version 4 default to the new ones and keeps anything you chose: Rounded and Square borders become the Mode edge (Border Size and Border Color retire), the old sizes (42 by 34, 36 by 28, bars 220 by 22) become the new ones, the #040404 background at 75% Mono panel at 100%, Expressway Geist with no outline, gold procs Celadon (Blizzard becomes Border), green glows Celadon or Ivory, the cyan ready glow Ivory (Pixel becomes Mode Glow), text sizes and colors, Mode Gradient on Mode BG with the spark for bars, and the cyan bar color Class Color (a color you picked stays, as Custom). A spell's own glow keeps its style and takes the new color if it still had the old default. Resource bars: Mode Gradient on Mode BG at 60%, Geist, the hostile red for combo points, and Border Color retires. Versions 6 and 7 are under Resource Bars, version 8 under Cast Bar. Version 12 (owner, November 24, 2026): the Bar Style (`barStyle`, and a `follow` table on every bar, resource bar, the Cast Bar and the Swing Timer). A new profile follows it everywhere (a default bar keeps its own size). An existing profile's bars take its border (a border set to None stays off) and text; every other group follows only where the bar already matches it, so nothing else changes on screen. Layout profiles take it with their own sizes. Added without a version step: `alerts` on a bar (Ready Sounds), the show rules (`hideMounted`, `hideVehicle`, `onlyInGroup`, `onlyInInstance`, `dim`), the Cast Bar's `visibility` and `fadeOpacity`, `db.swing`, and the trinket entries `t13`/`t14`. Version 10 (owner, November 20, 2026): the Cast Bar filled in your class color by default (Bar Mode Color, Bar Color Class Color); a Bar Mode still at Dark, the old default, takes Color. Version 9 (owner, November 18, 2026) adds the five default bars a profile doesn't hold, after its own bars, with new IDs from `nextCustom`, while there's room (up to 15 custom bars); its own bars are never touched. A new profile starts at version 9 with them as `custom1` to `custom5` (`nextCustom` 6). Bad data stops startup; nothing is reset.
 
 ## Files
 
@@ -275,7 +348,15 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `SpellMenu.lua`, `Picker.lua`, `Preview.lua`, `PreviewDrag.lua` | the preview, its spell menu, the + slot's list, and dragging spells to move them |
 | `Settings.lua`, `SettingsTabs.lua` | the settings page |
 | `Window.lua` | the module's own window |
-| `Layouts.lua` | ModeCDM's part of the Mode-DPS/TANK layout |
+| `Layouts.lua` | ModeCDM's parts of the Mode-DPS/TANK and Healer layouts (sizes and places; the look is the Bar Style) |
+| `Caps.lua` | what the client offers (`M.caps`), `/mcdm check` |
+| `BarStyle.lua`, `BarStyleOptions.lua`, `StylePage.lua` | the Bar Style: defaults, groups, following, version 12; changing it, presets; its page |
+| `Parts.lua` | what Initialize checks after the bars (player bars, Bar Style, alerts) |
+| `SettingsLook.lua`, `SpellList.lua`, `SettingsHelpers.lua` | Look and Text; the spell list; the page toolkit (section index, chips, More options) |
+| `Stage.lua` | the preview's Layout view and corner |
+| `HomePage.lua`, `WindowList.lua` | Home; the window's list |
+| `TestDisplay.lua`, `Alerts.lua` | Test on Screen; Ready Sound, Own Bar |
+| `SwingInit.lua`, `SwingTimer.lua`, `SwingSettings.lua` | the Swing Timer (Forever only) |
 
 Shared pieces it uses or added: `Shared/Domain/Cooldowns.lua`,
 `Shared/Domain/CooldownLayout.lua` (your Blizzard CDM setup, read only),
@@ -287,7 +368,78 @@ a standalone module's window), `PositionManager:SetLabel`, and the
 `standalone` module field (no sidebar entry or search results in ModeUI's
 window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
 
-## In-game check
+## In-game check: the rework (November 24, 2026)
+
+Before the first look: close WoW; a copy of your settings from before
+version 12 is at `Documents\GitHub\ModeUI-backups\SavedVariables-2026-11-24-before-cdm-v12-ModeUI.lua`.
+ModeCDM gains new files, so start the game fully (not only `/reload`).
+
+1. The Bar Style on your bars
+   - **Navigation:** log in on your usual profile; type `/mcdm`.
+   - **Action:** look at the bars on screen; click **Bar Style** in the list.
+   - **Required state:** ModeUI and ModeCDM enabled, the Cooldown Manager on.
+   - **Confirmation:** every bar keeps its size and place; borders are
+     Mode-Border in Gunmetal and cooldown numbers amber and outlined (Ultra
+     Emphasized Buffs still large); a bar whose border you'd set to None
+     still has none; the Bar Style page shows every bar in its preview; no
+     Lua errors.
+2. Home, the list and a bar's page
+   - **Navigation:** type `/mcdm` (it opens on Home); click **Essential
+     Cooldowns** under **Cooldowns**.
+   - **Action:** click each button in the section index (Layout, Look, Text,
+     Spells & Glows, Show); on **Look**, click the **● Bar Style** chip on
+     Border, change **Border Size**, then click **Use Bar Style (1)** at the
+     top right of the preview; click **More options** under Cooldown.
+   - **Required state:** out of combat.
+   - **Confirmation:** Home lists the presets and Racial Abilities; the page
+     scrolls to each section; the chip turns to **◆ Custom** and Border's
+     controls appear, then Use Bar Style puts it back and they hide; More
+     options shows Show Effect Time, Swipe Edge, Finish Sparkle, Ready Flash.
+3. The Layout view, the Bar view and Test on Screen
+   - **Navigation:** type `/mcdm`, click **Utility Cooldowns**.
+   - **Action:** in the preview, click Essential's icons in the Layout view;
+     click **Bar**, click a spell, then **Own Bar**; press **Test on Screen**
+     in the header, then enter combat.
+   - **Required state:** out of combat for the clicks; spells tracked in
+     Blizzard's Cooldown Manager.
+   - **Confirmation:** the Layout view shows every bar as on screen with the
+     edited one outlined, and clicking Essential edits it; the Bar view shows
+     Utility alone; Own Bar makes a one-icon bar named after the spell; Test
+     on Screen draws samples on the real bars and they vanish when combat
+     starts.
+4. Show rules
+   - **Navigation:** type `/mcdm`, click **Essential Cooldowns**, then **Show**
+     in the index.
+   - **Action:** tick **Hide While Mounted**, mount; tick **Dim Instead of
+     Hide**, set **Faded Opacity** to 30.
+   - **Required state:** a mount, outdoors.
+   - **Confirmation:** Essential hides while mounted, then shows faint
+     instead; back on the ground it shows in full.
+5. Trinkets and alerts
+   - **Navigation:** type `/mcdm`, click a Cooldown Bar, then **Bar** in the
+     preview and its **+** slot.
+   - **Action:** click **Trinket 1** under Items in Your Bags; click it in the
+     preview and pick a **Ready Sound**; use the trinket and wait for its
+     cooldown; swap trinkets.
+   - **Required state:** an equipped trinket with a Use: effect.
+   - **Confirmation:** the slot's trinket shows with its cooldown; the sound
+     plays when the cooldown ends; after the swap the icon shows the new
+     trinket; a spell Blizzard tracks offers **Alerts in Tracked Spells**
+     instead, which opens Blizzard's window.
+6. Swing Timer (Forever)
+   - **Navigation:** type `/mcdm check`; then `/mcdm`, **Swing Timer** under
+     Player Bars.
+   - **Action:** auto-attack a target dummy with one weapon, then with two,
+     then step out of melee range; type `/mcdm check` again.
+   - **Required state:** a melee class (a Hunter for ranged), a target.
+   - **Confirmation:** the check reports the swing timer API; a lane fills
+     once per swing, a second lane appears for the off hand, the fill turns
+     Rosewood out of range; the second check says the last swing duration was
+     a plain number (if it says secret, tell Claude: the lane stays full then).
+     Copy the whole `/mcdm check` output to Claude: it settles alerts, racial
+     and trinket categories and keybind support on Forever.
+
+## In-game check (November 13, 2026)
 
 1. Custom bar, glows and the active swipe
    - **Navigation:** type `/mcdm`.

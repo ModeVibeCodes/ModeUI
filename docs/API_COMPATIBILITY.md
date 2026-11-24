@@ -1703,3 +1703,38 @@ verified in game yet.
   the name's holder (a `DisableUntrustedLayoutScriptsTemplate` frame in the
   world), so they carry its forbidden aspect and may anchor to the name, which
   may follow an aura row's mark.
+
+## ModeCDM rework — November 24, 2026
+
+Checked against the `forever` branch of Gethe/wow-ui-source (1.60.1, 71091)
+and compared with `live` (12.1.5). Not yet checked in game: `/mcdm check`
+reports each item on the owner's client.
+
+- **Forever's Cooldown Manager is Retail's code.** 20 of
+  `Blizzard_CooldownViewer`'s 27 files are byte-identical to `live`. The
+  others add item category cooldowns (`CooldownViewerItemData.lua`:
+  `CooldownDataSource.Category`, `lastItemIDForCategory`,
+  `C_Spell.GetItemCooldown`: items sharing a cooldown show the last one
+  used) and `EditMode.RefreshCooldownViewer`. So Forever's files have the
+  alert editor (`CooldownViewerAlert.lua`, `CooldownViewerSettingsAlerts.lua`,
+  `C_CooldownViewer.GetValidAlertTypes`), group buffs, layouts per spec and
+  the `SpecAgnostic*` and `EquipSlot*` categories. Whether Forever's data
+  fills those categories is the open question.
+- **Swing timer (Forever only).** `C_SwingTimer.EnableRangeCheck(swingType,
+  enable)` and `IsTargetWithinSwingRange(swingType)` (both
+  `AllowedWhenUntainted`); events `PLAYER_SWING (swingDuration, swingType)`
+  and `PLAYER_SWING_RANGE_UPDATE (swingType, isInRange, checksRange)`;
+  `Enum.PlayerSwingType` MainHand 0, OffHand 1, Ranged 2. No secret flags are
+  documented on the payloads; ModeCDM uses the duration only when it's a
+  plain number (`SwingTimer.lua`).
+- **Show rules** read `IsMounted`, `UnitInVehicle("player")`, `IsInGroup` and
+  `IsInInstance` through `pcall`, a secret or missing answer counting as no,
+  and only ever set alpha; events `PLAYER_MOUNT_DISPLAY_CHANGED`,
+  `UNIT_ENTERED_VEHICLE`/`UNIT_EXITED_VEHICLE`, `GROUP_ROSTER_UPDATE` and
+  `ZONE_CHANGED_NEW_AREA` are registered under `pcall`.
+- **Trinkets:** `GetInventoryItemID("player", 13 | 14)` under `pcall`, then the
+  item paths ModeCDM already used (`C_Container.GetItemCooldown`).
+- **Sounds:** `PlaySound` (a SOUNDKIT number) or `PlaySoundFile` (a
+  SharedMedia path) through `addon.Media:GetSound`, under `pcall`.
+- **Test on Screen** draws on ModeCDM's own sample frames (`BuildSample`) and
+  sets their cooldowns with plain numbers; Blizzard's frames are untouched.

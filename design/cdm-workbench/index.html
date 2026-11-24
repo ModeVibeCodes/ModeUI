@@ -1,0 +1,1789 @@
+<title>ModeCDM Workbench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a workbench. Sticky header with save state, tab strip, one section per tab;
+   the Bar Style tab is a two-pane bench (controls left, a to-scale CDM cluster right). */
+:root {
+  color-scheme: dark;
+  --void: #0b0c0e;
+  --panel: #131417;
+  --raised: #1a1c20;
+  --sunk: #0f1012;
+  --line: #2a2d32;
+  --line-soft: #202226;
+  --text: #dcdcdc;
+  --muted: #8d9198;
+  --faint: #5d6168;
+  --ivory: #efe6d2;
+  --brand: #e2b866;
+  --celadon: #b4cdb6;
+  --rosewood: #cf6a6f;
+  --hot: #ff3948;
+  --amber: #ffb12f;
+  --steel: #8c8f95;
+  --font-game: "Urbanist", "Inter", system-ui, sans-serif;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--void); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+a { color: var(--brand); }
+h1, h2, h3 { font-family: var(--font-game); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h2 { font-size: 22px; font-weight: 700; color: var(--ivory); }
+h3 { font-size: 15px; font-weight: 700; color: var(--ivory); }
+p { margin: 0; max-width: 72ch; }
+code, .mono { font-family: var(--font-mono); font-size: 12px; }
+code { background: var(--sunk); border: 1px solid var(--line-soft); padding: 0 4px; border-radius: 3px; color: #c9c3b6; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+.top-in, .wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top-in { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.brand { font-family: var(--font-game); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
+.brand b { color: var(--brand); font-weight: 800; }
+.brand span { color: #fff; }
+.brand small { font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--muted); margin-left: 8px; letter-spacing: 0; }
+.spacer { flex: 1; }
+.save-state { font-size: 12px; color: var(--muted); }
+.save-state.dirty { color: var(--amber); }
+.save-state.ok { color: var(--celadon); }
+.btn { background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.btn:hover { border-color: #3d4148; }
+.btn.primary { background: #2a2418; border-color: #5b4a2a; color: var(--brand); }
+.btn.primary:hover { border-color: var(--brand); }
+.btn[disabled] { opacity: .45; cursor: default; }
+.tabs { display: flex; gap: 2px; overflow-x: auto; padding-bottom: 0; scrollbar-width: thin; }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; cursor: pointer; color: var(--muted); font-family: var(--font-game); font-weight: 700; font-size: 14px; white-space: nowrap; letter-spacing: .02em; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--ivory); border-bottom-color: var(--brand); }
+
+main .wrap { padding-block: 24px 64px; }
+section[data-tab] { display: grid; gap: 22px; }
+.lede { font-size: 15px; color: #c8c8c8; max-width: 78ch; }
+.eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.stack { display: grid; gap: 10px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+
+.strip { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.strip > div { padding: 12px 16px; border-right: 1px solid var(--line-soft); min-width: 140px; flex: 1; }
+.strip > div:last-child { border-right: 0; }
+.strip b { display: block; font-family: var(--font-game); font-size: 24px; font-weight: 800; color: var(--ivory); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.strip span { font-size: 12px; color: var(--muted); }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; letter-spacing: .02em; }
+.chip.bug { color: #ffb3b6; border-color: #6b2f33; background: #2a1517; }
+.chip.drift { color: #f5d49a; border-color: #5b4a2a; background: #241e12; }
+.chip.gap { color: #bcd4ff; border-color: #2f4466; background: #131c2a; }
+.chip.keep { color: var(--celadon); border-color: #3c5240; background: #141c16; }
+.chip.fit-forever { color: var(--brand); border-color: #5b4a2a; background: #241e12; }
+.chip.fit-both { color: var(--ivory); border-color: #4a4a4e; background: #1c1c1f; }
+.chip.fit-retail { color: #ffb3b6; border-color: #6b2f33; background: #2a1517; }
+.chip.fit-check { color: #bcd4ff; border-color: #2f4466; background: #131c2a; }
+.chip.risk-low { color: var(--celadon); border-color: #3c5240; }
+.chip.risk-mid { color: var(--amber); border-color: #5b4a2a; }
+.chip.risk-high { color: #ffb3b6; border-color: #6b2f33; }
+
+.findings { display: grid; gap: 0; }
+.finding { display: grid; grid-template-columns: 74px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.finding:first-child { border-top: 0; }
+.finding p { color: #cfcfcf; }
+.finding .where { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+
+/* Segmented controls */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--sunk); flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-right: 1px solid var(--line-soft); padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--ivory); box-shadow: inset 0 -2px 0 var(--brand); }
+.seg button:hover { color: var(--text); }
+
+/* Bar Style bench */
+.bench { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.controls { display: grid; gap: 4px; max-height: none; }
+.cgroup { border-top: 1px solid var(--line-soft); padding: 10px 0 6px; display: grid; gap: 8px; }
+.cgroup:first-child { border-top: 0; padding-top: 0; }
+.cgroup > .eyebrow { margin-bottom: 2px; }
+.crow { display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: center; gap: 10px; }
+.crow label { font-size: 12.5px; color: #c4c4c4; }
+.crow input[type=range] { width: 100%; accent-color: var(--brand); }
+.rng { display: flex; align-items: center; gap: 8px; }
+.rng output { font-family: var(--font-mono); font-size: 12px; color: var(--ivory); min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.sw { width: 22px; height: 22px; border-radius: 3px; border: 1px solid #000; box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0; }
+.sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--brand); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.stage-wrap { position: sticky; top: 112px; display: grid; gap: 10px; }
+.stage { position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: auto; min-height: 420px;
+  background: radial-gradient(ellipse at 50% 120%, #2a2f2a 0%, #15181a 45%, #0b0c0e 100%); }
+.stage-scale { padding: 28px 24px 36px; width: max-content; margin: 0 auto; }
+.stage-note { font-size: 12px; color: var(--muted); }
+.stage-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11.5px; color: var(--muted); }
+
+/* Mock CDM pieces (pixel units; scaled as a whole) */
+.cluster { position: relative; display: flex; flex-direction: column; align-items: center; font-family: var(--font-game); }
+.row { display: flex; justify-content: center; }
+.slot { position: relative; box-shadow: 0 0 0 1px #000; flex: none; }
+.slot .art { position: absolute; overflow: hidden; }
+.slot .art i { position: absolute; inset: -12%; }
+.slot .swipe { position: absolute; inset: 0; }
+.slot .cd, .slot .ct, .slot .dur { position: absolute; font-weight: 700; line-height: 1; white-space: nowrap; }
+.slot .cd { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.slot .ct { right: 2px; bottom: 1px; }
+.slot .dur { left: 50%; bottom: -1px; transform: translate(-50%, 0); }
+.slot .kb { position: absolute; left: 2px; top: 1px; font-weight: 700; line-height: 1; color: #e8e8e8; }
+.label-tag { position: absolute; font-family: var(--font-ui); font-size: 9px; color: rgba(220,220,220,.38); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.pbar { position: relative; box-shadow: 0 0 0 1px #000; flex: none; }
+.pbar .fill { position: absolute; left: 0; top: 0; bottom: 0; }
+.pbar .endline { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(239,230,210,.85); }
+.pbar .txt { position: absolute; top: 50%; transform: translateY(-50%); font-weight: 700; line-height: 1; white-space: nowrap; }
+.combo { display: flex; }
+.combo .pt { flex: 1; position: relative; }
+
+/* Pages tab: tiering */
+.tierbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tier-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.tier-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.ptabs { display: grid; gap: 14px; }
+.ptab h3 { display: flex; align-items: baseline; gap: 10px; }
+.ptab h3 small { font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--muted); }
+.prow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line-soft); }
+.prow:first-of-type { border-top: 0; }
+.prow .lbl { font-weight: 600; color: var(--text); font-size: 13px; }
+.prow .was { font-size: 12px; color: var(--muted); }
+.prow .note { font-size: 11.5px; color: var(--faint); display: block; }
+.prow[data-tier="drop"] .lbl { text-decoration: line-through; color: var(--faint); }
+.tseg button[data-t="simple"][aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--celadon); }
+.tseg button[data-t="more"][aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--amber); }
+.tseg button[data-t="style"][aria-pressed="true"] { box-shadow: inset 0 -2px 0 #9bb8e8; }
+.tseg button[data-t="drop"][aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--rosewood); }
+.counts { display: flex; gap: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; flex-wrap: wrap; }
+.counts > div { padding: 8px 14px; border-right: 1px solid var(--line-soft); background: var(--panel); flex: 1; min-width: 110px; }
+.counts > div:last-child { border-right: 0; }
+.counts b { display: block; font-family: var(--font-game); font-size: 20px; color: var(--ivory); font-variant-numeric: tabular-nums; }
+.counts span { font-size: 11.5px; color: var(--muted); }
+
+/* Structure tab */
+.sidebars { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.sbopt { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 14px; display: grid; gap: 10px; cursor: pointer; text-align: left; }
+.sbopt[aria-pressed="true"] { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; }
+.sbopt h3 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.sbmock { background: var(--sunk); border: 1px solid var(--line-soft); border-radius: 4px; padding: 8px 0; font-size: 12.5px; }
+.sbmock .cap { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--faint); padding: 6px 12px 2px; display: flex; justify-content: space-between; }
+.sbmock .it { padding: 3px 12px 3px 20px; color: #c9c9c9; display: flex; justify-content: space-between; }
+.sbmock .it.top-it { padding-left: 12px; font-weight: 600; color: var(--ivory); }
+.sbmock .it.sel { background: #22252a; box-shadow: inset 2px 0 0 var(--brand); }
+.sbmock .it em { font-style: normal; color: var(--faint); font-size: 11px; }
+
+/* Features */
+.ftable { display: grid; gap: 0; }
+.frow { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line-soft); align-items: start; }
+.frow:first-child { border-top: 0; }
+.frow .fname { font-weight: 600; color: var(--ivory); }
+.frow .fwhat { font-size: 12.5px; color: #c4c4c4; margin-top: 2px; }
+.frow .fmeta { font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+.frow .fmeta div { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.vseg button[data-v="now"][aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--celadon); }
+.vseg button[data-v="later"][aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--amber); }
+.vseg button[data-v="skip"][aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--rosewood); }
+.rec { font-size: 11px; color: var(--faint); margin-top: 4px; text-align: right; }
+
+/* Tables */
+.tscroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; background: var(--raised); position: sticky; top: 0; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); }
+td input[type=text] { width: 100%; min-width: 160px; background: var(--sunk); border: 1px solid var(--line); border-radius: 3px; padding: 4px 6px; font-size: 12.5px; }
+td input[type=checkbox] { accent-color: var(--brand); width: 15px; height: 15px; }
+.act { font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.act.keep { color: var(--celadon); } .act.merge { color: var(--amber); } .act.new { color: #9bb8e8; } .act.split { color: #d7a6e8; } .act.fix { color: #ffb3b6; }
+
+/* Questions */
+.q { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.q:first-child { border-top: 0; }
+.q textarea { width: 100%; min-height: 54px; background: var(--sunk); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: inherit; font-size: 13px; color: var(--text); resize: vertical; }
+
+/* Plan */
+.phase { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 14px; }
+.phase .pn { font-family: var(--font-game); font-size: 30px; font-weight: 800; color: var(--brand); line-height: 1; }
+.phase.dim { opacity: .45; }
+.phase ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+.phase li code { font-size: 11.5px; }
+.phase .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+details { border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: 8px; }
+summary { cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+
+
+/* Design Ideas: mock windows are drawn at a fixed design size, then zoomed to fit their card. */
+.ideas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; }
+.idea { display: grid; gap: 12px; align-content: start; }
+.idea.picked { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; }
+.idea.skipped { opacity: .55; }
+.idea-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.idea-foot { display: flex; justify-content: flex-end; }
+.pcs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pc { margin: 4px 0 0; padding-left: 16px; font-size: 12.5px; display: grid; gap: 3px; color: #cfcfcf; }
+.pc.pros li::marker { content: "+  "; color: var(--celadon); }
+.pc.cons li::marker { content: "–  "; color: var(--rosewood); }
+.mockbox { width: 100%; overflow: hidden; border-radius: 6px; }
+.mockframe { position: relative; }
+.sel-outline { outline: 1px dashed var(--brand); outline-offset: 4px; border-radius: 2px; }
+.mk-win { position: absolute; inset: 0; display: flex; flex-direction: column; background: #111215; border: 1px solid #2c2f34; border-radius: 6px; overflow: hidden; font-family: var(--font-ui); font-size: 11px; color: #cfcfcf; }
+.mk-top { height: 34px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 1px solid #23262b; background: #15161a; font-family: var(--font-game); font-weight: 800; font-size: 14px; }
+.mk-top b { color: var(--brand); } .mk-top .w { color: #fff; margin-left: -4px; }
+.mk-top .sp, .mk-ph .sp { flex: 1; }
+.mk-top .pill { font-family: var(--font-ui); font-weight: 500; font-size: 10px; padding: 3px 8px; border: 1px solid #33363c; border-radius: 3px; color: #b8b8b8; background: #1b1d21; }
+.mk-top .x { font-family: var(--font-ui); color: var(--muted); margin-left: 4px; font-weight: 400; }
+.mk-main { flex: 1; display: flex; min-height: 0; }
+.mk-list { width: 132px; flex: none; border-right: 1px solid #202227; padding: 8px 0; background: #0f1013; overflow: hidden; }
+.mk-cap { font-size: 8.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding: 7px 10px 2px; display: flex; justify-content: space-between; }
+.mk-it { font-size: 10.5px; padding: 3px 10px 3px 14px; color: #c4c4c4; display: flex; justify-content: space-between; gap: 6px; white-space: nowrap; }
+.mk-it span { overflow: hidden; text-overflow: ellipsis; }
+.mk-it em { font-style: normal; font-size: 9px; color: var(--faint); }
+.mk-it.sel { background: #22252a; box-shadow: inset 2px 0 0 var(--brand); color: var(--ivory); }
+.mk-body { flex: 1; min-width: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.mk-body.mk-row3 { flex-direction: row; }
+.mk-ph { display: flex; align-items: center; gap: 8px; font-family: var(--font-game); font-size: 14px; color: var(--ivory); }
+.mk-stage { position: relative; flex: none; border: 1px solid #23262b; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 120%, #2a2f2a 0%, #15181a 50%, #0b0c0e 100%); }
+.mk-cap2 { position: absolute; left: 8px; bottom: 5px; font-size: 9px; color: rgba(220,220,220,.5); }
+.mk-tabs { display: flex; gap: 14px; border-bottom: 1px solid #23262b; font-family: var(--font-game); font-weight: 700; font-size: 11px; color: var(--muted); padding-bottom: 4px; }
+.mk-tabs span.on { color: var(--ivory); box-shadow: 0 6px 0 -4px var(--brand); }
+.m-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; font-size: 11px; color: #c8c8c8; border-bottom: 1px solid #1c1e22; }
+.m-row.dim { opacity: .55; }
+.m-c { display: inline-flex; align-items: center; gap: 6px; }
+.m-sech { display: flex; align-items: center; gap: 8px; justify-content: space-between; font-family: var(--font-game); font-weight: 700; font-size: 12px; color: var(--ivory); padding: 8px 0 3px; }
+.m-sw { width: 24px; height: 13px; border-radius: 7px; background: #2a2c31; position: relative; display: inline-block; }
+.m-sw i { position: absolute; left: 2px; top: 2px; width: 9px; height: 9px; border-radius: 50%; background: #777; }
+.m-sw.on { background: #3a3220; } .m-sw.on i { left: 13px; background: var(--brand); }
+.m-sl { width: 92px; height: 4px; border-radius: 2px; background: #2a2c31; position: relative; display: inline-block; }
+.m-sl b { position: absolute; left: 0; top: 0; bottom: 0; background: #8a7444; border-radius: 2px; }
+.m-sl i { position: absolute; top: -4px; width: 4px; height: 12px; margin-left: -2px; background: var(--ivory); border-radius: 1px; }
+.m-c em { font-style: normal; font-family: var(--font-mono); font-size: 10px; color: var(--ivory); min-width: 38px; text-align: right; }
+.m-sel { display: inline-flex; gap: 10px; align-items: center; border: 1px solid #33363c; border-radius: 3px; padding: 2px 8px; font-size: 10.5px; background: #17181c; color: #ddd; }
+.m-sel s { text-decoration: none; color: var(--muted); }
+.m-pills { display: inline-flex; border: 1px solid #33363c; border-radius: 3px; overflow: hidden; }
+.m-pills span { padding: 2px 8px; font-size: 10px; color: var(--muted); border-right: 1px solid #26282d; }
+.m-pills span:last-child { border-right: 0; }
+.m-pills span.on { background: #23252a; color: var(--ivory); box-shadow: inset 0 -2px 0 var(--brand); }
+.m-chip { font-family: var(--font-ui); font-weight: 600; font-size: 9px; padding: 1px 7px; border-radius: 9px; border: 1px solid; letter-spacing: .02em; white-space: nowrap; }
+.m-chip.link { color: var(--celadon); border-color: #3c5240; background: #141c16; }
+.m-chip.custom { color: var(--brand); border-color: #5b4a2a; background: #241e12; }
+.m-fold { font-size: 10.5px; color: var(--muted); padding: 5px 0 2px; }
+.m-sws { display: inline-flex; gap: 4px; } .m-sws i { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #000; }
+.m-sws i.on { box-shadow: 0 0 0 2px var(--brand); }
+.m-st { font-size: 10px; padding: 1px 7px; border-radius: 9px; color: var(--muted); border: 1px solid #33363c; }
+.m-st.c { color: var(--brand); border-color: #5b4a2a; } .m-st.w { color: #bcd4ff; border-color: #2f4466; } .m-st.m { color: var(--faint); }
+.mk-split { display: flex; gap: 14px; min-height: 0; flex: 1; position: relative; }
+.mk-split::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; background: linear-gradient(transparent, #111215); pointer-events: none; }
+.mk-index { width: 96px; flex: none; display: flex; flex-direction: column; gap: 2px; font-family: var(--font-game); font-weight: 700; font-size: 11px; color: var(--muted); padding-top: 8px; }
+.mk-index span { padding: 3px 8px; border-radius: 3px; }
+.mk-index span.on { color: var(--ivory); background: #1e2024; box-shadow: inset 2px 0 0 var(--brand); }
+.mk-scroll { flex: 1; min-width: 0; overflow: hidden; }
+.mk-center { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.mk-center .mk-stage { width: 100%; }
+.mk-insp { width: 190px; flex: none; border-left: 1px solid #23262b; padding-left: 10px; overflow: hidden; }
+.mk-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.mk-card { border: 1px solid #2a2d32; border-radius: 5px; padding: 6px 10px 8px; background: #15161a; }
+.mk-card .m-sl { width: 60px; }
+.mk-game { background: radial-gradient(ellipse at 40% 110%, #34402f 0%, #1b211c 40%, #0d0f0e 100%); border-radius: 6px; }
+.mk-gamecluster { position: absolute; left: 0; right: 230px; bottom: 40px; display: flex; justify-content: center; }
+.mk-dock { position: absolute; right: 10px; top: 10px; bottom: 10px; width: 210px; background: rgba(17,18,21,.94); border: 1px solid #2c2f34; border-radius: 5px; padding: 6px 10px; }
+.mk-dock .m-sl { width: 60px; }
+.mk-states { height: 150px; gap: 26px; }
+.mk-state { display: grid; justify-items: center; gap: 8px; }
+.mk-cap3 { font-size: 10px; color: var(--muted); }
+.mk-full .mk-list { width: 220px; }
+.mk-full .mk-it { font-size: 12px; padding: 4px 12px 4px 18px; }
+.mk-full .mk-cap { font-size: 9.5px; padding: 9px 12px 3px; }
+.mk-full .mk-body { padding: 12px 20px; }
+.mk-full .mk-ph { font-size: 18px; }
+.mk-full .m-row { font-size: 12.5px; padding: 6px 0; }
+.mk-full .m-sech { font-size: 14px; padding-top: 12px; }
+.mk-full .mk-index { width: 130px; font-size: 13px; }
+.mk-full .m-sl { width: 160px; }
+.mk-full .mk-top { height: 56px; font-size: 19px; padding: 0 18px; }
+.mk-full .mk-top .pill { font-size: 12px; padding: 5px 10px; }
+.pat-host { font-size: 12px; }
+.pat { background: #111215; border: 1px solid #2c2f34; border-radius: 5px; padding: 6px 12px 10px; }
+.pat-open { border-left: 2px solid #2c2f34; padding-left: 10px; margin-top: 2px; }
+.pat-two { display: grid; grid-template-columns: 1fr 1.3fr; gap: 12px; background: none; border: 0; padding: 0; }
+.pat-two > div > .pat { margin-top: 4px; }
+.pat-stack { position: relative; height: 150px; margin-top: 4px; }
+.pat-menu, .pat-pop { position: absolute; background: #15161a; border: 1px solid #33363c; border-radius: 4px; padding: 6px 9px; font-size: 11px; line-height: 1.7; color: #c8c8c8; }
+.pat-menu { left: 0; top: 0; width: 140px; }
+.pat-pop { left: 108px; top: 34px; width: 110px; box-shadow: 0 6px 16px rgba(0,0,0,.5); }
+.pat-list .m-row { padding: 5px 0; }
+@media (max-width: 860px) {
+  .bench { grid-template-columns: 1fr; }
+  .stage-wrap { position: static; }
+  .prow, .frow { grid-template-columns: 1fr; }
+  .crow { grid-template-columns: 1fr; gap: 4px; }
+  .finding { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><b>Mode</b><span>CDM</span><small>Workbench · WoW Forever · organization, structure and features pass · Nov 24, 2026</small></div>
+    <div class="spacer"></div>
+    <span id="saveState" class="save-state">Example choices loaded</span>
+    <button class="btn" id="resetBtn" type="button">Reset to proposal</button>
+    <button class="btn primary" id="saveBtn" type="button">Save choices</button>
+  </div>
+  <div class="wrap"><nav class="tabs" role="tablist" id="tabs"></nav></div>
+</header>
+
+<main><div class="wrap">
+
+<!-- BRIEF -->
+<section data-tab="brief" hidden>
+  <div class="stack">
+    <div class="eyebrow">Research only · nothing in the addon has changed</div>
+    <h2>ModeCDM does a lot, but every bar has to be tuned by hand</h2>
+    <p class="lede">ModeCDM already covers more than most CDM addons: skinned Blizzard viewers, up to fifteen custom bars, spells by ID, items, racials, per-spell glows and text, resource bars and a cast bar. The weak spot is how it is set up. Each bar keeps its own copy of about 80 look settings and there is no shared style, so getting a consistent look means Copy &amp; Apply or hand tuning. The settings come from three separate page builders whose labels have drifted apart. The proposal is a <b>Bar Style</b>, the default look for new bars (and existing ones if you choose), a smaller set of pages with <b>More options</b> folded away, and a short list of new features chosen on the Features tab.</p>
+  </div>
+  <div class="strip" aria-label="Inventory at a glance">
+    <div><b>43</b><span>Lua files in ModeCDM</span></div>
+    <div><b>7,728</b><span>lines of module code</span></div>
+    <div><b>58</b><span>controls on Essential's page</span></div>
+    <div><b>~80</b><span>look keys copied into every bar</span></div>
+    <div><b>3</b><span>page builders, setters and validators</span></div>
+    <div><b>4</b><span>ways text settings are stored</span></div>
+  </div>
+  <div class="card stack">
+    <h3>Forever first, ready for a Midnight port</h3>
+    <div class="grid3">
+      <div><div class="eyebrow">What Forever is</div><p class="small">The modern (Midnight-era) client running the <code>camelot</code> game type, with classic-style classes and systems. Combo points sit on the target (Rogues, Druids in Cat Form). There are Shaman totems on the multi-cast bar, Hunter pet Happiness, weapon poisons and imbues, and a swing timer API (<code>C_SwingTimer</code>) Retail doesn't have. No Evokers or Retail class resources. Secret values apply as on Retail.</p></div>
+      <div><div class="eyebrow">What was checked</div><p class="small">Forever's own UI source (<code>forever</code> branch, 1.60.1). Its Cooldown Manager is Retail's code: 20 of 27 files are identical. The other 7 add Forever's item category cooldowns (potions show the last one used) and an Edit Mode refresh. So Blizzard's alert editor, group buffs, layouts and the equipment-slot categories are in Forever's files too. Whether Forever's game data fills them is checked in game.</p></div>
+      <div><div class="eyebrow">Rules for this pass</div><p class="small">Build only on what Forever's own source has. Each feature is tagged Forever only, Forever + Midnight, Check in game, or Retail-centric; Retail-centric ones are skipped. Forever-only features check that their API exists and step aside when it doesn't. A Midnight port then drops them cleanly instead of breaking. See Port groundwork on the Plan tab.</p></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card stack">
+      <h3>What the code review found</h3>
+      <div class="findings" id="findings"></div>
+    </div>
+    <div class="stack">
+      <div class="card stack">
+        <h3>What stays</h3>
+        <p class="small muted">These carry over unchanged in behavior. The rework changes how they are set up, not what they do.</p>
+        <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+          <li><span class="chip keep">keep</span> Custom Cooldown and Buff bars, including the five default bars (Defensive Cooldowns, Emphasized, Left, Right, Ultra)</li>
+          <li><span class="chip keep">keep</span> The preview with click-for-menu and drag-to-reorder</li>
+          <li><span class="chip keep">keep</span> Spells by ID, items, racials; per-spell glow and text looks</li>
+          <li><span class="chip keep">keep</span> Resource bars (Group Resources, tick marks, Dark mode) and the Cast Bar</li>
+          <li><span class="chip keep">keep</span> Blizzard decides what is tracked; ModeUI only places, skins and lights it</li>
+          <li><span class="chip keep">keep</span> Saved keys, the Mode-Default and Healer layouts, and the secret-value rules</li>
+        </ul>
+      </div>
+      <div class="card stack">
+        <h3>How to use this page</h3>
+        <ol class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+          <li><b>Bar Style</b>: tune the default rules every bar will start from. The preview is to scale.</li>
+          <li><b>Window</b>: pick how the <code>/mcdm</code> list is organized.</li>
+          <li><b>Design Ideas</b>: choose how the preview and settings pages look and work.</li>
+          <li><b>Pages</b>: for every control, decide whether it always shows, sits under More options, comes from the Bar Style, or goes away.</li>
+          <li><b>Features</b>: mark each candidate Build now, Later or Skip.</li>
+          <li><b>Words</b>: accept or edit the new labels.</li>
+          <li><b>Plan</b>: the phases update from your choices. Answer the open questions, then <b>Save choices</b> so I can read them before building.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <div class="card stack">
+    <h3>Where ModeCDM stands against other CDM addons</h3>
+    <p class="small muted">Checked against the authors' own pages for CMC, BetterCooldownManager, ArcUI, EllesmereUI CDM, TweaksUI, Sentinel CDM and Cooldown Master, plus Blizzard's Retail source. No code was read for reuse. The full feature-by-feature list is on the Features tab.</p>
+    <div class="grid3" id="position"></div>
+  </div>
+</section>
+
+<!-- BAR STYLE -->
+<section data-tab="style" hidden>
+  <div class="stack">
+    <div class="eyebrow">The default rules every bar starts from</div>
+    <h2>Bar Style</h2>
+    <p class="lede">The default look for bars. New bars start with it; existing bars use it if you choose. Any bar can still set its own border, text or glows.</p>
+    <p class="small muted">Starting values: your Mode-Default tuning (Mode-Empty rims, Spacing -1, red cooldown numbers).</p>
+  </div>
+  <div class="bench">
+    <div class="card controls" id="styleControls"></div>
+    <div class="stage-wrap">
+      <div class="stage-legend">
+        <span>Zoom</span><span class="seg" id="zoomSeg"></span>
+        <span>Class</span><span class="seg" id="classSeg"></span>
+      </div>
+      <div class="stage" id="stage"><div class="stage-scale" id="stageScale"></div></div>
+      <div class="stage-note" id="stageNote"></div>
+    </div>
+  </div>
+</section>
+
+<!-- WINDOW STRUCTURE -->
+<section data-tab="window" hidden>
+  <div class="stack">
+    <div class="eyebrow">The /mcdm window's list</div>
+    <h2>How the window is organized</h2>
+    <p class="lede">Today the list goes Spells and Abilities, Cooldown Bars, Buff Bars, Resource Bars (with the Cast Bar inside it). Each page also has an Editing dropdown and seven tabs. Pick a direction below. The first two use the same pages; they differ only in how the list groups them.</p>
+  </div>
+  <div class="sidebars" id="sidebars"></div>
+  <div class="card stack">
+    <h3>Every bar page, whichever list you pick</h3>
+    <div class="grid3">
+      <div><div class="eyebrow">Header</div><p class="small">Bar name, its on/off switch, and a <b>Following Bar Style</b> badge, or <b>3 groups custom</b> with Reset. Buttons: <b>Edit Mode</b>, <b>Test on Screen</b>, <b>Tracked Spells</b> (Blizzard's window).</p></div>
+      <div><div class="eyebrow">Preview</div><p class="small">Kept as it is: click a spell for its menu, drag to reorder, + to add. A <b>List</b> toggle shows the same spells as rows with Show and glow switches, for bars too long to click through.</p></div>
+      <div><div class="eyebrow">Tabs</div><p class="small">Seven become five: <b>Layout</b>, <b>Look</b>, <b>Text</b>, <b>Spells &amp; Glows</b>, <b>Show</b>. Copy &amp; Apply moves into Look as <b>Copy Look To…</b>; Spells and Glows merge.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- DESIGN IDEAS -->
+<section data-tab="ideas" hidden>
+  <div class="stack">
+    <div class="eyebrow">Brainstorm · how the window should look and work</div>
+    <h2>Design Ideas</h2>
+    <p class="lede">Options for the preview, the settings layout and the small patterns that keep pages clean. Each mockup is drawn in your saved Bar Style. Choose one per group, mark patterns Use or Skip, and add notes. My recommended combination is at the bottom.</p>
+  </div>
+  <div id="ideaGroups" class="stack" style="gap:28px"></div>
+  <div class="stack">
+    <h3>Patterns</h3>
+    <p class="small muted">Small rules that apply whichever layout you choose.</p>
+    <div class="ideas-grid" id="ideaPatterns"></div>
+  </div>
+  <div class="card stack">
+    <div class="eyebrow">My recommendation</div>
+    <h3>Layout stage + one scroll with an index</h3>
+    <p class="small">The stage shows every bar in place, with the one you're editing outlined; click another bar to switch. Below it, one scrolling page with a section index, a Bar Style chip on each section and a More options fold. A <b>Bar only</b> toggle zooms the stage onto the selected bar for clicking and dragging spells. <b>States</b> shows ready, cooling, proc and out of range side by side. Clicking a spell opens the spell view in place of today's popouts. Quick cards become the Home page, and Test on Screen covers true placement. Drawn to scale at the window's real size (1060 × 740).</p>
+    <div id="ideaFull"></div>
+  </div>
+</section>
+
+<!-- PAGES -->
+<section data-tab="pages" hidden>
+  <div class="stack">
+    <div class="eyebrow">Fine-tune every control</div>
+    <h2>Settings pages</h2>
+    <p class="lede">Each control gets one of four places. <b>Always</b> shows on the page. <b>More</b> sits under a "More options" fold. <b>Bar Style</b> comes from the Bar Style and shows only when that group is switched to Custom. <b>Remove</b> takes it off the page; the note says where it goes. The counts show what someone sees before opening anything.</p>
+  </div>
+  <div class="tierbar">
+    <span class="seg" id="pageKindSeg"></span>
+    <div class="tier-legend">
+      <span><i style="background:var(--celadon)"></i>Always</span>
+      <span><i style="background:var(--amber)"></i>More options</span>
+      <span><i style="background:#9bb8e8"></i>Bar Style</span>
+      <span><i style="background:var(--rosewood)"></i>Remove</span>
+    </div>
+  </div>
+  <div class="counts" id="pageCounts"></div>
+  <div class="ptabs" id="pageTabs"></div>
+</section>
+
+<!-- FEATURES -->
+<section data-tab="features" hidden>
+  <div class="stack">
+    <div class="eyebrow">What to add, what to leave</div>
+    <h2>Features</h2>
+    <p class="lede">Every candidate was checked against Forever's own UI source (the <code>forever</code> branch at 1.60.1), not Retail's. Each carries a tag. <b>Forever only</b> uses systems Retail doesn't have. <b>Forever + Midnight</b> works the same on both clients. <b>Check in game</b> is in Forever's files but not yet seen working. <b>Retail-centric</b> is skipped. My pick is under each switch.</p>
+    <div class="tier-legend"><span class="chip fit-forever">Forever only</span><span class="chip fit-both">Forever + Midnight</span><span class="chip fit-check">Check in game</span><span class="chip fit-retail">Retail-centric</span></div>
+  </div>
+  <div class="card"><div class="ftable" id="features"></div></div>
+</section>
+
+<!-- WORDS -->
+<section data-tab="words" hidden>
+  <div class="stack">
+    <div class="eyebrow">One name for one thing, on every page</div>
+    <h2>Words</h2>
+    <p class="lede">The same idea has different names on the cooldown, resource and cast pages (Border Metal vs Rim Color, Show This Text vs Show Text), and some labels are internal terms (Slug Text, Bling). Tick a row to accept it. You can edit the proposed label first.</p>
+  </div>
+  <div class="tscroll"><table id="words"><thead><tr><th style="width:36px">Use</th><th>Today</th><th>Proposed</th><th>Where / why</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<!-- INVENTORY -->
+<section data-tab="inventory" hidden>
+  <div class="stack">
+    <div class="eyebrow">What exists today, and what each phase touches</div>
+    <h2>Inventory</h2>
+    <p class="lede">The ModeCDM files with the planned action for each, then the WoW API surface and the game files involved. Line counts are from November 24, 2026. The 400-line cap applies to every file.</p>
+  </div>
+  <div class="tscroll"><table id="files"><thead><tr><th>File</th><th class="num">Lines</th><th>Job today</th><th>Plan</th></tr></thead><tbody></tbody></table></div>
+  <div class="grid2">
+    <div class="card stack"><h3>WoW API ModeCDM relies on</h3><div class="tscroll" style="border:0"><table id="apis"><thead><tr><th>API</th><th>Use</th><th>Combat / secret note</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="stack">
+      <div class="card stack"><h3>In Forever's source, not used yet</h3><p class="small muted">From the <code>forever</code> branch of Blizzard's UI source (1.60.1, our build). Each one still needs an in-game check before anything relies on it.</p><div class="tscroll" style="border:0"><table id="newapis"><thead><tr><th>API</th><th>Could give us</th></tr></thead><tbody></tbody></table></div></div>
+      <div class="card stack"><h3>Game files and shared ModeUI pieces</h3><div id="gamefiles" class="small" style="display:grid;gap:6px"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLAN -->
+<section data-tab="plan" hidden>
+  <div class="stack">
+    <div class="eyebrow">Built one phase at a time, each with tests and an in-game check</div>
+    <h2>Implementation plan</h2>
+    <p class="lede">Phases follow AGENTS.md: design doc first, then Style, then the module. Every settings change is a migration that keeps your values. A new default only replaces values still at the old default. Phases tied to features marked Skip are dimmed. Nothing here starts until you say so.</p>
+  </div>
+  <div class="card stack">
+    <h3>Port groundwork (applies in every phase)</h3>
+    <p class="small muted">Forever is the target. These rules keep a later Midnight port to a packaging change plus table entries, not a rewrite. No Retail package is built in this pass.</p>
+    <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:5px">
+      <li><b>Check the API, not the client.</b> <code>Caps.lua</code> (phase 1) records what the client offers; every feature and settings row reads <code>M.caps</code>. Nothing below the edition gate asks "is this Forever?".</li>
+      <li><b>Forever-only features live in their own files</b> (<code>SwingTimer.lua</code>, <code>WeaponEnchants.lua</code>, <code>PetBar.lua</code>) and register their Player Bar only when their cap is true. On Midnight they simply don't appear.</li>
+      <li><b>One edition gate.</b> <code>ModeCDM/Modules/CooldownManager/Init.lua:3</code> returns unless the edition is Forever. ModeUI's <code>Shared/Runtime/Core.lua</code> already knows a "Retail" edition (<code>WOW_PROJECT_MAINLINE</code>), so a port changes that one check and the TOC metadata (<code>## Interface</code>, <code>X-ModeUI-Edition</code>). Both stay Forever-only for now.</li>
+      <li><b>Class resources come from data.</b> <code>Resources.lua</code> takes the name and maximum from <code>Shared/Domain/ClassResource.lua</code>'s <code>CLASSES</code> table instead of assuming combo points, so Retail resources (Holy Power, Chi, Runes, Essence, Soul Shards) become table entries in a port. The saved key stays <code>combo</code>.</li>
+      <li><b>Saved settings are the same on both clients.</b> A feature whose API is missing keeps its saved keys and validation; it just doesn't show. No migration depends on the client.</li>
+      <li><b>Blizzard's Cooldown Manager is shared code,</b> so the hooks, Bar Style and pages work on both unchanged. Forever's one CDM difference (category cooldowns) is read, not relied on.</li>
+      <li><b>Tests</b> run the mock once with the Forever-only APIs removed, to prove those features step aside cleanly.</li>
+    </ul>
+  </div>
+  <div class="card stack" id="plan"></div>
+  <div class="card stack">
+    <h3>Open questions</h3>
+    <p class="small muted">Answers are saved with your choices.</p>
+    <div id="questions"></div>
+  </div>
+</section>
+
+</div></main>
+
+<script>
+(function () {
+"use strict";
+
+/* ---------- Data ---------- */
+var TABS = [
+  ["brief", "Brief"], ["style", "Bar Style"], ["window", "Window"], ["ideas", "Design Ideas"], ["pages", "Pages"],
+  ["features", "Features"], ["words", "Words"], ["inventory", "Inventory"], ["plan", "Plan"]
+];
+
+var FINDINGS = [
+  ["bug", "Custom bars never get the Mode-Obsidian theme pass. The theme passes the bar's list entry instead of its style table.", "Theme.lua:23"],
+  ["bug", "Delete Bar on a custom bar's Bar tab deletes at once. The list's − button asks first.", "Settings.lua:172"],
+  ["bug", "The pixel snapper's 0.2 s ticker never stops once made, even with the module off (it returns early).", "ResourceSnap.lua:15"],
+  ["drift", "Two page-helper systems. The cooldown page builds its own; the resource and cast pages share M:PageHelpers.", "Settings.lua:38 · SettingsHelpers.lua"],
+  ["drift", "Three setters, three resets, three validators and four appearance owners do the same jobs for viewers, resource bars and the cast bar.", "Driver.lua:144 · ResourceUpdate.lua:222 · CastSettings.lua:25"],
+  ["drift", "The same thing has different names on different pages: Border Metal vs Rim Color, Show This Text vs Show Text, barColorMode vs colorMode, showSpark vs spark.", "Settings · ResourceSettingsLook · CastSettings"],
+  ["drift", "Text settings are stored four ways (viewer parts, per-spell, resource, cast). Outline is a switch on bars and a three-way choice per spell.", "Init.lua:156 · Text.lua · ResourceInit · CastInit"],
+  ["gap", "No shared style. Each bar copies about 80 look keys, so a consistent look takes Copy & Apply or hand tuning.", "Init.lua:165 Style()"],
+  ["gap", "The Cast Bar has no Show When. Faded Opacity always shows on resource pages, but only under Mouseover on cooldown pages.", "CastSettings · ResourceSettingsLook"],
+  ["gap", "Test on Screen is already built into the shared preview but stays hidden, because ModeCDM has no SetTestDisplay.", "Shared/Settings/Previews.lua:52"],
+  ["gap", "Dead code: unused target lists, M.FadeRegion, M.PaintGlow, empty ui.When blocks, the retired 'none' text format.", "Init.lua:105 · Skin.lua:69 · SettingsTabs.lua:35"],
+  ["gap", "CastBar.lua (395) and Migrations.lua (392) are at the 400-line cap, so any new feature there needs a split first.", "tests/structure.lua"],
+  ["gap", "ModeCDM's own racial and bag-item icons may duplicate what Forever's CDM now does: it has racial and equipment categories, and tracks potions by item category. To be checked in game before changing anything.", "Racials.lua · Items.lua · forever CooldownViewerItemData.lua"]
+];
+
+var POSITION = [
+  ["Ahead of most", "Custom bars that hold Blizzard's own frames, per-spell glow and text looks, drag-to-reorder in a live preview, pixel-exact Mode borders, anchoring to every ModeUI frame, and built-in layouts (DPS/Tank, Healer)."],
+  ["On par", "Resource bars with ticks, a cast bar, racials and items, visibility modes, desaturation and range tint. CMC, BCDM, Ellesmere and Sentinel all have these."],
+  ["Behind", "A shared style with per-bar overrides (Cooldown Master), presets (Ellesmere, Arc), keybind text (CMC, Ellesmere), Test on Screen, more show rules (mounted, group, instance), sharing a setup as a string, and Forever extras like a swing timer and pet happiness (Arc Auras' Forever build). Blizzard's own alert editor is in Forever's CDM, but nothing in ModeCDM points to it."]
+];
+
+/* Bar Style */
+var DEFAULT_STYLE = {
+  bigH: 30, smallH: 24, shape: 8, utility: "big",
+  spacing: -1, stackGap: 1,
+  border: "empty", metal: "gunmetal", band: 1, corner: "round", flatRim: "#343438",
+  cdBig: 13, cdSmall: 10, cdColor: "#ff3948", countSize: 11, outline: "none", keybinds: false,
+  gray: true, swipe: 70, procStyle: "border", procColor: "#b4cdb6",
+  barMode: "color", grouped: true, powerH: 10, comboH: 8, castH: 12, castIcon: false, swingH: 0
+};
+var PRESETS = {
+  "Mode Default": {},
+  "Compact": { bigH: 26, smallH: 20, shape: 6, cdBig: 11, cdSmall: 9, countSize: 9, powerH: 8, comboH: 6, castH: 10 },
+  "Large & Clear": { bigH: 36, smallH: 28, shape: 8, spacing: 2, stackGap: 4, band: 2, cdBig: 16, cdSmall: 12, countSize: 12, outline: "outline", powerH: 14, comboH: 10, castH: 16 },
+  "Healer": { bigH: 34, utility: "small", grouped: false, powerH: 0, comboH: 6, castH: 20 }
+};
+var METALS = {
+  gunmetal: ["#a5a9af", "#7c8086", "#4e5156", "#2c2e31"],
+  steel: ["#d4d7dc", "#a3a6ab", "#6e7176", "#3d4044"],
+  silver: ["#f2f4f6", "#d9dce0", "#9a9ea4", "#5c6066"]
+};
+var CD_COLORS = [["#ff3948", "Hot red (Mode-Default)"], ["#ffb12f", "Amber (module default)"], ["#efe6d2", "Ivory"], ["#f2f2f2", "White"]];
+var PROC_COLORS = [["#b4cdb6", "Celadon"], ["#efe6d2", "Ivory"], ["#e2b866", "Brand gold"], ["#6cb8ff", "Blue"]];
+var FLAT_RIMS = [["#343438", "emptyRim"], ["#46494d", "Gunmetal mid"], ["#5b5e63", "Gunmetal light"], ["#1a1b1d", "Near black"]];
+var CLASSES = {
+  rogue: { name: "Rogue", color: "#fff468", power: "#ffe14d", powerName: "Energy", combo: true, spell: "Ambush" },
+  warrior: { name: "Warrior", color: "#c69b6d", power: "#ff4d4d", powerName: "Rage", combo: false, spell: "Slam" },
+  mage: { name: "Mage", color: "#3fc7eb", power: "#4d8cff", powerName: "Mana", combo: false, spell: "Frostbolt" }
+};
+
+var STYLE_GROUPS = [
+  { title: "Start from", rows: [{ type: "presets" }] },
+  { title: "Icons", rows: [
+    { key: "bigH", label: "Large icon height", type: "range", min: 20, max: 48, step: 1, unit: "px", hint: "Essential, Cooldown Bars" },
+    { key: "smallH", label: "Small icon height", type: "range", min: 16, max: 40, step: 1, unit: "px", hint: "Tracked Buffs, Buff Bars" },
+    { key: "shape", label: "Width over height", type: "seg", choices: [[0, "Square"], [4, "+4"], [6, "+6"], [8, "+8"], [10, "+10"]] },
+    { key: "utility", label: "Utility uses", type: "seg", choices: [["big", "Large"], ["small", "Small"]] }
+  ] },
+  { title: "Spacing", rows: [
+    { key: "spacing", label: "Icon spacing", type: "range", min: -2, max: 6, step: 1, unit: "px", hint: "-1: neighbours share one shadow pixel" },
+    { key: "stackGap", label: "Gap between bars", type: "range", min: 0, max: 12, step: 1, unit: "px" }
+  ] },
+  { title: "Border", rows: [
+    { key: "border", label: "Border style", type: "seg", choices: [["empty", "Mode-Empty"], ["metal", "Mode-Border"], ["none", "None"]] },
+    { key: "metal", label: "Metal", type: "seg", choices: [["gunmetal", "Gunmetal"], ["steel", "Steel"], ["silver", "Silver"]], when: function (s) { return s.border === "metal"; } },
+    { key: "flatRim", label: "Flat band color", type: "swatch", choices: FLAT_RIMS, when: function (s) { return s.border === "empty"; } },
+    { key: "band", label: "Band", type: "seg", choices: [[1, "1px"], [2, "2px"]], when: function (s) { return s.border !== "none"; } },
+    { key: "corner", label: "Corners", type: "seg", choices: [["round", "Round"], ["cut", "Square"]], when: function (s) { return s.border !== "none"; } }
+  ] },
+  { title: "Cooldown and text", rows: [
+    { key: "gray", label: "Gray on cooldown", type: "seg", choices: [[true, "On"], [false, "Off"]] },
+    { key: "swipe", label: "Swipe opacity", type: "range", min: 0, max: 100, step: 5, unit: "%" },
+    { key: "cdColor", label: "Cooldown numbers", type: "swatch", choices: CD_COLORS },
+    { key: "cdBig", label: "Numbers, large", type: "range", min: 8, max: 24, step: 1, unit: "" },
+    { key: "cdSmall", label: "Numbers, small", type: "range", min: 6, max: 20, step: 1, unit: "" },
+    { key: "countSize", label: "Count size", type: "range", min: 6, max: 18, step: 1, unit: "" },
+    { key: "outline", label: "Outline", type: "seg", choices: [["none", "None"], ["outline", "Outline"], ["thick", "Thick"]] },
+    { key: "keybinds", label: "Keybind text", type: "seg", choices: [[false, "Off"], [true, "On"]], hint: "Candidate feature" }
+  ] },
+  { title: "Glows", rows: [
+    { key: "procStyle", label: "Proc glow", type: "seg", choices: [["border", "Border"], ["mode", "Mode Glow"]] },
+    { key: "procColor", label: "Proc color", type: "swatch", choices: PROC_COLORS }
+  ] },
+  { title: "Player bars", rows: [
+    { key: "barMode", label: "Fill", type: "seg", choices: [["color", "Color"], ["dark", "Dark"]] },
+    { key: "grouped", label: "Resources", type: "seg", choices: [[true, "Together"], [false, "Apart"]] },
+    { key: "powerH", label: "Power height", type: "range", min: 0, max: 24, step: 1, unit: "px", hint: "0 hides Power" },
+    { key: "comboH", label: "Combo height", type: "range", min: 4, max: 16, step: 1, unit: "px" },
+    { key: "castH", label: "Cast Bar height", type: "range", min: 8, max: 28, step: 1, unit: "px" },
+    { key: "castIcon", label: "Cast icon", type: "seg", choices: [[false, "Hidden"], [true, "Left"]] },
+    { key: "swingH", label: "Swing timer", type: "range", min: 0, max: 16, step: 1, unit: "px", hint: "Forever only, candidate feature; 0 hides it" }
+  ] }
+];
+
+/* Window structures */
+var STRUCTURES = [
+  { id: "current", title: "Today", tag: "as built", desc: "Spells and Abilities, then Cooldown Bars and Buff Bars (yours, with +), then Resource Bars with the Cast Bar at the end. No place for shared settings.",
+    list: [["cap", "Spells and Abilities"], ["it", "Essential Cooldowns", "", true], ["it", "Utility Cooldowns"], ["it", "Tracked Buffs"], ["it", "Tracked Bars"], ["cap", "Cooldown Bars", "+"], ["it", "Defensive Cooldowns"], ["cap", "Buff Bars", "+"], ["it", "Emphasized Buffs"], ["it", "Left Buffs"], ["it", "Right Buffs"], ["it", "Ultra Emphasized Buffs"], ["cap", "Resource Bars"], ["it", "Power"], ["it", "Combo Points"], ["it", "Alternate Mana"], ["it", "Health"], ["it", "Cast Bar"]] },
+  { id: "bykind", title: "By kind", tag: "recommended", desc: "Home and Bar Style first. Cooldowns and Buffs each hold Blizzard's viewers and your bars together, so the + sits next to what it adds to. Player Bars takes the resource bars and the Cast Bar.",
+    list: [["top", "Home", "status, presets"], ["top", "Bar Style", "", true], ["cap", "Cooldowns", "+"], ["it", "Essential Cooldowns"], ["it", "Utility Cooldowns"], ["it", "Defensive Cooldowns", "yours"], ["cap", "Buffs", "+"], ["it", "Tracked Buffs"], ["it", "Tracked Bars"], ["it", "Emphasized Buffs", "yours"], ["it", "Left / Right Buffs", "yours"], ["it", "Ultra Emphasized Buffs", "yours"], ["cap", "Player Bars"], ["it", "Power"], ["it", "Combo Points"], ["it", "Alternate Mana"], ["it", "Health"], ["it", "Cast Bar"], ["it", "Swing Timer", "Forever"], ["it", "Pet", "Forever"], ["top", "Spells", "racials, items, alerts"], ["top", "Share", "import / export"]] },
+  { id: "byscreen", title: "By screen area", tag: "alternative", desc: "Grouped by where things sit: the center block under the character, the sides, and the extra bars. Closer to how the layouts think, but bars that move break the grouping.",
+    list: [["top", "Home"], ["top", "Bar Style"], ["cap", "Center Block"], ["it", "Cast Bar"], ["it", "Power and Combo Points"], ["it", "Essential Cooldowns", "", true], ["it", "Utility Cooldowns"], ["it", "Tracked Buffs"], ["cap", "Around It", "+"], ["it", "Emphasized Buffs"], ["it", "Left / Right Buffs"], ["it", "Defensive Cooldowns"], ["it", "Tracked Bars"], ["cap", "Extras"], ["it", "Alternate Mana"], ["it", "Health"], ["it", "Ultra Emphasized Buffs"], ["top", "Spells"], ["top", "Share"]] },
+  { id: "tasks", title: "By task", tag: "alternative", desc: "Top level is what you want to do: Look (Bar Style), Spells (all spells, all bars), Place (Edit Mode and sizes), Show (when bars appear). Fewest pages, but a single bar's settings end up spread across four places.",
+    list: [["top", "Home"], ["top", "Look", "Bar Style + per-bar Custom", true], ["top", "Spells", "every bar's spells, glows, alerts"], ["top", "Place", "size, growth, Edit Mode"], ["top", "Show", "when each bar appears"], ["cap", "Bars"], ["it", "pick a bar inside each page"], ["top", "Share"]] }
+];
+
+/* Pages: [proposed label, today, tier, note] */
+var PAGES = {
+  cooldown: { label: "Cooldown bar", sub: "Essential, Utility and your Cooldown Bars", now: 58, tabs: [
+    ["Layout", [
+      ["Show Bar", "Show Bar", "simple", "Also in the page header"],
+      ["Grow", "Growth", "simple", "Row, Centered · Row, Left to Right · Column, Downward ..."],
+      ["New Lines", "New Lines", "simple", ""],
+      ["Icons per Line", "Icons per Line", "simple", ""],
+      ["Icon Size", "Width + Height", "simple", "One slider; the Bar Style sets the shape"],
+      ["Exact Width / Height", "Width, Height", "more", "For odd sizes"],
+      ["Spacing", "Spacing", "style", ""],
+      ["Name", "Name", "simple", "Your bars only"],
+      ["Delete Bar", "Delete Bar", "more", "Now asks first, like the list's −"],
+      ["Racial Abilities", "Show On", "drop", "Moves to the Spells page: it's one choice for the whole module"],
+      ["Open Edit Mode", "Open Edit Mode", "drop", "The header's Edit Mode button does this"],
+      ["Tracked Spells", "Open CDM", "drop", "In the page header"]
+    ]],
+    ["Look", [
+      ["Look: Bar Style / Custom", "(new)", "simple", "One switch per group: Border, Background, Cooldown"],
+      ["Border Style", "Border", "style", ""],
+      ["Border Color", "Border Metal + Border Color", "style", "One list: the metals, Bar Color, Custom"],
+      ["Border Size", "Border Size", "style", ""],
+      ["Background", "Background Color + Opacity", "style", ""],
+      ["Gray on Cooldown", "Desaturate on Cooldown", "simple", ""],
+      ["Out of Range Tint", "Out of Range Tint", "simple", ""],
+      ["Show Effect Time", "Show Aura Time", "more", ""],
+      ["Swipe", "Swipe Color + Swipe Opacity", "style", ""],
+      ["Swipe Edge · Finish Sparkle · Ready Flash", "Edge, Bling, Ready Flash", "more", ""],
+      ["Debuff Border", "Debuff Border", "more", "Buff bars"],
+      ["Copy Look To…", "Copy & Apply tab", "more", "Replaces the tab"]
+    ]],
+    ["Text", [
+      ["Text: Bar Style / Custom", "(new)", "simple", ""],
+      ["Cooldown Numbers: Show, Size", "Show This Text, Size", "simple", ""],
+      ["Count: Show, Size", "Show This Text, Size", "simple", ""],
+      ["Keybind: Show, Size", "(new)", "simple", "If Keybind text is built"],
+      ["Text Colors", "Color", "style", ""],
+      ["Anchor and Offsets", "Anchor, Offset X, Offset Y", "more", ""],
+      ["Font, Outline, Shadow, Sharp Text", "Font, Outline, Text Shadow, Slug Text", "style", ""]
+    ]],
+    ["Spells & Glows", [
+      ["Spell list", "(new)", "simple", "Every spell on the bar as rows: Show, glows, alert"],
+      ["Starting glow looks", "Glows tab: Style, Color, Pulse ×3", "style", "What a glow looks like when switched on"],
+      ["Ready Glow timing", "When, Glow Time", "more", ""],
+      ["Pixel glow lines", "Lines, Thickness", "style", ""],
+      ["Reset All Spells", "Reset All Spells", "more", ""]
+    ]],
+    ["Show", [
+      ["Show When", "Show", "simple", "Adds: hide when mounted, in a vehicle, out of group"],
+      ["Opacity", "Opacity", "simple", ""],
+      ["Faded Opacity", "Faded Opacity", "more", "Only for Mouseover"],
+      ["Reset to Defaults", "Reset to Defaults", "more", ""],
+      ["Copy From", "Copy From: Bar", "drop", "Same as the Editing dropdown"]
+    ]]
+  ] },
+  buff: { label: "Buff bar", sub: "Tracked Buffs and your Buff Bars", now: 47, tabs: [
+    ["Layout", [
+      ["Show Bar", "Show Bar", "simple", ""],
+      ["Grow", "Growth", "simple", ""],
+      ["New Lines", "New Lines", "simple", ""],
+      ["Icons per Line", "Icons per Line", "simple", ""],
+      ["Icon Size", "Width + Height", "simple", ""],
+      ["Spacing", "Spacing", "style", ""],
+      ["Name / Delete Bar", "Name, Delete Bar", "simple", "Your bars only"]
+    ]],
+    ["Look", [
+      ["Look: Bar Style / Custom", "(new)", "simple", ""],
+      ["Border and Background", "Border ×4, Background ×2", "style", ""],
+      ["Swipe", "Swipe Color + Opacity", "style", ""],
+      ["Swipe Edge · Finish Sparkle · Ready Flash", "Edge, Bling, Ready Flash", "more", ""],
+      ["Debuff Border", "Debuff Border", "simple", ""]
+    ]],
+    ["Text", [
+      ["Text: Bar Style / Custom", "(new)", "simple", ""],
+      ["Time Left: Show, Size", "Cooldown text", "simple", "A buff's numbers are its time left"],
+      ["Stacks: Show, Size", "Count text", "simple", ""],
+      ["Anchor and Offsets", "Anchor, Offsets", "more", ""],
+      ["Font, Outline, Shadow, Sharp Text", "Font group", "style", ""]
+    ]],
+    ["Spells & Glows", [
+      ["Buff list", "(new)", "simple", ""],
+      ["Buff Glow look", "Buff Glow: Style, Color, Pulse", "style", ""],
+      ["Pixel glow lines", "Lines, Thickness", "style", ""],
+      ["Reset All Spells", "Reset All Spells", "more", ""]
+    ]],
+    ["Show", [
+      ["Show When", "Show", "simple", ""],
+      ["Opacity", "Opacity", "simple", ""],
+      ["Faded Opacity", "Faded Opacity", "more", ""]
+    ]]
+  ] },
+  resource: { label: "Resource bar", sub: "Power, Combo Points, Alternate Mana, Health", now: 42, tabs: [
+    ["Layout", [
+      ["Show Bar", "Show Bar", "simple", ""],
+      ["Stack Resources: Together / Apart", "Resources › Layout", "simple", "Was a second 'Layout' on Combo Points"],
+      ["Height", "Height", "simple", ""],
+      ["Width", "Width", "more", "Most bars Match Width in Edit Mode"],
+      ["Point Style: Joined / Separate", "Combo Points › Layout", "simple", "Combo Points"],
+      ["Point Spacing", "Spacing", "more", "Separate points"],
+      ["Divider Width / Color", "Divider Width, Divider Color", "style", ""],
+      ["Show Tick Marks", "Show Tick Marks", "simple", "Power, Alternate Mana"],
+      ["Tick list", "Tick 1-5, Shows On, + Add Tick Mark", "more", ""],
+      ["Tick Width / Color", "Tick Width, Tick Color", "style", ""],
+      ["Open Edit Mode", "Open Edit Mode", "drop", "Header"]
+    ]],
+    ["Look", [
+      ["Look: Bar Style / Custom", "(new)", "simple", ""],
+      ["Border Style / Color / Size", "Border, Border Style, Rim Color, Border Size, Custom Rim Color", "style", ""],
+      ["Fill: Color / Dark", "Bar Mode", "simple", ""],
+      ["Bar Color", "Bar Color", "simple", ""],
+      ["Custom Color", "Custom Color", "more", ""],
+      ["Dark Text Color", "Dark Text Color + Custom", "more", ""],
+      ["Texture and Background", "Bar Texture, Bar Background, Background Opacity", "style", ""],
+      ["Bar Opacity", "Bar Opacity", "more", ""],
+      ["Color When Full", "Full Combo Points Color (switch + color)", "more", "Combo Points"],
+      ["Fill Direction · Smooth", "Fill Direction, Smooth", "more", ""],
+      ["Fill End Line", "Fill End Line", "style", ""]
+    ]],
+    ["Text", [
+      ["Show Text", "Show Text", "simple", ""],
+      ["Text", "Text (format)", "simple", ""],
+      ["Size", "Size", "simple", ""],
+      ["Offsets", "Offset X, Offset Y", "more", ""],
+      ["Text Color", "Text Color", "more", ""],
+      ["Font, Outline, Shadow, Sharp Text", "Font group", "style", ""]
+    ]],
+    ["Show", [
+      ["Show When", "Show", "simple", ""],
+      ["Opacity", "Opacity", "simple", ""],
+      ["Faded Opacity", "Faded Opacity", "more", "Now only under Mouseover, like the cooldown pages"],
+      ["Reset to Defaults", "Reset to Defaults", "more", ""]
+    ]]
+  ] },
+  cast: { label: "Cast Bar", sub: "The player's cast bar", now: 39, tabs: [
+    ["Layout", [
+      ["Show Bar", "Show Bar", "simple", ""],
+      ["Height", "Height", "simple", ""],
+      ["Width", "Width", "more", ""],
+      ["Icon", "Icon", "simple", ""],
+      ["Icon Gap", "Icon Gap", "more", ""],
+      ["Show Interrupted", "Show Interrupted", "simple", ""],
+      ["Empower Pips", "(new)", "drop", "Retail-centric (Evoker); not on Forever"],
+      ["Open Edit Mode", "Open Edit Mode", "drop", "Header"]
+    ]],
+    ["Look", [
+      ["Look: Bar Style / Custom", "(new)", "simple", ""],
+      ["Border Style / Color / Size", "Border ×5", "style", ""],
+      ["Fill: Color / Dark", "Bar Mode", "simple", ""],
+      ["Bar Color", "Bar Color", "simple", ""],
+      ["Custom Color", "Custom Bar Color", "more", "Same name as the resource page"],
+      ["Can't Interrupt · Interrupted colors", "Not Interruptible, Interrupted", "more", ""],
+      ["Dark Text Color", "Dark Text Color + Custom", "more", ""],
+      ["Texture, Background, Spark", "Bar Texture, Bar Background, Background Opacity, Spark", "style", ""]
+    ]],
+    ["Text", [
+      ["Spell Name: Show", "Show Spell Name", "simple", ""],
+      ["Timer: Show", "Show Timer", "simple", ""],
+      ["Size", "Size", "simple", ""],
+      ["Anchors and Offsets", "Anchor ×2, Offset ×4", "more", ""],
+      ["Text Color", "Text Color", "more", ""],
+      ["Font, Outline, Shadow, Sharp Text", "Font group", "style", ""]
+    ]],
+    ["Show", [
+      ["Show When", "(new)", "simple", "Parity with the other bars"],
+      ["Opacity", "Opacity", "simple", ""],
+      ["Reset to Defaults", "Reset to Defaults", "more", ""]
+    ]]
+  ] }
+};
+
+/* Features: id, name, what, who, risk [lvl, text], effort, rec, fit
+   fit: forever = Forever only (systems Retail lacks); both = works the same on Forever and Midnight;
+        retail = Retail-centric (skipped); check = in Forever's files, not confirmed in game */
+var FIT = { forever: "Forever only", both: "Forever + Midnight", retail: "Retail-centric", check: "Check in game" };
+var FEATURES = [
+  ["barStyle", "Bar Style", "One shared look (border, background, cooldown, text, glows, bar fills) that every bar follows; each bar can switch a group to Custom.", "Cooldown Master (category defaults + per-spell overrides); Sentinel (Global Display)", ["low", "Pure ModeUI data; no new WoW API"], "L", "now", "both"],
+  ["presets", "Style presets", "Mode Default, Compact, Large & Clear, Healer: one click sets the Bar Style.", "EllesmereUI preset browser; Arc Auras Starter Layout; TweaksUI aspect presets", ["low", "Data only"], "S", "now", "both"],
+  ["home", "Home page", "Opens first: the game option, Blizzard viewers that are hidden, bars that are off, presets, and Edit Mode / Test on Screen / Tracked Spells buttons.", "ArcUI Modules page; EllesmereUI first-launch picker", ["low", "Reads what M:Status() already knows"], "M", "now", "both"],
+  ["simple", "More options fold", "Each page shows the common controls; the rest sit under 'More options'. Uses the tiers on the Pages tab.", "Arc Auras grouped options; ECM", ["low", "Needs an opt-in row flag in Shared/Settings/Pages.lua"], "M", "now", "both"],
+  ["list", "Spell list view", "A List toggle beside the preview: every spell on the bar as a row with Show, glow switches and alert.", "Cooldown Master per-spell table; Cooldown Manager Control", ["low", "Reuses SpellMenu's setters"], "M", "now", "both"],
+  ["test", "Test on Screen", "Sample cooldowns, procs and casts on the real bars while the window is open, out of combat.", "Kayli's Tracked Bars fake timers; Cooldown Master test mode", ["low", "The shared preview already has the button; ModeCDM adds SetTestDisplay (Damage Meters and Party Frames do)"], "M", "now", "both"],
+  ["show", "More show rules", "Hide when mounted or in a vehicle, only in a group or instance, and 'dim instead of hide'. The Cast Bar gets Show When too.", "EllesmereUI, TweaksUI, ECM, Sensei (their top request)", ["low", "IsMounted, UnitInVehicle, IsInGroup, IsInInstance; alpha only, never Show/Hide"], "S", "now", "both"],
+  ["popout", "Pop out one spell", "From a spell's menu: 'Own Bar' makes a one-icon custom bar for it, ready to place anywhere.", "TweaksUI Per-Icon Highlights; ArcUI free placement", ["low", "A custom bar with one entry already works"], "S", "now", "both"],
+  ["swing", "Swing timer", "A Player Bar for auto-attack swings (main hand, off hand, ranged) from Forever's own swing timer API, with an out-of-range tint. Sits under the Cast Bar in the same look.", "Arc Auras (Forever build); classic-era swing timer addons", ["low", "C_SwingTimer and PLAYER_SWING exist only on the forever branch (SwingTimerDocumentation.lua). Check in game whether the swing duration can be secret. Hidden where the API is missing."], "M", "now", "forever"],
+  ["enchants", "Poisons and weapon imbues", "Main-hand and off-hand temporary enchants (Rogue poisons, Shaman imbues, oils and stones) as icons with time left, and a glow while one is missing. Placeable on any bar.", "Classic-era aura trackers; ModeUI's Character window already reads them", ["mid", "C_Item.GetWeaponEnchantInfo and WEAPON_ENCHANT_CHANGED are on Forever (the Character window uses them); whether they turn secret in combat is unverified"], "M", "later", "forever"],
+  ["pet", "Pet bar", "Your pet's health and, for Hunters, Happiness, as a Player Bar in the same look and page as the resource bars.", "Arc Auras (Forever build: pet happiness)", ["low", "Happiness is a Forever power type ModeUI already colors; pet health can be secret, so it goes to the StatusBar only"], "M", "later", "forever"],
+  ["alerts", "Spell alerts", "Blizzard's own per-spell alerts (a sound, the spell's name spoken, or a visual flash) are in Forever's Cooldown Manager, unchanged from Retail. A spell's menu gets 'Alerts…', which opens Blizzard's editor. ModeCDM plays its own sound only for what Blizzard can't alert on: spells by ID, items and racials.", "Blizzard's CDM (Forever and Retail); ArcUI; Sentinel", ["low", "Forever ships CooldownViewerAlert.lua and the alert editor identical to Retail; check in game that the editor opens"], "S", "now", "check"],
+  ["trinket", "Trinkets, potions and racials", "Forever's Cooldown Manager has the equipment-slot and spec-independent categories, and tracks potions and other item cooldowns by category (Forever-only: the icon shows the last item used). ModeCDM follows Blizzard wherever it tracks these and keeps its own icons for the rest.", "Forever's own CDM; BCDM; EllesmereUI", ["mid", "The categories are in Forever's API. Check in game whether Forever's data fills them, so a racial or potion never shows twice."], "M", "later", "check"],
+  ["keybind", "Keybind text", "The key bound to the spell, in a corner of its icon.", "CMC, EllesmereUI, Arc Auras, CDMx", ["mid", "Forever's API includes the action bar docs; ModeUI's Action Bars Keybind.lua already formats bindings; C_ActionBar.FindSpellActionButtons to be checked in game"], "M", "later", "both"],
+  ["share", "Share a setup", "Export ModeCDM's settings (bars, spells, Bar Style) as a string and import one.", "BCDM, ArcUI, EllesmereUI, Sentinel", ["low", "ModeUI's ProfileCodec already exports whole profiles (!MT1!)"], "S", "later", "both"],
+  ["spec", "Per-spec setups", "Different bars or Bar Style per specialization, switched automatically.", "ArcUI, BCDM (LibDualSpec), Sentinel Setups", ["mid", "Forever has specializations (the Character window reads them) and Blizzard's CDM already keeps a layout per spec; ModeUI profiles don't switch by spec yet, a suite-wide change"], "L", "later", "both"],
+  ["empower", "Empower pips", "Stage marks on the Cast Bar for empowered spells.", "Sentinel CDM (Retail)", ["high", "Empowered spells are Retail's (Evoker). Forever's classes don't have them. The Cast Bar keeps its guarded empower events for a port."], "S", "skip", "retail"],
+  ["assist", "Rotation assist highlight", "Light the icon the game's assisted combat suggests.", "CMC, Sentinel (Retail)", ["mid", "AssistedCombatDocumentation.lua is on the forever branch, but nobody has confirmed Forever offers the suggestion in game; ModeCDM's GCD glow style exists"], "M", "skip", "check"],
+  ["inactive", "Grey inactive buffs", "Keep tracked buffs on screen grayed while they're down.", "TweaksUI persistent buffs; ArcUI ghost icons", ["high", "Blizzard only makes buff frames while the buff is up; would need ModeUI's own icons fed by secret aura state"], "L", "skip", "both"],
+  ["pandemic", "Pandemic glow", "Glow a DoT or buff in its refresh window.", "Blizzard's PandemicTime alert (Forever and Retail)", ["high", "Aura timing is secret in combat for addons; Blizzard's own alert already does it on Forever"], "M", "skip", "both"],
+  ["search", "Settings search", "One box that finds any setting.", "Arc Auras", ["low", "Needs a search index across the page builders"], "M", "skip", "both"]
+];
+
+/* Words: today, proposed, where, accepted */
+var WORDS = [
+  ["Spells and Abilities (list heading)", "Cooldowns / Buffs", "Blizzard's viewers sit with your bars of the same kind", true],
+  ["Resource Bars (list heading)", "Player Bars", "It also holds the Cast Bar", true],
+  ["Border (style dropdown)", "Border Style", "Cooldown page; the resource and cast pages already say Border Style", true],
+  ["Border Metal / Rim Color / Border Color", "Border Color", "One list on every page: Default Metal, Silver, Steel, Gunmetal, Bar Color, Custom", true],
+  ["Desaturate on Cooldown", "Gray on Cooldown", "Plain words", true],
+  ["Show Aura Time", "Show Effect Time", "The gold swipe while a spell's effect is up", true],
+  ["Edge", "Swipe Edge", "The bright line on the swipe", true],
+  ["Bling", "Finish Sparkle", "Blizzard's sparkle when a cooldown ends", true],
+  ["Slug Text", "Sharp Text", "The client's crisp text rendering", true],
+  ["Off Cooldown Glow", "Ready Glow", "Shorter; the spell is ready", true],
+  ["Glow Defaults", "Starting Glow Look", "What a glow looks like when you switch it on", true],
+  ["Copy & Apply (tab)", "Copy Look To…", "A button on the Look tab", true],
+  ["Show This Text / Show Text / Show Spell Name", "Show", "Inside a named text group, one word is enough", true],
+  ["Color (text tab) / Text Color", "Text Color", "Same name on every page", true],
+  ["Custom Color / Custom Bar Color", "Custom Color", "Same name on every page", true],
+  ["Growth: Centered Horizontal, Horizontal Right, Vertical Down ...", "Row, Centered · Row, Left to Right · Column, Downward ...", "Says the shape first", false],
+  ["Resources › Layout (Separate / Group Resources)", "Stack Resources: Together / Apart", "No longer clashes with Combo Points' Layout", true],
+  ["Combo Points › Layout (Grouped / Separated)", "Point Style: Joined / Separate", "", true],
+  ["Full Combo Points Color (switch and color)", "Color When Full", "One label, a switch with its color beside it", true],
+  ["Open CDM", "Tracked Spells", "Says what it's for: Blizzard's window where you pick tracked spells", true],
+  ["Tracked in Blizzard CDM / Not in Blizzard CDM (picker)", "Tracked / Not Tracked Yet", "", true],
+  ["NOT TRACKED IN BLIZZARD CDM - ADD IT IN /CDM", "Not tracked by Blizzard's Cooldown Manager. Track it there to show it.", "Sentence case, says what to do", true],
+  ["Holds", "Spells", "Custom bar's count line", true],
+  ["Count (buff icons)", "Stacks", "On buffs the number is stacks, not charges", false],
+  ["Cooldown (buff icons)", "Time Left", "On buffs the numbers are time left", false]
+];
+
+/* Files: path, lines, job, action, plan note */
+var FILES = [
+  ["Init.lua", 287, "Declarations, per-bar defaults, ranges, choices", "split", "Bar Style defaults move to new Style.lua; per-bar defaults shrink to shape keys"],
+  ["ResourceInit.lua", 261, "Resource defaults and validation", "merge", "Validation uses shared Validate.lua; rim helpers move to Rim.lua"],
+  ["CastInit.lua", 123, "Cast defaults and validation", "merge", "Same as ResourceInit"],
+  ["Presets.lua", 100, "The five default bars", "keep", "Presets inherit the Bar Style; only shape and place stay here"],
+  ["Migrations.lua", 392, "Validators and versions 1-11", "split", "Validators to Validate.lua; v12 step to MigrateV12.lua (at the cap)"],
+  ["Theme.lua", 26, "Mode-Obsidian theme part", "fix", "Line 23: pass db[bar.id], add an obsidian test for custom bars"],
+  ["Driver.lua", 314, "Lifecycle, setters, copy, reset", "merge", "SetOption becomes a wrapper over Options.lua's one setter"],
+  ["Custom.lua", 338, "Bar list, ownership, custom bar CRUD", "keep", "Adds AddSingleBar for Pop out"],
+  ["Spells.lua · Items.lua · Racials.lua", 395, "Own icons", "keep", "Items gains trinket slots if chosen"],
+  ["Blizzard.lua", 160, "Hooks on Blizzard's viewers", "keep", "Unchanged: post-hooks only"],
+  ["Tracking.lua", 99, "What Blizzard tracks", "keep", "Home page reads its counts"],
+  ["Layout.lua", 251, "Geometry and placement", "merge", "Reads effective style (spacing from Bar Style)"],
+  ["Skin.lua · Bars.lua · Text.lua · Glow.lua", 742, "Icon art, bars, text, glows", "merge", "Read M:Effective(id) instead of M.db[id]"],
+  ["Visibility.lua", 90, "Show modes, mouseover fader", "merge", "New show rules; Cast Bar joins; Faded Opacity rule unified"],
+  ["Resources.lua · ResourceUpdate.lua · ResourceGroup · Marks · Snap", 847, "Resource bars", "merge", "Effective style; snapper ticker stops while off"],
+  ["CastBar.lua", 395, "Cast Bar runtime", "split", "Split paint/text into CastPaint.lua before anything new"],
+  ["SpellMenu · GlowPopout · TextPopout · Picker", 855, "Spell menu, popouts, + list", "merge", "Shared popout scaffold (Popout.lua); Own Bar row"],
+  ["Preview.lua · PreviewDrag.lua", 394, "Bar preview and drag", "keep", "Adds List toggle (SpellList.lua)"],
+  ["ResourcePreview.lua · CastPreview.lua", 167, "Previews", "merge", "One PlayerBarPreview.lua"],
+  ["SettingsHelpers.lua", 92, "Helpers for resource/cast pages", "merge", "Becomes the only helper set (cooldown page joins)"],
+  ["Settings.lua · SettingsTabs.lua", 490, "Cooldown page and tabs", "split", "Rebuilt on shared groups: PageLayout, PageLook, PageText, PageSpells, PageShow"],
+  ["ResourceSettings · ResourceSettingsLook · CastSettings", 403, "Resource and cast pages", "merge", "Built from the same shared groups"],
+  ["Window.lua", 327, "Window and list", "merge", "New list (Home, Bar Style, Cooldowns, Buffs, Player Bars, Spells, Share)"],
+  ["Layouts.lua", 162, "DPS/Tank and Healer parts", "merge", "Writes Bar Style + shape instead of per-bar look keys"],
+  ["Style.lua (new)", 0, "", "new", "Bar Style: defaults, groups, resolve (M:Effective)"],
+  ["Options.lua (new)", 0, "", "new", "One setter, commit and reset for every bar kind"],
+  ["Validate.lua (new)", 0, "", "new", "Shared validators: whole numbers, colors, choices, lists"],
+  ["HomePage.lua · StylePage.lua (new)", 0, "", "new", "Home and Bar Style pages; cluster preview"],
+  ["Caps.lua (new)", 0, "", "new", "What the client offers (swing timer, CDM alerts, category cooldowns, target combo points, weapon enchants)"],
+  ["SwingTimer.lua · WeaponEnchants.lua · PetBar.lua (new, if chosen)", 0, "", "new", "Forever-only Player Bars and icons, each gated by a cap"],
+  ["Alerts.lua · Keybinds.lua (new, if chosen)", 0, "", "new", "Own sounds for what Blizzard's alert editor can't cover; keybind text"]
+];
+
+var APIS = [
+  ["hooksecurefunc on viewer OnAcquireItemFrame, Layout, RefreshData", "Find and re-place Blizzard's icons", "Post-hooks only, body in pcall; never write a field on Blizzard's frames"],
+  ["hooksecurefunc on item RefreshSpellCooldownInfo, RefreshIconDesaturation, RefreshIconColor, SetIsActive, UpdateShownState, SetBarContent", "Swipe, gray, range tint, buff glow, gap closing", "isActive can be secret: goes to SetAlphaFromBoolean"],
+  ["ActionButtonSpellAlertManager ShowAlert / HideAlert", "Proc glows", "Post-hook"],
+  ["C_CooldownViewer.GetCooldownViewerCooldownInfo, GetCooldownViewerCategorySet", "Each icon's spell; the + list", "Public IDs only"],
+  ["C_Spell.GetSpellCooldown (isActive, isOnGCD), GetSpellCooldownDuration, GetSpellChargeDuration", "Gray on cooldown; own icons", "isActive/isOnGCD never secret; durations go to SetCooldownFromDurationObject"],
+  ["C_SpellBook.IsSpellKnown, FindSpellBookSlotForSpell", "Racials, spells by ID", ""],
+  ["C_Container.GetItemCooldown, C_Item.*", "Item entries", ""],
+  ["UnitPower, UnitPowerMax, UnitHealth, UnitPowerType", "Resource bars", "Primary power and health can be secret: only to StatusBar, AbbreviateNumbers, text"],
+  ["UnitCastingInfo, UnitChannelInfo (via Domain.Cast)", "Cast Bar", "Player casts are not secret"],
+  ["CVar cooldownViewerEnabled", "Status line", "Read only; ModeUI never changes it"],
+  ["CooldownViewerSettings:TogglePanel()", "Tracked Spells button", "Outside combat"]
+];
+var NEWAPIS = [
+  ["C_SwingTimer.EnableRangeCheck, IsTargetWithinSwingRange; PLAYER_SWING, PLAYER_SWING_RANGE_UPDATE", "Forever only. Swing timer bar: each swing's duration and type, and whether the target is in auto-attack range."],
+  ["C_Item.GetWeaponEnchantInfo; WEAPON_ENCHANT_CHANGED", "Poisons and imbues. Used today only by ModeUI's Character window."],
+  ["Category cooldowns in CooldownViewerItemData.lua (lastItemIDForCategory, C_Spell.GetItemCooldown)", "Forever only. Items that share a cooldown category (potions, healthstones) show the last one used. ModeCDM's own item icons shouldn't duplicate them."],
+  ["C_CooldownViewer.GetValidAlertTypes; CooldownViewerAlert.lua, CooldownViewerSettingsAlerts.lua", "Blizzard's per-spell alert editor (sound, spoken name, flash), identical to Retail. ModeCDM links to it."],
+  ["Enum.CooldownViewerCategory EquipSlot* / SpecAgnostic*", "Trinkets, racials and potions natively, if Forever's data fills them."],
+  ["C_CooldownViewer.GetLayoutData / SetLayoutData", "Blizzard's tracked-spell layout per spec (Forever has specs). Read only: Home shows which one is active."],
+  ["IsMounted, UnitInVehicle, IsInGroup, IsInInstance", "New show rules (alpha only)"],
+  ["C_ActionBar.FindSpellActionButtons + GetBindingKey", "Keybind text"]
+];
+var GAMEFILES = [
+  "<b>Live client:</b> <code>C:\\Program Files (x86)\\World of Warcraft\\_forever_</code> (build 1.60.1.70938). The AddOns folder's ModeUI and ModeCDM are junctions into the repo. No Blizzard FrameXML is extracted locally, so Blizzard's code is read from the Retail mirror and checked in game.",
+  "<b>Saved settings:</b> <code>WTF\\Account\\…\\SavedVariables\\ModeUI.lua</code>, <code>ModeUIDB.profiles[*].modules.cooldownManager</code> (version 11). ModeCDM has no SavedVariables of its own. Every phase that changes settings adds a migration and asks for a backup of this file before the in-game check.",
+  "<b>Your profiles today:</b> dps/tank is at settings version 11; 2s, Mode-Healer and Mode-DPS/TANK at 10; 1, Mode-Healer (old), RealMode and Default at 9. Only the active profile migrates, so version 12 has to step up from 9 as well. In dps/tank all nine icon bars carry the same look (Spacing -1, Mode-Empty, cooldown numbers #FF3948), stored nine times, except Defensive Cooldowns, which uses Mode-Border.",
+  "<b>Other addons installed:</b> BugGrabber/BugSack, LibSharedMedia-3.0, SharedMedia, SharedMediaAdditionalFonts, Questie, RXPGuides, ForeverDungeonJournal, PlayTheGameTools. None of them touch the Cooldown Manager.",
+  "<b>Blizzard's tracked spells</b> live on the server as one layout string (<code>C_CooldownViewer.GetLayoutData</code>). ModeCDM only reads it and never writes it.",
+  "<b>Shared ModeUI code that phases touch:</b> <code>Shared/Settings/Pages.lua</code> (More options fold, opt-in), <code>Shared/Settings/Previews.lua</code> (Test on Screen), <code>Shared/Runtime/ProfileCodec.lua</code> (Share), <code>Shared/Domain/Cooldowns.lua</code> and <code>Items.lua</code> (trinkets), <code>Shared/Style</code> (only if the Bar Style needs a new Tone or Edge token).",
+  "<b>Tests:</b> <code>tests/cooldown_manager.lua</code> (878 lines), <code>resource_bars.lua</code>, <code>cast_bar.lua</code>, <code>cooldown_tracking.lua</code>, <code>companion.lua</code>, <code>layouts*.lua</code>, <code>obsidian.lua</code>, <code>structure.lua</code>, <code>design.lua</code>. <code>settings_fit.lua</code> skips standalone modules, so the new pages need their own fit test."
+];
+
+/* Plan phases: n, title, needs (feature ids; any not 'skip' keeps it on), version, items, tests */
+var PHASES = [
+  ["0", "Fixes and cleanup", [], "no version", [
+    "<code>Theme.lua:23</code>: theme <code>db[bar.id]</code>, not the list entry. Add custom bars to <code>tests/obsidian.lua</code>.",
+    "<code>Settings.lua:172</code>: Delete Bar goes through <code>M:ConfirmDelete(id)</code> (<code>Window.lua:204</code>).",
+    "<code>ResourceSnap.lua</code>: <code>M:WatchResourcePixels</code> stops its ticker in <code>OnDisable</code> and restarts in <code>OnEnable</code>.",
+    "Remove dead code: <code>M.allowedTargets</code>, <code>M.customTargets</code>, <code>M.resourceTargets</code>, <code>M.FadeRegion</code>, <code>M.PaintGlow</code>, the empty <code>ui.When</code> blocks, the 'none' branch in <code>M.ResourceValueText</code>, the picker's back-compat names (tests updated)."
+  ], "cooldown_manager, resource_bars, obsidian, structure"],
+  ["1", "One settings toolkit and capability checks", [], "no version", [
+    "New <code>Caps.lua</code> (loaded right after <code>Init.lua</code>): <code>M.caps</code>, worked out once from the API the client has: <code>swingTimer</code> (<code>C_SwingTimer</code>), <code>cdmAlerts</code> (<code>C_CooldownViewer.GetValidAlertTypes</code>), <code>categoryCooldowns</code> (Forever's item category cooldowns), <code>targetCombo</code> (<code>GetComboPoints</code> on the target), <code>weaponEnchants</code> (<code>C_Item.GetWeaponEnchantInfo</code>). Features and their settings rows read caps, never the edition's name.",
+    "New <code>Validate.lua</code>: <code>V.Whole</code>, <code>V.Color</code>, <code>V.Choice</code>, <code>V.List</code>, <code>V.Table</code>; used by <code>Migrations.lua</code> <code>Validate</code>, <code>ResourceInit</code> <code>ValidateResource</code>, <code>CastInit</code> <code>ValidateCast</code>.",
+    "New <code>Options.lua</code>: <code>M:SetBarOption(kind, id, key, value)</code>, <code>M:ResetBar(kind, id)</code>, <code>M:BarOwner(kind, id)</code>. <code>SetOption</code>, <code>SetResourceOption</code>, <code>SetCastOption</code> and the three resets become thin wrappers; per-spell switches stop forcing a full Refresh.",
+    "New <code>Rim.lua</code>: <code>M:RimChoice(style)</code>, <code>M:SetRim(style, value)</code>, <code>M:RimTint(style)</code>, <code>M:ClassColor()</code>, replacing the resource/cast copies.",
+    "<code>SettingsHelpers.lua</code> gains <code>SliderIn</code>, <code>SelectIn</code>, <code>Mark</code>, <code>ViewerChoices</code>; <code>Settings.lua</code> drops its private <code>ui</code>.",
+    "New shared page groups (<code>PageGroups.lua</code>): <code>ui.BorderGroup</code>, <code>ui.TextGroup</code>, <code>ui.FontGroup</code>, <code>ui.ShowGroup</code>, used by all three page kinds, so labels can't drift. Accepted Words land here."
+  ], "cooldown_manager, resource_bars, cast_bar; new settings_cdm_labels test (one label per idea); a caps test with Forever-only APIs missing"],
+  ["2", "Bar Style", ["barStyle", "presets"], "settings version 12", [
+    "Design doc first: <code>docs/COOLDOWN_MANAGER.md</code> gets a 'Bar Style' section; <code>docs/DESIGN_LANGUAGE.md</code> only if a new token is needed.",
+    "New <code>Style.lua</code>: <code>M.barStyleDefaults</code> (the values on the Bar Style tab), <code>M.styleGroups</code> (border, background, cooldown, text, glows, fill: which keys each covers), <code>M:Effective(id)</code> (a cached merged table: Bar Style for following groups, the bar's own keys for Custom ones), <code>M:FollowGroup(id, group, on)</code>, <code>M:SetBarStyle(key, value)</code>, <code>M:ApplyPreset(name)</code>.",
+    "Saved: <code>modules.cooldownManager.barStyle = {...}</code>; every bar, resource bar and the Cast Bar gets <code>custom = { border = false, text = false, ... }</code>. Shape keys (size, growth, per line) stay per bar.",
+    "<code>MigrateV12.lua</code>: the Bar Style is seeded from the profile itself: for each group, the value most bars share (in dps/tank that is your Mode-Default tuning, not the module defaults). A bar whose group matches it follows the Bar Style; a bar that differs (Defensive Cooldowns' Mode-Border) keeps its values as Custom. Nothing changes on screen. Profiles at version 9 or 10 step through 10 and 11 first.",
+    "Runtime readers switch from <code>M.db[id]</code> to <code>M:Effective(id)</code>: <code>Skin.lua</code>, <code>Text.lua</code>, <code>Glow.lua</code>, <code>Bars.lua</code>, <code>Layout.lua</code> (spacing), <code>Resources.lua</code>, <code>ResourceUpdate.lua</code>, <code>CastBar.lua</code>. Split <code>CastBar.lua</code> first (<code>CastPaint.lua</code>).",
+    "<code>Layouts.lua</code>: Mode-Default and Healer write the Bar Style once instead of the same look keys on fifteen bars. <code>Presets.lua</code> keeps only shape and place."
+  ], "new tests/cdm_bar_style.lua (follow, custom, migrate, presets), layouts, layouts_healer, obsidian"],
+  ["3", "Window and pages", ["home", "simple", "list"], "no version", [
+    "<code>Shared/Settings/Pages.lua</code>: opt-in <code>row.tier = \"more\"</code> and a 'More options' fold per section (other modules unchanged).",
+    "<code>Window.lua</code>: <code>M:RefreshList</code> builds the chosen list; new rows Home, Bar Style, Spells, Share; Cast Bar (and any Forever extras) under Player Bars; header adds Test on Screen.",
+    "New <code>HomePage.lua</code> (<code>M:CreateHomePage</code>): status from <code>M:Status</code> and <code>Tracking.lua</code>, presets, quick buttons.",
+    "New <code>StylePage.lua</code> (<code>M:CreateStylePage</code>) and <code>ClusterPreview.lua</code> (<code>M:RenderCluster</code>): the Bar Style page with every bar in one preview.",
+    "<code>Settings.lua</code>/<code>SettingsTabs.lua</code> rebuilt as <code>PageLayout.lua</code>, <code>PageLook.lua</code>, <code>PageText.lua</code>, <code>PageSpells.lua</code>, <code>PageShow.lua</code> using the Pages-tab tiers; resource and cast pages use the same files.",
+    "New <code>SpellList.lua</code> (<code>M:RenderSpellList</code>): the List toggle, reusing <code>M:SetSpellSwitch</code> and <code>M:SetSpellGlow</code>."
+  ], "smoke (window), new tests/cdm_pages.lua (tiers, fold, list), settings fit for the standalone window"],
+  ["4", "Show rules, Test on Screen, Own Bar", ["show", "test", "popout"], "settings version 13 if show rules change saved choices", [
+    "<code>Visibility.lua</code>: <code>M:StyleAlpha</code> learns <code>hideMounted</code>, <code>hideVehicle</code>, <code>groupOnly</code>, <code>dim</code>; events <code>PLAYER_MOUNT_DISPLAY_CHANGED</code>, <code>UNIT_ENTERED_VEHICLE</code>/<code>EXITED</code>, <code>GROUP_ROSTER_UPDATE</code>. Alpha only. The Cast Bar joins.",
+    "<code>M:SetTestDisplay(on)</code> in new <code>TestDisplay.lua</code>: sample cooldowns on own sample frames over each holder, a sample cast and resource fill; refused in combat (Previews.lua already checks).",
+    "<code>SpellMenu.lua</code>: 'Own Bar' row → <code>M:AddSingleBar(key)</code> in <code>Custom.lua</code>."
+  ], "cooldown_manager (visibility), cast_bar, new test display case"],
+  ["5", "Forever extras", ["swing", "enchants", "pet"], "a settings table per new bar, added without touching old keys", [
+    "Probe first (<code>probes/</code>, run by the owner in game): <code>PLAYER_SWING</code>'s swing duration in and out of combat, <code>C_SwingTimer.IsTargetWithinSwingRange</code>, <code>C_Item.GetWeaponEnchantInfo</code> in combat, pet Happiness.",
+    "Swing timer: new <code>SwingTimer.lua</code> and <code>SwingInit.lua</code>, a Player Bar built on the resource bar's frame and look (<code>M:BuildSwing</code>, <code>M:OnSwingEvent</code>). <code>PLAYER_SWING</code> starts one bar per swing type (main hand, off hand, ranged) for its duration; <code>C_SwingTimer.EnableRangeCheck</code> and <code>PLAYER_SWING_RANGE_UPDATE</code> drive the out-of-range tint. Edit Mode element <code>ModeUISwingTimer</code>, default under the Cast Bar. Only built when <code>M.caps.swingTimer</code>.",
+    "Poisons and imbues: new <code>WeaponEnchants.lua</code>: two own icons (main hand, off hand) from <code>C_Item.GetWeaponEnchantInfo</code> on <code>WEAPON_ENCHANT_CHANGED</code> and <code>UNIT_INVENTORY_CHANGED</code>, entries <code>w16</code>/<code>w17</code> placeable on any Cooldown or Buff Bar, a Missing glow. The Character window's reader moves to a shared <code>Shared/Domain/WeaponEnchant.lua</code>.",
+    "Pet bar: new <code>PetBar.lua</code>: pet health (StatusBar only) and Hunter Happiness, using the resource bar's settings page."
+  ], "new tests/cdm_swing.lua, cdm_enchants.lua, cdm_pet.lua, each also run with its API missing"],
+  ["6", "Alerts, items, keybinds, sharing", ["alerts", "trinket", "keybind", "share"], "settings version per feature", [
+    "Probe first: does Blizzard's alert editor open on Forever, and do the equipment-slot and spec-independent categories hold anything (racials, trinkets, potions)?",
+    "Alerts: the spell menu gets 'Alerts…', which opens Blizzard's Cooldown Settings (<code>CooldownViewerSettings:TogglePanel()</code>, outside combat). New <code>Alerts.lua</code> plays ModeCDM's own sound only for spells by ID, items and racials, on the ready and proc changes <code>Glow.lua</code> already detects; sounds from LibSharedMedia with a play button.",
+    "Items: where Forever's data fills Blizzard's categories, <code>Racials.lua</code> and <code>Items.lua</code> stand aside for the same spell or item; otherwise <code>t13</code>/<code>t14</code> trinket entries in <code>Items.lua</code>.",
+    "Keybinds: new <code>Keybinds.lua</code> and a <code>keybind</code> text part (<code>M.textParts</code>), sharing ModeUI's <code>ActionBars/Keybind.lua</code> formatting through a new <code>Shared/Domain/Bindings.lua</code>.",
+    "Share: export/import of <code>modules.cooldownManager</code> through <code>addon.ProfileCodec</code> on the Share page."
+  ], "one test file per feature; probes.lua for the probe"],
+  ["7", "Docs and release prep", [], "", [
+    "<code>docs/COOLDOWN_MANAGER.md</code> rewritten around Bar Style and the new pages; in-game checks with Navigation, Action, Required state, Confirmation. <code>docs/API_COMPATIBILITY.md</code> gets the Forever branch facts (swing timer, category cooldowns, alerts).",
+    "<code>docs/MODE_REDESIGN.md</code> revision entry; README and THIRD_PARTY_NOTICES unchanged unless a sound library is added.",
+    "Every test run; native acceptance only on the owner's word."
+  ], "all"]
+];
+
+var QUESTIONS = [
+  ["copy", "Keep Copy & Apply (as 'Copy Look To…') once bars follow the Bar Style, or drop it?"],
+  ["style-scope", "Should the Bar Style be per profile (like everything else today), or shared across profiles?"],
+  ["style-existing", "Existing bars: switch to the Bar Style automatically where they already match it (nothing changes on screen), or keep them as they are until you choose Use Bar Style on each?"],
+  ["sizes", "Should the Bar Style also set icon sizes (Large / Small heights and the shape), or only the look? Sizes in the layouts would then follow it."],
+  ["default-open", "When /mcdm opens: Home every time, or the last page you had open?"],
+  ["fold", "More options: closed every time, or remember if you opened it?"],
+  ["alerts", "Alerts: if Forever has Blizzard's own alert editor, link to it, build ModeCDM's own, or both?"],
+  ["defensives", "Defensive Cooldowns uses Mode-Border while your other eight bars use Mode-Empty. Is that on purpose (it would stay Custom), or should it follow the Bar Style?"],
+  ["swing", "Swing timer (Forever only): a Player Bar under the Cast Bar, or leave it out? Should Hunters see a ranged swing too?"],
+  ["port", "Port groundwork: keep it to capability checks and keeping Forever-only features in their own files for now (no Retail package), as proposed?"],
+  ["other", "Anything missing from this pass?"]
+];
+
+/* ---------- State ---------- */
+function baseChoices() {
+  var tiers = {};
+  Object.keys(PAGES).forEach(function (k) {
+    PAGES[k].tabs.forEach(function (tab, ti) { tab[1].forEach(function (row, ri) { tiers[k + ":" + ti + ":" + ri] = row[2]; }); });
+  });
+  var verdicts = {};
+  FEATURES.forEach(function (f) { verdicts[f[0]] = f[6]; });
+  var words = {};
+  WORDS.forEach(function (w, i) { words[i] = { use: w[3], text: w[1] }; });
+  return { style: Object.assign({}, DEFAULT_STYLE), preset: "Mode Default", structure: "bykind", tiers: tiers, verdicts: verdicts, words: words, answers: {}, zoom: 1.5, cls: "rogue", pageKind: "cooldown",
+    ideas: { preview: "stage", settings: "scroll", patterns: {}, notes: {} } };
+}
+var state = baseChoices();
+var db = null, dirty = false, saving = false;
+var DOC = "workbench/choices";
+
+function setDirty(v) {
+  dirty = v;
+  var el = document.getElementById("saveState");
+  if (v) { el.textContent = db ? "Unsaved changes" : "Changes kept in this tab only"; el.className = "save-state dirty"; }
+}
+function mark() { setDirty(true); }
+
+/* ---------- Helpers ---------- */
+function h(tag, attrs, kids) {
+  var el = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function (k) {
+    var v = attrs[k];
+    if (k === "text") el.textContent = v;
+    else if (k === "html") el.innerHTML = v;
+    else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+    else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) el.setAttribute(k, v === true ? "" : v);
+  });
+  (kids || []).forEach(function (c) { if (c != null) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+  return el;
+}
+function seg(choices, current, onPick, cls) {
+  var wrap = h("span", { class: "seg " + (cls || ""), role: "group" });
+  choices.forEach(function (c) {
+    var b = h("button", { type: "button", "aria-pressed": String(c[0] === current), text: c[1] });
+    if (c[2]) b.dataset[c[2][0]] = c[2][1];
+    b.addEventListener("click", function () { onPick(c[0]); });
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+/* ---------- Tabs ---------- */
+var currentTab = "brief";
+function showTab(id) {
+  if (!TABS.some(function (t) { return t[0] === id; })) id = "brief";
+  currentTab = id;
+  document.querySelectorAll("section[data-tab]").forEach(function (s) { s.hidden = s.dataset.tab !== id; });
+  document.querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-selected", String(t.dataset.id === id)); });
+  if (id === "ideas" && ideasDirty && typeof buildIdeas === "function") buildIdeas();
+  else if (id === "ideas") requestAnimationFrame(fitMocks);
+}
+window.addEventListener("resize", function () { if (currentTab === "ideas") fitMocks(); });
+function buildTabs() {
+  var nav = document.getElementById("tabs");
+  TABS.forEach(function (t) {
+    var b = h("button", { class: "tab", type: "button", role: "tab", text: t[1] });
+    b.dataset.id = t[0];
+    b.addEventListener("click", function () { location.hash = t[0]; });
+    nav.appendChild(b);
+  });
+  window.addEventListener("hashchange", function () { showTab(location.hash.slice(1)); });
+  showTab(location.hash.slice(1));
+}
+
+/* ---------- Brief ---------- */
+function buildBrief() {
+  var f = document.getElementById("findings");
+  FINDINGS.forEach(function (x) {
+    f.appendChild(h("div", { class: "finding" }, [
+      h("div", {}, [h("span", { class: "chip " + x[0], text: x[0] === "bug" ? "bug" : x[0] === "drift" ? "drift" : "gap" })]),
+      h("div", {}, [h("p", { text: x[1] }), h("div", { class: "where", text: x[2] })])
+    ]));
+  });
+  var p = document.getElementById("position");
+  POSITION.forEach(function (x) { p.appendChild(h("div", {}, [h("div", { class: "eyebrow", text: x[0] }), h("p", { class: "small", text: x[1] })])); });
+}
+
+/* ---------- Bar Style ---------- */
+function buildStyleControls() {
+  var host = document.getElementById("styleControls");
+  host.innerHTML = "";
+  var s = state.style;
+  STYLE_GROUPS.forEach(function (g) {
+    var grp = h("div", { class: "cgroup" }, [h("div", { class: "eyebrow", text: g.title })]);
+    g.rows.forEach(function (r) {
+      if (r.when && !r.when(s)) return;
+      if (r.type === "presets") {
+        var ps = h("div", { class: "presets" });
+        Object.keys(PRESETS).forEach(function (name) {
+          var b = h("button", { type: "button", class: "btn", text: name, "aria-pressed": String(state.preset === name) });
+          if (state.preset === name) b.classList.add("primary");
+          b.addEventListener("click", function () {
+            state.style = Object.assign({}, DEFAULT_STYLE, PRESETS[name]); state.preset = name; mark(); buildStyleControls(); renderStage();
+          });
+          ps.appendChild(b);
+        });
+        grp.appendChild(ps);
+        grp.appendChild(h("p", { class: "small muted", text: state.preset === "Custom" ? "Changed from a preset." : "Preset: " + state.preset + ". Any change below makes it Custom." }));
+        return;
+      }
+      var id = "st-" + r.key, ctl;
+      function set(v) { s[r.key] = v; state.preset = "Custom"; mark(); buildStyleControls(); renderStage(); }
+      if (r.type === "range") {
+        var out = h("output", { for: id, text: s[r.key] + (r.unit || "") });
+        var inp = h("input", { type: "range", id: id, min: r.min, max: r.max, step: r.step, value: s[r.key] });
+        inp.addEventListener("input", function () { s[r.key] = Number(inp.value); out.textContent = inp.value + (r.unit || ""); state.preset = "Custom"; mark(); renderStage(); });
+        inp.addEventListener("change", function () { buildStyleControls(); });
+        ctl = h("div", { class: "rng" }, [inp, out]);
+      } else if (r.type === "seg") {
+        ctl = seg(r.choices, s[r.key], set);
+      } else if (r.type === "swatch") {
+        ctl = h("div", { class: "swatches" });
+        r.choices.forEach(function (c) {
+          var b = h("button", { type: "button", class: "sw", title: c[1], "aria-label": c[1], "aria-pressed": String(s[r.key] === c[0]), style: { background: c[0] } });
+          b.addEventListener("click", function () { set(c[0]); });
+          ctl.appendChild(b);
+        });
+      }
+      var lab = h("label", { for: r.type === "range" ? id : null, text: r.label });
+      var right = h("div", {}, [ctl]);
+      if (r.hint) right.appendChild(h("div", { class: "small muted", style: { fontSize: "11px", marginTop: "2px" }, text: r.hint }));
+      grp.appendChild(h("div", { class: "crow" }, [lab, right]));
+    });
+    host.appendChild(grp);
+  });
+}
+
+var ART = [
+  ["#3b2a5a", "#9d6bd6"], ["#5a2a2a", "#e0704a"], ["#1f4a3a", "#5fd0a0"], ["#2a3f5a", "#6aa6e8"], ["#5a4a1f", "#e8c35a"],
+  ["#4a1f3a", "#d65f9d"], ["#1f3f4a", "#4ac6d6"], ["#3a3a3a", "#b0b0b0"], ["#4a2f1f", "#d6935f"], ["#2a4a1f", "#8fd65f"],
+  ["#1f2a4a", "#5f7fd6"], ["#4a3a1f", "#d6b85f"]
+];
+/* icon states: [kind, swipe 0..1, cdText, count] */
+var ESSENTIAL = [["ready"], ["cd", .62, "14"], ["proc"], ["ready", 0, "", "2"], ["cd", .25, "3"], ["ready"], ["cd", .85, "1:12"], ["ready"], ["cd", .4, "8"]];
+var UTILITY = [["ready"], ["cd", .7, "45"], ["ready"], ["ready"], ["cd", .3, "2:04"], ["ready"], ["ready"]];
+var BUFFS = [["buff", .35, "12", "3"], ["buff", .7, "4"], ["buffglow", .2, "18"], ["buff", .5, "9", "2"], ["buff", .1, "27"], ["buff", .8, "2"]];
+
+function rimFor(s, glow) {
+  if (glow && s.procStyle === "border") return s.procColor;
+  if (s.border === "none") return null;
+  if (s.border === "empty") return s.flatRim;
+  var m = METALS[s.metal];
+  return "linear-gradient(180deg," + m[0] + " 0%," + m[1] + " 30%," + m[2] + " 70%," + m[3] + " 100%)";
+}
+function textShadow(s) {
+  if (s.outline === "thick") return "0 0 2px #000, 0 0 2px #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000";
+  if (s.outline === "outline") return "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000";
+  return "1px 1px 1px rgba(0,0,0,.9)";
+}
+function iconRow(s, list, h0, small, artOffset) {
+  var w = h0 + s.shape, band = s.border === "none" ? 0 : s.band;
+  var row = h("div", { class: "row", style: { gap: (s.spacing + 2 + 2 * band - 2 * band) + "px" } });
+  // gap between outer shadows = spacing; each slot is (w + 2*band) wide with a 1px shadow outside.
+  row.style.gap = (s.spacing + 2) + "px";
+  list.forEach(function (st, i) {
+    var kind = st[0], glow = kind === "proc" || kind === "buffglow";
+    var rim = rimFor(s, glow && (kind === "proc" || s.procStyle === "border"));
+    var radius = s.border !== "none" && s.corner === "round" ? (band + 2) : 0;
+    var slot = h("div", { class: "slot", style: { width: (w + 2 * band) + "px", height: (h0 + 2 * band) + "px", background: rim || "transparent", borderRadius: radius + "px" } });
+    if (glow && s.procStyle === "mode") slot.style.boxShadow = "0 0 0 1px #000, 0 0 6px 2px " + s.procColor;
+    var a = ART[(i + artOffset) % ART.length];
+    var art = h("div", { class: "art", style: { left: band + "px", top: band + "px", right: band + "px", bottom: band + "px", background: "#16171a", borderRadius: Math.max(0, radius - band) + "px" } });
+    var cooling = kind === "cd";
+    if (kind === "plus") {
+      art.appendChild(h("div", { text: "+", style: { position: "absolute", inset: "0", display: "flex", alignItems: "center", justifyContent: "center", color: "#8d9198", fontSize: Math.round(h0 * .6) + "px", fontWeight: "700" } }));
+      slot.appendChild(art); row.appendChild(slot); return;
+    }
+    art.appendChild(h("i", { style: { background: "radial-gradient(circle at 35% 30%," + a[1] + " 0%," + a[0] + " 70%, #0d0d0f 120%)", filter: cooling && s.gray ? "grayscale(1) brightness(.75)" : "none" } }));
+    if (kind === "range") art.appendChild(h("div", { class: "swipe", style: { background: "rgba(207,106,111,.5)", mixBlendMode: "multiply" } }));
+    if (st[1]) {
+      var pct = Math.round(st[1] * 360);
+      var swipe = kind.indexOf("buff") === 0
+        ? "conic-gradient(rgba(0,0,0," + (s.swipe / 100) + ") 0deg " + pct + "deg, transparent " + pct + "deg 360deg)"
+        : "conic-gradient(transparent 0deg " + (360 - pct) + "deg, rgba(0,0,0," + (s.swipe / 100) + ") " + (360 - pct) + "deg 360deg)";
+      art.appendChild(h("div", { class: "swipe", style: { background: swipe } }));
+    }
+    slot.appendChild(art);
+    var ts = textShadow(s);
+    if (st[2]) slot.appendChild(h("div", { class: "cd", text: st[2], style: { fontSize: (small ? s.cdSmall : s.cdBig) + "px", color: kind.indexOf("buff") === 0 ? "#f2f2f2" : s.cdColor, textShadow: ts } }));
+    if (st[3]) slot.appendChild(h("div", { class: "ct", text: st[3], style: { fontSize: (small ? Math.max(6, s.countSize - 1) : s.countSize) + "px", color: "#f2f2f2", textShadow: ts, right: (band + 1) + "px", bottom: band + "px" } }));
+    if (s.keybinds && !small) slot.appendChild(h("div", { class: "kb", text: ["1", "2", "3", "Q", "E", "R", "F", "4", "5"][i % 9], style: { fontSize: Math.max(7, s.countSize - 2) + "px", textShadow: ts, left: (band + 2) + "px", top: (band + 1) + "px" } }));
+    row.appendChild(slot);
+  });
+  var width = list.length * (w + 2 * band) + (list.length - 1) * (s.spacing + 2);
+  return { el: row, width: width };
+}
+function playerBar(s, width, height, fillPct, color, darkTextColor, left, right) {
+  var band = s.border === "none" ? 0 : s.band;
+  var rim = rimFor(s, false);
+  var radius = s.border !== "none" && s.corner === "round" ? (band + 2) : 0;
+  var outer = h("div", { class: "pbar", style: { width: width + "px", height: (height + 2 * band) + "px", background: rim || "transparent", borderRadius: radius + "px" } });
+  var inner = h("div", { style: { position: "absolute", left: band + "px", right: band + "px", top: band + "px", bottom: band + "px", background: "rgba(70,70,75,.6)", overflow: "hidden", borderRadius: Math.max(0, radius - band) + "px" } });
+  var dark = s.barMode === "dark";
+  inner.appendChild(h("div", { class: "fill", style: { width: (fillPct * 100) + "%", background: dark ? "linear-gradient(180deg,#26272a,#1c1d1c)" : "linear-gradient(180deg," + color + "," + shade(color, -.28) + ")" } }));
+  inner.appendChild(h("div", { class: "endline", style: { left: "calc(" + (fillPct * 100) + "% - 1px)" } }));
+  var fs = Math.max(7, Math.min(height - 1, 11));
+  if (height >= 7) {
+    if (left) inner.appendChild(h("div", { class: "txt", text: left, style: { left: "4px", fontSize: fs + "px", color: dark ? darkTextColor : "#f2f2f2", textShadow: textShadow(s) } }));
+    if (right) inner.appendChild(h("div", { class: "txt", text: right, style: { right: "4px", fontSize: fs + "px", color: dark ? darkTextColor : "#f2f2f2", textShadow: textShadow(s) } }));
+  }
+  outer.appendChild(inner);
+  return outer;
+}
+function shade(hex, amt) {
+  var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  function f(c) { return Math.max(0, Math.min(255, Math.round(c + (amt < 0 ? c * amt : (255 - c) * amt)))); }
+  return "rgb(" + f(r) + "," + f(g) + "," + f(b) + ")";
+}
+function comboBar(s, width, height, lit, joined) {
+  var band = s.border === "none" ? 0 : s.band, rim = rimFor(s, false);
+  var radius = s.border !== "none" && s.corner === "round" ? (band + 2) : 0;
+  var red = "#e5484d";
+  var outer = h("div", { class: "pbar", style: { width: width + "px", height: (height + 2 * band) + "px", background: rim || "transparent", borderRadius: radius + "px" } });
+  var inner = h("div", { class: "combo", style: { position: "absolute", left: band + "px", right: band + "px", top: band + "px", bottom: band + "px", gap: "1px", background: "#000", overflow: "hidden", borderRadius: Math.max(0, radius - band) + "px" } });
+  for (var i = 0; i < 5; i++) {
+    var on = i < lit, dark = s.barMode === "dark";
+    inner.appendChild(h("div", { class: "pt", style: { background: on ? (dark ? "linear-gradient(180deg,#2a2b2e,#1c1d1c)" : "linear-gradient(180deg," + red + "," + shade(red, -.3) + ")") : "rgba(70,70,75,.6)", boxShadow: on && dark ? "inset 0 -2px 0 " + red : "none" } }));
+  }
+  outer.appendChild(inner);
+  return outer;
+}
+function trackedBar(s, width, name, pct, dur, idx) {
+  var band = s.border === "none" ? 0 : s.band, h0 = 16, iconW = h0 + 4;
+  var wrap = h("div", { style: { display: "flex", gap: "4px" } });
+  var ic = iconRow(s, [["ready"]], h0, true, idx + 5).el.firstChild;
+  ic.style.width = (iconW + 2 * band) + "px";
+  wrap.appendChild(ic);
+  wrap.appendChild(playerBar(s, width - iconW - 2 * band - 4, h0, pct, CLASSES[state.cls].color, "#f2f2f2", name, dur));
+  return wrap;
+}
+function tag(text, el, side) {
+  var holder = h("div", { style: { position: "relative" } }, [el]);
+  holder.appendChild(h("div", { class: "label-tag", text: text, style: side === "right" ? { left: "calc(100% + 10px)", top: "50%", transform: "translateY(-50%)" } : { right: "calc(100% + 10px)", top: "50%", transform: "translateY(-50%)" } }));
+  return holder;
+}
+/* The CDM cluster in the Bar Style s. opts: labels (row names), side (Tracked Bars), selected (row id outlined). */
+function buildCluster(s, opts) {
+  opts = opts || {};
+  var cls = CLASSES[state.cls];
+  var cluster = h("div", { class: "cluster" });
+  var gap = s.stackGap + 2; // between outer shadows
+  var ess = iconRow(s, ESSENTIAL.slice(0, 7), s.bigH, false, 0);
+  var ut = iconRow(s, UTILITY.slice(0, 6), s.utility === "big" ? s.bigH : s.smallH, s.utility !== "big", 4);
+  var bf = iconRow(s, BUFFS, s.smallH, true, 2);
+  var W = ess.width;
+  function put(id, text, el) {
+    var holder = opts.labels === false ? h("div", { style: { position: "relative" } }, [el]) : tag(text, el);
+    if (opts.selected === id) holder.classList.add("sel-outline");
+    col.appendChild(holder);
+  }
+  var col = h("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: gap + "px" } });
+  put("buffs", "Tracked Buffs", bf.el);
+  var castRow = h("div", { style: { display: "flex", gap: "3px" } });
+  var band = s.border === "none" ? 0 : s.band;
+  if (s.castIcon) { var ci = iconRow(s, [["ready"]], s.castH, true, 8).el.firstChild; ci.style.width = (s.castH + 2 * band) + "px"; castRow.appendChild(ci); }
+  castRow.appendChild(playerBar(s, W - (s.castIcon ? s.castH + 2 * band + 3 : 0), s.castH, .58, "#6cb8ff", cls.color, cls.spell, "0.8"));
+  put("cast", "Cast Bar", castRow);
+  if (s.swingH > 0) put("swing", "Swing Timer", playerBar(s, W, s.swingH, .4, "#c9c3b6", "#efe6d2", "", "1.4"));
+  var showCombo = cls.combo;
+  if (s.grouped && (s.powerH > 0)) {
+    var block = h("div", { class: "pbar", style: { width: W + "px", background: rimFor(s, false) || "transparent", padding: band + "px", borderRadius: (s.border !== "none" && s.corner === "round" ? band + 2 : 0) + "px" } });
+    var stackIn = h("div", { style: { display: "flex", flexDirection: "column", gap: "1px", background: "#000", overflow: "hidden", borderRadius: (s.border !== "none" && s.corner === "round" ? 2 : 0) + "px" } });
+    var pb = playerBar(Object.assign({}, s, { border: "none" }), W - 2 * band, s.powerH, .64, cls.power, cls.power, "", "64");
+    pb.style.boxShadow = "none"; stackIn.appendChild(pb);
+    if (showCombo) { var cb = comboBar(Object.assign({}, s, { border: "none" }), W - 2 * band, s.comboH, 3, true); cb.style.boxShadow = "none"; stackIn.appendChild(cb); }
+    block.appendChild(stackIn);
+    put("power", showCombo ? "Power + Combo Points" : "Power", block);
+  } else {
+    if (s.powerH > 0) put("power", "Power", playerBar(s, W, s.powerH, .64, cls.power, cls.power, "", "64"));
+    if (showCombo) put("combo", "Combo Points", comboBar(s, W, s.comboH, 3, false));
+  }
+  put("essential", "Essential", ess.el);
+  put("utility", "Utility", ut.el);
+  if (opts.side === false) { cluster.appendChild(col); return { el: cluster, width: W }; }
+  var SIDE = opts.sideWidth || 170;
+  var side = h("div", { style: { width: SIDE + "px", display: "flex", flexDirection: "column", gap: gap + "px", alignSelf: "flex-end", paddingBottom: "4px" } });
+  if (opts.labels !== false) side.appendChild(h("div", { class: "label-tag", text: "Tracked Bars", style: { position: "static" } }));
+  side.appendChild(trackedBar(s, SIDE, "Slice and Dice", .72, "21", 0));
+  side.appendChild(trackedBar(s, SIDE, "Adrenaline Rush", .35, "7", 1));
+  cluster.style.flexDirection = "row";
+  cluster.style.alignItems = "flex-end";
+  cluster.style.gap = (opts.sideGap || 84) + "px";
+  cluster.appendChild(h("div", { style: { width: SIDE + "px", flex: "none" } }));
+  cluster.appendChild(col);
+  cluster.appendChild(side);
+  return { el: cluster, width: W };
+}
+/* A smaller copy of the Bar Style for mockups. */
+function miniStyle(k) {
+  var s = Object.assign({}, state.style);
+  function sc(v, min) { return v > 0 ? Math.max(min, Math.round(v * k)) : 0; }
+  s.bigH = sc(s.bigH, 8); s.smallH = sc(s.smallH, 7); s.shape = Math.round(s.shape * k);
+  s.cdBig = sc(s.cdBig, 6); s.cdSmall = sc(s.cdSmall, 5); s.countSize = sc(s.countSize, 5);
+  s.powerH = sc(s.powerH, 3); s.comboH = sc(s.comboH, 3); s.castH = sc(s.castH, 4); s.swingH = sc(s.swingH, 1);
+  s.stackGap = Math.max(0, Math.round(s.stackGap * k));
+  return s;
+}
+function renderStage() {
+  var s = state.style;
+  var host = document.getElementById("stageScale");
+  host.innerHTML = "";
+  var c = buildCluster(s, {});
+  host.appendChild(c.el);
+  host.style.zoom = String(state.zoom);
+  var w = s.bigH + s.shape;
+  document.getElementById("stageNote").textContent = "Essential icons " + w + " × " + s.bigH + ", small " + (s.smallH + s.shape) + " × " + s.smallH +
+    ". A line of 7 is " + c.width + " px wide; Power and the Cast Bar match it. Spacing counts between the 1px shadows, as in game. Icon art is a stand-in.";
+  ideasDirty = true;
+  if (currentTab === "ideas") buildIdeas();
+}
+function buildStageBar() {
+  var z = document.getElementById("zoomSeg");
+  z.replaceWith(Object.assign(seg([[1, "1×"], [1.5, "1.5×"], [2, "2×"]], state.zoom, function (v) { state.zoom = v; buildStageBar(); renderStage(); }), { id: "zoomSeg" }));
+  var c = document.getElementById("classSeg");
+  c.replaceWith(Object.assign(seg(Object.keys(CLASSES).map(function (k) { return [k, CLASSES[k].name]; }), state.cls, function (v) { state.cls = v; buildStageBar(); renderStage(); }), { id: "classSeg" }));
+}
+
+/* ---------- Window ---------- */
+function buildWindow() {
+  var host = document.getElementById("sidebars");
+  host.innerHTML = "";
+  STRUCTURES.forEach(function (st) {
+    var mock = h("div", { class: "sbmock" });
+    st.list.forEach(function (it) {
+      if (it[0] === "cap") mock.appendChild(h("div", { class: "cap" }, [h("span", { text: it[1] }), it[2] ? h("span", { text: it[2] }) : null]));
+      else mock.appendChild(h("div", { class: "it" + (it[0] === "top" ? " top-it" : "") + (it[3] ? " sel" : "") }, [h("span", { text: it[1] }), it[2] ? h("em", { text: it[2] }) : null]));
+    });
+    var b = h("button", { type: "button", class: "sbopt", "aria-pressed": String(state.structure === st.id) }, [
+      h("h3", {}, [h("span", { text: st.title }), h("span", { class: "chip" + (st.tag === "recommended" ? " keep" : ""), text: state.structure === st.id ? "chosen" : st.tag })]),
+      h("p", { class: "small muted", text: st.desc }), mock
+    ]);
+    b.addEventListener("click", function () { state.structure = st.id; mark(); buildWindow(); });
+    host.appendChild(b);
+  });
+}
+
+/* ---------- Pages ---------- */
+var TIERS = [["simple", "Always", ["t", "simple"]], ["more", "More", ["t", "more"]], ["style", "Bar Style", ["t", "style"]], ["drop", "Remove", ["t", "drop"]]];
+function buildPages() {
+  var ks = document.getElementById("pageKindSeg");
+  ks.replaceWith(Object.assign(seg(Object.keys(PAGES).map(function (k) { return [k, PAGES[k].label]; }), state.pageKind, function (v) { state.pageKind = v; buildPages(); }), { id: "pageKindSeg" }));
+  var page = PAGES[state.pageKind], host = document.getElementById("pageTabs");
+  host.innerHTML = "";
+  var counts = { simple: 0, more: 0, style: 0, drop: 0 };
+  page.tabs.forEach(function (tab, ti) {
+    var card = h("div", { class: "card ptab" });
+    var visible = 0;
+    var rows = h("div");
+    tab[1].forEach(function (row, ri) {
+      var key = state.pageKind + ":" + ti + ":" + ri, tier = state.tiers[key] || row[2];
+      counts[tier]++;
+      if (tier === "simple") visible++;
+      var segEl = seg(TIERS, tier, function (v) { state.tiers[key] = v; mark(); buildPages(); }, "tseg");
+      rows.appendChild(h("div", { class: "prow", "data-tier": tier }, [
+        h("div", {}, [h("div", { class: "lbl", text: row[0] }), row[3] ? h("span", { class: "note", text: row[3] }) : null]),
+        h("div", { class: "was", text: row[1] === "(new)" ? "New" : "Today: " + row[1] }),
+        segEl
+      ]));
+    });
+    card.appendChild(h("h3", {}, [document.createTextNode(tab[0]), h("small", { text: visible + " always shown" })]));
+    card.appendChild(rows);
+    host.appendChild(card);
+  });
+  var c = document.getElementById("pageCounts");
+  c.innerHTML = "";
+  [[page.now, "controls today (" + page.sub + ")"], [counts.simple, "rows always shown"], [counts.more, "under More options"], [counts.style, "from the Bar Style"], [counts.drop, "removed or moved"]].forEach(function (x) {
+    c.appendChild(h("div", {}, [h("b", { text: String(x[0]) }), h("span", { text: x[1] })]));
+  });
+}
+
+/* ---------- Features ---------- */
+function buildFeatures() {
+  var host = document.getElementById("features");
+  host.innerHTML = "";
+  FEATURES.forEach(function (f) {
+    var v = state.verdicts[f[0]];
+    var vs = seg([["now", "Build now", ["v", "now"]], ["later", "Later", ["v", "later"]], ["skip", "Skip", ["v", "skip"]]], v, function (nv) { state.verdicts[f[0]] = nv; mark(); buildFeatures(); buildPlan(); }, "vseg");
+    var recLabel = { now: "Build now", later: "Later", skip: "Skip" }[f[7]];
+    host.appendChild(h("div", { class: "frow" }, [
+      h("div", {}, [h("div", { class: "fname", text: f[1] }), h("div", { class: "fwhat", text: f[2] })]),
+      h("div", { class: "fmeta" }, [
+        h("div", {}, [h("span", { class: "eyebrow", text: "Who has it" })]), h("div", { text: f[3] }),
+        h("div", {}, [h("span", { class: "chip fit-" + f[8], text: FIT[f[8]] }), h("span", { class: "chip risk-" + f[4][0], text: "Risk: " + f[4][0] }), h("span", { class: "chip", text: "Effort " + f[5] })]),
+        h("div", { class: "small", text: f[4][1] })
+      ]),
+      h("div", {}, [vs, h("div", { class: "rec", text: "My pick: " + recLabel })])
+    ]));
+  });
+}
+
+/* ---------- Words ---------- */
+function buildWords() {
+  var body = document.querySelector("#words tbody");
+  body.innerHTML = "";
+  WORDS.forEach(function (w, i) {
+    var st = state.words[i] || { use: w[3], text: w[1] };
+    var cb = h("input", { type: "checkbox", id: "w-use-" + i, "aria-label": "Use proposed label for " + w[0] });
+    cb.checked = !!st.use;
+    cb.addEventListener("change", function () { state.words[i] = { use: cb.checked, text: inp.value }; mark(); });
+    var inp = h("input", { type: "text", id: "w-text-" + i, value: st.text, "aria-label": "Proposed label for " + w[0] });
+    inp.addEventListener("input", function () { state.words[i] = { use: cb.checked, text: inp.value }; mark(); });
+    body.appendChild(h("tr", {}, [h("td", {}, [cb]), h("td", { text: w[0] }), h("td", {}, [inp]), h("td", { class: "muted", text: w[2] })]));
+  });
+}
+
+/* ---------- Inventory ---------- */
+function buildInventory() {
+  var fb = document.querySelector("#files tbody");
+  FILES.forEach(function (f) {
+    fb.appendChild(h("tr", {}, [h("td", {}, [h("code", { text: f[0] })]), h("td", { class: "num", text: f[1] ? String(f[1]) : "–" }), h("td", { text: f[2] }),
+      h("td", {}, [h("span", { class: "act " + f[3], text: f[3].toUpperCase() }), document.createTextNode(" " + f[4])])]));
+  });
+  var ab = document.querySelector("#apis tbody");
+  APIS.forEach(function (a) { ab.appendChild(h("tr", {}, [h("td", {}, [h("code", { text: a[0] })]), h("td", { text: a[1] }), h("td", { class: "muted", text: a[2] })])); });
+  var nb = document.querySelector("#newapis tbody");
+  NEWAPIS.forEach(function (a) { nb.appendChild(h("tr", {}, [h("td", {}, [h("code", { text: a[0] })]), h("td", { text: a[1] })])); });
+  var gf = document.getElementById("gamefiles");
+  GAMEFILES.forEach(function (g) { gf.appendChild(h("p", { html: g })); });
+}
+
+/* ---------- Plan ---------- */
+function buildPlan() {
+  var host = document.getElementById("plan");
+  host.innerHTML = "";
+  PHASES.forEach(function (p) {
+    var needs = p[2], on = !needs.length || needs.some(function (id) { return state.verdicts[id] !== "skip"; });
+    var tags = h("div", { class: "tags" });
+    needs.forEach(function (id) {
+      var f = FEATURES.filter(function (x) { return x[0] === id; })[0], v = state.verdicts[id];
+      tags.appendChild(h("span", { class: "chip " + (v === "now" ? "keep" : v === "later" ? "drift" : "bug"), text: f[1] + ": " + { now: "now", later: "later", skip: "skip" }[v] }));
+    });
+    if (p[3]) tags.appendChild(h("span", { class: "chip", text: p[3] }));
+    var list = h("ul");
+    p[4].forEach(function (li) { list.appendChild(h("li", { html: li })); });
+    host.appendChild(h("div", { class: "phase" + (on ? "" : " dim") }, [
+      h("div", { class: "pn", text: p[0] }),
+      h("div", {}, [h("h3", { text: p[1] + (on ? "" : " (skipped by your choices)") }), tags, list, h("p", { class: "small muted", style: { marginTop: "6px" }, html: "Tests: " + p[5] })])
+    ]));
+  });
+}
+function buildQuestions() {
+  var host = document.getElementById("questions");
+  host.innerHTML = "";
+  QUESTIONS.forEach(function (q) {
+    var ta = h("textarea", { id: "q-" + q[0], "aria-label": q[1], placeholder: "Your answer" });
+    ta.value = state.answers[q[0]] || "";
+    ta.addEventListener("input", function () { state.answers[q[0]] = ta.value; mark(); });
+    host.appendChild(h("div", { class: "q" }, [h("label", { for: "q-" + q[0], text: q[1], style: { fontWeight: "600" } }), ta]));
+  });
+}
+
+/* ---------- Design Ideas ---------- */
+var ideasBuilt = false, ideasDirty = true;
+/* Static mock markup helpers (fixed text written by this page, never user data). */
+function mkEl(cls, html) { var e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html; return e; }
+var M_ = {
+  sw: function (on) { return '<span class="m-sw' + (on ? " on" : "") + '"><i></i></span>'; },
+  sl: function (pct, val) { return '<span class="m-sl"><b style="width:' + pct + '%"></b><i style="left:' + pct + '%"></i></span><em>' + val + "</em>"; },
+  sel: function (t) { return '<span class="m-sel">' + t + "<s>▾</s></span>"; },
+  pills: function (arr, on) { return '<span class="m-pills">' + arr.map(function (t, i) { return "<span" + (i === on ? ' class="on"' : "") + ">" + t + "</span>"; }).join("") + "</span>"; },
+  row: function (label, ctl, dim) { return '<div class="m-row' + (dim ? " dim" : "") + '"><span>' + label + '</span><span class="m-c">' + ctl + "</span></div>"; },
+  sech: function (title, chip) { return '<div class="m-sech"><span>' + title + "</span>" + (chip || "") + "</div>"; },
+  link: '<span class="m-chip link">● Bar Style</span>',
+  custom: '<span class="m-chip custom">◆ Custom · Reset</span>',
+  fold: function (n) { return '<div class="m-fold">More options (' + n + ") ▸</div>"; },
+  swatches: function (cols, on) { return '<span class="m-sws">' + cols.map(function (c, i) { return '<i style="background:' + c + '"' + (i === on ? ' class="on"' : "") + "></i>"; }).join("") + "</span>"; }
+};
+function mkWindow(opts) {
+  var win = mkEl("mk-win");
+  var top = mkEl("mk-top", '<b>Mode</b><span class="w">CDM</span><span class="sp"></span>' + (opts.buttons || ["Tracked Spells", "Edit Mode", "Test on Screen"]).map(function (b) { return '<span class="pill">' + b + "</span>"; }).join("") + '<span class="x">×</span>');
+  win.appendChild(top);
+  var main = mkEl("mk-main");
+  if (opts.list !== false) {
+    var list = mkEl("mk-list", (opts.listItems || LIST_ITEMS).map(function (it) {
+      if (it[0] === "cap") return '<div class="mk-cap">' + it[1] + (it[2] ? "<s>" + it[2] + "</s>" : "") + "</div>";
+      return '<div class="mk-it' + (it[2] ? " sel" : "") + '"><span>' + it[1] + "</span>" + (it[3] ? "<em>" + it[3] + "</em>" : "") + "</div>";
+    }).join(""));
+    if (opts.listWidth) list.style.width = opts.listWidth + "px";
+    main.appendChild(list);
+  }
+  var body = mkEl("mk-body");
+  main.appendChild(body);
+  win.appendChild(main);
+  return { win: win, body: body, main: main };
+}
+var LIST_ITEMS = [["it", "Home"], ["it", "Bar Style"], ["cap", "Cooldowns", "+"], ["it", "Essential", true], ["it", "Utility"], ["it", "Defensives"], ["cap", "Buffs", "+"], ["it", "Tracked Buffs"], ["it", "Tracked Bars"], ["it", "Emphasized"], ["cap", "Player Bars"], ["it", "Power"], ["it", "Cast Bar"], ["it", "Swing Timer"]];
+var LIST_RICH = [["it", "Home"], ["it", "Bar Style"], ["cap", "Cooldowns", "+"], ["it", "Essential Cooldowns", true, "9"], ["it", "Utility Cooldowns", false, "6"], ["it", "Defensive Cooldowns", false, "custom"], ["cap", "Buffs", "+"], ["it", "Tracked Buffs", false, "12"], ["it", "Tracked Bars", false, "4"], ["it", "Emphasized Buffs", false, "3"], ["it", "Left / Right Buffs", false, "2"], ["it", "Ultra Emphasized", false, "off"], ["cap", "Player Bars"], ["it", "Power"], ["it", "Combo Points"], ["it", "Alternate Mana", false, "hidden"], ["it", "Health", false, "off"], ["it", "Cast Bar"], ["it", "Swing Timer"], ["it", "Spells"], ["it", "Share"]];
+function stageBox(height, k, opts) {
+  var st = mkEl("mk-stage");
+  st.style.height = height + "px";
+  var c = buildCluster(miniStyle(k), Object.assign({ labels: false, sideWidth: Math.round(170 * k), sideGap: Math.round(60 * k) }, opts || {}));
+  st.appendChild(c.el);
+  return st;
+}
+function pageHead(title, chip) {
+  return mkEl("mk-ph", "<b>" + title + "</b>" + M_.sw(true) + (chip || "") + '<span class="sp"></span>');
+}
+var IDEA_GROUPS = [
+  { id: "preview", title: "The preview", lede: "What sits at the top of a bar's page, and how you pick and touch spells.", options: [
+    { id: "strip", name: "Bar strip", tag: "today, tidied", mock: function () {
+        var w = mkWindow({}); w.body.appendChild(pageHead("Essential Cooldowns"));
+        var st = mkEl("mk-stage"); st.style.height = "112px";
+        st.appendChild(iconRow(miniStyle(1), ESSENTIAL.slice(0, 7).concat([["plus"]]), state.style.bigH, false, 0).el);
+        st.appendChild(mkEl("mk-cap2", "Static · Animated"));
+        w.body.appendChild(st);
+        w.body.appendChild(mkEl("mk-tabs", '<span class="on">Layout</span><span>Look</span><span>Text</span><span>Spells &amp; Glows</span><span>Show</span>'));
+        w.body.appendChild(mkEl("", M_.row("Show Bar", M_.sw(true)) + M_.row("Grow", M_.sel("Row, centered")) + M_.row("Icons per Line", M_.sl(40, "7"))));
+        return w.win; },
+      pros: ["Already built and tested; drag, click menu and + slot work today", "Big icons: easy to click and drag", "Same view for every bar kind"],
+      cons: ["Shows one bar out of context: spacing and matched widths between bars can't be judged", "Resource and cast bars use separate preview code", "A Bar Style change can't be seen across bars"] },
+    { id: "stage", name: "Layout stage", tag: "my pick", rec: true, mock: function () {
+        var w = mkWindow({}); w.body.appendChild(pageHead("Essential Cooldowns"));
+        var st = stageBox(196, .62, { selected: "essential" });
+        st.appendChild(mkEl("mk-cap2", "Click a bar to edit it · Bar only · States"));
+        w.body.appendChild(st);
+        w.body.appendChild(mkEl("", M_.row("Show Bar", M_.sw(true)) + M_.row("Icon Size", M_.sl(55, "32 × 26"))));
+        return w.win; },
+      pros: ["Every bar in place and to scale: spacing, widths and stacking can be judged", "Click a bar to select it; the list becomes a shortcut", "The same view is the Bar Style page's preview"],
+      cons: ["Icons are small at real scale in a 790px body, so it needs zoom and a 'Bar only' view for clicking and dragging spells", "New ClusterPreview.lua has to mirror the real anchors"] },
+    { id: "screen", name: "On-screen editing", tag: "with Test on Screen", mock: function () {
+        var box = mkEl("mk-win mk-game");
+        var c = buildCluster(miniStyle(.8), { labels: false, side: false, selected: "essential" });
+        var holder = mkEl("mk-gamecluster"); holder.appendChild(c.el); box.appendChild(holder);
+        box.appendChild(mkEl("mk-dock", '<div class="m-sech"><span>Essential Cooldowns</span>' + M_.sw(true) + "</div>" + M_.row("Icon Size", M_.sl(55, "32")) + M_.row("Spacing", M_.sl(20, "-1")) + M_.row("Gray on Cooldown", M_.sw(true)) + '<div class="m-fold">Test on Screen · samples on the real bars</div>'));
+        return box; },
+      pros: ["True scale, true place, the real world behind it", "Nothing to mirror: it is the real layout"],
+      cons: ["Out of combat only", "Blizzard's own icons can't be made clickable (ModeCDM never makes them interactive), so selecting needs overlay frames", "The panel covers part of the screen; the most work"] },
+    { id: "states", name: "State strip", tag: "inside the spell view", mock: function () {
+        var w = mkWindow({}); w.body.appendChild(pageHead("Essential · Kick"));
+        var st = mkEl("mk-stage mk-states");
+        var big = Math.round(state.style.bigH * 1.5);
+        var s2 = Object.assign({}, state.style, { cdBig: Math.round(state.style.cdBig * 1.4) });
+        [["Ready", ["ready"]], ["Cooling", ["cd", .55, "9"]], ["Proc", ["proc"]], ["Out of range", ["range"]]].forEach(function (x) {
+          var cell = mkEl("mk-state"); cell.appendChild(iconRow(s2, [x[1]], big, false, 1).el); cell.appendChild(mkEl("mk-cap3", x[0])); st.appendChild(cell);
+        });
+        w.body.appendChild(st);
+        w.body.appendChild(mkEl("", M_.sech("Glows") + M_.row("Proc Glow", M_.sw(true)) + M_.row("Ready Glow", M_.sw(false)) + M_.row("Cooldown Numbers", M_.sel("Bar's look"))));
+        return w.win; },
+      pros: ["Ready, cooling, proc and out of range side by side: glow, gray and text choices judged at once", "No waiting for a real cooldown or proc"],
+      cons: ["No layout context; not enough alone", "Best as a toggle inside the spell view of another option"] }
+  ] },
+  { id: "settings", title: "The settings", lede: "How a bar's controls are laid out under the preview.", options: [
+    { id: "tabs", name: "Tabs", tag: "today", mock: function () {
+        var w = mkWindow({}); w.body.appendChild(pageHead("Essential Cooldowns", M_.link));
+        w.body.appendChild(stageBox(70, .42, { side: false, selected: "essential" }));
+        w.body.appendChild(mkEl("mk-tabs", '<span>Layout</span><span class="on">Look</span><span>Text</span><span>Spells &amp; Glows</span><span>Show</span>'));
+        w.body.appendChild(mkEl("", M_.row("Look", M_.pills(["Bar Style", "Custom"], 0)) + M_.row("Gray on Cooldown", M_.sw(true)) + M_.row("Out of Range Tint", M_.sw(true)) + M_.fold(4)));
+        return w.win; },
+      pros: ["What exists; each tab is short", "Familiar from ModeUI's other pages"],
+      cons: ["Settings hide behind tabs; finding one means tab hopping", "Tabs plus a More fold are two levels of hiding"] },
+    { id: "scroll", name: "One scroll with an index", tag: "my pick", rec: true, mock: function () {
+        var w = mkWindow({}); w.body.appendChild(pageHead("Essential Cooldowns", '<span class="m-chip custom">1 group custom</span>'));
+        w.body.appendChild(stageBox(70, .42, { side: false, selected: "essential" }));
+        var split = mkEl("mk-split");
+        split.appendChild(mkEl("mk-index", '<span class="on">Layout</span><span>Look</span><span>Text</span><span>Spells</span><span>Show</span>'));
+        split.appendChild(mkEl("mk-scroll", M_.sech("Layout") + M_.row("Grow", M_.sel("Row, centered")) + M_.row("Icons per Line", M_.sl(40, "7")) + M_.fold(2) +
+          M_.sech("Look", M_.link) + M_.row("Gray on Cooldown", M_.sw(true)) + M_.row("Out of Range Tint", M_.sw(true)) + M_.fold(4) +
+          M_.sech("Text", M_.custom) + M_.row("Cooldown Numbers", M_.sl(50, "14"))));
+        w.body.appendChild(split);
+        return w.win; },
+      pros: ["Everything on one page in a fixed order; each section has its Bar Style chip and its own More fold", "The index jumps to a section; ready for search later", "The preview stays pinned above"],
+      cons: ["A long page for bars with many controls", "Needs the preview pinned while the list scrolls"] },
+    { id: "inspector", name: "Inspector", tag: "design-tool style", mock: function () {
+        var w = mkWindow({ listWidth: 92 });
+        var center = mkEl("mk-center"); center.appendChild(stageBox(262, .55, { side: false, selected: "essential" }));
+        w.body.appendChild(center);
+        w.body.classList.add("mk-row3");
+        w.body.appendChild(mkEl("mk-insp", M_.sech("Essential") + M_.row("Show", M_.sw(true)) + M_.row("Size", M_.sl(55, "32")) + M_.sech("Look", M_.link) + M_.row("Gray", M_.sw(true)) + M_.row("Range Tint", M_.sw(true)) + M_.sech("Text", M_.custom) + M_.row("Numbers", M_.sl(50, "14"))));
+        return w.win; },
+      pros: ["Familiar from design tools; the panel follows what you click (bar, spell, text)", "No popouts"],
+      cons: ["Three columns are tight in 1060px (list, stage, about 260px of controls)", "Narrow sliders and labels; furthest from ModeUI's other pages"] },
+    { id: "cards", name: "Quick cards", tag: "as the Home page", mock: function () {
+        var w = mkWindow({ list: false });
+        var grid = mkEl("mk-cards");
+        [["Essential Cooldowns", "Icon Size", "32"], ["Utility Cooldowns", "Icon Size", "32"], ["Tracked Buffs", "Icon Size", "26"], ["Power + Combo", "Height", "10"], ["Cast Bar", "Height", "12"], ["Defensive Cooldowns", "Icon Size", "30"]].forEach(function (c) {
+          grid.appendChild(mkEl("mk-card", '<div class="m-sech"><span>' + c[0] + "</span>" + M_.sw(true) + "</div>" + M_.row(c[1], M_.sl(50, c[2])) + M_.row("Show", M_.sel("Always")) + '<div class="m-fold">All settings ›</div>'));
+        });
+        w.body.appendChild(mkEl("mk-ph", "<b>Home</b>" + '<span class="m-chip link">Bar Style: Custom preset</span><span class="sp"></span>'));
+        w.body.appendChild(grid);
+        return w.win; },
+      pros: ["The simplest first look", "A good Home page: the few things people change most"],
+      cons: ["Settings live in two places", "Doesn't scale to fifteen custom bars; full pages are still needed"] }
+  ] }
+];
+var PATTERNS = [
+  { id: "chip", name: "Bar Style chip on each section", what: "Each section header says whether it follows the Bar Style or is Custom, with Reset one click away. Followed values show dimmed.", html: function () {
+      return '<div class="pat">' + M_.sech("Look", M_.link) + M_.row("Border Style", M_.sel("Mode-Border"), true) + M_.row("Gray on Cooldown", M_.sw(true)) + M_.sech("Text", M_.custom) + M_.row("Cooldown Numbers", M_.sl(50, "14")) + "</div>"; } },
+  { id: "fold", name: "More options fold", what: "The rarely changed controls of a section fold under one line, with how many are inside.", html: function () {
+      return '<div class="pat">' + M_.row("Gray on Cooldown", M_.sw(true)) + M_.row("Out of Range Tint", M_.sw(true)) + M_.fold(4) + '<div class="pat-open">' + M_.row("Show Effect Time", M_.sw(false)) + M_.row("Swipe Edge", M_.sw(false)) + M_.row("Finish Sparkle", M_.sw(true)) + M_.row("Ready Flash", M_.sw(true)) + "</div></div>"; } },
+  { id: "spellview", name: "Spell view instead of popouts", what: "Clicking a spell opens one panel with a back arrow (show, glows, text, alerts) instead of a menu with popouts beside it.", html: function () {
+      return '<div class="pat pat-two"><div><div class="eyebrow">Today</div><div class="pat-stack"><div class="pat-menu">Kick<br>☐ Show on This Bar<br>☑ Proc Glow ›<br>☐ Ready Glow ›<br>Cooldown Text ›</div><div class="pat-pop">Proc Glow<br>Style · Color<br>Pulse</div></div></div><div><div class="eyebrow">Spell view</div><div class="pat">' +
+        '<div class="m-sech"><span>‹ Essential · Kick</span></div>' + M_.row("Show on This Bar", M_.sw(true)) + M_.row("Proc Glow", M_.sw(true)) + M_.row("Ready Glow", M_.sw(false)) + M_.row("Cooldown Numbers", M_.sel("Bar's look")) + M_.row("Alerts", M_.sel("Blizzard…")) + "</div></div></div>"; } },
+  { id: "controls", name: "One control per kind of choice", what: "Pills for up to four choices, a dropdown for more, swatches for colors, sliders with the value typed beside them.", html: function () {
+      return '<div class="pat">' + M_.row("Border Style", M_.pills(["Mode-Empty", "Mode-Border", "None"], 1)) + M_.row("Grow", M_.sel("Row, centered")) + M_.row("Cooldown Numbers", M_.swatches(["#ff3948", "#ffb12f", "#efe6d2", "#f2f2f2"], 1)) + M_.row("Icon Size", M_.sl(45, "26")) + "</div>"; } },
+  { id: "status", name: "Status in the list", what: "Each row in the window's list says what matters: how many spells, Off, Custom look, hidden by Blizzard.", html: function () {
+      return '<div class="pat pat-list">' + [["Essential Cooldowns", "9 spells", ""], ["Defensive Cooldowns", "custom look", "c"], ["Alternate Mana", "not this class", "m"], ["Ultra Emphasized", "off", "m"], ["Tracked Bars", "hidden by Blizzard", "w"]].map(function (r) {
+        return '<div class="m-row"><span>' + r[0] + '</span><span class="m-st ' + r[2] + '">' + r[1] + "</span></div>"; }).join("") + "</div>"; } }
+];
+function fitMocks() {
+  document.querySelectorAll(".mockbox").forEach(function (box) {
+    var inner = box.firstChild; if (!inner) return;
+    var dw = Number(box.dataset.w) || 640;
+    var z = Math.min(1, (box.clientWidth || dw) / dw);
+    inner.style.zoom = String(z);
+  });
+}
+function mockBox(el, w, hgt) {
+  var box = h("div", { class: "mockbox" });
+  box.dataset.w = w;
+  var frame = h("div", { class: "mockframe", style: { width: w + "px", height: hgt + "px" } }, [el]);
+  box.appendChild(frame);
+  return box;
+}
+function buildIdeas() {
+  ideasBuilt = true; ideasDirty = false;
+  var host = document.getElementById("ideaGroups");
+  host.innerHTML = "";
+  IDEA_GROUPS.forEach(function (g) {
+    var wrap = h("div", { class: "stack" }, [h("h3", { text: g.title }), h("p", { class: "small muted", text: g.lede })]);
+    var grid = h("div", { class: "ideas-grid" });
+    g.options.forEach(function (o) {
+      var picked = state.ideas[g.id] === o.id;
+      var btn = h("button", { type: "button", class: "btn" + (picked ? " primary" : ""), "aria-pressed": String(picked), text: picked ? "Chosen" : "Choose this" });
+      btn.addEventListener("click", function () { state.ideas[g.id] = o.id; mark(); buildIdeas(); });
+      var pros = h("ul", { class: "pc pros" }); o.pros.forEach(function (p) { pros.appendChild(h("li", { text: p })); });
+      var cons = h("ul", { class: "pc cons" }); o.cons.forEach(function (p) { cons.appendChild(h("li", { text: p })); });
+      grid.appendChild(h("div", { class: "card idea" + (picked ? " picked" : "") }, [
+        h("div", { class: "idea-head" }, [h("h3", { text: o.name }), h("span", { class: "chip" + (o.rec ? " keep" : ""), text: o.tag })]),
+        mockBox(o.mock(), 640, 400),
+        h("div", { class: "pcs" }, [h("div", {}, [h("div", { class: "eyebrow", text: "Pros" }), pros]), h("div", {}, [h("div", { class: "eyebrow", text: "Cons" }), cons])]),
+        h("div", { class: "idea-foot" }, [btn])
+      ]));
+    });
+    wrap.appendChild(grid);
+    var note = h("textarea", { id: "idea-note-" + g.id, placeholder: "Notes on " + g.title.toLowerCase() + " (optional)", "aria-label": "Notes on " + g.title });
+    note.value = state.ideas.notes[g.id] || "";
+    note.addEventListener("input", function () { state.ideas.notes[g.id] = note.value; mark(); });
+    wrap.appendChild(h("div", { class: "q" }, [note]));
+    host.appendChild(wrap);
+  });
+  var pg = document.getElementById("ideaPatterns");
+  pg.innerHTML = "";
+  PATTERNS.forEach(function (p) {
+    var on = state.ideas.patterns[p.id] !== false;
+    var s = seg([[true, "Use"], [false, "Skip"]], on, function (v) { state.ideas.patterns[p.id] = v; mark(); buildIdeas(); });
+    pg.appendChild(h("div", { class: "card idea" + (on ? "" : " skipped") }, [
+      h("div", { class: "idea-head" }, [h("h3", { text: p.name }), s]),
+      h("p", { class: "small muted", text: p.what }),
+      h("div", { class: "pat-host", html: p.html() })
+    ]));
+  });
+  buildFullMock();
+  requestAnimationFrame(fitMocks);
+}
+function buildFullMock() {
+  var host = document.getElementById("ideaFull");
+  host.innerHTML = "";
+  var w = mkWindow({ listItems: LIST_RICH, listWidth: 220, buttons: ["Tracked Spells", "Edit Mode", "Test on Screen"] });
+  w.win.classList.add("mk-full");
+  w.body.appendChild(pageHead("Essential Cooldowns", '<span class="m-chip custom">1 group custom · Reset</span>'));
+  var st = mkEl("mk-stage"); st.style.height = "270px";
+  var c = buildCluster(state.style, { labels: false, selected: "essential", sideWidth: 150, sideGap: 50 });
+  st.appendChild(c.el);
+  st.appendChild(mkEl("mk-cap2", "Layout · Bar only · States   ·   click a bar to edit it, a spell for its view, drag to reorder, + to add"));
+  w.body.appendChild(st);
+  var split = mkEl("mk-split");
+  split.appendChild(mkEl("mk-index", '<span class="on">Layout</span><span>Look</span><span>Text</span><span>Spells &amp; Glows</span><span>Show</span>'));
+  split.appendChild(mkEl("mk-scroll", M_.sech("Layout") + M_.row("Show Bar", M_.sw(true)) + M_.row("Grow", M_.sel("Centered Horizontal")) + M_.row("New Lines", M_.pills(["Down", "Up"], 0)) + M_.row("Icons per Line", M_.sl(35, "7")) + M_.row("Icon Size", M_.sl(45, (state.style.bigH + state.style.shape) + " × " + state.style.bigH)) + M_.fold(2) +
+    M_.sech("Look", M_.link) + M_.row("Gray on Cooldown", M_.sw(true)) + M_.row("Out of Range Tint", M_.sw(true)) + M_.fold(4) +
+    M_.sech("Text", M_.custom) + M_.row("Cooldown Numbers", M_.sl(50, String(state.style.cdBig))) + M_.row("Count", M_.sl(40, String(state.style.countSize)))));
+  w.body.appendChild(split);
+  host.appendChild(mockBox(w.win, 1060, 740));
+}
+/* ---------- Save / load ---------- */
+function snapshot() {
+  return { savedAt: new Date().toISOString(), style: state.style, preset: state.preset, structure: state.structure,
+    tiers: state.tiers, verdicts: state.verdicts, words: state.words, answers: state.answers, ideas: state.ideas };
+}
+function applySaved(d) {
+  if (!d) return;
+  var b = baseChoices();
+  state.style = Object.assign({}, DEFAULT_STYLE, d.style || {});
+  state.preset = typeof d.preset === "string" ? d.preset : b.preset;
+  state.structure = typeof d.structure === "string" ? d.structure : b.structure;
+  state.tiers = Object.assign(b.tiers, d.tiers || {});
+  // Empower Pips is Retail-centric (v3); an older save marked it Always before that.
+  state.tiers["cast:0:6"] = "drop";
+  state.verdicts = b.verdicts;
+  Object.keys(d.verdicts || {}).forEach(function (k) { if (k in b.verdicts) state.verdicts[k] = d.verdicts[k]; });
+  state.words = Object.assign(b.words, d.words || {});
+  state.answers = Object.assign({}, d.answers || {});
+  var di = d.ideas || {};
+  state.ideas = { preview: typeof di.preview === "string" ? di.preview : b.ideas.preview, settings: typeof di.settings === "string" ? di.settings : b.ideas.settings,
+    patterns: Object.assign({}, di.patterns || {}), notes: Object.assign({}, di.notes || {}) };
+  ideasDirty = true;
+}
+function renderAll() {
+  buildStyleControls(); buildStageBar(); renderStage(); buildWindow(); buildPages(); buildFeatures(); buildWords(); buildPlan(); buildQuestions();
+}
+function save() {
+  if (!db || saving) return;
+  saving = true;
+  var el = document.getElementById("saveState");
+  el.textContent = "Saving…"; el.className = "save-state";
+  db.doc(DOC).set(snapshot()).then(function () {
+    saving = false; dirty = false; el.textContent = "Saved " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); el.className = "save-state ok";
+  }).catch(function (e) {
+    saving = false; el.textContent = "Couldn't save: " + ((e && e.code) || "error") + ". Your changes are still here."; el.className = "save-state dirty";
+  });
+}
+
+document.getElementById("saveBtn").addEventListener("click", save);
+document.getElementById("resetBtn").addEventListener("click", function () {
+  var keep = { zoom: state.zoom, cls: state.cls, pageKind: state.pageKind };
+  state = Object.assign(baseChoices(), keep); mark(); renderAll();
+});
+
+buildTabs(); buildBrief(); buildInventory(); renderAll();
+document.getElementById("saveBtn").disabled = true;
+
+(function connect() {
+  if (!window.claude || typeof window.claude.use !== "function") { document.getElementById("saveState").textContent = "Saving is off here; choices stay in this tab"; return; }
+  var timer = setTimeout(function () { document.getElementById("saveState").textContent = "Saving is unavailable; choices stay in this tab"; }, 10000);
+  window.claude.use("db").then(function (store) {
+    if (!store) { clearTimeout(timer); document.getElementById("saveState").textContent = "Sign in to save choices"; return; }
+    db = store;
+    db.doc(DOC).get().then(function (snap) {
+      clearTimeout(timer);
+      document.getElementById("saveBtn").disabled = false;
+      var el = document.getElementById("saveState");
+      if (snap.exists) {
+        var d = snap.data();
+        applySaved(d); renderAll();
+        el.textContent = "Loaded your saved choices" + (d && d.savedAt ? " (" + new Date(d.savedAt).toLocaleDateString() + ")" : "");
+        el.className = "save-state ok";
+      } else { el.textContent = "Proposal loaded · nothing saved yet"; el.className = "save-state"; }
+    }).catch(function () { clearTimeout(timer); document.getElementById("saveBtn").disabled = false; document.getElementById("saveState").textContent = "Couldn't load saved choices"; });
+  }).catch(function () { clearTimeout(timer); });
+})();
+})();
+</script>

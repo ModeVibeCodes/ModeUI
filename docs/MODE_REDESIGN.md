@@ -702,6 +702,24 @@ Owner preferences gathered along the way:
   of github.com/Gethe/wow-ui-source to confirm APIs; never assume Retail
   behavior applies to Forever.
 
+### Revision: ModeCDM rework (November 24, 2026)
+
+The owner's organization, structure and features pass, planned in the
+ModeCDM Workbench (`design/cdm-workbench/`, saved choices in its database)
+and built on `t3/cdm-rework`. Forever first, with groundwork for a Midnight
+port (`Caps.lua`: features ask for an API, never an edition). Settings
+version 12: the **Bar Style**, a default look new bars follow and existing
+bars use if chosen (existing bars took its border and text, as asked).
+The window goes by kind (Home, Bar Style, Cooldowns, Buffs, Player Bars);
+every page is one scroll with a section index, Bar Style chips and More
+options; the preview has a Layout view. New: Test on Screen, show rules,
+spell list, Own Bar, Ready Sound and Blizzard's alerts, trinket slots,
+racials that defer to Blizzard, the Cast Bar's Show When, the Forever Swing
+Timer, `/mcdm check`. Fixed: custom bars missed the theme pass, Delete Bar
+skipped its confirmation, the pixel snapper never stopped. See
+`docs/COOLDOWN_MANAGER.md`, "The window (rework, November 24, 2026)" and its
+in-game check. Waiting on the owner's in-game look.
+
 ## Resuming on another machine
 
 1. Clone the repository and check out `main`.
