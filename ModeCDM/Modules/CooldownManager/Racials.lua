@@ -56,9 +56,10 @@ M.RACIALS = {
 -- again after each Refresh (spells changing refreshes the module).
 function M:RacialKeys()
     if self.racialKeys then return self.racialKeys end
-    local keys, names = {}, {}
+    local keys, names, layout = {}, {}, self:BlizzardLayout()
     for _, spellID in ipairs(self.RACIALS) do
-        if Cooldowns.SurelyKnown(spellID) and Cooldowns.InSpellBook(spellID) ~= false then
+        -- One Blizzard's Cooldown Manager shows itself stays Blizzard's.
+        if Cooldowns.SurelyKnown(spellID) and Cooldowns.InSpellBook(spellID) ~= false and not self:BlizzardTracksSpell(spellID, layout) then
             local name = Cooldowns.SpellName(spellID) or spellID
             if not names[name] then names[name] = true; keys[#keys + 1] = "s" .. spellID end
         end

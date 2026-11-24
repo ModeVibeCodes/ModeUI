@@ -15,16 +15,37 @@ local L, Items = addon.L, addon.Domain.Items
 local NOT_USABLE, NO_POWER = { 0.4, 0.4, 0.4 }, { 0.5, 0.5, 1 }
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
 
-function M.IsItemEntry(key) return type(key) == "string" and key:match("^i%d+$") ~= nil end
+-- Equipped trinkets (owner, November 24, 2026): "t13" and "t14", the
+-- trinket slots, follow whatever trinket is in the slot now.
+M.TRINKET_SLOTS = { t13 = 13, t14 = 14 }
+function M.IsTrinketEntry(key) return M.TRINKET_SLOTS[key] ~= nil end
+function M.IsItemEntry(key) return type(key) == "string" and (key:match("^i%d+$") ~= nil or M.IsTrinketEntry(key)) end
 -- Entries on ModeUI's own icons: custom spells and items.
 function M.IsOwnEntry(key) return M.IsSpellEntry(key) or M.IsItemEntry(key) end
-function M.ItemOf(key) return M.IsItemEntry(key) and tonumber(key:sub(2)) or nil end
+function M.ItemOf(key)
+    if M.IsTrinketEntry(key) then
+        local ok, item = pcall(GetInventoryItemID, "player", M.TRINKET_SLOTS[key])
+        return ok and addon.IsNumber(item, 1) and item or nil
+    end
+    return M.IsItemEntry(key) and tonumber(key:sub(2)) or nil
+end
 
 -- Adds an item by its ID (a number, or text as typed) to a custom Cooldown
 -- Bar, Essential or Utility. Returns true and the item ID, or false and why.
 function M:AddCustomItem(id, text)
     if not self:TakesOwn(id) or not self:TakesEntries(id) then return false, L["Items go on Cooldown Bars, Essential and Utility."] end
     if not self:CanConfigure() then return false, L["Not in combat."] end
+    -- A trinket slot ("t13", "t14"): whatever is equipped there.
+    if self.IsTrinketEntry(text) then
+        local list = self:Entries(id)
+        for _, entry in ipairs(list) do if entry == text then return false, L["That trinket is on this bar already."] end end
+        if #list >= self.MAX_ENTRIES then return false, L["This bar is full."] end
+        local candidate = Copy(self.db)
+        local entries = self.EntriesIn(candidate, id)
+        entries[#entries + 1] = text
+        if not self.CommitBars(self, candidate) then return false, L["That item can not be added."] end
+        return true, self.ItemOf(text)
+    end
     local itemID = type(text) == "number" and text or tonumber(type(text) == "string" and text:match("^%s*(%d+)%s*$") or nil)
     if not itemID or not Items.Exists(itemID) then return false, L["No item has that ID."] end
     if not Items.Spell(itemID) then return false, L["That item has no Use: effect."] end
@@ -47,6 +68,7 @@ function M:EntryCooling(key)
         local _, _, cooling = Items.Cooldown(item)
         return cooling
     end
+    if self.IsTrinketEntry(key) then return false end
     return addon.Domain.Cooldowns.Cooling(self:CooldownSpell(key))
 end
 
@@ -61,21 +83,32 @@ end
 -- The item's name, else its ID.
 function M:ItemLabel(key)
     local item = self.ItemOf(key)
+    if self.IsTrinketEntry(key) then
+        local slot = key == "t13" and L["Trinket 1"] or L["Trinket 2"]
+        return item and string.format("%s · %s", slot, Items.Name(item) or tostring(item)) or string.format(L["%s · empty"], slot)
+    end
     return Items.Name(item) or string.format(L["Item %s"], tostring(item))
 end
 
 -- Brings an item's icon up to date: picture, cooldown, count, the usable
 -- tint and the gray.
 function M:UpdateItemIcon(icon, style)
-    local item = self.ItemOf(self.iconKey[icon])
-    icon.Icon:SetTexture(Items.Icon(item) or 134400)
+    local key = self.iconKey[icon]
+    local item = self.ItemOf(key)
+    icon.Icon:SetTexture(item and Items.Icon(item) or 134400)
+    if not item then
+        if icon.Cooldown.Clear then icon.Cooldown:Clear() end
+        icon.ChargeCount.Current:SetText(""); icon.Icon:SetDesaturated(true)
+        return
+    end
     local start, duration, cooling = Items.Cooldown(item)
     local cooldown = icon.Cooldown
     if start and cooldown.SetCooldown then
         if duration > 0 then cooldown:SetCooldown(start, duration)
         elseif cooldown.Clear then cooldown:Clear() end
     end
-    local count = Items.Count(item)
+    -- An equipped trinket has no count (it isn't in your bags).
+    local count = not self.IsTrinketEntry(key) and Items.Count(item) or nil
     icon.ChargeCount.Current:SetText(count and string.format("%d", count) or "")
     local usable, noPower = Items.Usable(item)
     local tint = (usable == false and count ~= 0) and (noPower and NO_POWER or NOT_USABLE) or nil
@@ -88,6 +121,14 @@ function M:ItemCandidates(id)
     if not self:TakesOwn(id) or not self:TakesEntries(id) then return {} end
     local here, list = {}, {}
     for _, key in ipairs(self:Entries(id)) do here[key] = true end
+    -- Your trinket slots first, while what's in them has a Use: effect.
+    for key in pairs(self.TRINKET_SLOTS) do
+        local item = self.ItemOf(key)
+        if item and Items.Spell(item) and not here[key] then
+            list[#list + 1] = { key = key, id = item, icon = Items.Icon(item), name = self:ItemLabel(key) }
+        end
+    end
+    table.sort(list, function(a, b) return a.key < b.key end)
     for _, item in ipairs(Items.UsableInBags()) do
         local key = "i" .. item.id
         if not here[key] then list[#list + 1] = { key = key, id = item.id, icon = item.icon, name = item.name or self:ItemLabel(key) } end

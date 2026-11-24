@@ -177,6 +177,7 @@ function M:UpdateCooldowns()
         self.cooling[item] = state
         self:WatchCooling(item, cooling == true)
         if style then
+            if ended then self:SpellReady(owner, id) end
             local ready = ended and self:SpellGlow(owner, id, "ready")
             if ready and ready.mode == "flash" then self:FlashReady(item, ready.duration)
             else self:ApplyGlows(item) end

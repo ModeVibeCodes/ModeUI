@@ -58,7 +58,7 @@ function M:OnEnable()
     -- these; procs light them; learning or losing a spell shows or hides one.
     -- Items: their cooldowns, counts, and names and icons once loaded.
     Events:On(self, "BAG_UPDATE_COOLDOWN", function() self:UpdateCooldowns() end)
-    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE", "BAG_UPDATE_DELAYED", "ITEM_DATA_LOAD_RESULT" }) do
+    for _, event in ipairs({ "SPELL_UPDATE_USES", "SPELL_UPDATE_ICON", "SPELL_UPDATE_USABLE", "BAG_UPDATE_DELAYED", "ITEM_DATA_LOAD_RESULT", "PLAYER_EQUIPMENT_CHANGED" }) do
         Events:On(self, event, function() self:UpdateSpellIcons() end)
     end
     Events:On(self, "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW", function(_, spellID) self:SpellProc(spellID, true) end)

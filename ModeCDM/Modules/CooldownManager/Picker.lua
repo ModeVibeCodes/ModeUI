@@ -263,7 +263,7 @@ function M:RefreshPicker(keepResult)
         button.icon:SetDesaturated(false); button.icon:SetAlpha(1)
         button.name, button.untracked = item.name, false
         button.where = string.format(L["%s · item"], item.name)
-        button.key, button.add = item.key, function() return M:AddCustomItem(id, item.id) end
+        button.key, button.add = item.key, function() return M:AddCustomItem(id, M.IsTrinketEntry(item.key) and item.key or item.id) end
     end)
     used = used + #items
     for index = used + 1, #picker.buttons do picker.buttons[index]:Hide(); picker.buttons[index].add = nil end

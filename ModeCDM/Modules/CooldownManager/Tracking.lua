@@ -34,6 +34,19 @@ function M:InBlizzardCDM(key, layout)
 end
 function M:NotTracked(key, layout) return self:InBlizzardCDM(key, layout) == false end
 
+-- Whether Blizzard's Cooldown Manager shows a spell itself, by spell ID
+-- (Forever's tracks racials and items in its spec-independent and
+-- equipment categories where its data has them): ModeUI's own icon for the
+-- same spell then stands aside (Racials.lua), so nothing shows twice.
+function M:BlizzardTracksSpell(spellID, layout)
+    layout = layout or self:BlizzardLayout()
+    if not layout or type(spellID) ~= "number" then return false end
+    for id in pairs(layout.category) do
+        if Cooldowns.SpellID(id) == spellID then return true end
+    end
+    return false
+end
+
 -- The keys a viewer shows by your setup, in your order.
 function M:LayoutKeys(viewer, layout)
     local spec, list = self.viewerSpecs[viewer], {}

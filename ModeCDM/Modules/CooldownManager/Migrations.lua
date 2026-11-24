@@ -21,7 +21,7 @@ local MAX_SPELLS = 200
 local function Whole(value, range) return Number(value, range[1], range[2]) and value == math.floor(value) end
 -- A spell's key: a cooldown ID ("1234"), a custom spell's ID ("s1234") or
 -- an item's ("i1234").
-local function Key(value) return type(value) == "string" and value:match("^[si]?%d+$") ~= nil and #value <= 12 end
+local function Key(value) return type(value) == "string" and (value:match("^[si]?%d+$") ~= nil or value:match("^t1[34]$") ~= nil) and #value <= 12 end
 
 -- A spell's glow while it's on: its look (the off-cooldown glow also when).
 local STYLES = {}

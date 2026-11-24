@@ -30,6 +30,7 @@
     <Script file="ResourceUpdate.lua"/>
     <Script file="CastBar.lua"/>
     <Script file="SwingTimer.lua"/>
+    <Script file="Alerts.lua"/>
     <Script file="SpellMenu.lua"/>
     <Script file="GlowPopout.lua"/>
     <Script file="TextPopout.lua"/>
