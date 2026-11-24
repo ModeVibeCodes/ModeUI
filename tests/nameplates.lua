@@ -190,6 +190,17 @@ world.run([==[
     -- Outlined text: the slug outline font, and no halo by default.
     assert(plate.name.font[3] == 'OUTLINE' and plate.healthText.font[3] == 'OUTLINE' and plate.healthText.shadowColor[4] == 1, 'outlined, with its shadow')
     assert(plate.name.halo == nil and plate.healthText.halo == nil, 'no halo copies until a glow is switched on')
+    -- At every recognized UI scale the outlined text keeps its size in UI units
+    -- and its shadow one physical pixel long (plate.px from the pixel factor).
+    for _, case in ipairs({ { 768 / 1080, 768 / 1080 }, { 768 / 1440, 768 / 1440 }, { 768 / 1440, 1 }, { 768 / 2160, 768 * 2 / 2160 } }) do
+        PixelUtil = { GetPixelToUIUnitFactor = function() return case[1] end }; UIParent:SetScale(case[2])
+        FireEvent('UI_SCALE_CHANGED')
+        local u = case[1] / plate:GetEffectiveScale()
+        assert(math.abs(plate.px - u) < 1e-9 and math.abs(plate.name.shadowOffset[1] - u) < 1e-9, 'a one-pixel shadow at every scale')
+        assert(plate.name.font[2] == M.db.enemy.nameFontSize and plate.name.font[3] == 'OUTLINE', 'outlined, the size in UI units')
+    end
+    PixelUtil = nil; UIParent:SetScale(1); FireEvent('UI_SCALE_CHANGED')
+    assert(plate.px == 1)
     -- Bold Text: name and level in Bold; off, SemiBold and Regular (health stays Bold).
     local function Face(text) return text.font[1]:match('Urbanist%-(%a+)%.ttf') end
     local levelText = plate.indicatorParts.level

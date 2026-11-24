@@ -600,6 +600,26 @@ world.run([====[
     local function EvenAt(v,u) local n=v/u;return math.abs(n-math.floor(n+0.5))<1e-6 and math.floor(n+0.5)%2==0 end
     assert(math.abs(r.px-px/1.2)<1e-9 and EvenAt(r.width,r.px) and EvenAt(r.height,r.px),'re-snapped at the new frame scale')
     assert(M:SetFrameOption('player','scale',100))
+    -- Text fit at every recognized UI scale (Optimizations' pixel-perfect
+    -- scales, and 1440p left at 100%): the bottom row 1px plus one unit on
+    -- whole pixels in, the top row 1px, and a name alone on its row stops
+    -- short of the ring.
+    assert(M:SetTextOption('player','topLeft','content','name'))
+    local scales={ {'1080p pixel perfect',768/1080,768/1080,2}, {'1440p pixel perfect',768/1440,768/1440,2},
+        {'1440p at 100%',768/1440,1,3}, {'4K pixel perfect',768/2160,768*2/2160,3} }
+    for _,case in ipairs(scales) do
+        local label,factor,uiScale,pixels=case[1],case[2],case[3],case[4]
+        PixelUtil={GetPixelToUIUnitFactor=function() return factor end};UIParent:SetScale(uiScale)
+        FireEvent('UI_SCALE_CHANGED')
+        local g=p.geometry;local u=g.px
+        assert(math.abs(u-factor/p:GetEffectiveScale())<1e-9,label..': one physical pixel')
+        local lv,nm=Point(PT.bottomLeft),Point(PT.topLeft)
+        assert(math.abs(lv[5]-pixels*u)<1e-9,label..': bottom row '..pixels..' pixels in, got '..tostring(lv[5]/u))
+        assert(math.abs(nm[5]+u)<1e-9,label..': top row 1 pixel in')
+        local span=g.width-g.blockStart-2*g.border
+        assert(PT.topLeft.width>span*0.6 and math.abs(nm[4])+PT.topLeft.width<=span-4+1e-9,label..': the name runs its row, short of the far side')
+    end
+    UIParent:SetScale(1);assert(M:SetTextOption('player','topLeft','content','none'))
     PixelUtil=nil;M:Refresh()
     assert(p.geometry.px==1)
 

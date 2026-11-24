@@ -66,11 +66,14 @@ end
 local function Clamped(sign, clear, dx) return sign * math.max(clear, clear + sign * dx) end
 
 -- Places one bar slot: its bar's point (TOPLEFT, RIGHT, BOTTOM...), 4 units in
--- from the bar's side, 1px in from its top edge or 2px from its bottom one.
--- A line keeps room above its letters but digits and capitals sit on its
--- bottom, so the extra pixel gives top and bottom rows the same clear pixel
--- inside the bar (owner's in-game screenshot, November 24, 2026: outlined
--- bottom text touched the bar's edge). Returns its X offset and line middle.
+-- from the bar's side, 1px in from its top edge, and from its bottom one 1px
+-- plus one unit on whole pixels (2px at the pixel-perfect 1080p and 1440p
+-- scales, 3px at 4K's two pixels per unit). A line keeps room above its
+-- letters but digits and capitals sit on its bottom, a gap in font units, so
+-- the extra unit gives top and bottom rows the same clear pixel inside the
+-- bar at any UI scale (owner's in-game screenshot, November 24, 2026:
+-- outlined bottom text touched the bar's edge). Returns its X offset and
+-- line middle.
 local function PlaceInBar(f, g, place, text, s, dx, near, sign)
     local px, power = g.px, place.bar == "power"
     local bar = power and f.power or f.health
@@ -79,7 +82,10 @@ local function PlaceInBar(f, g, place, text, s, dx, near, sign)
     local line = math.ceil((s.size + 2) / px) * px
     local mid, y = top + height / 2, s.y
     if place.v == "TOP" then mid, y = top + px + line / 2, s.y - px
-    elseif place.v == "BOTTOM" then mid, y = top + height - 2 * px - line / 2, s.y + 2 * px end
+    elseif place.v == "BOTTOM" then
+        local lift = px + math.max(px, math.floor(1 / px + 0.5) * px)
+        mid, y = top + height - lift - line / 2, s.y + lift
+    end
     local x = (place.h == "LEFT" and 4 or place.h == "RIGHT" and -4 or 0) + dx
     if place.h == near then x = Clamped(sign, Clearance(g, mid, s.size, s.y), dx) end
     local point = place.v == "CENTER" and place.h or place.h == "CENTER" and place.v or place.v .. place.h

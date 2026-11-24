@@ -13,14 +13,26 @@ clear row above it. The health % and level touched the bar's bottom edge.
 The name stopped at 60% of the bar ("Steeljaw Snapp...") with about 50px of
 its row still empty.
 
-- **Bottom rows sit 2px in** (top rows stay 1px in). A line keeps room above
-  its letters, but digits and capitals sit on its bottom. With the extra
-  pixel, top and bottom rows keep the same clear pixel inside the bar.
+- **Bottom rows sit 1px plus one unit in** (top rows stay 1px in). A line
+  keeps room above its letters, but digits and capitals sit on its bottom.
+  That gap is in font units, so the extra unit is snapped to whole pixels:
+  2px at the pixel-perfect 1080p and 1440p scales (one pixel per unit), 3px
+  at 1440p left at 100% and at 4K (two pixels per unit). Top and bottom rows
+  keep the same clear pixel inside the bar at every UI scale.
 - **A name alone on its row runs the row's length**: 4 units from the far
   end, clear of the ring on the portrait side (the same clearance as
   portrait-side text). Sharing its row with another text, it still stops at
   60% of the bar.
 - Settings and saved values are unchanged (no layout version).
+- **UI scales** (`tests/unit_frames.lua`, `tests/nameplates.lua`): the
+  tests lay the frames and plates out at 1080p and 1440p pixel perfect, at
+  1440p left at 100%, and at 4K pixel perfect (Optimizations'
+  `SuggestedScale`). At each one they check one-pixel shadows, the row
+  insets and the name's reach. Text sizes are in UI units. At the
+  pixel-perfect scales a unit is one screen pixel at both 1080p and 1440p,
+  so text is the same pixel size on both, like every other part of the
+  interface. The Mode-DPS/TANK layout's 1080 and 1440 variants differ only
+  in placement.
 
 Mock client only; not yet verified in game.
 
