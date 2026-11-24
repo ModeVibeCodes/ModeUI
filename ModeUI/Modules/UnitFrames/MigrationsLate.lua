@@ -40,4 +40,12 @@ function M.MigrateLate(db)
         end
         db.layoutVersion = 27
     end
+    -- 27 -> 28: readable Target text (owner, November 24, 2026). A Target
+    -- outline still at the old default (off) turns on; Slug Text and Bold
+    -- Text arrive with their defaults.
+    if db.layoutVersion == 27 then
+        local frame = db.target
+        if type(frame) == "table" and Public(frame) and frame.outline == false then frame.outline = true end
+        db.layoutVersion = 28
+    end
 end

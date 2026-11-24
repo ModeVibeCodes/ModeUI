@@ -583,6 +583,10 @@ at Any Distance made plates huge and is gone; instead every nameplate text is
 **outlined slug text** a size larger (name 14, health 12, cast and level 11;
 friendly names 13), and the halos are off by default.
 
+Then **Bold Text** (every nameplate text in Bold). On the owner's request,
+the Target unit frame got the same treatment (layout 28): outlined slug
+text with its name in Bold, its own even while it matches the Player.
+
 ## Decisions
 
 From the plan's "Decisions for you" (owner's answers):

@@ -124,7 +124,7 @@ function M:CreateConfigPage(parent)
         W.Tip(Note("Frame Off", "This frame is turned off. Use Show Frame above the preview, or on the General tab."))
     end)
     When(function() return db().enabled and Matched() end, function()
-        W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look and text, mirrored to its other side with Mirror Player Text. Its width, fill direction, health color, cast bar, auras, status and placement stay its own. Turn off Match Player Frame on the General tab to customize the rest.", 52))
+        W.Tip(Note("Target Matches Player", "The Target uses the Player frame's look and text, mirrored to its other side with Mirror Player Text. Its width, fill direction, health color, outline and weight, cast bar, auras, status and placement stay its own. Turn off Match Player Frame on the General tab to customize the rest.", 52))
     end)
 
     -- General > Frame: show it (reachable while it is off), Blizzard's own, its

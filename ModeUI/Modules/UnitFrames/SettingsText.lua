@@ -164,7 +164,6 @@ function M:BuildTextTab(ui)
     local page, When = ui.page, ui.When
     ui.Card("Text", "Text Style", function()
         local _, refresh = W.FontDropdown(page:Row("Font"), ui.owner); page.refreshers[#page.refreshers + 1] = refresh
-        ui.Toggles({ { "Outline", "outline" } })
         -- One choice for both shadows: None, Crisp (1px) or Lifted (1px plus a lighter one under it).
         local choices = {}
         for _, choice in ipairs(addon.Kit.SHADOW_CHOICES) do choices[#choices + 1] = { label = choice.label, value = choice.id, width = 96 } end
@@ -177,6 +176,15 @@ function M:BuildTextTab(ui)
         -- Default for numbers; names keep the Name Color and the level stays muted.
         ui.Color("Text Color", "textColor")
     end)
+    -- Every frame keeps its own (Init.lua, ownKeys), so a matched Target shows them too.
+    ui.Card("Text", "Outline and Weight", function()
+        ui.Toggles({ { "Outline", "outline" }, { "Slug Text", "slug" }, { "Bold Text", "boldText" } })
+        -- A note across the whole row (the label column would leave it too little room).
+        local host = page:Row("", 64)
+        host.rowLabel:Hide(); host:ClearAllPoints(); host:SetAllPoints(host.row)
+        local note = W.Label(host, "Outline draws a dark edge round every letter; Slug Text draws letters and outline from the glyph outlines, sharp at any size; Bold Text sets names in Bold. On for the Target by default, so its name reads on its class-colored bar.", nil, 0, -6, 440, addon.InterfaceTheme.muted)
+        note:SetWordWrap(true); W.Note(note)
+    end, true)
     ui.Card("Text", "Text Colors", function()
         ui.Choice("Name Color", "nameColorMode")
         When(function() return ui.db().nameColorMode == "custom" end, function() ui.Color("Custom Name Color", "nameColor") end)

@@ -420,7 +420,9 @@ The Cooldown Manager's icons, tracked bars and resource bars:
   cast and level 11, all in Bold (thin weights lose their shape inside an
   outline). Halos are off there by default. Enemy nameplate names
   are in the text color: the bar carries the reaction, and colored text on a
-  bar of the same hue loses its lower half.
+  bar of the same hue loses its lower half. The Target frame takes the same
+  treatment (outlined slug text, its name in Bold, owner, November 24, 2026):
+  its name sits on a class-colored bar.
 - **Health text glow on Party Frames** (a module toggle): a soft
   capsule behind the health numbers in the text's own color (added light, 22%,
   `Style.TextGlow`), 5px past the digits, its width from the format

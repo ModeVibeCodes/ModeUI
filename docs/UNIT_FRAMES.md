@@ -5,6 +5,40 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Readable Target text (layout version 28, November 24, 2026)
+
+The owner found the Target's class- or reaction-colored name hard to read on
+its class-colored health bar. After Bold Text on the nameplates, they asked
+for the same on the Target frame only:
+
+- The Target's texts are **outlined slug text**: Outline on, and **Slug
+  Text** (`slug`, `Kit.SlugFont`) draws the letters and their outline from
+  the glyph outlines. Its border name is in **Bold** (**Bold Text**,
+  `boldText`; off, SemiBold). Bar texts were already Bold.
+- Other frames keep their look: Outline, Slug Text and Bold Text are off.
+- The three are own keys (`M.ownKeys`): a Target matching the Player keeps
+  its own, so the Player stays unoutlined. They moved from Text Style to a
+  new **Outline and Weight** card on the Text tab, which shows while the
+  Target matches.
+- Version 27 to 28 turns the Target's Outline on when it is still off (the
+  old default). Slug Text and Bold Text arrive with their defaults.
+
+Mock client only; not yet verified in game.
+
+Manual check (layout version 28):
+- **Navigation:** `/modeui`, **Frames** › **Unit Frames**, the **Text** tab,
+  **Editing:** Target; then the game world.
+- **Action:** target a hostile, a neutral and a friendly NPC and a player of
+  another class. In **Outline and Weight**, turn **Outline**, **Slug Text**
+  and **Bold Text** off and on one at a time. Switch **Editing** to Player.
+- **Required state:** out of combat, Unit Frames on, the Target matching the
+  Player (the default).
+- **Confirmation:** the Target's name, level and health text are outlined
+  and its name is Bold, readable on the colored bar. The Player frame's
+  text is unchanged (no outline, SemiBold name). Each toggle changes only
+  the Target. The Player's Outline and Weight card shows its own (off)
+  values. No Lua errors.
+
 ## Standard tabs (November 21, 2026)
 
 The owner's settings review: the page uses the standard tabs
@@ -27,7 +61,8 @@ instead of one tab per part. Saved keys, defaults and ranges are unchanged.
 - **Glow:** Frame (Prism Glow), Combat Ring (Combat Ring, its color, Pulse
   When Pulled: the color serves the ring and the pulse, so they stay
   together), Text Glows.
-- **Text:** Text Style (Font, Outline, Shadow, Text Color), Text Colors, one
+- **Text:** Text Style (Font, Shadow, Text Color), Outline and Weight
+  (Outline, Slug Text, Bold Text: each frame's own, since layout 28), Text Colors, one
   card per text (Name, Level, Health Text, Power Text), Cast Bar Text (Spell
   Name, Timer, Outline, Size).
 - **Auras:** the Buffs/Debuffs switch and Show, Which Auras, Icons (size,
