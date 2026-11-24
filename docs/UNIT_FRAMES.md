@@ -5,6 +5,37 @@
 
 # Interface: Unit Frames (Player and Target)
 
+## Text that fits the bar (November 24, 2026)
+
+From the owner's in-game screenshot of the outlined Target text
+(Mode-DPS/TANK, a 28px health bar), measured in pixels. The name had one
+clear row above it. The health % and level touched the bar's bottom edge.
+The name stopped at 60% of the bar ("Steeljaw Snapp...") with about 50px of
+its row still empty.
+
+- **Bottom rows sit 2px in** (top rows stay 1px in). A line keeps room above
+  its letters, but digits and capitals sit on its bottom. With the extra
+  pixel, top and bottom rows keep the same clear pixel inside the bar.
+- **A name alone on its row runs the row's length**: 4 units from the far
+  end, clear of the ring on the portrait side (the same clearance as
+  portrait-side text). Sharing its row with another text, it still stops at
+  60% of the bar.
+- Settings and saved values are unchanged (no layout version).
+
+Mock client only; not yet verified in game.
+
+Manual check:
+- **Navigation:** the game world, with the Mode-DPS/TANK layout's Player and
+  Target frames.
+- **Action:** target an NPC with a long name (such as Steeljaw Snapper), then
+  one with a short name.
+- **Required state:** Unit Frames on, the name at the top and the health %
+  and level at the bottom of the health bar (the layout's default).
+- **Confirmation:** the health % and level have a clear pixel below them,
+  like the name above it. The long name shows in full, or shortens with "…"
+  only near the portrait. Player and Target look alike apart from the
+  Target's outline. No Lua errors.
+
 ## Readable Target text (layout version 28, November 24, 2026)
 
 The owner found the Target's class- or reaction-colored name hard to read on

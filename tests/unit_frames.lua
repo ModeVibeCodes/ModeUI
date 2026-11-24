@@ -122,13 +122,13 @@ world.run([====[
     assert(M:FrameDB('target').status==M.db.target.status,'a matched Target keeps its own status settings')
 
     -- The default slots (owner): the Player's level in the health bar's bottom left,
-    -- clear of the portrait's ring (35px in, 2px past the ring), 1px up; health percent at the right.
+    -- clear of the portrait's ring (35px in, 2px past the ring), 2px up; health percent at the right.
     -- A matched Target mirrors them: health on the left, level bottom right.
     local PT,TT=p.texts,t.texts
-    local lv=Point(PT.bottomLeft);assert(lv[1]=='BOTTOMLEFT' and lv[2]==p.health and lv[3]=='BOTTOMLEFT' and lv[4]==35 and lv[5]==1 and PT.bottomLeft.justifyH=='LEFT')
+    local lv=Point(PT.bottomLeft);assert(lv[1]=='BOTTOMLEFT' and lv[2]==p.health and lv[3]=='BOTTOMLEFT' and lv[4]==35 and lv[5]==2 and PT.bottomLeft.justifyH=='LEFT')
     local hv=Point(PT.right);assert(hv[1]=='RIGHT' and hv[2]==p.health and hv[4]==-4 and PT.right:IsShown(),'health percent at the right')
     assert(not PT.center:IsShown() and not PT.powerCenter:IsShown() and PT.center:GetText()=='','empty slots hide')
-    local tlv=Point(TT.bottomRight);assert(tlv[1]=='BOTTOMRIGHT' and tlv[2]==t.health and tlv[4]==-35 and tlv[5]==1,'Target: level bottom right, clear of its portrait')
+    local tlv=Point(TT.bottomRight);assert(tlv[1]=='BOTTOMRIGHT' and tlv[2]==t.health and tlv[4]==-35 and tlv[5]==2,'Target: level bottom right, clear of its portrait')
     assert(Point(TT.left)[1]=='LEFT' and Point(TT.left)[2]==t.health and Point(TT.left)[4]==4 and TT.left:IsShown() and not TT.right:IsShown(),'Target: health on the left')
     assert(M:SetTextOption('player','bottomLeft','x',-6) and Point(PT.bottomLeft)[4]==35,'never into the portrait')
     assert(Point(TT.bottomRight)[4]==-35 and M:SetTextOption('player','bottomLeft','x',5) and Point(PT.bottomLeft)[4]==40 and Point(TT.bottomRight)[4]==-40,'mirrored offsets')
@@ -401,7 +401,7 @@ world.run([====[
     -- Mirror Player Text off: the Player's slots as they are, each clear of the Target's own portrait.
     assert(M:SetFrameOption('target','mirrorText',false) and t.texts.border.justifyH=='RIGHT' and not t.texts.left:IsShown())
     local th=Point(t.texts.right);assert(th[1]=='RIGHT' and th[2]==t.health and th[4]==-35,'health on the right, like the Player, clear of the ring')
-    local tl=Point(t.texts.bottomLeft);assert(tl[1]=='BOTTOMLEFT' and tl[4]==4 and tl[5]==1,'level bottom left, away from the portrait')
+    local tl=Point(t.texts.bottomLeft);assert(tl[1]=='BOTTOMLEFT' and tl[4]==4 and tl[5]==2,'level bottom left, away from the portrait')
     -- The name clears the ring at its own height: on the border, 28px in from the bars (just above the border the ring curves away).
     assert(Point(t.texts.border,2)[4]==-28 and Point(p.texts.border,2)[4]==0,'name clear of the portrait at its own height')
     assert(M:SetFrameOption('target','mirrorText',true) and Point(t.texts.border)[4]==0 and Point(t.texts.border,2)[4]==-28)
@@ -613,7 +613,12 @@ world.run([====[
     assert(M:SetFrameOption('player','portraitScale',165) and p.geometry.portrait==70)
     -- Text slots: any slot shows any text; offsets, size and color are each slot's own.
     assert(M:SetTextOption('player','border','content','none') and M:SetTextOption('player','right','content','name'))
-    assert(Point(p.texts.right)[2]==p.health and Point(p.texts.right)[1]=='RIGHT' and Plain(p.texts.right:GetText())=='Fixture' and p.texts.right.width==184*0.6,'the name in the bar, 60% wide at most')
+    -- Alone on its row the name runs to the ring's clearance; sharing it, 60% of the bar.
+    local pg=p.geometry;local span=pg.width-pg.blockStart-2*pg.border
+    assert(Point(p.texts.right)[2]==p.health and Point(p.texts.right)[1]=='RIGHT' and Plain(p.texts.right:GetText())=='Fixture','the name in the bar')
+    assert(p.texts.right.width>span*0.6 and p.texts.right.width<span-4-30,'alone on its row: wide, short of the ring')
+    assert(M:SetTextOption('player','left','content','level') and p.texts.right.width==math.floor(span*0.6),'sharing its row: 60% wide at most')
+    assert(M:SetTextOption('player','left','content','none'))
     assert(p.texts.right:GetText()~='Fixture' and t.texts.left.text.label=='name','names keep the Gradient in any slot; the Target mirrors it')
     assert(M:SetTextOption('player','right','content','healthPercent') and p.texts.right:GetText()=='90%' and p.texts.right.width==0)
     assert(M:SetTextOption('player','border','content','levelName'))

@@ -66,7 +66,11 @@ end
 local function Clamped(sign, clear, dx) return sign * math.max(clear, clear + sign * dx) end
 
 -- Places one bar slot: its bar's point (TOPLEFT, RIGHT, BOTTOM...), 4 units in
--- from the bar's side and 1px in from its top or bottom edge.
+-- from the bar's side, 1px in from its top edge or 2px from its bottom one.
+-- A line keeps room above its letters but digits and capitals sit on its
+-- bottom, so the extra pixel gives top and bottom rows the same clear pixel
+-- inside the bar (owner's in-game screenshot, November 24, 2026: outlined
+-- bottom text touched the bar's edge). Returns its X offset and line middle.
 local function PlaceInBar(f, g, place, text, s, dx, near, sign)
     local px, power = g.px, place.bar == "power"
     local bar = power and f.power or f.health
@@ -75,11 +79,24 @@ local function PlaceInBar(f, g, place, text, s, dx, near, sign)
     local line = math.ceil((s.size + 2) / px) * px
     local mid, y = top + height / 2, s.y
     if place.v == "TOP" then mid, y = top + px + line / 2, s.y - px
-    elseif place.v == "BOTTOM" then mid, y = top + height - px - line / 2, s.y + px end
+    elseif place.v == "BOTTOM" then mid, y = top + height - 2 * px - line / 2, s.y + 2 * px end
     local x = (place.h == "LEFT" and 4 or place.h == "RIGHT" and -4 or 0) + dx
     if place.h == near then x = Clamped(sign, Clearance(g, mid, s.size, s.y), dx) end
     local point = place.v == "CENTER" and place.h or place.h == "CENTER" and place.v or place.v .. place.h
     text:SetPoint(point, bar, point, x, y)
+    return x, mid
+end
+
+-- How wide a name in a bar may run. Alone on its row it runs to the other
+-- side: 4 units in from the far end, clear of the ring on the portrait side
+-- (Clearance at its line). Sharing the row it stops at 60% of the bar, so it
+-- never runs over the other text.
+local function NameWidth(g, place, s, x, mid, alone, near)
+    local span = g.width - g.blockStart - 2 * g.border
+    if not alone then return math.floor(span * 0.6) end
+    local clear = Clearance(g, mid, s.size, s.y)
+    if place.h == "CENTER" then return span - 2 * math.max(clear, 4) end
+    return span - math.abs(x) - (place.h == near and 4 or clear)
 end
 
 -- On the border: across the health bar's span, clear of the ring at the
@@ -102,6 +119,15 @@ function M:LayoutTexts(f, unit)
     f.textUnitColored = f.textUnitColored or {}
     for _, list in pairs(f.textKinds) do for i = #list, 1, -1 do list[i] = nil end end
     for i = #f.textUnitColored, 1, -1 do f.textUnitColored[i] = nil end
+    -- How many texts share each bar row (a name alone on its row runs wider).
+    local rows = {}
+    for _, slot in ipairs(self.textSlots) do
+        local place, s = self.slotPlaces[slot], self:SlotSettings(fdb, slot)
+        if place.bar ~= "border" and s.content ~= "none" and (place.bar ~= "power" or fdb.showPower) then
+            local row = place.bar .. (place.v or "")
+            rows[row] = (rows[row] or 0) + 1
+        end
+    end
     for _, slot in ipairs(self.textSlots) do
         local text, place = f.texts[slot], self.slotPlaces[slot]
         local s, dx, align = self:SlotSettings(fdb, slot)
@@ -115,9 +141,9 @@ function M:LayoutTexts(f, unit)
             Font(text, fdb, s.size, addon.Style.Weighted(path, weight), g.px)
             if place.bar == "border" then self:PlaceOnBorder(f, g, text, s, dx, near, sign)
             else
-                PlaceInBar(f, g, place, text, s, dx, near, sign)
-                -- Names stop at 60% of the bar, so a long one never runs over the other side.
-                text:SetWidth(self.contentKind[s.content] == "name" and s.content ~= "level" and fdb.barWidth * 0.6 or 0)
+                local x, mid = PlaceInBar(f, g, place, text, s, dx, near, sign)
+                local name = self.contentKind[s.content] == "name" and s.content ~= "level"
+                text:SetWidth(name and NameWidth(g, place, s, x, mid, rows[place.bar .. place.v] == 1, near) or 0)
             end
             text:SetJustifyH(justify)
             -- A unit color that doesn't suit this text (Level Difficulty on a name) shows the default.
