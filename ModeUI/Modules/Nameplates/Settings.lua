@@ -233,7 +233,7 @@ function M:CreateConfigPage(parent)
             if note then Note(note, 48) end
         end)
     end
-    HaloCard("Name Text", "nameTextGlow", nil, "A tight ring round the letters, in place of their shadows. Ink keeps text readable over the bar and the world; Deep and Match Text light it in its own color.")
+    HaloCard("Name Text", "nameTextGlow", nil, "A tight ring round the letters, in place of their shadows: Ink darkens, Deep and Match Text light it in its own color. Off by default; the outline (Text Style) keeps text readable.")
     HaloCard("Health Text", "healthTextGlow", Plate)
 
     -- Text: the text style, then one card per text.
@@ -244,7 +244,7 @@ function M:CreateConfigPage(parent)
             local shadow, lifted = addon.Kit.ShadowKeys(mode)
             M:SetOption(editing, "shadow", shadow); M:SetOption(editing, "liftedShadow", lifted)
         end)
-        Note("Slug Text draws letters from their outlines, so they stay sharp at any size.", 32)
+        Note("Outline draws a dark edge round every letter, so text reads over the bar and the world; with Slug Text the game draws letters and outline from the glyph outlines, so both stay sharp at any size.", 48)
         local color = Columns({ "Text Color" })
         Color(color[1], "textColor")
     end)
@@ -328,11 +328,6 @@ function M:CreateConfigPage(parent)
     end)
 
     -- Behavior: fading the other plates while you have a focus.
-    Card("Behavior", "Size", nil, function()
-        page.scaleToggles = Toggles({ { "Same Size at Any Distance", "fixedScale",
-            get = function() return M.db.fixedScale end, set = function(value) M:SetFixedScale(value) end } })
-        Note("The game shrinks distant plates and grows your target's, which puts their thin lines and text between screen pixels. Same Size at Any Distance keeps every plate at its set size so text stays sharp; it applies to both kinds.", 48)
-    end)
     Card("Behavior", "Focus", Plate, function()
         local fade = Columns({ "Other Plates Opacity" })
         page.focusFadeSlider = Slider(fade[1], "focusFadeOthers", "%")

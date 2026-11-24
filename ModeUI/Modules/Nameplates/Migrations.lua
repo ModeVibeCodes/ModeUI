@@ -212,6 +212,7 @@ function M.Initialize(db)
     if db.version == 10 then MigrateV10(db); db.version = 11 end
     if db.version == 11 then M.MigrateV11(db); db.version = 12 end
     if db.version == 12 then M.MigrateV12(db); db.version = 13 end
+    if db.version == 13 then M.MigrateV13(db); db.version = 14 end
     if db.version == nil then db.version = M.VERSION end
     assert(db.version == M.VERSION, "Invalid nameplate settings version")
     for _, kind in ipairs(M.kinds) do
@@ -220,7 +221,6 @@ function M.Initialize(db)
     end
     if db.hideBlizzardCombatIcon == nil then db.hideBlizzardCombatIcon = false end
     assert(type(db.hideBlizzardCombatIcon) == "boolean", "Invalid nameplate setting: hideBlizzardCombatIcon")
-    if db.fixedScale == nil then db.fixedScale = true end
-    assert(type(db.fixedScale) == "boolean", "Invalid nameplate setting: fixedScale")
+
     M.ValidateSavedCVars(db)
 end

@@ -67,8 +67,6 @@ function M:BorderRoom(plate, side)
 end
 
 function M:LayoutPlate(plate)
-    -- The plate's scale first: the pixel size depends on it.
-    self:ApplyPlateScale(plate)
     local db, px = self:Style(plate), Kit.PixelSize(plate)
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local function Round(v) return math.floor(v / px + 0.5) * px end

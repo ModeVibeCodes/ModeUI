@@ -81,3 +81,22 @@ function M.MigrateV12(db)
         style.nameColorMode = M.styleDefaults.enemy.nameColorMode
     end
 end
+
+-- Version 13 -> 14 (owner, November 24, 2026): outlined slug text a size
+-- larger instead of the halos, and plates scale with the game again (Same
+-- Size at Any Distance is gone). Values still at version 13's defaults take
+-- the new ones; anything picked stays.
+M.V13 = {
+    enemy = { nameFontSize = 13, healthFontSize = 11, castFontSize = 10, levelSize = 10, outline = false,
+        nameTextGlow = true, healthTextGlow = true },
+    friendly = { nameFontSize = 12, outline = false, nameTextGlow = true, healthTextGlow = true },
+}
+function M.MigrateV13(db)
+    db.fixedScale = nil
+    for _, kind in ipairs(M.kinds) do
+        local style = db[kind]
+        if type(style) == "table" and addon.IsPublic(style) then
+            for key, old in pairs(M.V13[kind]) do Plain(style, key, old, M.styleDefaults[kind][key]) end
+        end
+    end
+end

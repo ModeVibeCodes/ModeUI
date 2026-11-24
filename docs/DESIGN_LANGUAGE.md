@@ -392,7 +392,7 @@ The Cooldown Manager's icons, tracked bars and resource bars:
   word "Mode" in ModeUI's own wordmark only, in Ivory (`Style.SCRIPT_FONT`).
   Never in game frames. It doesn't follow the interface Font setting.
 - One shadow: 1px offset (1, −1) at 95% black (no second, lifted copy);
-  OUTLINE only as a player choice.
+  OUTLINE only as a player choice, except on nameplates (below).
 - **Names:** in SemiBold, in the class or reaction color by default
   everywhere (color only in hints): solid on Unit Frames and Nameplates, Soft
   Class on Party Frames. The Gradient (the color fading to 50% color + 50% white
@@ -414,11 +414,12 @@ The Cooldown Manager's icons, tracked bars and resource bars:
   numbers take Deep 15% and names Ink 20%. Health text colored by health takes its Deep glow from a
   second color curve, since the color is secret.
 - **Readable nameplate text** (owner, November 24, 2026): text drawn over a
-  colored bar and the moving world takes the Halo in **Ink at 60%**, on by
-  default for nameplate names and health text: a dark ring that reads as a
-  crisp outline, sharper than the font outline. Enemy nameplate names are in
-  the text color: the bar carries the reaction, and colored text on a bar of
-  the same hue loses its lower half.
+  colored bar and the moving world is **outlined slug text** (the slug
+  outline is drawn from the glyph outlines, so it stays sharp at small sizes)
+  over the one shadow, a size larger than elsewhere: names 14, health 12,
+  cast and level 11. Halos are off there by default. Enemy nameplate names
+  are in the text color: the bar carries the reaction, and colored text on a
+  bar of the same hue loses its lower half.
 - **Health text glow on Party Frames** (a module toggle): a soft
   capsule behind the health numbers in the text's own color (added light, 22%,
   `Style.TextGlow`), 5px past the digits, its width from the format

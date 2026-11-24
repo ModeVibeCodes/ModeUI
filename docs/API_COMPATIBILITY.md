@@ -1691,13 +1691,14 @@ verified in game yet.
   (`NAME_PLATE_SCALES`); the client itself scales each nameplate frame by
   distance and for your target. ModeUI's plate is parented to the nameplate,
   so it was scaled too, and the pixel size it laid out with no longer matched.
-  **Same Size at Any Distance** calls `Frame:SetIgnoreParentScale(true)` on
+  **Same Size at Any Distance** called `Frame:SetIgnoreParentScale(true)` on
   ModeUI's own plate and `SetScale` with the effective scale of the
-  nameplate's parent. `SimpleFrameAPIDocumentation.lua` marks
-  `SetIgnoreParentScale` `IsProtectedFunction` with `SecretArguments =
-  "NotAllowed"`, as it does `SetScale` and `Show`; the plate is a plain,
-  insecure frame and the argument is a plain boolean. ModeUI never changes
-  the nameplate scale CVars.
+  nameplate's parent. In game (owner, November 24, 2026) that made plates
+  much larger than a full-size nameplate, so the nameplate's parent is not
+  the right reference; the option was removed in settings 14 and plates
+  scale with the game again. Text stays sharp through slug fonts instead
+  (`Kit.SlugFont`, `ModeUISlugFontOutline` with `outline="NORMAL"`), which the
+  client draws from glyph outlines at any scale.
 - **Halo copies.** The name's eight halo copies are FontStrings created inside
   the name's holder (a `DisableUntrustedLayoutScriptsTemplate` frame in the
   world), so they carry its forbidden aspect and may anchor to the name, which

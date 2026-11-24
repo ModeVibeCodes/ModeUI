@@ -41,7 +41,9 @@ addon:RegisterModule("nameplates", M)
 -- Version 12: the nameplates pass (owner, November 23, 2026; MigrationsV12.lua).
 -- Version 13: readable text (owner, November 24, 2026): an Ink halo behind
 -- names and health text, enemy names in the text color, plates at one size.
-M.VERSION = 13
+-- Version 14: outlined slug text a size larger instead (owner, November 24,
+-- 2026); the halos are off by default and plates scale with the game again.
+M.VERSION = 14
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
@@ -90,21 +92,21 @@ local function Style(kind)
         edgeStyle = "obsidian", edgeMetal = "default",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
         threatPullingColor = Copy(M.threatPalette.warning),
-        healthText = enemy and "percent" or "none", healthFontSize = enemy and 11 or 9, healthTextColor = "health",
-        -- Readable text (owner, November 24, 2026): a tight Ink halo (Style.TextHalo)
-        -- behind the name and health text keeps them clear over the bar and the world.
-        healthTextGlow = true, healthTextGlowColor = "ink", healthTextGlowStrength = 60,
-        nameTextGlow = true, nameTextGlowColor = "ink", nameTextGlowStrength = 60,
+        healthText = enemy and "percent" or "none", healthFontSize = enemy and 12 or 9, healthTextColor = "health",
+        -- Text halos (Style.TextHalo): off by default, the outline keeps text
+        -- readable (owner, November 24, 2026); Ink at 60% when switched on.
+        healthTextGlow = false, healthTextGlowColor = "ink", healthTextGlowStrength = 60,
+        nameTextGlow = false, nameTextGlowColor = "ink", nameTextGlowStrength = 60,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
         -- On Border: a Top or Bottom name rests on the bar's edge, sharing the
         -- line with aura groups set to Sit on Border, and stops where they start.
         -- Enemy names in the text color: the bar already shows the reaction,
         -- and a red name on a red bar was hard to read.
-        showName = true, nameFontSize = enemy and 13 or 12, nameColorMode = enemy and "text" or "class", nameAnchor = enemy and "TOPLEFT" or "TOP",
+        showName = true, nameFontSize = enemy and 14 or 13, nameColorMode = enemy and "text" or "class", nameAnchor = enemy and "TOPLEFT" or "TOP",
         nameX = 0, nameY = enemy and -3 or 0, nameOnBorder = enemy,
         -- Every Mode cast bar (owner, November 23, 2026): light blue, orange-red
         -- when it can't be interrupted, channels keep their green.
-        showCastBar = true, castFontSize = enemy and 10 or 8, castColor = Copy(Tone.cast.casting), castLockedColor = Copy(Tone.cast.shielded),
+        showCastBar = true, castFontSize = enemy and 11 or 8, castColor = Copy(Tone.cast.casting), castLockedColor = Copy(Tone.cast.shielded),
         castChannelColor = Copy(Tone.cast.channeling), castInterruptedColor = Copy(P.hostile),
         -- 1px below the health box: the two shadows share one pixel.
         castAnchor = "BOTTOM", castX = 0, castY = -1,
@@ -124,7 +126,7 @@ local function Style(kind)
         showIndicator = enemy, indicatorQuest = true, indicatorClassification = true, indicatorLevel = true,
         questAnchor = "LEFT", questX = 0, questY = 0, questSize = enemy and 18 or 14, questInside = false,
         classificationAnchor = "LEFT", classificationX = 0, classificationY = 0, classificationSize = 14, classificationInside = enemy,
-        levelAnchor = "LEFT", levelX = 0, levelY = 0, levelSize = enemy and 10 or 9, levelInside = enemy,
+        levelAnchor = "LEFT", levelX = 0, levelY = 0, levelSize = enemy and 11 or 9, levelInside = enemy,
         -- Target indicator: border, glow, arrows, border and arrows, or none.
         -- Arrows are always the outermost part on each side, following what shows there.
         targetStyle = enemy and "arrows" or "border", targetColor = Copy(addon.Style.Tone.ivory), targetThickness = 1,
@@ -156,16 +158,18 @@ local function Style(kind)
         crowdControl = Group(enemy, nil, enemy and "TOP" or "LEFT", enemy and 35 or 18, 2),
         debuffs = Group(true, enemy and "mine" or "dispellable", enemy and "TOPRIGHT" or "TOP", enemy and 24 or 16, 4, enemy),
         buffs = Group(enemy, enemy and "dispellable" or "mine", "RIGHT", enemy and 22 or 14, 3),
-        font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, liftedShadow = false, slug = true,
+        -- Readable text (owner, November 24, 2026): every text outlined and drawn
+        -- as slug text (letters and outline from the glyph outlines, sharp at
+        -- any size), a size larger, over the one crisp shadow.
+        font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = true, shadow = true, liftedShadow = false, slug = true,
         textColor = Copy(P.text),
     }
 end
 M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
 -- hideBlizzardCombatIcon (every kind): turns the game's own enemy and friend
--- soft-target icons off (BlizzardIcons.lua); off by default. fixedScale
--- (every kind): Same Size at Any Distance (Plate.lua ApplyPlateScale); on.
+-- soft-target icons off (BlizzardIcons.lua); off by default.
 M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly),
-    hideBlizzardCombatIcon = false, fixedScale = true }
+    hideBlizzardCombatIcon = false }
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
 M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true,

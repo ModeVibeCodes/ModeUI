@@ -578,6 +578,11 @@ bar and grass), nameplate settings 13:
 
 Mock client only; not yet verified in game.
 
+Revised the same day after the owner's in-game look (settings 14): Same Size
+at Any Distance made plates huge and is gone; instead every nameplate text is
+**outlined slug text** a size larger (name 14, health 12, cast and level 11;
+friendly names 13), and the halos are off by default.
+
 ## Decisions
 
 From the plan's "Decisions for you" (owner's answers):

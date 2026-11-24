@@ -94,35 +94,6 @@ function M:EnsurePlate(nameplate)
     return plate
 end
 
--- Same Size at Any Distance (db.fixedScale, every kind; owner, November 24,
--- 2026): the game scales each nameplate by distance and grows your target's,
--- so a plate's 1px rims, shadows and halos fell between screen pixels and its
--- text went soft. With it on, the plate ignores its nameplate's scale and
--- takes the scale of the nameplate's parent (what a nameplate at full size
--- has), so it keeps one size and whole pixels. Preview plates are left alone.
-function M:ApplyPlateScale(plate)
-    local nameplate = plate.nameplate
-    if not nameplate or type(plate.SetIgnoreParentScale) ~= "function" then return end
-    local Plain = addon.Domain.Query.Plain
-    local fixed = self.db.fixedScale == true
-    local scale = 1
-    if fixed then
-        local parent = Plain(nameplate.GetParent, nameplate)
-        local base = parent and Plain(parent.GetEffectiveScale, parent)
-        if addon.IsNumber(base, 0.01, 100) then scale = base else fixed = false end
-    end
-    plate:SetIgnoreParentScale(fixed)
-    plate:SetScale(scale)
-end
-
-function M:SetFixedScale(fixed)
-    if not self:CanConfigure() or type(fixed) ~= "boolean" then return false end
-    self.db.fixedScale = fixed
-    self:Refresh()
-    if self.page then self.page:Refresh() end
-    return true
-end
-
 -- Lays out one box and returns its full height (the bar and its rim). The
 -- bar is `barHeight` tall inside a `width` wide box. `background` is the
 -- track's opacity (0-1); `texture` the fill (the kind's Foreground when nil).
