@@ -37,7 +37,16 @@ M.resourceGroup = { "power", "combo", "mana" }
 -- Tick Marks: one to start, up to five with Add Tick Mark (owner, November 18, 2026).
 M.MARK_MAX = 5
 function M:IsResource(id) return type(id) == "string" and self.resourceSpecs[id] ~= nil end
-function M:ResourceLabel(id) return L[self.resourceSpecs[id].label] end
+-- The class resource bar takes its name from the class resource table
+-- (Shared/Domain/ClassResource.lua): Combo Points on Forever; a port adds
+-- the others there, not here.
+function M:ResourceLabel(id)
+    if id == "combo" then
+        local spec = addon.Domain.ClassResource and addon.Domain.ClassResource.Spec()
+        if type(spec) == "table" and type(spec.name) == "string" then return L[spec.name] end
+    end
+    return L[self.resourceSpecs[id].label]
+end
 
 -- Edit Mode element IDs (also the saved positions' keys) and frame names.
 local function Capital(id) return id:sub(1, 1):upper() .. id:sub(2) end

@@ -114,6 +114,9 @@ world.run([==[
     testGrouped = true; FireEvent('GROUP_ROSTER_UPDATE')
     assert(item.alpha == 1, 'in a group')
     assert(page.showRuleToggles, 'the rules on the Show section')
+    -- The Cast Bar has Show When too.
+    assert(M:SetCastOption("visibility", "combat") and M:CastAlpha() == 0, "the Cast Bar: in combat only")
+    assert(M:SetCastOption("visibility", "always") and M:CastAlpha() == 1)
     -- Copy Look To leaves the show rules alone.
     assert(M:CopyStyleTo('essential', { utility = true }) and not M.db.utility.onlyInGroup, 'show rules are the bar its own')
     window:Hide()

@@ -28,6 +28,9 @@ world.run([==[
     assert(frame:GetAlpha() == 1 and M:SwingLanes() == 1, 'shows while swinging; one lane')
     Advance(1)
     assert(math.abs(frame.lanes[1].bar.value - 0.5) < 0.01, 'half way after one of two seconds')
+    -- /mcdm check reports it for the in-game look.
+    assert(M:CapsReport()[2]:find("a plain number", 1, true), "the report says the duration was readable")
+    SlashCmdList.MODEUICDM("check")
     -- The off hand gets its own lane.
     FireEvent('PLAYER_SWING', 1.5, 1)
     assert(M:SwingLanes() == 2 and frame.lanes[2]:IsShown() and mover:GetHeight() > frame.lanes[1]:GetHeight() * 2, 'two lanes')

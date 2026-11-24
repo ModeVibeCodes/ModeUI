@@ -197,7 +197,7 @@ local function HoldTick(bar)
         M:UpdateCast()
         return
     end
-    frame:SetAlpha(M.db.castBar.opacity / 100 * math.min(1, left / Kit.CAST_HOLD_FADE))
+    frame:SetAlpha(M:CastAlpha() * math.min(1, left / Kit.CAST_HOLD_FADE))
 end
 
 function M:StopCast()
@@ -221,7 +221,7 @@ function M:HoldCast()
     -- A held bar is full: no spark.
     frame.box.comet:SetShown(false)
     Kit.Write(frame.name, INTERRUPTED or L["Interrupted"]); Kit.Write(frame.timer, "")
-    frame:SetAlpha(style.opacity / 100)
+    frame:SetAlpha(M:CastAlpha())
     bar:SetScript("OnUpdate", HoldTick)
 end
 
@@ -240,7 +240,7 @@ function M:UpdateCast()
         self:StopCast()
         if self.editing then
             self:PaintCastSample(frame)
-            frame:SetAlpha(style.opacity / 100); frame:Show()
+            frame:SetAlpha(M:CastAlpha()); frame:Show()
         end
         return
     end
@@ -251,7 +251,7 @@ function M:UpdateCast()
     if not pcall(Kit.Write, frame.name, info.text) then Kit.Write(frame.name, "") end
     if not pcall(frame.icon.texture.SetTexture, frame.icon.texture, info.texture) then frame.icon.texture:SetTexture(nil) end
     if not style.timerShow then Kit.Write(frame.timer, "") end
-    frame:SetAlpha(style.opacity / 100)
+    frame:SetAlpha(M:CastAlpha())
     frame:Show()
     Tick(bar)
     bar:SetScript("OnUpdate", Tick)

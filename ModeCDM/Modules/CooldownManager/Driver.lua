@@ -32,7 +32,10 @@ function M:OnInitialize()
         if self.active then self:RefreshResources(); self:UpdateCast() end
     end)
     SLASH_MODEUICDM1 = self.SLASH
-    SlashCmdList.MODEUICDM = function() self:ToggleWindow() end
+    -- /mcdm opens and closes the window; /mcdm check reports what the client offers (Caps.lua).
+    SlashCmdList.MODEUICDM = function(message)
+        if type(message) == "string" and message:lower():match("^%s*check") then self:PrintCapsReport() else self:ToggleWindow() end
+    end
 end
 
 -- Runtime sets self.enabled after these return, so they keep their own state.

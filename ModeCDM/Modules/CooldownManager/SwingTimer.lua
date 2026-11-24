@@ -164,6 +164,7 @@ function M:OnSwingEvent(event, a, b, c)
         if not kind then return end
         local lanes = self:SwingLanes()
         swings[kind].at = Now()
+        self.swingSeen = { public = Number(a, 0, 600) }
         swings[kind].duration = Number(a, 0.05, 60) and a or nil
         if self:SwingLanes() ~= lanes then self:LayoutSwing() end
     elseif event == "PLAYER_SWING_RANGE_UPDATE" then

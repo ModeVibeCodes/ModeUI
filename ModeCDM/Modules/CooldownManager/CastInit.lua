@@ -56,8 +56,11 @@ M.castDefaults = {
     textSize = 11, textColor = Copy(Tone.textBright),
     font = "game", fontMedia = addon.Style.FONT_DEFAULT, outline = false, shadow = true, slug = true,
     opacity = 100,
+    -- Show When and the show rules, like the other bars (owner, November 24, 2026).
+    visibility = "always", fadeOpacity = 0,
+    hideMounted = false, hideVehicle = false, onlyInGroup = false, onlyInInstance = false, dim = false,
 }
-M.castRanges = { width = { 40, 600, 1 }, height = { 6, 40, 1 }, iconGap = { 0, 12, 1 }, edgeSize = { 1, 2, 1 },
+M.castRanges = { fadeOpacity = { 0, 100, 5 }, width = { 40, 600, 1 }, height = { 6, 40, 1 }, iconGap = { 0, 12, 1 }, edgeSize = { 1, 2, 1 },
     barBackgroundOpacity = { 0, 100, 5 }, textSize = { 6, 32, 1 },
     nameX = { -60, 60, 1 }, nameY = { -40, 40, 1 }, timerX = { -60, 60, 1 }, timerY = { -40, 40, 1 },
     opacity = { 10, 100, 5 } }
@@ -66,6 +69,8 @@ M.castColorKeys = { rimCustom = true, barColor = true, lockedColor = true, inter
 M.castIdentityKeys = { show = true, width = true, height = true, matchWidth = true }
 local ANCHORS = { { id = "LEFT", label = "Left" }, { id = "CENTER", label = "Center" }, { id = "RIGHT", label = "Right" } }
 M.castChoices = {
+    visibility = { { id = "always", label = "Always" }, { id = "combat", label = "In Combat" }, { id = "noCombat", label = "Out of Combat" },
+        { id = "target", label = "In Combat or With a Target" }, { id = "hidden", label = "Hidden" } },
     border = M.resourceChoices.border, edgeStyle = M.resourceChoices.edgeStyle, edgeMetal = M.resourceChoices.edgeMetal,
     rimColor = M.resourceChoices.rimColor, barMode = M.resourceChoices.barMode,
     barColorMode = { { id = "class", label = "Class Color" }, { id = "custom", label = "Custom" } },

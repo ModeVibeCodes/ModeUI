@@ -109,3 +109,7 @@ function M:UpdateFade()
     end
     if self.fader then self.fader:SetShown(fading and true or false) end
 end
+
+-- The Cast Bar's alpha while it shows a cast: its Show When and show rules
+-- (it has no Mouseover; it shows only while you cast anyway).
+function M:CastAlpha() return self:StyleAlpha(self.db.castBar, nil) end
