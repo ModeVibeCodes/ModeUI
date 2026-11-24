@@ -51,8 +51,9 @@ world.run([==[
         assert(pg.width == 136 and pg.height == 64 and party.showPlayer and party.showSolo and party.spacing == 1, 'members 136 x 64, you shown, solo too')
         assert(party.edgeStyle == 'obsidian' and party.edgeMetal == 'default' and party.foregroundTexture == 'media:Mode-FG'
             and party.backgroundTexture == 'media:Mode-BG' and party.backgroundOpacity == 85, 'Mode-Border, Mode-FG over Mode-BG at 85')
-        assert(m.cooldownManager.essential.edgeStyle == 'obsidianEmpty' and addon.Style.SameColor(m.cooldownManager.essential.edgeColor, addon.Style.Tone.emptyRim),
-            'Cooldown Manager icons in Mode-Empty, neutral and darker')
+        assert(m.cooldownManager.essential.edgeStyle == 'obsidian' and m.cooldownManager.essential.edgeMetal == 'gunmetal'
+            and not m.cooldownManager.essential.follow.size and m.cooldownManager.essential.cooldownSize == 16,
+            'Cooldown Manager icons in the Bar Style; Essential 42 x 34 its own size, its numbers scaled to it')
         local column = PF.MAX_MEMBERS * pg.height + (PF.MAX_MEMBERS - 1) * party.spacing
         local p = pos.partyFrames
         -- Hung from the Player frame's bar block (owner, November 20, 2026): its

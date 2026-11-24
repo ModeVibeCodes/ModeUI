@@ -223,8 +223,12 @@ function M:SetResourceOption(id, key, value)
     if not self:CanConfigure() or not defaults or defaults[key] == nil then return false end
     local candidate = Copy(self.db)
     candidate.resources[id][key] = Copy(value)
+    -- Border and font values the bar takes from the Bar Style become its own.
+    local group, follow = self.playerKeyGroup[key], candidate.resources[id].follow
+    if group and type(follow) == "table" and follow[group] then follow[group] = false end
     if not pcall(self.Initialize, candidate) then return false end
     self.db.resources[id][key] = candidate.resources[id][key]
+    self.db.resources[id].follow = candidate.resources[id].follow
     return Changed(self, id, self.resourceAlphaKeys[key])
 end
 
@@ -233,9 +237,11 @@ function M:ResetResource(id)
     if not self:CanConfigure() or not self.resourceDefaults[id] then return false end
     local style = Copy(self.resourceDefaults[id])
     for key in pairs(self.resourceIdentityKeys) do style[key] = Copy(self.db.resources[id][key]) end
+    style.follow = { border = true, text = true }
     local target = self.db.resources[id]
     for key in pairs(target) do target[key] = nil end
     for key, value in pairs(style) do target[key] = value end
+    self.ApplyPlayerStyle(self.db, target)
     return Changed(self, id, false)
 end
 

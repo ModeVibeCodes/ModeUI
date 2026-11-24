@@ -260,3 +260,31 @@
         end,
     }
     function GameTooltip:SetItemByID(id) self.item = id end
+
+-- Version 11's look on every bar (the geometry and look checks were written
+-- against it): each bar back to its own defaults, following no Bar Style
+-- group (BarStyle.lua); the resource bars and the Cast Bar too. With an
+-- ID, that bar alone (a custom bar just made).
+function LegacyBars(only)
+    local M, Copy = addon.CooldownManager, addon.ProfileCodec.Copy
+    if only then
+        local style = M.db[only]
+        for key, value in pairs(M:Defaults(only)) do if key ~= 'spells' and key ~= 'show' then style[key] = Copy(value) end end
+        style.follow = {}
+        if M.active then M:Refresh() end
+        return only
+    end
+    for _, id in ipairs(M:BarIds()) do
+        local style = M.db[id]
+        for key, value in pairs(M:Defaults(id)) do if key ~= 'spells' and key ~= 'show' then style[key] = Copy(value) end end
+        style.follow = {}
+    end
+    for _, id in ipairs(M.resources) do
+        local style = M.db.resources[id]
+        for key, value in pairs(M.resourceDefaults[id]) do if key ~= 'show' then style[key] = Copy(value) end end
+        style.follow = {}
+    end
+    for key, value in pairs(M.castDefaults) do if key ~= 'show' then M.db.castBar[key] = Copy(value) end end
+    M.db.castBar.follow = {}
+    if M.active then M:Refresh() end
+end

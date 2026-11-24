@@ -66,7 +66,9 @@ addon:RegisterModule("cooldownManager", M)
 -- a Bar Mode still at Dark (the old default) takes Color.
 -- Version 11 (owner, November 23, 2026): every Mode cast bar in light blue,
 -- orange-red when it can't be interrupted; old default colors follow.
-M.VERSION = 11
+-- Version 12 (owner, November 24, 2026): the Bar Style (BarStyle.lua), the
+-- default look new bars follow; existing bars take its border and text.
+M.VERSION = 12
 M.SLASH = "/mcdm"
 local P, Mode = Kit.palette, addon.Style
 local Tone = Mode.Tone

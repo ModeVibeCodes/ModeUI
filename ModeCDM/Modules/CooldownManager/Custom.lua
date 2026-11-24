@@ -175,6 +175,8 @@ function M:AddCustomBar(kind)
     candidate.customBars[#candidate.customBars + 1] = { id = id, kind = kind, entries = {},
         name = string.format("%s %d", L[self.customKinds[kind].label], count) }
     candidate[id] = Copy(self.customDefaults[kind])
+    -- A new bar follows the Bar Style everywhere (BarStyle.lua).
+    candidate[id].follow = self.NewFollow(candidate, id)
     -- Other bars can anchor to it, like to the viewers.
     local name = candidate.customBars[#candidate.customBars].name
     addon.Positioning:AddTarget(self.ElementId(id), name, self.FrameName(id))

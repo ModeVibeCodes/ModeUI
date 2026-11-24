@@ -15,10 +15,10 @@ local world = H.Load({ before = STUBS })
 world.run([==[
     local M, PM, Kit, Tone, UF = addon.CooldownManager, addon.PositionManager, addon.Kit, addon.Style.Tone, addon.UnitFrames
     local db = M.db.castBar
-    assert(M.db.version == M.VERSION and M.VERSION == 11, 'settings version 11')
+    assert(M.db.version == M.VERSION and M.VERSION == 12, 'settings version 12')
     -- Every Mode cast bar (owner, November 23, 2026): light blue, orange-red when it can't be interrupted.
     assert(addon.Style.SameColor(db.barColor, Tone.cast.casting) and addon.Style.SameColor(db.lockedColor, Tone.cast.shielded), 'the new cast colors')
-    assert(db.show and db.edgeStyle == 'obsidian' and db.edgeMetal == 'default' and db.rimColor == 'metal' and db.barMode == 'color' and db.barColorMode == 'class', 'Mode-Border in its own metal, filled in your class color')
+    assert(db.show and db.edgeStyle == 'obsidian' and db.edgeMetal == 'gunmetal' and db.follow.border and db.rimColor == 'metal' and db.barMode == 'color' and db.barColorMode == 'class', 'Mode-Border in the Bar Style Gunmetal, filled in your class color')
     assert(db.icon == 'none' and db.showInterrupted and db.darkText == 'class' and db.matchWidth and db.height == 18, 'icon hidden, Show Interrupted, class-colored text')
     assert(M.defaultPositions.buffIcon.target == M.CAST_ELEMENT and M.castPosition.target == 'cooldownManagerEssential' and M.castPosition.placement == 'above')
 
@@ -39,7 +39,7 @@ world.run([==[
     assert(Kit.PlayerCast.ClaimedBy() == 'cooldownManager' and Kit.NativeFade:IsHeld(PlayerCastingBarFrame, 'cooldownManager'), 'the claim')
     assert(PlayerCastingBarFrame:GetAlpha() == 0 and not frame:IsShown(), "Blizzard's faded; nothing while not casting")
     -- The resource bars' look: the edge in pieces outside the box, on whole pixels.
-    assert(box.edge.pieces and #box.edge.parts[1] == 8 and box.edge.styleId == 'obsidian' and box.edge:Metal() == Tone.metal.obsidian, 'Mode-Border in its own metal, in pieces')
+    assert(box.edge.pieces and #box.edge.parts[1] == 8 and box.edge.styleId == 'obsidian' and box.edge:Metal() == Tone.metal.gunmetal, 'Mode-Border in Gunmetal, in pieces')
     assert(box.height == 18 and mover.height == 22 and Point(box)[4] == 2 and Point(box)[5] == -2, 'the box inside the edge reach')
     assert(frame.snapMover == mover and box.width == mover.width - 4, 'hung on whole pixels, the bar across the width')
     assert(PM:GetSizeMatch(M.CAST_ELEMENT, 'width'), 'Match Width')
@@ -197,7 +197,7 @@ cdm.version, cdm.castBar, cdm.moveBuffIcons = 7, nil, nil
 profile.positions.cooldownManagerBuffIcon = { target = 'cooldownManagerEssential', placement = 'above', x = 0, y = 0 }
 H.Load({ before = STUBS, saved = seven }).run([==[
     local M = addon.CooldownManager
-    assert(M.db.version == 11 and M.db.moveBuffIcons == nil and M.db.castBar.show and M.db.castBar.icon == 'none', 'version 8 (then 9, 10); the cast bar from its defaults')
+    assert(M.db.version == 12 and M.db.moveBuffIcons == nil and M.db.castBar.show and M.db.castBar.icon == 'none', 'version 8 (then 9, 10); the cast bar from its defaults')
     assert(addon.db.positions.cooldownManagerBuffIcon.target == M.CAST_ELEMENT, 'Buff Icons above the cast bar')
 ]==], "version 8")
 
@@ -209,7 +209,7 @@ nine.profiles.Default.modules.cooldownManager.castBar.barMode = 'dark'
 nine.profiles.Default.modules.cooldownManager.castBar.barColorMode = nil
 H.Load({ before = STUBS, saved = nine }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 11 and db.castBar.barMode == 'color' and db.castBar.barColorMode == 'class', 'Dark becomes your class color')
+    assert(db.version == 12 and db.castBar.barMode == 'color' and db.castBar.barColorMode == 'class', 'Dark becomes your class color')
 ]==], "version 10")
 
 -- Version 10 -> 11 (owner, November 23, 2026): cast colors still at the old
@@ -220,7 +220,7 @@ ten.profiles.Default.modules.cooldownManager.castBar.barColor = { 0xF2 / 255, 0x
 ten.profiles.Default.modules.cooldownManager.castBar.lockedColor = { 0.2, 0.3, 0.4 }
 H.Load({ before = STUBS, saved = ten }).run([==[
     local db, Tone, Same = addon.CooldownManager.db, addon.Style.Tone, addon.Style.SameColor
-    assert(db.version == 11 and Same(db.castBar.barColor, Tone.cast.casting), 'old amber takes the light blue')
+    assert(db.version == 12 and Same(db.castBar.barColor, Tone.cast.casting), 'old amber takes the light blue')
     assert(Same(db.castBar.lockedColor, { 0.2, 0.3, 0.4 }), 'a picked color stays')
 ]==], "version 11")
 local moved = restored.saved()

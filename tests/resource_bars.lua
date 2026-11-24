@@ -22,12 +22,14 @@ world.run([==[
     assert(M.db.version == M.VERSION, 'resource bars need no settings version of their own')
     assert(db.power.show and db.combo.show and db.mana.show and not db.health.show, 'Health starts off')
     assert(db.power.border == 'mode' and db.power.barTexture == 'media:Mode-FG' and db.power.barBackground == 'media:Mode-BG' and db.power.fontMedia == 'Mode', 'the Mode look')
-    assert(db.power.barBackgroundOpacity == 85 and db.power.borderColor == nil and not db.power.outline, 'Slate at 85% (the Mode-Obsidian part); one edge color; no outline')
+    assert(db.power.barBackgroundOpacity == 85 and db.power.borderColor == nil and db.power.outline and db.power.follow.border and db.power.follow.text, 'Slate at 85% (the Mode-Obsidian part); one edge color; the Bar Style border and outlined text')
     assert(db.power.matchWidth and db.power.colorMode == 'power' and db.power.text == 'current' and db.combo.text == 'current', 'the combo point count')
     assert(db.power.textShow and db.combo.textShow and not db.mana.textShow and db.power.textAnchor == nil, 'Show Text; always in the middle')
     assert(db.power.height == 16 and db.combo.height == 10 and db.mana.height == 8 and db.health.height == 14, 'version 7 heights')
     assert(not db.power.marksShow and #db.power.marks == 1 and db.power.marks[1].value == 0, 'Tick Marks off, one tick')
     assert(db.power.barMode == 'dark' and db.power.darkText == 'power' and db.combo.layout == 'grouped' and M.db.resourceLayout == 'separate', 'Dark, grouped points, Separate Resources')
+    -- The checks below were written against version 11's look.
+    LegacyBars()
     assert(ModeUIResourcePower == nil, 'nothing built while the module is off')
 
     addon:SetModuleEnabled('cooldownManager', true)
@@ -228,7 +230,7 @@ world.run([==[
 
     -- Reset keeps Show Bar and the size.
     assert(M:ResetResource('power') and db.power.border == 'mode' and db.power.visibility == 'always' and db.power.opacity == 100)
-    assert(db.power.edgeStyle == 'obsidian' and db.power.edgeMetal == 'default' and box.edge.styleId == 'obsidian' and box.edge:Metal() == Tone.metal.obsidian, 'Reset: Mode-Border in its own metal again')
+    assert(db.power.edgeStyle == 'obsidian' and db.power.edgeMetal == 'gunmetal' and db.power.follow.border and box.edge.styleId == 'obsidian' and box.edge:Metal() == Tone.metal.gunmetal, 'Reset: back to the Bar Style border')
     assert(db.power.barMode == 'dark' and M:SetResourceOption('power', 'barMode', 'color'), 'Reset: Dark again')
     assert(db.power.matchWidth == false and db.power.show, 'size and show stay')
     assert(M:SetResourceOption('power', 'matchWidth', true) and ModeUIResourcePower.width == 454)
@@ -379,9 +381,9 @@ cdm5.resources.health.edgeMetal = 'steel'
 H.Load({ before = STUBS, saved = five }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 11 and M.db.resourceLayout == 'separate', 'version 10, Separate Resources')
+    assert(M.db.version == 12 and M.db.resourceLayout == 'separate', 'version 10, Separate Resources')
     assert(db.power.height == 16 and db.mana.height == 8 and db.combo.height == 12, 'default heights move; a chosen one stays')
-    assert(db.power.edgeStyle == 'obsidian' and db.power.edgeMetal == 'default' and db.health.edgeMetal == 'steel', 'Mode-Border in its own metal; a chosen metal stays')
+    assert(db.power.edgeStyle == 'obsidian' and db.power.edgeMetal == 'gunmetal' and db.health.edgeMetal == 'gunmetal' and db.health.follow.border, 'Mode-Border; version 12 gives every border the Bar Style (owner, November 24, 2026)')
     assert(db.combo.text == 'current' and db.combo.textShow and db.combo.textAnchor == nil and db.combo.layout == 'grouped', 'the count on, grouped points')
     assert(db.power.barMode == 'dark' and db.power.rimColor == 'metal' and #db.power.marks == 1 and not db.power.marksShow, 'new settings from their defaults')
 ]==], "version 6")
@@ -401,7 +403,7 @@ r6.mana.marks = { { value = 0, power = 'MANA' }, { value = 0, power = 'any' }, {
 H.Load({ before = STUBS, saved = six }).run([==[
     local M = addon.CooldownManager
     local db = M.db.resources
-    assert(M.db.version == 11, 'version 10')
+    assert(M.db.version == 12, 'version 10')
     assert(db.power.height == 16 and db.combo.height == 10 and db.mana.height == 7, 'version 6 heights move; a chosen one stays')
     assert(db.mana.textShow == false and db.mana.text == 'current' and db.power.textShow and db.combo.textShow, 'None becomes Show Text off')
     assert(db.combo.textAnchor == nil and db.power.textAnchor == nil, 'the anchor goes: always in the middle')

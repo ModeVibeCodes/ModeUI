@@ -311,7 +311,8 @@ end
 
 function M.Initialize(db)
     -- A new profile: version 8's settings, then the version 9 step's bars.
-    if db.version == nil then db.version = 8 end
+    local fresh = db.version == nil
+    if fresh then db.version = 8 end
     if db.version == 1 then
         for _, viewer in ipairs(M.viewers) do if type(db[viewer]) == "table" then GrowthFromV1(db[viewer]) end end
         db.version = 2
@@ -372,6 +373,9 @@ function M.Initialize(db)
         db.version = 10
     end
     if db.version == 10 then M.MigrateCastColors(db); db.version = 11 end -- every Mode cast bar (CastInit.lua)
+    -- Version 11 -> 12: the Bar Style, once the tables below are filled in (BarStyle.lua).
+    local barStyleStep = db.version == 11
+    if barStyleStep then db.version = 12 end
     assert(db.version == M.VERSION, "Invalid cooldown manager settings version")
     if db.customBars == nil then db.customBars = {} end
     if db.nextCustom == nil then db.nextCustom = 1 end
@@ -388,4 +392,7 @@ function M.Initialize(db)
     M.ValidateResources(db)
     -- The Cast Bar (CastInit.lua): the same.
     M.ValidateCast(db)
+    if barStyleStep then M.MigrateV12(db, fresh) end
+    M.ValidateBarStyle(db)
+    M.ApplyBarStyleAll(db)
 end

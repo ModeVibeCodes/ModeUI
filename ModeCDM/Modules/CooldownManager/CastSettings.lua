@@ -26,8 +26,12 @@ function M:SetCastOption(key, value)
     if not self:CanConfigure() or self.castDefaults[key] == nil then return false end
     local candidate = Copy(self.db)
     candidate.castBar[key] = Copy(value)
+    -- Border and font values it takes from the Bar Style become its own.
+    local group, follow = self.playerKeyGroup[key], candidate.castBar.follow
+    if group and type(follow) == "table" and follow[group] then follow[group] = false end
     if not pcall(self.Initialize, candidate) then return false end
     self.db.castBar[key] = candidate.castBar[key]
+    self.db.castBar.follow = candidate.castBar.follow
     return Changed(self, key == "opacity")
 end
 
@@ -36,9 +40,11 @@ function M:ResetCast()
     if not self:CanConfigure() then return false end
     local style = Copy(self.castDefaults)
     for key in pairs(self.castIdentityKeys) do style[key] = Copy(self.db.castBar[key]) end
+    style.follow = { border = true, text = true }
     local target = self.db.castBar
     for key in pairs(target) do target[key] = nil end
     for key, value in pairs(style) do target[key] = value end
+    self.ApplyPlayerStyle(self.db, target)
     return Changed(self, false)
 end
 

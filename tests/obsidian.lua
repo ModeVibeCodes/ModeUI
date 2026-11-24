@@ -114,7 +114,8 @@ world.run([==[
     -- A new profile and a layout's are Mode-Obsidian.
     local made = addon.Database:NewProfile()
     assert(made.theme == 'obsidian' and made.look == 1 and made.modules.unitFrames.player.prismGlow == 'hover', 'a new profile')
-    assert(made.modules.cooldownManager.essential.edgeStyle == 'obsidianEmpty', "the Cooldown Manager's icons in Mode-Empty")
+    local cdm = made.modules.cooldownManager
+    assert(cdm.essential.edgeStyle == 'obsidian' and cdm.essential.edgeMetal == 'gunmetal' and cdm.barStyle.edgeMetal == 'gunmetal', "the Cooldown Manager's icons in the Bar Style, its Gunmetal kept")
     local layout = addon.Layouts:Build('mode-default', '1440')
     assert(layout.theme == 'obsidian' and layout.modules.partyFrames.dispelFrom == 'bottom', 'a layout profile')
     assert(addon.Profiles.CreateThemed == nil, 'no themed copies: there is one look')

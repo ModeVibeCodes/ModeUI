@@ -11,9 +11,11 @@ if not M or not addon.Themes then return end
 -- default; borders follow the theme in Style. Runs once per profile, when
 -- the companion starts.
 local TRACK = "media:Mode-BG"
+-- A border that follows the Bar Style keeps the Bar Style's metal (owner,
+-- November 24, 2026: Gunmetal); so does the Bar Style itself.
 local function Track(style)
     if type(style) ~= "table" then return end
-    addon.Themes.DefaultMetal(style)
+    if not (type(style.follow) == "table" and style.follow.border) then addon.Themes.DefaultMetal(style) end
     if style.barBackground == nil then return end
     style.barBackground, style.barBackgroundOpacity = TRACK, 85
 end
@@ -26,4 +28,5 @@ addon.Themes:Contribute("obsidian", "cooldownManager", function(db)
     end
     for _, id in ipairs(M.resources or {}) do Track(type(db.resources) == "table" and db.resources[id]) end
     Track(db.castBar)
+    if type(db.barStyle) == "table" then Swap(db.barStyle, "backgroundColor", "mono", "panel") end
 end)

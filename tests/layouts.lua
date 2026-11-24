@@ -49,7 +49,7 @@ world.run([==[
         -- The Mode-Obsidian look (owner, November 20, 2026): every module's
         -- theme part ran after the layout's; frames in Mode-Border in its own
         -- metal, dark health in Mode-FG over Mode-BG; the Cooldown Manager's
-        -- icons in Mode-Empty with a neutral, darker rim.
+        -- bars in the Bar Style (owner, November 24, 2026): Mode-Border in Gunmetal.
         assert(profile.theme == 'obsidian' and profile.look == 1, 'Mode-Obsidian')
         for id in pairs(profile.modules) do
             assert(not addon.Themes.parts.obsidian[id] or profile.themeParts[id] == 'obsidian', id .. ': its theme part ran')
@@ -58,10 +58,12 @@ world.run([==[
             and uf.player.foregroundTexture == 'media:Mode-FG' and uf.player.backgroundTexture == 'media:Mode-BG', 'Unit Frames in Mode-Obsidian')
         for _, viewer in ipairs({ 'essential', 'utility', 'buffIcon', 'buffBar' }) do
             local style = cdm[viewer]
-            assert(style.edgeStyle == 'obsidianEmpty' and style.edgeMetal == 'default' and addon.Style.SameColor(style.edgeColor, addon.Style.Tone.emptyRim)
-                and addon.Style.IsFlatStyle(style.edgeStyle), viewer .. ': Mode-Empty, neutral and darker')
+            assert(style.edgeStyle == 'obsidian' and style.edgeMetal == 'gunmetal' and style.follow.border and style.follow.text
+                and style.outline and style.spacing == -1, viewer .. ': the Bar Style')
         end
-        for _, bar in ipairs(cdm.customBars) do assert(cdm[bar.id].edgeStyle == 'obsidianEmpty', bar.id .. ': Mode-Empty') end
+        for _, bar in ipairs(cdm.customBars) do assert(cdm[bar.id].edgeStyle == 'obsidian' and cdm[bar.id].follow.border, bar.id .. ': the Bar Style') end
+        assert(cdm.essential.follow.size and not cdm.utility.follow.size and cdm.essential.cooldownSize == 14, 'Essential is the Large size; Utility 36 x 30 its own')
+        assert(cdm.barStyle.edgeMetal == 'gunmetal' and cdm.castBar.edgeMetal == 'gunmetal' and cdm.castBar.rimColor == 'metal', 'player bars in the Bar Style border')
         assert(profile.modules.partyFrames.dispelFrom == 'bottom' and profile.modules.nameplates.enemy.backgroundTexture == 'media:Mode-BG', 'Party Frames and Nameplates in Mode-Obsidian')
         local essential = addon.CooldownManager.Geometry(cdm.essential, 1, 1)
         assert(essential.width == 288 and essential.reach == 2, 'Essential 288 wide')

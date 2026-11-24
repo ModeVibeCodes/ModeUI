@@ -18,8 +18,10 @@ world.run([==[
     assert(M and not M.enabled and not M.built and M.standalone and M.category == nil, 'standalone, off by default')
     local first = ItemsOf(essential)[1]
     assert(first.Icon.mask ~= nil and Point(first)[2] == essential, "Blizzard's icons untouched while off")
-    assert(M.db.essential.width == 40 and M.db.essential.height == 34 and M.db.utility.width == 32 and M.db.utility.height == 28, 'icons wider than tall (Mode sizes)')
-    assert(M.db.version == 11 and M.db.essential.border == 'mode' and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
+    -- A new profile follows the Bar Style (owner, November 24, 2026): Large 38 x 30 (Utility too), Small 32 x 26.
+    assert(M.db.essential.width == 38 and M.db.essential.height == 30 and M.db.utility.width == 38 and M.db.buffIcon.width == 32 and M.db.buffIcon.height == 26, 'the Bar Style sizes')
+    assert(M.db.essential.edgeStyle == 'obsidian' and M.db.essential.edgeMetal == 'gunmetal' and M.db.essential.spacing == -1 and M.db.essential.follow.size, 'Mode-Border in Gunmetal, one shared shadow pixel')
+    assert(M.db.version == 12 and M.db.essential.border == 'mode' and M.db.essential.grow == 'centerH' and M.db.buffIcon.lineGrowth == 'up')
     -- A new profile starts with the five default bars (Presets.lua), in order.
     assert(#M.db.customBars == 5 and M.db.nextCustom == 6, 'the five default bars')
     local want = { { 'defensives', 'Defensive Cooldowns', 'cooldown', 30, 24, 3, 'left', 'up', 2 },
@@ -32,12 +34,14 @@ world.run([==[
         assert(bar.id == 'custom' .. i and bar.preset == w[1] and bar.name == w[2] and bar.kind == w[3] and #bar.entries == 0, w[1])
         assert(style.width == w[4] and style.height == w[5] and style.perLine == w[6] and style.grow == w[7] and style.lineGrowth == w[8] and style.spacing == w[9], w[1] .. ' shape')
     end
-    assert(M.db.custom5.cooldownSize == 22 and M.db.custom5.countSize == 18 and M.db.custom2.cooldownSize == 10, 'Ultra: big text')
+    assert(M.db.custom5.cooldownSize == 22 and M.db.custom5.countSize == 18 and M.db.custom2.cooldownSize == 18, 'text scales with the icon: Ultra big, Emphasized 18')
     assert(M.db.essential.desaturate and not M.db.essential.auraSwipe and next(M.db.essential.spells) == nil, 'gray on cooldown; glows off on every spell')
-    assert(M.db.essential.procGlow == 'border' and M.db.essential.readyGlow == 'mode', 'looks a glow starts with')
+    assert(M.db.essential.procGlow == 'mode' and M.db.essential.readyGlow == 'mode', 'looks a glow starts with')
     local Tone = addon.Style.Tone
-    assert(addon.Style.SameColor(M.db.essential.procColor, Tone.celadon) and addon.Style.SameColor(M.db.essential.readyColor, Tone.ivory), 'Celadon procs, Ivory ready')
-    assert(M.db.essential.fontMedia == 'Mode' and not M.db.essential.outline and M.db.essential.backgroundOpacity == 100, 'Urbanist, no outline, a solid face')
+    assert(addon.Style.SameColor(M.db.essential.procColor, Tone.brand) and addon.Style.SameColor(M.db.essential.readyColor, Tone.ivory), 'brand gold procs, Ivory ready')
+    assert(M.db.essential.fontMedia == 'Mode' and M.db.essential.outline and M.db.essential.backgroundOpacity == 100 and M.db.essential.cooldownSize == 14, 'Urbanist outlined, a solid face')
+    -- The checks below were written against version 11's look.
+    LegacyBars()
 
     addon:SetModuleEnabled('cooldownManager', true)
     assert(M.built and ModeUICooldownEssential and ModeUICooldownBuffBar, 'a stand-in per viewer')
@@ -270,7 +274,7 @@ world.run([==[
     assert(#M.db.customBars == 0 and M.db.nextCustom == 6 and addon.db.positions.cooldownManagerCustom2 == nil)
 
     -- Custom bars: Blizzard's own icons move onto them.
-    local c1 = M:AddCustomBar('cooldown')
+    local c1 = LegacyBars(M:AddCustomBar('cooldown'))
     assert(c1 == 'custom6' and M:Custom(c1).name == 'Cooldown Bar 1' and ModeUICooldownCustom6 and M.db.custom6.perLine == 8, 'a new Cooldown Bar')
     assert(PM:GetPosition('cooldownManagerCustom6').target == 'screen', 'placed in Edit Mode like the viewers')
     local byKey = {}
@@ -281,10 +285,10 @@ world.run([==[
     assert(Point(byKey[102])[4] == 140 and Point(byKey[201])[4] == 186, 'in the order added, centered')
     assert(M:MoveEntry(c1, '201', -1) and Point(byKey[201])[4] == 140, 'Earlier')
     assert(not M:AddEntry(c1, '301'), 'a Cooldown Bar takes no buffs')
-    local c2 = M:AddCustomBar('buff')
+    local c2 = LegacyBars(M:AddCustomBar('buff'))
     assert(c2 == 'custom7' and M:Custom(c2).name == 'Buff Bar 1' and M:AddEntry(c2, '301') and not M:AddEntry(c2, '101'))
     assert(Point(byKey[301])[2] == M.holders.custom7, 'a buff on a Buff Bar')
-    local c3 = M:AddCustomBar('cooldown')
+    local c3 = LegacyBars(M:AddCustomBar('cooldown'))
     assert(M:Custom(c3).name == 'Cooldown Bar 2' and M:AddEntry(c3, '102'))
     assert(#M:Custom(c1).entries == 1 and Point(byKey[102])[2] == M.holders.custom8, 'a spell moves between custom bars')
     assert(M:SetSpellSwitch(c3, '102', 'hide', true) and byKey[102].alpha == 0, 'hidden on its custom bar')
@@ -575,7 +579,7 @@ world.run([==[
     assert(M:SetSpellSwitch('utility', 's26297', 'hide', false))
     assert(M:SetRacials('essential') and M.spellIcons.essential.s26297:IsShown() and not M.spellIcons.utility.s26297, 'moved to Essential')
     assert(not M:SetRacials('buffIcon') and M.db.racials == 'essential', 'not on Tracked Buffs')
-    local temp = M:AddCustomBar('cooldown')
+    local temp = LegacyBars(M:AddCustomBar('cooldown'))
     assert(M:SetRacials(temp) and M.spellIcons[temp].s26297 and M:DeleteCustomBar(temp) and M.db.racials == 'utility', 'a deleted bar gives them back to Utility')
     assert(M:SetRacials('none') and not M.spellIcons.utility.s26297 and not M.spellIcons.essential.s26297, 'Off')
     assert(M:SetRacials('utility'))
@@ -611,7 +615,7 @@ world.run([==[
     -- Copy and reset, then the no-writes rule.
     assert(M:SetOption('essential', 'border', 'none') and M:SetOption('essential', 'edgeStyle', 'round') and M:CopyStyleToAll('essential'))
     assert(M.db.custom6.border == 'none' and M.db.custom6.edgeStyle == 'round' and M.db.buffBar.width == 220, 'look copied to every bar, shape kept')
-    assert(M:ResetViewer(c1) and M.db.custom6.border == 'mode' and M.db.custom6.edgeStyle == 'obsidianEmpty')
+    assert(M:ResetViewer(c1) and M.db.custom6.border == 'mode' and M.db.custom6.edgeStyle == 'obsidian' and M.db.custom6.follow.border, 'reset: back to the Bar Style')
     assert(#blizzardWrites == 0, 'wrote to Blizzard frames: ' .. table.concat(blizzardWrites, ', '))
 
     -- Switching off: icons back at full, a reload for the look.
@@ -653,9 +657,9 @@ do
     for key, style in pairs(db) do if type(style) == "table" and style.border then style.edgeStyle, style.edgeMetal = nil, nil end end
     H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
         local M = addon.CooldownManager
-        assert(M.db.version == 11 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
+        assert(M.db.version == 12 and M.db.essential.border == 'none' and #M.db.customBars == 2, 'nothing reset')
         for _, viewer in ipairs(M.viewers) do assert(M.db[viewer].edgeStyle == 'obsidianEmpty' and M.db[viewer].edgeMetal == 'default', viewer .. ' takes the default border') end
-        assert(M.db.custom6.edgeStyle == 'obsidianEmpty' and M.db.custom7.edgeMetal == 'default', 'custom bars too')
+        assert(M.db.custom6.edgeStyle == 'obsidian' and M.db.custom6.follow.border and M.db.custom7.edgeMetal == 'default', 'custom bars too; one that follows the Bar Style takes its border')
     ]==], "fill border style")
 end
 
@@ -667,7 +671,7 @@ v1.profiles.Default.modules.cooldownManager = { enabled = true, version = 1,
     buffIcon = { orientation = "horizontal", start = "BOTTOMLEFT", center = true, readyGlow = false, readyStyle = "glow" } }
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v1 }).run([==[
     local db = addon.CooldownManager.db
-    assert(db.version == 11 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'v1 also takes the Mode edge')
+    assert(db.version == 12 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'v1 also takes the Mode edge')
     assert(db.essential.grow == 'left' and db.essential.lineGrowth == 'down', 'right-aligned rows grow left')
     assert(db.essential.readyGlow == 'border' and db.essential.readyMode == 'flash' and db.essential.readyStyle == nil, 'ready glow look kept, as a flash')
     assert(db.essential.orientation == nil and db.essential.desaturate == true and #db.customBars == 5, 'and the five default bars (version 9)')
@@ -685,7 +689,7 @@ old.utility.border, old.utility.borderColor = "square", { 1, 0, 0 }
 old.custom6.border = "rounded"
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v2 }).run([==[
     local db, Kit = addon.CooldownManager.db, addon.Kit
-    assert(db.version == 11 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'old default to the Mode edge')
+    assert(db.version == 12 and db.essential.border == 'mode' and db.essential.borderColor == nil, 'old default to the Mode edge')
     assert(db.utility.border == 'mode' and db.utility.borderColor == nil and db.utility.borderSize == nil, 'Square becomes the Mode edge; size and color retire')
     assert(db.custom6.border == 'mode', 'custom bars too')
 ]==], "migrate v2")
@@ -702,7 +706,7 @@ v3.profiles.Default.positions.cooldownManagerUtility = { target = "cooldownManag
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v3 }).run([==[
     local M, PM = addon.CooldownManager, addon.PositionManager
     local db = M.db
-    assert(db.version == 11 and db.essential.width == 40 and db.essential.height == 34 and db.custom7.width == 32 and db.custom7.height == 28, 'default sizes move')
+    assert(db.version == 12 and db.essential.width == 40 and db.essential.height == 34 and db.custom7.width == 32 and db.custom7.height == 28, 'default sizes move')
     assert(db.utility.width == 40 and db.utility.height == 30 and db.movePlaces == nil, 'a chosen size stays')
     assert(PM:GetPosition('cooldownManagerUtility').y == 0 and Point(ModeUICooldownUtility)[5] == -1, 'Utility 1px under Essential')
 ]==], "migrate v3")
@@ -729,20 +733,21 @@ four.resources = { power = { barTexture = "mode", barBackground = "slate", barBa
 H.Load({ before = STUBS .. "\nMakeViewers()", saved = v4 }).run([==[
     local db, Tone, Same = addon.CooldownManager.db, addon.Style.Tone, addon.Style.SameColor
     local E, U, B = db.essential, db.utility, db.buffBar
-    assert(db.version == 11 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
+    assert(db.version == 12 and E.border == 'mode' and E.borderSize == nil and E.borderColor == nil, 'the Mode edge; size and color retire')
     assert(E.width == 40 and E.height == 34 and U.width == 32 and U.height == 28 and B.height == 16, 'default sizes move')
-    assert(Same(E.backgroundColor, Tone.mono.panel) and E.backgroundOpacity == 100 and E.fontMedia == 'Mode' and not E.outline)
+    -- Version 12: every bar's text takes the Bar Style (outlined, sizes scaled to the icon).
+    assert(Same(E.backgroundColor, Tone.mono.panel) and E.backgroundOpacity == 100 and E.fontMedia == 'Mode' and E.outline)
     assert(E.procGlow == 'border' and Same(E.procColor, Tone.celadon) and E.readyGlow == 'mode' and Same(E.readyColor, Tone.ivory), 'glow looks')
     assert(Same(E.spells['101'].proc.color, Tone.celadon) and E.spells['101'].proc.style == 'pixel', "a spell's glow takes the new color, keeps its style")
-    assert(E.cooldownSize == 13 and E.countSize == 11 and Same(E.countColor, Tone.textBright), 'text sizes and colors')
-    assert(Same(U.backgroundColor, { 1, 0, 0 }) and U.fontMedia == 'Friz Quadrata', 'chosen values stay')
+    assert(E.cooldownSize == 16 and E.countSize == 11 and Same(E.countColor, Tone.textBright), 'text sizes (scaled to 34 tall) and colors')
+    assert(Same(U.backgroundColor, { 1, 0, 0 }) and not U.follow.background and U.fontMedia == 'Mode', 'a chosen background stays; the text is the Bar Style')
     -- Mode Gradient and Mode BG, then the look step (Mode-FG, Mode-BG) and the
     -- Mode-Obsidian part (the empty part at 85%).
     assert(B.barTexture == 'media:Mode-FG' and B.barBackground == 'media:Mode-BG' and B.barBackgroundOpacity == 85 and B.showSpark, 'Mode bars')
     assert(B.barColorMode == 'class' and db.custom6.barColorMode == 'custom' and Same(db.custom6.barColor, { 0.2, 0.4, 0.6 }), 'cyan becomes class; a chosen color stays, as Custom')
     local power, combo = db.resources.power, db.resources.combo
     assert(power.barTexture == 'media:Mode-FG' and power.barBackground == 'media:Mode-BG' and power.barBackgroundOpacity == 85, 'resource bars')
-    assert(power.borderColor == nil and power.fontMedia == 'Mode' and not power.outline and Same(combo.barColor, Tone.reaction.hostile))
+    assert(power.borderColor == nil and power.fontMedia == 'Mode' and power.outline and Same(combo.barColor, Tone.reaction.hostile))
 ]==], "migrate v4")
 
 -- Bad saved data stops startup rather than being reset.
@@ -797,7 +802,7 @@ do
     H.Load({ before = STUBS .. "\nMakeViewers()", saved = saved }).run([==[
         local M, PM = addon.CooldownManager, addon.PositionManager
         local bars = M.db.customBars
-        assert(M.db.version == 11 and #bars == 7 and bars[1].id == 'custom6' and bars[2].id == 'custom7' and #bars[1].entries == 2, 'its own bars first, kept')
+        assert(M.db.version == 12 and #bars == 7 and bars[1].id == 'custom6' and bars[2].id == 'custom7' and #bars[1].entries == 2, 'its own bars first, kept')
         for i, tag in ipairs(M.presetOrder) do assert(bars[i + 2].id == 'custom' .. (10 + i) and bars[i + 2].preset == tag, tag .. ' added') end
         assert(M.db.nextCustom == 16 and M.db.custom15.width == 54 and M.db.essential.border == 'none', 'the counter carries on; nothing else changes')
         assert(PM:GetPosition('cooldownManagerCustom12').target == 'cooldownManagerBuffIcon', 'in its own place')
@@ -839,15 +844,15 @@ H.Load({ before = STUBS .. "\nMakeViewers()" }).run([==[
         assert(Shape(db.essential, 38, 30, 7, -1, 'centerH', 'down') and Placed('cooldownManagerEssential', 'screen', 'CENTER', 'BOTTOM', 0, variant == '1440' and 325 or 300), 'Essential')
         -- Utility 36 under Essential's second row: a row is 30 + 2 x 2 - 1 = 33.
         assert(Shape(db.utility, 36, 30, 6, -1, 'centerH', 'down') and Placed('cooldownManagerUtility', 'cooldownManagerEssential', 'TOP', 'BOTTOM', 0, -69), 'Utility')
-        -- Every bar in Mode-Empty with the neutral, darker rim (owner, November 20,
-        -- 2026) and cooldownHot numbers (owner's tuning, November 18, 2026).
+        -- Every bar in the profile's Bar Style (owner, November 24, 2026):
+        -- Mode-Border in Gunmetal, one shared shadow pixel, amber numbers.
         local looks = { 'essential', 'utility', 'buffIcon', 'buffBar' }
         for _, bar in ipairs(db.customBars) do looks[#looks + 1] = bar.id end
         for _, key in ipairs(looks) do
             local style = db[key]
-            assert(style.edgeStyle == 'obsidianEmpty' and style.edgeMetal == 'default' and style.spacing == -1 and style.edgeSize == 1
-                and addon.Style.SameColor(style.edgeColor, addon.Style.Tone.emptyRim)
-                and addon.Style.SameColor(style.cooldownColor, addon.Style.Tone.cooldownHot), key .. ': the Mode-DPS/TANK look')
+            assert(style.edgeStyle == 'obsidian' and style.edgeMetal == 'gunmetal' and style.spacing == -1 and style.edgeSize == 1
+                and style.follow.border and style.follow.text
+                and addon.Style.SameColor(style.cooldownColor, addon.Style.Tone.cooldown), key .. ': the Bar Style')
         end
         local r = db.resources
         assert(db.resourceLayout == 'grouped' and r.power.height == 10 and r.combo.height == 8 and r.mana.height == 8 and not r.health.show, 'Group Resources')
@@ -872,7 +877,7 @@ H.Load({ before = STUBS .. "\nMakeViewers()" }).run([==[
         assert(Shape(style, 54, 48, 2, -1, 'centerH', 'up') and style.cooldownSize == 22 and style.countSize == 18, 'Ultra Emphasized Buffs')
         assert(Placed(id, 'screen', 'CENTER', 'CENTER', variant == '1440' and 135 or 110, 115), 'Ultra further out at 1440')
     end
-    assert(not M.db.enabled and M.db.essential.width == 40 and addon.db.positions.cooldownManagerEssential == nil, 'the profile in use is untouched')
+    assert(not M.db.enabled and M.db.essential.width == 38 and addon.db.positions.cooldownManagerEssential == nil, 'the profile in use is untouched')
 ]==], "mode-default layout")
 
 print("cooldown manager: all checks passed")

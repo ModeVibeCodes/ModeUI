@@ -146,6 +146,10 @@ function M:SetOption(viewer, key, value)
     if not self:CanConfigure() or not defaults or defaults[key] == nil then return false end
     local candidate = Copy(self.db)
     candidate[viewer][key] = Copy(value)
+    -- A value of a group the bar takes from the Bar Style makes that group
+    -- the bar's own (BarStyle.lua).
+    local group, follow = self.styleKeyGroup[key], candidate[viewer].follow
+    if group and type(follow) == "table" and follow[group] then follow[group] = false end
     -- Rows add lines down or up, columns right or left: a new Growth keeps
     -- New Lines if it still fits, else takes the first that does.
     if key == "grow" then
@@ -155,6 +159,7 @@ function M:SetOption(viewer, key, value)
     if not pcall(self.Initialize, candidate) then return false end
     if self.alphaKeys[key] then
         self.db[viewer][key] = candidate[viewer][key]
+        self.db[viewer].follow = candidate[viewer].follow
         if self.active then self:UpdateFade() end
         if self.page then self.page:Refresh() end
         return true
@@ -166,7 +171,14 @@ function M:ResetViewer(viewer)
     if not self:CanConfigure() or not self:Defaults(viewer) then return false end
     local style = Copy(self:Defaults(viewer))
     for key in pairs(self.identityKeys) do style[key] = Copy(self.db[viewer][key]) end
-    return Commit(self, viewer, style)
+    -- Back to the Bar Style too; its size stays its own as it was.
+    local follow = self.NewFollow(self.db, viewer)
+    if follow.size ~= nil then follow.size = self:Follows(viewer, "size") end
+    style.follow = follow
+    local candidate = Copy(self.db)
+    candidate[viewer] = style
+    if not pcall(self.Initialize, candidate) then return false end
+    return Commit(self, viewer, candidate[viewer])
 end
 
 -- Copies one viewer's look (borders, background, cooldown, text, glows,
@@ -179,6 +191,8 @@ function M:CopyStyleTo(from, targets)
         if viewer ~= from and targets[viewer] then
             local style = Copy(self.db[from])
             for key in pairs(self.identityKeys) do style[key] = Copy(self.db[viewer][key]) end
+            -- The size stays the target's, and so does whether it follows the Bar Style's.
+            if type(style.follow) == "table" then style.follow.size = self:Follows(viewer, "size") or nil end
             local candidate = Copy(self.db)
             candidate[viewer] = style
             if pcall(self.Initialize, candidate) then

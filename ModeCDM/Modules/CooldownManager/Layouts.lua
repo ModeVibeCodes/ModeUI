@@ -12,28 +12,34 @@ if not M or not addon.Layouts then return end
 -- Measured in UI units, a pixel each at the pixel-perfect scale: a bar's
 -- place is its Edit Mode stand-in's (one line of icons with their edges).
 --
--- The owner's tuning (November 18, 2026, testing at 1080p): icons at
--- Spacing -1 (neighbours share one shadow pixel), cooldown numbers in
--- cooldownHot; every bar in Mode-Empty with a neutral, darker rim
--- (Tone.emptyRim; owner, November 20, 2026, for Mode-Obsidian); Essential and Emphasized Buffs
--- 38 x 30, Defensive Cooldowns 36 x 30 on the Player frame's top border;
--- Power filled in your class color, Combo Points and Alternate Mana in color.
+-- The look is the profile's Bar Style (BarStyle.lua; owner, November 24,
+-- 2026: layout profiles look like new bars). The sizes are the layout's own
+-- (owner, November 18, 2026, testing at 1080p): Essential and Emphasized
+-- Buffs 38 x 30, Defensive Cooldowns 36 x 30 on the Player frame's top
+-- border; Power filled in your class color, Combo Points and Alternate Mana
+-- in color.
 local function Copy(value) return addon.ProfileCodec.Copy(value) end
-local Tone = addon.Style.Tone
 local E, CAST, POWER = M.ElementId("essential"), M.CAST_ELEMENT, M.ResourceElementId("power")
-local SPACING = -1
 
--- Every bar's look in this layout.
-local function Look(style)
-    style.spacing, style.edgeStyle, style.edgeMetal = SPACING, "obsidianEmpty", "default"
-    style.edgeColor = Copy(Tone.emptyRim)
-    style.cooldownColor = Copy(Tone.cooldownHot)
-end
--- A bar's shape: icon size, Icons per Line, Growth, New Lines; and the look.
+-- A bar's shape: icon size, Icons per Line, Growth, New Lines.
 local function Shape(style, width, height, perLine, grow, lineGrowth)
     style.width, style.height, style.perLine = width, height, perLine
     style.grow, style.lineGrowth = grow, lineGrowth
-    Look(style)
+end
+-- After the shapes: a size that isn't the Bar Style's own makes Size
+-- Custom, and every followed group is written again (the text follows the
+-- new height).
+local function Settle(db, id)
+    local style, bs = db[id], db.barStyle
+    local role = M.StyleRole(db, id)
+    if role and type(style.follow) == "table" and style.follow.size ~= nil then
+        style.follow.size = style.width == bs[role .. "Width"] and style.height == bs[role .. "Height"]
+    end
+    M.ApplyBarStyle(db, id)
+end
+local function SettleAll(db)
+    for _, viewer in ipairs(M.viewers) do Settle(db, viewer) end
+    for _, bar in ipairs(db.customBars) do Settle(db, bar.id) end
 end
 -- The default bars' own sizes here, and places. Defensive Cooldowns hang
 -- from the Player frame's bar block (unitFramesPlayerBars: its border on
@@ -54,7 +60,8 @@ local function Presets(db, ctx, places)
         local style, defaults = db[bar.id], M.presetDefaults[tag]
         for key in pairs(M.presets[tag].style) do style[key] = Copy(defaults[key]) end
         if SIZES[tag] then style.width, style.height = SIZES[tag][1], SIZES[tag][2] end
-        Look(style)
+        -- The Bar Style's spacing here too (one shared shadow pixel).
+        style.spacing = db.barStyle.spacing
         local place = Copy(M.presets[tag].place)
         for key, value in pairs(places[tag] or {}) do place[key] = value end
         ctx.Place(M.ElementId(bar.id), place.target, place.point, place.relativePoint, place.x, place.y)
@@ -74,9 +81,8 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     ctx.Place(E, "screen", "CENTER", "BOTTOM", 0, ctx.V({ ["1080"] = 300, ["1440"] = 325 }))
     -- Utility 36 under Essential's second row, as the owner placed it.
     Shape(db.utility, 36, 30, 6, "centerH", "down")
-    local row = db.essential.height + 2 * M.IconReach(db.essential) + SPACING
+    local row = db.essential.height + 2 * M.IconReach(db.essential) + db.essential.spacing
     ctx.Place(M.ElementId("utility"), E, "TOP", "BOTTOM", 0, -(row + 36))
-    Look(db.buffBar)
 
     -- Group Resources: Power hosts the block (Power 10, Combo Points and
     -- Alternate Mana 8, filled: Power in your class color, the others in
@@ -108,6 +114,7 @@ addon.Layouts:Contribute("mode-default", "cooldownManager", function(db, ctx)
     TrackedBars(ctx)
     -- The default bars at their sizes and places here.
     Presets(db, ctx, { defensives = { target = "unitFramesPlayerBars", x = 1, y = 0 } })
+    SettleAll(db)
 end)
 
 -- The Healer layout (owner, November 19, 2026; design/healer-layout/): the
@@ -115,7 +122,7 @@ end)
 -- Player frame shows your mana). From the bottom up: Utility 70 under
 -- Essential's first line (33 under its second); Essential 42 x 34 (4px
 -- bigger), seven to a line, at the same place; on it a thin Combo Points
--- strip (6px, Mode-Border) and the Cast Bar
+-- strip (6px) and the Cast Bar
 -- (20 tall: 16 until the owner's 1440 check, November 20, 2026) at a fixed place over that strip, so nothing moves when a class
 -- has no combo points; then Tracked Buffs and Emphasized Buffs as before.
 -- With Power off the resources stand apart, so the Cast Bar hangs from
@@ -133,17 +140,15 @@ addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     ctx.Place(E, "screen", "CENTER", "BOTTOM", 0, ctx.V({ ["1080"] = 300, ["1440"] = 325 }))
     Shape(db.utility, 36, 30, 6, "centerH", "down")
     ctx.Place(M.ElementId("utility"), E, "TOP", "BOTTOM", 0, -HEALER.utility)
-    Look(db.buffBar)
     TrackedBars(ctx)
 
     -- Resources apart: Power and Alternate Mana off, Combo Points a 6px
-    -- Mode-Border strip as wide as Essential, 1px over it.
+    -- strip in the Bar Style's border, as wide as Essential, 1px over it.
     db.resourceLayout = "separate"
     local bars = db.resources
     bars.power.show, bars.mana.show, bars.health.show = false, false, false
     local combo = bars.combo
     combo.height, combo.barMode, combo.matchWidth, combo.textShow = HEALER.combo, "color", true, false
-    combo.edgeStyle, combo.edgeMetal = "obsidian", "default"
     ctx.Match(COMBO, "width", E)
     ctx.Place(COMBO, E, "BOTTOM", "TOP", 0, 1)
 
@@ -159,4 +164,5 @@ addon.Layouts:Contribute("healer", "cooldownManager", function(db, ctx)
     Presets(db, ctx, { leftBuffs = { x = -side.x, y = side.y }, rightBuffs = { x = side.x, y = side.y } })
     -- Defensive Cooldowns: hidden, not deleted, so it can come back.
     db[M.PresetBar(db, "defensives").id].show = false
+    SettleAll(db)
 end)
