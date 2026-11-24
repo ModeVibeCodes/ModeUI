@@ -413,7 +413,13 @@ The Cooldown Manager's icons, tracked bars and resource bars:
   (no glow behind text in Mode-Obsidian); switched on, Unit Frames health
   numbers take Deep 15% and names Ink 20%. Health text colored by health takes its Deep glow from a
   second color curve, since the color is secret.
-- **Health text glow on Party Frames and Nameplates** (a module toggle): a soft
+- **Readable nameplate text** (owner, November 24, 2026): text drawn over a
+  colored bar and the moving world takes the Halo in **Ink at 60%**, on by
+  default for nameplate names and health text: a dark ring that reads as a
+  crisp outline, sharper than the font outline. Enemy nameplate names are in
+  the text color: the bar carries the reaction, and colored text on a bar of
+  the same hue loses its lower half.
+- **Health text glow on Party Frames** (a module toggle): a soft
   capsule behind the health numbers in the text's own color (added light, 22%,
   `Style.TextGlow`), 5px past the digits, its width from the format
   (characters × 0.62 × size), on the text's justified side.

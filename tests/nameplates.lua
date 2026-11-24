@@ -121,6 +121,7 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua") .. [==[
             style.castColor, style.castLockedColor = addon.ProfileCodec.Copy(addon.Kit.palette.neutral), addon.ProfileCodec.Copy(addon.Kit.palette.tapped)
             style.nameOnBorder, style.auraOrder, style.comboFollowCast = false, 'indicators', false
             style.levelInside, style.classificationInside, style.raidAnchor, style.nameAnchor, style.nameY = false, false, 'LEFT', 'TOP', 0
+            style.nameColorMode = 'class'
             if kind == 'enemy' then
                 style.crowdControl.anchor, style.crowdControl.grow, style.crowdControl.size = 'LEFT', 'left', 24
                 style.debuffs.anchor, style.debuffs.grow, style.debuffs.size, style.debuffs.max, style.debuffs.attach = 'TOP', 'center', 20, 6, false
@@ -135,7 +136,7 @@ world.run([==[
     local M, Kit = addon.Nameplates, addon.Kit
     local P = Kit.palette
     assert(M and addon.modules.nameplates == M and M.category == 'frames' and not M.enabled, 'registered under Frames, off by default')
-    assert(M.db.version == 12 and M.db.enemy.width == 156 and M.db.enemy.healthHeight == 16 and M.db.friendly.width == 120, 'separate defaults per kind')
+    assert(M.db.version == 13 and M.db.enemy.width == 156 and M.db.enemy.healthHeight == 16 and M.db.friendly.width == 120, 'separate defaults per kind')
     -- The owner's baseline (November 23, 2026): the name on the top border at
     -- the top left, your debuffs on the same line top right, crowd control above,
     -- buffs right, quest left, the marker, level and elite inside, arrows.
@@ -147,6 +148,13 @@ world.run([==[
     assert(E.targetStyle == 'arrows' and E.auraOrder == 'auras' and E.auraShape == 'mode' and E.auraSpacing == 1 and E.comboFollowCast, 'arrows, auras first')
     assert(E.castHeight == 12 and E.castY == -1 and E.castTargetAnchor == 'RIGHT', 'cast bar')
     assert(F.display == 'name' and not F.showAuras and F.nameFontSize == 12, 'friendly plates: names only')
+    -- Readable text (owner, November 24, 2026): an Ink halo on names and health
+    -- text, enemy names in the text color, plates at one size.
+    for _, S in ipairs({ E, F }) do
+        assert(S.nameTextGlow and S.nameTextGlowColor == 'ink' and S.nameTextGlowStrength == 60, 'an Ink halo on names')
+        assert(S.healthTextGlow and S.healthTextGlowColor == 'ink' and S.healthTextGlowStrength == 60, 'an Ink halo on health text')
+    end
+    assert(E.nameColorMode == 'text' and F.nameColorMode == 'class' and M.db.fixedScale == true, 'enemy names in the text color; one size')
     UseV11(M)
     -- The Mode-Obsidian look (the theme part runs on every profile): Mode-FG
     -- on Mode-BG at 85%, Mode-FG casts, the focus in the Glow, Gradient names,
@@ -178,9 +186,24 @@ world.run([==[
     assert(plate.health.statusBarColor[1] == hostile[1] and plate.health.statusBarColor[4] == 1, 'true hostile color, opaque bar')
     assert(M.db.enemy.softness == nil and M.db.enemy.healthOpacity == 100 and M.db.enemy.backgroundOpacity == 85, 'opacity defaults: see-through empty bars')
     assert(math.abs(plate.health.bg.vertexColor[4] - 0.85) < 1e-9, 'Slate at 85%')
-    local hg = plate.healthText.glow
-    assert(M.db.enemy.healthTextGlow and hg and hg.on and hg:IsShown(), 'health numbers glow')
-    assert(M:SetOption('enemy', 'healthTextGlow', false) and not hg:IsShown() and M:SetOption('enemy', 'healthTextGlow', true) and hg:IsShown())
+    -- The halo: eight copies 1px round the text in Ink, in place of its shadows.
+    local hg, ng = plate.healthText.halo, plate.name.halo
+    assert(M.db.enemy.healthTextGlow and hg and hg.on and hg.mode == 'ink' and #hg == 8 and hg[1]:IsShown(), 'health numbers wear the halo')
+    assert(ng and ng.on and ng.mode == 'ink' and ng[1]:IsShown() and ng[1]:GetParent() == plate.nameHolder, 'the name too, inside its holder')
+    assert(math.abs(hg[1]:GetAlpha() - 0.6) < 1e-9 and plate.healthText.shadowColor[4] == 0 and not plate.healthText.lift:IsShown(), 'the halo replaces the shadows')
+    assert(issecretvalue(ng[1].text), 'secret names reach the halo copies too')
+    assert(M:SetOption('enemy', 'healthTextGlow', false) and not hg[1]:IsShown() and plate.healthText.shadowColor[4] == 1, 'off: the shadow is back')
+    assert(M:SetOption('enemy', 'healthTextGlow', true) and hg[1]:IsShown())
+    assert(M:SetOption('enemy', 'nameTextGlowColor', 'match') and ng.mode == 'match' and M:SetOption('enemy', 'nameTextGlowColor', 'ink'))
+    assert(not M:SetOption('enemy', 'nameTextGlowColor', 'neon') and not M:SetOption('enemy', 'nameTextGlowStrength', 0), 'halo choices and range')
+    -- Same Size at Any Distance: the plate ignores its nameplate's scale (the
+    -- game's distance and target scaling) and keeps whole pixels.
+    assert(plate:IsIgnoringParentScale() and plate.scale == first:GetParent():GetEffectiveScale(), 'one size at any distance')
+    first:SetScale(0.8); M:LayoutPlate(plate)
+    assert(plate:GetEffectiveScale() == first:GetParent():GetEffectiveScale(), 'a distant nameplate does not shrink it')
+    assert(M:SetFixedScale(false) and not M.byUnit.nameplate1:IsIgnoringParentScale() and M.byUnit.nameplate1.scale == 1, 'off: the game scales it')
+    assert(M:SetFixedScale(true) and M.byUnit.nameplate1:IsIgnoringParentScale() and not M:SetFixedScale('yes'))
+    first:SetScale(1); M:LayoutPlate(plate)
     assert(M:SetOption('enemy', 'healthOpacity', 60) and math.abs(plate.health.statusBarColor[4] - 0.6) < 1e-9, 'Health Opacity fades the bar')
     assert(plate.health.statusBarColor[1] == hostile[1], 'fading keeps the color')
     assert(M:SetOption('enemy', 'backgroundOpacity', 20) and math.abs(plate.health.bg.vertexColor[4] - 0.2) < 1e-9, 'Background Opacity')
@@ -902,9 +925,9 @@ world.run([==[
     end
     assert(table.concat(cards, ',') == 'General:Show,General:Size,General:Cast Bar,General:Combo Points,General:Indicators,'
         .. 'General:Raid Marker,General:Soft Target Icon,Fill:Health Bar,Fill:Cast Bar,Fill:Combo Points,Fill:Focus,'
-        .. 'Border:Border,Border:Aura Borders,Border:Target,Border:Aura Border Colors,Glow:Focus,Glow:Crowd Control,Glow:Health Text,'
+        .. 'Border:Border,Border:Aura Borders,Border:Target,Border:Aura Border Colors,Glow:Focus,Glow:Crowd Control,Glow:Name Text,Glow:Health Text,'
         .. 'Text:Text Style,Text:Name Text,Text:Health Text,Text:Cast Bar Text,Auras:Groups,Auras:Icons,Auras:Timer,Auras:Stacks,'
-        .. 'Behavior:Focus', table.concat(cards, ','))
+        .. 'Behavior:Size,Behavior:Focus', table.concat(cards, ','))
     -- On the Glow tab (the focus highlight) the sample shows itself as the focus, not the target.
     local selected = page.selectedSection
     -- The focus defaults to the Glow (Mode-Obsidian); the sample shows the Border style here.
@@ -1059,7 +1082,7 @@ v1.profiles.Default.modules.nameplates = { enabled = true, version = 1, width = 
 local migrated = H.Load({ before = STUBS, saved = v1 })
 migrated.run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 12 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
+    assert(db.version == 13 and db.width == nil and db.texture == nil and db.enabled == true, 'flat keys moved')
     for _, kind in ipairs({ 'enemy', 'friendly' }) do
         local style = db[kind]
         assert(style.width == 200 and style.healthColorMode == 'onyx' and style.texture == nil and style.outline == true, kind)
@@ -1080,7 +1103,7 @@ for _, kind in ipairs({ 'enemy', 'friendly' }) do
 end
 H.Load({ before = STUBS, saved = v2 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 12 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
+    assert(db.version == 13 and db.enemy.texture == nil and db.friendly.texture == nil, 'texture retired')
     assert(db.enemy.showAuras and db.enemy.debuffs.filter == 'mine' and db.friendly.debuffs.filter == 'dispellable', 'aura defaults')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v2")
@@ -1095,7 +1118,7 @@ old.auraCrowdControl, old.auraDebuffs, old.auraBuffs = true, 'all', 'none'
 old.auraPosition, old.auraAlign, old.auraSize, old.auraMax = 'below', 'right', 22, 5
 H.Load({ before = STUBS, saved = v3 }).run([==[
     local style = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 12 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 13 and style.auraPosition == nil and style.auraDebuffs == nil and style.auraSize == nil, 'old keys gone')
     for _, group in ipairs({ 'crowdControl', 'debuffs', 'buffs' }) do
         assert(style[group].anchor == 'BOTTOMRIGHT' and style[group].size == 22 and style[group].max == 5, group .. ' where the row was')
         assert(style[group].grow == 'left', group .. ' grows the way its anchor did')
@@ -1116,7 +1139,7 @@ end
 np.enemy.debuffs.anchor = 'TOPRIGHT'
 H.Load({ before = STUBS, saved = v4 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 12 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
+    assert(db.version == 13 and db.enemy.targetHighlight == nil and db.enemy.targetStyle == 'none' and db.friendly.targetStyle == 'border')
     assert(db.enemy.debuffs.grow == 'left' and db.enemy.buffs.grow == 'right', 'grow from anchors')
     -- Then version 12: crowd control, still at version 11's Left (growing left),
     -- moves above; the name and the marker at version 11's defaults take the baseline.
@@ -1133,7 +1156,7 @@ np.enemy.healthOpacity, np.enemy.backgroundOpacity = nil, nil
 np.friendly.healthOpacity, np.friendly.backgroundOpacity = nil, nil
 H.Load({ before = STUBS, saved = v5 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 12 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
+    assert(db.version == 13 and db.enemy.softness == nil and db.friendly.softness == nil, 'softness removed')
     assert(db.enemy.healthOpacity == 100 and db.enemy.backgroundOpacity == 85 and db.friendly.backgroundOpacity == 85, 'opacity defaults (Mode-Obsidian: 85)')
     assert(db.enemy.width == 180, 'other settings kept')
 ]==], "nameplates_v5")
@@ -1148,7 +1171,7 @@ end
 np.enemy.indicatorAnchor, np.enemy.indicatorX, np.enemy.indicatorY, np.enemy.indicatorSize, np.enemy.indicatorFontSize = 'TOPLEFT', 3, -2, 18, 11
 H.Load({ before = STUBS, saved = v6 }).run([==[
     local e = addon.Nameplates.db.enemy
-    assert(addon.Nameplates.db.version == 12 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
+    assert(addon.Nameplates.db.version == 13 and e.indicatorAnchor == nil and e.indicatorFontSize == nil, 'old keys gone')
     assert(e.questAnchor == 'TOPLEFT' and e.levelAnchor == 'TOPLEFT' and e.classificationX == 3 and e.levelY == -2, 'place carried over')
     assert(e.questSize == 18 and e.classificationSize == 18 and e.levelSize == 11, 'sizes carried over')
 ]==], "nameplates_v6")
@@ -1309,7 +1332,7 @@ np.enemy.auraCCNoTypeColor = { 1, 140 / 255, 40 / 255 }
 np.friendly.auraCCNoTypeColor = { 0.2, 0.4, 0.9 }
 H.Load({ before = STUBS, saved = v7 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 12 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
+    assert(db.version == 13 and math.abs(db.enemy.auraCCNoTypeColor[2] - 89 / 255) < 1e-9, 'old default follows the new one')
     assert(db.friendly.auraCCNoTypeColor[3] == 0.9, 'a picked color stays')
 ]==], "nameplates_v7")
 
@@ -1328,8 +1351,8 @@ np.friendly.backgroundOpacity, np.friendly.nameColorMode = 40, 'class'
 H.Load({ before = STUBS, saved = v8 }).run([==[
     local db, Tone, P = addon.Nameplates.db, addon.Style.Tone, addon.Kit.palette
     local e, f = db.enemy, db.friendly
-    assert(db.version == 12 and e.foregroundTexture == 'media:Mode-FG' and e.backgroundTexture == 'media:Mode-BG' and e.backgroundOpacity == 85)
-    assert(e.nameColorMode == 'class' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode-FG')
+    assert(db.version == 13 and e.foregroundTexture == 'media:Mode-FG' and e.backgroundTexture == 'media:Mode-BG' and e.backgroundOpacity == 85)
+    assert(e.nameColorMode == 'text' and e.fontMedia == 'Mode' and e.liftedShadow == false and e.castTexture == 'media:Mode-FG')
     assert(e.healthTextColor == 'health' and e.focusColor[1] == Tone.rosewood[1], 'old focus amber takes Rosewood')
     assert(f.backgroundOpacity == 40 and f.nameColorMode == 'class', 'picked values stay')
 ]==], "nameplates_v8")
@@ -1343,7 +1366,7 @@ np.enemy.auraBorderSize, np.enemy.auraCorners, np.enemy.auraNoTypeColor = 2, 'ro
 np.friendly.auraBorderSize, np.friendly.auraCorners, np.friendly.auraNoTypeColor = 3, 'sharp', { 0.5, 0.1, 0.1 }
 H.Load({ before = STUBS, saved = v9 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 12 and db.enemy.auraBorderSize == 1 and db.friendly.auraBorderSize == 2, 'sizes move')
+    assert(db.version == 13 and db.enemy.auraBorderSize == 1 and db.friendly.auraBorderSize == 2, 'sizes move')
     assert(db.enemy.auraCorners == nil and db.friendly.auraCorners == nil, 'Corners retired')
     assert(addon.Style.SameColor(db.enemy.auraNoTypeColor, addon.Style.Tone.gunmetal.mid) and db.friendly.auraNoTypeColor[1] == 0.5, 'old rim moves, picked stays')
 ]==], "nameplates_v9")
@@ -1355,7 +1378,7 @@ np.version, np.enemy.backgroundOpacity, np.friendly.backgroundOpacity = 10, 100,
 np.enemy.edgeStyle, np.enemy.edgeMetal, np.friendly.edgeStyle, np.friendly.edgeMetal = nil, nil, nil, nil
 H.Load({ before = STUBS, saved = v10 }).run([==[
     local db = addon.Nameplates.db
-    assert(db.version == 12 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 45, '100 becomes 60')
+    assert(db.version == 13 and db.enemy.backgroundOpacity == 60 and db.friendly.backgroundOpacity == 45, '100 becomes 60')
     assert(db.enemy.edgeStyle == 'obsidian' and db.friendly.edgeMetal == 'default', 'the border keys arrive with their defaults')
 ]==], "nameplates_v10")
 
@@ -1387,7 +1410,7 @@ end
 H.Load({ before = STUBS, saved = V11Profile() }).run([==[
     local db, M = addon.Nameplates.db, addon.Nameplates
     local e, f = db.enemy, db.friendly
-    assert(db.version == 12 and e.width == 156 and e.healthHeight == 16 and e.castY == -1, 'version 11 defaults take the baseline')
+    assert(db.version == 13 and e.width == 156 and e.healthHeight == 16 and e.castY == -1, 'version 11 defaults take the baseline')
     assert(e.nameAnchor == 'TOPLEFT' and e.nameY == -3 and e.nameOnBorder and e.raidAnchor == 'CENTER' and e.levelInside and e.classificationInside, 'name, marker, indicators')
     assert(e.crowdControl.anchor == 'TOP' and e.crowdControl.grow == 'center' and e.crowdControl.size == 35, 'crowd control above')
     assert(e.debuffs.anchor == 'TOPRIGHT' and e.debuffs.attach and e.debuffs.max == 4 and e.buffs.size == 22, 'your debuffs on the border line')
@@ -1440,3 +1463,27 @@ H.Load({ before = STUBS }).run([==[
     end
 ]==], "nameplates_layout")
 print("nameplates: all checks passed")
+
+-- Version 12 -> 13, readable text (owner, November 24, 2026): enemy names
+-- still in Class or Reaction take the text color; a picked color stays; the
+-- halo keys and Same Size at Any Distance fill in.
+local function V12Profile(enemyColor)
+    local saved = world.saved()
+    local np = saved.profiles.Default.modules.nameplates
+    np.version, np.fixedScale = 12, nil
+    np.enemy.nameColorMode, np.friendly.nameColorMode = enemyColor, 'class'
+    for _, s in ipairs({ np.enemy, np.friendly }) do
+        s.nameTextGlow, s.nameTextGlowColor, s.nameTextGlowStrength, s.healthTextGlowColor, s.healthTextGlowStrength = nil, nil, nil, nil, nil
+    end
+    np.enemy.healthTextGlow = false
+    return saved
+end
+H.Load({ before = STUBS, saved = V12Profile('class') }).run([==[
+    local db = addon.Nameplates.db
+    assert(db.version == 13 and db.enemy.nameColorMode == 'text' and db.friendly.nameColorMode == 'class', 'enemy names take the text color')
+    assert(db.enemy.nameTextGlow and db.enemy.nameTextGlowColor == 'ink' and db.friendly.healthTextGlowStrength == 60 and db.fixedScale == true, 'new keys fill in')
+    assert(db.enemy.healthTextGlow == false, 'a switched-off health glow stays off')
+]==], "nameplates_v12")
+H.Load({ before = STUBS, saved = V12Profile('gradient') }).run([==[
+    assert(addon.Nameplates.db.enemy.nameColorMode == 'gradient', 'a picked name color stays')
+]==], "nameplates_v12_picked")

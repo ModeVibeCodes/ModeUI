@@ -1680,3 +1680,25 @@ verified in game yet.
   `DisableUntrustedLayoutScriptsTemplate` (their regions are created inside,
   so they carry it). Part rows don't follow marks in the world. Every anchor
   to a mark is `pcall`-guarded with a full-reach fallback.
+
+## Readable nameplate text — November 24, 2026
+
+Source: the same `forever` branch of Gethe/wow-ui-source. Nothing below is
+verified in game yet.
+
+- **Plate scale.** Forever's nameplate driver (`Blizzard_NamePlates.lua`)
+  sizes Blizzard's own plate parts by the Nameplate Size setting
+  (`NAME_PLATE_SCALES`); the client itself scales each nameplate frame by
+  distance and for your target. ModeUI's plate is parented to the nameplate,
+  so it was scaled too, and the pixel size it laid out with no longer matched.
+  **Same Size at Any Distance** calls `Frame:SetIgnoreParentScale(true)` on
+  ModeUI's own plate and `SetScale` with the effective scale of the
+  nameplate's parent. `SimpleFrameAPIDocumentation.lua` marks
+  `SetIgnoreParentScale` `IsProtectedFunction` with `SecretArguments =
+  "NotAllowed"`, as it does `SetScale` and `Show`; the plate is a plain,
+  insecure frame and the argument is a plain boolean. ModeUI never changes
+  the nameplate scale CVars.
+- **Halo copies.** The name's eight halo copies are FontStrings created inside
+  the name's holder (a `DisableUntrustedLayoutScriptsTemplate` frame in the
+  world), so they carry its forbidden aspect and may anchor to the name, which
+  may follow an aura row's mark.

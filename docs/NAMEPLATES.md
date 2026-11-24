@@ -33,9 +33,14 @@ Enemy plates:
 - **Target:** arrows on both sides, always the outermost part.
 - **Soft-target icon:** the loot and interact icon (a bag or gear) above
   everything; no combat icon.
+- **Text** (owner, November 24, 2026): the name is in the light text color,
+  since the bar already shows the reaction. The name and the health text each
+  wear a tight **Ink** halo, a dark ring 1px round the letters, so they read
+  over the bar and the world. Plates keep **one size at any distance**, so
+  their text and 1px lines stay on whole screen pixels.
 
 Friendly plates are **Name Only**: players in their class color, friendly NPCs
-in the friendly color, no auras.
+in the friendly color, with the same Ink halo, no auras.
 
 ## What it draws
 
@@ -49,10 +54,22 @@ frame and fades Blizzard's art. Each plate has:
   **Mode-FG** on Mode-BG at 85%; the cast bar has its own **Cast Bar** texture
   and the **Comet** spark on the fill's leading edge (a channel's on its left),
   hidden while an interrupted cast is held.
-- **Name** in SemiBold, in the class or reaction color by default (Gradient
-  and Text Color are options). **Health text** (Percent, Current Health,
-  Current and Percent, None) in Bold, colored **By Health** or in the Text
-  Color, with a soft glow (**Health Text Glow**).
+- **Name** in SemiBold: on enemy plates in the Text Color by default, on
+  friendly ones in the class or reaction color (Gradient is the third
+  option). **Health text** (Percent, Current Health, Current and Percent,
+  None) in Bold, colored **By Health** or in the Text Color.
+- **Text halos** (`Style.TextHalo`): **Name Text Glow** and **Health Text
+  Glow** draw eight copies of the text 1px out in every direction, in Ink
+  (Deep and Match Text are options) at 60% each. A glowing text drops its
+  shadows; the halo takes their place. The copies take every write the text
+  takes, secret names and numbers included, and the name's copies are made
+  inside its holder, so they carry the holder's forbidden aspect.
+- **Same Size at Any Distance** (on by default, both kinds): the game scales
+  each nameplate by distance and grows your target's, which put the plate's
+  1px rims, shadows and halos between screen pixels and blurred its text. With
+  it on, the plate ignores its nameplate's scale (`SetIgnoreParentScale`) and
+  takes the scale of the nameplate's parent, the scale a full-size nameplate
+  has.
 - **Health color:** Reaction and Class, Reaction, Onyx or Custom, used exactly
   as they are. **Threat Colors** (enemies) gives each threat status its own
   color: **Has Aggro**, **Losing Aggro**, **Close to Pulling**.
@@ -245,7 +262,8 @@ The standard tabs under the **Editing** switch:
 - **Fill:** Health Bar, Cast Bar (Interruptible, Not Interruptible,
   Interrupted, **Channel**), Combo Points, Focus.
 - **Border:** Border, Aura Borders, Target, Aura Border Colors.
-- **Glow:** Focus, Crowd Control, Health Text.
+- **Glow:** Focus, Crowd Control, **Name Text** and **Health Text** (each a
+  Glow switch, **Glow Color** and **Glow Strength**).
 - **Text:**
   - Text Style.
   - **Name Text**, with **On Border**.
@@ -253,11 +271,12 @@ The standard tabs under the **Editing** switch:
   - Cast Bar Text.
 - **Auras:** Groups (with **Sit on Border**), Icons (Shape, **On One Anchor**,
   Spacing), Timer, Stacks.
-- **Behavior:** Focus.
+- **Behavior:** **Size** (**Same Size at Any Distance**), Focus.
 
 ## What stays Blizzard's
 
-- Where plates appear, their stacking, scale, clicks and hit areas. The
+- Where plates appear, their stacking, clicks and hit areas, and their
+  scale while **Same Size at Any Distance** is off. The
   156-wide plate fits inside Blizzard's Forever click area, which is 166 wide
   at Medium.
 - Friendly plates inside instances (forbidden to addons).
@@ -268,6 +287,11 @@ Switching the module off gives every plate back to Blizzard. Plates are plain
 frames, never secure, so they also work in combat. Settings change outside combat.
 
 ## Settings versions
+
+**Version 13** (readable text, `MigrationsV12.lua`). Enemy names still in
+Class or Reaction take the Text Color; a picked name color stays. The halo
+keys and **Same Size at Any Distance** arrive with their defaults; a Health
+Text Glow switched off stays off and now draws the halo when switched on.
 
 **Version 12** (the nameplates pass, `MigrationsV12.lua`). A value still equal
 to its version 11 default takes the baseline; anything picked stays. The new
@@ -299,10 +323,10 @@ Earlier versions:
 |---|---|
 | `Init.lua` | declaration, per-kind defaults (the baseline), ranges and choices |
 | `Migrations.lua` | `Initialize(db)`: validation and the settings-version migrations |
-| `MigrationsV12.lua` | version 11 → 12 and version 11's defaults (`M.V11`) |
+| `MigrationsV12.lua` | version 11 → 12 and version 11's defaults (`M.V11`), version 12 → 13 |
 | `Driver.lua` | lifecycle, events, enemy or friendly kind, fading Blizzard's unit frame, per-kind settings |
-| `Plate.lua` | building a plate and laying out its boxes |
-| `Layout.lua` | layers, the spine (border line, cast bar, text lines), text placement, the On Border name |
+| `Plate.lua` | building a plate, laying out its boxes, Same Size at Any Distance |
+| `Layout.lua` | layers, the spine (border line, cast bar, text lines), text placement and halos, the On Border name |
 | `Stacks.lua` | stacks per anchor, edge marks, the arrows, the Top stacks' room, name stops |
 | `Target.lua` | target indicator styles and name colors |
 | `Indicator.lua` | the level, classification and quest indicators |
@@ -345,6 +369,11 @@ Earlier versions:
   - Look at a friendly player and a friendly NPC.
   - On **General**, in **Soft Target Icon**, turn **Hide Blizzard's Combat
     Icon** on, then off.
+  - Look at an enemy over a busy background (grass, spell effects), near and
+    far, then target it. On **Behavior**, in **Size**, turn **Same Size at
+    Any Distance** off and on.
+  - On **Glow**, in **Name Text**, set **Glow Color** to Deep, then back to
+    Ink, and move **Glow Strength**.
 - **Required state:** out of combat to change settings; enemy nameplates
   shown (friendly ones too for the names).
 - **Confirmation:**
@@ -365,4 +394,8 @@ Earlier versions:
     green.
   - The game's own enemy soft-target icon is gone while Hide Blizzard's
     Combat Icon is on and back when it's off.
+  - The enemy name (light) and health % read clearly over the red bar and
+    the ground, each with a thin dark ring and no drop shadow.
+  - With Same Size at Any Distance on, near, far and targeted plates are the
+    same size and the text stays sharp; off, distant plates shrink again.
   - No Lua errors.

@@ -73,8 +73,11 @@ function M:PaintName(plate, override)
     if name == nil then return end
     local db = self:Style(plate)
     if not override and db.nameColorMode == "gradient" and not plate.nameOnly then
-        Style.SetName(text, name, self:NameColor(plate), "gradient")
+        local color = self:NameColor(plate)
+        Style.SetName(text, name, color, "gradient")
         if text.lift then text.lift:SetText(name) end
+        -- The halo takes the name's color, not the white under the codes.
+        Style.TintHalo(text, color[1], color[2], color[3])
         return
     end
     local color = override or self:NameColor(plate)

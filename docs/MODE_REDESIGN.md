@@ -564,6 +564,19 @@ From the owner's baseline and answers on the Nameplate Designer artifact
 - **The magnified previewer** (option B).
 
 docs/NAMEPLATES.md has it all. Mock client only; nothing is verified in game.
+The owner confirmed it in game the same day ("Looks good, all is working").
+
+### Revision: readable nameplate text (November 24, 2026)
+
+From an in-game screenshot (a red name and health % hard to read over a red
+bar and grass), nameplate settings 13:
+- an **Ink halo** (`Style.TextHalo`, 60%) on names and health text, in place
+  of their shadows and of the old additive health glow;
+- enemy names in the **text color** (the bar shows the reaction);
+- **Same Size at Any Distance**: plates ignore the game's distance and target
+  scaling, so their 1px lines and text stay on whole pixels.
+
+Mock client only; not yet verified in game.
 
 ## Decisions
 

@@ -71,3 +71,13 @@ function M.MigrateV11(db)
         if type(style) == "table" and addon.IsPublic(style) then Kind(style, kind, M.styleDefaults[kind]) end
     end
 end
+
+-- Version 12 -> 13, readable text (owner, November 24, 2026): enemy names
+-- still in Class or Reaction (the old default) take the text color. The new
+-- halo keys and Same Size at Any Distance fill in from the defaults.
+function M.MigrateV12(db)
+    local style = db.enemy
+    if type(style) == "table" and addon.IsPublic(style) and style.nameColorMode == "class" then
+        style.nameColorMode = M.styleDefaults.enemy.nameColorMode
+    end
+end

@@ -221,9 +221,20 @@ function M:CreateConfigPage(parent)
             page.auraGlowPills = Pills("Glow Style", M.choices.auraGlowStyle, function() return db().auraGlowStyle end, Set("auraGlowStyle"), 110)
         end)
     end)
-    Card("Glow", "Health Text", Plate, function()
-        page.healthGlowToggles = Toggles({ { "Health Text Glow", "healthTextGlow" } })
-    end)
+    -- Text halos (Style.TextHalo): a tight ring 1px round the letters, Ink by
+    -- default; a glowing text drops its shadows, the halo takes their place.
+    local function HaloCard(title, key, predicate, note)
+        Card("Glow", title, predicate, function()
+            page[key .. "Toggles"] = Toggles({ { title .. " Glow", key } })
+            When(function() return db()[key] end, function()
+                local look = Columns({ "Glow Color", "Glow Strength" })
+                Select(look[1], 160, M.choices[key .. "Color"], key .. "Color"); Slider(look[2], key .. "Strength", "%")
+            end)
+            if note then Note(note, 48) end
+        end)
+    end
+    HaloCard("Name Text", "nameTextGlow", nil, "A tight ring round the letters, in place of their shadows. Ink keeps text readable over the bar and the world; Deep and Match Text light it in its own color.")
+    HaloCard("Health Text", "healthTextGlow", Plate)
 
     -- Text: the text style, then one card per text.
     Card("Text", "Text Style", nil, function()
@@ -317,6 +328,11 @@ function M:CreateConfigPage(parent)
     end)
 
     -- Behavior: fading the other plates while you have a focus.
+    Card("Behavior", "Size", nil, function()
+        page.scaleToggles = Toggles({ { "Same Size at Any Distance", "fixedScale",
+            get = function() return M.db.fixedScale end, set = function(value) M:SetFixedScale(value) end } })
+        Note("The game shrinks distant plates and grows your target's, which puts their thin lines and text between screen pixels. Same Size at Any Distance keeps every plate at its set size so text stays sharp; it applies to both kinds.", 48)
+    end)
     Card("Behavior", "Focus", Plate, function()
         local fade = Columns({ "Other Plates Opacity" })
         page.focusFadeSlider = Slider(fade[1], "focusFadeOthers", "%")

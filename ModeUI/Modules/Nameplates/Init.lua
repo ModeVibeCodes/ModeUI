@@ -39,7 +39,9 @@ addon:RegisterModule("nameplates", M)
 -- default; Corners retire), and auras without a type keep the Gunmetal metal.
 -- Version 11: semi-transparent empty bars (Slate at 60%).
 -- Version 12: the nameplates pass (owner, November 23, 2026; MigrationsV12.lua).
-M.VERSION = 12
+-- Version 13: readable text (owner, November 24, 2026): an Ink halo behind
+-- names and health text, enemy names in the text color, plates at one size.
+M.VERSION = 13
 local EMPTY = math.floor(addon.Style.Tone.emptyAlpha * 100 + 0.5)
 M.indicatorParts = { "quest", "classification", "level" }
 M.indicatorPartLabels = { quest = "Quest", classification = "Elite and Rare", level = "Level" }
@@ -88,11 +90,17 @@ local function Style(kind)
         edgeStyle = "obsidian", edgeMetal = "default",
         threatAggroColor = Copy(M.threatPalette.aggro), threatLosingColor = Copy(M.threatPalette.warning),
         threatPullingColor = Copy(M.threatPalette.warning),
-        healthText = enemy and "percent" or "none", healthFontSize = enemy and 11 or 9, healthTextColor = "health", healthTextGlow = true,
+        healthText = enemy and "percent" or "none", healthFontSize = enemy and 11 or 9, healthTextColor = "health",
+        -- Readable text (owner, November 24, 2026): a tight Ink halo (Style.TextHalo)
+        -- behind the name and health text keeps them clear over the bar and the world.
+        healthTextGlow = true, healthTextGlowColor = "ink", healthTextGlowStrength = 60,
+        nameTextGlow = true, nameTextGlowColor = "ink", nameTextGlowStrength = 60,
         healthTextAnchor = "RIGHT", healthTextX = 0, healthTextY = 0,
         -- On Border: a Top or Bottom name rests on the bar's edge, sharing the
         -- line with aura groups set to Sit on Border, and stops where they start.
-        showName = true, nameFontSize = enemy and 13 or 12, nameColorMode = "class", nameAnchor = enemy and "TOPLEFT" or "TOP",
+        -- Enemy names in the text color: the bar already shows the reaction,
+        -- and a red name on a red bar was hard to read.
+        showName = true, nameFontSize = enemy and 13 or 12, nameColorMode = enemy and "text" or "class", nameAnchor = enemy and "TOPLEFT" or "TOP",
         nameX = 0, nameY = enemy and -3 or 0, nameOnBorder = enemy,
         -- Every Mode cast bar (owner, November 23, 2026): light blue, orange-red
         -- when it can't be interrupted, channels keep their green.
@@ -154,9 +162,10 @@ local function Style(kind)
 end
 M.styleDefaults = { enemy = Style("enemy"), friendly = Style("friendly") }
 -- hideBlizzardCombatIcon (every kind): turns the game's own enemy and friend
--- soft-target icons off (BlizzardIcons.lua); off by default.
+-- soft-target icons off (BlizzardIcons.lua); off by default. fixedScale
+-- (every kind): Same Size at Any Distance (Plate.lua ApplyPlateScale); on.
 M.defaults = { version = M.VERSION, enemy = Copy(M.styleDefaults.enemy), friendly = Copy(M.styleDefaults.friendly),
-    hideBlizzardCombatIcon = false }
+    hideBlizzardCombatIcon = false, fixedScale = true }
 -- Keys Copy Style leaves alone.
 M.identityKeys = { show = true }
 M.colorKeys = { healthColor = true, focusColor = true, threatAggroColor = true, threatLosingColor = true, threatPullingColor = true, castColor = true, castLockedColor = true,
@@ -174,6 +183,7 @@ M.dispelTypeIDs = Kit.DISPEL_TYPE_IDS
 M.ranges = { width = { 80, 250, 1 }, healthHeight = { 4, 30, 1 }, castHeight = { 4, 20, 1 },
     auraBorderSize = { 1, 2, 1 },
     healthOpacity = { 10, 100, 5 }, backgroundOpacity = { 0, 100, 5 },
+    healthTextGlowStrength = { 5, 100, 5 }, nameTextGlowStrength = { 5, 100, 5 },
     healthFontSize = { 6, 20, 1 }, nameFontSize = { 6, 20, 1 }, castFontSize = { 6, 20, 1 }, auraSpacing = { 0, 8, 1 },
     nameX = { -50, 50, 1 }, nameY = { -50, 50, 1 }, healthTextX = { -50, 50, 1 }, healthTextY = { -50, 50, 1 },
     castX = { -50, 50, 1 }, castY = { -50, 50, 1 },
@@ -204,6 +214,8 @@ M.choices = {
     display = { { id = "plate", label = "Plate" }, { id = "name", label = "Name Only" } },
     nameColorMode = { { id = "gradient", label = "Gradient" }, { id = "class", label = "Class or Reaction" }, { id = "text", label = "Text Color" } },
     healthTextColor = { { id = "health", label = "By Health" }, { id = "text", label = "Text Color" } },
+    -- Text halo colors (Style.TextHalo): Deep, Ink, Match Text.
+    healthTextGlowColor = addon.Style.GLOW_COLORS, nameTextGlowColor = addon.Style.GLOW_COLORS,
     castAnchor = { { id = "BOTTOM", label = "Below" }, { id = "TOP", label = "Above" } },
     castIcon = { { id = "LEFT", label = "Left" }, { id = "RIGHT", label = "Right" }, { id = "OUTLEFT", label = "Outside Left" },
         { id = "OUTRIGHT", label = "Outside Right" }, { id = "none", label = "None" } },

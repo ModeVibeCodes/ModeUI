@@ -67,6 +67,8 @@ function M:BorderRoom(plate, side)
 end
 
 function M:LayoutPlate(plate)
+    -- The plate's scale first: the pixel size depends on it.
+    self:ApplyPlateScale(plate)
     local db, px = self:Style(plate), Kit.PixelSize(plate)
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local function Round(v) return math.floor(v / px + 0.5) * px end
@@ -113,9 +115,17 @@ function M:LayoutPlate(plate)
         plate.above, plate.below, plate.belowNoCast = overhang, overhang, overhang
     end
 
+    -- A text's halo (Style.TextHalo; Name Text Glow, Health Text Glow: a tight
+    -- Ink ring by default) takes the place of its shadows. It goes on after the
+    -- font, anchors and justification; true when it shows.
+    local function Halo(text, key, shown)
+        local on = (shown and db[key]) and true or false
+        Style.TextHalo(text, on and { color = db[key .. "Color"], strength = db[key .. "Strength"] / 100, px = px } or nil)
+        return on
+    end
     -- Text: on the border line, outside the bar for Top and Bottom anchors,
     -- inside it otherwise.
-    local function PlaceText(text, anchor, size, shown, dx, dy, border)
+    local function PlaceText(text, anchor, size, shown, dx, dy, border, glowKey)
         local h = Horizontal(anchor)
         local justify = h == "" and "CENTER" or h
         text:ClearAllPoints()
@@ -134,8 +144,9 @@ function M:LayoutPlate(plate)
         local weighted = Style.Weighted(path, text == plate.name and "semibold" or "bold")
         Kit.Font(text, db, size, weighted, px)
         text:SetJustifyH(justify)
-        Kit.LayoutLift(text, db, size, weighted, px, shown, justify)
+        Kit.LayoutLift(text, db, size, weighted, px, shown and not db[glowKey], justify)
         text:SetShown(shown)
+        Halo(text, glowKey, shown)
     end
     if nameOnly then
         plate.name:ClearAllPoints()
@@ -144,17 +155,14 @@ function M:LayoutPlate(plate)
         local semibold = Style.Weighted(path, "semibold")
         Kit.Font(plate.name, db, db.nameFontSize, semibold, px)
         plate.name:SetJustifyH("CENTER")
-        Kit.LayoutLift(plate.name, db, db.nameFontSize, semibold, px, true, "CENTER")
+        Kit.LayoutLift(plate.name, db, db.nameFontSize, semibold, px, not db.nameTextGlow, "CENTER")
         plate.name:SetShown(true)
+        Halo(plate.name, "nameTextGlow", true)
     else
-        PlaceText(plate.name, db.nameAnchor, db.nameFontSize, db.showName, db.nameX, db.nameY, self:NameOnBorder(plate))
+        PlaceText(plate.name, db.nameAnchor, db.nameFontSize, db.showName, db.nameX, db.nameY, self:NameOnBorder(plate), "nameTextGlow")
     end
     local healthShown = not nameOnly and db.healthText ~= "none"
-    PlaceText(plate.healthText, db.healthTextAnchor, db.healthFontSize, healthShown, db.healthTextX, db.healthTextY)
-    -- Health numbers glow (Health Text Glow); width from the format.
-    local glowSide = Horizontal(db.healthTextAnchor)
-    Style.TextGlow(plate.healthText, healthShown and db.healthTextGlow and { size = db.healthFontSize,
-        chars = Style.GLOW_CHARS[db.healthText], justify = glowSide == "" and "CENTER" or glowSide, px = px } or nil)
+    PlaceText(plate.healthText, db.healthTextAnchor, db.healthFontSize, healthShown, db.healthTextX, db.healthTextY, nil, "healthTextGlow")
     self:LayoutCast(plate)
 
     -- Markers, indicators and combo points are sized here and placed by the
