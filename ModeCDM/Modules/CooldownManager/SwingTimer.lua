@@ -123,8 +123,9 @@ end
 
 function M:SwingColor()
     local style = self.db.swing
+    -- Class colors come as { r, g, b }; the tint takes { 1, 2, 3 }.
     local class = style.barColorMode == "class" and UnitColor.PlayerClass("player")
-    return class or style.barColor
+    return class and { class.r, class.g, class.b } or style.barColor
 end
 
 -- Each frame while shown: every lane's fill, its out-of-range tint and timer.

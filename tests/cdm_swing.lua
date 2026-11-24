@@ -26,6 +26,14 @@ world.run([==[
     -- A main-hand swing fills its lane over its duration.
     FireEvent('PLAYER_SWING', 2, 0)
     assert(frame:GetAlpha() == 1 and M:SwingLanes() == 1, 'shows while swinging; one lane')
+    -- The game's class colors come as { r, g, b }: the tint gets { 1, 2, 3 }.
+    local UC = addon.Domain.UnitColor
+    local playerClass = UC.PlayerClass
+    UC.PlayerClass = function() return { r = 1, g = 0.96, b = 0.41 } end
+    local color = M:SwingColor()
+    assert(color[1] == 1 and color[3] == 0.41, 'the class color as { 1, 2, 3 } for the tint')
+    M:TickSwing()
+    UC.PlayerClass = playerClass
     Advance(1)
     assert(math.abs(frame.lanes[1].bar.value - 0.5) < 0.01, 'half way after one of two seconds')
     -- /mcdm check reports it for the in-game look.
