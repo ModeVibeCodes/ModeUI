@@ -97,6 +97,8 @@ world.run([==[
     local function Hex(c) return string.format('%02X%02X%02X', math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5), math.floor(c[3] * 255 + 0.5)) end
     assert(Hex(m.tooltip.backgroundColor) == '0B0B0C' and Hex(m.bags.headerColor) == '131314' and Hex(m.actionBars.bar1.backgroundColor) == '09090A')
     assert(m.cooldownManager.resources.power.barBackground == 'media:Mode-BG' and m.cooldownManager.castBar.barBackgroundOpacity == 85)
+    assert(m.cooldownManager.custom1 and addon.Style.SameColor(m.cooldownManager.custom1.backgroundColor, m.cooldownManager.essential.backgroundColor),
+        'custom bars take the theme too')
     -- Once: a later change stays through another check.
     player.prismGlow = 'none'
     local checked = addon.Database:ValidateProfile(profile)

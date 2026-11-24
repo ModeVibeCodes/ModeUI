@@ -98,21 +98,11 @@ M.MAX_CUSTOM, M.MAX_ENTRIES, M.MAX_NAME = 15, 40, 32
 local function Capital(id) return id:sub(1, 1):upper() .. id:sub(2) end
 function M.ElementId(id) return "cooldownManager" .. Capital(id) end
 function M.FrameName(id) return "ModeUICooldown" .. Capital(id) end
--- Blizzard's viewers anchor to each other, the screen and the game's frames;
--- custom bars to those and the viewers.
-local BASE_TARGETS = { "screen", "player", "target", "focus", "minimap", "party" }
-M.BASE_TARGETS = BASE_TARGETS
-M.allowedTargets = {}
-for index, viewer in ipairs(M.viewers) do
-    local allowed = Copy(BASE_TARGETS)
-    for other, otherViewer in ipairs(M.viewers) do
-        if other ~= index then allowed[#allowed + 1] = M.ElementId(otherViewer) end
-    end
-    M.allowedTargets[viewer] = allowed
+-- Every bar is an Edit Mode target (elements register with anyTarget, so
+-- any ModeUI element can hang from any other).
+for _, viewer in ipairs(M.viewers) do
     addon.Positioning:AddTarget(M.ElementId(viewer), L[M.viewerSpecs[viewer].label], M.FrameName(viewer))
 end
-M.customTargets = Copy(BASE_TARGETS)
-for _, viewer in ipairs(M.viewers) do M.customTargets[#M.customTargets + 1] = M.ElementId(viewer) end
 
 -- Default places, near Blizzard's own: Essential above the middle of the
 -- action bars, Utility under it, Tracked Buffs on top; Tracked Bars to the

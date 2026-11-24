@@ -44,23 +44,9 @@ local function Capital(id) return id:sub(1, 1):upper() .. id:sub(2) end
 function M.ResourceElementId(id) return "cooldownManagerResource" .. Capital(id) end
 function M.ResourceFrameName(id) return "ModeUIResource" .. Capital(id) end
 
--- Resource bars attach to the screen, your frames, the viewers and each
--- other; the viewers and custom bars can attach to them in turn.
-M.resourceTargets = {}
+-- Resource bars are Edit Mode targets like the other bars.
 for _, id in ipairs(M.resources) do
     addon.Positioning:AddTarget(M.ResourceElementId(id), L[M.resourceSpecs[id].label], M.ResourceFrameName(id))
-end
-for _, id in ipairs(M.resources) do
-    local allowed = Copy(M.BASE_TARGETS)
-    for _, viewer in ipairs(M.viewers) do allowed[#allowed + 1] = M.ElementId(viewer) end
-    for _, other in ipairs(M.resources) do
-        if other ~= id then allowed[#allowed + 1] = M.ResourceElementId(other) end
-    end
-    M.resourceTargets[id] = allowed
-end
-for _, id in ipairs(M.resources) do
-    for _, viewer in ipairs(M.viewers) do table.insert(M.allowedTargets[viewer], M.ResourceElementId(id)) end
-    M.customTargets[#M.customTargets + 1] = M.ResourceElementId(id)
 end
 
 -- Default places: a stack under Utility Cooldowns (Power, Combo Points,

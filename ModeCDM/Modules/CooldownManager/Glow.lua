@@ -68,7 +68,6 @@ local function Paint(item, frame, look)
     end
     if border and look.pulse and frame.pulse and not frame.pulse:IsPlaying() then frame.pulse:Play() end
 end
-M.PaintGlow = Paint
 
 -- Wants (look) or not (nil) one kind of glow on an item.
 function M:WantGlow(item, kind, look)

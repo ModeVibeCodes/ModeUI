@@ -66,7 +66,6 @@ function M:DressItem(viewer, item, g)
 end
 
 local function Fade(region, shown) if region and region.SetAlpha then region:SetAlpha(shown and 1 or 0) end end
-M.FadeRegion = Fade
 
 -- The Mode icon art (docs/DESIGN_LANGUAGE.md, "Cooldown icons"): a Mode
 -- Button face in Background Color behind the icon, and the `frameThin` edge

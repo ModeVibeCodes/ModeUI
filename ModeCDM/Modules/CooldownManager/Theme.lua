@@ -20,7 +20,10 @@ end
 addon.Themes:Contribute("obsidian", "cooldownManager", function(db)
     local Swap = addon.Themes.SwapColor
     for _, viewer in ipairs(M.viewers) do Swap(db[viewer], "backgroundColor", "mono", "panel"); Track(db[viewer]) end
-    for _, bar in pairs(type(db.customBars) == "table" and db.customBars or {}) do Swap(bar, "backgroundColor", "mono", "panel"); Track(bar) end
+    for _, bar in pairs(type(db.customBars) == "table" and db.customBars or {}) do
+        local style = type(bar) == "table" and db[bar.id]
+        if type(style) == "table" then Swap(style, "backgroundColor", "mono", "panel"); Track(style) end
+    end
     for _, id in ipairs(M.resources or {}) do Track(type(db.resources) == "table" and db.resources[id]) end
     Track(db.castBar)
 end)

@@ -51,15 +51,17 @@ end
 function M:UnsnapResourceFrame(frame) frame.snapMover, frame.snapX, frame.snapY = nil, nil, nil end
 
 -- The check: every CHECK_EVERY seconds, each shown bar on its own stand-in
--- (the resource bars and the Cast Bar).
+-- (the resource bars and the Cast Bar). It stops (hides) while the module
+-- is off and starts again the next time a bar is placed.
 function M:WatchResourcePixels()
-    if self.resourceSnapper then return end
+    if self.resourceSnapper then self.resourceSnapper:Show(); return end
     local snapper, wait = CreateFrame("Frame"), 0
-    snapper:SetScript("OnUpdate", function(_, elapsed)
+    snapper:SetScript("OnUpdate", function(frame, elapsed)
         wait = wait + elapsed
         if wait < CHECK_EVERY then return end
         wait = 0
-        if not (M.active and M.resourceFrames) then return end
+        if not M.active then frame:Hide(); return end
+        if not M.resourceFrames then return end
         for _, id in ipairs(M.resources) do
             local frame = M.resourceFrames[id]
             if frame and frame.snapMover and frame:IsShown() then M:SnapResourceFrame(frame) end

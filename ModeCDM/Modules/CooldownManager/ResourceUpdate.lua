@@ -32,10 +32,9 @@ local function Fill(bar, okMax, max, okValue, value, smooth)
     pcall(bar.SetValue, bar, value)
 end
 
--- Text modes: None, Current, Percent, Current and Percent (Kit.ValueText)
--- and Current / Max.
+-- Text modes: Current, Percent, Current and Percent (Kit.ValueText) and
+-- Current / Max (Show Text off hides the text instead).
 function M.ResourceValueText(text, mode, percentFn, okValue, value, okMax, max)
-    if mode == "none" then Kit.Write(text, ""); return end
     if mode == "currentMax" then
         local hasValue, current, hasMax, top = false, nil, false, nil
         if okValue then hasValue, current = Call(AbbreviateNumbers, value) end
