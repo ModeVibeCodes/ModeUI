@@ -72,6 +72,11 @@ world.run([==[
     local page = M.swingPage
     assert(page and page:IsShown() and M:EditingValue() == 'swing' and page.swingToggles and page.styleChips.border, 'its page')
     assert(#page.indexButtons == 4 and page.indexButtons[1].label.text == 'Layout', 'one scroll with an index')
+    -- Its preview: the swing timer alone, a sample swing in both lanes.
+    local view = M.swingPreview
+    assert(view.stage == nil and view.bar.lanes[1]:IsShown() and view.bar.lanes[2]:IsShown(), 'the swing timer alone, two lanes')
+    assert(view.bar.lanes[1].bar:GetValue() == 0.6 and view.bar.lanes[1].text.text == (M.db.swing.timerShow and '1.4' or ''), 'a sample swing')
+    assert(view.area.width == M:SwingWidth(1) and view.caption.text:find('Swing Timer', 1, true), 'its own width')
     window:Hide()
 ]==], "swing timer")
 

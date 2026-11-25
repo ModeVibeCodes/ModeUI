@@ -34,6 +34,14 @@ local Cooldowns = addon.Domain.Cooldowns
 -- side, so the line holds the edges and Spacing counts between their shadows.
 -- The icon fills its slot inside the reach (no inset). Border Size widens
 -- the band, and the reach with it (frameThin: the 1px shadow ring plus the band).
+--
+-- Every UI scale (owner, November 24, 2026: 1080p and 1440p): sizes are UI
+-- units rounded to whole pixels, so at the pixel-perfect scales (1 unit, 1
+-- pixel) they are exact and elsewhere a pixel off at most. The edge's reach
+-- is physical pixels, and so is a negative Spacing: it overlaps the edges'
+-- shadow rings, which are pixels, so -1 shares one shadow pixel and -2 makes
+-- the bands touch at any scale (as UI units, -1 overlapped two pixels at
+-- 1440p on Blizzard's default scale).
 M.EDGE = "frameThin"
 M.EDGE_REACH = addon.Style.EdgeReach(M.EDGE)
 function M.IconReach(style)
@@ -45,7 +53,8 @@ function M.Geometry(style, count, px, match)
     local function Snap(v) return math.max(px, math.floor(v / px + 0.5) * px) end
     local function Round(v) return math.floor(v / px + 0.5) * px end
     local horizontal = M.horizontalGrowth[style.grow] == true
-    local w, h, gap = Snap(style.width), Snap(style.height), Round(style.spacing)
+    local w, h = Snap(style.width), Snap(style.height)
+    local gap = style.spacing < 0 and style.spacing * px or Round(style.spacing)
     local reach = M.IconReach(style) * px
     count = math.max(0, count)
     local per = math.max(1, style.perLine)
@@ -150,8 +159,11 @@ function M:EnsureBarFrames(id)
         if self.active and (self.db[id].matchWidth or self.db[id].matchHeight) then self:LayoutViewer(id) end
     end)
     mover:Hide()
+    -- The icons hang from the holder, the stand-in's size and on whole
+    -- pixels (ResourceSnap.lua), so their 1px edges stay sharp at a UI scale
+    -- that isn't pixel perfect.
     local holder = CreateFrame("Frame", nil, UIParent)
-    holder:SetAllPoints(mover)
+    self:PlaceResourceFrame(holder, mover)
     self.holders[id] = holder
 end
 
@@ -163,6 +175,8 @@ function M:SyncBarFrames()
             self.anchorSizes[id] = nil
             addon.PositionManager:UnregisterElement(self.ElementId(id))
             mover:Hide()
+            local holder = self.holders[id]
+            if holder then self:UnsnapResourceFrame(holder); holder:Hide() end
             self.movers[id], self.holders[id] = nil, nil
         end
     end
@@ -221,6 +235,8 @@ function M:LayoutViewer(id)
     local placed, parked = self:Placed(id)
     local g = self.Geometry(style, #placed, self.PixelSize(holder), self:MatchSize(id))
     mover:SetSize(g.width, g.height)
+    -- The new size can put the holder between pixels: back onto whole ones.
+    self:PlaceResourceFrame(holder, mover)
     for index, item in ipairs(placed) do
         if self:IsOwnIcon(item) then item:Show() end
         if item.SetScale then item:SetScale(1) end

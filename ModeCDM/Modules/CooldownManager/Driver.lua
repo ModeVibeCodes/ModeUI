@@ -81,6 +81,8 @@ end
 -- into Blizzard's code. Placement, glows and fading stop now.
 function M:OnDisable()
     self.active = false
+    -- Test on Screen stops with the module.
+    if self.testDisplay then self:SetTestDisplay(false) end
     Events:OffAll(self)
     self:SetResourceEvents(false)
     self:SetCastEvents(false)
@@ -138,6 +140,9 @@ function M:Refresh()
     if self.resourcePage then self.resourcePage:Refresh() end
     if self.castPage then self.castPage:Refresh() end
     if self.swingPage then self.swingPage:Refresh() end
+    -- The Bar Style page's samples and Home's counts follow too.
+    if self.stylePage and self.stylePage:IsShown() then self.stylePage:Refresh() end
+    if self.homePage and self.homePage:IsShown() then self.homePage:Refresh() end
 end
 
 function M:CanConfigure() return not addon.InCombat() end

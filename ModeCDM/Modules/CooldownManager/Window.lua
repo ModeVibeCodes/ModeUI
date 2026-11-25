@@ -225,8 +225,10 @@ function M:RefreshWindow()
     window.moduleHeader:Refresh()
     window.editButton:SetSelected(addon.editMode == true)
     window.cdmButton:SetEnabled(self:CanOpenCooldownSettings())
-    window.testButton:SetEnabled(self:CanTestDisplay())
+    -- While the test runs the button stops it, and says so.
+    window.testButton:SetEnabled(self.testDisplay == true or self:CanTestDisplay())
     window.testButton:SetSelected(self.testDisplay == true)
+    window.testButton.label:SetText(L[self.testDisplay and "Stop Test" or "Test on Screen"])
     self:RefreshList()
     for _, field in pairs(FIELDS) do
         local page = self[field]

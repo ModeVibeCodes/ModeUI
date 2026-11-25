@@ -4,28 +4,56 @@ local M, W, T, L = addon.CooldownManager, addon.ConfigWidgets, addon.InterfaceTh
 if not M then return end
 
 -- The Swing Timer's page (Forever only; SwingInit.lua): one scrolling page
--- with a section index like the other player bars. Its preview is the
--- Layout view with the swing timer outlined.
+-- with a section index like the other player bars. Its preview is the swing
+-- timer alone (owner, November 24, 2026: a preview shows what its page
+-- edits), drawn by the same lane code with a sample swing in both lanes.
+local Kit = addon.Kit
+local MAX_WIDTH, CAPTION_HEIGHT = 560, 18
+
+local function Scale(width) return math.min(1, MAX_WIDTH / width) end
+
+function M:GetSwingPreviewSize()
+    local width = self:SwingWidth(1)
+    local scale = Scale(width)
+    return math.max(320, width * scale), self:SwingHeight(2, 1) * scale + 12 + CAPTION_HEIGHT
+end
+
+function M:RenderSwingPreview(view)
+    local style = self.db.swing
+    local scale = Scale(self:SwingWidth(1))
+    view.area:SetScale(scale)
+    local px = Kit.PixelSize(view.area)
+    local width = self:SwingWidth(px)
+    view.area:SetSize(width, self:SwingHeight(2, px))
+    view.area:ClearAllPoints(); view.area:SetPoint("TOP", view.frame, "TOP", 0, -6 / scale)
+    self:LayoutSwingLanes(view.bar, width, px, 2)
+    self:PaintSwingSample(view.bar)
+    view.area:SetAlpha(style.show and style.opacity / 100 or 0.4)
+    local label = L[self.SWING_LABEL]
+    view.caption:SetText((style.show and label or string.format(L["%s is off"], label)) .. " · " .. L["sample swing: main hand, off hand"])
+end
+
+function M:CreateSwingPreview(parent)
+    local frame = CreateFrame("Frame", nil, parent)
+    frame:SetAllPoints()
+    local view = { frame = frame }
+    view.area = CreateFrame("Frame", nil, frame)
+    view.bar = CreateFrame("Frame", nil, view.area)
+    view.bar:SetAllPoints(view.area)
+    view.bar.lanes = { M.NewSwingLane(view.bar), M.NewSwingLane(view.bar) }
+    view.caption = W.Label(frame, "", nil, 0, 0, 520, T.muted)
+    view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
+    function view.Refresh() M:RenderSwingPreview(view) end
+    view.RenderSimulation = view.Refresh
+    self.swingPreview = view
+    return view
+end
+
+-- What the shared preview widget (W.Preview) calls.
 function M:SwingPreviewOwner()
     return setmetatable({
-        CreateConfigPreview = function(_, parent)
-            local frame = CreateFrame("Frame", nil, parent)
-            frame:SetAllPoints()
-            local view = { frame = frame }
-            view.area = CreateFrame("Frame", nil, frame)
-            view.caption = W.Label(frame, "", nil, 0, 0, 520, T.muted)
-            view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
-            function view.Refresh()
-                local mode = M.previewMode
-                M.previewMode = "layout"
-                local drawn = M:RenderStage(view, "swing")
-                M.previewMode = mode
-                if not drawn then view.caption:SetText(M:SwingStatus()) end
-            end
-            view.RenderSimulation = view.Refresh
-            M.swingPreview = view
-            return view
-        end,
+        CreateConfigPreview = function(_, parent) return M:CreateSwingPreview(parent) end,
+        GetPreviewSize = function() return M:GetSwingPreviewSize() end,
     }, { __index = M })
 end
 

@@ -92,7 +92,7 @@ end
 -- after it.
 function M:LayoutBarParts(item)
     local state = self.dress[item]
-    local style = state and self.db[state.viewer]
+    local style = state and (state.style or self.db[state.viewer])
     local iconFrame, bar = item.Icon, item.Bar
     if not style or not state.box or not iconFrame or not bar then return end
     local g = state.g

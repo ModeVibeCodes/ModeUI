@@ -41,7 +41,10 @@ Its art, the data and the builder that drew it are kept outside the addon in
   scroll, drag and popups) and button faces follow the snapped rect. The
   Cooldown Manager's resource bars do the same in game: each bar's frame
   hangs from its Edit Mode stand-in nudged onto whole pixels and is checked
-  again as the stand-in moves (owner, in game, November 18, 2026).
+  again as the stand-in moves (owner, in game, November 18, 2026); since
+  November 24, 2026 so do its cooldown icons' holders and the Swing Timer.
+  A gap that overlaps edges (a cooldown bar's negative Spacing) counts
+  physical pixels, like the edges themselves.
 - **No masks for borders.** Rim art covers its own inner corner, so content
   under a border is never masked. (A frame's own shape, the minimap's
   rectangle, is the one mask, through `Style.SetShapeMask`. A texture holds at

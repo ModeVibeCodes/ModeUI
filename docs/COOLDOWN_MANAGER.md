@@ -38,8 +38,8 @@ When Full, Tracked Spells, Tracked / Not Tracked Yet).
 
 - **Header:** the title, **Tracked Spells** (Blizzard's Cooldown Settings,
   where you choose the tracked spells and their alerts; outside combat),
-  **Test on Screen**, **Edit Mode** and the close button. Edit Mode hides
-  the window and brings it back when it ends.
+  **Test on Screen** (**Stop Test** while it runs), **Edit Mode** and the
+  close button. Edit Mode hides the window and brings it back when it ends.
 - **List** on the left, by kind: **Home** and **Bar Style**; **Cooldowns**
   (Essential, Utility and your Cooldown Bars) and **Buffs** (Tracked Buffs,
   Tracked Bars and your Buff Bars), each heading with a **+** that makes a
@@ -51,7 +51,9 @@ When Full, Tracked Spells, Tracked / Not Tracked Yet).
   with its presets (**Mode Default**, **Compact**, **Large & Clear**), **Edit
   Bar Style** and **Use Bar Style on Every Bar**; how many bars show, are off
   or have a look of their own; **Racial Abilities** (the bar they show on;
-  it was on each bar's Bar tab); **Tracked Spells**.
+  it was on each bar's Bar tab); **Tracked Spells**. A **Screen** line says
+  the screen, the UI scale and whether it is pixel perfect (below, "Every UI
+  scale").
 - **Bar Style** (`BarStyle.lua`, `BarStyleOptions.lua`, `StylePage.lua`): the
   default look for bars. New bars and new profiles start with it; existing
   bars use it if you choose. Groups: **Size** (Large icons 38 x 30 for
@@ -62,7 +64,10 @@ When Full, Tracked Spells, Tracked / Not Tracked Yet).
   shorter icon scales them, so Ultra Emphasized Buffs keep 22 and 18),
   **Starting Glow Look** (gold Mode Glow procs) and **Bar Fill** (Tracked
   Bars). The resource bars, the Cast Bar and the Swing Timer take its border
-  and font. Its preview is the Layout view of every bar.
+  and font. Its preview (`StylePreview.lua`) draws the Bar Style itself: a
+  line of six Large icons (your Essential spells), one of six Small icons
+  (your Tracked Buffs) and a Tracked Bar, with sample cooldowns, a count and
+  the Starting Glow Look, so a change shows before any bar follows it.
 - **A bar's page:** one scrolling page with a section index on its left:
   **Layout**, **Look**, **Text**, **Spells & Glows** and **Show** (the player
   bars: Layout, Look, Text, Show). Each group that can follow the Bar Style
@@ -74,14 +79,18 @@ When Full, Tracked Spells, Tracked / Not Tracked Yet).
   is under Look's More options; **Reset to Defaults** under Show's (back to
   the Bar Style, the size kept); **Delete Bar** under Layout's (it asks
   first). Blizzard's Edit Mode and Tracked Spells moved to the header.
-- **The preview:** **Layout** (`Stage.lua`: every bar that shows, where it
-  sits and to scale, read from the Edit Mode stand-ins, the bar being edited
-  outlined; a click edits another bar) or **Bar** (this bar alone, to click
-  and drag its spells and use its **+** slot). The Layout view needs the
-  module on; otherwise the Bar view shows.
-- **Spell list** (`SpellList.lua`, Spells & Glows): every spell on the bar as
-  a row with its icon, name (a click opens its menu), **Show** and a switch
-  per glow the bar has.
+- **The preview** shows only what its page edits (owner, November 24,
+  2026): on a bar's page that bar alone at its real size, to click and drag
+  its spells, ending in its **+** slot; on a player bar's page that bar; on
+  the Swing Timer's its two lanes with a sample swing. (The rework's Layout
+  view of every bar at once, `Stage.lua`, is gone: squeezed into the
+  preview it was too small to use and hid the **+** slot.) The preview stays
+  while Test on Screen runs.
+- **Spell list** (`SpellList.lua`, Spells & Glows): **+ Add Spell** opens
+  the same list as the preview's **+** slot (on Tracked Buffs and Tracked
+  Bars it reads **+ Add in Tracked Spells** and opens Blizzard's window);
+  then every spell on the bar as a row with its icon, name (a click opens
+  its menu), **Show** and a switch per glow the bar has.
 - **A spell's menu** also has **Own Bar** (a one-icon bar of its own, named
   after it, ready to place; not for racials) and its alerts: **Alerts in
   Tracked Spells** opens Blizzard's alert editor for a spell Blizzard tracks
@@ -89,9 +98,14 @@ When Full, Tracked Spells, Tracked / Not Tracked Yet).
   racials) picks a **Ready Sound** (No Sound, Blizzard Warning or your
   SharedMedia sounds) played when its cooldown ends (`Alerts.lua`).
 - **Test on Screen** (`TestDisplay.lua`): sample icons on every bar in its
-  real place (some cooling, one lit) and the Cast Bar's sample, on ModeUI's
-  own frames; out of combat, until combat starts, the window closes or it's
-  pressed again.
+  real place (some cooling, one lit), the Cast Bar's and the Swing Timer's
+  samples, on ModeUI's own frames; out of combat. While it runs a bar at the
+  top of the screen says so with **Stop Test**, and both Test on Screen
+  buttons (the header's, the preview's) read **Stop Test**. It also stops
+  when combat starts, the window closes or the module is switched off. (It
+  used to keep running after the window closed when started from the Bar
+  Style, Cast Bar, resource or Swing Timer preview: those hand the shared
+  preview a proxy of the module, and the test's state was kept on the proxy.)
 - **Show rules** (`Visibility.lua`): besides Show When, **Hide While
   Mounted**, **Hide in a Vehicle**, **Only in a Group**, **Only in an
   Instance** and **Dim Instead of Hide** (Faded Opacity instead of hidden),
@@ -119,7 +133,7 @@ When Full, Tracked Spells, Tracked / Not Tracked Yet).
 | Part | Look and behavior |
 |---|---|
 | Placement | Each bar has a stand-in in ModeUI's Edit Mode (`ModeUICooldownEssential`, ..., `ModeUICooldownCustom1`), one full line long, anchored to the screen or to any ModeUI element (another Cooldown Manager bar, a resource bar, your unit frames, ...). Anchored, it sits 1 px off its target's edge, pixel-perfect at any UI scale; the nudge buttons move it from there. **Match Width** and **Match Height** in the Edit Mode window size its line to what it's anchored on, separately, and follow that element when its size changes (the size is pushed on change, never polled). The first line never moves; more lines grow outside it. Essential starts at the bottom middle, 300 px up, Utility under it, Tracked Buffs on top, Tracked Bars to the right; custom bars in the middle of the screen (the default bars in their own places). Icons are wider than tall (Essential and Cooldown Bars 40 by 34; Utility, Tracked Buffs and Buff Bars 32 by 28), and each line leaves room for the icons' edges, so a matched width includes them. |
-| Growth | **Centered Horizontal** (default), **Centered Vertical**, **Horizontal Right**, **Horizontal Left**, **Vertical Down** or **Vertical Up**, with **New Lines** going Down or Up for rows, Right or Left for columns (Tracked Buffs and Bars: Up). **Icons per Line** (12; bars 1; custom bars 8), Spacing (2 px, between the edges' shadows; down to -2: at -1 neighbours share one shadow pixel, at -2 their bands touch), Width and Height. Spells Blizzard hides (an inactive buff) leave no gap. |
+| Growth | **Centered Horizontal** (default), **Centered Vertical**, **Horizontal Right**, **Horizontal Left**, **Vertical Down** or **Vertical Up**, with **New Lines** going Down or Up for rows, Right or Left for columns (Tracked Buffs and Bars: Up). **Icons per Line** (12; bars 1; custom bars 8), Spacing (2 px, between the edges' shadows; down to -2: at -1 neighbours share one shadow pixel, at -2 their bands touch; a negative Spacing counts physical pixels at every UI scale), Width and Height. Spells Blizzard hides (an inactive buff) leave no gap. |
 | Icons | The Mode look (`docs/DESIGN_LANGUAGE.md`, "Cooldown icons"): the icon fills the item, cropped, over a **Mode-FG** face (its base) in Background Color (Mono panel, 100%), with the `frameThin` edge outside it (Mode-Empty by default, its flat band in the neutral, darker `emptyRim`; owner, November 20, 2026). **Border**: **Mode** or **None** (no edge, and its room given back); with Mode, **Border Style**, **Border Metal**, **Border Size** (the band, 1px or 2px; a 2px band reaches 3px past the icon, so the line grows) and, with Mode-Empty, **Border Color** (its flat band; `emptyRim` #343438 by default). Every icon edge is drawn in pieces (four 1:1 corners and four sides: an icon is shorter than the ring art, whose sliced corners shrank and looked square; owner, November 18, 2026). Tracked Bars' icons and bar boxes take the same edge, and a Border glow's rim follows the bar's style and band width. Blizzard's round mask and frame art come off; no mask goes on Blizzard's textures. |
 | Cooldown | **Desaturate on Cooldown** (on): an icon goes gray while its spell is on a real cooldown (not the global cooldown) and takes its color back within a fifth of a second of the cooldown ending: the game sends no event then, so icons on a real cooldown are asked about again by one small ticker that runs only while one is cooling; off, icons keep full color. A flat swipe in Swipe Color at Swipe Opacity (70%). While a spell's effect is up Blizzard shows the effect's time in a full-color gold swipe; ModeUI shows the spell's own cooldown instead, gray, straight away. **Show Aura Time** brings Blizzard's gold swipe back. **Edge**, **Bling**, **Ready Flash**, **Out of Range Tint** (the Mode Rosewood tint on an out-of-range spell instead of Blizzard's red; off keeps full color) and, on buffs, **Debuff Border**. Blizzard's out-of-range shade, cut to its round mask, stays faded: repainted it showed as a solid red block, and Blizzard leaves it shown on an icon with no spell yet. |
 | Bars | Tracked Bars (220 by 16): the icon, 4px wider than the bar is tall, beside the bar's own box, both in the `frameThin` edge 2px apart; the fill in Bar Texture (Mode-FG: its base and white lift) in **Bar Color**: **Class Color** (default) or **Custom** (Ivory), over Bar Background (Mode-BG on Slate at 85%); Icon Side; **Spark** (the Comet, on by default). |
@@ -128,6 +142,20 @@ When Full, Tracked Spells, Tracked / Not Tracked Yet).
 | Spells | Clicking a spell in the preview opens its menu: **Show on This Bar**, a switch for each of the bar's glows, each with a **>** that opens its popout beside the menu (**Glow On**, Style, Color, Pulse, Lines, Thickness, and for the off-cooldown glow When and Glow Time; the preview shows that glow while it's open; changing the look switches the glow on), a **Text** row per text (Cooldown Text and Count Text on icons; Name, Duration and Count Text on bars), each with a **>** that opens its text popout (**Show This Text**, **Text Shadow**, **Font**, **Size**, **Color**, **Outline**: None, Outline or Thick, **Anchor**, **Offset X** and **Offset Y**; the first change copies the bar's look and changes it, the row then says "own look", and **Use Bar's Look** goes back; the preview shows that text on the spell while it's open), **Copy**, **Paste**, **Apply to Bar**, **Glow Defaults**, **Earlier** and **Later**; on a custom bar, Essential and Utility also **Remove from Bar** (a viewer's own spell hides there). One popout shows at a time. **Dragging** a spell in the preview moves it: a copy of its icon follows the cursor, the slot under it lights up, and letting go there puts the spell in that place (a plain click still opens the menu). On a custom bar this is its list's order; on a viewer it's ModeUI's own order for that bar (`order`), which only changes where ModeUI lays the icons out: Blizzard's window keeps its order, and spells it starts tracking later go at the end. Only the preview's icons can be dragged; Blizzard's icons on screen are never made draggable. Hidden spells leave no gap and show faded in the preview. Switches are kept by the game's cooldown ID. **Reset All Spells** on the Spells tab clears them. |
 | Visibility | Show: Always, In Combat, Out of Combat, In Combat or With a Target, Mouseover (Faded Opacity) or Hidden; Opacity; **Show Bar**. |
 | Copy & Apply | The bar being edited is the source; its look goes to the bars you tick, each keeping its size, lines, spells and show settings. **Reset to Defaults**. |
+
+### Every UI scale (November 24, 2026)
+
+Sizes are UI units. At ModeUI's pixel-perfect UI scale (71.11% at 1080p,
+53.33% at 1440p; 4K takes two pixels per unit at 71.11%) a unit is a whole
+number of pixels, so every size, gap and 1px edge is exact; at 1440p the
+bars are the same number of pixels as at 1080p, smaller on the bigger
+screen, as everywhere in ModeUI. The layouts' places differ per screen
+(`Layouts.lua`, from the UI's height). Off the pixel-perfect scale (another
+UI scale), each size rounds to whole pixels (a pixel off at most), the icon
+holders sit on whole pixels (`ResourceSnap.lua`), the edges stay 1px, and a
+negative Spacing counts physical pixels, so -1 still shares one shadow pixel
+(as UI units it overlapped two pixels at 1440p on Blizzard's default scale).
+Home's **Screen** line says which applies.
 
 ### Custom bars
 
@@ -345,7 +373,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Glow.lua` | the four glows; a spell's alpha |
 | `GlowPopout.lua`, `TextPopout.lua` | a glow's and a text's popout beside the spell menu |
 | `Visibility.lua` | Show, Opacity, Mouseover |
-| `SpellMenu.lua`, `Picker.lua`, `Preview.lua`, `PreviewDrag.lua` | the preview, its spell menu, the + slot's list, and dragging spells to move them |
+| `SpellMenu.lua`, `Picker.lua`, `Preview.lua`, `PreviewDrag.lua` | the preview and its corner (Use Bar Style), its spell menu, the + slot's list, and dragging spells to move them |
 | `Settings.lua`, `SettingsTabs.lua` | the settings page |
 | `Window.lua` | the module's own window |
 | `Layouts.lua` | ModeCDM's parts of the Mode-DPS/TANK and Healer layouts (sizes and places; the look is the Bar Style) |
@@ -353,7 +381,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `BarStyle.lua`, `BarStyleOptions.lua`, `StylePage.lua` | the Bar Style: defaults, groups, following, version 12; changing it, presets; its page |
 | `Parts.lua` | what Initialize checks after the bars (player bars, Bar Style, alerts) |
 | `SettingsLook.lua`, `SpellList.lua`, `SettingsHelpers.lua` | Look and Text; the spell list; the page toolkit (section index, chips, More options) |
-| `Stage.lua` | the preview's Layout view and corner |
+| `StylePreview.lua` | the Bar Style page's preview (sample icons and a bar in the Bar Style) |
 | `HomePage.lua`, `WindowList.lua` | Home; the window's list |
 | `TestDisplay.lua`, `Alerts.lua` | Test on Screen; Ready Sound, Own Bar |
 | `SwingInit.lua`, `SwingTimer.lua`, `SwingSettings.lua` | the Swing Timer (Forever only) |
@@ -381,8 +409,9 @@ ModeCDM gains new files, so start the game fully (not only `/reload`).
    - **Confirmation:** every bar keeps its size and place; borders are
      Mode-Border in Gunmetal and cooldown numbers amber and outlined (Ultra
      Emphasized Buffs still large); a bar whose border you'd set to None
-     still has none; the Bar Style page shows every bar in its preview; no
-     Lua errors.
+     still has none; the Bar Style page's preview shows a line of Large
+     icons, one of Small icons and a Tracked Bar in the Bar Style; no Lua
+     errors.
 2. Home, the list and a bar's page
    - **Navigation:** type `/mcdm` (it opens on Home); click **Essential
      Cooldowns** under **Cooldowns**.
@@ -395,18 +424,23 @@ ModeCDM gains new files, so start the game fully (not only `/reload`).
      scrolls to each section; the chip turns to **◆ Custom** and Border's
      controls appear, then Use Bar Style puts it back and they hide; More
      options shows Show Effect Time, Swipe Edge, Finish Sparkle, Ready Flash.
-3. The Layout view, the Bar view and Test on Screen
+3. The preview, + Add Spell and Test on Screen
    - **Navigation:** type `/mcdm`, click **Utility Cooldowns**.
-   - **Action:** in the preview, click Essential's icons in the Layout view;
-     click **Bar**, click a spell, then **Own Bar**; press **Test on Screen**
-     in the header, then enter combat.
+   - **Action:** look at the preview; click its **+** slot, then click
+     outside the list; click **Spells & Glows** in the index, then **+ Add
+     Spell**; click a spell in the preview, then **Own Bar**; press **Test on
+     Screen** in the header, then **Stop Test** on the bar at the top of the
+     screen; press **Test on Screen** again and close the window with **X**;
+     open it, press **Test on Screen** once more and enter combat.
    - **Required state:** out of combat for the clicks; spells tracked in
      Blizzard's Cooldown Manager.
-   - **Confirmation:** the Layout view shows every bar as on screen with the
-     edited one outlined, and clicking Essential edits it; the Bar view shows
-     Utility alone; Own Bar makes a one-icon bar named after the spell; Test
-     on Screen draws samples on the real bars and they vanish when combat
-     starts.
+   - **Confirmation:** the preview shows only Utility, at its real size,
+     ending in a **+** slot; the + slot and + Add Spell open the same list
+     (Tracked, Not Tracked Yet, Items in Your Bags); Own Bar makes a one-icon
+     bar named after the spell; while the test runs both Test on Screen
+     buttons read **Stop Test** and a bar at the top of the screen offers
+     **Stop Test**; the samples vanish on Stop Test, on closing the window
+     and when combat starts.
 4. Show rules
    - **Navigation:** type `/mcdm`, click **Essential Cooldowns**, then **Show**
      in the index.
@@ -416,8 +450,8 @@ ModeCDM gains new files, so start the game fully (not only `/reload`).
    - **Confirmation:** Essential hides while mounted, then shows faint
      instead; back on the ground it shows in full.
 5. Trinkets and alerts
-   - **Navigation:** type `/mcdm`, click a Cooldown Bar, then **Bar** in the
-     preview and its **+** slot.
+   - **Navigation:** type `/mcdm`, click a Cooldown Bar, then the **+** slot
+     at the end of its preview (or **+ Add Spell** under Spells & Glows).
    - **Action:** click **Trinket 1** under Items in Your Bags; click it in the
      preview and pick a **Ready Sound**; use the trinket and wait for its
      cooldown; swap trinkets.
@@ -438,6 +472,18 @@ ModeCDM gains new files, so start the game fully (not only `/reload`).
      a plain number (if it says secret, tell Claude: the lane stays full then).
      Copy the whole `/mcdm check` output to Claude: it settles alerts, racial
      and trinket categories and keybind support on Forever.
+7. Every UI scale (1080p and 1440p)
+   - **Navigation:** type `/mcdm` (Home).
+   - **Action:** read the **Screen** line; look closely at Essential's icon
+     edges and the one shared shadow pixel between icons; if you can, do the
+     same on your other screen, or at another UI scale (`/modeui`,
+     **Optimizations**, **UI Scale**: **Set UI Scale** on, **Scale**
+     **Custom**), then type `/mcdm` again.
+   - **Required state:** the Cooldown Manager on, spells on Essential.
+   - **Confirmation:** the Screen line names your resolution and UI scale
+     (pixel perfect at 71.11% on 1080p, 53.33% on 1440p); icon edges are
+     sharp 1px lines with one shared dark pixel between neighbours at either
+     scale, even off the pixel-perfect scale.
 
 ## In-game check (November 13, 2026)
 
@@ -616,7 +662,9 @@ perfect (Blizzard's default) a stand-in sits between physical pixels and a
 bar's 1px border would land on half pixels: faint or gone, with specks at the
 corners (owner, in game, November 18, 2026). Each bar's frame hangs from its
 stand-in nudged by under a pixel onto whole pixels, and a check every 0.2
-seconds places shown bars again when a stand-in moves.
+seconds places shown bars again when a stand-in moves. Since November 24,
+2026 the cooldown bars' icon holders and the Swing Timer hang the same way
+(the Swing Timer was placed on whole pixels but left out of the check).
 
 **Placement.** Each bar is an element of ModeUI's Edit Mode
 (`ModeUIResourcePower`, `ModeUIResourceCombo`, `ModeUIResourceMana`,

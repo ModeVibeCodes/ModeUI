@@ -27,6 +27,10 @@ function M:CreateHomePage(parent)
     local status = Text("Now", 56)
     ui.Refresh(function() status:SetText(M:Status()) end)
     page.homeStatus = status
+    -- The UI scale the bars are drawn at (1080p and 1440p, pixel perfect or not).
+    local screen = Text("Screen", 56)
+    ui.Refresh(function() screen:SetText(M:ScreenStatus()) end)
+    page.homeScreen = screen
 
     page:Group(L["Bar Style"])
     local preset = Text("Preset")

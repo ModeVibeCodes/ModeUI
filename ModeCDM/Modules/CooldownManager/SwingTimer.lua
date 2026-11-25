@@ -81,17 +81,30 @@ function M:SwingLanes()
     return (off or self.swingSample) and 2 or 1
 end
 
+-- The height `lanes` lanes take, `px` a physical pixel.
+function M:SwingHeight(lanes, px)
+    local style = self.db.swing
+    local laneHeight = M.ResourceBarHeight(style, px) + 2 * M.ResourceReach(style, px)
+    return lanes * laneHeight + (lanes - 1) * LANE_GAP * px
+end
+
 function M:LayoutSwing()
     local frame, mover = self.swingFrame, self.swingMover
     if not frame then return end
-    local style = self.db.swing
     local px = Kit.PixelSize(mover)
-    local width = self:SwingWidth(px)
-    local h, reach = M.ResourceBarHeight(style, px), M.ResourceReach(style, px)
-    local lanes = self:SwingLanes()
-    local laneHeight = h + 2 * reach
-    mover:SetSize(width, lanes * laneHeight + (lanes - 1) * LANE_GAP * px)
+    local width, lanes = self:SwingWidth(px), self:SwingLanes()
+    mover:SetSize(width, self:SwingHeight(lanes, px))
     self:PlaceResourceFrame(frame, mover)
+    self:LayoutSwingLanes(frame, width, px, lanes)
+    self:TickSwing()
+end
+
+-- Lays out `frame`'s lanes (the Swing Timer's, or its page preview's) at
+-- `width`, the first `lanes` shown.
+function M:LayoutSwingLanes(frame, width, px, lanes)
+    local style = self.db.swing
+    local h, reach = M.ResourceBarHeight(style, px), M.ResourceReach(style, px)
+    local laneHeight = h + 2 * reach
     local look = { outline = style.outline, shadow = style.shadow, slug = style.slug, textColor = style.textColor }
     local path = Style.Weighted(Kit.FontPath(style, self.id), "bold")
     for index, box in ipairs(frame.lanes) do
@@ -118,8 +131,21 @@ function M:LayoutSwing()
             Kit.LayoutLift(box.text, look, style.textSize, path, px, false, "RIGHT")
         end
     end
-    self:TickSwing()
 end
+
+-- The sample swing (Edit Mode, Test on Screen and the page's preview): each
+-- lane's fill and seconds left. PaintSwingSample paints it on the preview.
+local SAMPLE = { { value = 0.6, left = 1.4 }, { value = 0.25, left = 2.1 } }
+function M:PaintSwingSample(frame)
+    local style, color = self.db.swing, self:SwingColor()
+    for index, box in ipairs(frame.lanes) do
+        box.bar:SetValue(SAMPLE[index].value)
+        local texture = box.bar:GetStatusBarTexture()
+        if texture then Kit.Tint(texture, color, 1) end
+        Kit.Write(box.text, style.timerShow and string.format("%.1f", SAMPLE[index].left) or "")
+    end
+end
+M.NewSwingLane = NewLane
 
 function M:SwingColor()
     local style = self.db.swing
@@ -138,7 +164,7 @@ function M:TickSwing()
     local live = false
     for index, box in ipairs(frame.lanes) do
         local swing, value, left = lanes[index] or {}, 1, nil
-        if self.swingSample then value, left = index == 1 and 0.6 or 0.25, index == 1 and 1.4 or 2.1
+        if self.swingSample then value, left = SAMPLE[index].value, SAMPLE[index].left
         elseif swing.at and swing.duration then
             local elapsed = now - swing.at
             value = math.min(1, elapsed / swing.duration)

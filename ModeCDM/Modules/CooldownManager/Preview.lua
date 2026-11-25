@@ -15,9 +15,13 @@ if not M then return end
 -- on the first icon.
 local Kit, W, T, L = addon.Kit, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local Cooldowns = addon.Domain.Cooldowns
-local SAMPLE_COOLDOWN, STATIC_ELAPSED, HINT_HEIGHT, MAX_WIDTH, MAX_HEIGHT = 8, 3, 18, 560, 200
+local SAMPLE_COOLDOWN, STATIC_ELAPSED, HINT_HEIGHT, MAX_WIDTH, MAX_HEIGHT, MIN_WIDTH = 8, 3, 18, 560, 200, 600
 local SAMPLE_ICON, SAMPLE_COUNT = 134400, 6 -- the question mark icon
 local FADED = 0.3
+
+-- The preview stays while Test on Screen runs: the samples on screen don't
+-- replace its + slot and spells (Shared/Settings/Previews.lua).
+M.previewWhileTesting = true
 
 addon.PreviewStates:Register(M.id, {
     states = { { id = "static", label = "Static" }, { id = "animated", label = "Animated" } },
@@ -87,7 +91,8 @@ end
 function M:GetPreviewSize()
     local id = self:PreviewViewer()
     local scale, g = Scale(self.db[id], Count(id, (self:PreviewEntries(id))))
-    return math.max(320, g.extent.width * scale), g.extent.height * scale + 8 + HINT_HEIGHT
+    -- At least as wide as the caption and the hint under the bar.
+    return math.max(MIN_WIDTH, g.extent.width * scale), g.extent.height * scale + 8 + HINT_HEIGHT
 end
 
 -- A spell's sample also names it in a tooltip, with the warning while
@@ -184,9 +189,6 @@ end
 
 function M:RenderPreview(view)
     local id = self:PreviewViewer()
-    -- The Layout view (Stage.lua) draws instead while it's chosen.
-    if self:RenderStage(view, id) then self:RefreshSpellMenu(); return end
-    view.area:Show(); if view.hint then view.hint:Show() end
     local style, bar = self.db[id], self:IsBar(id)
     local entries, real = self:PreviewEntries(id)
     local plus = self:HasPlus(id)
@@ -259,9 +261,9 @@ function M:CreateConfigPreview(parent)
     self.previewView = view
     view.area = CreateFrame("Frame", nil, frame)
     view.holder = CreateFrame("Frame", nil, view.area)
-    view.caption = W.Label(frame, "", nil, 0, 0, 360, T.muted)
+    view.caption = W.Label(frame, "", nil, 0, 0, 340, T.muted)
     view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
-    view.hint = W.Label(frame, L["Click a spell for its switches; drag to move"], nil, 0, 0, 240, T.faint or T.muted)
+    view.hint = W.Label(frame, L["Click a spell for its menu · drag to move · + adds"], nil, 0, 0, 250, T.faint or T.muted)
     view.hint:ClearAllPoints(); view.hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2); view.hint:SetJustifyH("RIGHT")
     function view.Refresh() M:RenderPreview(view) end
     view.RenderSimulation = view.Refresh
@@ -286,4 +288,26 @@ function M:JumpTo(target, part)
     if part and page.SetTextPart then page.SetTextPart(part) end
     page:Reveal(page.jumpTargets[target])
     return true
+end
+
+-- The preview's corner: Use Bar Style while any of this bar's groups is its
+-- own. `opts.custom()` counts them; `opts.useStyle()` follows the Bar Style
+-- again. (The preview shows only the bar being edited; owner, November 24,
+-- 2026: the Layout view of every bar was too small to use.)
+function M:AddPreviewCorner(page, opts)
+    opts = opts or {}
+    if not page.previewArea then return end
+    local corner = CreateFrame("Frame", nil, page.previewArea)
+    corner:SetPoint("TOPRIGHT", page.previewArea, "TOPRIGHT", 0, -4); corner:SetSize(160, 28)
+    local use = W.Button(corner, "", 150, 24, "secondary")
+    use:SetPoint("RIGHT", 0, 0)
+    use:SetScript("OnClick", function() if opts.useStyle then opts.useStyle() end end)
+    page.useStyleButton = use
+    page.refreshers[#page.refreshers + 1] = function()
+        local custom = opts.custom and opts.custom() or 0
+        use:SetShown(custom > 0)
+        use.label:SetText(string.format(L["Use Bar Style (%d)"], custom))
+    end
+    page.previewReserveRight = 172
+    page:UpdatePreviewLayout()
 end

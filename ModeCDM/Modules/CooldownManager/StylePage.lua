@@ -5,9 +5,10 @@ if not M then return end
 
 -- The Bar Style page (owner, November 24, 2026): the default look for bars.
 -- New bars start with it; existing bars use it if you choose (each bar's
--- chips, or Use Bar Style on Every Bar). Above it the Layout view of every
--- bar (Stage.lua); one scrolling page with a section index: Presets, Size,
--- Border, Background, Cooldown, Text, Starting Glow Look and Bar Fill.
+-- chips, or Use Bar Style on Every Bar). Above it the Bar Style drawn on
+-- sample icons and a bar (StylePreview.lua); one scrolling page with a
+-- section index: Presets, Size, Border, Background, Cooldown, Text,
+-- Starting Glow Look and Bar Fill.
 local function Owner()
     local appearance = setmetatable({}, { __index = function(_, key) return M.db.barStyle[key] end })
     local owner = { db = { appearance = appearance } }
@@ -15,30 +16,6 @@ local function Owner()
     function owner.GetFonts() return addon.Media:GetFonts() end
     function owner.SetAppearance(_, key, value) return M:SetBarStyle(key, value) end
     return owner
-end
-
--- The preview: every bar in place, none outlined.
-function M:StylePreviewOwner()
-    return setmetatable({
-        CreateConfigPreview = function(_, parent)
-            local frame = CreateFrame("Frame", nil, parent)
-            frame:SetAllPoints()
-            local view = { frame = frame }
-            view.area = CreateFrame("Frame", nil, frame)
-            view.caption = W.Label(frame, "", nil, 0, 0, 520, T.muted)
-            view.caption:ClearAllPoints(); view.caption:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 2); view.caption:SetJustifyH("LEFT")
-            function view.Refresh()
-                local mode = M.previewMode
-                M.previewMode = "layout"
-                local drawn = M:RenderStage(view, nil)
-                M.previewMode = mode
-                if not drawn then view.caption:SetText(L["Turn the Cooldown Manager on to see your bars here."]) end
-            end
-            view.RenderSimulation = view.Refresh
-            M.stylePreview = view
-            return view
-        end,
-    }, { __index = M })
 end
 
 function M:CreateStylePage(parent)

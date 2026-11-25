@@ -1,18 +1,27 @@
 local _, ns = ...
 local addon = ns.ModeUI or {}
-local M = addon.CooldownManager
+local M, W, T, L = addon.CooldownManager, addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 if not M then return end
 
--- Test on Screen (owner, November 24, 2026): while the window is open and out
--- of combat, every icon bar that shows draws sample icons in its real place
--- (its own frames over the holder, never Blizzard's), some cooling and one
--- lit; the Cast Bar shows its sample. It stops when combat starts, the
--- window closes, or the button is pressed again.
+-- Test on Screen (owner, November 24, 2026): out of combat, every icon bar
+-- that shows draws sample icons in its real place (its own frames over the
+-- holder, never Blizzard's), some cooling and one lit; the Cast Bar and the
+-- Swing Timer show their samples. While it runs a bar at the top of the
+-- screen says so with a Stop Test button (owner, November 24, 2026: there
+-- was no clear way to stop it). It also stops when combat starts, the
+-- window closes, the module is switched off, or either Test on Screen
+-- button (the window's header, the preview's) is pressed again.
+--
+-- The state lives on the module itself: the Bar Style, Cast Bar, resource
+-- and Swing Timer previews hand the shared preview widget a proxy of the
+-- module, and a test started from one of them used to keep its state on the
+-- proxy, where closing the window couldn't find it.
 local SAMPLE_ICON = 134400 -- the question mark icon
 local COOLING = { [2] = 0.45, [4] = 0.8, [6] = 0.25 }
+local Style = addon.Style
 
 function M:CanTestDisplay()
-    return self.active == true and self.built == true and not addon.InCombat()
+    return M.active == true and M.built == true and not addon.InCombat()
 end
 
 local function Sample(self, id, index, bar)
@@ -70,9 +79,34 @@ local function Draw(self, id)
     for index = count + 1, #(self.testSamples[id] or {}) do self.testSamples[id][index]:Hide() end
 end
 
-function M:SetTestDisplay(on)
+-- The bar at the top of the screen while the test runs: what it is, and Stop Test.
+local function Banner(self)
+    if self.testBanner then return self.testBanner end
+    local banner = CreateFrame("Frame", "ModeUICooldownTestBanner", self.testHost)
+    banner:SetFrameStrata("DIALOG")
+    banner:SetSize(420, 44)
+    banner:SetPoint("TOP", UIParent, "TOP", 0, -96)
+    banner:EnableMouse(true)
+    banner.fill = W.Fill(banner, T.background, "BACKGROUND")
+    banner.edge = Style.Edge(banner, M.EDGE, { pieces = true })
+    banner.edge:Layout()
+    banner.label = W.Label(banner, L["Test on Screen: sample spells on your bars"], nil, 14, -15, 270, T.text)
+    banner.label:SetWordWrap(false)
+    banner.stop = W.Button(banner, L["Stop Test"], 110, 28, "primary")
+    banner.stop:SetPoint("RIGHT", banner, "RIGHT", -8, 0)
+    banner.stop:SetScript("OnClick", function() M:SetTestDisplay(false) end)
+    self.testBanner = banner
+    return banner
+end
+
+-- Starts (true) or stops the test; returns whether it runs now. The
+-- previews call it on their proxies (see above), so it always works on M.
+function M.SetTestDisplay(_, on)
+    local self = M
     on = on and self:CanTestDisplay() or false
     self.testDisplay = on or nil
+    -- The shared preview's Test on Screen button reads `testing`.
+    self.testing = on or nil
     self.testSamples = self.testSamples or {}
     if not self.testHost then
         self.testHost = CreateFrame("Frame", nil, UIParent)
@@ -81,6 +115,7 @@ function M:SetTestDisplay(on)
     for _, list in pairs(self.testSamples) do for _, sample in ipairs(list) do sample:Hide() end end
     self.testHost:SetShown(on)
     if on then
+        Banner(self):Show()
         for _, id in ipairs(self:BarIds()) do Draw(self, id) end
         if self.castFrame and self.db.castBar.show then self.castFrame:Show(); self:PaintCastSample(self.castFrame) end
     elseif self.castFrame then

@@ -720,6 +720,24 @@ skipped its confirmation, the pixel snapper never stopped. See
 `docs/COOLDOWN_MANAGER.md`, "The window (rework, November 24, 2026)" and its
 in-game check. Waiting on the owner's in-game look.
 
+### Revision: ModeCDM revisions pass (November 24, 2026)
+
+The owner's first review of the rework. **Previews show only what their
+page edits:** the Layout view of every bar (`Stage.lua`) is gone, too small
+to use and hiding the **+** slot; a bar's page previews that bar alone with
+its **+** slot, the Bar Style page draws the Bar Style on sample Large and
+Small icons and a Tracked Bar (`StylePreview.lua`), the Swing Timer page its
+two lanes. **+ Add Spell** on Spells & Glows opens the same list as the +
+slot. **Test on Screen** could not be stopped once started from the Bar
+Style, Cast Bar, resource or Swing Timer preview (its state sat on a proxy
+of the module); it now lives on the module, a **Stop Test** bar shows on
+screen while it runs, both buttons read Stop Test, and it stops with the
+window, combat or the module. **Every UI scale:** a negative Spacing counts
+physical pixels, the icon holders and the Swing Timer sit on whole pixels,
+and Home says the screen, UI scale and whether it is pixel perfect. See
+`docs/COOLDOWN_MANAGER.md` (the window, "Every UI scale", in-game checks 3
+and 7). Waiting on the owner's in-game look.
+
 ## Resuming on another machine
 
 1. Clone the repository and check out `main`.

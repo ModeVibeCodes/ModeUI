@@ -93,7 +93,10 @@ function W.Preview(page, module, options)
             headerHeight=headerHeight+30
         end
         body:ClearAllPoints();body:SetPoint("TOPLEFT",0,-headerHeight);body:SetPoint("BOTTOMRIGHT")
-        local external=module.testing
+        -- On screen the real element is the preview, so the body folds away;
+        -- a module whose test draws samples beside its preview keeps it
+        -- (previewWhileTesting: the Cooldown Manager's + slot and spells).
+        local external=module.testing and not module.previewWhileTesting
         local collapsed=external or (not pane and (self.previewSectionCollapsed or self.previewManualCollapsed)) or false
         self.previewCollapsed=collapsed and true or false
         if module.GetPreviewSize then
@@ -115,6 +118,8 @@ function W.Preview(page, module, options)
         local safe=not (InCombatLockdown() or UnitAffectingCombat("player"))
         static:SetEnabled(safe);animated:SetEnabled(safe)
         test:SetSelected(module.testing==true)
+        -- While the test runs the same button stops it, and says so.
+        test.label:SetText(module.testing and "Stop Test" or "Test on Screen")
         local permitted=module.SetTestDisplay and module.active and not (InCombatLockdown() or UnitAffectingCombat("player") or addon.editMode or addon.previewMode)
         if module.CanTestDisplay then permitted=module:CanTestDisplay() end
         test:SetEnabled(module.testing==true or permitted==true)

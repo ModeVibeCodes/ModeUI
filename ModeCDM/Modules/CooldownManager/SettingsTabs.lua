@@ -36,6 +36,21 @@ function M:BuildSpellsSection(ui)
             status:SetText(hidden > 0 and string.format(L["%d spells hidden here."], hidden) or L["Every tracked spell shows."])
         end)
         page.spellsStatus = status
+        -- The preview's + slot, as a button (owner, November 24, 2026): the
+        -- spells to add on a bar that takes them, else Blizzard's Tracked
+        -- Spells (Tracked Buffs and Tracked Bars).
+        local add = ui.Button("+ Add Spell", 190, function(button)
+            local id = ui.Viewer()
+            if not M:TakesEntries(id) then M:OpenCooldownSettings(); return end
+            if M.picker and M.picker:IsShown() and M.picker.opener == button then M.picker:Hide(); return end
+            M:OpenPicker(M.previewView, button)
+        end)
+        ui.Refresh(function()
+            local takes = M:TakesEntries(ui.Viewer())
+            add.label:SetText(L[takes and "+ Add Spell" or "+ Add in Tracked Spells"])
+            add:SetEnabled(takes or M:CanOpenCooldownSettings())
+        end)
+        page.addSpellButton = add
         M:BuildSpellList(ui)
         W.Tip(ui.Note("Click a spell in the list or the preview for its menu: glows, its own text, order, or to take it off the bar. Drag in the preview to move one.", 48))
         ui.More("spells", function()

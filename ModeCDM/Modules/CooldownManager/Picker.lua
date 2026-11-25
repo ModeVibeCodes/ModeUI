@@ -33,7 +33,7 @@ local HINT = "Point at an icon to see what it is"
 
 local function OnEvent(picker, event)
     if event == "PLAYER_REGEN_DISABLED" then picker:Hide(); return end
-    local over = picker:IsMouseOver() or (picker.anchor and picker.anchor:IsMouseOver())
+    local over = picker:IsMouseOver() or (picker.opener and picker.opener:IsMouseOver())
     if not (addon.IsPublic(over) and over) then picker:Hide() end
 end
 
@@ -97,7 +97,7 @@ function M:Picker()
             if not picker:IsEventRegistered(event) then picker:RegisterEvent(event) end
         end
     end)
-    picker:SetScript("OnHide", function() picker:UnregisterAllEvents(); picker.anchor = nil end)
+    picker:SetScript("OnHide", function() picker:UnregisterAllEvents(); picker.opener = nil end)
     self.picker = picker
     return picker
 end
@@ -138,7 +138,7 @@ function M:OpenPicker(view, anchor)
     if picker.barId ~= id then
         picker.idResult:SetText(""); picker.spellRow.input:SetText(""); picker.itemRow.input:SetText("")
     end
-    picker.barId, picker.anchor, picker.view = id, anchor, view
+    picker.barId, picker.opener, picker.view = id, anchor, view
     picker:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
     picker:ClearAllPoints(); picker:SetPoint("TOP", anchor, "BOTTOM", 0, -8)
     picker:Show()

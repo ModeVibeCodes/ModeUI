@@ -398,11 +398,9 @@ world.run([==[
     assert(not confirm:IsShown() and M:Custom(added), 'Cancel keeps it')
     window.rows[6].delete.scripts.OnClick(window.rows[6].delete); confirm.accept.scripts.OnClick(confirm.accept)
     assert(not M:Custom(added) and M.selectedBar == 'essential', 'deleted after Delete Bar')
-    -- The preview: the Layout view (every bar in place), then the Bar view.
+    -- The preview: the bar being edited, alone.
     M:SelectEditing('utility'); assert(M.page.viewerEditing() == 'utility' and M.page:IsShown(), 'a bar by its list value')
-    assert(M.page.layoutViewButton.selected and M.previewView.stage and M.previewView.stage:IsShown() and M.previewView.stage.bars >= 4, 'the Layout view: every bar in place')
-    M.page.barViewButton.scripts.OnClick(M.page.barViewButton)
-    assert(M.previewMode == 'bar' and not M.previewView.stage:IsShown() and M.previewView.area:IsShown(), 'the Bar view')
+    assert(M.previewView.stage == nil and M.previewView.area:IsShown() and M.previewView.icons[1]:IsShown(), 'this bar alone')
     window.rows[8].scripts.OnClick(window.rows[8])
     local page, view = M.page, M.previewView
     assert(page.viewerEditing() == c2 and view.icons[1].key == '301' and view.plus:IsShown(), 'a custom bar: its spells, then +')

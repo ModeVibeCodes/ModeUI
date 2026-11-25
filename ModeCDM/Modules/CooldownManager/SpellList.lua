@@ -79,7 +79,7 @@ function M:BuildSpellList(ui)
         for index = count + 1, #host.lines do host.lines[index]:Hide() end
         row:SetHeight(math.max(1, count) * LINE + 4)
         host.empty = host.empty or W.Label(host, "", nil, 0, -4, 420, T.muted)
-        host.empty:SetText(count == 0 and L["No spells on this bar yet. Click + in the preview to add one."] or "")
+        host.empty:SetText(count == 0 and L["No spells on this bar yet. Click + Add Spell or the + in the preview to add one."] or "")
         host.count = count
     end
     ui.Refresh(Draw)

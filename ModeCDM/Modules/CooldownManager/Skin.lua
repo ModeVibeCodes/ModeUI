@@ -188,7 +188,8 @@ end
 -- while a spell's aura is up is left as it is.
 function M:StyleCooldown(item)
     local state = self.dress[item]
-    local style = state and self.db[state.viewer]
+    -- A preview sample can carry a look of its own (the Bar Style page's).
+    local style = state and (state.style or self.db[state.viewer])
     local cooldown = item.Cooldown
     if not style or not cooldown or not cooldown.SetSwipeColor then return end
     local aura = self.AuraUp(item) and not self:IsBuff(self.sourceOf[item])

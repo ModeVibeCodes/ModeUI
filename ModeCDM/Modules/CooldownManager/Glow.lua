@@ -54,7 +54,7 @@ local function Paint(item, frame, look)
     if frame.ring then
         frame.ring:SetShown(border)
         -- The rim takes the bar's shape and band width, so it covers the edge exactly.
-        local style = border and state and M.db and M.db[state.viewer]
+        local style = border and state and (state.style or (M.db and M.db[state.viewer]))
         if style then frame.ring:SetRim(style.edgeSize); frame.ring:SetStyle(style.edgeStyle) end
         if border then
             frame.ring:Layout(); frame.ring:SetTint(look.color)

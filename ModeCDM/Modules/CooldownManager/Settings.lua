@@ -6,9 +6,8 @@ if not M then return end
 -- Only defines the page; the module's window (Window.lua) builds it the
 -- first time it opens. One scrolling page with a section index on its left
 -- (owner, November 24, 2026): Layout, Look, Text, Spells & Glows and Show.
--- Above it the preview: the Layout view (Stage.lua: every bar in place, this
--- one outlined) or the Bar view (Preview.lua: this bar, to click and drag
--- its spells). Groups that can follow the Bar Style carry its chip; the
+-- Above it the preview (Preview.lua): this bar alone, to click and drag its
+-- spells and add more with its + slot. Groups that can follow the Bar Style carry its chip; the
 -- controls the Bar Style sets show while the group is the bar's own; rarely
 -- changed ones sit under More options. This file builds the page, its
 -- helpers and Layout; SettingsLook.lua Look and Text; SettingsTabs.lua the rest.
@@ -135,7 +134,7 @@ function M:CreateConfigPage(parent)
     end
 
     page.configPreview = W.Preview(page, M, { contentHeight = 150 })
-    M:AddPreviewCorner(page, { views = true, custom = function() return M:CustomGroups(editing) end,
+    M:AddPreviewCorner(page, { custom = function() return M:CustomGroups(editing) end,
         useStyle = function() M:UseBarStyle(editing) end })
     self:BuildLayoutSection(ui)
     self:BuildLookSection(ui)
