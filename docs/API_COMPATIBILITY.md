@@ -1738,3 +1738,19 @@ reports each item on the owner's client.
   SharedMedia path) through `addon.Media:GetSound`, under `pcall`.
 - **Test on Screen** draws on ModeCDM's own sample frames (`BuildSample`) and
   sets their cooldowns with plain numbers; Blizzard's frames are untouched.
+
+## UI scale on Forever — November 24, 2026
+
+The owner's client (`/run print(C_CVar.GetCVarInfo("useUiScale"))`, Forever,
+1440p) reports `useUiScale` as **secure** (`isSecure` true, not locked, not
+read-only), its value `0`, `uiScale` `1.0`, and `UIParent:GetScale()` 0.64:
+with the game's UI Scale off, the game picks its own scale, 64% on a 1440p
+screen. Addon code can't change a secure setting, so Optimizations no longer
+stops there: it writes the game's settings only where `GetCVarInfo` allows
+(`GameSettings.lua`: a value already in place needs no write, so putting it
+back never trips the lock), and always sets the interface's own scale with
+`UIParent:SetScale` out of combat, as other UI addons do, again on
+`UI_SCALE_CHANGED` and `DISPLAY_SIZE_CHANGED` (the game puts its own scale
+back then). Turning it off asks for a reload, which gives the game its scale
+back. "Using" on the General page's UI Scale card checks the scale actually on
+screen. Needs the owner's in-game confirmation.

@@ -384,7 +384,9 @@ post-hook (`hooksecurefunc`, `HookScript`).
 - **Game-wide settings** (CVars, UI scale, loot) change only through the
   Optimizations module: each one is off by default except the UI scale (on at
   Pixel Perfect since November 15, 2026, the owner's request), and turning one
-  off puts back the game's previous value. Other modules never write them, and nothing rewrites
+  off puts back the game's previous value. The UI scale is set on the
+  interface (`UIParent`) even where the game's own UI Scale setting is secure,
+  as on Forever (`docs/API_COMPATIBILITY.md`, "UI scale on Forever"). Other modules never write them, and nothing rewrites
   the game-wide fonts.
 - **APIs:** before building a module, write down every API it relies on, with a
   Forever source link, in `docs/API_COMPATIBILITY.md`. Don't assume Retail

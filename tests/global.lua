@@ -6,14 +6,14 @@ local STUBS = H.Read(H.root .. "tests/unit_frame_stubs.lua")
 -- Game settings (CVars), error frame, screen and loot doubles.
 local CLIENT = STUBS .. [==[
     cvars={autoLootDefault='0',cameraDistanceMaxZoomFactor='1.9',useUiScale='0',uiScale='1.0'}
-    restrictedCVars={}
+    restrictedCVars={};secureCVars={}
     cvarWrites={}
     C_CVar={
         GetCVar=function(name) return cvars[name] end,
-        SetCVar=function(name,value) if restrictedCVars[name] then return false end
+        SetCVar=function(name,value) if restrictedCVars[name] or secureCVars[name] then return false end
             cvarWrites[#cvarWrites+1]=name..'='..tostring(value);cvars[name]=tostring(value);return true end,
         GetCVarInfo=function(name) if cvars[name]==nil then return nil end
-            return cvars[name],cvars[name],false,false,restrictedCVars[name]==true,false,false end,
+            return cvars[name],cvars[name],false,false,restrictedCVars[name]==true,secureCVars[name]==true,false end,
         GetCVarBool=function(name) return cvars[name]=='1' end,
     }
     function GetPhysicalScreenSize() return 2560,1440 end
@@ -203,6 +203,23 @@ world.run([==[
     restrictedCVars.autoLootDefault=true
     assert(O:SetOption('autoLoot',true) and cvars.autoLootDefault=='0' and O.status.autoLoot:find("doesn't allow",1,true))
     restrictedCVars.autoLootDefault=nil;O:SetOption('autoLoot',false)
+    -- Forever: useUiScale is secure. The game's UI Scale stays off (its own
+    -- automatic 64%), and the interface takes the pixel-perfect scale anyway.
+    assert(O:SetOption('manageScale',false));addon.ReloadManager:Clear('uiScale')
+    secureCVars.useUiScale=true;UIParent:SetScale(0.64)
+    assert(not O:UsingSuggestedScale(),'off: not in use')
+    cvarWrites={}
+    assert(O:SetOption('scaleMode','auto') and O:SetOption('manageScale',true))
+    assert(cvars.useUiScale=='0' and #cvarWrites==0,'the secure setting is left alone')
+    assert(math.abs(UIParent:GetScale()-768/1440)<1e-6 and O.status.scale:find('53.33%, on the interface',1,true),'53.33% on the interface')
+    assert(O:UsingSuggestedScale(),'in use')
+    -- The game puts its own scale back on a scale or display change; ModeUI follows.
+    UIParent:SetScale(0.64);assert(not O:UsingSuggestedScale(),'64% on screen is not in use')
+    FireEvent('UI_SCALE_CHANGED');assert(math.abs(UIParent:GetScale()-768/1440)<1e-6 and O:UsingSuggestedScale(),'and back')
+    -- Off: nothing to write back; a reload gives the game its own scale.
+    assert(O:SetOption('manageScale',false) and ModeUIDB.optimizationOriginals.useUiScale==nil and O.status.scale=='Game setting restored.')
+    assert(addon.ReloadManager.requests.uiScale,'a reload finishes it')
+    addon.ReloadManager:Clear('uiScale');secureCVars.useUiScale=nil
 ]==], "optimizations")
 
 -- Originals survive a reload, so turning an optimization off later still restores.

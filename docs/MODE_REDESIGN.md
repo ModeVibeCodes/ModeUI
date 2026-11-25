@@ -738,6 +738,12 @@ and Home says the screen, UI scale and whether it is pixel perfect. See
 `docs/COOLDOWN_MANAGER.md` (the window, "Every UI scale", in-game checks 3
 and 7). Waiting on the owner's in-game look.
 
+The same day ModeCDM's new Screen line showed 64% where ModeUI said 53.33%:
+Forever's `useUiScale` is a secure game setting, so Optimizations' UI Scale
+had stopped before sizing the interface, and "Using 53.33%" only checked the
+settings. It now sets the interface's scale either way and "Using" checks the
+screen (`docs/API_COMPATIBILITY.md`, "UI scale on Forever").
+
 ## Resuming on another machine
 
 1. Clone the repository and check out `main`.

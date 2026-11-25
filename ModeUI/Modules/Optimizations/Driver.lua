@@ -45,6 +45,11 @@ function M:ApplyCamera()
     self.status.camera = not ok and reason or (want and ("Max distance " .. want .. "x.") or (reason == "restored" and "Game setting restored." or "Game setting unchanged."))
 end
 
+-- The game's own UI Scale settings where addons may change them, then the
+-- interface itself (UIParent, out of combat). On Forever useUiScale is a
+-- secure setting (C_CVar.GetCVarInfo: isSecure; owner's client, November 24,
+-- 2026), so the game's UI Scale stays off and its automatic scale (64% at
+-- 1440p) was all that showed: the interface now takes the scale either way.
 function M:ApplyScale()
     if self.applyingScale then return end
     self.applyingScale = true
@@ -53,16 +58,15 @@ function M:ApplyScale()
         if not desired then
             self.status.scale = "Screen resolution isn't available yet."
         else
-            local ok, reason = self:Manage("useUiScale", "1")
-            if ok then ok, reason = self:Manage("uiScale", string.format("%.4f", math.max(self.CVAR_SCALE_FLOOR, desired / 100))) end
-            if ok then
-                local set = pcall(UIParent.SetScale, UIParent, desired / 100)
-                local actual = Read(UIParent.GetScale, UIParent)
-                self.scaleApplied = true
-                ok = set and Number(actual, 0.1, 2) and math.abs(actual - desired / 100) < 0.001
-                reason = not ok and "The game didn't accept this UI scale." or nil
-            end
-            self.status.scale = ok and string.format("UI scale %.2f%%.", desired) or reason
+            local game = self:Manage("useUiScale", "1")
+            if game then game = self:Manage("uiScale", string.format("%.4f", math.max(self.CVAR_SCALE_FLOOR, desired / 100))) end
+            local set = pcall(UIParent.SetScale, UIParent, desired / 100)
+            local actual = Read(UIParent.GetScale, UIParent)
+            local ok = set and Number(actual, 0.1, 2) and math.abs(actual - desired / 100) < 0.001
+            if ok then self.scaleApplied = true end
+            self.status.scale = (not ok and "The game didn't accept this UI scale.")
+                or (game and string.format("UI scale %.2f%%.", desired))
+                or string.format("UI scale %.2f%%, on the interface (the game keeps its own UI Scale setting from addons).", desired)
         end
     else
         local okUse, useReason = self:Manage("useUiScale", nil)
@@ -70,7 +74,7 @@ function M:ApplyScale()
         local storedScale = originals.uiScale
         local okScale, scaleReason = self:Manage("uiScale", nil)
         local restored = useReason == "restored" or scaleReason == "restored"
-        if okUse and okScale and restored and self.scaleApplied then
+        if okUse and okScale and self.scaleApplied then
             -- The game redraws its own scale from these settings; a reload makes
             -- sure nothing is left at ModeUI's scale.
             local scale = tonumber(storedScale or self:GetCVar("uiScale"))
@@ -154,8 +158,12 @@ end
 
 -- The General page's quick action: Set UI Scale on, at the Pixel Perfect
 -- scale for this screen (switching Optimizations on if it was off).
+-- In use means on screen: the interface at that scale now, not only chosen.
 function M:UsingSuggestedScale()
-    return self:On("manageScale") and self.db.scaleMode == "auto" and self:SuggestedScale() ~= nil
+    local scale = self:SuggestedScale()
+    if not (self:On("manageScale") and self.db.scaleMode == "auto" and scale) then return false end
+    local actual = Read(UIParent.GetScale, UIParent)
+    return Number(actual, 0.1, 2) and math.abs(actual - scale / 100) < 0.001 or false
 end
 function M:UseSuggestedScale()
     local scale, height = self:SuggestedScale()

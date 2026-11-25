@@ -19,16 +19,18 @@ function M:WriteCVar(name, value)
     value = tostring(value)
     local current = self:GetCVar(name)
     if current == nil then return false, "Not available in this client." end
+    -- Already so: nothing to write, even where the game locks the setting
+    -- (putting back Forever's secure useUiScale, which ModeUI never changed).
+    local a, b = tonumber(current), tonumber(value)
+    if current == value or (a and b and math.abs(a - b) < 0.001) then return true end
     if C_CVar and C_CVar.GetCVarInfo then
         local _, _, _, _, locked, secure, readOnly = Read(C_CVar.GetCVarInfo, name)
         if locked == true or secure == true or readOnly == true then return false, "The game doesn't allow addons to change this." end
     end
-    if current ~= value then
-        local set = C_CVar and C_CVar.SetCVar or SetCVar
-        if type(set) ~= "function" or Read(set, name, value) == false then return false, "The game didn't accept this setting." end
-    end
+    local set = C_CVar and C_CVar.SetCVar or SetCVar
+    if type(set) ~= "function" or Read(set, name, value) == false then return false, "The game didn't accept this setting." end
     local result = self:GetCVar(name)
-    local a, b = tonumber(result), tonumber(value)
+    a = tonumber(result)
     if result == value or (a and b and math.abs(a - b) < 0.001) then return true end
     return false, "The game kept " .. tostring(result) .. "."
 end
