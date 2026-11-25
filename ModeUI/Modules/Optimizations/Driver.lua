@@ -177,6 +177,23 @@ function M:UseSuggestedScale()
     return true
 end
 
+-- The General page's 1080p Size switch (owner, November 24, 2026: the
+-- choice was only on the Optimizations page): on, 1080p Size; off, Pixel
+-- Perfect. Set UI Scale is on either way, Optimizations too.
+function M:UsingSize1080() return self:On("manageScale") and self.db.scaleMode == "size1080" end
+-- Whether the switch means anything here: 1080p Size differs from Pixel
+-- Perfect (not on 1080p or 4K, where both are 71.11%).
+function M:Size1080Differs()
+    local scale = self:SuggestedScale()
+    return scale ~= nil and math.abs(scale - self.SIZE_1080) > 0.01
+end
+function M:SetSize1080(on)
+    if not self:CanConfigure() or not self:SuggestedScale() then return false end
+    if not self.enabled then addon:SetModuleEnabled(self.id, true) end
+    self.db.scaleMode = on and "size1080" or "auto"
+    return self:SetOption("manageScale", true)
+end
+
 -- Play The Game Tools has its own Optimizations; if both manage the same
 -- setting, whichever applies last wins.
 function M:OtherManager()

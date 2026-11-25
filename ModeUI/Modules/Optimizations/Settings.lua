@@ -87,13 +87,17 @@ function M:CreateConfigPage(parent)
 end
 
 -- The General page's UI Scale card (Shared/Settings/Home.lua asks each module
--- for its cards): the screen ModeUI detected, and one button that sets the
--- Pixel Perfect scale for it ("Using" once it's in use).
+-- for its cards): the screen ModeUI detected, one button that sets the
+-- chosen scale for it ("Using" once it's on screen), and the 1080p Size
+-- switch where it differs from Pixel Perfect (1440p).
 function M:BuildHomeCard(page, rows)
     page:Group(addon.L["UI Scale"])
     local button, row = rows.Action(page, "Screen", { "ui scale", "scale", "pixel perfect", "resolution", "1080p", "1440p" })
     page.homeScaleButton, page.homeScaleRow = button, row
     button:SetScript("OnClick", function() M:UseSuggestedScale(); page:Refresh() end)
+    local size = rows.Switch(page, "1080p Size", function() return M:UsingSize1080() end, function(on) M:SetSize1080(on) end)
+    size:GetParent().row.visibleWhen = function() return M:Size1080Differs() end
+    page.homeScaleSizeToggle = size
     page.refreshers[#page.refreshers + 1] = function()
         local scale, height = M:ScreenScale()
         row.settingsLabel:SetText(height and (height .. "p") or "Screen")

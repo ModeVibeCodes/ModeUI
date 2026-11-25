@@ -31,6 +31,15 @@ function M:CreateHomePage(parent)
     local screen = Text("Screen", 56)
     ui.Refresh(function() screen:SetText(M:ScreenStatus()) end)
     page.homeScreen = screen
+    -- The scale is ModeUI's (Optimizations, UI Scale: Pixel Perfect or 1080p
+    -- Size); this opens that page in ModeUI's settings window.
+    local scaleRow = page:Row("", 40)
+    scaleRow.rowLabel:Hide(); scaleRow:ClearAllPoints(); scaleRow:SetAllPoints(scaleRow.row)
+    page.homeScaleButton = Button(scaleRow, "UI Scale Settings", 160, function()
+        if addon:OpenConfig() then addon:SelectConfigPage("optimizations") end
+    end)
+    page.homeScaleButton:SetPoint("LEFT")
+    scaleRow.row.visibleWhen = function() return addon.modules.optimizations ~= nil end
 
     page:Group(L["Bar Style"])
     local preset = Text("Preset")

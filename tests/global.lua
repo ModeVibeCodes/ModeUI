@@ -232,6 +232,20 @@ world.run([==[
     assert(#scalePage.scaleModeButtons==3 and scalePage.scaleModeButtons[2].label:GetText()=='1080p Size','Pixel Perfect, 1080p Size, Custom')
     addon.configWindow:Hide()
     assert(O:SetOption('scaleMode','auto') and math.abs(UIParent:GetScale()-768/1440)<1e-6,'back to Pixel Perfect')
+    -- The General page's 1080p Size switch, beside Using.
+    SlashCmdList.MODEUI();addon:SelectConfigPage('home')
+    local home2=addon.configWindow.pages.home
+    local switch=home2.homeScaleSizeToggle
+    assert(switch:GetParent().row.visibleWhen() and not switch.selected,'1440p: the switch, off at Pixel Perfect')
+    switch.scripts.OnClick(switch)
+    assert(O.db.scaleMode=='size1080' and math.abs(UIParent:GetScale()-768/1080)<1e-6 and switch.selected,'on: 71.11%')
+    assert(home2.homeScaleButton.label:GetText()=='Using 71.11%')
+    switch.scripts.OnClick(switch)
+    assert(O.db.scaleMode=='auto' and math.abs(UIParent:GetScale()-768/1440)<1e-6 and not switch.selected,'off: Pixel Perfect')
+    local physical=GetPhysicalScreenSize;GetPhysicalScreenSize=function() return 1920,1080 end
+    assert(not switch:GetParent().row.visibleWhen(),'1080p: both are 71.11%, no switch')
+    GetPhysicalScreenSize=physical
+    addon.configWindow:Hide()
 ]==], "optimizations")
 
 -- Originals survive a reload, so turning an optimization off later still restores.

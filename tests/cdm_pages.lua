@@ -29,6 +29,7 @@ world.run([==[
     assert(window.cdmButton.label.text == 'Tracked Spells' and window.testButton:IsEnabled(), 'the header')
 
     assert(home.homeScreen and home.homeScreen.text ~= '', 'the Screen line')
+    assert(home.homeScaleButton and home.homeScaleButton.label.text == 'UI Scale Settings', 'a way to the UI scale')
     -- 1440p: pixel perfect at 53.33%; at 64% it isn't, and says what is.
     local oldUtil, oldSize = PixelUtil, GetPhysicalScreenSize
     PixelUtil = { GetPixelToUIUnitFactor = function() return 768 / 1440 end }
