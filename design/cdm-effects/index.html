@@ -1,0 +1,1200 @@
+<title>ModeCDM Icon Effects</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a workbench. Sticky header with save state and tabs; the Bench tab is a
+   two-pane rig (simulated CDM with fight controls left, the effect editor right). */
+:root {
+  color-scheme: dark;
+  --void: #0b0c0e;
+  --panel: #131417;
+  --raised: #1a1c20;
+  --sunk: #0f1012;
+  --line: #2a2d32;
+  --line-soft: #202226;
+  --text: #dcdcdc;
+  --muted: #8d9198;
+  --faint: #5d6168;
+  --ivory: #efe6d2;
+  --brand: #e2b866;
+  --celadon: #b4cdb6;
+  --rosewood: #cf6a6f;
+  --hot: #ff3948;
+  --amber: #ffb12f;
+  --power-tint: #759acd;
+  --graphite-muted: #85858b;
+  --empty-rim: #343438;
+  --font-game: "Urbanist", "Inter", system-ui, sans-serif;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+* { box-sizing: border-box; }
+body { background: var(--void); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+a { color: var(--brand); }
+h1, h2, h3, h4 { font-family: var(--font-game); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h2 { font-size: 22px; font-weight: 700; color: var(--ivory); }
+h3 { font-size: 15px; font-weight: 700; color: var(--ivory); }
+h4 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+p { margin: 0; max-width: 74ch; }
+code, .mono { font-family: var(--font-mono); font-size: 12px; }
+code { background: var(--sunk); border: 1px solid var(--line-soft); padding: 0 4px; border-radius: 3px; color: #c9c3b6; overflow-wrap: anywhere; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+ul { margin: 0; padding-left: 18px; }
+li { margin: 3px 0; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+.top-in, .wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top-in { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.brand { font-family: var(--font-game); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
+.brand b { color: var(--brand); font-weight: 800; }
+.brand span { color: #fff; }
+.brand small { font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--muted); margin-left: 8px; letter-spacing: 0; }
+.spacer { flex: 1; }
+.save-state { font-size: 12px; color: var(--muted); }
+.save-state.dirty { color: var(--amber); }
+.save-state.ok { color: var(--celadon); }
+.btn { background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.btn:hover { border-color: #3d4148; }
+.btn.primary { background: #2a2418; border-color: #5b4a2a; color: var(--brand); }
+.btn.primary:hover { border-color: var(--brand); }
+.btn.on { border-color: var(--brand); color: var(--brand); background: #221e15; }
+.btn.small { padding: 3px 9px; font-size: 12px; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin; }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; cursor: pointer; color: var(--muted); font-family: var(--font-game); font-weight: 700; font-size: 14px; white-space: nowrap; letter-spacing: .02em; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--ivory); border-bottom-color: var(--brand); }
+
+main .wrap { padding-block: 22px 60px; }
+section.view { display: grid; gap: 18px; }
+.lede { color: var(--muted); max-width: 80ch; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.card.sunk { background: var(--sunk); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.fm { color: var(--celadon); border-color: #3b4a3d; }
+.chip.fo { color: var(--brand); border-color: #5b4a2a; }
+.chip.ck { color: var(--amber); border-color: #5a4320; }
+.chip.rc { color: var(--rosewood); border-color: #5a2e31; }
+.chip.ex { color: var(--ivory); border-color: #4a4639; }
+.chip.nw { color: #9fc3ff; border-color: #2c3e5c; }
+.note { font-size: 12px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+th { font-family: var(--font-game); font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; background: var(--sunk); position: sticky; top: 0; }
+tr:last-child td { border-bottom: 0; }
+td .sub { color: var(--muted); font-size: 12px; display: block; margin-top: 2px; }
+select.mini, input.mini { background: var(--sunk); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; font-size: 12px; }
+textarea.notes { width: 100%; min-height: 64px; background: var(--sunk); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-size: 13px; resize: vertical; }
+
+/* Bench ------------------------------------------------------------------ */
+.bench { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .bench { grid-template-columns: 1fr; } }
+.stage { background: radial-gradient(120% 90% at 50% 20%, #1b1d22 0%, #0d0e10 70%); border: 1px solid var(--line); border-radius: 6px; padding: 18px 14px; display: grid; gap: 14px; justify-items: center; min-height: 300px; position: relative; overflow: hidden; }
+.stage-label { justify-self: start; font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+.row { display: flex; gap: var(--gap, 1px); justify-content: center; flex-wrap: wrap; }
+.ic { position: relative; width: calc(var(--w) * var(--z)); height: calc(var(--h) * var(--z)); cursor: pointer; flex: none; transition: opacity .15s; }
+.ic .art { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-game); font-weight: 800; color: rgba(255,255,255,.9); font-size: calc(9px * var(--z)); letter-spacing: .02em; text-shadow: 0 1px 2px #000; overflow: hidden; transition: filter .15s; }
+.ic .art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255,255,255,.18), transparent 45%, rgba(0,0,0,.35)); }
+.ic .tint { position: absolute; inset: 0; mix-blend-mode: multiply; opacity: 0; pointer-events: none; }
+.ic .swipe { position: absolute; inset: 0; pointer-events: none; }
+.ic .num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-game); font-weight: 800; font-size: calc(var(--fs) * var(--z)); color: var(--amber); -webkit-text-stroke: calc(.6px * var(--z)) #000; paint-order: stroke fill; pointer-events: none; }
+.ic .cnt { position: absolute; right: calc(2px * var(--z)); bottom: 0; font-family: var(--font-game); font-weight: 800; font-size: calc(10px * var(--z)); color: #f2f2f2; -webkit-text-stroke: calc(.5px * var(--z)) #000; paint-order: stroke fill; pointer-events: none; }
+.ic .edge { position: absolute; inset: calc(-1px * var(--z)); border: calc(1px * var(--z)) solid #4e5156; box-shadow: 0 0 0 calc(1px * var(--z)) #000; pointer-events: none; }
+.ic .glow, .ic .gl { position: absolute; pointer-events: none; }
+.ic .glow { inset: 0; }
+.ic .gl { inset: 0; --c: var(--brand); }
+.ic.sel::before { content: ""; position: absolute; inset: calc(-5px * var(--z)); border: 1px dashed rgba(226,184,102,.65); border-radius: 2px; pointer-events: none; }
+.ic.pulse .glow { animation: pulse 1.2s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: .35; } }
+.ic.pop { animation: pop .32s ease-out; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.ic.shake { animation: shake .4s linear; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-3px); } 40% { transform: translateX(3px); } 60% { transform: translateX(-2px); } 80% { transform: translateX(2px); } }
+.ic.flash .art { animation: flash .5s ease-out; }
+@keyframes flash { 0% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
+.g-mode { box-shadow: 0 0 calc(5px * var(--z)) calc(2px * var(--z)) var(--c), inset 0 0 calc(4px * var(--z)) var(--c); opacity: .95; }
+.g-border { box-shadow: inset 0 0 0 calc(1.5px * var(--z)) var(--c); }
+.g-border::after { content: ""; position: absolute; inset: calc(-1px * var(--z)); border: calc(1px * var(--z)) solid var(--c); }
+.g-pixel { inset: calc(-2px * var(--z)) !important;
+  background:
+    linear-gradient(90deg, var(--c) 50%, transparent 0) repeat-x top left / calc(8px * var(--z)) calc(2px * var(--z)),
+    linear-gradient(90deg, var(--c) 50%, transparent 0) repeat-x bottom left / calc(8px * var(--z)) calc(2px * var(--z)),
+    linear-gradient(0deg, var(--c) 50%, transparent 0) repeat-y top left / calc(2px * var(--z)) calc(8px * var(--z)),
+    linear-gradient(0deg, var(--c) 50%, transparent 0) repeat-y top right / calc(2px * var(--z)) calc(8px * var(--z));
+  animation: march .7s linear infinite; }
+@keyframes march { to { background-position: calc(8px * var(--z)) 0, calc(-8px * var(--z)) 100%, 0 calc(-8px * var(--z)), 100% calc(8px * var(--z)); } }
+.g-blizzard { inset: calc(-4px * var(--z)) !important; border-radius: 3px; box-shadow: 0 0 0 calc(2px * var(--z)) var(--c), 0 0 calc(9px * var(--z)) calc(3px * var(--z)) var(--c); animation: flicker .9s steps(6) infinite; }
+@keyframes flicker { 0%,100% { opacity: 1; } 50% { opacity: .7; } }
+.g-gcd { inset: calc(-3px * var(--z)) !important; padding: calc(2px * var(--z)); background: conic-gradient(from var(--a), var(--c), transparent 25%, var(--c) 50%, transparent 75%, var(--c));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: spin 1.4s linear infinite; }
+@keyframes spin { to { --a: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .ic.pulse .glow, .g-pixel, .g-blizzard, .g-gcd, .ic.pop, .ic.shake, .ic.flash .art { animation: none !important; } }
+
+.controls { display: grid; gap: 10px; }
+.ctl-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ctl-row > .lbl { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; min-width: 64px; }
+.log { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); background: var(--sunk); border: 1px solid var(--line-soft); border-radius: 4px; padding: 8px; height: 112px; overflow-y: auto; }
+.log b { color: var(--ivory); font-weight: 500; }
+.res { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.res .bar { width: 160px; height: 8px; background: #1e1f22; border: 1px solid #000; position: relative; }
+.res .bar i { position: absolute; inset: 0 auto 0 0; background: var(--amber); }
+.cps { display: inline-flex; gap: 3px; }
+.cps i { width: 9px; height: 9px; border-radius: 50%; background: #2a2b2e; border: 1px solid #000; }
+.cps i.on { background: #f05454; }
+.statebar { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; min-height: 22px; }
+
+.editor { display: grid; gap: 12px; }
+.ed-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.layer { display: grid; gap: 4px; }
+.erow { display: grid; grid-template-columns: 22px minmax(96px, 1.1fr) minmax(0, 1fr) 34px auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 4px; background: var(--sunk); border: 1px solid var(--line-soft); }
+.erow.dim { opacity: .5; }
+.erow.own { border-color: #5b4a2a; }
+.erow .nm { font-size: 13px; font-weight: 600; color: var(--ivory); line-height: 1.2; }
+.erow .nm small { display: block; font-weight: 400; color: var(--faint); font-size: 11px; }
+.erow .opts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.erow input[type=color] { width: 30px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 3px; background: none; cursor: pointer; }
+.erow input[type=checkbox] { accent-color: var(--brand); width: 15px; height: 15px; }
+.erow label.tiny { font-size: 11px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; }
+.erow .src { font-size: 11px; }
+.erow .src button { background: none; border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; cursor: pointer; color: var(--muted); font-size: 11px; }
+.erow .src button.own { color: var(--brand); border-color: #5b4a2a; }
+@media (max-width: 560px) { .erow { grid-template-columns: 22px 1fr 34px; } .erow .opts, .erow .src { grid-column: 2 / -1; } }
+.prio { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
+.prio b { color: var(--ivory); font-weight: 600; }
+
+/* Options mockups ------------------------------------------------------- */
+.opt { display: grid; gap: 10px; }
+.opt-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.opt-head h3 { font-size: 17px; }
+.mock { background: #0b0b0c; border: 1px solid #2c2c2f; border-radius: 4px; padding: 12px; font-size: 12px; color: #d8d8db; display: grid; gap: 8px; font-family: var(--font-game); }
+.mock .mh { font-weight: 700; color: #a9a9ae; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.mock .mrow { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: #121213; border: 1px solid #222224; border-radius: 3px; flex-wrap: wrap; }
+.mock .mrow .grow { flex: 1; min-width: 60px; }
+.mock .pill { padding: 1px 8px; border-radius: 3px; border: 1px solid #3d3d41; font-size: 11px; color: #d8d8db; background: #1a1a1c; white-space: nowrap; }
+.mock .pill.gold { border-color: #6b5530; color: var(--brand); }
+.mock .pill.dim { color: #85858b; }
+.mock .sw { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #000; flex: none; }
+.mock .mini-ic { width: 30px; height: 24px; position: relative; flex: none; display: grid; place-items: center; font-size: 8px; font-weight: 800; color: #fff; border: 1px solid #4e5156; }
+.mock .strip { display: flex; gap: 8px; flex-wrap: wrap; }
+.mock .strip .st { display: grid; justify-items: center; gap: 3px; padding: 6px; border: 1px solid #222224; border-radius: 3px; background: #121213; font-size: 10px; color: #a9a9ae; cursor: default; }
+.mock .strip .st.sel { border-color: #6b5530; color: var(--brand); }
+.pc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
+.pc h4 { margin-bottom: 4px; }
+.pc .pro li::marker { color: var(--celadon); }
+.pc .con li::marker { color: var(--rosewood); }
+@media (max-width: 600px) { .pc { grid-template-columns: 1fr; } }
+.pick { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; cursor: pointer; }
+.pick input { accent-color: var(--brand); }
+.rec { color: var(--brand); font-size: 12px; font-weight: 600; }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.swatch { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; background: var(--sunk); border: 1px solid var(--line-soft); border-radius: 5px; padding: 8px; }
+.swatch .chipc { width: 44px; height: 36px; border-radius: 3px; border: 1px solid #000; position: relative; overflow: hidden; }
+.swatch input[type=color] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.swatch .t { font-size: 13px; color: var(--ivory); font-weight: 600; line-height: 1.25; }
+.swatch .t small { display: block; color: var(--faint); font-weight: 400; font-family: var(--font-mono); font-size: 11px; }
+
+.phase { display: grid; gap: 8px; }
+.phase ol { margin: 0; padding-left: 20px; }
+.files { display: grid; gap: 4px; font-size: 13px; }
+.files div { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line-soft); }
+.files div:last-child { border-bottom: 0; }
+@media (max-width: 600px) { .files div { grid-template-columns: 1fr; gap: 2px; } }
+.q { display: grid; gap: 6px; padding: 10px; background: var(--sunk); border: 1px solid var(--line-soft); border-radius: 5px; }
+.q .qt { font-weight: 600; color: var(--ivory); font-size: 13px; }
+.q .qa { display: flex; gap: 12px; flex-wrap: wrap; }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><b>Mode</b><span>CDM</span> <small>Icon Effects · research and plan · Nov 25, 2026</small></div>
+    <div class="spacer"></div>
+    <span class="save-state" id="saveState">Connecting…</span>
+    <button class="btn" id="resetBtn" type="button">Reset to proposal</button>
+    <button class="btn primary" id="saveBtn" type="button">Save choices</button>
+  </div>
+  <div class="top-in" style="padding-block:0">
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+  </div>
+</header>
+
+<main><div class="wrap" id="views"></div></main>
+
+<script>
+(function () {
+"use strict";
+/* ---------- Data --------------------------------------------------------- */
+var TONE = { brand: "#e2b866", ivory: "#efe6d2", celadon: "#b4cdb6", rosewood: "#cf6a6f", amber: "#ffb12f", hot: "#ff3948",
+  powerTint: "#759acd", muted: "#85858b", auraGlow: "#ffd15c" };
+var LOOKS = {
+  glow: [["off", "Off"], ["mode", "Mode Glow"], ["border", "Border"], ["pixel", "Pixel"], ["blizzard", "Blizzard"], ["gcd", "GCD"]],
+  icon: [["off", "Off"], ["tint", "Tint"], ["gray", "Gray"], ["fade", "Fade"]],
+  text: [["off", "Off"], ["color", "Color the numbers"]]
+};
+var MOTIONS = [["none", "No motion"], ["pop", "Pop"], ["flash", "Flash"], ["shake", "Shake"]];
+var SOUNDS = [["none", "No sound"], ["warning", "Blizzard Warning"], ["ready", "Ready chime"]];
+
+/* Each state: when it applies, its layer, the proposed default, and its tags. */
+var STATES = [
+  { id: "proc", label: "Proc", layer: "glow", on: "cooldown", when: "The game lights the spell up (its spell alert).",
+    def: { on: true, look: "mode", color: TONE.brand, pulse: false, motion: "pop", sound: "none" }, status: "exists", tag: "fm",
+    detect: "ActionButtonSpellAlertManager:ShowAlert/HideAlert hooked on Blizzard's items; SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE for ModeUI's own icons." },
+  { id: "usable", label: "Usable", layer: "glow", on: "cooldown", when: "A spell that couldn't be cast becomes castable: Riposte after a parry, Overpower after a dodge, Execute under 20%.",
+    def: { on: true, look: "pixel", color: TONE.ivory, pulse: false, motion: "pop", sound: "none" }, status: "new", tag: "fm",
+    detect: "C_Spell.IsSpellUsable flips from not usable (and not short on power) to usable, on SPELL_UPDATE_USABLE. Starts on only for spells marked reactive." },
+  { id: "active", label: "Active", layer: "glow", on: "cooldown", when: "The spell's own effect is up (Evasion, Bloodrage).",
+    def: { on: false, look: "border", color: TONE.ivory, pulse: false, motion: "none", sound: "none" }, status: "exists", tag: "fm",
+    detect: "Blizzard's gold aura swipe on the item (compared by reference, never secret)." },
+  { id: "ready", label: "Ready", layer: "glow", on: "cooldown", when: "A real cooldown ends: a flash for Glow Time, or lit for as long as it's ready.",
+    def: { on: false, look: "mode", color: TONE.ivory, pulse: true, motion: "flash", sound: "none", mode: "flash", secs: 2 }, status: "exists", tag: "fm",
+    detect: "C_Spell.GetSpellCooldown isActive/isOnGCD (never secret) plus the 0.2 s watch ticker." },
+  { id: "charges", label: "Full Charges", layer: "glow", on: "cooldown", when: "Every charge is back, so a recharge is being wasted.",
+    def: { on: false, look: "border", color: TONE.amber, pulse: false, motion: "none", sound: "none" }, status: "new", tag: "ck",
+    detect: "C_Spell.GetSpellCharges: has charges and isActive (recharging) is false. Both are never secret. Forever spells with charges: check in game." },
+  { id: "buffUp", label: "Buff Up", layer: "glow", on: "buff", when: "A tracked buff is on you.",
+    def: { on: false, look: "border", color: TONE.celadon, pulse: false, motion: "none", sound: "none" }, status: "exists", tag: "fm",
+    detect: "The item's isActive (can be secret) through SetAlphaFromBoolean." },
+  { id: "buffMissing", label: "Buff Missing", layer: "glow", on: "buff", when: "A buff you keep up is gone (Battle Shout, Slice and Dice). The icon stays shown so you notice.",
+    def: { on: false, look: "border", color: TONE.rosewood, pulse: true, motion: "none", sound: "none" }, status: "new", tag: "fm",
+    detect: "The same isActive, inverted: the missing look's textures fade from the boolean (secret-safe), with Blizzard's Hide When Inactive left off for that spell." },
+  { id: "ending", label: "Ending Soon", layer: "text", on: "both", when: "The last seconds of a cooldown or buff: the numbers turn hot.",
+    def: { on: true, look: "color", color: TONE.hot, secs: 3 }, status: "new", tag: "ck",
+    detect: "Duration object time left. In combat the time can be secret, so this needs a color curve on the duration. Check in game." },
+  { id: "cooling", label: "On Cooldown", layer: "icon", on: "cooldown", when: "A real cooldown runs (not the global cooldown).",
+    def: { on: true, look: "gray", color: TONE.muted, alpha: 100 }, status: "exists", tag: "fm",
+    detect: "Gray on Cooldown today. isActive and isOnGCD are never secret." },
+  { id: "range", label: "Out of Range", layer: "icon", on: "cooldown", when: "Your target is out of the spell's range.",
+    def: { on: true, look: "tint", color: TONE.rosewood, alpha: 100 }, status: "exists", tag: "fm",
+    detect: "Blizzard's item.spellOutOfRange (read when public); C_Spell.IsSpellInRange for ModeUI's own icons." },
+  { id: "noPower", label: "Not Enough Power", layer: "icon", on: "cooldown", when: "Short on mana, rage or energy.",
+    def: { on: true, look: "tint", color: TONE.powerTint, alpha: 100 }, status: "partial", tag: "fm",
+    detect: "C_Spell.IsSpellUsable second return. Blizzard tints its own items. ModeUI's own icons hard-code (0.5, 0.5, 1)." },
+  { id: "unusable", label: "Unusable", layer: "icon", on: "cooldown", when: "Can't be cast for another reason: no combo points, wrong stance, reactive window closed.",
+    def: { on: true, look: "tint", color: TONE.muted, alpha: 100 }, status: "partial", tag: "fm",
+    detect: "C_Spell.IsSpellUsable first return. ModeUI's own icons hard-code 0.4 gray." }
+];
+var BY_ID = {}; STATES.forEach(function (s) { BY_ID[s.id] = s; });
+var LAYER_NAMES = { glow: "Glows", icon: "Icon", text: "Numbers" };
+var GLOW_ORDER = ["proc", "usable", "active", "ready", "charges", "buffMissing", "buffUp"];
+var ICON_ORDER = ["range", "noPower", "unusable", "cooling"];
+
+/* Spells for the bench (cooldowns shortened so a demo fight is quick). */
+var CLASSES = {
+  rogue: { name: "Rogue", power: "Energy", powerColor: "#f2d15a", combo: true,
+    essential: [
+      { id: "ss", n: "Sinister Strike", ab: "SS", hue: 8, cost: 40 },
+      { id: "ri", n: "Riposte", ab: "RI", hue: 200, cd: 6, reactive: "parry", cost: 10 },
+      { id: "ev", n: "Eviscerate", ab: "EV", hue: 350, needsCombo: true, cost: 35 },
+      { id: "ki", n: "Kick", ab: "KI", hue: 30, cd: 10, cost: 25, ranged: true },
+      { id: "ar", n: "Adrenaline Rush", ab: "AR", hue: 50, cd: 30, active: 8 },
+      { id: "es", n: "Evasion", ab: "EV", hue: 270, cd: 24, active: 8 }
+    ],
+    utility: [
+      { id: "sp", n: "Sprint", ab: "SP", hue: 120, cd: 20 },
+      { id: "va", n: "Vanish", ab: "VA", hue: 250, cd: 30 },
+      { id: "bl", n: "Blind", ab: "BL", hue: 320, cd: 18, ranged: true },
+      { id: "ks", n: "Kidney Shot", ab: "KS", hue: 15, cd: 16, needsCombo: true, cost: 25 }
+    ],
+    buffs: [
+      { id: "snd", n: "Slice and Dice", ab: "SD", hue: 40, dur: 14, keep: true },
+      { id: "bf", n: "Blade Flurry", ab: "BF", hue: 190, dur: 10 }
+    ] },
+  warrior: { name: "Warrior", power: "Rage", powerColor: "#dc4d4d", combo: false,
+    essential: [
+      { id: "ms", n: "Mortal Strike", ab: "MS", hue: 0, cd: 6, cost: 30 },
+      { id: "op", n: "Overpower", ab: "OP", hue: 30, cd: 5, reactive: "dodge", cost: 5 },
+      { id: "ex", n: "Execute", ab: "EX", hue: 355, reactive: "execute", cost: 15 },
+      { id: "rv", n: "Revenge", ab: "RV", hue: 210, cd: 5, reactive: "parry", cost: 5 },
+      { id: "ww", n: "Whirlwind", ab: "WW", hue: 190, cd: 10, cost: 25 },
+      { id: "br", n: "Bloodrage", ab: "BR", hue: 350, cd: 30, active: 8 }
+    ],
+    utility: [
+      { id: "ch", n: "Charge", ab: "CH", hue: 25, cd: 15, ranged: true, charges: 2 },
+      { id: "pu", n: "Pummel", ab: "PU", hue: 45, cd: 10, ranged: true, cost: 10 },
+      { id: "is", n: "Intimidating Shout", ab: "IS", hue: 280, cd: 30 },
+      { id: "sw", n: "Shield Wall", ab: "SW", hue: 220, cd: 40, active: 8 }
+    ],
+    buffs: [
+      { id: "bs", n: "Battle Shout", ab: "BS", hue: 15, dur: 16, keep: true },
+      { id: "en", n: "Enrage", ab: "EN", hue: 0, dur: 8 }
+    ] }
+};
+
+/* ---------- State --------------------------------------------------------- */
+var DOC = "effects/choices";
+var db = null, saving = false, dirty = false;
+function baseEffects() { var e = {}; STATES.forEach(function (s) { e[s.id] = JSON.parse(JSON.stringify(s.def)); }); return e; }
+function baseChoices() {
+  var dec = {}; STATES.forEach(function (s) { dec[s.id] = s.tag === "ck" ? "check" : "now"; });
+  return { effects: baseEffects(), spells: {}, reactiveAuto: "mark", decisions: dec, layout: "C", colors: {}, notes: {}, answers: {}, cls: "rogue", zoom: 2 };
+}
+var state = baseChoices();
+function mark() { dirty = true; var el = document.getElementById("saveState"); if (db) { el.textContent = "Unsaved changes"; el.className = "save-state dirty"; } }
+
+/* ---------- Tabs ---------------------------------------------------------- */
+var TABS = [["brief", "Brief"], ["bench", "Bench"], ["states", "States"], ["layout", "Settings Layout"], ["colors", "Colors"], ["inventory", "Inventory"], ["plan", "Plan"]];
+var views = {};
+function buildTabs() {
+  var nav = document.getElementById("tabs"), host = document.getElementById("views");
+  TABS.forEach(function (t, i) {
+    var b = document.createElement("button");
+    b.className = "tab"; b.type = "button"; b.role = "tab"; b.id = "tab-" + t[0]; b.textContent = t[1];
+    b.setAttribute("aria-selected", i === 0 ? "true" : "false");
+    b.addEventListener("click", function () { show(t[0]); });
+    nav.appendChild(b);
+    var v = document.createElement("section"); v.className = "view"; v.id = "view-" + t[0]; v.hidden = i !== 0;
+    host.appendChild(v); views[t[0]] = v;
+  });
+  var start = (location.hash || "").slice(1);
+  if (views[start]) show(start);
+  window.addEventListener("hashchange", function () { var h = location.hash.slice(1); if (views[h]) show(h); });
+}
+function show(id) {
+  TABS.forEach(function (t) { views[t[0]].hidden = t[0] !== id; document.getElementById("tab-" + t[0]).setAttribute("aria-selected", t[0] === id ? "true" : "false"); });
+  try { history.replaceState(null, "", "#" + id); } catch (e) {}
+  if (id === "bench" && typeof sim !== "undefined" && sim) renderEditor();
+}
+function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+var TAGS = { fm: ["Forever + Midnight", "fm"], fo: ["Forever only", "fo"], ck: ["Check in game", "ck"], rc: ["Retail-centric", "rc"] };
+function tagChip(t) { var x = TAGS[t]; return '<span class="chip ' + x[1] + '">' + x[0] + "</span>"; }
+function statusChip(s) { return s === "exists" ? '<span class="chip ex">Exists today</span>' : s === "partial" ? '<span class="chip ex">Partly today</span>' : '<span class="chip nw">New</span>'; }
+
+/* ---------- Brief ---------------------------------------------------------- */
+var BRIEF = { findings: [], gaps: [], forever: [], ideas: [] };
+function buildBrief() {
+  var v = views.brief; v.innerHTML = "";
+  v.appendChild(el("div", "", '<h2>How icons react</h2><p class="lede" style="margin-top:6px">Research for ModeCDM\'s icon effects: what an icon does when its spell changes state. Riposte lighting up after a parry is the example. Start on the <b>Bench</b> to watch icons react to a simulated fight and tune every effect, then pick a settings layout. <b>Save choices</b> records your picks for the build.</p>'));
+  var g = el("div", "grid2");
+  function list(title, items) { var c = el("div", "card"); c.appendChild(el("h3", "", esc(title))); var u = el("ul"); items.forEach(function (i) { u.appendChild(el("li", "", i)); }); c.appendChild(u); return c; }
+  g.appendChild(list("What ModeCDM does today", BRIEF.findings));
+  g.appendChild(list("Gaps and problems found", BRIEF.gaps));
+  g.appendChild(list("Forever, and the later Midnight port", BRIEF.forever));
+  g.appendChild(list("The proposal in one look", BRIEF.ideas));
+  if (BRIEF.addons) g.appendChild(list("What other addons do", BRIEF.addons));
+  if (BRIEF.pitfalls) g.appendChild(list("Pitfalls to avoid", BRIEF.pitfalls));
+  v.appendChild(g);
+}
+
+/* ---------- Bench: simulation --------------------------------------------- */
+var sim;
+function newSim() {
+  var c = CLASSES[state.cls];
+  sim = { t: 0, power: 100, combo: 0, lowPower: false, outRange: false, execute: false, windows: {}, cds: {}, active: {}, buffs: {}, procs: {}, charges: {},
+    prev: {}, readyUntil: {}, sel: null, clickMode: "cast", log: [], script: null };
+  c.utility.forEach(function (s) { if (s.charges) sim.charges[s.id] = { n: s.charges, next: 0 }; });
+  c.buffs.forEach(function (b) { if (!b.keep) sim.buffs[b.id] = 0; else sim.buffs[b.id] = 0; });
+}
+function allSpells() { var c = CLASSES[state.cls]; return c.essential.concat(c.utility); }
+function spellById(id) { var c = CLASSES[state.cls]; return c.essential.concat(c.utility, c.buffs).filter(function (s) { return s.id === id; })[0]; }
+function log(msg) { sim.log.unshift("<b>" + sim.t.toFixed(1) + "s</b> " + msg); sim.log.length = Math.min(sim.log.length, 40); var L = document.getElementById("simLog"); if (L) L.innerHTML = sim.log.join("<br>"); }
+
+function cooling(s) { return (sim.cds[s.id] || 0) > sim.t; }
+function remaining(s) { return Math.max(0, (sim.cds[s.id] || 0) - sim.t); }
+function reactiveOpen(s) {
+  if (!s.reactive) return true;
+  if (s.reactive === "execute") return sim.execute;
+  return (sim.windows[s.reactive] || 0) > sim.t;
+}
+function spellState(s) {
+  var st = {};
+  var ch = sim.charges[s.id];
+  var isCool = ch ? ch.n === 0 : cooling(s);
+  st.cooling = isCool;
+  st.remain = ch ? (ch.n < s.charges ? Math.max(0, ch.next - sim.t) : 0) : remaining(s);
+  st.total = s.cd || 0;
+  var powerShort = (s.cost || 0) > 0 && (sim.lowPower || sim.power < s.cost);
+  var reasonBlocked = (s.needsCombo && sim.combo === 0) || !reactiveOpen(s);
+  st.unusable = reasonBlocked && !isCool;
+  st.noPower = !reasonBlocked && powerShort && !isCool;
+  st.range = !!s.ranged && sim.outRange;
+  st.usable = !!s.reactive && reactiveOpen(s) && !isCool;
+  st.proc = !!sim.procs[s.id];
+  st.active = (sim.active[s.id] || 0) > sim.t;
+  st.activeRemain = st.active ? sim.active[s.id] - sim.t : 0;
+  st.charges = ch ? (ch.n === s.charges) : false;
+  st.chargeCount = ch ? ch.n : null;
+  st.ready = (sim.readyUntil[s.id] || 0) > sim.t;
+  st.readyLong = !isCool && (s.cd > 0 || !!ch);
+  return st;
+}
+function buffState(b) {
+  var left = Math.max(0, (sim.buffs[b.id] || 0) - sim.t);
+  return { buffUp: left > 0, buffMissing: left <= 0 && !!b.keep, remain: left, total: b.dur, keep: !!b.keep };
+}
+function cast(s) {
+  if (!s) return;
+  var c = CLASSES[state.cls];
+  if (c.buffs.indexOf(s) >= 0) { sim.buffs[s.id] = sim.t + s.dur; log("Cast " + esc(s.n) + " (" + s.dur + "s)"); return; }
+  var st = spellState(s);
+  if (st.cooling) { log(esc(s.n) + ": still cooling down"); bump(s.id, "shake"); return; }
+  if (st.unusable) { log(esc(s.n) + ": can't be cast now" + (s.reactive ? " (needs a " + s.reactive + ")" : "")); bump(s.id, "shake"); return; }
+  if (st.noPower) { log(esc(s.n) + ": not enough " + c.power.toLowerCase()); bump(s.id, "shake"); return; }
+  if (st.range) { log(esc(s.n) + ": out of range"); bump(s.id, "shake"); return; }
+  sim.power = Math.max(0, sim.power - (s.cost || 0));
+  if (s.reactive && s.reactive !== "execute") sim.windows[s.reactive] = 0;
+  if (s.needsCombo) sim.combo = 0; else if (c.combo && !s.cd) sim.combo = Math.min(5, sim.combo + 1);
+  if (sim.charges[s.id]) { var ch = sim.charges[s.id]; if (ch.n === s.charges) ch.next = sim.t + s.cd; ch.n--; }
+  else if (s.cd) sim.cds[s.id] = sim.t + s.cd;
+  if (s.active) sim.active[s.id] = sim.t + s.active;
+  sim.procs[s.id] = false;
+  log("Cast <b>" + esc(s.n) + "</b>");
+}
+var bumps = {};
+function bump(id, kind) { bumps[id] = { kind: kind, at: performance.now() }; }
+
+function tick(dt) {
+  sim.t += dt;
+  if (!sim.lowPower) sim.power = Math.min(100, sim.power + dt * 10);
+  Object.keys(sim.charges).forEach(function (id) {
+    var s = spellById(id), ch = sim.charges[id];
+    if (ch.n < s.charges && sim.t >= ch.next) { ch.n++; if (ch.n < s.charges) ch.next = sim.t + s.cd; }
+  });
+  allSpells().forEach(function (s) {
+    var st = spellState(s), p = sim.prev[s.id] || {};
+    // Ready: a real cooldown ending.
+    if (p.cooling && !st.cooling) { var r = effFor(s.id, "ready"); sim.readyUntil[s.id] = sim.t + (r.mode === "flash" ? r.secs : 0); onEnter(s.id, "ready"); }
+    ["proc", "usable", "charges"].forEach(function (k) { if (st[k] && !p[k]) onEnter(s.id, k); });
+    sim.prev[s.id] = st;
+  });
+  CLASSES[state.cls].buffs.forEach(function (b) {
+    var st = buffState(b), p = sim.prev[b.id] || {};
+    if (st.buffMissing && !p.buffMissing) onEnter(b.id, "buffMissing");
+    if (st.buffUp && !p.buffUp) onEnter(b.id, "buffUp");
+    sim.prev[b.id] = st;
+  });
+  if (sim.script) runScript();
+}
+function onEnter(id, kind) {
+  var e = effFor(id, kind);
+  if (!e.on || e.look === "off") return;
+  if (e.motion && e.motion !== "none") bump(id, e.motion);
+  if (e.sound && e.sound !== "none") log("♪ " + (e.sound === "warning" ? "Blizzard Warning" : "Ready chime") + " for " + esc(spellById(id).n));
+}
+
+/* Effective effect for a spell and state: the spell's own, else the bar's (Usable starts on only for reactive spells when set to). */
+function effFor(id, kind) {
+  var base = state.effects[kind];
+  var own = state.spells[id] && state.spells[id][kind];
+  var e = own ? own : base;
+  if (!own && kind === "usable") {
+    var s = spellById(id);
+    var auto = state.reactiveAuto;
+    var on = base.on && (auto === "all" || (auto === "mark" && s && !!s.reactive));
+    e = Object.assign({}, base, { on: on });
+  }
+  return e;
+}
+
+/* ---------- Bench: rendering ------------------------------------------------ */
+function artBg(s) { return "linear-gradient(135deg, hsl(" + s.hue + " 55% 38%), hsl(" + ((s.hue + 40) % 360) + " 45% 18%))"; }
+function makeIcon(s, size, kind) {
+  var d = el("div", "ic"); d.dataset.id = s.id; d.dataset.kind = kind;
+  d.style.setProperty("--w", size[0] + "px"); d.style.setProperty("--h", size[1] + "px"); d.style.setProperty("--fs", (size[0] > 34 ? 14 : 12) + "px");
+  d.innerHTML = '<div class="art" style="background:' + artBg(s) + '">' + esc(s.ab) + '</div><div class="tint"></div><div class="swipe"></div><div class="num"></div><div class="cnt"></div><div class="edge"></div><div class="glow"><div class="gl"></div></div>';
+  d.title = s.n;
+  d.addEventListener("click", function () {
+    if (sim.clickMode === "cast") cast(s);
+    sim.sel = s.id; renderEditor();
+  });
+  return d;
+}
+function buildStage() {
+  var c = CLASSES[state.cls];
+  var st = document.getElementById("stage"); st.innerHTML = "";
+  st.style.setProperty("--z", state.zoom);
+  st.appendChild(el("div", "stage-label", "Buffs"));
+  var rb = el("div", "row"); c.buffs.forEach(function (b) { rb.appendChild(makeIcon(b, [32, 26], "buff")); }); st.appendChild(rb);
+  st.appendChild(el("div", "stage-label", "Essential"));
+  var re = el("div", "row"); c.essential.forEach(function (s) { re.appendChild(makeIcon(s, [38, 30], "cd")); }); st.appendChild(re);
+  st.appendChild(el("div", "stage-label", "Utility"));
+  var ru = el("div", "row"); c.utility.forEach(function (s) { ru.appendChild(makeIcon(s, [32, 26], "cd")); }); st.appendChild(ru);
+  st.appendChild(el("div", "statebar", "")).id = "stateBar";
+}
+function applyGlow(node, e) {
+  var gl = node.querySelector(".gl");
+  gl.className = "gl" + (e ? " g-" + e.look : "");
+  if (e) gl.style.setProperty("--c", e.color);
+  node.classList.toggle("pulse", !!(e && e.pulse));
+}
+function renderIcons() {
+  var now = performance.now();
+  var nodes = document.querySelectorAll("#stage .ic");
+  nodes.forEach(function (node) {
+    var id = node.dataset.id, s = spellById(id), isBuff = node.dataset.kind === "buff";
+    var st = isBuff ? buffState(s) : spellState(s);
+    // Glow layer: first wanted state wins.
+    var glow = null;
+    for (var i = 0; i < GLOW_ORDER.length && !glow; i++) {
+      var k = GLOW_ORDER[i]; var e = effFor(id, k);
+      var applies = BY_ID[k].on === "both" || (BY_ID[k].on === "buff") === isBuff;
+      if (!applies || !e.on || e.look === "off") continue;
+      var hit = k === "ready" ? (e.mode === "flash" ? st.ready : (st.readyLong && !st.unusable)) : st[k];
+      if (hit) glow = e;
+    }
+    applyGlow(node, glow);
+    // Icon layer.
+    var art = node.querySelector(".art"), tint = node.querySelector(".tint");
+    var filt = "", tcol = null, alpha = 1;
+    if (!isBuff) {
+      for (var j = 0; j < ICON_ORDER.length; j++) {
+        var k2 = ICON_ORDER[j], e2 = effFor(id, k2);
+        if (!e2.on || e2.look === "off" || !st[k2]) continue;
+        if (e2.look === "gray") filt = "grayscale(1) brightness(.75)";
+        else if (e2.look === "tint") { if (!tcol) tcol = e2.color; }
+        else if (e2.look === "fade") alpha = Math.min(alpha, (e2.alpha || 40) / 100);
+      }
+    } else if (st.buffMissing && effFor(id, "buffMissing").on) { filt = "grayscale(1) brightness(.6)"; }
+    else if (!st.buffUp) { alpha = 0.35; }
+    art.style.filter = filt;
+    tint.style.opacity = tcol ? 1 : 0; if (tcol) tint.style.background = tcol;
+    node.style.opacity = alpha;
+    // Swipe and numbers.
+    var sw = node.querySelector(".swipe"), num = node.querySelector(".num"), cnt = node.querySelector(".cnt");
+    var rem = 0, tot = 1, aura = false;
+    if (isBuff) { rem = st.remain; tot = st.total; aura = true; }
+    else if (st.active && !st.cooling) { rem = st.activeRemain; tot = s.active; aura = true; }
+    else if (st.remain > 0) { rem = st.remain; tot = st.total; }
+    if (rem > 0) {
+      var frac = Math.min(1, rem / tot) * 100;
+      sw.style.background = aura ? "conic-gradient(rgba(255,209,92,.32) " + frac + "%, transparent 0)" : "conic-gradient(rgba(0,0,0,.7) " + frac + "%, transparent 0)";
+      num.textContent = rem >= 10 ? Math.ceil(rem) : rem.toFixed(rem < 3 ? 1 : 0);
+      var en = effFor(id, "ending");
+      num.style.color = (en.on && en.look === "color" && rem <= en.secs) ? en.color : "var(--amber)";
+    } else { sw.style.background = "none"; num.textContent = ""; }
+    cnt.textContent = (!isBuff && st.chargeCount != null) ? st.chargeCount : "";
+    node.classList.toggle("sel", sim.sel === id);
+    var b = bumps[id];
+    if (b && !b.applied) { b.applied = true; node.classList.remove("pop", "flash", "shake"); void node.offsetWidth; node.classList.add(b.kind); }
+    else if (b && now - b.at > 600) { node.classList.remove(b.kind); delete bumps[id]; }
+  });
+  var c = CLASSES[state.cls];
+  var pb = document.getElementById("powerBar"); if (pb) { pb.style.width = sim.power + "%"; pb.style.background = c.powerColor; }
+  var cps = document.getElementById("cps"); if (cps) { cps.hidden = !c.combo; cps.innerHTML = ""; for (var q = 0; q < 5; q++) cps.appendChild(el("i", q < sim.combo ? "on" : "")); }
+  var sb = document.getElementById("stateBar");
+  if (sb) {
+    var chips = [];
+    if (sim.windows.parry > sim.t) chips.push("Parried · " + (sim.windows.parry - sim.t).toFixed(1) + "s");
+    if (sim.windows.dodge > sim.t) chips.push("Target dodged · " + (sim.windows.dodge - sim.t).toFixed(1) + "s");
+    if (sim.execute) chips.push("Target under 20%");
+    if (sim.lowPower) chips.push("Low " + c.power.toLowerCase());
+    if (sim.outRange) chips.push("Target out of range");
+    sb.innerHTML = chips.map(function (x) { return '<span class="chip ck">' + esc(x) + "</span>"; }).join("");
+  }
+}
+var lastFrame = 0, running = true;
+function loop(ts) {
+  if (!lastFrame) lastFrame = ts;
+  var dt = Math.min(0.1, (ts - lastFrame) / 1000); lastFrame = ts;
+  if (running && !views.bench.hidden) { tick(dt); renderIcons(); }
+  requestAnimationFrame(loop);
+}
+
+/* A short scripted fight. */
+var SCRIPTS = {
+  rogue: [[0.5, "parry"], [1.6, "cast:ri"], [2.6, "cast:ss"], [3.4, "cast:ss"], [4.2, "cast:snd"], [5, "lowPower:on"], [6.2, "cast:ss"], [7.5, "lowPower:off"], [8, "proc:ki"], [9, "cast:ki"], [10, "range:on"], [12, "range:off"], [12.5, "parry"], [13.4, "cast:es"], [15, "cast:ev"]],
+  warrior: [[0.5, "dodge"], [1.4, "cast:op"], [2.2, "cast:ms"], [3, "cast:bs"], [4, "execute:on"], [5, "cast:ex"], [6, "cast:ch"], [6.6, "cast:ch"], [7.5, "proc:ww"], [8.5, "cast:ww"], [9.5, "parry"], [10.4, "cast:rv"], [11.5, "execute:off"], [12, "range:on"], [14, "range:off"], [14.5, "cast:br"]]
+};
+function startScript() { newSim(); sim.script = { start: sim.t, i: 0, list: SCRIPTS[state.cls] }; log("Fight started"); syncToggles(); }
+function runScript() {
+  var sc = sim.script; while (sc.i < sc.list.length && sim.t - sc.start >= sc.list[sc.i][0]) { act(sc.list[sc.i][1]); sc.i++; }
+  if (sc.i >= sc.list.length) { sim.script = null; log("Fight over"); }
+}
+function act(a) {
+  var p = a.split(":");
+  if (p[0] === "parry") { sim.windows.parry = sim.t + 5; log("You <b>parried</b> an attack"); }
+  else if (p[0] === "dodge") { sim.windows.dodge = sim.t + 5; log("Your target <b>dodged</b>"); }
+  else if (p[0] === "cast") cast(spellById(p[1]));
+  else if (p[0] === "proc") { sim.procs[p[1]] = true; log("The game lights up <b>" + esc(spellById(p[1]).n) + "</b>"); }
+  else if (p[0] === "lowPower") { sim.lowPower = p[1] === "on"; if (sim.lowPower) sim.power = 8; syncToggles(); }
+  else if (p[0] === "range") { sim.outRange = p[1] === "on"; syncToggles(); }
+  else if (p[0] === "execute") { sim.execute = p[1] === "on"; syncToggles(); }
+}
+function syncToggles() {
+  [["tgLow", sim.lowPower], ["tgRange", sim.outRange], ["tgExec", sim.execute]].forEach(function (x) { var b = document.getElementById(x[0]); if (b) b.classList.toggle("on", x[1]); });
+}
+
+function buildBench() {
+  var v = views.bench; v.innerHTML = "";
+  v.appendChild(el("div", "", '<h2>Bench</h2><p class="lede" style="margin-top:6px">A to-scale CDM in the Bar Style (Essential 38×30, Utility and Buffs 32×26, Mode-Border Gunmetal) reacting to a simulated fight. Click an icon to cast it, use the fight controls, or press <b>Play a fight</b>. The editor on the right changes what each state looks like for every spell, or for the spell you clicked. Cooldowns are shortened for the demo.</p>'));
+  var bench = el("div", "bench");
+  var left = el("div", "card"); left.style.gap = "12px";
+  var head = el("div", "ctl-row");
+  head.innerHTML = '<span class="lbl">Class</span>';
+  Object.keys(CLASSES).forEach(function (k) {
+    var b = el("button", "btn small" + (state.cls === k ? " on" : ""), CLASSES[k].name); b.type = "button";
+    b.addEventListener("click", function () { state.cls = k; mark(); newSim(); buildBench(); });
+    head.appendChild(b);
+  });
+  head.appendChild(el("span", "spacer"));
+  var zl = el("span", "lbl", "Zoom"); zl.style.minWidth = "auto"; head.appendChild(zl);
+  [1, 2, 3].forEach(function (z) {
+    var b = el("button", "btn small" + (state.zoom === z ? " on" : ""), z + "×"); b.type = "button";
+    b.addEventListener("click", function () { state.zoom = z; buildBench(); });
+    head.appendChild(b);
+  });
+  left.appendChild(head);
+  var stage = el("div", "stage"); stage.id = "stage"; left.appendChild(stage);
+  var res = el("div", "res", '<span id="powerName"></span><span class="bar"><i id="powerBar"></i></span><span class="cps" id="cps"></span>');
+  left.appendChild(res);
+  var ctl = el("div", "controls");
+  var c = CLASSES[state.cls];
+  function btn(label, fn, id) { var b = el("button", "btn small", label); b.type = "button"; if (id) b.id = id; b.addEventListener("click", fn); return b; }
+  var r1 = el("div", "ctl-row"); r1.appendChild(el("span", "lbl", "Fight"));
+  r1.appendChild(btn("Play a fight", startScript));
+  r1.appendChild(btn("You parry", function () { act("parry"); }));
+  r1.appendChild(btn("Target dodges", function () { act("dodge"); }));
+  r1.appendChild(btn("Light up a spell", function () { var id = sim.sel && !CLASSES[state.cls].buffs.some(function (b) { return b.id === sim.sel; }) ? sim.sel : c.essential[3].id; act("proc:" + id); }));
+  if (c.combo) r1.appendChild(btn("+1 combo point", function () { sim.combo = Math.min(5, sim.combo + 1); }));
+  ctl.appendChild(r1);
+  var r2 = el("div", "ctl-row"); r2.appendChild(el("span", "lbl", "Hold"));
+  r2.appendChild(btn("Low " + c.power.toLowerCase(), function () { act("lowPower:" + (sim.lowPower ? "off" : "on")); }, "tgLow"));
+  r2.appendChild(btn("Out of range", function () { act("range:" + (sim.outRange ? "off" : "on")); }, "tgRange"));
+  if (state.cls === "warrior") r2.appendChild(btn("Target under 20%", function () { act("execute:" + (sim.execute ? "off" : "on")); }, "tgExec"));
+  r2.appendChild(el("span", "spacer"));
+  var cm = btn("Click: Cast", function () { sim.clickMode = sim.clickMode === "cast" ? "select" : "cast"; cm.textContent = "Click: " + (sim.clickMode === "cast" ? "Cast" : "Select only"); });
+  r2.appendChild(cm);
+  r2.appendChild(btn("Reset", function () { newSim(); syncToggles(); log("Reset"); }));
+  ctl.appendChild(r2);
+  var lg = el("div", "log"); lg.id = "simLog"; ctl.appendChild(lg);
+  left.appendChild(ctl);
+  bench.appendChild(left);
+  var right = el("div", "card editor"); right.id = "editor";
+  bench.appendChild(right);
+  v.appendChild(bench);
+  document.getElementById("powerName").textContent = c.power;
+  buildStage(); renderEditor(); syncToggles();
+  if (sim.log.length) document.getElementById("simLog").innerHTML = sim.log.join("<br>");
+}
+
+/* ---------- Bench: editor ---------------------------------------------------- */
+function lookSelect(layer, value, onchange) {
+  var s = el("select", "mini");
+  LOOKS[layer].forEach(function (o) { var op = el("option", "", esc(o[1])); op.value = o[0]; if (o[0] === value) op.selected = true; s.appendChild(op); });
+  s.addEventListener("change", function () { onchange(s.value); });
+  return s;
+}
+function optSelect(list, value, onchange) {
+  var s = el("select", "mini");
+  list.forEach(function (o) { var op = el("option", "", esc(o[1])); op.value = o[0]; if (o[0] === value) op.selected = true; s.appendChild(op); });
+  s.addEventListener("change", function () { onchange(s.value); });
+  return s;
+}
+function renderEditor() {
+  var ed = document.getElementById("editor"); if (!ed) return;
+  ed.innerHTML = "";
+  var spell = sim.sel ? spellById(sim.sel) : null;
+  var isBuff = spell && CLASSES[state.cls].buffs.indexOf(spell) >= 0;
+  var head = el("div", "ed-tabs");
+  var allB = el("button", "btn small" + (!spell ? " on" : ""), "Every spell · Bar Style"); allB.type = "button";
+  allB.addEventListener("click", function () { sim.sel = null; renderEditor(); });
+  head.appendChild(allB);
+  if (spell) head.appendChild(el("button", "btn small on", esc(spell.n))).type = "button";
+  else head.appendChild(el("span", "note", "Click an icon to give one spell its own look."));
+  ed.appendChild(head);
+  if (spell) ed.appendChild(el("p", "note", "Rows say <b>Bar</b> while the spell follows the Bar Style. <b>Own</b> gives this spell its own copy to change. Only the states this kind of icon can have are listed."));
+  else {
+    var ra = el("div", "ctl-row");
+    ra.appendChild(el("span", "note", "Usable starts on for:"));
+    ra.appendChild(optSelect([["mark", "Reactive spells only"], ["all", "Every spell"], ["none", "No spell (switch on per spell)"]], state.reactiveAuto, function (v) { state.reactiveAuto = v; mark(); }));
+    ed.appendChild(ra);
+  }
+  ["glow", "icon", "text"].forEach(function (layer) {
+    var rows = STATES.filter(function (s) {
+      if (s.layer !== layer) return false;
+      if (!spell) return true;
+      return s.on === "both" || (s.on === "buff") === !!isBuff;
+    });
+    if (!rows.length) return;
+    var box = el("div", "layer");
+    box.appendChild(el("h4", "", LAYER_NAMES[layer]));
+    rows.forEach(function (s) { box.appendChild(effectRow(s, spell)); });
+    ed.appendChild(box);
+  });
+  ed.appendChild(el("div", "prio", "<span>When two glows want the icon:</span> " + GLOW_ORDER.map(function (k) { return "<b>" + BY_ID[k].label + "</b>"; }).join(" › ")));
+  ed.appendChild(el("div", "prio", "<span>Icon looks:</span> " + ICON_ORDER.map(function (k) { return "<b>" + BY_ID[k].label + "</b>"; }).join(" › ") + "<span>(gray and a tint can show together)</span>"));
+}
+function effectRow(s, spell) {
+  var own = spell && state.spells[spell.id] && state.spells[spell.id][s.id];
+  var e = spell ? effFor(spell.id, s.id) : state.effects[s.id];
+  var editable = !spell || !!own;
+  var row = el("div", "erow" + (own ? " own" : "") + (!e.on ? " dim" : ""));
+  var on = el("input"); on.type = "checkbox"; on.checked = !!e.on; on.title = "On"; on.setAttribute("aria-label", s.label + " on");
+  on.disabled = !editable;
+  on.addEventListener("change", function () { target().on = on.checked; changed(); });
+  row.appendChild(on);
+  var nm = el("div", "nm", esc(s.label) + "<small>" + esc(s.when.split(":")[0].split(".")[0]) + "</small>");
+  nm.title = s.when; row.appendChild(nm);
+  var opts = el("div", "opts");
+  function target() {
+    if (!spell) return state.effects[s.id];
+    state.spells[spell.id] = state.spells[spell.id] || {};
+    return state.spells[spell.id][s.id];
+  }
+  function changed() { mark(); renderEditor(); }
+  var ls = lookSelect(s.layer, e.look, function (v) { target().look = v; changed(); }); ls.disabled = !editable; opts.appendChild(ls);
+  if (s.layer === "glow") {
+    var pl = el("label", "tiny"); var pc = el("input"); pc.type = "checkbox"; pc.checked = !!e.pulse; pc.disabled = !editable;
+    pc.addEventListener("change", function () { target().pulse = pc.checked; changed(); }); pl.appendChild(pc); pl.appendChild(document.createTextNode("Pulse")); opts.appendChild(pl);
+    var ms = optSelect(MOTIONS, e.motion || "none", function (v) { target().motion = v; changed(); }); ms.disabled = !editable; ms.title = "Motion when it starts"; opts.appendChild(ms);
+    var ss = optSelect(SOUNDS, e.sound || "none", function (v) { target().sound = v; changed(); }); ss.disabled = !editable; ss.title = "Sound when it starts"; opts.appendChild(ss);
+  }
+  if (s.id === "ready") {
+    var md = optSelect([["flash", "Flash"], ["always", "While Ready"]], e.mode, function (v) { target().mode = v; changed(); }); md.disabled = !editable; opts.appendChild(md);
+    if (e.mode === "flash") { var sec = el("input", "mini"); sec.type = "number"; sec.min = 1; sec.max = 10; sec.value = e.secs; sec.style.width = "52px"; sec.disabled = !editable; sec.title = "Glow Time (s)";
+      sec.addEventListener("change", function () { target().secs = Math.max(1, Math.min(10, +sec.value || 2)); changed(); }); opts.appendChild(sec); }
+  }
+  if (s.id === "ending") {
+    var sec2 = el("input", "mini"); sec2.type = "number"; sec2.min = 1; sec2.max = 10; sec2.value = e.secs; sec2.style.width = "52px"; sec2.disabled = !editable; sec2.title = "Last seconds";
+    sec2.addEventListener("change", function () { target().secs = Math.max(1, Math.min(10, +sec2.value || 3)); changed(); }); opts.appendChild(sec2);
+    opts.appendChild(el("span", "note", "s"));
+  }
+  if (s.layer === "icon" && e.look === "fade") {
+    var al = el("input", "mini"); al.type = "number"; al.min = 10; al.max = 90; al.step = 10; al.value = e.alpha && e.alpha < 100 ? e.alpha : 40; al.style.width = "56px"; al.disabled = !editable; al.title = "Opacity %";
+    al.addEventListener("change", function () { target().alpha = Math.max(10, Math.min(90, +al.value || 40)); changed(); }); opts.appendChild(al);
+    opts.appendChild(el("span", "note", "%"));
+  }
+  row.appendChild(opts);
+  var col = el("input"); col.type = "color"; col.value = e.color || "#ffffff"; col.disabled = !editable || e.look === "gray"; col.title = "Color"; col.setAttribute("aria-label", s.label + " color");
+  col.addEventListener("input", function () { target().color = col.value; mark(); });
+  col.addEventListener("change", function () { renderEditor(); });
+  row.appendChild(col);
+  var src = el("div", "src");
+  if (spell) {
+    var sb = el("button", own ? "own" : "", own ? "Own" : "Bar"); sb.type = "button";
+    sb.title = own ? "Back to the Bar Style" : "Give this spell its own look";
+    sb.addEventListener("click", function () {
+      state.spells[spell.id] = state.spells[spell.id] || {};
+      if (own) delete state.spells[spell.id][s.id];
+      else state.spells[spell.id][s.id] = JSON.parse(JSON.stringify(effFor(spell.id, s.id)));
+      changed();
+    });
+    src.appendChild(sb);
+  } else src.innerHTML = statusChip(s.status);
+  row.appendChild(src);
+  return row;
+}
+
+/* ---------- States tab -------------------------------------------------------- */
+function buildStates() {
+  var v = views.states; v.innerHTML = "";
+  v.appendChild(el("div", "", '<h2>States</h2><p class="lede" style="margin-top:6px">Every state an icon can react to, how the game reports it, and whether it holds up on Forever and on a later Midnight port. Pick Build now, Later or Skip for each.</p>'));
+  var w = el("div", "tbl-wrap"); var t = el("table");
+  t.innerHTML = "<thead><tr><th>State</th><th>Layer</th><th>How it's detected</th><th>Tags</th><th>Decision</th></tr></thead>";
+  var tb = el("tbody");
+  STATES.forEach(function (s) {
+    var tr = el("tr");
+    tr.innerHTML = "<td><b style='color:var(--ivory)'>" + esc(s.label) + "</b><span class='sub'>" + esc(s.when) + "</span></td><td>" + LAYER_NAMES[s.layer] + "<span class='sub'>" + (s.on === "buff" ? "Buff icons" : s.on === "both" ? "All icons" : "Cooldown icons") + "</span></td><td>" + esc(s.detect) + "</td><td>" + tagChip(s.tag) + " " + statusChip(s.status) + "</td>";
+    var td = el("td"); td.appendChild(optSelect([["now", "Build now"], ["later", "Later"], ["check", "After /mcdm check"], ["skip", "Skip"]], state.decisions[s.id], function (val) { state.decisions[s.id] = val; mark(); }));
+    tr.appendChild(td); tb.appendChild(tr);
+  });
+  EXTRA_STATES.forEach(function (x) {
+    var tr = el("tr");
+    tr.innerHTML = "<td><b style='color:var(--ivory)'>" + esc(x.label) + "</b><span class='sub'>" + esc(x.when) + "</span></td><td>" + esc(x.layer) + "</td><td>" + esc(x.detect) + "</td><td>" + tagChip(x.tag) + "</td>";
+    var td = el("td"); var key = "x_" + x.id;
+    td.appendChild(optSelect([["now", "Build now"], ["later", "Later"], ["check", "After /mcdm check"], ["skip", "Skip"]], state.decisions[key] || x.def, function (val) { state.decisions[key] = val; mark(); }));
+    tr.appendChild(td); tb.appendChild(tr);
+  });
+  t.appendChild(tb); w.appendChild(t); v.appendChild(w);
+}
+var EXTRA_STATES = [];
+
+/* ---------- Settings layout tab -------------------------------------------- */
+var OPTIONS = [];
+function buildSettings() {
+  var v = views.layout; v.innerHTML = "";
+  v.appendChild(el("div", "", '<h2>Settings layout</h2><p class="lede" style="margin-top:6px">Four ways to present effects in ModeCDM\'s window. All four keep the same model underneath: a state picks one look per layer, the Bar Style sets it for every spell, a spell can take its own. They differ in how much shows at once.</p>'));
+  OPTIONS.forEach(function (o) {
+    var c = el("div", "card opt");
+    var h = el("div", "opt-head");
+    var lab = el("label", "pick"); var r = el("input"); r.type = "radio"; r.name = "layout"; r.value = o.id; r.checked = state.layout === o.id;
+    r.addEventListener("change", function () { state.layout = o.id; mark(); });
+    lab.appendChild(r); lab.appendChild(el("h3", "", esc(o.id + ". " + o.name)));
+    h.appendChild(lab);
+    if (o.rec) h.appendChild(el("span", "rec", "Recommended"));
+    c.appendChild(h);
+    c.appendChild(el("p", "note", esc(o.blurb)));
+    c.appendChild(el("div", "mock", o.mock()));
+    var pc = el("div", "pc");
+    pc.innerHTML = "<div><h4>Pros</h4><ul class='pro'>" + o.pros.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div><div><h4>Cons</h4><ul class='con'>" + o.cons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>";
+    c.appendChild(pc);
+    v.appendChild(c);
+  });
+}
+
+/* ---------- Colors tab ---------------------------------------------------------- */
+function buildColors() {
+  var v = views.colors; v.innerHTML = "";
+  v.appendChild(el("div", "", '<h2>Colors</h2><p class="lede" style="margin-top:6px">Each state\'s color comes from a Mode token (<code>Style.Tone</code>), so the defaults match the action bars and the rest of ModeUI. Every color can be changed in the Bar Style for all spells, or per spell. Change a swatch here to try it on the Bench.</p>'));
+  var g = el("div", "swatches");
+  STATES.forEach(function (s) {
+    if (s.id === "cooling") return;
+    var e = state.effects[s.id];
+    var sw = el("div", "swatch");
+    var cc = el("div", "chipc"); cc.style.background = e.color;
+    var inp = el("input"); inp.type = "color"; inp.value = e.color; inp.setAttribute("aria-label", s.label + " color");
+    inp.addEventListener("input", function () { e.color = inp.value; cc.style.background = inp.value; mark(); });
+    cc.appendChild(inp); sw.appendChild(cc);
+    sw.appendChild(el("div", "t", esc(s.label) + "<small>" + esc(TOKEN_NAMES[s.id] || "") + " · " + esc(e.color) + "</small>"));
+    g.appendChild(sw);
+  });
+  v.appendChild(g);
+  var c = el("div", "card"); c.appendChild(el("h3", "", "Notes on color"));
+  var u = el("ul"); COLOR_NOTES.forEach(function (n) { u.appendChild(el("li", "", n)); }); c.appendChild(u);
+  v.appendChild(c);
+}
+var TOKEN_NAMES = { proc: "Tone.brand", usable: "Tone.ivory", active: "Tone.ivory", ready: "Tone.ivory", charges: "Tone.cooldown", buffUp: "Tone.celadon", buffMissing: "Tone.rosewood",
+  ending: "Tone.cooldownHot", range: "Tone.rosewood", noPower: "Mix(Tone.power, white, 0.7)", unusable: "Tone.graphite.muted" };
+var COLOR_NOTES = [];
+
+/* ---------- Inventory and plan -------------------------------------------------- */
+var INVENTORY = [];
+var PLAN = { phases: [], files: [], questions: [] };
+function buildInventory() {
+  var v = views.inventory; v.innerHTML = "";
+  v.appendChild(el("div", "", '<h2>Inventory</h2><p class="lede" style="margin-top:6px">Blizzard files and APIs this touches (Forever branch of the UI source), and the ModeCDM and ModeUI files involved.</p>'));
+  INVENTORY.forEach(function (sec) {
+    var c = el("div", "card"); c.appendChild(el("h3", "", esc(sec.title)));
+    if (sec.note) c.appendChild(el("p", "note", sec.note));
+    var f = el("div", "files");
+    sec.rows.forEach(function (r) { f.appendChild(el("div", "", "<code>" + esc(r[0]) + "</code><span>" + r[1] + "</span>")); });
+    c.appendChild(f); v.appendChild(c);
+  });
+}
+function buildPlan() {
+  var v = views.plan; v.innerHTML = "";
+  v.appendChild(el("div", "", '<h2>Plan</h2><p class="lede" style="margin-top:6px">How the build would go, file by file. Nothing here is built yet. The open questions at the bottom are saved with your choices.</p>'));
+  PLAN.phases.forEach(function (p) {
+    var c = el("div", "card phase"); c.appendChild(el("h3", "", esc(p.title)));
+    if (p.goal) c.appendChild(el("p", "note", p.goal));
+    var f = el("div", "files"); p.steps.forEach(function (s) { f.appendChild(el("div", "", "<code>" + esc(s[0]) + "</code><span>" + s[1] + "</span>")); });
+    c.appendChild(f); v.appendChild(c);
+  });
+  var qc = el("div", "card"); qc.appendChild(el("h3", "", "Open questions"));
+  PLAN.questions.forEach(function (q) {
+    var d = el("div", "q"); d.appendChild(el("div", "qt", esc(q.q)));
+    if (q.why) d.appendChild(el("div", "note", esc(q.why)));
+    var a = el("div", "qa");
+    q.a.forEach(function (opt, i) {
+      var l = el("label", "pick"); var r = el("input"); r.type = "radio"; r.name = "q_" + q.id; r.value = opt;
+      r.checked = (state.answers[q.id] || q.a[0]) === opt;
+      r.addEventListener("change", function () { state.answers[q.id] = opt; mark(); });
+      l.appendChild(r); l.appendChild(document.createTextNode(opt + (i === 0 ? " (recommended)" : ""))); a.appendChild(l);
+    });
+    d.appendChild(a); qc.appendChild(d);
+  });
+  var nt = el("textarea", "notes"); nt.id = "planNotes"; nt.placeholder = "Anything else for the build"; nt.value = state.notes.plan || "";
+  nt.addEventListener("input", function () { state.notes.plan = nt.value; mark(); });
+  qc.appendChild(el("h4", "", "Notes")); qc.appendChild(nt);
+  v.appendChild(qc);
+}
+
+/* ---------- Save and load ------------------------------------------------------- */
+function snapshot() { return { effects: state.effects, spells: state.spells, reactiveAuto: state.reactiveAuto, decisions: state.decisions, layout: state.layout, notes: state.notes, answers: state.answers, cls: state.cls, savedAt: Date.now() }; }
+function applySaved(d) {
+  var b = baseChoices();
+  var eff = b.effects;
+  if (d.effects) Object.keys(eff).forEach(function (k) { if (d.effects[k]) eff[k] = Object.assign(eff[k], d.effects[k]); });
+  state = Object.assign(b, { effects: eff, spells: d.spells || {}, reactiveAuto: d.reactiveAuto || b.reactiveAuto, decisions: Object.assign(b.decisions, d.decisions || {}),
+    layout: d.layout || b.layout, notes: d.notes || {}, answers: d.answers || {}, cls: CLASSES[d.cls] ? d.cls : b.cls });
+}
+function renderAll() { newSim(); buildBrief(); buildBench(); buildStates(); buildSettings(); buildColors(); buildInventory(); buildPlan(); }
+function save() {
+  if (!db || saving) return;
+  saving = true;
+  var s = document.getElementById("saveState");
+  s.textContent = "Saving…"; s.className = "save-state";
+  db.doc(DOC).set(snapshot()).then(function () {
+    saving = false; dirty = false; s.textContent = "Saved " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); s.className = "save-state ok";
+  }).catch(function (e) {
+    saving = false; s.textContent = "Couldn't save (" + ((e && e.code) || "error") + "). Your changes are still here."; s.className = "save-state dirty";
+  });
+}
+document.getElementById("saveBtn").addEventListener("click", save);
+document.getElementById("resetBtn").addEventListener("click", function () { var keep = { cls: state.cls, zoom: state.zoom }; state = Object.assign(baseChoices(), keep); mark(); renderAll(); });
+
+window.__boot = function () {
+  buildTabs(); renderAll(); requestAnimationFrame(loop);
+  document.getElementById("saveBtn").disabled = true;
+  (function connect() {
+    var s = document.getElementById("saveState");
+    if (!window.claude || typeof window.claude.use !== "function") { s.textContent = "Saving is off here; choices stay in this tab"; return; }
+    var timer = setTimeout(function () { s.textContent = "Saving is unavailable; choices stay in this tab"; }, 10000);
+    window.claude.use("db").then(function (store) {
+      if (!store) { clearTimeout(timer); s.textContent = "Sign in to save choices"; return; }
+      db = store;
+      db.doc(DOC).get().then(function (snap) {
+        clearTimeout(timer);
+        document.getElementById("saveBtn").disabled = false;
+        if (snap.exists) { var d = snap.data(); applySaved(d); renderAll(); s.textContent = "Loaded your saved choices" + (d && d.savedAt ? " (" + new Date(d.savedAt).toLocaleDateString() + ")" : ""); s.className = "save-state ok"; }
+        else { s.textContent = "Proposal loaded · nothing saved yet"; s.className = "save-state"; }
+      }).catch(function () { clearTimeout(timer); document.getElementById("saveBtn").disabled = false; s.textContent = "Couldn't load saved choices"; });
+    }).catch(function () { clearTimeout(timer); s.textContent = "Saving is unavailable; choices stay in this tab"; });
+  })();
+};
+window.__data = { BRIEF: BRIEF, EXTRA_STATES: EXTRA_STATES, OPTIONS: OPTIONS, COLOR_NOTES: COLOR_NOTES, INVENTORY: INVENTORY, PLAN: PLAN, STATES: STATES, BY_ID: BY_ID };
+})();
+</script>
+<script>
+/* ---------- Research content (filled from the research pass) ---------- */
+(function () {
+var D = window.__data;
+var B = D.BRIEF;
+B.findings = [
+  "Four glows today: <b>Proc</b>, <b>Active</b>, <b>Ready</b> (Flash or While Ready) on cooldown icons, <b>Buff</b> on buff icons. Each has five looks (Mode Glow, Border, Pixel, Blizzard, GCD), a color and a pulse (<code>Glow.lua</code>, <code>GlowPopout.lua</code>).",
+  "Every glow starts <b>off</b> on every spell (owner, Nov 13). A spell's menu switches one on and stores its own look in <code>spells[key][kind]</code>.",
+  "Icon looks: <b>Gray on Cooldown</b> (real cooldowns only, from the never-secret <code>isActive</code>/<code>isOnGCD</code>) and <b>Out of Range Tint</b> (Rosewood instead of Blizzard's red).",
+  "Spells by ID and items have ModeUI's own icons, which tint for unusable and short on power, and glow on procs from <code>SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE</code>.",
+  "A <b>Ready Sound</b> plays for spells ModeUI tracks itself. Spells Blizzard tracks link to Blizzard's own alerts (Available, Pandemic, On Cooldown, Charge Gained, Aura Applied/Removed)."
+];
+B.gaps = [
+  "<b>Procs are invisible by default.</b> While ModeCDM is on, it hides Blizzard's spell alert on every icon (<code>ApplyGlows</code>), but its own Proc glow is off until you switch it on per spell. A fresh install shows no procs at all.",
+  "<b>No state for Riposte-type spells.</b> A spell that becomes castable after a parry or dodge only loses Blizzard's gray tint. Nothing draws the eye to it.",
+  "<b>Hard-coded tints.</b> <code>Spells.lua</code> and <code>Items.lua</code> use raw <code>{0.4,0.4,0.4}</code> and <code>{0.5,0.5,1}</code>. The action bars already use Mode tints (<code>ActionBars/Skin.lua</code>: Rosewood, Mix(power, white), graphite muted). Blizzard's own CDM items keep Blizzard's blue and gray.",
+  "<b>ModeUI's own icons have no range check.</b> Blizzard enables range checks for its items. Spells by ID never get the Out of Range tint.",
+  "<b>Tint colors can't be changed.</b> Out of Range is an on/off switch. No-power and unusable colors aren't settings.",
+  "<b>Missing buffs don't stand out.</b> A buff you keep up (Battle Shout, Slice and Dice) can only glow while it's up, never call out that it's gone.",
+  "<b>Per-glow popouts.</b> Every glow is its own row with its own popout. Adding states this way would make the spell menu long."
+];
+B.forever = [
+  "Forever's Blizzard_CooldownViewer is Retail's code (TOC: <code>standard, camelot</code>). It already handles range, usability, mana, procs, auras, totems and a <b>pandemic</b> effect. ModeCDM can recolor all of these.",
+  "Forever has <b>no reactive-ability code</b>. Riposte or Overpower being usable means <code>C_Spell.IsSpellUsable</code> turning true on <code>SPELL_UPDATE_USABLE</code>. Whether the game also fires a proc overlay for them is spell data. <code>/mcdm check</code> will log it.",
+  "Values that branch safely on both clients: cooldown vs. GCD (<code>isActive</code>, <code>isOnGCD</code>: never secret), max charges and recharging (never secret), usable and no-power (not marked secret), range (not marked secret), proc overlay events.",
+  "Secret in combat on Midnight, so display-only: time left, current charges, aura data, power amounts. \"Ending Soon\" and stack thresholds must use <b>color curves on duration objects</b> (<code>EvaluateRemainingPercent</code>), never Lua comparisons.",
+  "Secret-safe setters ModeCDM can use: <code>SetVertexColorFromBoolean</code>, <code>SetAlphaFromBoolean</code>, <code>SetDesaturation</code>, <code>C_CurveUtil.EvaluateColorFromBoolean</code>, <code>Cooldown:SetCooldownFromDurationObject</code>."
+];
+B.ideas = [
+  "<b>One model:</b> each state picks one look per layer. <b>Glows</b> (the edge), <b>Icon</b> (tint, gray, fade) and <b>Numbers</b> (cooldown text color). A fixed priority decides when two glows want the icon, so there is nothing to order by hand.",
+  "<b>Held vs. one-shot.</b> A state's look holds while the state lasts. A one-shot <b>Motion</b> (Pop, Flash) and <b>Sound</b> fire as it starts. No \"stop animation\" settings.",
+  "<b>Bar Style sets it for every spell</b>, with Proc on out of the box. A spell follows the Bar Style until you give it its own look (Bar / Own on each row).",
+  "<b>New states:</b> Usable (Riposte), Full Charges, Buff Missing, Ending Soon, and the tints made into settings: Out of Range, Not Enough Power, Unusable.",
+  "<b>Colors from Mode tokens</b>, all changeable: brand gold procs, Ivory usable/active/ready, Celadon buffs, Rosewood range and missing, power blue, graphite unusable, hot red final seconds."
+];
+B.addons = [
+  "<b>TellMeWhen</b> splits one-shot events (On Start, On Finish) from held states (While …). Many animations (Shake, Color Flash, Alpha Flash, Pixel/Autocast border), but its terms (\"Notifications\", \"Condition Set Passing\") confuse people.",
+  "<b>WeakAuras</b> has an ordered If/Then Conditions list where later rows win. Very powerful but steep, and people set the same glow in two places. It has no Midnight version.",
+  "<b>Midnight CDM addons</b> (MiliUI, ArcUI, EllesmereUI, CDMAuras, Ckraigs) converged on: per-spell proc/active/ready glows, a global theme with per-bar or per-spell overrides, a live preview where clicking an icon edits it, a pandemic border, and color curves for time-left tints.",
+  "<b>ArcUI</b>: \"proc overrides dim\", so a lit spell shows at full opacity. <b>EllesmereUI</b>: glow type and color first, Pixel lines and speed behind a cog, and an \"Only in Combat\" switch per glow.",
+  "<b>GM CDM (Forever)</b> is a Forever competitor with active-buff glows and borders and condition-based looks.",
+  "Two addons exist only to turn off Blizzard's <b>gray on cooldown</b>, so that default is divisive."
+];
+B.pitfalls = [
+  "A free-form rule builder. Too much for a CDM, and it can't port to Midnight's secret values.",
+  "Setting the same effect in two places (WeakAuras' Actions vs. Conditions).",
+  "Jargon: \"Activation Border\", \"Event Handler\", \"Condition\". Say Proc, Usable, Ready.",
+  "Every glow parameter on the first screen. Look and Color first; Pixel lines and thickness under More.",
+  "Stacking effects with no priority (gray plus red plus a glow at once).",
+  "Time or stack thresholds written as Lua comparisons. They work on Forever and break on Midnight."
+];
+
+/* Detection details from the Forever source. */
+var S = D.BY_ID;
+S.proc.detect = "Blizzard's RefreshOverlayGlow (IsSpellOverlayed / the overlay events) calls ActionButtonSpellAlertManager:ShowAlert, which ModeCDM hooks. ModeCDM's own icons listen for SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE.";
+S.usable.detect = "C_Spell.IsSpellUsable (not marked secret) turns from not usable (and not short on power) to usable, on SPELL_UPDATE_USABLE. Forever has no reactive code path; whether Riposte also fires a proc overlay is spell data (logged by /mcdm check).";
+S.range.detect = "Blizzard: OnSpellRangeCheckUpdateEvent sets item.spellOutOfRange, then (0.64, 0.15, 0.15) and an OOR shadow, which ModeCDM swaps to Rosewood. ModeCDM's own icons need C_Spell.EnableSpellRangeCheck plus SPELL_RANGE_CHECK_UPDATE (missing today).";
+S.noPower.detect = "Blizzard's RefreshIconColor: ITEM_NOT_ENOUGH_MANA_COLOR (0.5, 0.5, 1). ModeCDM already hooks it for range and would paint the bar's color instead. Own icons: C_Spell.IsSpellUsable's insufficientPower.";
+S.unusable.detect = "Blizzard's RefreshIconColor: ITEM_NOT_USABLE_COLOR (0.4, 0.4, 0.4). Same hook. Own icons: C_Spell.IsSpellUsable false without insufficientPower.";
+S.ending.detect = "Time left can be secret, so this uses a color curve: C_CurveUtil color curve plus the duration object's EvaluateRemainingPercent, painted on the countdown text. Blizzard's own cue is the CooldownFlash flipbook 0.75 s before the end (the Ready Flash switch).";
+S.charges.detect = "C_Spell.GetSpellCharges: maxCharges > 1 and isActive (recharging) false. Both are never secret. Few Forever spells have charges: check in game.";
+S.buffMissing.detect = "The item's isActive (can be secret), with the look faded in from the boolean (SetAlphaFromBoolean with the alphas swapped) and the icon grayed by SetDesaturation. Needs the bar to show inactive buffs (Edit Mode: Hide When Inactive off).";
+
+D.EXTRA_STATES.push(
+  { id: "pandemic", label: "Refresh Window", layer: "Glows", when: "The last part of a buff or debuff where recasting doesn't waste time (pandemic).", tag: "ck", def: "check",
+    detect: "Blizzard's CDM already shows CooldownPandemicFXTemplate from C_UnitAuras.GetRefreshCarryOverDuration. ModeCDM would recolor or swap it. Forever's camelot rules may not use pandemic." },
+  { id: "toggle", label: "Toggled On", layer: "Glows", when: "A toggled ability is on (auto-repeat, an aura you switch on).", tag: "fo", def: "later",
+    detect: "C_Spell.IsActiveSpell, which is in Forever's docs and not live's." },
+  { id: "totem", label: "Totem Down", layer: "Glows", when: "Your totem for that spell is out.", tag: "fo", def: "later",
+    detect: "Blizzard's CDM shows totems as the item's aura (GetTotemInfo, PLAYER_TOTEM_UPDATE). ModeCDM's Active state already sees its gold swipe." },
+  { id: "enchant", label: "Weapon Buff Missing", layer: "Glows", when: "A poison or imbue has run out.", tag: "fo", def: "later",
+    detect: "C_Item.GetWeaponEnchantInfo plus WEAPON_ENCHANT_CHANGED. Ties into the Later item on poisons and imbues." },
+  { id: "loc", label: "Locked Out", layer: "Icon", when: "A school lockout or silence stops the spell.", tag: "ck", def: "later",
+    detect: "C_Spell.GetSpellLossOfControlCooldownDuration (a duration object, for the swipe only)." },
+  { id: "stacks", label: "Stacks Reached", layer: "Glows", when: "A buff or debuff reaches N stacks (Sunder Armor 5).", tag: "rc", def: "skip",
+    detect: "Stack counts are secret in combat. They can only go to text, so this can't be a branch on Midnight. Skip, or Forever-only." },
+  { id: "debuff", label: "Target Debuff Missing", layer: "Glows", when: "Your debuff isn't on the target.", tag: "rc", def: "skip",
+    detect: "Blizzard's buff items cover target debuffs they track (HARMFUL|PLAYER scan). Use Buff Missing on those items. An arbitrary aura check is impossible on Midnight." },
+  { id: "power", label: "Power Above N", layer: "Glows", when: "Rage or energy over a threshold.", tag: "rc", def: "skip",
+    detect: "UnitPower is secret on Midnight. The resource bars' marks already cover this." }
+);
+
+/* Settings layouts. */
+function ic(txt, hue, extra) { return '<span class="mini-ic" style="background:linear-gradient(135deg,hsl(' + hue + ' 55% 38%),hsl(' + ((hue + 40) % 360) + ' 45% 18%));' + (extra || "") + '">' + txt + "</span>"; }
+var GOLD = "box-shadow:0 0 5px 2px #e2b866", IVORY_PX = "outline:2px dashed #efe6d2;outline-offset:1px", BORD = "box-shadow:inset 0 0 0 2px #efe6d2", ROSE = "filter:none;background:linear-gradient(135deg,#7a3a3e,#3a1d1f)", GRAY = "filter:grayscale(1) brightness(.7)";
+function sw(c) { return '<span class="sw" style="background:' + c + '"></span>'; }
+D.OPTIONS.push(
+  { id: "A", name: "State table", rec: false,
+    blurb: "The Bar Style page lists every state as a row. A spell's menu shows the same rows, each following the bar or taking its own look.",
+    mock: function () {
+      function r(on, n, look, c, extra) { return '<div class="mrow"><span class="pill ' + (on ? "gold" : "dim") + '">' + (on ? "On" : "Off") + '</span><span class="grow">' + n + '</span><span class="pill">' + look + "</span>" + sw(c) + (extra ? '<span class="pill dim">' + extra + "</span>" : "") + "</div>"; }
+      return '<div class="mh">Bar Style · Effects</div>' + r(true, "Proc", "Mode Glow", "#e2b866", "Pop") + r(true, "Usable", "Pixel", "#efe6d2", "Reactive spells") + r(false, "Active", "Border", "#efe6d2") + r(false, "Ready", "Mode Glow", "#efe6d2", "Flash 2s") + r(true, "Out of Range", "Tint", "#cf6a6f") + r(true, "Not Enough Power", "Tint", "#759acd") + r(true, "Ending Soon", "Color", "#ff3948", "3s") + '<div class="note" style="font-family:var(--font-ui)">…and five more rows</div>';
+    },
+    pros: ["Everything visible at once; nothing hidden.", "Maps one-to-one to the saved settings, so it's easy to build and test.", "Same rows on the Bar Style page and in a spell's menu."],
+    cons: ["Twelve rows is a lot for the spell menu.", "No picture of what each look does until you try it.", "Rows for states a spell can't have (Full Charges on a spell without charges) are noise."] },
+  { id: "B", name: "Recipes first", rec: false,
+    blurb: "A spell picks one recipe: Standard, Reactive, Big Cooldown, Keep Up or Quiet. Customize opens the table for that spell.",
+    mock: function () {
+      function rc(n, d, sel, i) { return '<div class="mrow" style="' + (sel ? "border-color:#6b5530" : "") + '">' + i + '<span class="grow"><b style="color:' + (sel ? "#e2b866" : "#d8d8db") + '">' + n + '</b><br><span style="color:#85858b;font-size:11px">' + d + "</span></span></div>"; }
+      return '<div class="mh">Riposte · Effects</div>' + rc("Standard", "Proc glow, gray on cooldown", false, ic("RI", 200)) + rc("Reactive", "Glow + pop when it becomes usable", true, ic("RI", 200, IVORY_PX)) + rc("Big Cooldown", "Lit while ready, border while active", false, ic("RI", 200, BORD)) + rc("Keep Up", "Red border when the buff is missing", false, ic("RI", 200, "box-shadow:inset 0 0 0 2px #cf6a6f")) + rc("Quiet", "No glows", false, ic("RI", 200)) + '<div class="mrow"><span class="grow">Customize…</span><span class="pill">›</span></div>';
+    },
+    pros: ["One click per spell; the fewest words.", "Recipes say what you want (\"Reactive\") instead of how it works.", "Easy to explain in a tooltip."],
+    cons: ["A recipe that's almost right still sends you to the full table.", "Recipes and the Bar Style can disagree, which is a second place to look.", "Changing a recipe later doesn't say what it changed."] },
+  { id: "C", name: "State strip and inspector, recipes on spells", rec: true,
+    blurb: "Bar Style: a strip of states, each drawn as a tiny icon in its look. Click one and a single inspector below edits it. A spell's menu lists only the states that spell can have, each row reading Bar or Own, with recipe buttons as shortcuts.",
+    mock: function () {
+      function st(n, i, sel) { return '<div class="st' + (sel ? " sel" : "") + '">' + i + n + "</div>"; }
+      var strip = '<div class="strip">' + st("Proc", ic("KI", 30, GOLD), false) + st("Usable", ic("RI", 200, IVORY_PX), true) + st("Active", ic("EV", 270, BORD), false) + st("Ready", ic("SP", 120, "box-shadow:0 0 5px 2px #efe6d2"), false) + st("Range", ic("BL", 320, ROSE), false) + st("Power", ic("SS", 8, "background:linear-gradient(135deg,#3f5b86,#1d2a40)"), false) + st("Cooldown", ic("VA", 250, GRAY), false) + st("Ending", ic("AR", 50) .replace("AR</span>", '<b style="color:#ff3948">2</b></span>'), false) + "</div>";
+      var insp = '<div class="mrow"><span class="grow"><b style="color:#e2b866">Usable</b> <span style="color:#85858b">· starts on for reactive spells</span></span></div><div class="mrow"><span class="pill">Mode Glow</span><span class="pill">Border</span><span class="pill gold">Pixel</span><span class="pill">Blizzard</span><span class="pill">GCD</span>' + sw("#efe6d2") + '<span class="pill dim">Pulse</span><span class="pill">Pop</span><span class="pill dim">No sound</span><span class="pill dim">More ›</span></div>';
+      var spell = '<div class="mh" style="margin-top:6px">Riposte · spell menu</div><div class="mrow"><span class="pill">Standard</span><span class="pill gold">Reactive</span><span class="pill">Quiet</span></div><div class="mrow"><span class="grow">Usable</span><span class="pill gold">Own · Pixel</span>' + sw("#efe6d2") + '<span class="pill">›</span></div><div class="mrow"><span class="grow">Proc</span><span class="pill dim">Bar · Mode Glow</span>' + sw("#e2b866") + '<span class="pill">›</span></div><div class="mrow"><span class="grow">Ready</span><span class="pill dim">Bar · Off</span><span class="pill">›</span></div>';
+      return '<div class="mh">Bar Style · Effects</div>' + strip + insp + spell;
+    },
+    pros: ["You see each look before you open it; the strip is the legend.", "One inspector, so one set of controls to learn. It replaces the per-glow popouts.", "The spell menu stays short: only the states the spell can have, and Bar/Own answers \"why does it look like this\".", "Recipes are shortcuts that write Own rows, so there's still one place where a look lives.", "Fits the window's pattern: Stage-style preview on top, one scroll below."],
+    cons: ["The most new UI to build: strip, inspector, mini previews.", "The strip has to wrap at the window's narrow width.", "Recipes need names that are good for Forever classes."] },
+  { id: "D", name: "Rules list", rec: false,
+    blurb: "\"When [state] then [look]\" rows you add and order yourself, like WeakAuras' Conditions.",
+    mock: function () {
+      function rl(w, t) { return '<div class="mrow"><span class="pill dim">When</span><span class="pill">' + w + '</span><span class="pill dim">then</span><span class="pill gold">' + t + '</span><span class="grow"></span><span class="pill dim">⋮</span></div>'; }
+      return '<div class="mh">Riposte · Rules</div>' + rl("Usable", "Pixel Glow, Ivory") + rl("Proc", "Mode Glow, Gold") + rl("Time left < 3s", "Numbers red") + rl("Out of range", "Tint Rosewood") + '<div class="mrow"><span class="grow">+ Add rule</span></div>';
+    },
+    pros: ["The most flexible; any combination.", "Familiar to WeakAuras users."],
+    cons: ["The opposite of \"concise and simple\".", "Ordering rules by hand is a chore and easy to get wrong.", "Invites thresholds that can't port to Midnight (time left, stacks).", "Hard to give good defaults; an empty list shows nothing."] }
+);
+
+D.COLOR_NOTES.push(
+  "Out of Range, Not Enough Power and Unusable would become <code>Style.Tone</code> tokens shared with the action bars (<code>ActionBars/Skin.lua</code> computes the power tint itself today), so both read the same.",
+  "Blizzard's defaults for reference: not enough mana (0.5, 0.5, 1.0), unusable (0.4, 0.4, 0.4), out of range (0.64, 0.15, 0.15) on CDM items. Action buttons only redden the hotkey.",
+  "Proc moves from Celadon (today's default when switched on) to <b>brand gold</b>, as the Bar Style already set (<code>procColor = Tone.brand</code>), so a proc reads as the most important light.",
+  "Glow colors are per state for every spell (Bar Style) and per spell (Own). A <b>Class Color</b> choice for any glow is a cheap addition (EllesmereUI offers it for pandemic).",
+  "Colors from secret booleans go through <code>SetVertexColorFromBoolean</code> (true color, false color), so the Bar Style colors work in combat on both clients."
+);
+
+D.INVENTORY.push(
+  { title: "Blizzard_CooldownViewer (Forever branch, 1.60.1)", note: "<code>Interface/AddOns/Blizzard_CooldownViewer/</code>. The local client has no extracted UI, so these come from Gethe/wow-ui-source <code>forever</code>.",
+    rows: [
+      ["CooldownViewer.lua", "Item mixins. <code>RefreshIconColor</code> (range → usable → mana → gray), <code>RefreshIconDesaturation</code> (real cooldowns only), <code>RefreshSpellCooldownInfo</code> (swipe, aura time), <code>RefreshOverlayGlow</code> (spell alert), <code>CacheChargeValues</code>, <code>CheckPandemicTimeDisplay</code>, <code>RefreshTotemData</code>, <code>OnSpellRangeCheckUpdateEvent</code>, the 0.75 s <code>CooldownFlash</code>."],
+      ["CooldownViewer.xml", "Item templates: <code>OutOfRange</code> shadow, <code>CooldownFlash</code>, <code>ChargeCount</code>, <code>DebuffBorder</code>, <code>PandemicIcon</code>."],
+      ["CooldownViewerItemData.lua", "Cooldown info, <code>linkedSpellIDs</code>, aura lookup on player then target."],
+      ["CooldownViewerAlert.lua", "Alert events: Available, PandemicTime, OnCooldown, ChargeGained, OnAuraApplied, OnAuraRemoved. Sound or Visual."],
+      ["CooldownViewerVisualAlertTarget.lua", "Visual alerts on items (MarchingAnts and Flash, in five colors)."],
+      ["CooldownViewerSecure.lua", "Secure environment. Blizzard compares raw times here; addons can't copy that arithmetic."],
+      ["PandemicAlertAnimation.xml", "<code>CooldownPandemicFXTemplate</code>, <code>CooldownPandemicBarFXTemplate</code>."],
+      ["Blizzard_CooldownViewer.toc", "<code>AllowLoadGameType: standard, camelot</code>."]
+    ] },
+  { title: "Action bars, glows and cooldown frames (Forever branch)", rows: [
+      ["Blizzard_ActionBar/Shared/ActionButtonSpellAlerts.lua/.xml", "<code>ActionButtonSpellAlertManager:ShowAlert(frame, skipBirth)</code>, <code>HideAlert</code>, <code>HasAlert</code>. The flipbooks <code>UI-HUD-ActionBar-Proc-Start/Loop-Flipbook</code>. ModeCDM hooks it."],
+      ["Blizzard_ActionBar/Shared/ActionButton.lua", "<code>UpdateUsable</code> on <code>ACTION_USABLE_CHANGED</code>: (1,1,1) / (0.5,0.5,1) / (0.4,0.4,0.4); <code>UpdateSpellAlert</code>; range reddens the hotkey only."],
+      ["Blizzard_ActionBar/Camelot/ActionButtonOverrides.lua", "Forever's action button overrides. No reactive-ability code."],
+      ["Blizzard_FrameXML/SpellActivationOverlay.lua", "Screen-edge proc art; CVar <code>displaySpellActivationOverlays</code>."],
+      ["Blizzard_VisualAlerts/VisualAlertTemplates.xml", "<code>VisualAlertMarchingAnts*</code> and <code>VisualAlertFlash*</code> templates; atlases <code>VisualAlert_Ants_Flipbook</code>, <code>UI-CooldownManager-VisualAlert-Glow</code>."],
+      ["Blizzard_FrameXMLUtil/Cooldown.lua", "<code>CooldownFrame_Set</code> compares <code>start &gt; 0</code>, so it can't take secrets from addon code."],
+      ["Blizzard_EditMode/Shared/EditModeSettingDisplayInfo.lua", "Cooldown viewer settings: Hide When Inactive, Show Timer, Show Tooltips, Visible Setting."]
+    ] },
+  { title: "APIs and secret status (Forever docs)", note: "\"Secret\" means the docs mark the value secret when cooldowns or auras are restricted.",
+    rows: [
+      ["C_Spell.IsSpellUsable", "<code>isUsable, insufficientPower</code>. Not marked secret. Usable, Not Enough Power, Unusable."],
+      ["C_Spell.IsSpellInRange / EnableSpellRangeCheck", "Not marked secret. <code>SPELL_RANGE_CHECK_UPDATE(spell, inRange, checksRange)</code>. Out of Range for own icons."],
+      ["C_Spell.GetSpellCooldown", "Secret, except <code>isEnabled</code>, <code>isActive</code>, <code>isOnGCD</code> (never secret). On Cooldown, Ready."],
+      ["C_Spell.GetSpellCharges", "Secret, except <code>maxCharges</code> and <code>isActive</code> (never secret). Full Charges."],
+      ["C_Spell.GetSpellCooldownDuration / GetSpellChargeDuration", "Duration objects for the swipe and numbers; <code>EvaluateRemainingPercent(curve)</code> for Ending Soon."],
+      ["C_SpellActivationOverlay.IsSpellOverlayed", "Not marked secret (argument must be public). Proc on own icons."],
+      ["C_CurveUtil (color curves, EvaluateColorFromBoolean)", "Color from a secret duration or boolean. Ending Soon, Buff Missing."],
+      ["Texture:SetVertexColorFromBoolean / Region:SetAlphaFromBoolean / SetDesaturation", "Accept secrets from addon code. Buff Up/Missing, tints from secret states."],
+      ["C_Secrets.ShouldSpellCooldownBeSecret", "Says up front whether a spell's times will be secret. For <code>/mcdm check</code>."],
+      ["C_UnitAuras.GetRefreshCarryOverDuration", "Secret. Blizzard uses it for the pandemic effect."],
+      ["C_Spell.IsActiveSpell", "Forever only (not in live's docs). Toggled On."],
+      ["C_Item.GetWeaponEnchantInfo", "Weapon Buff Missing (Later)."]
+    ] },
+  { title: "ModeCDM files (ModeCDM/Modules/CooldownManager/)", rows: [
+      ["Glow.lua (263)", "Glow kinds, <code>ApplyGlows</code>, <code>ResolveGlows</code> order (proc › active › ready), buff glow, proc hook, ready flash, the cooling ticker. <b>Grows:</b> new kinds, Bar-default looks, motion and sound on start."],
+      ["GlowPopout.lua (168)", "One popout per glow. <b>Replaced</b> by an Effect popout (one inspector)."],
+      ["SpellMenu.lua (244)", "Spell menu rows (Show, a row per glow, texts, Copy/Paste). <b>Changes:</b> an Effects list of the states that spell can have, Bar/Own, recipe buttons."],
+      ["Spells.lua (185) · Items.lua (137)", "Own icons: hard-coded tints. <b>Changes:</b> tints from the bar's colors, a range check, usable transitions."],
+      ["Skin.lua (230)", "<code>StyleRange</code> (Rosewood), <code>StyleDesaturation</code>, <code>AuraUp</code>, <code>StyleCooldown</code>. <b>Changes:</b> StyleRange becomes a tint layer for range, power and unusable."],
+      ["Blizzard.lua (160)", "Hooks <code>RefreshIconColor</code>, <code>RefreshIconDesaturation</code>, <code>SetIsActive</code>. <b>Changes:</b> the color hook paints the tint layer."],
+      ["Init.lua (282)", "<code>glowKinds</code>, labels, glow defaults, <code>spellKinds</code>, ranges, choices. <b>Changes:</b> new kinds and keys."],
+      ["BarStyle.lua (285) · BarStyleOptions.lua", "The <code>glows</code> group (\"Starting Glow Look\"). <b>Changes:</b> becomes Effects, with the new keys."],
+      ["Migrations.lua (392)", "At the 400-line limit. The v13 step goes in a new file called from <code>Parts.lua</code>."],
+      ["Driver.lua (347)", "Events (<code>SPELL_UPDATE_USABLE</code>, overlay events). <b>Adds:</b> range check events, <code>SetSpellEffect</code>."],
+      ["Alerts.lua (91)", "Ready Sound for own spells. <b>Grows:</b> sounds on Proc and Usable."],
+      ["Text.lua (133)", "Cooldown text look. <b>Adds:</b> the Ending Soon color curve."],
+      ["StylePage.lua (132) · StylePreview.lua (143) · Preview.lua (313)", "Bar Style page and previews. <b>Changes:</b> the Effects strip and inspector; preview states."],
+      ["TestDisplay.lua (127)", "Test on Screen. <b>Adds:</b> states cycle on the sample icons."],
+      ["Caps.lua (58)", "<code>/mcdm check</code>. <b>Adds:</b> overlay and usable log for tracked spells, curve and boolean-setter checks, secret predictions."]
+    ] },
+  { title: "ModeUI shared files (ModeUI/Shared/)", rows: [
+      ["Style/Tone.lua", "<b>Adds</b> icon-state tokens (range, power, unusable) shared with the action bars."],
+      ["Kit/Slot.lua · Kit/Glows.lua", "<code>Kit.SlotGlow</code>, <code>PaintSlotGlow</code>, Pixel and flipbook glows. Unchanged, reused."],
+      ["Kit/Motion.lua (new)", "<code>Kit.Pop</code>, <code>Kit.Flash</code>: client-run animation groups for one-shot motion."],
+      ["Kit/IconTint.lua (new)", "<code>Kit.IconTint</code> and the from-boolean variant, used by ModeCDM and the action bars."],
+      ["Domain/Cooldowns.lua", "<code>Usable</code>, <code>Charges</code>, <code>Cooling</code>. <b>Adds</b> <code>InRange</code>, <code>EnableRange</code>, <code>FullCharges</code>."],
+      ["Modules/ActionBars/Skin.lua", "<code>POWER_TINT</code> moves to the token."],
+      ["docs/DESIGN_LANGUAGE.md", "\"Cooldown icons\": states, looks and colors. Changed first."]
+    ] }
+);
+
+var P = D.PLAN;
+P.phases.push(
+  { title: "Phase 0 · Check on Forever first", goal: "Settle the unknowns before building on them. Nothing changes for users.",
+    steps: [
+      ["Caps.lua", "<code>/mcdm check</code> learns: which tracked spells fired <code>SPELL_ACTIVATION_OVERLAY_GLOW_SHOW</code> this session, which turned usable on <code>SPELL_UPDATE_USABLE</code> (Riposte, Overpower, Revenge, Execute), <code>C_Secrets.ShouldSpellCooldownBeSecret</code> for them, and whether <code>C_CurveUtil</code> color curves, <code>SetVertexColorFromBoolean</code> and duration <code>EvaluateRemainingPercent</code> exist."],
+      ["tests/cdm_effects.lua", "A new test for the check report (stubs in <code>cooldown_manager_stubs.lua</code>)."]
+    ] },
+  { title: "Phase 1 · Design and tokens", steps: [
+      ["docs/DESIGN_LANGUAGE.md", "\"Cooldown icons\": the three layers, the priority, the state colors."],
+      ["ModeUI/Shared/Style/Tone.lua", "<code>Tone.iconState = { range = rosewood, power = Mix(power, white, 0.7), unusable = graphite.muted }</code>."],
+      ["ModeUI/Shared/Kit/IconTint.lua (new)", "<code>Kit.IconTint(texture, color)</code>, <code>Kit.IconTintFromBoolean(texture, secretBool, onColor, offColor)</code>."],
+      ["ModeUI/Shared/Kit/Motion.lua (new)", "<code>Kit.Pop(frame)</code> (scale 1 → 1.18 → 1), <code>Kit.Flash(texture)</code> (alpha), built once per frame and played by the client."],
+      ["Modules/ActionBars/Skin.lua", "Reads <code>Tone.iconState</code> instead of its own POWER_TINT."]
+    ] },
+  { title: "Phase 2 · Settings model (version 13)", goal: "Each bar keeps its flat keys. A per-spell entry still stores a look table, and now <code>false</code> means off for that spell.",
+    steps: [
+      ["Init.lua", "Kinds: proc, usable, active, ready, charges, buff, missing. Per bar: <code>&lt;kind&gt;On</code> (starts on for every spell), <code>&lt;kind&gt;Glow/Color/Pulse/Motion/Sound</code>; tints <code>rangeColor</code>, <code>powerColor</code>, <code>unusableColor</code> plus switches; <code>endingShow</code>, <code>endingSeconds</code>, <code>endingColor</code>; <code>usableFor</code> (reactive / all / none)."],
+      ["EffectsInit.lua (new)", "<code>M.effectKinds</code>, layers, priority, recipes, <code>M.MigrateV13(db, fresh)</code>, <code>M.ValidateEffects(db)</code>. Existing profiles keep their switched-on glows. Proc On follows your answer below. <code>rangeTint</code> false becomes Range Off."],
+      ["Parts.lua · Migrations.lua", "VERSION 13. <code>InitializeParts</code> runs MigrateV13 and ValidateEffects (Migrations.lua stays under 400 lines)."],
+      ["BarStyle.lua · BarStyleOptions.lua", "The <code>glows</code> group becomes <code>effects</code> with every new key. The presets get Effects."],
+      ["Driver.lua", "<code>M:SetSpellEffect(viewer, key, kind, field, value)</code> and <code>M:SpellEffect(viewer, key, kind)</code>, which resolves Own, else the bar's look when On. These replace SetSpellGlow/SpellGlow, with the old names kept as wrappers."]
+    ] },
+  { title: "Phase 3 · Runtime", steps: [
+      ["States.lua (new)", "<code>M.itemState[item]</code>: usable, noPower, range, fullCharges. <code>M:UpdateStates()</code> on SPELL_UPDATE_USABLE, SPELL_UPDATE_CHARGES and SPELL_RANGE_CHECK_UPDATE; <code>M:OnStateEnter(item, kind)</code> plays the motion and sound. <code>M:IsReactive(key)</code>: after Phase 0, the spells the check showed."],
+      ["Glow.lua", "ORDER: proc › usable › active › ready › charges › missing; <code>ApplyGlows</code> uses <code>SpellEffect</code>; the buff glow and the missing look (alphas swapped) go through <code>SetAlphaFromBoolean</code>."],
+      ["Skin.lua · Blizzard.lua", "<code>StyleRange</code> becomes <code>M:StyleTint(item, style)</code>: range, power, unusable from the bar's colors (Proc and Usable lift the dim, like ArcUI's \"proc overrides dim\"). The <code>RefreshIconColor</code> hook calls it."],
+      ["Spells.lua · Items.lua", "Raw tints removed: <code>M:StyleTint</code>. Range check enabled per own spell (<code>Cooldowns.EnableRange</code>)."],
+      ["Text.lua", "<code>M:StyleEnding(item, style)</code>: a color curve on the cooldown's duration object, painted on the countdown text (Forever and Midnight)."],
+      ["Alerts.lua", "<code>M:PlayEffectSound(item, kind)</code> for Proc and Usable. Ready Sound keeps working."],
+      ["ModeUI/Shared/Domain/Cooldowns.lua", "<code>CD.InRange</code>, <code>CD.EnableRange</code>, <code>CD.FullCharges</code>."]
+    ] },
+  { title: "Phase 4 · Settings pages", steps: [
+      ["EffectsSection.lua (new)", "The Bar Style page's Effects: the state strip (mini icons in each look) and one inspector (Look, Color, Pulse, Motion, Sound; Pixel lines and thickness under More)."],
+      ["EffectPopout.lua (new, replaces GlowPopout.lua)", "The same inspector for one spell, opened from its menu row."],
+      ["SpellMenu.lua", "\"Effects\": recipe buttons (Standard, Reactive, Big Cooldown, Keep Up, Quiet), then one row per state that spell can have, reading Bar or Own."],
+      ["StylePage.lua · StylePreview.lua · Preview.lua", "Effects replaces Starting Glow Look; the preview takes a state from the strip (<code>M.previewState</code>) so a look is visible without a fight."],
+      ["TestDisplay.lua", "Test on Screen cycles the sample icons through Proc, Usable, Cooldown, Ending, Ready."],
+      ["CooldownManager.xml", "Load order: EffectsInit after BarStyle; States after Glow; EffectsSection and EffectPopout before StylePage."]
+    ] },
+  { title: "Phase 5 · Tests and docs", steps: [
+      ["tests/cdm_effects.lua", "Priority, Bar/Own resolution, v13 migration (existing switches kept, Proc on by your answer), usable transitions, tints from tokens, secret paths using the boolean setters, Ending Soon through a curve stub."],
+      ["tests/cooldown_manager.lua · cdm_spells.lua · cdm_bar_style.lua · obsidian.lua · design.lua", "Updated for the new kinds and keys. design.lua stays clean (no literal colors)."],
+      ["docs/COOLDOWN_MANAGER.md · API_COMPATIBILITY.md · MODE_REDESIGN.md", "The Effects section, the Forever API notes (secret flags above), a revision entry and in-game checks."]
+    ] }
+);
+P.questions.push(
+  { id: "procOn", q: "Proc glow on for every spell?", why: "Today ModeCDM hides Blizzard's proc art and draws nothing until you switch a spell's Proc Glow on.", a: ["On for every spell, new and existing profiles", "On for new profiles only", "Keep off until switched on"] },
+  { id: "usableFor", q: "Usable (Riposte, Overpower, Execute) starts on for which spells?", why: "Every spell that turns usable would also light Eviscerate whenever you have combo points.", a: ["The reactive spells /mcdm check finds, plus a per-spell switch", "Every spell that turns usable", "None; switch on per spell"] },
+  { id: "gray", q: "Gray on Cooldown default?", why: "Two addons exist only to turn off Blizzard's gray. The Bar Style has it on.", a: ["Keep it on", "Off for new profiles"] },
+  { id: "motion", q: "Which one-shot motions?", why: "Motion catches the eye but is easy to overdo.", a: ["Pop and Flash", "Pop, Flash and Shake", "None"] },
+  { id: "sounds", q: "Sounds on Proc and Usable?", why: "Blizzard's alerts already cover tracked spells (Available, Charge Gained…).", a: ["ModeUI sounds for any spell, off by default", "Leave sounds to Blizzard's alerts"] },
+  { id: "scope", q: "What gets built in this round?", a: ["Phases 0-5 (states marked Build now)", "Phase 0 first, then decide", "Phases 0-3 now, pages later"] }
+);
+window.__boot();
+})();
+</script>
