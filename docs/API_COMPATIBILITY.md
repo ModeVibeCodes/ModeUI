@@ -1753,4 +1753,10 @@ back never trips the lock), and always sets the interface's own scale with
 `UI_SCALE_CHANGED` and `DISPLAY_SIZE_CHANGED` (the game puts its own scale
 back then). Turning it off asks for a reload, which gives the game its scale
 back. "Using" on the General page's UI Scale card checks the scale actually on
-screen. Needs the owner's in-game confirmation.
+screen. The owner confirmed in game that the interface took 53.33%, then found
+it too small at 1440p and chose **1080p Size**, a third Scale choice: 71.11%
+on any screen, the interface 1080 UI units tall, so 1440p looks like 1080p and
+the layouts use their 1080 places (`Layouts:CurrentVariant` reads the UI's
+height). A UI unit is then 1.33 pixels; ModeUI's edges, bars and icons still
+land on whole pixels (`Kit.PixelSize`, `Style.SnapEdges`, ModeCDM's snapped
+holders), sizes a pixel off at most.

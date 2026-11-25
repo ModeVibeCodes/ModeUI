@@ -155,7 +155,10 @@ UI scale), each size rounds to whole pixels (a pixel off at most), the icon
 holders sit on whole pixels (`ResourceSnap.lua`), the edges stay 1px, and a
 negative Spacing counts physical pixels, so -1 still shares one shadow pixel
 (as UI units it overlapped two pixels at 1440p on Blizzard's default scale).
-Home's **Screen** line says which applies.
+ModeUI's **1080p Size** scale (Optimizations, 71.11% on any screen; owner,
+November 24, 2026) is such a scale on 1440p: the bars are the size they are
+on 1080p and stay on whole pixels. Home's **Screen** line says which
+applies.
 
 ### Custom bars
 

@@ -61,7 +61,8 @@ function M:CreateConfigPage(parent)
     page.scaleToggles = Toggles({ Option("Set UI Scale", "manageScale") })
     When(function() return M.db.manageScale end, function()
         local buttons, refresh = W.Exclusive(page:Row("Scale", 48), {
-            { label = "Pixel Perfect", value = "auto", width = 132 }, { label = "Custom", value = "custom", width = 110 } },
+            { label = "Pixel Perfect", value = "auto", width = 132 }, { label = "1080p Size", value = "size1080", width = 120 },
+            { label = "Custom", value = "custom", width = 110 } },
             function() return M.db.scaleMode end, function(value) M:SetOption("scaleMode", value) end)
         page.scaleModeButtons = buttons; Refresh(refresh)
     end)
@@ -75,7 +76,8 @@ function M:CreateConfigPage(parent)
     Refresh(function()
         local width, height = M:Resolution()
         local recommended = M:RecommendedScale()
-        detected:SetText(width and string.format("%d x %d. Pixel Perfect is %.2f%%.", width, height, recommended) or "Resolution isn't available yet.")
+        detected:SetText(width and string.format("%d x %d. Pixel Perfect is %.2f%%; 1080p Size is %.2f%%.", width, height, recommended, M.SIZE_1080)
+            or "Resolution isn't available yet.")
     end)
     page.scaleStatus = Status("scale")
     OtherNote()
@@ -93,7 +95,7 @@ function M:BuildHomeCard(page, rows)
     page.homeScaleButton, page.homeScaleRow = button, row
     button:SetScript("OnClick", function() M:UseSuggestedScale(); page:Refresh() end)
     page.refreshers[#page.refreshers + 1] = function()
-        local scale, height = M:SuggestedScale()
+        local scale, height = M:ScreenScale()
         row.settingsLabel:SetText(height and (height .. "p") or "Screen")
         local using = M:UsingSuggestedScale()
         button.label:SetText(not scale and "Unavailable" or string.format(using and "Using %.2f%%" or "Use %.2f%%", scale))

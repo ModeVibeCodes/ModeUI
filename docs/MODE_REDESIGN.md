@@ -742,7 +742,10 @@ The same day ModeCDM's new Screen line showed 64% where ModeUI said 53.33%:
 Forever's `useUiScale` is a secure game setting, so Optimizations' UI Scale
 had stopped before sizing the interface, and "Using 53.33%" only checked the
 settings. It now sets the interface's scale either way and "Using" checks the
-screen (`docs/API_COMPATIBILITY.md`, "UI scale on Forever").
+screen (`docs/API_COMPATIBILITY.md`, "UI scale on Forever"). At a true 53.33%
+the owner found everything too small and chose a new Scale choice, **1080p
+Size** (71.11% on any screen): 1440p keeps 1080p's proportions and 1080 layout
+places, ModeUI's edges on whole pixels.
 
 ## Resuming on another machine
 

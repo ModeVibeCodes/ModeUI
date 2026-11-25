@@ -23,7 +23,10 @@ M.VERSION = 2
 M.defaults = { version = M.VERSION, autoLoot = false, fastLoot = false, hideErrors = false,
     manageCamera = false, cameraZoom = 4, manageScale = true, scaleMode = "auto", uiScale = 71 }
 M.ranges = { cameraZoom = { 1, 4 }, uiScale = { 40, 115 } }
-M.scaleModes = { auto = true, custom = true }
+-- Scale: Pixel Perfect (auto), 1080p Size (size1080: the interface 1080 UI
+-- units tall on any screen, 71.11%; owner, November 24, 2026, for 1440p) or
+-- Custom.
+M.scaleModes = { auto = true, size1080 = true, custom = true }
 -- Floor of the game's own UI scale setting; smaller scales are applied to
 -- UIParent directly, as Blizzard's pixel-perfect scale does.
 M.CVAR_SCALE_FLOOR = 0.65

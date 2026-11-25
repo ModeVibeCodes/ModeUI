@@ -37,6 +37,8 @@ world.run([==[
     assert(M:ScreenStatus():find('2560 x 1440 at UI scale 53.33%: pixel perfect', 1, true), '1440p, pixel perfect')
     UIParent:SetScale(0.64)
     assert(M:ScreenStatus():find('UI scale 64.00% (pixel perfect here is 53.33%)', 1, true), '1440p at 64%')
+    UIParent:SetScale(768 / 1080)
+    assert(M:ScreenStatus():find('UI scale 71.11%: the 1080p size', 1, true), "1440p at ModeUI's 1080p Size")
     PixelUtil = { GetPixelToUIUnitFactor = function() return 768 / 1080 end }
     GetPhysicalScreenSize = function() return 1920, 1080 end
     UIParent:SetScale(768 / 1080)

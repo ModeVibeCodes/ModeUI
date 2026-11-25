@@ -220,6 +220,18 @@ world.run([==[
     assert(O:SetOption('manageScale',false) and ModeUIDB.optimizationOriginals.useUiScale==nil and O.status.scale=='Game setting restored.')
     assert(addon.ReloadManager.requests.uiScale,'a reload finishes it')
     addon.ReloadManager:Clear('uiScale');secureCVars.useUiScale=nil
+    -- 1080p Size: 71.11% on any screen (1440p here), the interface 1080 units tall.
+    assert(O:SetOption('scaleMode','size1080') and O:SetOption('manageScale',true))
+    assert(math.abs(UIParent:GetScale()-768/1080)<1e-6 and O.status.scale=='UI scale 71.11%.','71.11% on 1440p')
+    assert(O:UsingSuggestedScale(),'the card follows the 1080p Size')
+    SlashCmdList.MODEUI();addon:SelectConfigPage('home')
+    local card=addon.configWindow.pages.home.homeScaleButton
+    assert(card.label:GetText()=='Using 71.11%' and not card:IsEnabled(),'Using 71.11%')
+    addon:SelectConfigPage('optimizations')
+    local scalePage=addon.configWindow.pages.optimizations
+    assert(#scalePage.scaleModeButtons==3 and scalePage.scaleModeButtons[2].label:GetText()=='1080p Size','Pixel Perfect, 1080p Size, Custom')
+    addon.configWindow:Hide()
+    assert(O:SetOption('scaleMode','auto') and math.abs(UIParent:GetScale()-768/1440)<1e-6,'back to Pixel Perfect')
 ]==], "optimizations")
 
 -- Originals survive a reload, so turning an optimization off later still restores.

@@ -77,7 +77,8 @@ end
 
 -- Home's Screen line: the screen, the UI scale and whether it's pixel
 -- perfect (a whole number of pixels per UI unit: 71.11% at 1080p, 53.33% at
--- 1440p, as ModeUI's UI scale sets it), and what that means for the bars.
+-- 1440p, as ModeUI's UI scale sets it) or ModeUI's 1080p Size (1080 UI units
+-- tall), and what that means for the bars.
 function M:ScreenStatus()
     local Plain = addon.Domain.Query.Plain
     local width, height = Plain(GetPhysicalScreenSize)
@@ -89,6 +90,10 @@ function M:ScreenStatus()
     local perfect = 768 * math.max(1, math.floor(height / 1080)) / height * 100
     if math.abs(per - math.floor(per + 0.5)) < 0.01 then
         return string.format(L["%d x %d at UI scale %.2f%%: pixel perfect. Sizes, spacing and 1px edges are exact."], width, height, scale)
+    end
+    if math.abs(height * px - 1080) < 1 then
+        return string.format(L["%d x %d at UI scale %.2f%%: the 1080p size. Bars sit on whole pixels, edges stay 1px and sizes round to the pixel."],
+            width, height, scale)
     end
     return string.format(L["%d x %d at UI scale %.2f%% (pixel perfect here is %.2f%%). Bars sit on whole pixels, edges stay 1px and sizes round to the pixel, a pixel off at most."],
         width, height, scale, perfect)

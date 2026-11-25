@@ -78,7 +78,22 @@ function M:SuggestedScale()
 end
 function M:RecommendedScale() return (self:SuggestedScale()) end
 
+-- 1080p Size (owner, November 24, 2026): the interface the size it is on a
+-- 1080p screen, on any screen: 1080 UI units tall, 71.11%. On 1080p and 4K
+-- that is pixel perfect too; on 1440p a UI unit is 1.33 pixels, and ModeUI's
+-- borders and bars still land on whole pixels (Kit.PixelSize, Style.SnapEdges).
+M.SIZE_1080 = 768 / 1080 * 100
+-- The scale the General page's card offers: 1080p Size while that's the
+-- choice, else Pixel Perfect. Returns the scale, the screen's height and the mode.
+function M:ScreenScale()
+    local scale, height = self:SuggestedScale()
+    if not scale then return end
+    if self.db.scaleMode == "size1080" then return self.SIZE_1080, height, "size1080" end
+    return scale, height, "auto"
+end
+
 function M:DesiredScale()
     if self.db.scaleMode == "auto" then return self:RecommendedScale() end
+    if self.db.scaleMode == "size1080" then return self:SuggestedScale() and self.SIZE_1080 or nil end
     return self.db.uiScale
 end

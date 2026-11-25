@@ -159,19 +159,21 @@ end
 -- The General page's quick action: Set UI Scale on, at the Pixel Perfect
 -- scale for this screen (switching Optimizations on if it was off).
 -- In use means on screen: the interface at that scale now, not only chosen.
+-- The scale is the card's (ScreenScale: Pixel Perfect, or 1080p Size).
 function M:UsingSuggestedScale()
-    local scale = self:SuggestedScale()
-    if not (self:On("manageScale") and self.db.scaleMode == "auto" and scale) then return false end
+    local scale, _, mode = self:ScreenScale()
+    if not (self:On("manageScale") and self.db.scaleMode == mode and scale) then return false end
     local actual = Read(UIParent.GetScale, UIParent)
     return Number(actual, 0.1, 2) and math.abs(actual - scale / 100) < 0.001 or false
 end
 function M:UseSuggestedScale()
-    local scale, height = self:SuggestedScale()
+    local scale, height, mode = self:ScreenScale()
     if not scale or not self:CanConfigure() then return false end
     if not self.enabled then addon:SetModuleEnabled(self.id, true) end
-    self.db.scaleMode = "auto"
+    self.db.scaleMode = mode
     if not self:SetOption("manageScale", true) then return false end
-    addon:PrintAction(string.format("UI scale %.2f%%, pixel perfect for %dp.", scale, height), "uiScale")
+    addon:PrintAction(string.format(mode == "size1080" and "UI scale %.2f%%, the 1080p size on %dp." or "UI scale %.2f%%, pixel perfect for %dp.",
+        scale, height), "uiScale")
     return true
 end
 
