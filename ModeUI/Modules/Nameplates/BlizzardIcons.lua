@@ -9,7 +9,8 @@ if not M then return end
 -- SoftTargetIconFriend to 0, remembering what they were (db.savedIconCVars),
 -- and puts them back when it is turned off or the module is. Loot and
 -- interact icons (SoftTargetIconInteract) stay. It changes a game setting, so
--- it happens only while the switch is on, and only outside combat.
+-- it happens only while the switch is on, and only outside combat (a change
+-- asked for in combat waits for combat to end).
 local Call, Public = addon.Domain.Query.Call, addon.IsPublic
 M.combatIconCVars = { "SoftTargetIconEnemy", "SoftTargetIconFriend" }
 
@@ -34,9 +35,11 @@ local function Set(name, value)
 end
 
 -- Applies the switch: on while the module runs, else the saved values return.
-function M:ApplyBlizzardIcons()
+-- In combat it waits for the end of combat (addon.Defer), then applies
+-- whatever the switch and the module say by then.
+local function Apply(self)
     local db = self.db
-    if not db or addon.InCombat() then return end
+    if not db then return end
     if db.hideBlizzardCombatIcon and self.active then
         if type(db.savedIconCVars) ~= "table" then
             local saved = {}
@@ -51,6 +54,10 @@ function M:ApplyBlizzardIcons()
         end
         db.savedIconCVars = nil
     end
+end
+function M:ApplyBlizzardIcons()
+    if not self.db then return end
+    addon.Defer:Run("nameplates:blizzardIcons", function() Apply(self) end)
 end
 
 function M:SetHideBlizzardCombatIcon(hidden)
