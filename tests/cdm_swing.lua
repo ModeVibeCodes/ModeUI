@@ -23,9 +23,11 @@ world.run([==[
     assert(frame and mover and addon.PositionManager:GetPosition('cooldownManagerSwingTimer').target == 'cooldownManagerResourceHealth', 'built, under the resource bars')
     assert(rangeChecks[0] == true and rangeChecks[2] == true, 'range checks on for the main hand and ranged')
     assert(frame:GetAlpha() == 0, 'nothing while not swinging')
+    assert(frame:GetScript('OnUpdate') == nil, 'no per-frame work while not swinging')
     -- A main-hand swing fills its lane over its duration.
     FireEvent('PLAYER_SWING', 2, 0)
     assert(frame:GetAlpha() == 1 and M:SwingLanes() == 1, 'shows while swinging; one lane')
+    assert(frame:GetScript('OnUpdate') ~= nil, 'updates each frame while a swing runs')
     -- The game's class colors come as { r, g, b }: the tint gets { 1, 2, 3 }.
     local UC = addon.Domain.UnitColor
     local playerClass = UC.PlayerClass
@@ -53,6 +55,12 @@ world.run([==[
     assert(frame.lanes[1].bar.value == 1, 'no duration: full')
     Advance(10)
     assert(frame:GetAlpha() == 0, 'fades once the swings stop')
+    assert(frame:GetScript('OnUpdate') == nil, 'and stops updating')
+    assert(M:SetSwingOption('show', false))
+    FireEvent('PLAYER_SWING', 2, 0)
+    assert(frame:GetAlpha() == 0 and frame:GetScript('OnUpdate') == nil, 'a swing with the bar off: no per-frame work')
+    Advance(10)
+    assert(M:SetSwingOption('show', true))
     -- Edit Mode: the stand-in with a sample.
     assert(addon:SetEditMode(true) and mover:IsShown() and M.swingSample and frame:GetAlpha() == 1, 'a sample in Edit Mode')
     assert(addon:SetEditMode(false) and not mover:IsShown() and not M.swingSample)

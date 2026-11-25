@@ -58,7 +58,16 @@ function M:BuildSwing()
     frame:Hide()
     self.swingFrame = frame
     self.swings = { main = {}, off = {} }
-    frame:SetScript("OnUpdate", function() M:TickSwing() end)
+end
+
+-- The per-frame update runs only while a swing is under way (and its linger);
+-- otherwise the lanes keep their last paint and nothing runs each frame.
+local function OnUpdate() M:TickSwing() end
+function M:SetSwingTicking(on)
+    local frame = self.swingFrame
+    if not frame or (self.swingTicking == true) == (on == true) then return end
+    self.swingTicking = on == true or nil
+    frame:SetScript("OnUpdate", on and OnUpdate or nil)
 end
 
 function M:SwingWidth(px)
@@ -95,6 +104,7 @@ function M:LayoutSwing()
     local width, lanes = self:SwingWidth(px), self:SwingLanes()
     mover:SetSize(width, self:SwingHeight(lanes, px))
     self:PlaceResourceFrame(frame, mover)
+    self.swingColor = self:SwingColor()
     self:LayoutSwingLanes(frame, width, px, lanes)
     self:TickSwing()
 end
@@ -154,16 +164,18 @@ function M:SwingColor()
     return class and { class.r, class.g, class.b } or style.barColor
 end
 
--- Each frame while shown: every lane's fill, its out-of-range tint and timer.
+-- Each frame while a swing runs, and on every change: every lane's fill, its
+-- out-of-range tint and timer. The color comes from the last layout, so a
+-- frame's paint makes no new tables.
+local NO_SWING = {}
 function M:TickSwing()
     local frame = self.swingFrame
     if not frame then return end
     local style, now, swings = self.db.swing, Now(), self.swings
-    local color = self:SwingColor()
-    local lanes = { swings.main, swings.off }
+    local color = self.swingColor or self:SwingColor()
     local live = false
     for index, box in ipairs(frame.lanes) do
-        local swing, value, left = lanes[index] or {}, 1, nil
+        local swing, value, left = (index == 1 and swings.main or swings.off) or NO_SWING, 1, nil
         if self.swingSample then value, left = SAMPLE[index].value, SAMPLE[index].left
         elseif swing.at and swing.duration then
             local elapsed = now - swing.at
@@ -180,6 +192,7 @@ function M:TickSwing()
     end
     local show = style.show and self.active and (live or self.swingSample)
     frame:SetAlpha(show and style.opacity / 100 or 0)
+    self:SetSwingTicking(style.show and self.active and live and not self.swingSample)
 end
 
 -- PLAYER_SWING: (swingDuration, swingType); the range update: (swingType, inRange, checksRange).

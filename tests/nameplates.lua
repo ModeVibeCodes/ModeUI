@@ -537,6 +537,15 @@ world.run([==[
     assert(cvars.SoftTargetIconEnemy == '0', 'applied again')
     assert(M:SetHideBlizzardCombatIcon(false) and cvars.SoftTargetIconEnemy == '1' and M.db.savedIconCVars == nil, 'turned off: restored')
     assert(not M:SetHideBlizzardCombatIcon('yes'), 'validated')
+    -- Applied in combat (a reload mid-fight): it waits for combat to end.
+    M.db.hideBlizzardCombatIcon = true
+    testCombat, testLockdown = true, true
+    M:ApplyBlizzardIcons()
+    assert(cvars.SoftTargetIconEnemy == '1' and M.db.savedIconCVars == nil, 'nothing changes in combat')
+    testCombat, testLockdown = false, false
+    FireEvent('PLAYER_REGEN_ENABLED')
+    assert(cvars.SoftTargetIconEnemy == '0' and M.db.savedIconCVars.SoftTargetIconEnemy == '1', 'applied when combat ends')
+    assert(M:SetHideBlizzardCombatIcon(false) and cvars.SoftTargetIconEnemy == '1', 'and restored')
     cvars.SoftTargetIconFriend = '0'
 
     -- Health and cast boxes share the frameThin edge.
