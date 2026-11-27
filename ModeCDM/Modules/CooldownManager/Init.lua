@@ -17,7 +17,7 @@ if not addon.Edition or addon.Edition.name ~= "Forever" then return end
 -- The five default bars (Defensive Cooldowns and four buff bars): see
 -- Presets.lua. Its part of the Mode-Default layout: Layouts.lua.
 -- Files: Init (this), ResourceInit, CastInit, Presets, Migrations, Driver,
--- Custom, Spells, Items, Racials, Blizzard, Tracking, Layout, Skin, Bars, Text, Glow,
+-- Custom, SpecSetups, Spells, Items, Racials, Blizzard, Tracking, Layout, Skin, Bars, Text, Glow,
 -- Visibility, Resources, ResourceSnap, ResourceGroup, ResourceMarks,
 -- ResourceUpdate, CastBar, SpellMenu, GlowPopout, TextPopout, Picker,
 -- Preview, PreviewDrag, ResourcePreview, CastPreview, SettingsHelpers,

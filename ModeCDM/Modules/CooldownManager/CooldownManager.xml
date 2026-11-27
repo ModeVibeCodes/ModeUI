@@ -12,6 +12,7 @@
     <Script file="Driver.lua"/>
     <Script file="BarStyleOptions.lua"/>
     <Script file="Custom.lua"/>
+    <Script file="SpecSetups.lua"/>
     <Script file="Spells.lua"/>
     <Script file="Items.lua"/>
     <Script file="Racials.lua"/>

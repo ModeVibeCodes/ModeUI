@@ -201,6 +201,7 @@ function M:DeleteCustomBar(id)
     candidate[id] = nil
     -- Racials on it go back to Utility.
     if candidate.racials == id then candidate.racials = "utility" end
+    M.ForgetSpecBar(candidate, id)
     if not Commit(self, candidate) then return false end
     local positions = addon.db and addon.db.positions
     if type(positions) == "table" then positions[self.ElementId(id)] = nil end

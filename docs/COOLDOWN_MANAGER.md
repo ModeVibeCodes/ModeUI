@@ -301,6 +301,31 @@ On screen the icons are still Blizzard's own frames: a viewer hidden in
 Blizzard's Edit Mode shows nothing until it's on. ModeUI never changes
 Blizzard's Edit Mode settings.
 
+### Each spec its own setup (November 26, 2026)
+
+The owner saw bars, spell order and places reset after a spec change: ModeCDM
+kept one setup for every spec, so a change made in one spec overwrote the
+other's. Now each specialization keeps its own (`SpecSetups.lua`; owner
+chose spells and positions):
+
+- **Per spec:** which spells sit on which bar (custom bars' spells, what
+  Essential and Utility took), each viewer's spell order, and where every
+  ModeCDM bar sits in Edit Mode (cooldown, buff and custom bars, Resource
+  Bars, Cast Bar, Swing Timer).
+- **Shared:** looks and sizes, the Bar Style, the list of custom bars, each
+  spell's own switches (hidden, glows, texts, Ready Sound) and the racials'
+  bar.
+- A spec you haven't played since starts from the setup you had; so does a
+  bar its setup doesn't name yet. Deleting a bar removes it from every
+  spec's setup.
+- The live setup is the current spec's and stays where it always was; on a
+  spec change it's put away and the new spec's comes back (checked on
+  entering the world, on `PLAYER_SPECIALIZATION_CHANGED` and
+  `ACTIVE_TALENT_GROUP_CHANGED`, and after combat, since nothing moves in
+  combat). A setup that no longer fits the bars keeps the live spells.
+- The spec comes from `C_SpecializationInfo.GetSpecialization` and
+  `GetSpecializationInfo` (Forever's own API docs list both).
+
 ## What stays Blizzard's
 
 - **Which spells are tracked, and their order** in each viewer: Blizzard's
@@ -357,7 +382,7 @@ custom bar (`custom1`, ...), `customBars` (each bar's ID, name, kind and
 spells in order) and `nextCustom`. Version 2 replaced Lines, First Icon and
 Center Lines with Growth and New Lines, and the ready glow's switch and style
 with the Off Cooldown glow's style (a flash, as before); the migration keeps
-your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), `order = { essential = { "102", "101", ... } }`, a viewer's spell order once you move one, `racials` (the bar racials show on: `"utility"` by default, `"essential"`, a custom Cooldown Bar's ID or `"none"`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Version 5 (the Mode design language) moves values still at a version 4 default to the new ones and keeps anything you chose: Rounded and Square borders become the Mode edge (Border Size and Border Color retire), the old sizes (42 by 34, 36 by 28, bars 220 by 22) become the new ones, the #040404 background at 75% Mono panel at 100%, Expressway Geist with no outline, gold procs Celadon (Blizzard becomes Border), green glows Celadon or Ivory, the cyan ready glow Ivory (Pixel becomes Mode Glow), text sizes and colors, Mode Gradient on Mode BG with the spark for bars, and the cyan bar color Class Color (a color you picked stays, as Custom). A spell's own glow keeps its style and takes the new color if it still had the old default. Resource bars: Mode Gradient on Mode BG at 60%, Geist, the hostile red for combo points, and Border Color retires. Versions 6 and 7 are under Resource Bars, version 8 under Cast Bar. Version 12 (owner, November 24, 2026): the Bar Style (`barStyle`, and a `follow` table on every bar, resource bar, the Cast Bar and the Swing Timer). A new profile follows it everywhere (a default bar keeps its own size). An existing profile's bars take its border (a border set to None stays off) and text; every other group follows only where the bar already matches it, so nothing else changes on screen. Layout profiles take it with their own sizes. Added without a version step: `alerts` on a bar (Ready Sounds), the show rules (`hideMounted`, `hideVehicle`, `onlyInGroup`, `onlyInInstance`, `dim`), the Cast Bar's `visibility` and `fadeOpacity`, `db.swing`, and the trinket entries `t13`/`t14`. Version 10 (owner, November 20, 2026): the Cast Bar filled in your class color by default (Bar Mode Color, Bar Color Class Color); a Bar Mode still at Dark, the old default, takes Color. Version 9 (owner, November 18, 2026) adds the five default bars a profile doesn't hold, after its own bars, with new IDs from `nextCustom`, while there's room (up to 15 custom bars); its own bars are never touched. A new profile starts at version 9 with them as `custom1` to `custom5` (`nextCustom` 6). Bad data stops startup; nothing is reset.
+your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the old default, becomes it, and the old #101010 color its color; Square and None stay). Version 4 moved the default sizes to 8 px wider than tall (a size you chose stays), set Utility's default place against Essential (the 1px gap is built in), and made glows per spell: each bar's glow styles become its Glow Defaults (None becomes Mode Glow), and a spell's glow switch keeps the look as its own. Custom bars' spells also take items (`i<ID>`, Cooldown Bars only). Added later without a version step (a profile saved before starts empty): `extras = { essential = {...}, utility = {...} }`, the spells those viewers took (cooldown IDs, `s<ID>`, `i<ID>`), `order = { essential = { "102", "101", ... } }`, a viewer's spell order once you move one, `racials` (the bar racials show on: `"utility"` by default, `"essential"`, a custom Cooldown Bar's ID or `"none"`), and a spell's own text looks, `spells[key].text = { count = { show, size, anchor, x, y, color, font, fontMedia, outline = "none" | "outline" | "thick", shadow } }`. Version 5 (the Mode design language) moves values still at a version 4 default to the new ones and keeps anything you chose: Rounded and Square borders become the Mode edge (Border Size and Border Color retire), the old sizes (42 by 34, 36 by 28, bars 220 by 22) become the new ones, the #040404 background at 75% Mono panel at 100%, Expressway Geist with no outline, gold procs Celadon (Blizzard becomes Border), green glows Celadon or Ivory, the cyan ready glow Ivory (Pixel becomes Mode Glow), text sizes and colors, Mode Gradient on Mode BG with the spark for bars, and the cyan bar color Class Color (a color you picked stays, as Custom). A spell's own glow keeps its style and takes the new color if it still had the old default. Resource bars: Mode Gradient on Mode BG at 60%, Geist, the hostile red for combo points, and Border Color retires. Versions 6 and 7 are under Resource Bars, version 8 under Cast Bar. Version 12 (owner, November 24, 2026): the Bar Style (`barStyle`, and a `follow` table on every bar, resource bar, the Cast Bar and the Swing Timer). A new profile follows it everywhere (a default bar keeps its own size). An existing profile's bars take its border (a border set to None stays off) and text; every other group follows only where the bar already matches it, so nothing else changes on screen. Layout profiles take it with their own sizes. Added without a version step: `alerts` on a bar (Ready Sounds), the show rules (`hideMounted`, `hideVehicle`, `onlyInGroup`, `onlyInInstance`, `dim`), the Cast Bar's `visibility` and `fadeOpacity`, `db.swing`, the trinket entries `t13`/`t14`, and each spec's setup: `activeSpec` (the spec ID the live setup belongs to) and `specs = { ["<spec ID>"] = { entries = { custom1 = {...} }, extras = {...}, order = {...}, positions = { [element ID] = place } } }` (Each spec its own setup). Version 10 (owner, November 20, 2026): the Cast Bar filled in your class color by default (Bar Mode Color, Bar Color Class Color); a Bar Mode still at Dark, the old default, takes Color. Version 9 (owner, November 18, 2026) adds the five default bars a profile doesn't hold, after its own bars, with new IDs from `nextCustom`, while there's room (up to 15 custom bars); its own bars are never touched. A new profile starts at version 9 with them as `custom1` to `custom5` (`nextCustom` 6). Bad data stops startup; nothing is reset.
 
 ## Files
 
@@ -368,6 +393,7 @@ your choices. Version 3 gave every bar the ModeUI border (a Rounded border, the 
 | `Migrations.lua` | `Initialize(db)`: version 1 to 9, validation |
 | `Driver.lua` | lifecycle, `/mcdm`, events, settings changes, per-spell switches, copy and reset, status |
 | `Custom.lua` | the bar list, custom bars, what Essential and Utility took, and which spell shows where |
+| `SpecSetups.lua` | each spec's own spells, order and places: put away and brought back on a spec change |
 | `Spells.lua`, `Items.lua`, `Racials.lua` | custom spells, items and racials on ModeUI's own icons |
 | `Blizzard.lua` | finding and hooking Blizzard's viewers and items |
 | `Tracking.lua` | what you track in Blizzard's Cooldown Manager for the preview and the + slot's list; the NOT TRACKED warning |
@@ -398,6 +424,30 @@ PositionManager (`gapPixels`, `SetSizeMatch`, `AllowTarget`, `RemoveTarget`), `a
 a standalone module's window), `PositionManager:SetLabel`, and the
 `standalone` module field (no sidebar entry or search results in ModeUI's
 window; Edit Mode's Open Module Settings calls `module:OpenSettings`).
+
+## In-game check: each spec its own setup (November 26, 2026)
+
+ModeCDM gains a file, so start the game fully (not only `/reload`).
+
+1. Two specs, two setups
+   - **Navigation:** log in on a character with two specs; type `/mcdm`.
+   - **Action:** in your first spec, drag a spell to a new place on
+     **Essential Cooldowns**, put a spell on **Defensive Cooldowns** with its
+     **+** slot, and move Essential with **Edit Mode**. Change spec in the
+     talent window; change that spec's Essential order and place the same
+     way. Change back to the first spec, then to the second again.
+   - **Required state:** ModeUI and ModeCDM enabled, the game's Cooldown
+     Manager on, out of combat.
+   - **Confirmation:** the first time in the second spec it starts with the
+     first spec's setup; after that, each spec shows its own order, its own
+     Defensive Cooldowns spells and its own Essential place every time you
+     switch; sizes and looks stay the same in both; no Lua errors.
+2. After a reload
+   - **Navigation:** type `/reload` in either spec.
+   - **Action:** look at the bars; change spec once more.
+   - **Required state:** as above.
+   - **Confirmation:** the bars come back in that spec's setup, and the
+     other spec's still comes back when you switch.
 
 ## In-game check: the rework (November 24, 2026)
 

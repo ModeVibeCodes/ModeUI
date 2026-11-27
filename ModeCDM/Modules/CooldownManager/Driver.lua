@@ -47,6 +47,8 @@ function M:OnEnable()
     self:SetCastEvents(true)
     self:SetSwingEvents(true)
     self:HookProcs()
+    -- Each spec's own spells and places (SpecSetups.lua).
+    self:SetSpecEvents(true)
     -- Blizzard's Cooldown Manager loads with the game, normally before
     -- ModeUI; if not yet, its viewers are hooked when it does.
     if not self:HookViewers() then
@@ -87,6 +89,7 @@ function M:OnDisable()
     self:SetResourceEvents(false)
     self:SetCastEvents(false)
     self:SetSwingEvents(false)
+    self:SetSpecEvents(false)
     if self.built then
         for _, id in ipairs(self:BarIds()) do self:UpdateAlpha(id) end
         self:RefreshGlows()
