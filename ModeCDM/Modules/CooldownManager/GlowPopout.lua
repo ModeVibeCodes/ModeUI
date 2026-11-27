@@ -52,15 +52,48 @@ local function Slider(popout, label, field, range, suffix)
     return row
 end
 
+-- Blizzard's color picker for a popout (glow or text): it opens in the
+-- DIALOG strata, under the popouts (TOOLTIP), where a click lands on them
+-- and the picker's own outside click cancels it. So while a popout uses it,
+-- it sits right below that popout, above both popouts; on hiding it goes
+-- back to Blizzard's strata, level and place for anyone else's colors.
+local function Restore(picker)
+    local saved = picker.modeSaved
+    if not saved then return end
+    picker.modeSaved = nil
+    picker:SetFrameStrata(saved.strata); picker:SetFrameLevel(saved.level)
+    picker:ClearAllPoints()
+    for _, point in ipairs(saved.points) do picker:SetPoint(unpack(point)) end
+end
+function M:OpenColorPicker(popout, info)
+    local picker = _G.ColorPickerFrame
+    if not picker or not picker.SetupColorPickerAndShow or addon.InCombat() then return end
+    if not picker.modeHooked then
+        picker.modeHooked = true
+        picker:HookScript("OnHide", Restore)
+    end
+    if not picker.modeSaved then
+        local saved = { strata = picker:GetFrameStrata(), level = picker:GetFrameLevel(), points = {} }
+        for i = 1, picker:GetNumPoints() do saved.points[i] = { picker:GetPoint(i) } end
+        picker.modeSaved = saved
+    end
+    picker:SetFrameStrata(popout:GetFrameStrata())
+    picker:SetFrameLevel(popout:GetFrameLevel() + 40)
+    picker:ClearAllPoints()
+    picker:SetPoint("TOPLEFT", popout, "BOTTOMLEFT", 0, -6)
+    picker:SetupColorPickerAndShow(info)
+    return true
+end
+
 -- The color swatch opens Blizzard's color picker; the color applies live.
 local function OpenPicker(popout)
     local picker = _G.ColorPickerFrame
     local look = Look(popout)
-    if not picker or not look or not picker.SetupColorPickerAndShow or addon.InCombat() then return end
+    if not picker or not look then return end
     local id, key, kind = Target(popout)
     local before = { look.color[1], look.color[2], look.color[3] }
     local apply = W.Throttle(function(rgb) M:SetSpellGlow(id, key, kind, "color", rgb); M:RefreshSpellMenu() end)
-    picker:SetupColorPickerAndShow({ r = before[1], g = before[2], b = before[3], hasOpacity = false,
+    M:OpenColorPicker(popout, { r = before[1], g = before[2], b = before[3], hasOpacity = false,
         swatchFunc = function() local r, g, b = picker:GetColorRGB(); apply({ r, g, b }) end,
         cancelFunc = function() M:SetSpellGlow(id, key, kind, "color", before); M:RefreshSpellMenu() end })
 end

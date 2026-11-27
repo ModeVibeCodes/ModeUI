@@ -61,11 +61,11 @@ end
 local function OpenColor(popout)
     local picker = _G.ColorPickerFrame
     local look = Look(popout)
-    if not picker or not look or not picker.SetupColorPickerAndShow or addon.InCombat() then return end
+    if not picker or not look then return end
     local id, key, part = Target(popout)
     local before = { look.color[1], look.color[2], look.color[3] }
     local apply = W.Throttle(function(rgb) M:SetSpellText(id, key, part, "color", rgb); M:RefreshSpellMenu() end)
-    picker:SetupColorPickerAndShow({ r = before[1], g = before[2], b = before[3], hasOpacity = false,
+    M:OpenColorPicker(popout, { r = before[1], g = before[2], b = before[3], hasOpacity = false,
         swatchFunc = function() local r, g, b = picker:GetColorRGB(); apply({ r, g, b }) end,
         cancelFunc = function() M:SetSpellText(id, key, part, "color", before); M:RefreshSpellMenu() end })
 end
