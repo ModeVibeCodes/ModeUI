@@ -76,7 +76,9 @@ function addon:BuildConfigNavigation(window)
         if copy then last = window.copyButton end
         window.editButton:ClearAllPoints()
         window.editButton:SetPoint("RIGHT", last, "LEFT", -8, 0)
-        for _, page in pairs(pages) do page:Refresh() end
+        -- Only the page on show (in the window or borrowed by Edit Mode's
+        -- panel); a hidden one refreshes when Select shows it again.
+        for _, page in pairs(pages) do if page:IsShown() then page:Refresh() end end
     end
 
     function self:EnsureConfigPage(id)

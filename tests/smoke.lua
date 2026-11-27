@@ -91,6 +91,17 @@ world.run([[
         assert(window.column:GetWidth()>=480+44 and window.pages[id].cardColumns==nil,'the column fits a page not yet rebuilt')
     end
     addon:SelectConfigPage('chat');assert(not window.pages.partyFrames.previewArea:IsShown() and not window.previewPane:IsShown(),'one preview at a time')
+    -- A page switch refreshes the page it shows, not every page built so far
+    -- (the settings freeze, November 27, 2026).
+    local refreshed={}
+    for id,page in pairs(window.pages) do local refresh=page.Refresh; page.Refresh=function(self) refreshed[id]=true; return refresh(self) end end
+    addon:SelectConfigPage('bags');assert(refreshed.bags and not refreshed.chat and not refreshed.partyFrames and not refreshed.unitFrames,'only the shown page refreshes')
+    -- Labels redraw until a late pass settles them; then a window opening skips them.
+    local label=window.crumbTitle;local sets=label.layoutWrites or 0
+    addon.Media:RedrawInterfaceText(true);assert(addon.Media.settled[label],'the late pass settles a label')
+    sets=label.layoutWrites or 0;addon.Media:RedrawInterfaceText();assert((label.layoutWrites or 0)==sets,'a settled label is left alone')
+    addon.Media:RefreshFonts();assert(not addon.Media.settled[label],'new fonts redraw every label again')
+    addon:SelectConfigPage('chat')
     -- Back: the rail's home, "All modules", the wordmark or Esc; Esc on the main panel closes.
     Click(window.railButtons.home);assert(window.selectedPage=='home' and window.sidebar:IsShown())
     addon:SelectConfigPage('chat');Click(window.backButton);assert(window.selectedPage=='home')

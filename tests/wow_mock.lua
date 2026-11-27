@@ -82,6 +82,8 @@ function methods:Hide()
     if self.scripts.OnHide then self.scripts.OnHide(self) end
 end
 function methods:IsShown() return self.shown end
+-- Shown, with every parent shown (as the game resolves it).
+function methods:IsVisible() local f = self; while f do if not f.shown then return false end f = f.parent end return true end
 function methods:SetShown(shown) if shown then self:Show() else self:Hide() end end
 function methods:SetSize(w, h)
     if self.resizeBounds then

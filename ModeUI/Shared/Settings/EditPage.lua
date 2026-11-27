@@ -68,6 +68,7 @@ function P:Return()
     local window = addon.configWindow
     if window and window.selectedPage == module.id then
         page:Show()
+        if window:IsShown() then page:Refresh() end
         if page.UpdatePreviewLayout then page:UpdatePreviewLayout() end
         page:Layout()
     end

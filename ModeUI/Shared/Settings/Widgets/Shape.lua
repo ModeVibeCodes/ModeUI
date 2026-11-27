@@ -76,15 +76,26 @@ function W.Box(frame, key, layer, sublevel, opts)
     return box
 end
 
+-- Re-lays every border in the game (Style.RelayoutEdges) when the pixel grid,
+-- the UI scale or a settings window's scale changed since the last call: a
+-- window opening again at the same scale only snaps its own borders.
+local lastGrid
 function W.RefreshPixelInsets()
-    Style.RelayoutEdges()
+    local grid = { Style.PixelFactor() or 0, UIParent:GetEffectiveScale(), addon.configWindow and addon.configWindow:GetEffectiveScale() or 0 }
+    for _, window in ipairs(addon.settingsWindows or {}) do grid[#grid + 1] = window:GetEffectiveScale() end
+    for i, value in ipairs(grid) do grid[i] = string.format("%.5f", value) end
+    grid = table.concat(grid, " ")
+    if grid ~= lastGrid then lastGrid = grid; Style.RelayoutEdges() end
     W.SnapSettings()
 end
 
 -- Snaps every border in the settings window to whole physical pixels on the
--- next frame (Style.QueueSnapEdges): call it whenever its controls move.
+-- next frame (Style.QueueSnapEdges): call it whenever its controls move. A
+-- page Edit Mode's panel borrowed (EditPage.lua) snaps under the panel.
 function W.SnapSettings()
     if addon.configWindow then Style.QueueSnapEdges(addon.configWindow) end
+    local borrowed = addon.EditPage and addon.EditPage.host
+    if borrowed then Style.QueueSnapEdges(borrowed) end
 end
 
 -- A small down chevron at the right of a dropdown button; muted, lit by hover.

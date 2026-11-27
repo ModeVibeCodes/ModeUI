@@ -4,6 +4,8 @@ local _, addon = ...
 local M = {
     gameFont = GameFontHighlight:GetFont(), chatFont = ChatFontNormal:GetFont(),
     regions = setmetatable({}, { __mode = "k" }),
+    -- Regions redrawn once their font had time to load (RedrawInterfaceText).
+    settled = setmetatable({}, { __mode = "k" }),
     fontListeners = setmetatable({}, { __mode = "k" }),
     borderListeners = setmetatable({}, { __mode = "k" }),
     borderRevision = 0,
@@ -198,14 +200,14 @@ end
 -- redrawn with the rest; `fallback` if the client refuses the file.
 function M:BindFixedFont(region, path, size, fallback)
     local spec = { path = path, size = size, flags = "", fixed = true, fallback = fallback }
-    self.regions[region] = spec
+    self.regions[region], self.settled[region] = spec, nil
     self:ApplyInterfaceFont(region, spec)
 end
 
 function M:BindInterfaceFont(region, fontObject, fontSize, scope, weight)
     local path, size, flags = fontObject:GetFont()
     local spec = { path = path, size = fontSize or size, flags = flags or "", scope = scope or self:FrameScope(region), weight = weight }
-    self.regions[region] = spec
+    self.regions[region], self.settled[region] = spec, nil
     self:ApplyInterfaceFont(region, spec)
 end
 function M:UnbindInterfaceFont(region) self.regions[region] = nil end
@@ -214,13 +216,18 @@ function M:UnbindInterfaceFont(region) self.regions[region] = nil end
 -- a game session; text set during that window stays blank until it is set
 -- again. Re-apply the font and re-set the text of every bound FontString.
 -- EditBoxes are skipped: re-setting their text would fire their handlers.
-function M:RedrawInterfaceText()
+-- settle: the late pass. Its regions are done (their font has loaded) and
+-- later redraws skip them, until they bind again or the fonts change: a
+-- redraw of every label in the game each time a window opened was a
+-- noticeable hitch (November 27, 2026).
+function M:RedrawInterfaceText(settle)
     if InCombat() then return false end
     for region, spec in pairs(self.regions) do
-        if region.GetObjectType and region:GetObjectType() == "FontString" then
+        if not self.settled[region] and region.GetObjectType and region:GetObjectType() == "FontString" then
             self:ApplyInterfaceFont(region, spec)
             local text = region:GetText()
             if type(text) == "string" and text ~= "" then region:SetText(""); region:SetText(text) end
+            if settle then self.settled[region] = true end
         end
     end
     return true
@@ -234,7 +241,7 @@ function M:ScheduleTextRedraw()
     local epoch = self.redrawEpoch
     for _, delay in ipairs({ 0.2, 1 }) do
         C_Timer.After(delay, function()
-            if self.redrawEpoch == epoch then self:RedrawInterfaceText() end
+            if self.redrawEpoch == epoch then self:RedrawInterfaceText(delay == 1) end
         end)
     end
 end
@@ -243,6 +250,8 @@ function M:RefreshFonts()
     self:AttachLibrary()
     if InCombat() then self:RefreshAfterCombat(); return end
     self.pending = false
+    -- A font file new to this session may load late: every label redraws again.
+    self.settled = setmetatable({}, { __mode = "k" })
     for region, spec in pairs(self.regions) do self:ApplyInterfaceFont(region, spec) end
     for owner, callback in pairs(self.fontListeners) do callback(owner) end
     if self.borderPending then self:RefreshBorders() end

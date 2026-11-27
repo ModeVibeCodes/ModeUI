@@ -95,34 +95,42 @@ function Style.RelayoutEdges()
     for edge in pairs(edges) do edge:Layout() end
 end
 
--- Snapping: a host can sit between physical pixels (a UI scale that isn't
--- pixel perfect puts most whole-unit offsets there), and its 1px rings then
--- land on half pixels: one side full, the other faint or gone, specks at the
--- cut corners. A snapped edge moves its holder onto the nearest whole pixels
--- of the host's rect. Only a surface that re-snaps as it moves uses it
--- (Style.SnapEdges: the settings window, on show, page layout, scroll and
--- drag); a host that moves by itself (a nameplate) keeps the plain anchor.
--- A host inside a frame the game forbids to addons (an aura icon on
--- Blizzard's containers) can't be walked up: GetParent errors, so the walk
--- stops there; such a host is never in the settings window.
-local function Under(frame, root)
+-- Snapping: a host between physical pixels (a UI scale that isn't pixel
+-- perfect) puts its 1px rings on half pixels; a snapped edge moves its holder
+-- onto the host rect's nearest whole pixels. Only a surface that re-snaps as
+-- it moves uses it (the settings window, popups); a nameplate keeps the plain
+-- anchor. The walk up from a host stops at a frame the game forbids to addons
+-- (an aura icon on Blizzard's containers); memo shares one pass's answers.
+local function Under(frame, root, memo)
+    local chain, result = {}, false
     for _ = 1, 40 do
-        if frame == root then return true end
-        if not (frame and frame.GetParent) then return false end
+        if frame == root then result = true; break end
+        if not (frame and frame.GetParent) then break end
+        if memo[frame] ~= nil then result = memo[frame]; break end
         if frame.IsForbidden then
             local okForbidden, forbidden = pcall(frame.IsForbidden, frame)
-            if not okForbidden or forbidden == true then return false end
+            if not okForbidden or forbidden == true then break end
         end
-        local ok, parent = pcall(frame.GetParent, frame)
-        if not ok then return false end
-        frame = parent
+        local ok, parent = pcall(frame.GetParent, frame); if not ok then break end
+        chain[#chain + 1], frame = frame, parent
     end
-    return false
+    for _, link in ipairs(chain) do memo[link] = result end
+    return result
 end
+-- Each edge remembers per root whether it is under it (edge.roots). A pass
+-- skips a hidden root (a closed popup) and hidden borders (pages not on view):
+-- showing one queues its own snap. (Until November 27, 2026 every pass walked
+-- and re-anchored every border in the game: seconds-long settings freezes.)
 function Style.SnapEdges(root)
+    if not root or (root.IsVisible and not root:IsVisible()) then return end
+    local memo = {}
     for edge in pairs(edges) do
-        if edge.snapRoot ~= root then edge.snapRoot, edge.snap = root, Under(edge.host, root) end
-        if edge.snap then edge:Place() end
+        local roots = edge.roots or setmetatable({}, { __mode = "k" }); edge.roots = roots
+        if roots[root] == nil then
+            roots[root] = Under(edge.host, root, memo)
+            if roots[root] or edge.snap == nil then edge.snap = roots[root] end
+        end
+        if roots[root] and edge.holder:IsVisible() then edge:Place() end
     end
 end
 -- Snaps once on the next frame, after the client has laid the frames out.
@@ -211,16 +219,22 @@ end
 -- whole physical pixels. Holder offsets are in physical pixels (PixelGrid).
 function Edge:Place()
     local holder, host, N = self.holder, self.host, addon.IsNumber
-    holder:ClearAllPoints()
     local factor = self.snap and Style.PixelFactor()
     local scale = factor and host:GetEffectiveScale()
     local l, b, w, h
     if N(scale, 0.01, 100) then l, b, w, h = host:GetLeft(), host:GetBottom(), host:GetWidth(), host:GetHeight() end
-    if not (N(l) and N(b) and N(w) and N(h)) then holder:SetAllPoints(host); return end
+    if not (N(l) and N(b) and N(w) and N(h)) then self.placed = nil; holder:ClearAllPoints(); holder:SetAllPoints(host); return end
     local k = scale / factor
     local function Off(v) v = v * k; return math.floor(v + 0.5) - v end
-    holder:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", Off(l), Off(b))
-    holder:SetPoint("TOPRIGHT", host, "TOPRIGHT", Off(l + w), Off(b + h))
+    local x1, y1, x2, y2 = Off(l), Off(b), Off(l + w), Off(b + h)
+    -- Unchanged offsets: the anchors hold, and re-anchoring would only make
+    -- the client lay the border out again.
+    local placed = string.format("%.4f %.4f %.4f %.4f", x1, y1, x2, y2)
+    if self.placed == placed then return end
+    self.placed = placed
+    holder:ClearAllPoints()
+    holder:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", x1, y1)
+    holder:SetPoint("TOPRIGHT", host, "TOPRIGHT", x2, y2)
 end
 
 -- Places every ring on whole physical pixels. Returns how far the band and

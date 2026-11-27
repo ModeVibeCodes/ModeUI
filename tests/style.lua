@@ -178,6 +178,23 @@ world.run([[
     assert(math.abs(low[4]) > 1e-6, "the fixture really sits between pixels")
     assert(plain.holder.points[1][1] == "TOPLEFT" and plain.holder.points[1][4] == 0, "an edge outside the root keeps the plain anchor")
     snapped:Layout(); assert(snapped.holder.points[1][1] == "BOTTOMLEFT", "a re-layout keeps the snap")
+    -- The settings freeze (November 27, 2026): a pass leaves unmoved borders'
+    -- anchors alone, skips hidden borders and closed popups, and a popup's own
+    -- pass never costs the window its remembered borders.
+    local writes = snapped.holder.layoutWrites
+    Style.SnapEdges(root); assert(snapped.holder.layoutWrites == writes, "an unmoved border keeps its anchors")
+    control.centerX = 301.1; Style.SnapEdges(root)
+    assert(snapped.holder.layoutWrites > writes, "a moved border snaps again")
+    control:Hide(); control.centerX = 302.3; writes = snapped.holder.layoutWrites
+    Style.SnapEdges(root); assert(snapped.holder.layoutWrites == writes, "a hidden border waits")
+    control:Show(); Style.SnapEdges(root); assert(snapped.holder.layoutWrites > writes, "and snaps once it shows")
+    local popup = CreateFrame("Frame", nil, UIParent); popup:Hide()
+    local item = CreateFrame("Button", nil, popup); item:SetSize(100, 24); item.centerX, item.centerY = 50.5, 40.2
+    local itemEdge = Style.Edge(item, "control")
+    Style.SnapEdges(popup); assert(itemEdge.roots == nil, "a closed popup's pass does nothing")
+    popup:Show(); Style.SnapEdges(popup)
+    assert(itemEdge.snap == true and itemEdge.holder.points[1][1] == "BOTTOMLEFT", "an open popup snaps its borders")
+    assert(snapped.snap == true and snapped.roots[root] == true and snapped.roots[popup] == false, "each root's answer is remembered")
     PixelUtil = oldPixelUtil
     -- The roles' defaults: Mode-Border in its own metal (Mode-Empty on the
     -- empty role). The reach of every role is what it was: the heavy roles'

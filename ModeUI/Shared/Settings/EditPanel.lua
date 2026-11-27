@@ -306,7 +306,8 @@ function addon:CreateEditPanel(strip, controls)
         host:SetShown(view == "settings"); place:SetShown(view == "place")
         none:SetShown(page == nil)
         none:SetText(element and element.module.standalone and "Open Page opens this module's own settings window." or "")
-        if page and view == "settings" and not page:IsShown() then page:Show(); page:Layout()
+        -- A hidden page isn't refreshed (Navigation.lua): it catches up on showing.
+        if page and view == "settings" and not page:IsShown() then page:Show(); page:Refresh(); page:Layout()
         elseif page and view ~= "settings" then page:Hide() end
         placeState.Refresh()
     end
