@@ -31,10 +31,18 @@ function Kit.PaintFlipbookGlow(frame, host, style, color, px)
         local texture = frame:CreateTexture(nil, "OVERLAY", nil, 2)
         frame.flipbook = texture
         frame.parts[#frame.parts + 1] = texture
-        if frame.CreateAnimationGroup then
-            local group = frame:CreateAnimationGroup()
+        -- The group lives on the texture, as in Blizzard's own templates
+        -- (ActionBarButtonAssistedCombatHighlightTemplate): a FlipBook steps
+        -- its target's texture coordinates, and one on the frame has no
+        -- texture to step, so the whole sheet of frames showed as a grid.
+        if texture.CreateAnimationGroup then
+            local group = texture:CreateAnimationGroup()
             group:SetLooping("REPEAT")
             frame.flipGroup, frame.flipAnim = group, group:CreateAnimation("FlipBook")
+            -- Hiding stops an animation; showing again picks the loop back up.
+            frame:HookScript("OnShow", function(self)
+                if self.flipbook:IsShown() and not self.flipGroup:IsPlaying() then self.flipGroup:Play() end
+            end)
         end
     end
     local texture, anim = frame.flipbook, frame.flipAnim

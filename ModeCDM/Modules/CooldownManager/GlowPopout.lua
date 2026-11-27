@@ -79,7 +79,7 @@ function M:GlowPopout()
     popout.close:SetScript("OnClick", function() popout:Hide() end)
     -- On or off for this spell.
     popout.onBox = W.Button(popout, "", 24, 24, "checkbox")
-    popout.onText = W.Label(popout, L["Glow On"], nil, 0, 0, INNER - 34, T.text)
+    popout.onText = W.Label(popout, L["Glow On"], nil, 0, 0, INNER - popout.onBox:GetWidth() - 8, T.text)
     popout.onBox:SetScript("OnClick", function()
         local id, key, kind = Target(popout)
         if id then M:SetSpellSwitch(id, key, kind, not M:SpellSwitch(id, key, kind)); M:RefreshSpellMenu() end
@@ -150,7 +150,8 @@ function M:RefreshGlowPopout()
     popout.pulseBox:SetSelected(look.pulse)
     local y = -54
     popout.onBox:ClearAllPoints(); popout.onBox:SetPoint("TOPLEFT", PAD, y)
-    popout.onText:ClearAllPoints(); popout.onText:SetPoint("TOPLEFT", PAD + 34, y - 4)
+    -- Right of the switch (W.Switch widens the box to fit).
+    popout.onText:ClearAllPoints(); popout.onText:SetPoint("LEFT", popout.onBox, "RIGHT", 8, 0)
     y = y - 34
     local shown = { [popout.styleRow] = true, [popout.colorRow] = true,
         [popout.pulseRow] = look.style == "mode" or look.style == "border",

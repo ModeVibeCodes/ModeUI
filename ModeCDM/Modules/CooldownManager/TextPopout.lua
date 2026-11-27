@@ -52,7 +52,7 @@ end
 -- A checkbox line for a true-or-false field.
 local function Check(popout, label, field)
     local box = W.Button(popout, "", 24, 24, "checkbox")
-    box.text = W.Label(popout, label, nil, 0, 0, INNER - 34, T.text)
+    box.text = W.Label(popout, label, nil, 0, 0, INNER - box:GetWidth() - 8, T.text)
     box:SetScript("OnClick", function() local look = Look(popout); if look then Set(popout, field, not look[field]) end end)
     box.field = field
     return box
@@ -168,7 +168,8 @@ function M:RefreshTextPopout()
     for _, box in ipairs({ popout.showBox, popout.shadowBox }) do
         box:SetSelected(look[box.field] == true)
         box:ClearAllPoints(); box:SetPoint("TOPLEFT", PAD, y)
-        box.text:ClearAllPoints(); box.text:SetPoint("TOPLEFT", PAD + 34, y - 4)
+        -- Right of the switch (W.Switch widens the box to fit).
+        box.text:ClearAllPoints(); box.text:SetPoint("LEFT", box, "RIGHT", 8, 0)
         y = y - 30
     end
     y = y - 4

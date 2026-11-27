@@ -46,7 +46,9 @@ end
 local function Check(menu, y, label, kind)
     local box = W.Button(menu, "", 24, 24, "checkbox")
     box:SetPoint("TOPLEFT", PAD, y)
-    box.text = W.Label(menu, label, nil, PAD + 34, y - 4, INNER - 34, T.text)
+    -- The label sits right of the switch (W.Switch widens the box to fit).
+    box.text = W.Label(menu, label, nil, 0, 0, INNER - box:GetWidth() - 8, T.text)
+    box.text:ClearAllPoints(); box.text:SetPoint("LEFT", box, "RIGHT", 8, 0)
     box:SetScript("OnClick", function()
         local bar = M:PreviewBar()
         M:SetButtonGlow(bar, menu.index, kind, not M.GlowOn(M.db[bar], menu.index, kind))

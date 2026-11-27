@@ -20,12 +20,17 @@ if not M then return end
 -- (Tracking.lua).
 local W, T, L = addon.ConfigWidgets, addon.InterfaceTheme, addon.L
 local Cooldowns = addon.Domain.Cooldowns
-local WIDTH, PAD, LINE = 304, 14, 28
+local WIDTH, PAD, LINE = 320, 14, 28
 local INNER = WIDTH - 2 * PAD
+-- The action buttons: two short ones and a long one per row, the long one
+-- wide enough for Remove from Bar.
+local SHORT, GAP = 76, 4
+local LONG = INNER - 2 * SHORT - 2 * GAP
 
 local function Check(menu, label, kind)
     local box = W.Button(menu, "", 24, 24, "checkbox")
-    box.text = W.Label(menu, label, nil, 0, 0, INNER - 70, T.text)
+    -- The label sits right of the switch (W.Switch widens the box to fit).
+    box.text = W.Label(menu, label, nil, 0, 0, INNER - box:GetWidth() - 48, T.text)
     box:SetScript("OnClick", function()
         local id = M:PreviewViewer()
         M:SetSpellSwitch(id, menu.key, kind, not M:SpellSwitch(id, menu.key, kind))
@@ -86,20 +91,20 @@ function M:SpellMenu()
     menu.textSection = W.Label(menu, L["Text"], nil, PAD, 0, INNER, T.muted)
     menu.textRows = {}
     for _, part in ipairs(M.textParts) do menu.textRows[part] = TextRow(menu, part) end
-    menu.copy = Action(menu, L["Copy"], 84, function(id, key) M:CopySpell(id, key) end)
-    menu.paste = Action(menu, L["Paste"], 84, function(id, key) M:PasteSpell(id, key) end)
-    menu.apply = Action(menu, L["Apply to Bar"], INNER - 176, function(id, key) M:ApplySpellToViewer(id, key) end)
-    menu.earlier = Action(menu, L["Earlier"], 84, function(id, key) M:MoveEntry(id, key, -1) end)
-    menu.later = Action(menu, L["Later"], 84, function(id, key) M:MoveEntry(id, key, 1) end)
-    menu.remove = Action(menu, L["Remove from Bar"], INNER - 176, function(id, key) M:RemoveEntry(id, key); menu:Hide() end)
+    menu.copy = Action(menu, L["Copy"], SHORT, function(id, key) M:CopySpell(id, key) end)
+    menu.paste = Action(menu, L["Paste"], SHORT, function(id, key) M:PasteSpell(id, key) end)
+    menu.apply = Action(menu, L["Apply to Bar"], LONG, function(id, key) M:ApplySpellToViewer(id, key) end)
+    menu.earlier = Action(menu, L["Earlier"], SHORT, function(id, key) M:MoveEntry(id, key, -1) end)
+    menu.later = Action(menu, L["Later"], SHORT, function(id, key) M:MoveEntry(id, key, 1) end)
+    menu.remove = Action(menu, L["Remove from Bar"], LONG, function(id, key) M:RemoveEntry(id, key); menu:Hide() end)
     -- Own Bar; alerts: Blizzard's for the spells it tracks, a Ready Sound of
     -- ModeUI's own for the rest (Alerts.lua).
-    menu.ownBar = Action(menu, L["Own Bar"], 100, function(id, key)
+    menu.ownBar = Action(menu, L["Own Bar"], SHORT, function(id, key)
         local new = M:AddSingleBar(id, key)
         if new then menu:Hide(); M:SelectBar(new) end
     end)
-    menu.alerts = Action(menu, L["Alerts in Tracked Spells"], INNER - 104, function() menu:Hide(); M:OpenCooldownSettings() end)
-    menu.sound = W.Select(menu, INNER - 104, function() return M:AlertSoundChoices() end, function()
+    menu.alerts = Action(menu, L["Alerts in Tracked Spells"], INNER - SHORT - GAP, function() menu:Hide(); M:OpenCooldownSettings() end)
+    menu.sound = W.Select(menu, INNER - SHORT - GAP, function() return M:AlertSoundChoices() end, function()
         local value = menu.key and M:SpellAlert(M:PreviewViewer(), menu.key) or "none"
         for _, choice in ipairs(M:AlertSoundChoices()) do if choice.id == value then return value, choice.label end end
         return value, tostring(value)
@@ -174,7 +179,7 @@ function M:RefreshSpellMenu()
         box:SetShown(shown); box.text:SetShown(shown)
         if not shown then return end
         box:ClearAllPoints(); box:SetPoint("TOPLEFT", PAD, y)
-        box.text:ClearAllPoints(); box.text:SetPoint("TOPLEFT", PAD + 34, y - 4)
+        box.text:ClearAllPoints(); box.text:SetPoint("LEFT", box, "RIGHT", 8, 0)
         y = y - LINE
     end
     Line(menu.showBox, true)
@@ -211,7 +216,7 @@ function M:RefreshSpellMenu()
         local x = PAD
         for _, button in ipairs(buttons) do
             button:SetShown(shown)
-            if shown then button:ClearAllPoints(); button:SetPoint("TOPLEFT", x, y - 4); x = x + button:GetWidth() + 4 end
+            if shown then button:ClearAllPoints(); button:SetPoint("TOPLEFT", x, y - 4); x = x + button:GetWidth() + GAP end
         end
         if shown then y = y - 34 end
     end
@@ -228,7 +233,7 @@ function M:RefreshSpellMenu()
     menu.ownBar:SetEnabled(self:CanOwnBar(id, menu.key) and self:CanConfigure())
     menu.alerts:SetShown(not own); menu.sound:SetShown(own)
     local alert = own and menu.sound or menu.alerts
-    alert:ClearAllPoints(); alert:SetPoint("TOPLEFT", menu.ownBar, "TOPRIGHT", 4, 0)
+    alert:ClearAllPoints(); alert:SetPoint("TOPLEFT", menu.ownBar, "TOPRIGHT", GAP, 0)
     menu.alerts:SetEnabled(self:CanOpenCooldownSettings() and self.caps.cdmAlerts)
     if menu.sound.Refresh then menu.sound:Refresh() end
     y = y - 34

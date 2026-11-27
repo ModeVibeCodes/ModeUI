@@ -191,6 +191,25 @@ world.run([==[
     assert(M:SetOption('essential', 'edgeStyle', 'obsidian') and M:SetOption('essential', 'edgeSize', 1) and ring.styleId == 'obsidian' and ring.rim == 1)
     assert(M:SetSpellGlow('essential', '102', 'proc', 'style', 'blizzard') and not ring.holder:IsShown())
     assert(set.proc.flipbook:IsShown() and set.proc.flipbook.atlas == 'UI-HUD-ActionBar-Proc-Loop-Flipbook', "Blizzard: the game's proc loop art")
+    do -- The FlipBook steps the art's own texture (its group lives on it), and plays again on show.
+        local methods = getmetatable(UIParent).__index
+        function methods:CreateAnimationGroup()
+            local group = { owner = self }
+            function group:CreateAnimation() return setmetatable({}, { __index = function() return function() end end }) end
+            function group:SetLooping() end
+            function group:Play() self.playing = true end
+            function group:Stop() self.playing = false end
+            function group:IsPlaying() return self.playing == true end
+            return group
+        end
+        local host = CreateFrame('Frame', nil, UIParent); host:SetSize(40, 32)
+        local glow = Kit.SlotGlow(host)
+        Kit.PaintSlotGlow(glow, host, 'blizzard', { 1, 0, 0 }, false, 1, { width = 40, height = 32 })
+        assert(glow.flipGroup.owner == glow.flipbook and glow.flipGroup:IsPlaying(), 'the flipbook animates its texture')
+        glow.flipGroup:Stop(); glow:Show()
+        assert(glow.flipGroup:IsPlaying(), 'shown again: the loop plays')
+        methods.CreateAnimationGroup = nil
+    end
     assert(M:SetSpellSwitch('essential', '102', 'active', true) and set.active and not set.active:IsShown(), 'proc wins over active')
     ActionButtonSpellAlertManager:HideAlert(items[2]); assert(set.active:IsShown() and not set.proc:IsShown(), 'active glow while the effect is up')
     assert(M:SetSpellGlow('essential', '102', 'active', 'style', 'pixel') and set.active.pixels and set.active.pixels[1]:IsShown(), 'Pixel: marching lines')
