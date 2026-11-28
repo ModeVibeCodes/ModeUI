@@ -14,10 +14,10 @@ if not M then return end
 -- The live setup stays where it always was (db.customBars[i].entries,
 -- db.extras, db.order and ModeUI's saved positions), so the rest of the
 -- module reads it as before; it is the setup of db.activeSpec. When the spec
--- changes, the live setup is put away under db.specs[<old spec ID>] and the
+-- changes, the live setup is put away under db.specs[<old spec key>] and the
 -- new spec's comes back from there. A spec with nothing put away yet starts
 -- from the live setup (so does a bar a spec's setup doesn't name yet).
---   db.specs = { ["62"] = { entries = { custom1 = { "1234" } },
+--   db.specs = { ["14882"] = { entries = { custom1 = { "1234" } },
 --       extras = { essential = {}, utility = {} }, order = { essential = { "1234" } },
 --       positions = { cooldownManagerEssential = { target, placement, x, y, ... } } } }
 local Events, Number = addon.Events, addon.IsNumber
@@ -61,14 +61,21 @@ function M.ValidateSpecSetups(db)
     assert(count <= MAX_SPECS, "Too many cooldown manager spec setups")
 end
 
--- The spec you play now (its ID), or nil while the game can't tell.
+-- The spec you play now, or nil while the game can't tell: its ID times ten
+-- plus its spec group (1488 in group 2 is 14882). Forever gives each class
+-- one spec ID, so what you switch between there are the two spec groups
+-- (owner, November 27, 2026: the setups never swapped, both specs were
+-- 1488); C_SpecializationInfo.GetActiveSpecGroup, as AyijeUI reads it.
 function M.CurrentSpec()
     local info = C_SpecializationInfo
     local index = info and info.GetSpecialization and select(2, pcall(info.GetSpecialization))
     if not Number(index, 1, 10) then return nil end
     local read = GetSpecializationInfo or (info and info.GetSpecializationInfo)
     local ok, id = pcall(read, index)
-    if ok and Number(id, 1) and id == math.floor(id) then return id end
+    if not ok or not Number(id, 1) or id ~= math.floor(id) then return nil end
+    local group = info.GetActiveSpecGroup and select(2, pcall(info.GetActiveSpecGroup))
+    if not Number(group, 1, 9) or group ~= math.floor(group) then group = 1 end
+    return id * 10 + group
 end
 
 -- Every Edit Mode element of this module, by ID.
@@ -148,7 +155,12 @@ function M:SyncSpec()
     local db = self.db
     if not spec or db.activeSpec == spec then return false end
     local old, setup = db.activeSpec, db.specs[tostring(spec)]
-    -- The first spec seen keeps the live setup as its own.
+    -- The first spec seen keeps the live setup as its own; so does the group
+    -- you're in when the spec was saved without its group (before November
+    -- 27, 2026), and its put-away setup under the bare ID goes.
+    if old and not setup and old == math.floor(spec / 10) then
+        db.specs[tostring(old)] = nil; old = nil
+    end
     if not old and not setup then db.activeSpec = spec; return false end
     local candidate = Copy(db)
     if old then candidate.specs[tostring(old)] = self:CaptureSetup(db) end
