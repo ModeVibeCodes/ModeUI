@@ -207,7 +207,15 @@ function methods:GetStringWidth()
     local _, size = self:GetFont()
     return #(self.text or ""):gsub("[\128-\191]", "") * size * 0.6
 end
-function methods:GetStringHeight() local _, size = self:GetFont(); return size end
+-- Wrapping text is as many lines tall as its width needs.
+function methods:GetStringHeight()
+    local _, size = self:GetFont()
+    local width = self.width
+    if self.wordWrap ~= false and type(width) == "number" and width > 0 then
+        return size * math.max(1, math.ceil(self:GetStringWidth() / width))
+    end
+    return size
+end
 function methods:SetWordWrap(value) self.wordWrap = value end
 function methods:SetDesaturated(value) assert(type(value) == "boolean"); self.desaturated = value end
 function methods:SetBackdrop(info)

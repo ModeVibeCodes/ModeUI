@@ -104,11 +104,21 @@ function W.PageControls(page, ROW_HEIGHT)
             local minimum = math.max(160, options and options.minimumCellWidth or 180)
             local columns = math.max(1, math.min(options and options.maxColumns or 3, #items, math.floor(width / minimum)))
             local cellWidth = width / columns
-            self:SetHeight(math.ceil(#items / columns) * ROW_HEIGHT)
+            -- A line grows for a label that wraps past two lines.
+            local lines = {}
             for i, cell in ipairs(cells) do
-                cell.frame:ClearAllPoints(); cell.frame:SetSize(cellWidth, ROW_HEIGHT)
-                cell.frame:SetPoint("TOPLEFT", ((i-1)%columns)*cellWidth, -math.floor((i-1)/columns)*ROW_HEIGHT)
                 cell.label:SetWidth(cellWidth-78)
+                local line, height = math.floor((i-1)/columns) + 1, cell.label:GetStringHeight()
+                if (issecretvalue and issecretvalue(height)) or type(height) ~= "number" or height ~= height or height == math.huge then height = 0 end
+                lines[line] = math.max(lines[line] or ROW_HEIGHT, math.ceil(height) + 6)
+            end
+            local tops, y = {}, 0
+            for line, height in ipairs(lines) do tops[line] = y; y = y + height end
+            self:SetHeight(y)
+            for i, cell in ipairs(cells) do
+                local line = math.floor((i-1)/columns) + 1
+                cell.frame:ClearAllPoints(); cell.frame:SetSize(cellWidth, lines[line])
+                cell.frame:SetPoint("TOPLEFT", ((i-1)%columns)*cellWidth, -tops[line])
             end
         end
         self.toggleGrids = self.toggleGrids or {}; self.toggleGrids[#self.toggleGrids+1] = cells

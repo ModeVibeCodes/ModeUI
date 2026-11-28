@@ -99,8 +99,10 @@ function W.Page(parent, minimumWidth)
                 row.settingsFooterRestore();row.settingsFooterMoved=false
             end
             local rowWidth=footer and math.max(1,content:GetWidth()-self.contentInset*2) or innerWidth or width
-            row:SetWidth(rowWidth)
-            if row.layoutChildren then row:layoutChildren(rowWidth) end
+            local show = Visible(row)
+            -- Rows on show fit their room as on tiles (PageGrid.lua): text wraps, a side label stacks.
+            if footer or not show then row:SetWidth(rowWidth); if row.layoutChildren then row:layoutChildren(rowWidth) end
+            else W.FitSettingsRow(row,rowWidth) end
             if footer then
                 row.settingsFooterMoved=true
                 local note=row.settingsFooterNote
@@ -118,7 +120,6 @@ function W.Page(parent, minimumWidth)
                 row:SetHeight(math.max(14,height)+(titled and 20 or 0)+12)
                 if row.divider then row.divider:Hide() end
             end
-            local show = Visible(row)
             row:SetShown(show)
             return show
         end
@@ -219,6 +220,8 @@ function W.Page(parent, minimumWidth)
             local ok, message = pcall(refresh)
             if not ok then geterrorhandler()(message) end
         end
+        -- Wrapped text a refresher changed takes its new height.
+        if self:IsShown() and W.SettingsTextChanged(self) then self:Layout() end
     end
     function page:FooterNote(note,inlineWhen)
         local row=note:GetParent().row
@@ -324,6 +327,7 @@ function W.Page(parent, minimumWidth)
         else
             controls:SetPoint("TOPLEFT", 184, -ROW_INSET)
             controls:SetPoint("BOTTOMRIGHT", -14, ROW_INSET)
+            row.sideLabel = not plain
         end
         self.rows[#self.rows + 1] = row
         row.section = self.activeSection

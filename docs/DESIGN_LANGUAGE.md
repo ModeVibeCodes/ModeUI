@@ -576,8 +576,13 @@ A hybrid window, its palette rebuilt from the tokens (`Style.OnThemeApplied`):
   dropdown in the same place. Segments never stack vertically, wrap, or push
   the controls below them. For more than four options or long labels, use a
   dropdown (`W.Select`) from the start.
-- **Text in tiles:** notes wrap to the full width of their tile; row labels are
-  sized by their row.
+- **Text in tiles:** notes wrap to the full width of their tile, and their row
+  grows to the last line, also when a refresh changes the text after the page
+  was laid out; row labels are sized by their row. A row that keeps its label
+  beside its control (a note or picker with its own height) stacks like a
+  standard row, label above and control below, on a tile too narrow for both
+  (November 28, 2026). A toggle grid line grows for a label past two lines.
+  The same fitting applies in the split column (one card per row).
 - **Nothing past its tile.** Dropdowns fill their row or column cell. Column
   cells wrap onto another line when a line can't give each one 120px. A
   fixed-width control or label shrinks to its room. Things to pick several of

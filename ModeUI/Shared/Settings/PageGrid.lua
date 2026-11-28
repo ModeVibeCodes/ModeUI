@@ -85,6 +85,59 @@ local function FitWidth(region, width)
     region.gridFitWidth = width
 end
 
+-- A row whose label sits beside its control (page:Row with its own height: a
+-- note, a picker) on a tile too narrow for both stacks like a standard row:
+-- label above, control below across the row. Too narrow: the room beside the
+-- label is under SIDE_MIN, or under what the host's controls need (their
+-- natural widths; text its own width, at most SIDE_TEXT, as it wraps). A wider layout puts them
+-- back. Rows whose module re-anchored the host (full-width notes, grids) are
+-- left alone.
+local SIDE_X, SIDE_RIGHT, SIDE_MIN, SIDE_TEXT, STACK_LABEL, ROW_INSET = 184, 14, 120, 160, 22, 4
+local function Needs(host)
+    local need = 0
+    for _, region in ipairs({ host:GetRegions() }) do
+        if region:IsShown() and region:GetObjectType() == "FontString" and region:GetNumPoints() == 1 then
+            local left = LeftOf(region, host, 0)
+            local used = math.min(Natural(region), SIDE_TEXT, Measured(region:GetStringWidth(), SIDE_TEXT))
+            if left then need = math.max(need, left + used) end
+        end
+    end
+    for _, child in ipairs({ host:GetChildren() }) do
+        if child:IsShown() and child:GetNumPoints() == 1 then
+            local left = LeftOf(child, host, 0)
+            if left then need = math.max(need, left + Natural(child)) end
+        end
+    end
+    return need
+end
+local function Restack(row, width)
+    local host, label = row.settingsHost, row.settingsLabel
+    if not (row.sideLabel and host and label) then return end
+    local room = width - SIDE_X - SIDE_RIGHT
+    local stack = room < SIDE_MIN or room < Needs(host)
+    if not row.gridStacked then
+        local point, relative, _, x = host:GetPoint(1)
+        if not stack or host:GetNumPoints() ~= 2 or point ~= "TOPLEFT" or (relative ~= nil and relative ~= row) or x ~= SIDE_X then return end
+    end
+    if stack then
+        local titled = label:IsShown() and row.settingsTitle and row.settingsTitle ~= ""
+        local top = ROW_INSET
+        if titled then
+            label:ClearAllPoints(); label:SetPoint("TOPLEFT", row, "TOPLEFT", 0, -2); label:SetWidth(width)
+            label:SetTextColor(unpack(T.secondary))
+            top = math.max(STACK_LABEL, Measured(label:GetStringHeight(), 14) + 8)
+        end
+        host:ClearAllPoints(); host:SetPoint("TOPLEFT", 0, -top); host:SetPoint("BOTTOMRIGHT", 0, ROW_INSET)
+        row:SetHeight(row:GetHeight() + top - ROW_INSET)
+        row.gridStacked = true
+    else
+        label:ClearAllPoints(); label:SetPoint("LEFT", row, "LEFT", 0, 0); label:SetWidth(172)
+        label:SetTextColor(unpack(T.text))
+        host:ClearAllPoints(); host:SetPoint("TOPLEFT", SIDE_X, -ROW_INSET); host:SetPoint("BOTTOMRIGHT", -SIDE_RIGHT, ROW_INSET)
+        row.gridStacked = nil
+    end
+end
+
 local function FitText(row, region, host, available, hostTop)
     -- Text anchored on two sides already spans its host.
     if region:GetNumPoints() ~= 1 then return end
@@ -94,15 +147,22 @@ local function FitText(row, region, host, available, hostTop)
     if room <= 20 then return end
     local natural = Natural(region)
     -- A wrapping note that starts at the left edge uses the whole width.
-    local note = left <= 1 and region.CanWordWrap and region:CanWordWrap()
+    local wraps = region.CanWordWrap and region:CanWordWrap()
+    local note = left <= 1 and wraps
     FitWidth(region, note and room or math.min(natural, room))
-    if natural > room then
-        region:SetWordWrap(true)
-        local point, _, _, _, y = region:GetPoint(1)
-        if type(point) == "string" and point:find("^TOP") then
-            local below = -(type(y) == "number" and y or 0)
-            local bottom = hostTop + below + Measured(region:GetStringHeight(), 0) + 6
-            if bottom > row:GetHeight() then row:SetHeight(bottom) end
+    if natural > room then region:SetWordWrap(true); wraps = true end
+    -- Wrapped text anchored from its top grows the row to its last line.
+    local point, _, _, _, y = region:GetPoint(1)
+    if wraps and type(point) == "string" and point:find("^TOP") then
+        local below = -(type(y) == "number" and y or 0)
+        local bottom = hostTop + below + Measured(region:GetStringHeight(), 0) + 6
+        if bottom > row:GetHeight() then row:SetHeight(bottom) end
+        -- Text a refresher sets after this layout lays the page out again
+        -- (W.SettingsTextChanged), so the row follows the new text.
+        local text = region:GetText()
+        if not (issecretvalue and issecretvalue(text)) then
+            row.gridTexts = row.gridTexts or {}
+            row.gridTexts[region] = text or ""
         end
     end
 end
@@ -135,6 +195,31 @@ local function FitFrame(row, frame, available, hostTop, depth)
     end
 end
 
+-- Fits one row to `width` from its natural size. footerNotes: a footer note
+-- (page:FooterNote) wraps inside the row, as on a tile.
+function W.FitSettingsRow(row, width, footerNotes)
+    row.gridNaturalHeight = row.gridNaturalHeight or row:GetHeight()
+    row:SetHeight(row.gridNaturalHeight)
+    row:SetWidth(width)
+    row.gridTexts = nil
+    if row.layoutChildren then row:layoutChildren(width) end
+    if row.settingsFooterNote and footerNotes then FitNote(row, width)
+    else Restack(row, width); FitFrame(row, row, width, 0, 0) end
+end
+
+-- Whether a refresher changed text the last layout wrapped (a row on show).
+function W.SettingsTextChanged(page)
+    for _, row in ipairs(page.rows) do
+        if row.gridTexts and row:IsShown() then
+            for region, text in pairs(row.gridTexts) do
+                local now = region:IsShown() and region:GetText() or text
+                if not (issecretvalue and issecretvalue(now)) and (now or "") ~= text then return true end
+            end
+        end
+    end
+    return false
+end
+
 -- Lays out one card's rows from `padding` down; returns { row, y, x } entries and the height.
 local function CardRows(page, card, inner, padding, Snap)
     local visible, content = {}, false
@@ -145,14 +230,7 @@ local function CardRows(page, card, inner, padding, Snap)
             if show then visible[#visible + 1] = row; content = content or not row.cardTitle end
         end
     end
-    local function Fit(row, rowWidth)
-        row.gridNaturalHeight = row.gridNaturalHeight or row:GetHeight()
-        row:SetHeight(row.gridNaturalHeight)
-        row:SetWidth(rowWidth)
-        if row.layoutChildren then row:layoutChildren(rowWidth) end
-        if row.settingsFooterNote and page.modeFooterLayout then FitNote(row, rowWidth)
-        else FitFrame(row, row, rowWidth, 0, 0) end
-    end
+    local function Fit(row, rowWidth) W.FitSettingsRow(row, rowWidth, page.modeFooterLayout) end
     local half, placed, y, index = Snap((inner - PAIR_GAP) / 2), {}, padding, 1
     while index <= #visible do
         local row, partner = visible[index], visible[index + 1]
